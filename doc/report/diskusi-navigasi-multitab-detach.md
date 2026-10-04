@@ -4,11 +4,7 @@ Status: **diskusi selesai, rancangan dituangkan ke 3 plan, belum ada kode yang d
 Dibuat: 2026-09-23
 Baseline: commit `0e69ef4`, branch `data-services`
 Sifat: laporan **diskusi dan keputusan**, bukan laporan eksekusi
-Rujukan:
-- [plan/unexecuted/navigasi-1-hapus-multitab.md](../../plan/unexecuted/navigasi-1-hapus-multitab.md)
-- [plan/executed/navigasi-2-entri-per-host.md](../../plan/executed/navigasi-2-entri-per-host.md)
-- [plan/executed/navigasi-3-detach-window.md](../../plan/executed/navigasi-3-detach-window.md)
-- [doc/TODO-LIST.md](../TODO-LIST.md), item "Pasang token konkurensi di entity"
+Rujukan: plan navigasi 1–3 (hapus multitab, entri per host, detach window) sudah dieksekusi dan diarsipkan.
 
 ---
 

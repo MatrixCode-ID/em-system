@@ -1,7 +1,7 @@
 # Data snapshot (engine)
 
 Status: **sedang dirancang**. Hasil pembahasan 2026-09-29 (muncul dari pembahasan
-[request perubahan dan approval](../executed/request-perubahan-dan-approval.md)), bahan untuk menyusun plan.
+request perubahan dan approval), bahan untuk menyusun plan.
 
 ## Latar belakang
 

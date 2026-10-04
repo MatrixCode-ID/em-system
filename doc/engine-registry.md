@@ -1,7 +1,6 @@
 # Engine container registry — cara memakai dan menguji
 
-Registry terintegrasi di `Em.Api.Core` (folder `Api/Registry/`), seperti CDN dan approval. **Kenapa**
-dirancang begini: [../plan/executed/container-registry.md](../plan/executed/container-registry.md).
+Registry terintegrasi di `Em.Api.Core` (folder `Api/Registry/`), seperti CDN dan approval.
 Dokumen ini: cara menyalakan, cara membuat root/container/robot tanpa UI, dan cara mengujinya.
 Layar WPF **Container Manager** sudah ada (lihat bagian "Container Manager (WPF)" di bawah).
 
@@ -71,8 +70,7 @@ menghapus metadata; berkas layer di disk menunggu garbage collection (tahap 2).
 
 Layar bawaan `Em.Ui.Wpf.Core`: menu **Container Manager** di daftar Tools (navigasi `admin.container`), muncul hanya
 untuk akun yang memegang claim `Administrative Tools:Container Manager Access` (atau administrator).
-Rancangannya: [../plan/executed/container-manager-wpf.md](../plan/executed/container-manager-wpf.md);
-hasil eksekusi dan yang belum teruji: [report/container-manager-wpf-eksekusi.md](report/container-manager-wpf-eksekusi.md).
+Yang belum teruji: layar terhadap server, docker sungguhan, dan drag-drop dengan mouse.
 
 - **Containers**: daftar root (kiri), tree folder dan container root terpilih (tengah), detail item
   terpilih (kanan). Buat/edit/hapus root, folder, container; pindah lewat menu "Move to..." atau drag-drop

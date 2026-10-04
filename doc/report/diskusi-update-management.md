@@ -7,7 +7,6 @@ Sifat: laporan **diskusi dan keputusan**, bukan laporan eksekusi
 Rujukan:
 - `src/backend/Em.Api/Program.cs` (`builder.EnableCdn("./data/cdn", 200)`)
 - `src/backend/CLAUDE.md`, bagian "CDN: public files outside the dispatcher"
-- [plan/executed/cdn-publik-dan-cdn-manager.md](../../plan/executed/cdn-publik-dan-cdn-manager.md)
 
 ---
 
@@ -201,12 +200,10 @@ Belum dikonfirmasi user. Diputuskan saat menyusun plan tahap terkait.
 
 ## 8. Langkah berikutnya
 
-1. ~~Susun **plan tahap 1 (Release Manager)**.~~ Sudah: [plan/executed/release-manager-wpf.md](../../plan/executed/release-manager-wpf.md),
-   dan sudah dieksekusi. Dua hal di laporan ini berubah di sana: hash file menjadi **SHA-256** (bukan
+1. ~~Susun **plan tahap 1 (Release Manager)**.~~ Sudah dieksekusi (plan diarsipkan). Dua hal di laporan ini berubah di sana: hash file menjadi **SHA-256** (bukan
    SHA-1 seperti R2), dan tanda tangan `release.json.sig` (ECDSA P-256) **sudah dikerjakan di tahap 1**.
    Format rilis kini dikunci di [doc/release-format.md](../release-format.md).
-2. ~~Susun **plan tahap 2 (Launcher)**.~~ Sudah: [plan/executed/launcher-rust-tahap2.md](../../plan/executed/launcher-rust-tahap2.md),
-   dan sudah dieksekusi (6 sesi di branch `launcher-tahap2`, termasuk verifikasi end-to-end). Perubahan
+2. ~~Susun **plan tahap 2 (Launcher)**.~~ Sudah dieksekusi (plan diarsipkan) (6 sesi di branch `launcher-tahap2`, termasuk verifikasi end-to-end). Perubahan
    terhadap laporan ini:
    - launcher ditulis dalam **Rust** (`src/frontend/Launcher`, GUI Win32 lewat `winsafe`), bukan C# NativeAOT
      seperti usulan di bagian 6.4;

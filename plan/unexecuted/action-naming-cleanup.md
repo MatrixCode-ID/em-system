@@ -1,7 +1,7 @@
 # Plan — Seragamkan nama action lama ke konvensi penamaan
 
 Status: **belum dieksekusi**
-Dibuat: 2026-09-13 — dipisah dari `authorization-fase1-service-layer.md` bagian 5.3 atas permintaan
+Dibuat: 2026-09-13 — dipisah dari plan authorization fase 1 bagian 5.3 atas permintaan
 user, supaya tidak hilang setelah fase 1 selesai.
 
 ---
@@ -53,7 +53,7 @@ Dua action di `CredentialServices` melanggarnya:
 | `PostTa_User_NewBatch` | lima tabel yang sama, per baris | `PostMeta_CreateUserSetBatch` |
 
 Nama `...UserSet` mengikuti istilah yang dipakai user untuk hal sejenis di sisi role
-(`PostMeta_SaveRoleSet`, lihat `rolemanager-binding-view-model.md`) — konfirmasi dulu sebelum
+(`PostMeta_SaveRoleSet`, lihat plan binding Role Manager) — konfirmasi dulu sebelum
 dipakai, ini baru usulan.
 
 Yang **tidak** ikut diubah: isi kedua method itu. Pola transaksinya (`BeginTransactionAsync`, tiga

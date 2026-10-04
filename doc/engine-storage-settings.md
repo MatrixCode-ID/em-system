@@ -92,4 +92,3 @@ inisialisasi admin/business task host tidak dijalankan. Ini bukan uji Docker CLI
 `dotnet run --project scripts/storage-settings-render/StorageSettingsRender.csproj`
 merender card enabled/disabled dan transisi busy pada kedua tema tanpa window tampil;
 PNG disimpan pada output build script. Interaksi mouse terhadap server perlu uji operator.
-Hasil aktual dan verifikasi tertunda: `doc/report/cdn-registry-settings-ui-eksekusi.md`.

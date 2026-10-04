@@ -6,7 +6,7 @@
     ta_Robot, ta_CtnRoot, ta_CtnFolder, ta_CtnImage, ta_CtnManifest, ta_CtnTag, ta_CtnBlob,
     ta_CtnBlobLink, ta_CtnManifestBlob, ta_CtnUpload, ta_CtnRootRobot.
 
-    Rancangan: plan/executed/container-registry.md (bagian 6). Catatan penting:
+    Catatan penting:
     - Kolom tag, digest, dan hash token memakai collation CASE-SENSITIVE (SQL_Latin1_General_CP1_CS_AS):
       di OCI "Latest" dan "latest" adalah dua tag berbeda. Collation default skema ini case-insensitive.
     - Batas panjang nama (root 64, container 128, tag 128, folder 100, kedalaman folder 8) dijaga

@@ -2,7 +2,7 @@
 
 Tanggal: 2026-10-04
 Status: diskusi
-Asal: temuan saat merapikan NuGet Manager dan Container Manager (`doc/report/ui-nuget-container-manager-eksekusi.md`).
+Asal: temuan saat merapikan NuGet Manager dan Container Manager.
 
 ## Temuan
 

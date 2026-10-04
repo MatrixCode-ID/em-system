@@ -15,9 +15,7 @@ on its own. One exe plays five roles:
 - **maintenance**: Repair, change source or keys, Uninstall (opened through **Modify** in Settings);
 - **CLI for IT**: silent install, key import, HKLM policy.
 
-The plan it was built from, with every decision and the execution notes per session, is
-[plan/executed/launcher-rust-tahap2.md](../../../plan/executed/launcher-rust-tahap2.md). Read it before changing
-behaviour. Status: all six sessions done, including the end-to-end verification.
+Status: all six sessions done, including the end-to-end verification.
 
 ## Product neutral
 

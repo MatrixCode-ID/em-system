@@ -159,7 +159,7 @@ view model / `FilterState` bersama.
 - [ ] **Pengguna kedua sudah muncul: rail Role Manager** (dibahas 2026-09-18). `RoleManager.xaml`
   memakai pola yang sama persis di rail kirinya — kotak search (`:282`) plus segment
   All / In use / Disabled (`:310`) di atas daftar, dengan footer "6 of 6 roles" dan tombol
-  prev/next di bawahnya. Pada plan binding Role Manager (`rolemanager-binding-view-model.md`)
+  prev/next di bawahnya. Pada plan binding Role Manager 
   filter itu **sengaja dilewati**: kontrolnya dibiarkan tergambar tapi tidak diikat ke apa pun,
   karena menyembunyikannya berarti menggambar ulang layout rail dan harus dibongkar lagi nanti.
   Pagernya tetap diikat, karena itu paging dan bukan filter.

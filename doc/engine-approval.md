@@ -1,9 +1,6 @@
 # Engine approval — cara memakai dari modul
 
-Panduan untuk penulis modul pemakai. **Kenapa** engine ini dirancang begini ada di
-[../plan/executed/request-perubahan-dan-approval.md](../plan/executed/request-perubahan-dan-approval.md);
-**apa yang dikerjakan dan hasil ujinya** ada di [report/engine-approval-eksekusi.md](report/engine-approval-eksekusi.md).
-Dokumen ini hanya menjelaskan permukaan publiknya.
+Panduan untuk penulis modul pemakai. Dokumen ini hanya menjelaskan permukaan publiknya.
 
 Engine menyediakan dua jenis persetujuan. Keduanya memakai satu set tabel request, satu set action
 (`core.approval`), satu Approval Manager, dan satu hub MY TASKS.
@@ -176,7 +173,7 @@ MAUI; client service-nya ada.
 
 ## Batas yang diketahui
 
-Lihat bagian *Sisa pekerjaan* di [report](report/engine-approval-eksekusi.md). Yang paling perlu diingat
+Yang paling perlu diingat
 modul pemakai: perbandingan konflik membaca nilai lalu handler membaca ulang barisnya tanpa kunci baris
 (ada jendela kecil antara keduanya); dan hook modul yang mengambil context lewat `GetService` tidak ikut
 transaksi.

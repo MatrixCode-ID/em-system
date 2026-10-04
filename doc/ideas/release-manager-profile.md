@@ -57,6 +57,4 @@ Tidak ada. Semua keputusan sudah final dan dipindah ke plan.
 
 ## Plan turunan
 
-- [plan/executed/release-manager-profile.codex.md](../../plan/executed/release-manager-profile.codex.md) (2026-10-04, untuk Codex).
-
-- Laporan eksekusi 2026-10-04: [release-manager-profile-eksekusi.md](../report/release-manager-profile-eksekusi.md).
+- Plan 2026-10-04 (untuk Codex): sudah dieksekusi dan diarsipkan.

@@ -2,7 +2,7 @@
 
 - **Tanggal:** 2026-10-04
 - **Status:** jadi plan
-- **Plan turunan:** [plan/executed/publish-nuget-container-gui.codex.md](../../plan/executed/publish-nuget-container-gui.codex.md)
+- **Plan turunan:** sudah dieksekusi dan diarsipkan
 - **Keputusan yang sudah jelas:** konfigurasi dan operasi publish tersedia di GUI seperti Release Manager; pengguna tidak perlu membuat `.cmd`, `.bat`, atau `.ps1` untuk setiap project; bisa dipakai lintas project. Project legacy hanya referensi.
 - **Pembaruan diskusi 2026-10-04:** pengguna menetapkan profil disimpan lokal dan mengusulkan folder profil dengan profil berbentuk file. Rancangan utama tidak memerlukan perubahan skema DB; usulan format file dan alur folder dirinci di bawah.
 - **Keputusan lanjutan 2026-10-04:** tersedia opsi menyimpan sensitive data langsung di JSON profil. Larangan secret di JSON pada gagasan awal diganti menjadi pilihan penyimpanan per profil; penyimpanan terpisah tetap usulan default. Profil berisi secret tetap lokal di luar repo publik.
@@ -273,4 +273,4 @@ Referensi engine yang dibaca: [ReleaseManager.xaml.cs](../../src/shared/Em.Ui.Wp
 
 ## Implementasi 2026-10-04
 
-Migrasi NuPak ke engine dan publisher WPF selesai diimplementasikan. Build lima solution, 170 pemeriksaan NuPak, 105 pemeriksaan settings, 35 pemeriksaan publisher serta render terang/gelap lulus. Docker daemon tidak tersedia sehingga build/push container sungguhan masih tertunda; interaksi aplikasi utama dan tujuan eksternal juga belum diuji. Rincian hasil dicatat di [laporan](../report/publish-nuget-container-gui-eksekusi.md). Ide lanjutan ditunda: JSON-encrypted, symbols .snupkg, retensi log otomatis, build jarak jauh dan MAUI.
+Migrasi NuPak ke engine dan publisher WPF selesai diimplementasikan. Build lima solution, 170 pemeriksaan NuPak, 105 pemeriksaan settings, 35 pemeriksaan publisher serta render terang/gelap lulus. Docker daemon tidak tersedia sehingga build/push container sungguhan masih tertunda; interaksi aplikasi utama dan tujuan eksternal juga belum diuji. Ide lanjutan ditunda: JSON-encrypted, symbols .snupkg, retensi log otomatis, build jarak jauh dan MAUI.
