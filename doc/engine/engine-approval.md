@@ -100,8 +100,8 @@ login; `ApprovalStartupChecks` menolak aplikasi yang melanggarnya sebelum reques
 ## Tabel
 
 Tujuh tabel di database inti aplikasi: request, langkah, penanda tangan langkah, item, kunci item, kolom
-item, komentar. **Skripnya dipegang aplikasi pemakai** (belum ada di `MainTable.sql`; lihat sisa
-pekerjaan di report). Dua hal yang merupakan perilaku engine, bukan optimasi:
+item, komentar. Skripnya `doc/sqlscript/mssql/tables/020-approval.sql`, termasuk tabel jenis dokumen
+(`ta_Doc`) yang dirujuk FK; baris jenis dokumennya tetap diisi aplikasi/modul pemakai. Dua hal yang merupakan perilaku engine, bukan optimasi:
 
 1. Unique index tersaring pada (jenis dokumen, kunci, versi) `WHERE Stage = Pending` — penjaga balapan
    dua pengajuan bersamaan.

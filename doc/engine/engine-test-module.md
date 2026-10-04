@@ -20,7 +20,7 @@ Untuk melepasnya dari aplikasi nyata: hapus dua baris `AddTestModule` dan `Proje
 
 ## Menjalankan
 
-1. Jalankan `doc/sqlscript/mssql/sets/EmTest.sql` pada database inti (aman diulang). Skrip membuat tabel dan view uji
+1. Jalankan `doc/sqlscript/mssql/tables/900-emtest.sql` pada database inti (aman diulang). Skrip membuat tabel dan view uji
    dan dua jenis dokumen approval (`EmTestDoc`, `EmTestItem`) di daftar jenis dokumen.
 2. Jalankan `Em.Api` dan `Em.Ui.Wpf`, masuk, lalu buka menu **Em Test**. Semua layar butuh claim `test:Run Tests`
    (administrator dan mode debug lolos).

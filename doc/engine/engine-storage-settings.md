@@ -27,7 +27,7 @@ mempertahankan fitur lain. Perubahan aktif tidak ikut berubah ketika row direfre
 Row invalid/versi unsupported menggagalkan startup; pulihkan row dari backup DB atau
 koreksi JSON, kemudian restart. Jangan hapus row untuk reset tanpa mencatat path lama.
 Tidak diperlukan DDL baru karena `ta_Meta` sudah ada. Siapkan skema inti dan registry
-(`doc/sqlscript/mssql/sets/Ctn.sql`, termasuk migrasi robot bila skema lama) sebelum startup
+(`doc/sqlscript/mssql/tables/010-core.sql` dan `tables/030-registry.sql`; migrasi robot bila skema lama) sebelum startup
 managed, termasuk ketika registry dinonaktifkan. Startup tetap memeriksa tabel registry.
 
 ## Hak dan layar WPF

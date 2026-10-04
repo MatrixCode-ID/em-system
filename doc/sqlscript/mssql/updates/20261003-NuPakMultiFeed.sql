@@ -3,7 +3,7 @@
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 IF OBJECT_ID('dbo.ta_NuPakPrefix','U') IS NULL
- THROW 51000,'NuPak is not installed: use sets/NuPak.sql for a new installation.',1;
+ THROW 51000,'NuPak is not installed: use tables/040-nupak.sql for a new installation.',1;
 IF COL_LENGTH('dbo.ta_NuPakPrefix','cNuPakFeedId') IS NULL
 BEGIN
  IF EXISTS(SELECT 1 FROM dbo.ta_NuPakPrefix) OR EXISTS(SELECT 1 FROM dbo.ta_NuPakPackage)

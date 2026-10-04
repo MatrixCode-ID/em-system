@@ -13,9 +13,8 @@ Kolom identitas memakai `cRobot*`; hak Container memakai `cCtnRootRobotAccess`.
 Referensi upload dan pengirim manifest juga memakai `cRobotId`. Hash, token, expiry, status, riwayat push dan foreign key tetap berlaku.
 Database yang sudah di-rename tidak perlu menjalankan rename lagi.
 
-Instalasi baru tanpa registry: jalankan `doc/sqlscript/mssql/sets/Robot.sql`.
-Dengan registry: `doc/sqlscript/mssql/sets/Ctn.sql` juga membuat `ta_Robot` jika
-belum ada. Instalasi lama: gunakan
+Instalasi baru: `ta_Robot` dibuat oleh `doc/sqlscript/mssql/tables/010-core.sql` (tabel inti),
+dengan atau tanpa registry. Instalasi lama: gunakan
 `doc/sqlscript/mssql/updates/20261003-RobotUserManager.sql` sebelum server baru
 dinyalakan. Jangan menjalankan DDL instalasi baru dahulu pada database yang belum
 di-rename karena akan membuat tabel identitas terpisah.
@@ -46,7 +45,7 @@ Robot tetap memakai token dan grant manager sendiri.
 
 Database lama wajib menjalankan `doc/sqlscript/mssql/updates/20261003-RobotOwner.sql`
 sebelum backend baru dinyalakan. Skrip idempotent dan mempertahankan robot yang sudah ada
-sebagai tanpa owner. DDL instalasi `Robot.sql`/`Ctn.sql` memerlukan tabel `ta_User` terlebih dahulu.
+sebagai tanpa owner. Bagian robot di `010-core.sql` dibuat sesudah tabel `ta_User` di berkas yang sama.
 Uji lokal sekaligus migrasi: `dotnet run --project ..\.artefacts\em-system\scripts\robot-smoke -- --migrate-owner`.
 
 ## Menambah manager

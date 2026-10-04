@@ -35,7 +35,7 @@ namespace Em.Api.Core.Registry
          } catch (Exception ex) {
             throw new InvalidOperationException(
                $"The container registry is enabled but table '{table}' cannot be read. " +
-               "Run doc/sqlscript/mssql/sets/Ctn.sql on the core database first.", ex);
+               "Run doc/sqlscript/mssql/tables/030-registry.sql on the core database first.", ex);
          }
       }
    }

@@ -8,7 +8,7 @@ Layar WPF **Container Manager** sudah ada (lihat bagian "Container Manager (WPF)
 
 Untuk instalasi lama, jalankan migrasi pada [engine-robots.md](engine-robots.md) dahulu.
 
-1. Jalankan `doc/sqlscript/mssql/sets/Ctn.sql` pada database inti (tabel registry + `ta_Robot`; instalasi baru, aman diulang).
+1. Jalankan `doc/sqlscript/mssql/tables/030-registry.sql` pada database inti sesudah `tables/010-core.sql` (yang membuat `ta_Robot`); instalasi baru, aman diulang.
 2. Di `Program.cs` host (sudah aktif di `Em.Api`):
 
    ```csharp

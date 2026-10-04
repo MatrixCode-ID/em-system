@@ -21,7 +21,7 @@ need a separate migration design with explicit destination feeds.
    `NuPakEnable` is preserved; legacy `NuPakAnonymousRead` remains metadata only
    and is never inherited by new feeds.
 5. Run `doc/sqlscript/mssql/updates/20261003-NuPakMultiFeed.sql`, followed by
-   `doc/sqlscript/mssql/sets/NuPak.sql`. Both are transactional and idempotent;
+   `doc/sqlscript/mssql/tables/040-nupak.sql`. Both are transactional and idempotent;
    rerunning them on populated multi-feed schema preserves feeds/packages.
    New installations use only the set script. Neither script seeds feeds.
 6. Deploy backend and WPF together. Startup requires schema marker

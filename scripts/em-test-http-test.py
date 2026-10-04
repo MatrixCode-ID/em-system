@@ -5,7 +5,7 @@ action publik, kegagalan berstatus, batas waktu, claim, stream unggah dan unduh,
 paging dan pencarian, business task, serta aksi dokumen approval.
 
 Prasyarat: Python 3.8+ (tanpa paket tambahan); Em.Api berjalan dengan module uji terpasang; skrip
-doc/sqlscript/mssql/sets/EmTest.sql sudah dijalankan; akun penguji memegang semua claim module "test"
+doc/sqlscript/mssql/tables/900-emtest.sql sudah dijalankan; akun penguji memegang semua claim module "test"
 atau administrator.
 Parameter (environment variable):
   EM_BASE_URL   alamat server, bawaan http://localhost:5132

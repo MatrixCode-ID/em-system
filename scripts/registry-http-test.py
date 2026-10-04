@@ -4,7 +4,7 @@ Uji HTTP container registry Em (jalur /v2 dan layanan manajemen), meniru klien D
 bersegmen, mount lintas root, manifest, tag, Range, hak per root, dan kasus negatifnya.
 
 Prasyarat: Python 3.8+ (tanpa paket tambahan); Em.Api berjalan dengan registry menyala dan tabel
-ta_Ctn* sudah dibuat (doc/sqlscript/mssql/sets/Ctn.sql); akun yang boleh masuk dan memegang claim
+ta_Ctn* sudah dibuat (doc/sqlscript/mssql/tables/030-registry.sql); akun yang boleh masuk dan memegang claim
 "Administrative Tools:Container Manager Access" dan "Administrative Tools:User Manager Access" (atau administrator).
 Parameter (environment variable):
   EM_BASE_URL   alamat server, bawaan http://localhost:5055

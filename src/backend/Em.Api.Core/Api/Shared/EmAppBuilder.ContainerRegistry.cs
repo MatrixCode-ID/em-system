@@ -15,7 +15,7 @@ namespace Em.Api.Shared
       /// Menyalakan container registry: jalur <c>/v2</c> (OCI Distribution) melayani <c>docker login</c>,
       /// <c>push</c>, dan <c>pull</c> bagi robot yang diberi hak. Metadata (root, nama container, tag,
       /// manifest, robot, hak) ada di database lewat tabel <c>ta_Ctn*</c> (skrip
-      /// <c>doc/sqlscript/mssql/sets/Ctn.sql</c>); isi layer ada di disk. Root, folder dan nama container
+      /// <c>doc/sqlscript/mssql/tables/030-registry.sql</c>); isi layer ada di disk. Root, folder dan nama container
       /// dikelola lewat <c>ICtnServices</c> dengan claim <c>Container Manager Access</c>. Robot memakai
       /// <c>IRobotServices</c> dengan claim <c>User Manager Access</c>.
       /// Tanpa panggilan ini, setiap alamat di bawah <c>/v2</c> dijawab 404.
