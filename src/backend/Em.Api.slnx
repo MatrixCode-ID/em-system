@@ -7,6 +7,12 @@
     <Project Path="../modules/Em.Test/Em.Test.Models/Em.Test.Models.csproj" />
     <Project Path="../modules/Em.Test/Em.Test.Api/Em.Test.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <File Path="../../tests/Directory.Build.props" />
+    <Project Path="../../tests/Em.Libs.Tests/Em.Libs.Tests.csproj" />
+    <Project Path="../../tests/Em.Api.Core.Tests/Em.Api.Core.Tests.csproj" />
+    <Project Path="../../tests/Em.Api.Core.IntegrationTests/Em.Api.Core.IntegrationTests.csproj" />
+  </Folder>
   <Project Path="Em.Api/Em.Api.csproj" />
   <Project Path="compose.dcproj" />
   <Folder Name="/Container/">

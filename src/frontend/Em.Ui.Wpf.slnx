@@ -7,5 +7,10 @@
     <Project Path="../modules/Em.Test/Em.Test.Models.Ui/Em.Test.Models.Ui.csproj" />
     <Project Path="../modules/Em.Test/Em.Test.Wpf/Em.Test.Wpf.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <File Path="../../tests/Directory.Build.props" />
+    <Project Path="../../tests/Em.Ui.Core.Tests/Em.Ui.Core.Tests.csproj" />
+    <Project Path="../../tests/Em.Ui.Wpf.Core.Tests/Em.Ui.Wpf.Core.Tests.csproj" />
+  </Folder>
   <Project Path="Em.Ui.Wpf/Em.Ui.Wpf.csproj" />
 </Solution>

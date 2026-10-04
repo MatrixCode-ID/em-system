@@ -28,6 +28,8 @@ Debug token API bersifat opsional: `EM_DEBUG_TOKEN` berisi public key RSA Base64
 
 Pembaruan 2026-10-01 (engine approval): engine approval (data approval, document approval, local binary storage, stamp PDF, Approval Manager, hub MY TASKS) sudah dibangun dan ditutup. Cara memakainya dari modul: `doc/engine/engine-approval.md`.
 
+Pembaruan 2026-10-04 (project test): project test berada di `tests/` (sejajar `src/`), memakai xUnit v3 (Microsoft Testing Platform v2) dan dimasukkan ke solution areanya: `Em.Libs.Tests`, `Em.Api.Core.Tests`, `Em.Api.Core.IntegrationTests` di `src/backend/Em.Api.slnx`; `Em.Ui.Core.Tests`, `Em.Ui.Wpf.Core.Tests` di `src/frontend/Em.Ui.Wpf.slnx`. Jalankan `dotnet test src/backend/Em.Api.slnx` dan `dotnet test src/frontend/Em.Ui.Wpf.slnx` (atau Test Explorer). `global.json` di root memilih runner `Microsoft.Testing.Platform`; tanpa itu .NET 10 SDK menolak project MTP v2, jadi semua project test baru harus berbasis MTP. Test integrasi memakai SQL Server lokal `(local)` dengan Windows Authentication (butuh hak `dbcreator`, server bisa diganti lewat `EM_TEST_DB_SERVER`), membuat lalu menghapus database `EmSystem_IntegrationTest_<guid>` per run, dan di-skip bila server tidak terjangkau. Panduan: `tests/README.md`.
+
 ## Konvensi
 
 - `AGENTS.md` menginstruksikan Codex untuk selalu membaca `claude.md` ini sebelum bekerja. Karena itu, file ini dipakai bersama oleh Claude Code dan Codex.
