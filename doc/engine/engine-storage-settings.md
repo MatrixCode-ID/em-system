@@ -80,7 +80,7 @@ Menggabungkan managed dan statis dalam host yang sama ditolak saat registrasi.
 
 ## Verifikasi terisolasi
 
-`dotnet run --project scripts/storage-settings-smoke/StorageSettingsSmoke.csproj`
+`dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-smoke\StorageSettingsSmoke.csproj`
 memakai directory temp unik dan persistence fixture tanpa menyentuh payload/database host.
 Tambahkan `-- --sql` untuk membuat database SQL Server fixture unik melalui koneksi lokal,
 menguji `ta_Meta`, lalu menghapus hanya database fixture yang dibuat pengujian.
@@ -89,6 +89,6 @@ HTTP dengan token user sungguhan, claim manager/settings, restart, CDN Range/upl
 streaming upload selama Save pending, serta login/push/pull blob OCI dan grant robot.
 Fixture memakai dispatcher dan pemetaan publik engine, bukan Program.cs host produksi;
 inisialisasi admin/business task host tidak dijalankan. Ini bukan uji Docker CLI.
-`dotnet run --project scripts/storage-settings-render/StorageSettingsRender.csproj`
+`dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-render\StorageSettingsRender.csproj`
 merender card enabled/disabled dan transisi busy pada kedua tema tanpa window tampil;
 PNG disimpan pada output build script. Interaksi mouse terhadap server perlu uji operator.

@@ -23,7 +23,7 @@ dapat memerlukan waktu. Cancellation token request diteruskan. Folder tak dapat 
 request gagal; angka parsial tidak ditampilkan sebagai total. Perubahan file bersamaan dengan scan
 dapat mengubah hasil atau menyebabkan request gagal; user dapat melakukan refresh ulang.
 
-Uji: `dotnet run --project scripts/cdn-storage-smoke` dari root repo. Fixture terisolasi di folder script,
+Uji: `dotnet run --project ..\.artefacts\em-system\scripts\cdn-storage-smoke` dari root repo. Fixture terisolasi di folder script,
 dibersihkan di `finally`, dan tidak menyentuh CDN aktif.
 
 

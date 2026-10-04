@@ -133,7 +133,7 @@ Container Manager menampilkan total global, rincian blob/manifest, dan keteranga
 Refresh serta pembacaan ulang root setelah perubahan membaca ulang angka. Registry nonaktif atau
 request gagal menampilkan status, bukan angka nol yang menyesatkan.
 
-Uji agregasi SQL Server: `dotnet run --project scripts/container-storage-smoke` dari root repo.
+Uji agregasi SQL Server: `dotnet run --project ..\.artefacts\em-system\scripts\container-storage-smoke` dari root repo.
 Data uji menggunakan transaksi yang selalu di-rollback.
 
 ## Batas yang diketahui

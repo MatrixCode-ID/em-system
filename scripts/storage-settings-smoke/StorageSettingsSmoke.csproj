@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
- <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
- <ItemGroup>
-  <ProjectReference Include="../../src/backend/Em.Api.Core/Em.Api.Core.csproj" />
-  <Compile Include="../../src/backend/Em.Api.Core/Api/Storage/ManagedStorageSettings.cs" Link="ManagedStorageSettings.cs" />
-  <Compile Include="../../src/backend/Em.Api.Core/Api/Storage/MetaStorageSettingsPersistence.cs" Link="MetaStorageSettingsPersistence.cs" />
- </ItemGroup>
-</Project>

@@ -47,7 +47,7 @@ Robot tetap memakai token dan grant manager sendiri.
 Database lama wajib menjalankan `doc/sqlscript/mssql/updates/20261003-RobotOwner.sql`
 sebelum backend baru dinyalakan. Skrip idempotent dan mempertahankan robot yang sudah ada
 sebagai tanpa owner. DDL instalasi `Robot.sql`/`Ctn.sql` memerlukan tabel `ta_User` terlebih dahulu.
-Uji lokal sekaligus migrasi: `dotnet run --project scripts/robot-smoke -- --migrate-owner`.
+Uji lokal sekaligus migrasi: `dotnet run --project ..\.artefacts\em-system\scripts\robot-smoke -- --migrate-owner`.
 
 ## Menambah manager
 
