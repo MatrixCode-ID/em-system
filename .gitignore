@@ -419,3 +419,6 @@ doc/*.bkp
 
 # Hasil dotnet pack lokal (scripts/pack-nuget.ps1); tidak di-commit
 dist/nuget-pack/
+
+# Hasil build Launcher (src/frontend/Launcher/build-dist.ps1); dibagikan lewat GitHub Releases, tidak di-commit
+dist/launcher/
