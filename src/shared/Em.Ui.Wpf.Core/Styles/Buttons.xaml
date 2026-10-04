@@ -1,0 +1,414 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls">
+
+   <!--
+      The material buttons every screen shares. All of the framed ones are one template - a
+      rounded container, a state layer over it, then the content - and a variant is a few
+      setters over that, never a second template.
+
+      Which variant to reach for:
+
+      - filled, once per strip: the action that strip exists for;
+      - tonal: a secondary action that still wants a surface of its own;
+      - outlined: the quiet one, an outline and nothing else at rest;
+      - danger outlined: the action that destroys a record. It keeps the quiet shape on
+        purpose - it has to be reachable, never inviting;
+      - text: the small actions inside a section, which must not compete with the strip above
+        them.
+
+      The compact pair is the same button one size down, for strips inside a card where the
+      full height version would out-shout the toolbar at the top of the screen.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/FlatIconButton.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Typography.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <!-- The state layer a framed button paints under the pointer and while pressed. The template
+        looks these up by key, so a variant re-tints them in its own Style.Resources: a grey wash
+        on a neutral button, a red one on a danger button, a white one on a filled button - the
+        hover then reads in the colour of the button it is on. The neutral pair repeats
+        stateHoverBrush/statePressedBrush of Palette.xaml; keep them equal. -->
+   <SolidColorBrush x:Key="buttonHoverBrush" Color="#1F808080" />
+   <SolidColorBrush x:Key="buttonPressedBrush" Color="#33808080" />
+
+   <Style x:Key="materialButtonBaseStyle" TargetType="Button">
+      <Setter Property="Height" Value="38" />
+      <Setter Property="Padding" Value="18,0" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="SnapsToDevicePixels" Value="True" />
+      <!-- The template draws its own focus ring; the dotted default one squares off the pill. -->
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Button">
+               <!-- CornerRadius 19 is half the resting height, i.e. a full pill. -->
+               <Border x:Name="shape"
+                       CornerRadius="19"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <Grid>
+                     <Border x:Name="stateLayer" CornerRadius="19" Background="Transparent" />
+                     <ContentPresenter x:Name="content"
+                                       Margin="{TemplateBinding Padding}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                     <controls:WaitDots x:Name="waitDots"
+                                        Visibility="Collapsed"
+                                        Width="28" Height="8"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsActive="{TemplateBinding controls:ButtonWait.IsWaiting}" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background"
+                             Value="{DynamicResource buttonHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background"
+                             Value="{DynamicResource buttonPressedBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocused" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter TargetName="shape" Property="Opacity" Value="0.4" />
+                  </Trigger>
+                  <!-- Last on purpose: an async command disables its button while it runs, and the
+                       waiting state must win over that dimming so the dots stay bright. -->
+                  <Trigger Property="controls:ButtonWait.IsWaiting" Value="True">
+                     <Setter TargetName="shape" Property="Opacity" Value="1" />
+                     <Setter TargetName="content" Property="Opacity" Value="0" />
+                     <Setter TargetName="waitDots" Property="Visibility" Value="Visible" />
+                     <Setter TargetName="shape" Property="IsHitTestVisible" Value="False" />
+                  </Trigger>
+                  <Trigger Property="controls:ButtonWait.OnAccent" Value="True">
+                     <Setter TargetName="waitDots" Property="Foreground" Value="White" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- Accent background plus a soft shadow, which is the only elevation in these layouts. -->
+   <Style x:Key="filledButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+      <Style.Resources>
+         <SolidColorBrush x:Key="buttonHoverBrush" Color="#24FFFFFF" />
+         <SolidColorBrush x:Key="buttonPressedBrush" Color="#3DFFFFFF" />
+      </Style.Resources>
+      <Setter Property="Background"
+              Value="{DynamicResource themeAccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="controls:ButtonWait.OnAccent" Value="True" />
+      <Setter Property="Effect">
+         <Setter.Value>
+            <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" Color="#000000" />
+         </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+         <!-- Material raises a filled button as the pointer comes over it. -->
+         <Trigger Property="IsMouseOver" Value="True">
+            <Setter Property="Effect">
+               <Setter.Value>
+                  <DropShadowEffect BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000" />
+               </Setter.Value>
+            </Setter>
+         </Trigger>
+      </Style.Triggers>
+   </Style>
+
+   <Style x:Key="tonalButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+      <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+   </Style>
+
+   <Style x:Key="outlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+   </Style>
+
+   <Style x:Key="dangerOutlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+      <Style.Resources>
+         <SolidColorBrush x:Key="buttonHoverBrush" Color="#24E05656" />
+         <SolidColorBrush x:Key="buttonPressedBrush" Color="#3DE05656" />
+      </Style.Resources>
+      <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+      <Setter Property="Foreground" Value="{StaticResource dangerBrush}" />
+   </Style>
+
+   <Style x:Key="compactFilledButtonStyle" TargetType="Button" BasedOn="{StaticResource filledButtonStyle}">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="15,0" />
+      <Setter Property="FontSize" Value="12.5" />
+   </Style>
+
+   <Style x:Key="compactOutlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource outlinedButtonStyle}">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="15,0" />
+      <Setter Property="FontSize" Value="12.5" />
+   </Style>
+
+   <Style x:Key="compactDangerOutlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource dangerOutlinedButtonStyle}">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="15,0" />
+      <Setter Property="FontSize" Value="12.5" />
+   </Style>
+
+   <!-- No chrome at all: a caption in the accent that lights up under the pointer.
+
+        It targets ButtonBase, so a ToggleButton can wear it wherever the action is really a
+        piece of state the caption should follow - "expand all" that becomes "collapse all".
+        Foreground is a setter of this style rather than something left to the theme, which is
+        what keeps a third-party ToggleButton style from turning the caption black while it is
+        checked: a setter here outranks a trigger of the theme's own default style. -->
+   <Style x:Key="textButtonStyle" TargetType="ButtonBase">
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground"
+              Value="{DynamicResource themeAccentBrush}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ButtonBase">
+               <Border x:Name="shape" CornerRadius="14" Background="Transparent">
+                  <ContentPresenter Margin="{TemplateBinding Padding}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="Background"
+                             Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="textDangerButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource textButtonStyle}">
+      <Setter Property="Foreground" Value="{StaticResource dangerBrush}" />
+   </Style>
+
+   <!-- The thin divider between two groups of toolbar buttons: what creates a record on one
+        side, what acts on the list that already exists on the other. -->
+   <Style x:Key="toolbarSeparatorStyle" TargetType="Border">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Margin" Value="14,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Background" Value="{StaticResource outlineBrush}" />
+   </Style>
+
+   <!-- Icon and caption share one line inside a button that carries both. -->
+   <Style x:Key="buttonIconStyle" TargetType="fa:FontAwesome">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Margin" Value="0,0,9,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+   </Style>
+
+   <!-- Small in-place actions - the pencil on a row, the arrows on a pager, the cross that
+        closes a panel: the shared flat icon button, one size down. It targets ButtonBase, so a
+        ToggleButton can wear it wherever the action is really a piece of state. -->
+   <Style x:Key="rowActionButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource flatIconButtonStyle}">
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Opacity" Value="0.75" />
+   </Style>
+
+   <!-- ============================================================
+        DIALOG ANSWERS
+        Every answer row of a dialog - EmMessageBox and any confirmation dialog built
+        outside it. Plain answers take answerButtonStyle, the confirming one (OK, Yes, Save)
+        takes confirmAnswerButtonStyle.
+        ============================================================
+        The fill marks the answer Enter would press: the default one while focus is on
+        nothing else (IsDefaulted), or whichever answer Tab has moved focus to. Only one
+        answer is filled at a time. Hovering an answer that is not filled gives it a light
+        wash of its own colour - a fill, but visibly not the chosen one. OK/Yes are red,
+        every other answer takes the accent. Drive the fill from IsDefaulted and
+        IsKeyboardFocused only, never from a bound "is default" flag, or it stops following Tab. -->
+   <DropShadowEffect x:Key="answerShadow" BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" Color="#000000" />
+   <DropShadowEffect x:Key="answerRaisedShadow" BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000" />
+
+   <Style x:Key="answerButtonStyle" TargetType="Button" BasedOn="{StaticResource outlinedButtonStyle}">
+      <Style.Resources>
+         <SolidColorBrush x:Key="buttonHoverBrush" Color="#33808080" />
+         <SolidColorBrush x:Key="buttonPressedBrush" Color="#4D808080" />
+      </Style.Resources>
+      <Style.Triggers>
+         <Trigger Property="IsDefaulted" Value="True">
+            <Setter Property="Background" Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect" Value="{StaticResource answerShadow}" />
+         </Trigger>
+         <Trigger Property="IsKeyboardFocused" Value="True">
+            <Setter Property="Background" Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect" Value="{StaticResource answerShadow}" />
+         </Trigger>
+         <MultiTrigger>
+            <MultiTrigger.Conditions>
+               <Condition Property="IsMouseOver" Value="True" />
+               <Condition Property="IsDefaulted" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter Property="Effect" Value="{StaticResource answerRaisedShadow}" />
+         </MultiTrigger>
+         <MultiTrigger>
+            <MultiTrigger.Conditions>
+               <Condition Property="IsMouseOver" Value="True" />
+               <Condition Property="IsKeyboardFocused" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter Property="Effect" Value="{StaticResource answerRaisedShadow}" />
+         </MultiTrigger>
+      </Style.Triggers>
+   </Style>
+
+   <Style x:Key="confirmAnswerButtonStyle" TargetType="Button" BasedOn="{StaticResource dangerOutlinedButtonStyle}">
+      <Style.Resources>
+         <SolidColorBrush x:Key="buttonHoverBrush" Color="#40E05656" />
+         <SolidColorBrush x:Key="buttonPressedBrush" Color="#66E05656" />
+      </Style.Resources>
+      <Style.Triggers>
+         <Trigger Property="IsDefaulted" Value="True">
+            <Setter Property="Background" Value="{StaticResource dangerBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect" Value="{StaticResource answerShadow}" />
+         </Trigger>
+         <Trigger Property="IsKeyboardFocused" Value="True">
+            <Setter Property="Background" Value="{StaticResource dangerBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect" Value="{StaticResource answerShadow}" />
+         </Trigger>
+         <MultiTrigger>
+            <MultiTrigger.Conditions>
+               <Condition Property="IsMouseOver" Value="True" />
+               <Condition Property="IsDefaulted" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter Property="Effect" Value="{StaticResource answerRaisedShadow}" />
+         </MultiTrigger>
+         <MultiTrigger>
+            <MultiTrigger.Conditions>
+               <Condition Property="IsMouseOver" Value="True" />
+               <Condition Property="IsKeyboardFocused" Value="True" />
+            </MultiTrigger.Conditions>
+            <Setter Property="Effect" Value="{StaticResource answerRaisedShadow}" />
+         </MultiTrigger>
+      </Style.Triggers>
+   </Style>
+
+   <Style x:Key="materialLoginButtonBaseStyle" TargetType="Button">
+      <Style.Resources>
+         <Style TargetType="TextBlock" BasedOn="{StaticResource typeLabelLargeStyle}">
+            <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+         </Style>
+         <SolidColorBrush x:Key="buttonHoverBrush" Color="{DynamicResource themeSurfaceColor}" Opacity="0.08" />
+         <SolidColorBrush x:Key="buttonPressedBrush" Color="{DynamicResource themeSurfaceColor}" Opacity="0.12" />
+      </Style.Resources>
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="18,0" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="SnapsToDevicePixels" Value="True" />
+      <!-- The template draws its own focus ring; the dotted default one squares off the pill. -->
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Button">
+               <!-- CornerRadius 19 is half the resting height, i.e. a full pill. -->
+               <Border x:Name="shape"
+                       CornerRadius="20"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <Grid>
+                     <Border x:Name="stateLayer" CornerRadius="20" Background="Transparent" />
+                     <ContentPresenter x:Name="content"
+                                       Margin="{TemplateBinding Padding}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                     <controls:WaitDots x:Name="waitDots"
+                                        Visibility="Collapsed"
+                                        Width="28" Height="8"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsActive="{TemplateBinding controls:ButtonWait.IsWaiting}" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background"
+                             Value="{DynamicResource buttonHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background"
+                             Value="{DynamicResource buttonPressedBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocused" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{DynamicResource buttonPressedBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter TargetName="shape" Property="Opacity" Value="0.4" />
+                  </Trigger>
+                  <!-- Last on purpose: an async command disables its button while it runs, and the
+                       waiting state must win over that dimming so the dots stay bright. -->
+                  <Trigger Property="controls:ButtonWait.IsWaiting" Value="True">
+                     <Setter TargetName="shape" Property="Opacity" Value="1" />
+                     <Setter TargetName="content" Property="Opacity" Value="0" />
+                     <Setter TargetName="waitDots" Property="Visibility" Value="Visible" />
+                     <Setter TargetName="shape" Property="IsHitTestVisible" Value="False" />
+                  </Trigger>
+                  <Trigger Property="controls:ButtonWait.OnAccent" Value="True">
+                     <Setter TargetName="waitDots" Property="Foreground" Value="{DynamicResource themeOnAccentBrush}" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="materialFilledButtonStyle" TargetType="Button" BasedOn="{StaticResource materialLoginButtonBaseStyle}">
+      <Setter Property="Background" Value="{DynamicResource themeAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnAccentBrush}" />
+      <Setter Property="controls:ButtonWait.OnAccent" Value="True" />
+   </Style>
+   <Style x:Key="materialTonalButtonStyle" TargetType="Button" BasedOn="{StaticResource materialLoginButtonBaseStyle}">
+      <Setter Property="Background" Value="{DynamicResource themePrimaryContainerBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnPrimaryContainerBrush}" />
+   </Style>
+   <Style x:Key="materialIconButtonStyle" TargetType="Button" BasedOn="{StaticResource materialLoginButtonBaseStyle}">
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnSurfaceVariantBrush}" />
+   </Style>
+
+</ResourceDictionary>

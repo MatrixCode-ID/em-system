@@ -1,0 +1,1780 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.UserManager"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+             xmlns:conv="clr-namespace:Em.Ui.Wpf.Converters"
+             xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1180">
+   <UserControl.DataContext>
+      <local:UserManagerVm/>
+   </UserControl.DataContext>
+
+   <!--
+      User manager screen: a chrome-less tool strip over a single card that holds the
+      user list. There is no screen title here on purpose - the host draws the title and
+      subtitle in its own navigation bar directly above this control.
+
+      The list and the pager are bound to UserManagerVm; one row is one User, and the
+      columns are the fields of vi_User the screen shows. The filter sheet and the filter
+      strip are still markup only - see the region at the end of the code behind.
+
+      Two rules keep the design working on both the light and the dark theme:
+
+      - every surface, outline and divider is a translucent grey (#xx808080), which darkens
+        a light background and lightens a dark one without naming a theme colour;
+      - the one colour taken from the theme is the accent, read through the Em
+        theme token themeAccentBrush, so the primary button and the selection marker follow the theme.
+
+      Row cells line up with the column headers through SharedSizeGroup instead of repeated
+      fixed widths: the card grid is the shared size scope, so a header cell and the cells
+      under it always agree on their width.
+   -->
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <!-- ============================================================
+              CONVERTERS
+              The avatar is the only cell that is not a field printed as
+              it stands: its initials and its colour are both worked out
+              from the name, so nothing about it has to be stored.
+              ============================================================ -->
+         <conv:InitialsConverter x:Key="initialsConverter" />
+         <conv:AvatarPaletteConverter x:Key="avatarPaletteConverter" />
+
+         <!-- ============================================================
+              PALETTE
+              ============================================================ -->
+         <SolidColorBrush x:Key="surfaceBrush" Color="#0D808080" />
+         <SolidColorBrush x:Key="surfaceStrongBrush" Color="#1A808080" />
+         <SolidColorBrush x:Key="outlineBrush" Color="#29808080" />
+         <SolidColorBrush x:Key="outlineStrongBrush" Color="#4D808080" />
+         <SolidColorBrush x:Key="dividerBrush" Color="#1F808080" />
+
+         <!-- Material state layers: one translucent grey veil over whatever the control
+              already paints, so the same two brushes serve every button variant. -->
+         <SolidColorBrush x:Key="stateHoverBrush" Color="#1F808080" />
+         <SolidColorBrush x:Key="statePressedBrush" Color="#33808080" />
+
+         <!-- Status colours are mid-tone on purpose: dark enough to read on a light chip,
+              light enough to read on a dark one. -->
+         <SolidColorBrush x:Key="successBrush" Color="#2FA84F" />
+         <SolidColorBrush x:Key="successChipBrush" Color="#242FA84F" />
+         <SolidColorBrush x:Key="warningBrush" Color="#C98A00" />
+         <SolidColorBrush x:Key="warningChipBrush" Color="#24C98A00" />
+         <SolidColorBrush x:Key="dangerBrush" Color="#E05656" />
+         <SolidColorBrush x:Key="dangerChipBrush" Color="#24E05656" />
+
+         <!-- ============================================================
+              TYPOGRAPHY
+              ============================================================ -->
+         <!-- Column captions are written upper case by hand - WPF has no letter spacing,
+              so case is the only thing separating a header from the cells below it. -->
+         <Style x:Key="columnHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.55" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+         </Style>
+
+         <Style x:Key="primaryCellStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+         </Style>
+
+         <Style x:Key="secondaryCellStyle" TargetType="TextBlock" BasedOn="{StaticResource primaryCellStyle}">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="Opacity" Value="0.6" />
+         </Style>
+
+         <!-- ============================================================
+              BUTTONS
+              Three material variants sharing one template shape: a rounded
+              container, a state layer over it, then the content. Only the
+              resting brushes differ, so a variant costs a few setters
+              rather than another template.
+              ============================================================ -->
+         <Style x:Key="materialButtonBaseStyle" TargetType="Button">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <!-- The template draws its own focus ring; the dotted default one squares off
+                 the pill shape. -->
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                     <!-- CornerRadius 19 is half the resting height, i.e. a full pill. -->
+                     <Border x:Name="shape"
+                             CornerRadius="19"
+                             Background="{TemplateBinding Background}"
+                             BorderBrush="{TemplateBinding BorderBrush}"
+                             BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                           <Border x:Name="stateLayer" CornerRadius="19" Background="Transparent" />
+                           <ContentPresenter Margin="{TemplateBinding Padding}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center" />
+                        </Grid>
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                           <Setter TargetName="shape" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Filled: the single primary action on the screen. Accent background plus a soft
+              shadow, which is the only elevation in the layout. -->
+         <Style x:Key="filledButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="Background"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect">
+               <Setter.Value>
+                  <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" Color="#000000" />
+               </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+               <!-- Material raises a filled button as the pointer comes over it. -->
+               <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Effect">
+                     <Setter.Value>
+                        <DropShadowEffect BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000" />
+                     </Setter.Value>
+                  </Setter>
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- Tonal: a secondary action that still wants a surface of its own. -->
+         <Style x:Key="tonalButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+         </Style>
+
+         <!-- Outlined: the quietest of the three, an outline and nothing else at rest. -->
+         <Style x:Key="outlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+         </Style>
+
+         <!-- Icon and caption share one line inside every toolbar button. -->
+         <Style x:Key="buttonIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,0,9,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <!-- ============================================================
+              SEARCH FIELD
+              Plain TextBox with its chrome removed - the pill around it
+              draws the frame. The watermark is part of the template and
+              reads the box's Tag, the same arrangement the editor's fields
+              use, so the placeholder sits on the same left edge as the text
+              that replaces it.
+              ============================================================ -->
+         <Style x:Key="searchBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <!-- The theme gives TextBox its Foreground; the caret is not themed, so it
+                 simply follows the text colour. -->
+            <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="TextBox">
+                     <!-- No Padding on this Grid: TextBoxBase already insets its own
+                          text by Padding, so a margin here would indent the typed text
+                          twice while the watermark below moved only once. The watermark
+                          carries the padding itself, which keeps the two on one edge. -->
+                     <Grid>
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Focusable="False"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden" />
+                        <!-- Watermark: the box's own Tag, shown only while it is empty. A
+                             plain Binding rather than a TemplateBinding, so the Tag object
+                             is converted to text on the way in. -->
+                        <TextBlock x:Name="watermark"
+                                   Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Margin="{TemplateBinding Padding}"
+                                   Opacity="0.45"
+                                   Visibility="Collapsed"
+                                   IsHitTestVisible="False"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="Text" Value="">
+                           <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- ============================================================
+              AVATAR + STATUS CHIP
+              ============================================================ -->
+         <!-- Initials on a tinted disc. Each row overrides Background with its own tint, so
+              the list reads as a set of people rather than a block of grey. -->
+         <Style x:Key="avatarStyle" TargetType="Border">
+            <Setter Property="Width" Value="38" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="CornerRadius" Value="19" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <Style x:Key="avatarTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <!-- TextElement.Foreground is set on the chip and inherits down to the caption
+              inside it, so a variant only has to name three brushes. -->
+         <Style x:Key="chipStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Setter Property="TextElement.FontSize" Value="11" />
+            <Setter Property="TextElement.FontWeight" Value="SemiBold" />
+         </Style>
+
+         <Style x:Key="chipSuccessStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="Background" Value="{StaticResource successChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource successBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{StaticResource successBrush}" />
+         </Style>
+
+         <Style x:Key="chipWarningStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{StaticResource warningBrush}" />
+         </Style>
+
+         <Style x:Key="chipDangerStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{StaticResource dangerBrush}" />
+         </Style>
+
+         <!-- Muted chip for an account that is simply switched off: no colour, only the
+              neutral surface, so it never competes with the live rows. -->
+         <Style x:Key="chipMutedStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="Opacity" Value="0.65" />
+         </Style>
+
+         <!-- Accent chip for a role rather than a state. The three status colours are a scale
+              a role does not belong on, so this one borrows the theme accent instead - the same
+              colour the primary button and the current page already use. -->
+         <Style x:Key="chipAccentStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="TextElement.Foreground"
+                    Value="{DynamicResource themeAccentBrush}" />
+         </Style>
+
+         <!-- ============================================================
+              PAGE SIZE SELECTOR
+              How many records one page shows. It is a plain ComboBox with
+              its chrome replaced, so the page sizes can later come from a
+              view model as an ItemsSource without touching this template.
+
+              The drop down is the only surface here that cannot be a
+              translucent grey: a popup floats over whatever is behind the
+              window, so it needs an opaque background - here the theme's
+              popup surface token, themePopupBackgroundBrush.
+              ============================================================ -->
+         <Style x:Key="pageSizeItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ComboBoxItem">
+                     <Border x:Name="itemSurface"
+                             CornerRadius="7"
+                             Background="Transparent"
+                             Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="itemSurface" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="itemSurface" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- The toggle draws the field itself: the pill and the chevron. The selected
+              value is painted over it by the ComboBox template, so this stays a pure
+              piece of chrome. -->
+         <Style x:Key="pageSizeToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <!-- A style of our own does not displace the theme style: properties this style
+                 leaves alone keep taking the theme's setters and triggers. The theme's
+                 ToggleButton turns Foreground black while IsChecked, which is meant for its
+                 own accent-filled chrome and is unreadable over ours, so every ToggleButton
+                 here pins Foreground back to the colour it would have inherited. RadioButton
+                 and CheckBox carry no such trigger and are left alone. -->
+            <Setter Property="Foreground"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                     <Border x:Name="shape"
+                             CornerRadius="15"
+                             Background="{StaticResource surfaceStrongBrush}"
+                             BorderBrush="{StaticResource outlineBrush}"
+                             BorderThickness="1">
+                        <Grid>
+                           <Border x:Name="stateLayer" CornerRadius="15" Background="Transparent" />
+                           <fa:FontAwesome x:Name="chevron"
+                                           Icon="Solid_ChevronDown"
+                                           FontSize="9"
+                                           Opacity="0.6"
+                                           Margin="0,0,12,0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center" />
+                        </Grid>
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <!-- Open list: the chevron points the other way and the field is
+                             outlined in the accent, so it is clear which field the popup
+                             below belongs to. -->
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="chevron" Property="Icon" Value="Solid_ChevronUp" />
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <Style x:Key="pageSizeComboStyle" TargetType="ComboBox">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource pageSizeItemStyle}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ComboBox">
+                     <Grid>
+                        <!-- ClickMode Press opens the list on the way down, the way a
+                             native drop down does. -->
+                        <ToggleButton Style="{StaticResource pageSizeToggleStyle}"
+                                      ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                          RelativeSource={RelativeSource TemplatedParent}}" />
+                        <!-- The selected value sits above the toggle and lets the mouse
+                             through, so clicking the text still opens the list. -->
+                        <ContentPresenter Margin="14,0,28,0"
+                                          IsHitTestVisible="False"
+                                          VerticalAlignment="Center"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+
+                        <Popup x:Name="PART_Popup"
+                               Placement="Top"
+                               VerticalOffset="-6"
+                               AllowsTransparency="True"
+                               Focusable="False"
+                               PopupAnimation="Fade"
+                               IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                           <!-- The margin is what leaves room for the shadow; without it
+                                the popup clips its own drop shadow away. -->
+                           <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Margin="8,8,8,0"
+                                   Padding="4"
+                                   CornerRadius="10"
+                                   Background="{DynamicResource themePopupBackgroundBrush}"
+                                   BorderBrush="{StaticResource outlineBrush}"
+                                   BorderThickness="1">
+                              <Border.Effect>
+                                 <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270"
+                                                   Opacity="0.3" Color="#000000" />
+                              </Border.Effect>
+                              <ItemsPresenter />
+                           </Border>
+                        </Popup>
+                     </Grid>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- ============================================================
+              PAGER
+              Page numbers are RadioButtons in one group: the group keeps
+              exactly one page current and moves the highlight when another
+              is clicked, which is a working pager with no code behind it.
+              The current page is the only filled circle, so the state is
+              readable at a glance.
+              ============================================================ -->
+         <Style x:Key="pageNumberStyle" TargetType="RadioButton">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="RadioButton">
+                     <Border x:Name="shape"
+                             CornerRadius="15"
+                             Background="Transparent"
+                             BorderBrush="Transparent"
+                             BorderThickness="1">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter Property="Foreground" Value="White" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- The gap between two runs of page numbers. It says that pages were left out, and
+              because those are exactly the pages no button can reach, it is also the way in
+              to them: clicking it opens a box to type a page number into. -->
+         <Style x:Key="pageGapToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Content" Value="..." />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle. -->
+            <Setter Property="Foreground"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                     <Border x:Name="shape"
+                             CornerRadius="15"
+                             Background="Transparent"
+                             BorderBrush="Transparent"
+                             BorderThickness="1">
+                        <ContentPresenter x:Name="caption"
+                                          Opacity="0.5"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                           <Setter TargetName="caption" Property="Opacity" Value="1" />
+                        </Trigger>
+                        <!-- Open box: the same accent outline the page size field uses while its
+                             own list is open, so both read as "this is what the popup belongs to". -->
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="caption" Property="Opacity" Value="1" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- The frame around the page number box inside that popup. Same shape as the search
+              field, one size down. -->
+         <Style x:Key="pageJumpFieldStyle" TargetType="Border">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="CornerRadius" Value="15" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+         </Style>
+
+         <!-- ============================================================
+              PAGER SLOT
+              One entry of the pager: either a page number or the gap.
+              Both shapes live in the same template and one DataTrigger
+              picks between them, which keeps the pager a single
+              ItemsControl over one collection.
+              ============================================================ -->
+         <DataTemplate x:Key="pagerSlotTemplate" DataType="{x:Type shared:PagerSlot}">
+            <Grid>
+               <RadioButton x:Name="pageButton"
+                            GroupName="userManagerPager"
+                            Style="{StaticResource pageNumberStyle}"
+                            Content="{Binding Page}"
+                            IsChecked="{Binding IsCurrent, Mode=TwoWay}"
+                            ToolTip="Go to this page" />
+
+               <Grid x:Name="gapHost" Visibility="Collapsed">
+                  <ToggleButton x:Name="gapToggle"
+                                Style="{StaticResource pageGapToggleStyle}"
+                                ToolTip="Jump to a page" />
+
+                  <!-- StaysOpen False closes the box on the first click outside it; the Go button
+                       and the text box are inside, so they are not "outside". -->
+                  <Popup PlacementTarget="{Binding ElementName=gapToggle}"
+                         Placement="Top"
+                         VerticalOffset="-6"
+                         HorizontalOffset="-40"
+                         StaysOpen="False"
+                         AllowsTransparency="True"
+                         PopupAnimation="Fade"
+                         Opened="PageJumpPopup_Opened"
+                         IsOpen="{Binding IsChecked, ElementName=gapToggle, Mode=TwoWay}">
+                     <Border Margin="8,8,8,0"
+                             Padding="14,12"
+                             CornerRadius="10"
+                             Background="{DynamicResource themePopupBackgroundBrush}"
+                             BorderBrush="{StaticResource outlineBrush}"
+                             BorderThickness="1">
+                        <Border.Effect>
+                           <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270"
+                                             Opacity="0.3" Color="#000000" />
+                        </Border.Effect>
+
+                        <StackPanel>
+                           <TextBlock Text="GO TO PAGE"
+                                      FontSize="11"
+                                      FontWeight="SemiBold"
+                                      Opacity="0.55"
+                                      Margin="2,0,0,8" />
+
+                           <StackPanel Orientation="Horizontal">
+                              <Border Width="86" Style="{StaticResource pageJumpFieldStyle}">
+                                 <TextBox x:Name="pageJumpBox"
+                                          Style="{StaticResource searchBoxStyle}"
+                                          FontSize="12"
+                                          MaxLength="9"
+                                          KeyDown="PageJumpBox_KeyDown" />
+                              </Border>
+
+                              <Button Content="Go"
+                                      Margin="8,0,0,0"
+                                      Height="30"
+                                      Padding="14,0"
+                                      Style="{StaticResource tonalButtonStyle}"
+                                      Tag="{Binding ElementName=pageJumpBox}"
+                                      Click="PageJumpGo_Click" />
+                           </StackPanel>
+
+                           <!-- The box accepts anything; what it will do with an out of range
+                                number is clamp it, so the range is worth saying up front. -->
+                           <TextBlock Margin="2,8,0,0"
+                                      FontSize="11"
+                                      Opacity="0.55"
+                                      Text="{Binding DataContext.PageCount,
+                                                     RelativeSource={RelativeSource AncestorType=UserControl},
+                                                     StringFormat='Page 1 - {0}'}" />
+                        </StackPanel>
+                     </Border>
+                  </Popup>
+               </Grid>
+            </Grid>
+
+            <DataTemplate.Triggers>
+               <DataTrigger Binding="{Binding IsGap}" Value="True">
+                  <Setter TargetName="pageButton" Property="Visibility" Value="Collapsed" />
+                  <Setter TargetName="gapHost" Property="Visibility" Value="Visible" />
+               </DataTrigger>
+            </DataTemplate.Triggers>
+         </DataTemplate>
+
+         <!-- ============================================================
+              LIST ROW
+              A row is a ListBoxItem: hover and selection are state layers
+              over a transparent surface, and selection additionally shows
+              an accent bar on the leading edge. The divider belongs to the
+              row template, so the last row keeps it too - that is what
+              closes the list off against the footer.
+              ============================================================ -->
+         <Style x:Key="userRowStyle" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <!-- A double click on a row opens it. ListBoxItem has no command for the gesture and
+                 an input binding would sit on a Freezable, which has no tree for RelativeSource to
+                 walk to the screen's view model - so this one is taken in code behind, where the
+                 handler does nothing but hand the row to the very command the pencil runs. -->
+            <EventSetter Event="MouseDoubleClick" Handler="UserRow_MouseDoubleClick" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="*" />
+                           <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Border x:Name="stateLayer" Grid.Row="0" Background="Transparent" MinHeight="60">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="Auto" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <!-- Selection marker: a 3px accent bar, hidden at rest. -->
+                              <Border x:Name="selectionBar"
+                                      Grid.Column="0"
+                                      Width="3"
+                                      Margin="0,8"
+                                      CornerRadius="2"
+                                      Visibility="Hidden"
+                                      Background="{DynamicResource themeAccentBrush}" />
+                              <ContentPresenter Grid.Column="1"
+                                                Margin="21,0,20,0"
+                                                VerticalAlignment="Center" />
+                           </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Height="1" Background="{StaticResource dividerBrush}" />
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                           <Setter TargetName="selectionBar" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Row action buttons: the shared flat icon button, one size down. -->
+         <Style x:Key="rowActionButtonStyle" TargetType="ButtonBase" BasedOn="{StaticResource flatIconButtonStyle}">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Opacity" Value="0.75" />
+         </Style>
+
+         <!-- ============================================================
+              FILTERING
+              Three layers, and each one has its own control here:
+
+              1. the search box in the toolbar (free text),
+              2. the quick filter next to the list - the one facet that is
+                 asked for most often, one click away,
+              3. the filter sheet behind the toolbar's Filter button, for
+                 everything else.
+
+              Whatever the last two produce is repeated as a removable chip
+              above the list, so a filtered list always says why it is
+              short and lets the reason be taken back one click at a time.
+              This whole block is meant to move into a shared filter
+              control later; nothing in it knows it is filtering users.
+              ============================================================ -->
+
+         <!-- Toolbar Filter button. A ToggleButton, not a Button: it stays visibly pressed
+              while the sheet is open, which is what ties the panel to what opened it. -->
+         <Style x:Key="filterToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle. -->
+            <Setter Property="Foreground"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                     <Border x:Name="shape"
+                             CornerRadius="19"
+                             Background="Transparent"
+                             BorderBrush="{StaticResource outlineBrush}"
+                             BorderThickness="1">
+                        <Grid>
+                           <Border x:Name="stateLayer" CornerRadius="19" Background="Transparent" />
+                           <ContentPresenter Margin="{TemplateBinding Padding}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center" />
+                        </Grid>
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource surfaceStrongBrush}" />
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Count of conditions coming from the sheet, carried on the Filter button so the
+              hidden ones are still visible from the toolbar. -->
+         <Style x:Key="filterBadgeStyle" TargetType="Border">
+            <Setter Property="MinWidth" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Margin" Value="9,0,0,0" />
+            <Setter Property="Padding" Value="5,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="TextElement.Foreground" Value="White" />
+            <Setter Property="TextElement.FontSize" Value="10.5" />
+            <Setter Property="TextElement.FontWeight" Value="SemiBold" />
+         </Style>
+
+         <!-- Quick filter: one segment of the segmented control beside the list. RadioButtons
+              in one group, so the current facet is exclusive and needs no code. -->
+         <Style x:Key="quickFilterStyle" TargetType="RadioButton">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="RadioButton">
+                     <Border x:Name="shape" CornerRadius="13" Background="Transparent">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter Property="Foreground" Value="White" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Filter chip inside the sheet: same shape as a status chip, but it can be
+              switched on and off and several may be on at once. -->
+         <Style x:Key="filterChipStyle" TargetType="ToggleButton">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="13,0" />
+            <Setter Property="Margin" Value="0,0,7,7" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle.
+                 This style is also worn by RadioButtons, which the binding leaves as they were. -->
+            <Setter Property="Foreground"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                     <Border x:Name="shape"
+                             CornerRadius="14"
+                             Background="Transparent"
+                             BorderBrush="{StaticResource outlineBrush}"
+                             BorderThickness="1">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Active filter chip above the list: caption plus the button that takes it back. -->
+         <Style x:Key="activeFilterChipStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="Padding" Value="11,2,3,2" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="TextElement.FontWeight" Value="Normal" />
+         </Style>
+
+         <Style x:Key="chipCloseButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Margin" Value="7,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                     <Border x:Name="shape" CornerRadius="9" Background="{TemplateBinding Background}">
+                        <fa:FontAwesome Icon="Solid_Xmark"
+                                        FontSize="9"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                           <Setter Property="Opacity" Value="1" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Text button: no chrome at all, for the one destructive-ish action that must
+              stay available but must not compete with anything. -->
+         <Style x:Key="textButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                     <Border x:Name="shape" CornerRadius="14" Background="Transparent">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="shape" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- ============================================================
+              FILTER SHEET INTERNALS
+              ============================================================ -->
+         <Style x:Key="sheetSectionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.55" />
+            <Setter Property="Margin" Value="0,20,0,9" />
+         </Style>
+
+         <Style x:Key="filterCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="CheckBox">
+                     <!-- Transparent background makes the whole row the click target, not
+                          just the box and the glyph. -->
+                     <Grid Background="Transparent">
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="Auto" />
+                           <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="box"
+                                Grid.Column="0"
+                                Width="18"
+                                Height="18"
+                                CornerRadius="5"
+                                Background="Transparent"
+                                BorderBrush="{StaticResource outlineStrongBrush}"
+                                BorderThickness="1.4"
+                                VerticalAlignment="Center">
+                           <fa:FontAwesome x:Name="tick"
+                                           Icon="Solid_Check"
+                                           FontSize="9"
+                                           Opacity="0"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                        </Border>
+                        <ContentPresenter Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center" />
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="box" Property="Background"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="box" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="tick" Property="Opacity" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="box" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Switch for the one option that is on or off rather than a value to pick. -->
+         <Style x:Key="filterSwitchStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="38" />
+            <Setter Property="Height" Value="21" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ToggleButton">
+                     <Border x:Name="track"
+                             CornerRadius="11"
+                             Background="{StaticResource surfaceStrongBrush}"
+                             BorderBrush="{StaticResource outlineStrongBrush}"
+                             BorderThickness="1">
+                        <Border x:Name="thumb"
+                                Width="15"
+                                Height="15"
+                                Margin="3,0,0,0"
+                                CornerRadius="8"
+                                HorizontalAlignment="Left"
+                                Background="#99808080" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                           <Setter TargetName="track" Property="Background"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="track" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="thumb" Property="HorizontalAlignment" Value="Right" />
+                           <Setter TargetName="thumb" Property="Margin" Value="0,0,3,0" />
+                           <Setter TargetName="thumb" Property="Background" Value="White" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Date box: the frame around the editor, matching the search field's shape. -->
+         <Style x:Key="dateFieldStyle" TargetType="Border">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Padding" Value="11,0" />
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+         </Style>
+
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <!-- The filter sheet and its scrim live outside the row grid on purpose: they cover
+        the whole control, and a panel spanning every row would let its own height push
+        the auto sized rows around. ClipToBounds hides the sheet while it is parked off
+        the right edge. -->
+   <TabControl Style="{StaticResource materialTabControlStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}">
+      <TabItem Foreground="{DynamicResource themeWindowForegroundBrush}">
+         <TabItem.Header><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Users" Margin="0,0,8,0" VerticalAlignment="Center"/><TextBlock Text="Users"/></StackPanel></TabItem.Header>
+   <Grid ClipToBounds="True">
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+         </Grid.RowDefinitions>
+
+         <!-- =========================================================
+              TOOLBAR - tools only, no screen title
+              The host already draws the screen title and subtitle in its own
+              navigation bar directly above this control, so a title here
+              would put the same caption on screen twice. For the same reason
+              the strip stays chrome-less: a second filled bar right under
+              the host's bar reads as a double header.
+
+              Actions on the left in the order they are used, search and the
+              counters on the right, which keeps the strip readable when the
+              window is narrow: the buttons never move.
+              ========================================================= -->
+         <Grid Grid.Row="0" Margin="22,12,22,10">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- The primary action leads the strip and is the only filled button here. -->
+            <Button Command="{Binding Commands[AddNewUserCommand]}" Grid.Column="0" Style="{StaticResource filledButtonStyle}" ToolTip="Create a new user account">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_UserPlus" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="New User" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+
+            <!-- Separator: what creates a record on one side, what acts on the list that
+                 already exists on the other. -->
+            <Border Grid.Column="1"
+                    Width="1"
+                    Height="22"
+                    Margin="14,0"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource outlineBrush}" />
+
+            <!-- Reloading the list is the toolbar of the navigation host's job, so no
+                 Refresh button of our own sits here. -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+               <Button Style="{StaticResource outlinedButtonStyle}" ToolTip="Export the list to a file">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_FileExport" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Export" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+            </StackPanel>
+
+            <!-- Search sits with the list it filters, not with the actions. -->
+            <Border Grid.Column="4"
+                    Width="300"
+                    Height="38"
+                    CornerRadius="19"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource surfaceStrongBrush}"
+                    BorderBrush="{StaticResource outlineBrush}"
+                    BorderThickness="1">
+               <Grid Margin="16,0">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="Auto" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+
+                  <fa:FontAwesome Grid.Column="0"
+                                  Icon="Solid_MagnifyingGlass"
+                                  FontSize="13"
+                                  Opacity="0.6"
+                                  VerticalAlignment="Center" />
+
+                  <TextBox x:Name="searchBox"
+                           Grid.Column="1"
+                           Margin="12,0,0,0"
+                           Tag="Search account, name or email"
+                           Style="{StaticResource searchBoxStyle}" />
+               </Grid>
+            </Border>
+
+            <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
+               <!-- Opens the filter sheet. The badge counts the conditions that are set in
+                    there, so nothing stays hidden behind the button. -->
+               <ToggleButton x:Name="filterToggle"
+                             Style="{StaticResource filterToggleStyle}"
+                             ToolTip="Filter the list">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Filter" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Filter" VerticalAlignment="Center" />
+                     <Border x:Name="filterBadge" Style="{StaticResource filterBadgeStyle}">
+                        <TextBlock x:Name="filterCountText" Text="2" VerticalAlignment="Center" />
+                     </Border>
+                  </StackPanel>
+               </ToggleButton>
+
+               <!-- How much there is, and where in it the screen currently sits. Both come
+                    from the record count the reload asks for, so neither can drift away from
+                    what the list is actually showing. -->
+               <Border Style="{StaticResource chipStyle}" Margin="12,0,0,0">
+                  <TextBlock Text="{Binding TotalCaption}" />
+               </Border>
+               <Border Style="{StaticResource chipStyle}" Margin="8,0,0,0">
+                  <TextBlock Text="{Binding PageCaption}" />
+               </Border>
+            </StackPanel>
+         </Grid>
+
+         <!-- =========================================================
+              FILTER STRIP
+              Left: the quick filter, the one facet worth a permanent
+              control. Right: whatever the sheet has set, one chip per
+              condition, each removable on its own, plus a way to drop all
+              of them at once. A filtered list that cannot say what it is
+              filtered by is the failure mode this strip exists to prevent.
+              ========================================================= -->
+         <Grid Grid.Row="1" Margin="22,0,22,10">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    CornerRadius="15"
+                    Padding="2"
+                    Background="{StaticResource surfaceBrush}"
+                    BorderBrush="{StaticResource outlineBrush}"
+                    BorderThickness="1">
+               <StackPanel Orientation="Horizontal">
+                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}"
+                               Content="All" IsChecked="True" />
+                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Active" />
+                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Pending" />
+                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Suspended" />
+                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Inactive" />
+               </StackPanel>
+            </Border>
+
+            <StackPanel x:Name="activeFilterGroup"
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+               <Border Width="1" Height="20" Margin="16,0" Background="{StaticResource outlineBrush}" />
+
+               <StackPanel x:Name="activeFilterPanel" Orientation="Horizontal" VerticalAlignment="Center">
+                  <!-- One chip per condition. The close button carries its own chip in Tag, so
+                       removing one is a single line in the handler. -->
+                  <Border x:Name="chipRoleFilter" Style="{StaticResource activeFilterChipStyle}">
+                     <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Role: Administrator" VerticalAlignment="Center" />
+                        <Button Style="{StaticResource chipCloseButtonStyle}"
+                                Tag="{Binding ElementName=chipRoleFilter}"
+                                Click="ActiveFilterRemove_Click"
+                                ToolTip="Remove this condition" />
+                     </StackPanel>
+                  </Border>
+
+                  <Border x:Name="chipDepartmentFilter" Style="{StaticResource activeFilterChipStyle}">
+                     <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Department: Sales &amp; Marketing" VerticalAlignment="Center" />
+                        <Button Style="{StaticResource chipCloseButtonStyle}"
+                                Tag="{Binding ElementName=chipDepartmentFilter}"
+                                Click="ActiveFilterRemove_Click"
+                                ToolTip="Remove this condition" />
+                     </StackPanel>
+                  </Border>
+               </StackPanel>
+            </StackPanel>
+
+            <Button x:Name="clearAllFiltersButton"
+                    Grid.Column="2"
+                    Style="{StaticResource textButtonStyle}"
+                    Content="Clear all"
+                    Click="ActiveFilterClearAll_Click"
+                    ToolTip="Remove every condition" />
+         </Grid>
+
+         <!-- =========================================================
+              MAIN BODY - the user list, inside one card
+              ========================================================= -->
+         <Border Grid.Row="2"
+                 Margin="22,0,22,22"
+                 CornerRadius="14"
+                 Background="{StaticResource surfaceBrush}"
+                 BorderBrush="{StaticResource outlineBrush}"
+                 BorderThickness="1">
+            <!-- IsSharedSizeScope is what lets the header cells and the row cells below agree
+                 on their widths without either side hard coding a number. -->
+            <Grid Grid.IsSharedSizeScope="True">
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                  <RowDefinition Height="Auto" />
+               </Grid.RowDefinitions>
+
+               <!-- ==== column headers ====
+                    One column per vi_User field the screen shows, in the order they are read:
+                    who the account is, then how to reach them, then where they are, then what
+                    state the account is in, whether it is an administrator, then whatever was
+                    noted about the contact. -->
+               <Border Grid.Row="0"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource dividerBrush}"
+                       BorderThickness="0,0,0,1"
+                       CornerRadius="13,13,0,0">
+                  <!-- Left margin 24 = the row template's 3px selection bar plus its 21px
+                       content margin, which is what keeps a caption over its own column. -->
+                  <Grid Margin="24,0,20,0" Height="38">
+                     <!-- Only the two columns that carry free text are given the leftover width:
+                          an address and a note have no length to speak of, while every other
+                          column holds something short and known - a name, an email, a state.
+                          The rest are Auto and shared with the row template, which is what keeps
+                          a caption sitting over its own column; a star column cannot be shared,
+                          so the two that fill agree by being declared the same on both sides. -->
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colAccount" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colFullName" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colEmail" />
+                        <ColumnDefinition Width="*" MinWidth="150" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colZip" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colStatus" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colRole" />
+                        <ColumnDefinition Width="*" MinWidth="130" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colActions" />
+                     </Grid.ColumnDefinitions>
+
+                     <TextBlock Grid.Column="0" Text="ACCOUNT NAME" MinWidth="190" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="1" Text="FULL NAME" MinWidth="160" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="2" Text="EMAIL" MinWidth="200" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="3" Text="ADDRESS" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="4" Text="ZIP" MinWidth="66" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="5" Text="STATUS" MinWidth="110" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="6" Text="ROLE" MinWidth="104" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="7" Text="NOTE" Style="{StaticResource columnHeaderStyle}" />
+                     <!-- Empty caption over the action buttons; the MinWidth is what reserves
+                          their column. -->
+                     <TextBlock Grid.Column="8" Text="" MinWidth="70" Style="{StaticResource columnHeaderStyle}" />
+                  </Grid>
+               </Border>
+
+               <!-- ==== the list itself ====
+                    Chrome is stripped from the ListBox so the card border stays the only frame
+                    around the rows. One row is one User; the template repeats the same nine
+                    column layout the header declares, and the shared size groups are what make
+                    the two agree.
+
+                    Three fields of vi_User are deliberately absent, because they are filled in
+                    rather than chosen: the address name, and the type and state of the contact
+                    communication that carries the email. -->
+               <ListBox Grid.Row="1"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalContentAlignment="Stretch"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        ItemsSource="{Binding Users}"
+                        ItemContainerStyle="{StaticResource userRowStyle}">
+                  <ListBox.ItemTemplate>
+                     <DataTemplate>
+                        <Grid>
+                           <!-- Mirrors the header column for column; see the note there. -->
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colAccount" />
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colFullName" />
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colEmail" />
+                              <ColumnDefinition Width="*" MinWidth="150" />
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colZip" />
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colStatus" />
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colRole" />
+                              <ColumnDefinition Width="*" MinWidth="130" />
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="colActions" />
+                           </Grid.ColumnDefinitions>
+
+                           <!-- The avatar is drawn from the full name, so the disc still reads as
+                                a person even though the caption beside it is the account. -->
+                           <StackPanel Grid.Column="0" Orientation="Horizontal">
+                              <Border Style="{StaticResource avatarStyle}"
+                                      Background="{Binding cContactFullName, Converter={StaticResource avatarPaletteConverter}}">
+                                 <TextBlock Style="{StaticResource avatarTextStyle}"
+                                            Text="{Binding cContactFullName, Converter={StaticResource initialsConverter}}"
+                                            Foreground="{Binding cContactFullName,
+                                                                 Converter={StaticResource avatarPaletteConverter},
+                                                                 ConverterParameter=Text}" />
+                              </Border>
+                              <!-- The column is Auto, so it is only as wide as the longest account
+                                   on the page; the cap is what stops one unusually long account from
+                                   taking the width the address and the note are meant to have. -->
+                              <TextBlock Margin="14,0,16,0"
+                                         MaxWidth="240"
+                                         FontWeight="SemiBold"
+                                         Style="{StaticResource primaryCellStyle}"
+                                         Text="{Binding cUserAccount}"
+                                         ToolTip="{Binding cUserAccount}" />
+                           </StackPanel>
+
+                           <TextBlock Grid.Column="1" Style="{StaticResource primaryCellStyle}"
+                                      Text="{Binding cContactFullName}" />
+                           <TextBlock Grid.Column="2" Style="{StaticResource secondaryCellStyle}"
+                                      Text="{Binding cCommValue}" />
+                           <TextBlock Grid.Column="3" Style="{StaticResource primaryCellStyle}"
+                                      Text="{Binding cAddressLocation}" />
+                           <TextBlock Grid.Column="4" Style="{StaticResource secondaryCellStyle}"
+                                      Text="{Binding cAddressZip}" />
+
+                           <!-- The chip keeps its shape and only swaps palette, so the five user
+                                states read as one scale: live, waiting, blocked, switched off. -->
+                           <Border x:Name="statusChip" Grid.Column="5" Style="{StaticResource chipMutedStyle}">
+                              <TextBlock Text="{Binding cUserState}" />
+                           </Border>
+
+                           <!-- Only an administrator is marked. An ordinary account leaves the
+                                cell empty on purpose: the column is there to be scanned for the
+                                few rows that carry the privilege, and printing a caption on
+                                every other row would bury exactly those. -->
+                           <Border x:Name="roleChip" Grid.Column="6"
+                                   Style="{StaticResource chipAccentStyle}"
+                                   Visibility="Collapsed"
+                                   ToolTip="This account has administrator privileges">
+                              <StackPanel Orientation="Horizontal">
+                                 <fa:FontAwesome Icon="Solid_ShieldHalved"
+                                                 FontSize="10"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,6,0" />
+                                 <TextBlock Text="ADMIN" VerticalAlignment="Center" />
+                              </StackPanel>
+                           </Border>
+
+                           <TextBlock Grid.Column="7" Style="{StaticResource secondaryCellStyle}"
+                                      Text="{Binding cContactNote}"
+                                      ToolTip="{Binding cContactNote}" />
+
+                           <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center">
+                              <Button Style="{StaticResource rowActionButtonStyle}"
+                                      ToolTip="Edit user"
+                                      Command="{Binding DataContext.Commands[EditUserCommand],
+                                                        RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                      CommandParameter="{Binding}">
+                                 <fa:FontAwesome Icon="Solid_PenToSquare" />
+                              </Button>
+                              <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="More actions">
+                                 <fa:FontAwesome Icon="Solid_EllipsisVertical" />
+                              </Button>
+                           </StackPanel>
+                        </Grid>
+
+                        <DataTemplate.Triggers>
+                           <DataTrigger Binding="{Binding cUserIsAdmin}" Value="True">
+                              <Setter TargetName="roleChip" Property="Visibility" Value="Visible" />
+                           </DataTrigger>
+
+                           <DataTrigger Binding="{Binding cUserState}" Value="Active">
+                              <Setter TargetName="statusChip" Property="Style"
+                                      Value="{StaticResource chipSuccessStyle}" />
+                           </DataTrigger>
+                           <DataTrigger Binding="{Binding cUserState}" Value="Pending">
+                              <Setter TargetName="statusChip" Property="Style"
+                                      Value="{StaticResource chipWarningStyle}" />
+                           </DataTrigger>
+                           <DataTrigger Binding="{Binding cUserState}" Value="Suspended">
+                              <Setter TargetName="statusChip" Property="Style"
+                                      Value="{StaticResource chipDangerStyle}" />
+                           </DataTrigger>
+                           <DataTrigger Binding="{Binding cUserState}" Value="Deleted">
+                              <Setter TargetName="statusChip" Property="Style"
+                                      Value="{StaticResource chipDangerStyle}" />
+                           </DataTrigger>
+                        </DataTemplate.Triggers>
+                     </DataTemplate>
+                  </ListBox.ItemTemplate>
+               </ListBox>
+
+               <!-- ==== card footer: range on the left, pager on the right ==== -->
+               <Grid Grid.Row="2" Margin="20,12,20,14">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+
+                  <!-- Records per page, then the range it produces: the setting first, what
+                       it currently yields second, which is the order they are read in.
+                       Picking a size writes it to DefaultPageSize, which is what reloads the
+                       list - the combo itself knows nothing about fetching. -->
+                  <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                     <TextBlock Text="Rows per page"
+                                Margin="0,0,10,0"
+                                Style="{StaticResource secondaryCellStyle}" />
+                     <ComboBox Style="{StaticResource pageSizeComboStyle}"
+                               ItemsSource="{Binding PageSizes}"
+                               SelectedItem="{Binding SelectedPageSize}"
+                               DisplayMemberPath="Caption"
+                               ToolTip="Number of records shown on one page" />
+                     <TextBlock Text="{Binding RangeCaption}"
+                                Margin="18,0,0,0"
+                                Style="{StaticResource secondaryCellStyle}" />
+                  </StackPanel>
+
+                  <!-- Pager: jump to the ends, step one page, or pick a page directly. The
+                       numbers and the gaps between them come from PagerSlots, so the strip
+                       always shows the first page, the last page and a window around the one
+                       that is open, however many pages there are. -->
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                     <Button Style="{StaticResource rowActionButtonStyle}"
+                             Command="{Binding Commands[FirstPageCommand]}"
+                             ToolTip="First page">
+                        <fa:FontAwesome Icon="Solid_AnglesLeft" />
+                     </Button>
+                     <Button Style="{StaticResource rowActionButtonStyle}"
+                             Margin="2,0,8,0"
+                             Command="{Binding Commands[PreviousPageCommand]}"
+                             ToolTip="Previous page">
+                        <fa:FontAwesome Icon="Solid_ChevronLeft" />
+                     </Button>
+
+                     <ItemsControl ItemsSource="{Binding PagerSlots}"
+                                   ItemTemplate="{StaticResource pagerSlotTemplate}"
+                                   VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                           <ItemsPanelTemplate>
+                              <StackPanel Orientation="Horizontal" />
+                           </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                     </ItemsControl>
+
+                     <Button Style="{StaticResource rowActionButtonStyle}"
+                             Margin="8,0,2,0"
+                             Command="{Binding Commands[NextPageCommand]}"
+                             ToolTip="Next page">
+                        <fa:FontAwesome Icon="Solid_ChevronRight" />
+                     </Button>
+                     <Button Style="{StaticResource rowActionButtonStyle}"
+                             Command="{Binding Commands[LastPageCommand]}"
+                             ToolTip="Last page">
+                        <fa:FontAwesome Icon="Solid_AnglesRight" />
+                     </Button>
+                  </StackPanel>
+               </Grid>
+            </Grid>
+         </Border>
+      </Grid>
+
+      <!-- =========================================================
+           FILTER SHEET
+           Everything the quick filter does not cover. It is a side sheet
+           rather than a dialog: it slides in over the list, keeps the
+           toolbar reachable, and leaves the page underneath untouched
+           until Apply is pressed.
+
+           The panel is always in the tree and simply parked off the right
+           edge, which is what lets the slide be two animations on one
+           trigger instead of code. The Filter button owns the state:
+           everything here reacts to its IsChecked.
+           ========================================================= -->
+      <Border x:Name="filterScrim"
+              Background="#33000000"
+              Opacity="0"
+              Visibility="Collapsed"
+              MouseLeftButtonDown="FilterScrim_MouseDown">
+         <Border.Style>
+            <Style TargetType="Border">
+               <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsChecked, ElementName=filterToggle}" Value="True">
+                     <Setter Property="Visibility" Value="Visible" />
+                     <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                           <Storyboard>
+                              <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                               To="1" Duration="0:0:0.18" />
+                           </Storyboard>
+                        </BeginStoryboard>
+                     </DataTrigger.EnterActions>
+                     <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                           <Storyboard>
+                              <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                               To="0" Duration="0:0:0.14" />
+                           </Storyboard>
+                        </BeginStoryboard>
+                     </DataTrigger.ExitActions>
+                  </DataTrigger>
+               </Style.Triggers>
+            </Style>
+         </Border.Style>
+      </Border>
+
+      <Border x:Name="filterSheet"
+              Width="360"
+              HorizontalAlignment="Right"
+              Background="{DynamicResource themeWindowBackgroundBrush}"
+              BorderBrush="{StaticResource outlineBrush}"
+              BorderThickness="1,0,0,0">
+         <Border.RenderTransform>
+            <TranslateTransform X="380" />
+         </Border.RenderTransform>
+         <Border.Effect>
+            <DropShadowEffect BlurRadius="26" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+         </Border.Effect>
+         <Border.Style>
+            <Style TargetType="Border">
+               <!-- Parked: no clicks reach a panel the user cannot see. -->
+               <Setter Property="IsHitTestVisible" Value="False" />
+               <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsChecked, ElementName=filterToggle}" Value="True">
+                     <Setter Property="IsHitTestVisible" Value="True" />
+                     <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                           <Storyboard>
+                              <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)"
+                                               To="0" Duration="0:0:0.22">
+                                 <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                 </DoubleAnimation.EasingFunction>
+                              </DoubleAnimation>
+                           </Storyboard>
+                        </BeginStoryboard>
+                     </DataTrigger.EnterActions>
+                     <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                           <Storyboard>
+                              <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)"
+                                               To="380" Duration="0:0:0.18">
+                                 <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseIn" />
+                                 </DoubleAnimation.EasingFunction>
+                              </DoubleAnimation>
+                           </Storyboard>
+                        </BeginStoryboard>
+                     </DataTrigger.ExitActions>
+                  </DataTrigger>
+               </Style.Triggers>
+            </Style>
+         </Border.Style>
+
+         <Grid>
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="*" />
+               <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- ==== sheet header ==== -->
+            <Grid Grid.Row="0" Margin="22,20,16,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+               </Grid.ColumnDefinitions>
+
+               <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="Filters" FontSize="16" FontWeight="SemiBold" />
+                  <TextBlock Text="Narrow the list down to what you need"
+                             FontSize="11.5"
+                             Opacity="0.6"
+                             Margin="0,2,0,0" />
+               </StackPanel>
+
+               <Button Grid.Column="1"
+                       Style="{StaticResource rowActionButtonStyle}"
+                       Click="FilterSheetClose_Click"
+                       ToolTip="Close">
+                  <fa:FontAwesome Icon="Solid_Xmark" />
+               </Button>
+            </Grid>
+
+            <Border Grid.Row="0" Height="1" VerticalAlignment="Bottom"
+                    Background="{StaticResource dividerBrush}" />
+
+            <!-- ==== sheet body ====
+                 One section per field, in the order they are asked for. Each section is a
+                 caption plus one editor kind - chips for a short exclusive-ish set,
+                 check boxes for a list that is picked from, a switch for a plain yes/no.
+                 A declarative filter definition later maps onto exactly these three. -->
+            <ScrollViewer Grid.Row="1"
+                          Padding="22,0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+               <StackPanel x:Name="filterSheetContent" Margin="0,0,0,20">
+
+                  <TextBlock Text="STATUS" Style="{StaticResource sheetSectionStyle}" Margin="0,16,0,9" />
+                  <WrapPanel>
+                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Active" IsChecked="True" />
+                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Pending" />
+                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Suspended" />
+                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Inactive" />
+                  </WrapPanel>
+
+                  <TextBlock Text="ROLE" Style="{StaticResource sheetSectionStyle}" />
+                  <StackPanel>
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Administrator" IsChecked="True" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Sales Manager" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Warehouse Supervisor" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Finance Officer" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Internal Auditor" />
+                  </StackPanel>
+
+                  <TextBlock Text="DEPARTMENT" Style="{StaticResource sheetSectionStyle}" />
+                  <StackPanel>
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Information Technology" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Sales &amp; Marketing" IsChecked="True" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Logistics" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Finance &amp; Accounting" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Operations" />
+                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Compliance" />
+                  </StackPanel>
+
+                  <!-- Presets first, the two date boxes second: most of the time a preset is
+                       the answer, and the boxes only matter when none of them is. The chip
+                       style is reused on RadioButtons here, which makes the set exclusive
+                       without a second template. -->
+                  <TextBlock Text="LAST ACTIVE" Style="{StaticResource sheetSectionStyle}" />
+                  <WrapPanel>
+                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}"
+                                  Content="Any time" IsChecked="True" />
+                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Today" />
+                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Last 7 days" />
+                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Last 30 days" />
+                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Custom" />
+                  </WrapPanel>
+
+                  <Grid Margin="0,4,0,0">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+
+                     <Border Grid.Column="0" Style="{StaticResource dateFieldStyle}">
+                        <DatePicker x:Name="dateFromEdit"
+                                    Style="{StaticResource inlineDatePickerStyle}"
+                                    FontSize="12"
+                                    Tag="From" />
+                     </Border>
+
+                     <TextBlock Grid.Column="1" Text="to" Margin="10,0" Opacity="0.5"
+                                FontSize="12" VerticalAlignment="Center" />
+
+                     <Border Grid.Column="2" Style="{StaticResource dateFieldStyle}">
+                        <DatePicker x:Name="dateToEdit"
+                                    Style="{StaticResource inlineDatePickerStyle}"
+                                    FontSize="12"
+                                    Tag="To" />
+                     </Border>
+                  </Grid>
+
+                  <TextBlock Text="OPTIONS" Style="{StaticResource sheetSectionStyle}" />
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="Include archived accounts" FontSize="12.5" />
+                        <TextBlock Text="Off by default; archived accounts are rarely wanted"
+                                   FontSize="11" Opacity="0.55" Margin="0,2,0,0" TextWrapping="Wrap" />
+                     </StackPanel>
+                     <ToggleButton Grid.Column="1" Style="{StaticResource filterSwitchStyle}" Margin="12,0,0,0" />
+                  </Grid>
+               </StackPanel>
+            </ScrollViewer>
+
+            <!-- ==== sheet footer ====
+                 Apply is what sends the query, so it is the filled button here; Reset only
+                 empties the fields and leaves the sheet open. -->
+            <Border Grid.Row="2" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0">
+               <Grid Margin="22,14">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <Button Grid.Column="0"
+                          Style="{StaticResource outlinedButtonStyle}"
+                          Margin="0,0,6,0"
+                          Content="Reset"
+                          Click="FilterReset_Click" />
+                  <Button Grid.Column="1"
+                          Style="{StaticResource filledButtonStyle}"
+                          Margin="6,0,0,0"
+                          Content="Apply"
+                          Click="FilterApply_Click" />
+               </Grid>
+            </Border>
+         </Grid>
+      </Border>
+
+      <!-- Last child of the outer grid, so it covers the card, the toolbar and the filter
+           sheet alike: the list is read from the server, and until that comes back there is
+           nothing on this screen worth touching. -->
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}"
+                         Caption="{Binding WaiterText}" />
+   </Grid>
+      </TabItem>
+      <TabItem Foreground="{DynamicResource themeWindowForegroundBrush}">
+         <TabItem.Header><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Robot" Margin="0,0,8,0" VerticalAlignment="Center"/><TextBlock Text="Robots"/></StackPanel></TabItem.Header>
+         <local:RobotManager x:Name="robotManager" />
+      </TabItem>
+   </TabControl>
+</UserControl>

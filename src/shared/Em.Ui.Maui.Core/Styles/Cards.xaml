@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+   Kartu dan pemisah. Kartu di sini bertipe "filled" - ia berdiri di atas halaman lewat bidangnya
+   sendiri, bukan lewat bayangan. Bayangan sengaja tidak dipakai sama sekali: di tema gelap ia nyaris
+   tak terlihat, sehingga layar yang sama akan terbaca berbeda di dua tema.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
+                    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls">
+
+   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
+        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
+        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <ResourceDictionary.MergedDictionaries>
+      <styles:Palette />
+   </ResourceDictionary.MergedDictionaries>
+
+   <Style x:Key="cardStyle" TargetType="Border">
+      <Setter Property="Padding" Value="20" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="16" />
+      </Setter>
+   </Style>
+
+   <!-- Kartu yang isinya bisa ditekan; radiusnya lebih besar supaya ia terbaca sebagai satu kesatuan
+        yang bisa disentuh, bukan sekadar bidang berisi teks. -->
+   <Style x:Key="actionCardStyle" TargetType="Border" BasedOn="{StaticResource cardStyle}">
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}" />
+   </Style>
+
+   <!-- Kartu bergaris, untuk isi yang tidak boleh menarik perhatian lebih dari tetangganya. -->
+   <Style x:Key="outlinedCardStyle" TargetType="Border" BasedOn="{StaticResource cardStyle}">
+      <Setter Property="BackgroundColor" Value="Transparent" />
+      <Setter Property="StrokeThickness" Value="1" />
+      <Setter Property="Stroke"
+              Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
+   </Style>
+
+   <Style x:Key="dividerStyle" TargetType="BoxView">
+      <Setter Property="HeightRequest" Value="1" />
+      <Setter Property="Color"
+              Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
+   </Style>
+
+   <!-- Lingkaran berisi inisial, berdiri menggantikan foto yang memang tidak ada. -->
+   <Style x:Key="avatarStyle" TargetType="Border">
+      <Setter Property="WidthRequest" Value="44" />
+      <Setter Property="HeightRequest" Value="44" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource primaryContainerLight}, Dark={StaticResource primaryContainerDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="22" />
+      </Setter>
+   </Style>
+</ResourceDictionary>

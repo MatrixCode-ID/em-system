@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
+             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+             x:Class="Em.Ui.Maui.Navigations.LoginControl">
+
+   <ContentView.BindingContext>
+      <local:LoginControlVm />
+   </ContentView.BindingContext>
+
+   <Grid RowDefinitions="Auto,*">
+
+      <Border Grid.Row="0" Padding="24,36,24,28" StrokeThickness="0"
+              BackgroundColor="{AppThemeBinding Light={StaticResource brandLight}, Dark={StaticResource brandDark}}">
+         <Border.StrokeShape>
+            <shapes:RoundRectangle CornerRadius="0,0,28,28" />
+         </Border.StrokeShape>
+         <VerticalStackLayout Spacing="14" HorizontalOptions="Center">
+            <Image Source="{Binding LogoImage}" HeightRequest="64" Aspect="AspectFit" />
+            <VerticalStackLayout Spacing="2">
+               <Label Text="{Binding BrandTitle}" Style="{StaticResource headlineTextStyle}"
+                      TextColor="White" HorizontalOptions="Center" />
+               <Label Text="{Binding BrandTagline}" Style="{StaticResource supportTextStyle}"
+                      TextColor="White" Opacity="0.75" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+         </VerticalStackLayout>
+      </Border>
+
+      <ScrollView Grid.Row="1">
+         <VerticalStackLayout Padding="20,20,20,32" Spacing="16">
+
+            <Border Style="{StaticResource cardStyle}" IsVisible="{Binding HasSessionEndedNotice}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}"
+                    Padding="16">
+               <Label Text="{Binding SessionEndedNotice}" Style="{StaticResource supportTextStyle}"
+                      TextColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+            </Border>
+
+            <Border Style="{StaticResource cardStyle}">
+               <VerticalStackLayout Spacing="16">
+
+                  <Label Text="SIGN IN" Style="{StaticResource sectionCaptionStyle}" />
+
+                  <!-- Alamat server diketik, bukan dipilih dari daftar: di luar debug tidak ada
+                       daftar untuk dipilih sama sekali. Di debug isian ini terkunci - servernya
+                       ditentukan saat compile, dan yang berlaku adalah yang sedang terpilih di
+                       panel account. -->
+                  <VerticalStackLayout Spacing="6">
+                     <Label Text="API Server" Style="{StaticResource labelTextStyle}" />
+                     <Border Style="{StaticResource inputFieldStyle}">
+                        <Entry Text="{Binding ServerUrl}" Placeholder="https://server.example.com"
+                               IsReadOnly="{Binding IsServerLocked}"
+                               Keyboard="Url" ReturnType="Next" />
+                     </Border>
+                  </VerticalStackLayout>
+
+                  <VerticalStackLayout Spacing="6">
+                     <Label Text="Account" Style="{StaticResource labelTextStyle}" />
+                     <Border Style="{StaticResource inputFieldStyle}">
+                        <Entry Text="{Binding UserName}" Placeholder="Account name" ReturnType="Next" />
+                     </Border>
+                  </VerticalStackLayout>
+
+                  <VerticalStackLayout Spacing="6">
+                     <Label Text="Password" Style="{StaticResource labelTextStyle}" />
+                     <Border Style="{StaticResource inputFieldStyle}">
+                        <Entry Text="{Binding Password}" IsPassword="True" Placeholder="Password"
+                               ReturnType="Go" ReturnCommand="{Binding Commands[SignInCommand]}" />
+                     </Border>
+                  </VerticalStackLayout>
+
+                  <!-- Ganti tema duduk di samping tombol masuk, bukan di bilah atas: bilah itu
+                       sengaja disembunyikan selama belum ada yang masuk, dan panel account - tempat
+                       baris ganti tema tinggal di layar lain - dibuka dari sana. -->
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                     <controls:IconButton Grid.Column="0"
+                                          Glyph="{x:Static controls:FontIcons.CircleHalfStroke}" IconSize="20"
+                                          VerticalOptions="Center"
+                                          Command="{Binding Commands[ToggleThemeCommand]}"
+                                          TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+                     <Button Grid.Column="1" Text="Sign in" Style="{StaticResource filledButtonStyle}"
+                             Command="{Binding Commands[SignInCommand]}" />
+                  </Grid>
+
+                  <HorizontalStackLayout Spacing="8" IsVisible="{Binding HasSignInError}">
+                     <controls:FontIcon Glyph="{x:Static controls:FontIcons.LockOpen}" IconSize="18"
+                                            VerticalOptions="Start"
+                                            TintColor="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" />
+                     <Label Text="{Binding SignInError}" Style="{StaticResource errorTextStyle}" />
+                  </HorizontalStackLayout>
+
+                  <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                                     HorizontalOptions="Center" />
+               </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding BrandCopyright}" Style="{StaticResource labelTextStyle}"
+                   FontSize="10.5" Opacity="0.6" HorizontalOptions="Center" />
+         </VerticalStackLayout>
+      </ScrollView>
+   </Grid>
+</ContentView>

@@ -1,0 +1,114 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      Material tabs: a caption with an accent underline on the current one, over a strip that
+      runs the width of whatever holds it. No box and no border of their own - the card around
+      them is already the frame.
+
+      The strip is squared off and closed on both edges, which suits a tab row sitting under a
+      record header in the middle of a card. A tab row that starts at the very top of a card
+      wants rounded top corners instead; that is one setter on a copy of the template.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <Style x:Key="materialTabItemStyle" TargetType="TabItem">
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="TabItem">
+               <Border x:Name="shape" Background="Transparent" Height="46">
+                  <Grid>
+                     <!-- The pill is the object: it carries the hand cursor and it is what
+                          lights up on hover, so the pointer changes exactly where something
+                          answers to it. The band around it is only the strip's surface - a
+                          click there still selects the tab, but nothing about it looks
+                          clickable, so the cursor stays an arrow. Setting the cursor on the
+                          style instead would put it on the whole 46px item, which is what makes
+                          a tab strip feel like one large button. -->
+                     <Border x:Name="stateLayer"
+                             Margin="4,6"
+                             CornerRadius="8"
+                             Background="Transparent"
+                             Cursor="Hand">
+                        <ContentPresenter ContentSource="Header"
+                                          Margin="16,0"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                     </Border>
+                     <!-- The underline is the whole selected state; it is hidden rather than
+                          collapsed so the caption never shifts. -->
+                     <Border x:Name="indicator"
+                             Height="3"
+                             Margin="10,0"
+                             CornerRadius="2,2,0,0"
+                             VerticalAlignment="Bottom"
+                             Visibility="Hidden"
+                             Background="{DynamicResource themeAccentBrush}" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background"
+                             Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsSelected" Value="True">
+                     <Setter TargetName="indicator" Property="Visibility" Value="Visible" />
+                     <Setter Property="FontWeight" Value="SemiBold" />
+                     <!-- The accent goes on the strip that holds the caption, not on the TabItem:
+                          Foreground is inherited, and setting it on the item itself hands the
+                          accent to everything the selected tab contains - every caption, every
+                          row, every help line in the body below. -->
+                     <Setter TargetName="stateLayer" Property="TextElement.Foreground"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="materialTabControlStyle" TargetType="TabControl">
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource materialTabItemStyle}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="TabControl">
+               <Grid>
+                  <Grid.RowDefinitions>
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="*" />
+                  </Grid.RowDefinitions>
+
+                  <Border Grid.Row="0"
+                          Background="{StaticResource surfaceStrongBrush}"
+                          BorderBrush="{StaticResource dividerBrush}"
+                          BorderThickness="0,1,0,1">
+                     <TabPanel IsItemsHost="True" Margin="12,0,0,0" HorizontalAlignment="Left" />
+                  </Border>
+
+                  <ContentPresenter Grid.Row="1" ContentSource="SelectedContent"
+                                    TextElement.Foreground="{TemplateBinding Foreground}" />
+               </Grid>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+         <Trigger Property="IsEnabled" Value="False">
+            <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+         </Trigger>
+      </Style.Triggers>
+   </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
+             x:Class="Em.Ui.Maui.Navigations.DefaultHomeControl">
+
+   <ContentView.BindingContext>
+      <local:DefaultHomeControlVm />
+   </ContentView.BindingContext>
+
+   <ScrollView>
+      <VerticalStackLayout Padding="20,20,20,32" Spacing="16">
+
+         <!-- Kotak pencarian. Bentuknya saja untuk sekarang - sama seperti di client desktop, ia belum
+              tersambung ke apa pun. Penyaringnya dikerjakan nanti, saat sudah ada cukup banyak layar
+              module yang membuatnya berguna, dan sebaiknya di kedua client sekaligus. -->
+         <Border Style="{StaticResource searchFieldStyle}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+               <controls:FontIcon Grid.Column="0" Glyph="{x:Static controls:FontIcons.MagnifyingGlass}"
+                                  IconSize="14" VerticalOptions="Center" Opacity="0.6"
+                                  TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+               <Entry Grid.Column="1" Placeholder="Search" FontSize="14" VerticalOptions="Center" />
+            </Grid>
+         </Border>
+
+         <Border Style="{StaticResource outlinedCardStyle}" IsVisible="{Binding IsModuleListEmpty}">
+            <VerticalStackLayout Spacing="8">
+               <controls:FontIcon Glyph="{x:Static controls:FontIcons.TableCellsLarge}" IconSize="24"
+                                  HorizontalOptions="Start"
+                                  TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+               <Label Text="No module yet" Style="{StaticResource titleTextStyle}" />
+               <Label Text="Screens registered by a module will appear here as shortcuts."
+                      Style="{StaticResource supportTextStyle}" />
+            </VerticalStackLayout>
+         </Border>
+
+         <!-- Layar tanpa MenuPath berdiri di atas pohon, bukan di dalam salah satu grupnya. -->
+         <VerticalStackLayout Spacing="10"
+                              BindableLayout.ItemsSource="{Binding RootAppMenus}"
+                              BindableLayout.ItemTemplate="{StaticResource navigationTileTemplate}" />
+
+         <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding AppMenuGroups}">
+            <BindableLayout.ItemTemplate>
+               <DataTemplate>
+                  <local:MenuGroupView />
+               </DataTemplate>
+            </BindableLayout.ItemTemplate>
+         </VerticalStackLayout>
+      </VerticalStackLayout>
+   </ScrollView>
+</ContentView>

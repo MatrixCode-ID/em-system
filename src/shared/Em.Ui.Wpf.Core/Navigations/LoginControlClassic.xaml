@@ -1,0 +1,855 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.LoginControlClassic"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:shared="clr-namespace:Em.Ui.Core.Shared;assembly=Em.Ui.Core"
+             mc:Ignorable="d"
+             MinWidth="720"
+             MinHeight="520"
+             d:DesignHeight="620" d:DesignWidth="1000">
+
+   <!--
+      Sign-in screen, dressed in the same material language as the user screens: a coloured
+      brand panel on one side, and on the other a raised surface carrying the form.
+
+      Two rules keep it readable on both themes, exactly as on UserEditor/UserManager:
+
+      - every surface, outline, divider and state layer is a translucent grey (#xx808080),
+        which darkens a light background and lightens a dark one without naming a theme
+        colour;
+      - the colours actually taken from the theme are the accent - the primary action, the
+        focused field, the selected theme button - and the opaque surface the card is
+        painted with, both read through the Em theme tokens.
+
+      The brand panel keeps a palette of its own instead: its background and watermark are
+      the theme's Brand and OnBrand colours (themeBrandBrush, themeOnBrandBrush), which the
+      application sets per theme through its branding, so everything drawn over them is
+      white-on-colour.
+   -->
+
+   <UserControl.DataContext>
+      <local:LoginControlVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <!--
+            Everything in the brand panel below starts out on these values and is overwritten by
+            LoginControl.RenderBranding once the application object is known. They are what the panel
+            shows with no EmApp behind it - the XAML designer, chiefly - so they are kept in step
+            with BrandingInfo's own generic defaults.
+         -->
+
+         <!-- Fallback used when the application does not inject its own logo -->
+         <BitmapImage x:Key="defaultLogo"
+                      UriSource="pack://application:,,,/Em.Ui.Wpf.Core;component/Assets/Icons/Logo.png" />
+
+         <!-- Panel texts, matching BrandingInfo.DefaultTitle/DefaultTagline/DefaultDescriptionText. -->
+         <sys:String x:Key="defaultBrandTitle">Your Company</sys:String>
+         <sys:String x:Key="defaultBrandTagline">Enterprise Application</sys:String>
+         <sys:String x:Key="defaultBrandDescription">One workspace for your operations, assets, and people — connected end to end.</sys:String>
+         <sys:String x:Key="defaultBrandCopyright">© 2026 Your Company. All rights reserved.</sys:String>
+
+         <!-- ============================================================
+              PALETTE
+              The same keys and the same values as the user screens, so
+              this chrome is a move rather than a rewrite once they share
+              a dictionary.
+              ============================================================ -->
+         <SolidColorBrush x:Key="surfaceBrush" Color="#0D808080" />
+         <SolidColorBrush x:Key="surfaceStrongBrush" Color="#1A808080" />
+         <SolidColorBrush x:Key="outlineBrush" Color="#29808080" />
+         <SolidColorBrush x:Key="outlineStrongBrush" Color="#4D808080" />
+         <SolidColorBrush x:Key="dividerBrush" Color="#1F808080" />
+
+         <!-- Material state layers: one translucent grey veil over whatever the control
+              already paints, so the same two brushes serve every button variant. -->
+         <SolidColorBrush x:Key="stateHoverBrush" Color="#1F808080" />
+         <SolidColorBrush x:Key="statePressedBrush" Color="#33808080" />
+
+         <!-- Status colours are mid-tone on purpose: dark enough to read on a light surface,
+              light enough to read on a dark one. -->
+         <SolidColorBrush x:Key="successBrush" Color="#2FA84F" />
+         <SolidColorBrush x:Key="successChipBrush" Color="#242FA84F" />
+         <SolidColorBrush x:Key="warningBrush" Color="#C98A00" />
+         <SolidColorBrush x:Key="warningChipBrush" Color="#24C98A00" />
+         <SolidColorBrush x:Key="dangerBrush" Color="#E05656" />
+         <SolidColorBrush x:Key="dangerChipBrush" Color="#24E05656" />
+
+         <!-- The two surfaces drawn over the brand colour. White with an alpha channel, so
+              they lift whichever colour the branding hands the panel. -->
+         <SolidColorBrush x:Key="brandSurfaceBrush" Color="#1FFFFFFF" />
+         <SolidColorBrush x:Key="brandOutlineBrush" Color="#33FFFFFF" />
+
+         <!-- ============================================================
+              TYPOGRAPHY
+              ============================================================ -->
+         <!-- The headline of the form, and the line under it saying what the form is for. -->
+         <Style x:Key="headlineStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="27" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+         </Style>
+
+         <Style x:Key="supportingTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Opacity" Value="0.65" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+         </Style>
+
+         <!-- Caption over a field. Sentence case, like the user screens: a label this close
+              to its editor reads better as a word than as a heading. -->
+         <Style x:Key="fieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Margin" Value="2,0,0,6" />
+         </Style>
+
+         <!-- ============================================================
+              BUTTONS
+              Two material variants over one template: a rounded container,
+              a state layer over it, then the content.
+
+              The template reads its corner radius from the button's Tag.
+              A pill is half its own height and the two variants are not
+              the same height, so the radius cannot sit in the template as
+              a constant - and a Tag costs one attribute where a second
+              template would cost a copy.
+              ============================================================ -->
+         <Style x:Key="materialButtonBaseStyle" TargetType="Button">
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <!-- The template draws its own focus ring; the dotted default one squares off
+                 the pill shape. -->
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                     <Border x:Name="shape"
+                             CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                             Background="{TemplateBinding Background}"
+                             BorderBrush="{TemplateBinding BorderBrush}"
+                             BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                           <Border x:Name="stateLayer"
+                                   CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Background="Transparent" />
+                           <ContentPresenter Margin="{TemplateBinding Padding}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center" />
+                        </Grid>
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                           <Setter TargetName="shape" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Filled: the one action this screen exists for. Accent background and a soft
+              shadow, the only elevation inside the card. -->
+         <Style x:Key="filledButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="Height" Value="46" />
+            <Setter Property="Tag" Value="23" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect">
+               <Setter.Value>
+                  <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" Color="#000000" />
+               </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+               <!-- Material raises a filled button as the pointer comes over it. -->
+               <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Effect">
+                     <Setter.Value>
+                        <DropShadowEffect BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000" />
+                     </Setter.Value>
+                  </Setter>
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- Outlined: the quiet action in the utility strip - an outline and nothing else
+              at rest. -->
+         <Style x:Key="outlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Tag" Value="17" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+         </Style>
+
+         <!-- The same outlined button with no caption: a round one carrying only a glyph. -->
+         <Style x:Key="outlinedIconButtonStyle" TargetType="Button" BasedOn="{StaticResource outlinedButtonStyle}">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Padding" Value="0" />
+         </Style>
+
+         <!-- ============================================================
+              COLOR THEME BUTTON
+              One button rather than a pair, the same way the navigation
+              toolbar carries it: a single glyph that hands the theme over
+              to the other one.
+
+              The view model only knows how to be told which theme to
+              apply, so which theme that is has to be decided here. Both
+              setters below are driven by the state it already publishes,
+              and the login screen is told to re-read that state whenever
+              the theme changes (TabbedMainWindow.OnThemeChanged), so the button
+              always points at the theme that is currently off.
+              ============================================================ -->
+         <Style x:Key="colorThemeButtonStyle" TargetType="Button" BasedOn="{StaticResource outlinedIconButtonStyle}">
+            <Setter Property="CommandParameter" Value="{x:Static shared:ThemeVariant.Light}" />
+            <Setter Property="ToolTip" Value="Switch to light mode" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding LightModeSelected}" Value="True">
+                  <Setter Property="CommandParameter" Value="{x:Static shared:ThemeVariant.Dark}" />
+                  <Setter Property="ToolTip" Value="Switch to dark mode" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ============================================================
+              FIELDS
+              The frame is a Border and the editor inside it drops its own
+              chrome, the same arrangement the date field on the user
+              editor uses: one rounded shape per field, with hover and
+              focus painted on the frame - where they also cover the icon
+              standing next to the editor.
+              ============================================================ -->
+         <Style x:Key="fieldFrameStyle" TargetType="Border">
+            <Setter Property="Height" Value="48" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Style.Triggers>
+               <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="BorderBrush" Value="{StaticResource outlineStrongBrush}" />
+               </Trigger>
+               <!-- Focus is the one state the accent is spent on inside a form: it says which
+                    field the keyboard is talking to. -->
+               <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                  <Setter Property="BorderBrush"
+                          Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- The leading icon of a field: what the value is, at a glance. Quiet enough that
+              the typed text stays the thing being read. -->
+         <Style x:Key="fieldIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Opacity" Value="0.55" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <Style x:Key="passwordPlaceholderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Opacity" Value="0.45" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Password}" Value="">
+                  <Setter Property="Visibility" Value="Visible" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- The line under a field: here, why the button at the bottom is dead. It shows only
+              while no connection is picked, which is the one thing the user has to settle before
+              signing in, so it is a note rather than an error. -->
+         <Style x:Key="fieldHelpStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="Margin" Value="2,-8,0,14" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <!-- Hidden rather than Collapsed: the note comes and goes as the connection is picked,
+                 and collapsing it would take its two lines out of the layout with it, so the card
+                 jumped to a different height every time the pick changed. Hidden keeps the space. -->
+            <Setter Property="Visibility" Value="Hidden" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding SelectedConnection}" Value="{x:Null}">
+                  <Setter Property="Visibility" Value="Visible" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ============================================================
+              SIGN-IN FEEDBACK
+              Both strips are driven by the view model rather than by an
+              inline Visibility: a value set straight on the element would
+              outrank the trigger, and neither of these is ever shown by
+              anything other than the state below.
+              ============================================================ -->
+         <Style x:Key="errorStripStyle" TargetType="Border">
+            <Setter Property="Margin" Value="0,0,0,20" />
+            <Setter Property="Padding" Value="14,11" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding SignInError}" Value="{x:Null}">
+                  <Setter Property="Visibility" Value="Collapsed" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- The same strip in a calmer colour, for something that is not the user's doing:
+              a session that ended by itself. Its own style rather than a trigger on the one
+              above, because the two can never be shown at the same time anyway - typing
+              clears this one. -->
+         <Style x:Key="noticeStripStyle" TargetType="Border">
+            <Setter Property="Margin" Value="0,0,0,20" />
+            <Setter Property="Padding" Value="14,11" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding SessionEndedNotice}" Value="{x:Null}">
+                  <Setter Property="Visibility" Value="Collapsed" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="busyPanelStyle" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,16,0,0" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding InWaiting}" Value="True">
+                  <Setter Property="Visibility" Value="Visible" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ============================================================
+              SERVER STATUS
+              The chip at the bottom reports the probe that runs every time
+              the connection field changes. Both the chip and the dot in it
+              are the same four states, so they are driven by one property
+              and differ only in which brush they take.
+              ============================================================ -->
+         <Style x:Key="serverStatusChipStyle" TargetType="Border">
+            <Setter Property="Padding" Value="11,4" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="BorderThickness" Value="1" />
+            <!-- Nothing picked yet: a neutral chip, the same grey as a field frame. -->
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="Probing">
+                  <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="Connected">
+                  <Setter Property="Background" Value="{StaticResource successChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource successBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="Unreachable">
+                  <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="serverStatusDotStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Height" Value="8" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Fill" Value="{StaticResource outlineStrongBrush}" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="Probing">
+                  <Setter Property="Fill" Value="{StaticResource warningBrush}" />
+                  <!-- The dot pulses only while the probe is out, which is the one state the
+                       reader is waiting on rather than reading. -->
+                  <DataTrigger.EnterActions>
+                     <BeginStoryboard x:Name="pulseDot">
+                        <Storyboard>
+                           <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                            From="1" To="0.25"
+                                            Duration="0:0:0.7"
+                                            AutoReverse="True"
+                                            RepeatBehavior="Forever" />
+                        </Storyboard>
+                     </BeginStoryboard>
+                  </DataTrigger.EnterActions>
+                  <DataTrigger.ExitActions>
+                     <StopStoryboard BeginStoryboardName="pulseDot" />
+                  </DataTrigger.ExitActions>
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="Connected">
+                  <Setter Property="Fill" Value="{StaticResource successBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="Unreachable">
+                  <Setter Property="Fill" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- Link inside the form: accent coloured, underlined only under the pointer, so a
+              row of labels is not broken up by a permanent rule. -->
+         <Style x:Key="fieldLinkStyle" TargetType="Hyperlink">
+            <Setter Property="TextDecorations" Value="{x:Null}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Style.Triggers>
+               <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="TextDecorations" Value="Underline" />
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid.ColumnDefinitions>
+         <!-- Branding panel: fixed-ish, collapses out of the way on small screens -->
+         <ColumnDefinition Width="0.9*" MinWidth="300" MaxWidth="420" />
+         <ColumnDefinition Width="1.1*" MinWidth="380" />
+      </Grid.ColumnDefinitions>
+
+      <!-- =========================================================
+           BRAND PANEL
+           ========================================================= -->
+      <!-- ClipToBounds: the decorative circles below sit on negative margins, so without it they
+           spill outside the panel - and being hit-testable, they swallow mouse clicks on whatever
+           sits next to this control. -->
+      <Border x:Name="brandPanel"
+              Grid.Column="0"
+              ClipToBounds="True"
+              Background="{DynamicResource themeBrandBrush}">
+         <Grid>
+            <Grid.RowDefinitions>
+               <RowDefinition Height="*" />
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="*" />
+               <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Decorative watermark, kept very subtle so it never fights the text -->
+            <Ellipse x:Name="brandWatermarkTop"
+                     Grid.Row="0" Grid.RowSpan="4"
+                     Width="520" Height="520"
+                     Margin="-190,-160,0,0"
+                     Opacity="0.07"
+                     HorizontalAlignment="Left"
+                     VerticalAlignment="Top"
+                     Fill="{DynamicResource themeOnBrandBrush}" />
+            <Ellipse x:Name="brandWatermarkBottom"
+                     Grid.Row="0" Grid.RowSpan="4"
+                     Width="360" Height="360"
+                     Margin="0,0,-150,-140"
+                     Opacity="0.07"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Bottom"
+                     Fill="{DynamicResource themeOnBrandBrush}" />
+
+            <!-- Depth over the flat brand colour: the panel darkens towards its bottom corner,
+                 which is what keeps the footer from carrying the same weight as the title.
+                 Never hit-testable - it lies over the whole panel. -->
+            <Border Grid.Row="0" Grid.RowSpan="4" IsHitTestVisible="False">
+               <Border.Background>
+                  <LinearGradientBrush StartPoint="0.15,0" EndPoint="0.85,1">
+                     <GradientStop Color="#00000000" Offset="0" />
+                     <GradientStop Color="#00000000" Offset="0.45" />
+                     <GradientStop Color="#2B000000" Offset="1" />
+                  </LinearGradientBrush>
+               </Border.Background>
+            </Border>
+
+            <!-- Logo + product name -->
+            <StackPanel Grid.Row="1" Margin="44,0" VerticalAlignment="Center">
+               <!-- The logo sits on a surface of its own, so a mark drawn for a white page
+                    still has something to stand on over the brand colour. -->
+               <Border HorizontalAlignment="Left"
+                       CornerRadius="18"
+                       Padding="18,14"
+                       Background="{StaticResource brandSurfaceBrush}"
+                       BorderThickness="1"
+                       BorderBrush="{StaticResource brandOutlineBrush}">
+                  <Image x:Name="brandLogo"
+                         Height="56"
+                         MaxWidth="200"
+                         Stretch="Uniform"
+                         HorizontalAlignment="Left"
+                         RenderOptions.BitmapScalingMode="HighQuality"
+                         Source="{StaticResource defaultLogo}" />
+               </Border>
+
+               <TextBlock x:Name="brandTitle"
+                          Margin="0,26,0,0"
+                          FontSize="34"
+                          FontWeight="SemiBold"
+                          Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"
+                          Text="{StaticResource defaultBrandTitle}" />
+
+               <TextBlock x:Name="brandTagline"
+                          Margin="0,4,0,0"
+                          FontSize="14"
+                          Opacity="0.9"
+                          TextWrapping="Wrap"
+                          Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"
+                          Text="{StaticResource defaultBrandTagline}" />
+
+               <Rectangle Height="3"
+                          Width="52"
+                          RadiusX="1.5"
+                          RadiusY="1.5"
+                          Margin="0,24,0,0"
+                          Opacity="0.55"
+                          HorizontalAlignment="Left"
+                          Fill="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+
+               <TextBlock x:Name="brandDescription"
+                          Margin="0,24,0,0"
+                          FontSize="13"
+                          LineHeight="22"
+                          Opacity="0.85"
+                          TextWrapping="Wrap"
+                          MaxWidth="290"
+                          HorizontalAlignment="Left"
+                          Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"
+                          Text="{StaticResource defaultBrandDescription}" />
+            </StackPanel>
+
+            <!-- Panel footer -->
+            <StackPanel Grid.Row="3" Margin="44,0,44,28">
+               <TextBlock x:Name="brandCopyright"
+                          FontSize="11"
+                          Opacity="0.7"
+                          Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"
+                          Text="{StaticResource defaultBrandCopyright}" />
+            </StackPanel>
+         </Grid>
+      </Border>
+
+      <!-- =========================================================
+           SIGN-IN PANEL
+           The background is one translucent grey over the window, so
+           the card below reads as a surface raised off it rather than
+           as a box drawn on the same sheet.
+           ========================================================= -->
+      <Grid Grid.Column="1" Background="{StaticResource surfaceBrush}">
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+         </Grid.RowDefinitions>
+
+         <!-- Top-right utility strip -->
+         <StackPanel Grid.Row="0"
+                     Orientation="Horizontal"
+                     Margin="0,20,26,0"
+                     HorizontalAlignment="Right">
+
+            <!-- The theme switch lives here because the main window toolbar - and with it the
+                 Color Mode menu - stays hidden for as long as the login screen is shown. The
+                 glyph is the navigation toolbar's, so the same button means the same thing
+                 wherever the application shows it. -->
+            <Button x:Name="colorThemeButton"
+                    Style="{StaticResource colorThemeButtonStyle}"
+                    Margin="0,0,10,0"
+                    Command="{Binding Commands[ChangeThemeCommand]}">
+               <fa:FontAwesome Icon="Solid_CircleHalfStroke" FontSize="14" />
+            </Button>
+
+            <Button x:Name="connectionConfigButton"
+                    Style="{StaticResource outlinedButtonStyle}"
+                    ToolTip="Manage API server connections"
+                    Command="{Binding Commands[ConnectionConfigCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_NetworkWired"
+                                  FontSize="12"
+                                  Margin="0,0,9,0"
+                                  VerticalAlignment="Center" />
+                  <TextBlock Text="Connections" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </StackPanel>
+
+         <!-- Form body: one raised card, centred in whatever room is left. Its margin is what
+              gives the shadow somewhere to fall. -->
+         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Border MaxWidth="420"
+                    Margin="24,20,24,24"
+                    Padding="36,34"
+                    CornerRadius="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BorderThickness="1"
+                    BorderBrush="{StaticResource outlineBrush}"
+                    Background="{DynamicResource themeWindowBackgroundBrush}">
+               <Border.Effect>
+                  <!-- Material elevation: a soft shadow straight down, never a glow. -->
+                  <DropShadowEffect BlurRadius="30" ShadowDepth="7" Direction="270"
+                                    Color="Black" Opacity="0.22" />
+               </Border.Effect>
+
+               <!-- Tab order inside the card is stated rather than inherited from the visual tree:
+                    the fields sit inside a Border and a Grid apiece, next to an icon and a
+                    placeholder, so the order the tree happens to produce is not necessarily the
+                    order the form is filled in. Local navigation keeps
+                    the TabIndex values below meaningful within the card, and keeps the utility
+                    buttons above it out of the walk between two fields. -->
+               <StackPanel KeyboardNavigation.TabNavigation="Local">
+
+                  <TextBlock Text="Sign in" Style="{StaticResource headlineStyle}" />
+                  <TextBlock Text="Use your pre-registered account to continue."
+                             Style="{StaticResource supportingTextStyle}"
+                             Margin="0,6,0,26" />
+
+                  <!-- Error strip: hidden until a sign-in attempt fails. The tooltip carries the
+                       technical detail, which exists only for a failure that is not the user's
+                       doing - a wrong password has nothing more to say than the line itself. -->
+                  <Border x:Name="errorStrip"
+                          Style="{StaticResource errorStripStyle}"
+                          d:Visibility="Visible"
+                          ToolTip="{Binding SignInErrorDetail}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_TriangleExclamation"
+                                        FontSize="13"
+                                        Margin="0,1,0,0"
+                                        VerticalAlignment="Top"
+                                        Foreground="{StaticResource dangerBrush}" />
+                        <TextBlock x:Name="errorText"
+                                   Margin="11,0,0,0"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding SignInError, FallbackValue='Incorrect username or password. Please try again.'}" />
+                     </StackPanel>
+                  </Border>
+
+                  <!-- Notice strip: hidden unless the previous session ended on its own. -->
+                  <Border x:Name="noticeStrip"
+                          Style="{StaticResource noticeStripStyle}"
+                          d:Visibility="Collapsed">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_CircleInfo"
+                                        FontSize="13"
+                                        Margin="0,1,0,0"
+                                        VerticalAlignment="Top"
+                                        Foreground="{StaticResource warningBrush}" />
+                        <TextBlock x:Name="noticeText"
+                                   Margin="11,0,0,0"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding SessionEndedNotice}" />
+                     </StackPanel>
+                  </Border>
+
+                  <!-- Server connection. The frame gives up part of its right inset to the
+                       chevron the drop down brings with it. -->
+                  <TextBlock Text="Server connection" Style="{StaticResource fieldLabelStyle}" />
+                  <Border Style="{StaticResource fieldFrameStyle}" Padding="14,0,6,0">
+                     <Grid>
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="Auto" />
+                           <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <fa:FontAwesome Icon="Solid_Server" Style="{StaticResource fieldIconStyle}" />
+                        <ComboBox x:Name="connectionEdit"
+                                  Grid.Column="1"
+                                  TabIndex="0"
+                                  Style="{StaticResource inlineComboStyle}"
+                                  Tag="Select a connection profile"
+                                  ItemsSource="{Binding ApiConnections}"
+                                  SelectedItem="{Binding SelectedConnection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                           <ComboBox.ItemTemplate>
+                              <DataTemplate>
+                                 <TextBlock Text="{Binding ProfileName}" TextTrimming="CharacterEllipsis" />
+                              </DataTemplate>
+                           </ComboBox.ItemTemplate>
+                        </ComboBox>
+                     </Grid>
+                  </Border>
+                  <TextBlock Style="{StaticResource fieldHelpStyle}"
+                             Text="Pick the server you are signing in to — the button below stays off until you do." />
+
+                  <!-- Credentials -->
+                  <TextBlock Text="Username" Style="{StaticResource fieldLabelStyle}" />
+                  <Border Style="{StaticResource fieldFrameStyle}">
+                     <Grid>
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="Auto" />
+                           <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <fa:FontAwesome Icon="Solid_User" Style="{StaticResource fieldIconStyle}" />
+                        <TextBox x:Name="usernameEdit"
+                                 Grid.Column="1"
+                                 TabIndex="1"
+                                 PreviewKeyDown="CredentialField_PreviewKeyDown"
+                                 Style="{StaticResource inlineBoxStyle}"
+                                 Tag="e.g. andi.pratama"
+                                 Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" />
+                     </Grid>
+                  </Border>
+
+                  <Grid Margin="0,0,0,6">
+                     <TextBlock Text="Password" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,0" />
+                     <!-- Hidden until password recovery exists: a link that leads nowhere reads as a
+                          way out to somebody who has just failed to sign in. Kept in place, rather
+                          than deleted, because nothing about it changes when it comes back - it is
+                          the Visibility below and a handler on the link, and that is all.
+                          Collapsed on the TextBlock: a Hyperlink is an inline and carries no
+                          Visibility of its own. -->
+                     <TextBlock HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed">
+                        <Hyperlink x:Name="forgotPasswordLink"
+                                   Style="{StaticResource fieldLinkStyle}">
+                           <Run Text="Forgot password?" FontSize="11.5" />
+                        </Hyperlink>
+                     </TextBlock>
+                  </Grid>
+                  <Border Style="{StaticResource fieldFrameStyle}" Margin="0,0,0,12">
+                     <Grid>
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="Auto" />
+                           <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <fa:FontAwesome Icon="Solid_Lock" Style="{StaticResource fieldIconStyle}" />
+                        <TextBlock Grid.Column="1"
+                                   Style="{StaticResource passwordPlaceholderStyle}"
+                                   Text="Enter your password" />
+                        <PasswordBox x:Name="passwordEdit"
+                                     Grid.Column="1"
+                                     TabIndex="2"
+                                     Style="{StaticResource inlinePasswordStyle}"
+                                     PasswordChanged="PasswordEdit_PasswordChanged" />
+                     </Grid>
+                  </Border>
+
+                  <!-- Caps Lock hint: shown only while Caps Lock is on. One element and no
+                       wrapper around it, so whatever shows it later only has to flip this
+                       Visibility. -->
+                  <TextBlock x:Name="capsLockHint"
+                             Margin="2,0,0,12"
+                             FontSize="11.5"
+                             Visibility="Collapsed"
+                             d:Visibility="Visible"
+                             Foreground="{StaticResource warningBrush}"
+                             Text="Caps Lock is on." />
+
+                  <CheckBox x:Name="rememberMeEdit"
+                            Style="{StaticResource checkBoxStyle}"
+                            Margin="0,0,0,24"
+                            TabIndex="3"
+                            FontSize="12.5"
+                            IsChecked="{Binding RememberMe, Mode=TwoWay}"
+                            Content="Keep me signed in on this computer" />
+
+                  <Button x:Name="signInButton"
+                          Style="{StaticResource filledButtonStyle}"
+                          TabIndex="4"
+                          IsDefault="True"
+                          Command="{Binding Commands[SignInCommand]}"
+                          Content="Sign in" />
+
+                  <!-- Inline progress, shown while the sign in is out with the server -->
+                  <StackPanel x:Name="busyPanel"
+                              Style="{StaticResource busyPanelStyle}"
+                              d:Visibility="Visible">
+                     <ProgressBar IsIndeterminate="True"
+                                  Height="4"
+                                  BorderThickness="0"
+                                  Background="{StaticResource surfaceStrongBrush}"
+                                  Foreground="{DynamicResource themeAccentBrush}" />
+                     <TextBlock Text="{Binding WaiterText, FallbackValue='Signing in…'}"
+                                Margin="0,10,0,0"
+                                FontSize="12"
+                                Opacity="0.7"
+                                HorizontalAlignment="Center" />
+                  </StackPanel>
+
+               </StackPanel>
+            </Border>
+         </ScrollViewer>
+
+         <!-- Bottom status bar -->
+         <Border Grid.Row="2"
+                 Padding="26,12"
+                 BorderThickness="0,1,0,0"
+                 BorderBrush="{StaticResource dividerBrush}">
+            <Grid>
+               <Grid.ColumnDefinitions>
+                  <!-- The chip gives way to the version, not the other way round: a long host
+                       is trimmed inside the chip instead of running under the version text. -->
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+               </Grid.ColumnDefinitions>
+
+               <!-- The server line is a chip rather than loose text: it is a state, and it is
+                    the one thing down here that changes. The tooltip carries whatever the probe
+                    had to say for itself - the error message, when there is one. -->
+               <Border Grid.Column="0"
+                       Style="{StaticResource serverStatusChipStyle}"
+                       ToolTip="{Binding ServerStatusDetail}">
+                  <StackPanel Orientation="Horizontal">
+                     <Ellipse Style="{StaticResource serverStatusDotStyle}" />
+                     <TextBlock x:Name="serverStatusText"
+                                Text="{Binding ServerStatusText, FallbackValue='No server connection selected'}"
+                                Margin="8,0,0,0"
+                                FontSize="11"
+                                TextTrimming="CharacterEllipsis"
+                                VerticalAlignment="Center" />
+                  </StackPanel>
+               </Border>
+               <TextBlock x:Name="versionText"
+                          Grid.Column="1"
+                          Text="v1.0.0"
+                          Margin="12,0,0,0"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          FontSize="11"
+                          Opacity="0.55" />
+            </Grid>
+         </Border>
+      </Grid>
+   </Grid>
+</UserControl>

@@ -1,0 +1,547 @@
+<mxfile host="app.diagrams.net" type="device" version="24.7.17">
+  <diagram id="p1" name="1. Request end-to-end">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1320" pageHeight="2120" math="0" shadow="0">
+      <root>
+        <mxCell id="p1_0" />
+        <mxCell id="1" parent="p1_0" />
+        <mxCell id="p1_n1" value="&lt;b&gt;CLIENT  -  Em.Ui.Wpf.Core / Em.Ui.Core&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n2" value="UI / ViewModel&lt;br&gt;mis. LoginControlVm.SignInCommand" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="50" width="420" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n3" value="CredentialService : ServiceWpfBase&lt;br&gt;[Module(Defaults.CredentialModuleName)]&lt;br&gt;GetAsync/PostAsync(nameof(action), args)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="130" width="420" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n4" value="ApiClient.GetAsync&amp;lt;T&amp;gt; / PostAsync&amp;lt;T&amp;gt;&lt;br&gt;BuildGetUrl -&amp;gt; ?par1=..&amp;amp;par2=..  |  BuildPostBody -&amp;gt; PostMethodPayload[]" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="226" width="420" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n5" value="ApiClient.SendAsync&amp;lt;T&amp;gt;(requestFactory)&lt;br&gt;pembungkus tunggal semua jalur request&lt;br&gt;401 ditangani di sini  -&amp;gt;  halaman 3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="380" y="314" width="420" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n6" value="BuildRequest(method, url, content)&lt;br&gt;X-Em-Debug-Token   - kalau koneksi debug&lt;br&gt;Authorization: Bearer - kalau HasSession&lt;br&gt;X-Em-User           - UserHeaderProtocol.Create(id, akun)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="410" width="420" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n7" value="HttpClient.SendAsync" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="522" width="420" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n2" target="p1_n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n3" target="p1_n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n4" target="p1_n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n5" target="p1_n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n6" target="p1_n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n13" value="&lt;b&gt;JARINGAN&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="594" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n14" value="GET / POST  -&amp;gt;  /api/{module}/{action}" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="590" width="420" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n7" target="p1_n14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n16" value="&lt;b&gt;SERVER  -  Em.Api.Core&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="664" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n17" value="EmApp.ProcessRequest(module, action, http)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="660" width="420" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n18" value="ResolveCallerAsync  -&amp;gt;  CallerGate(ActionRequest, Rejection?)&lt;br&gt;gerbang identitas  -&amp;gt;  halaman 2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="734" width="420" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n19" value="http.Items[RequestItemKey] = gate.Request&lt;br&gt;BUKAN field: EmApp singleton, dua request bisa saling menimpa" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="822" width="420" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n20" value="gate.Rejection terisi?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="910" width="420" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n21" value="404 / 401&lt;br&gt;gerbang menolak sebelum route dicari" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="880" y="915" width="320" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n22" value="ActionDefinition ketemu?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1004" width="420" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n23" value="404  Action not found" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1014" width="320" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n24" value="IsPublicAction  ATAU  Request.IsAuthenticated ?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1098" width="420" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n25" value="401  This action requires a signed-in caller&lt;br&gt;PENEGAKAN - baru menyala di fase 2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1108" width="320" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n26" value="HTTP method cocok dengan action?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1202" width="420" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n27" value="405  Method Not Allowed" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1212" width="320" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n28" value="Resolve service dari DI (scope milik request)&lt;br&gt;service.App / HttpContext / Logger&lt;br&gt;service.Request = gate.Request" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1296" width="420" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n29" value="Binding argumen berhasil?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1392" width="420" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n30" value="400  Bad Request&lt;br&gt;query parN / PostMethodPayload tidak cocok" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1397" width="320" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n31" value="InvokeAsync  -&amp;gt;  action dijalankan&lt;br&gt;di dalamnya: Request.RequireAdmin() / RequireSelfOrAdmin() / RequireUserId()&lt;br&gt;ActionException -&amp;gt; status yang dipilih action (400 / 401 / 403 / 404)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1486" width="420" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n32" value="ToJsonResult&lt;br&gt;Results.Json(ActionResult, statusCode: result.StatusCode)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1590" width="420" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n17" target="p1_n18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n18" target="p1_n19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n19" target="p1_n20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e36" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n20" target="p1_n22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e37" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n22" target="p1_n24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e38" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n24" target="p1_n26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e39" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n26" target="p1_n28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n28" target="p1_n29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e41" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n29" target="p1_n31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e42" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n31" target="p1_n32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e43" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n20" target="p1_n21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e44" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n22" target="p1_n23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e45" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n24" target="p1_n25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e46" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n26" target="p1_n27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e47" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n29" target="p1_n30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n48" value="&lt;b&gt;KEMBALI KE CLIENT&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1682" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n49" value="ProcessHttpResult&amp;lt;T&amp;gt;  (Em.Ui.Core/Extensions.cs)&lt;br&gt;!ValidResult  -&amp;gt;  throw ActionException(ErrorMessage, StatusCode)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1678" width="420" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n50" value="StatusCode == 401 ?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1766" width="420" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n51" value="Refresh token, lalu ulangi SEKALI&lt;br&gt;-&amp;gt;  halaman 3" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1776" width="320" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n52" value="Data&amp;lt;T&amp;gt; kembali ke pemanggil" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1860" width="420" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e53" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n32" target="p1_n49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e54" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n49" target="p1_n50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e55" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n50" target="p1_n52">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_e56" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p1_n50" target="p1_n51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_n57" value="Catatan status HTTP:&lt;br&gt;ToJsonResult memakai statusCode milik ActionResult, jadi 401 yang dipilih action benar-benar&lt;br&gt;sampai ke client sebagai 401 HTTP - itu yang dibaca ProcessHttpResult dan dipakai SendAsync&lt;br&gt;untuk memutuskan apakah perlu refresh. 403 sengaja TIDAK memicu refresh: siapa pemanggilnya&lt;br&gt;sudah terbukti, dan token baru tidak akan mengubah jawabannya." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1940" width="660" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p2" name="2. Gerbang identitas (ResolveCallerAsync)">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1640" pageHeight="1320" math="0" shadow="0">
+      <root>
+        <mxCell id="p2_0" />
+        <mxCell id="1" parent="p2_0" />
+        <mxCell id="p2_n1" value="EmApp.ResolveCallerAsync(http, routeLabel)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="620" y="40" width="400" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n2" value="Baca X-Em-Debug-Token&lt;br&gt;Baca X-Em-User  -&amp;gt;  UserHeaderProtocol.TryRead&lt;br&gt;-&amp;gt; headerUserId, headerAccount   (objek JSON, atau nama akun polos)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="620" y="114" width="400" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n3" value="Bangun ActionRequest dasar&lt;br&gt;RouteLabel . CallerAddress . ReceivedAtUtc" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="620" y="210" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n4" value="Ada X-Em-Debug-Token?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="660" y="290" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n1" target="p2_n2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n2" target="p2_n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n3" target="p2_n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n8" value="&lt;b&gt;JALUR TOKEN DEBUG&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="396" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n9" value="TryVerifyDebugToken lolos?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="60" y="440" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n10" value="404  Action not found&lt;br&gt;sama persis dengan action yang memang tidak ada.&lt;br&gt;Alasan sebenarnya hanya ditulis ke log server." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="420" y="448" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n11" value="ResolveDebugCallerAsync&lt;br&gt;Source = DebugToken . DebugKeyName terisi" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="60" y="560" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n12" value="Akun yang disamar ketemu dan boleh dipakai?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="60" y="650" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n13" value="401  pesan jelas&lt;br&gt;token sudah lolos, jadi tak ada lagi yang&lt;br&gt;perlu disembunyikan dari pengembang" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="420" y="665" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n14" value="ActionRequest terisi&lt;br&gt;cUserId + cUserAccount + IsAdmin (dari barisnya)&lt;br&gt;IsImpersonating = true (kecuali akun debugger)&lt;br&gt;cUserSessionId = null  -&amp;gt;  PostMeta_SignOut 401" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="60" y="770" width="300" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e15" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n4" target="p2_n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e16" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n9" target="p2_n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e17" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n9" target="p2_n11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n11" target="p2_n12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e19" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n12" target="p2_n13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e20" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n12" target="p2_n14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n21" value="Matriks X-Em-User di jalur ini:&lt;br&gt;kosong               -&amp;gt;  akun debugger&lt;br&gt;hanya cUserAccount   -&amp;gt;  dicari lewat nama akun&lt;br&gt;hanya cUserId        -&amp;gt;  dicari lewat id&lt;br&gt;keduanya             -&amp;gt;  dicari lewat cUserId, lalu nama akun dicocokkan;&lt;br&gt;                         tidak sepasang -&amp;gt; 401 (id yang permanen, jadi id yang menang)&lt;br&gt;Akun sistem (debugger / admin) dijawab dari konstanta, tidak pernah dicari sebagai baris." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="890" width="660" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n22" value="&lt;b&gt;JALUR ACCESS TOKEN (Bearer)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="820" y="396" width="340" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n23" value="Header menyebut akun debugger?&lt;br&gt;(nama akun ATAU Defaults.DebuggerUserId)" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="840" y="430" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n24" value="404  TRIPWIRE&lt;br&gt;tidak ada jalur login yang bisa menghasilkan&lt;br&gt;akun ini, jadi yang menyebutnya tanpa token&lt;br&gt;debug sudah pasti palsu" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="445" width="300" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n25" value="Ada header Authorization: Bearer ?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="840" y="560" width="320" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n26" value="Identitas kosong&lt;br&gt;Source = None . IsAuthenticated = false" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="570" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n27" value="TokenServices.ValidateAsync(accessToken)&lt;br&gt;1. tanda tangan RS256 + masa berlaku&lt;br&gt;2. claim sub / sid / adm&lt;br&gt;3. IsSessionActiveAsync(sid)  &amp;lt;- fase 2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="840" y="674" width="320" height="86" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n28" value="Valid?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="840" y="800" width="320" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n29" value="Identitas kosong + LogWarning&lt;br&gt;TIDAK ditolak di sini - action publik harus tetap lewat,&lt;br&gt;justru supaya refresh token bisa dikirim" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="805" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n30" value="ActionRequest terisi&lt;br&gt;Source = AccessToken&lt;br&gt;cUserId = sub . cUserSessionId = sid . IsAdmin = adm&lt;br&gt;cUserAccount tetap null - token tidak membawanya,&lt;br&gt;dan nama di header datang dari pemanggil, bukan dari data" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="840" y="900" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e31" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n4" target="p2_n23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e32" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n23" target="p2_n24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e33" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n23" target="p2_n25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e34" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n25" target="p2_n26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e35" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n25" target="p2_n27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e36" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n27" target="p2_n28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e37" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n28" target="p2_n29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_e38" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p2_n28" target="p2_n30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_n39" value="IsSessionActiveAsync mencari sid di ta_UserSession dan ta_SystemSession; sesi harus Active DAN belum lewat Expiry.&lt;br&gt;Tanpa pemeriksaan ini, sign out baru berlaku sesudah access token mati sendiri - sampai 15 menit kemudian.&lt;br&gt;Rotasi refresh juga mengganti baris sesi, jadi access token lama otomatis ikut mati di sini." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="1030" width="680" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p3" name="3. 401 -&amp;gt; refresh token (client)">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1240" pageHeight="1420" math="0" shadow="0">
+      <root>
+        <mxCell id="p3_0" />
+        <mxCell id="1" parent="p3_0" />
+        <mxCell id="p3_n1" value="ApiClient.SendAsync&amp;lt;T&amp;gt;(requestFactory)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="440" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n2" value="HasSession?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="110" width="440" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n3" value="Kirim sekali, apa adanya.&lt;br&gt;Tidak ada yang bisa diperbarui." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="115" width="380" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n4" value="attemptedToken = AccessToken&lt;br&gt;kirim request pertama" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="204" width="440" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n5" value="ActionException ber-StatusCode 401 ?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="288" width="440" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n6" value="Kembalikan hasilnya." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="298" width="380" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n7" value="EnsureRefreshedAsync(attemptedToken)&lt;br&gt;await _refreshGate.WaitAsync()   -   SemaphoreSlim(1, 1)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="300" y="392" width="440" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n8" value="AccessToken masih sama dengan attemptedToken?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="484" width="440" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n9" value="Request lain sudah memperbarui lebih dulu.&lt;br&gt;JANGAN pakai refresh token lagi - ia sudah dirotasi,&lt;br&gt;dan memakainya kedua kali mencabut sesinya sendiri.&lt;br&gt;return HasSession" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="494" width="380" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n10" value="RefreshToken ada?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="594" width="440" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n11" value="SendRefreshAsync - JALUR MENTAH&lt;br&gt;tidak lewat SendAsync, tidak memasang Authorization&lt;br&gt;core.credential / PostGetMeta_RefreshToken  (action publik)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="300" y="688" width="440" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n12" value="Berhasil?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="792" width="440" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n13" value="SetSession(token baru)  -&amp;gt;  SessionChanged&lt;br&gt;(yang tersimpan di Registry ikut ditimpa)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="300" y="886" width="440" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n14" value="Susun ULANG request dari factory, kirim sekali lagi&lt;br&gt;HttpRequestMessage tidak bisa dipakai dua kali - itu sebabnya&lt;br&gt;parameternya factory, dan body POST dibangun di dalamnya" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="974" width="440" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n15" value="401 lagi?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1078" width="440" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n16" value="Kembalikan hasilnya." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1086" width="380" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n17" value="EndSession()  -&amp;gt;  ClearSession + SessionEnded&lt;br&gt;ActionException terakhir dilempar ke pemanggil" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1172" width="440" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n1" target="p3_n2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e19" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n2" target="p3_n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e20" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n2" target="p3_n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n4" target="p3_n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e22" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n5" target="p3_n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e23" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n5" target="p3_n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n7" target="p3_n8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e25" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n8" target="p3_n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e26" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n8" target="p3_n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e27" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n10" target="p3_n11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n11" target="p3_n12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e29" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n12" target="p3_n13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e30" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n13" target="p3_n14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e31" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n14" target="p3_n15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e32" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n15" target="p3_n16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e33" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n15" target="p3_n17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e34" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n10" target="p3_n17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_e35" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p3_n12" target="p3_n17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3_n36" value="Maksimal SATU kali ulang. Tidak ada loop: 401 kedua sesudah token baru berarti masalahnya bukan token.&lt;br&gt;Lima request yang kena 401 bersamaan menunggu satu refresh yang sama - itu gunanya _refreshGate&lt;br&gt;dan perbandingan attemptedToken di atas." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1256" width="760" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p4" name="4. Siklus sesi di client">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1520" math="0" shadow="0">
+      <root>
+        <mxCell id="p4_0" />
+        <mxCell id="1" parent="p4_0" />
+        <mxCell id="p4_n1" value="&lt;b&gt;MASUK&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="8" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n2" value="Startup: MainWindow.OnLoaded&lt;br&gt;Vm.LoadConnections()" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="50" width="400" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n3" value="RememberSignIn menyala DAN RememberedProfileName ada?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n4" value="EmApp.TryRestoreSessionAsync(profile)&lt;br&gt;SessionStorage.Load  -&amp;gt;  PostGetMeta_RefreshToken&lt;br&gt;(action publik - token itu sendiri buktinya)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="230" width="400" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n5" value="Berhasil?" style="rhombus;whiteSpace=wrap;html=1;verticalAlign=middle;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="60" y="326" width="400" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n6" value="SessionStorage.Clear(profile)&lt;br&gt;Layar login, nama akun terisi,&lt;br&gt;TANPA pesan merah - sesi kedaluwarsa&lt;br&gt;bukan kesalahan user" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="410" width="400" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n7" value="Layar login: LoginControl.SignInCommand" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="580" y="50" width="400" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n8" value="PostGetMeta_SignIn(cUserAccount, password)&lt;br&gt;401  -&amp;gt;  &quot;Incorrect username or password.&quot;&lt;br&gt;(satu pesan untuk semua sebab)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="580" y="120" width="400" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n9" value="RememberedUserName + RememberedProfileName&lt;br&gt;disimpan hanya kalau &quot;keep me signed in&quot; menyala" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="220" width="400" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n10" value="EmApp.BeginSessionAsync(token, remember)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="520" width="440" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n11" value="1.  ApiClient.SetSession(token)&lt;br&gt;2.  Kosongkan Connection.DebugToken  (nilainya disimpan)&lt;br&gt;3.  Muat ActiveUser - admin: objek sintetis;&lt;br&gt;     selain itu User.GetUser_ByIdAsync(cUserId)&lt;br&gt;4.  Langganan SessionChanged / SessionEnded&lt;br&gt;5.  remember  -&amp;gt;  SessionStorage.Save (DPAPI, per profil)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="594" width="440" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n12" value="Gagal di langkah 3  -&amp;gt;  BATALKAN SEMUA:&lt;br&gt;DebugToken dikembalikan, ClearSession,&lt;br&gt;storage dibersihkan, exception naik.&lt;br&gt;Setengah masuk lebih buruk daripada gagal masuk." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="780" y="604" width="300" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n13" value="Vm.IsSignedIn = true  -&amp;gt;  workspace" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="310" y="734" width="440" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n2" target="p4_n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e15" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n3" target="p4_n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n4" target="p4_n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e17" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n5" target="p4_n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e18" value="ya" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n5" target="p4_n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e19" value="tidak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n3" target="p4_n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e20" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n7" target="p4_n8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n8" target="p4_n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n9" target="p4_n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n10" target="p4_n11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n11" target="p4_n12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n11" target="p4_n13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n26" value="&lt;b&gt;SELAMA BERJALAN&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="812" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n27" value="Setiap rotasi refresh  -&amp;gt;  ApiClient.SessionChanged&lt;br&gt;-&amp;gt;  EmApp.StoreSession()  -&amp;gt;  timpa refresh token tersimpan&lt;br&gt;Tanpa ini, restart berikutnya memakai token mati." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="808" width="440" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n13" target="p4_n27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n29" value="&lt;b&gt;KELUAR&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#eeeeee;strokeColor=none;align=left;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="906" width="300" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n30" value="User tekan Sign out&lt;br&gt;MainWindowVm.PerformLogoff&lt;br&gt;EndSessionAsync(notifyServer: true)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="900" width="400" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n31" value="Refresh gagal  -&amp;gt;  ApiClient.SessionEnded&lt;br&gt;dimarshal ke Dispatcher lebih dulu&lt;br&gt;EndSessionAsync(false, SessionExpiredNotice)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="580" y="900" width="400" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n32" value="EmApp.EndSessionAsync&lt;br&gt;lepas langganan SessionChanged / SessionEnded&lt;br&gt;PostMeta_SignOut()  -  gagal? DIABAIKAN&lt;br&gt;ClearSession + SessionStorage.Clear(profil)&lt;br&gt;DebugToken dikembalikan ke koneksi&lt;br&gt;SetActiveUser(null)  -&amp;gt;  ActiveUserChanged&lt;br&gt;picu EmApp.SessionEnded(Reason)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="310" y="1006" width="440" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n33" value="MainWindow:  Dispatcher.Invoke&lt;br&gt;Vm.SessionEndedNotice = e.Reason&lt;br&gt;Vm.IsSignedIn = false" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="310" y="1154" width="440" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n34" value="SyncLoginHost  -&amp;gt;  LoginControl dibangun ULANG&lt;br&gt;Reason terisi  -&amp;gt;  strip kuning (bukan merah)&lt;br&gt;Reason null (user sendiri yang keluar)  -&amp;gt;  tanpa strip" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="310" y="1250" width="440" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n30" target="p4_n32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e36" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n31" target="p4_n32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n32" target="p4_n33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_e38" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=10;" edge="1" parent="1" source="p4_n33" target="p4_n34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p4_n39" value="Dua sebab berakhirnya sesi sengaja melewati jalan yang sama persis, supaya tidak ada cabang tampilan yang terlewat.&lt;br&gt;Tab yang sedang terbuka TIDAK ditutup di fase ini - workspace hanya tersembunyi." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;verticalAlign=middle;fontSize=11;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="1350" width="740" height="56" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

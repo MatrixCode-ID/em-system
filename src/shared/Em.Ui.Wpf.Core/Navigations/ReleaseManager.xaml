@@ -1,0 +1,424 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.ReleaseManager"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:conv="clr-namespace:Em.Ui.Wpf.Converters"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="820" d:DesignWidth="1280">
+   <UserControl.DataContext>
+      <local:ReleaseManagerVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <conv:InverseBoolToVisibilityConverter x:Key="inverseBoolToVisibility" />
+
+         <!-- ==== summary strip ==== -->
+         <Style x:Key="summaryValueStyle" TargetType="TextBlock" BasedOn="{StaticResource metaValueStyle}">
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+         </Style>
+
+         <Style x:Key="summaryNoteStyle" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
+         </Style>
+
+         <Style x:Key="summaryWarningStyle" TargetType="TextBlock" BasedOn="{StaticResource summaryValueStyle}">
+            <Setter Property="Foreground" Value="{StaticResource warningBrush}" />
+         </Style>
+
+         <Style x:Key="summaryWarningNoteStyle" TargetType="TextBlock" BasedOn="{StaticResource summaryNoteStyle}">
+            <Setter Property="Foreground" Value="{StaticResource warningBrush}" />
+            <Setter Property="Opacity" Value="1" />
+         </Style>
+
+         <!-- ==== status chip ==== -->
+         <Style x:Key="statusChipStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="MinWidth" Value="74" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Status}" Value="New">
+                  <Setter Property="Background" Value="{StaticResource successChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource successBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource successBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Status}" Value="Changed">
+                  <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Status}" Value="Removed">
+                  <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Status}" Value="Same">
+                  <Setter Property="Opacity" Value="0.65" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="verifyChipStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding VerifySucceeded}" Value="True">
+                  <Setter Property="Background" Value="{StaticResource successChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource successBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource successBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding VerifySucceeded}" Value="False">
+                  <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding VerifyCaption}" Value="">
+                  <Setter Property="Visibility" Value="Collapsed" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ==== diff row ==== -->
+         <DataTemplate x:Key="diffRowTemplate">
+            <Grid MinHeight="34" Margin="18,0,18,0">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" SharedSizeGroup="colSize" />
+               </Grid.ColumnDefinitions>
+               <Border Grid.Column="0" Style="{StaticResource statusChipStyle}">
+                  <TextBlock Text="{Binding StatusCaption}" HorizontalAlignment="Center" />
+               </Border>
+               <TextBlock Grid.Column="1"
+                          Margin="14,0,16,0"
+                          FontFamily="Consolas"
+                          FontSize="12.5"
+                          Style="{StaticResource primaryCellStyle}"
+                          Text="{Binding Path}"
+                          ToolTip="{Binding Path}" />
+               <TextBlock Grid.Column="2"
+                          MinWidth="170"
+                          TextAlignment="Right"
+                          Style="{StaticResource secondaryCellStyle}"
+                          Text="{Binding SizeCaption}"
+                          ToolTip="{Binding SizeTooltip}" />
+            </Grid>
+         </DataTemplate>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid Margin="22,12,22,22">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="*" MinHeight="160" />
+         <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- ==== summary ==== -->
+      <Border Grid.Row="0" Style="{StaticResource cardStyle}" Padding="20,12">
+         <Grid>
+
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="24" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="24" />
+               <ColumnDefinition Width="0.7*" />
+            </Grid.ColumnDefinitions>
+            <Button Style="{StaticResource rowActionButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Top" Panel.ZIndex="2" Grid.Column="4" Margin="0,-8,-8,0" ToolTip="Refresh profile summary" AutomationProperties.Name="Refresh profile summary" Command="{Binding Commands[RefreshSummaryCommand]}"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+
+            <StackPanel Grid.Column="0">
+               <TextBlock Text="SOURCE" Style="{StaticResource metaLabelStyle}" />
+               <TextBlock Text="{Binding SourceCaption}" Style="{StaticResource summaryValueStyle}" />
+               <TextBlock Text="{Binding SdkCaption}" Style="{StaticResource summaryNoteStyle}"
+                          Visibility="{Binding IsPrepareBlocked, Converter={StaticResource inverseBoolToVisibility}}" />
+               <TextBlock Text="{Binding SdkCaption}" Style="{StaticResource summaryWarningNoteStyle}"
+                          Visibility="{Binding IsPrepareBlocked, Converter={StaticResource boolToVisibility}}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+               <TextBlock Text="TARGET" Style="{StaticResource metaLabelStyle}" />
+               <TextBlock Text="{Binding TargetCaption}" Style="{StaticResource summaryValueStyle}"
+                          Visibility="{Binding IsTargetBlocked, Converter={StaticResource inverseBoolToVisibility}}" />
+               <TextBlock Text="{Binding TargetCaption}" Style="{StaticResource summaryWarningStyle}"
+                          Visibility="{Binding IsTargetBlocked, Converter={StaticResource boolToVisibility}}" />
+               <TextBlock Text="{Binding TargetKindCaption}" Style="{StaticResource summaryNoteStyle}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="4">
+               <TextBlock Text="SIGNING KEY" Style="{StaticResource metaLabelStyle}" />
+               <TextBlock Text="{Binding SigningCaption}" Style="{StaticResource summaryValueStyle}" FontFamily="Consolas"
+                          Visibility="{Binding HasSigningKey, Converter={StaticResource boolToVisibility}}" />
+               <TextBlock Text="{Binding SigningCaption}" Style="{StaticResource summaryValueStyle}"
+                          TextWrapping="Wrap"
+                          Visibility="{Binding HasSigningKey, Converter={StaticResource inverseBoolToVisibility}}" />
+               <TextBlock Text="{Binding SigningNote}" Style="{StaticResource summaryNoteStyle}"
+                          Visibility="{Binding HasSigningKey, Converter={StaticResource boolToVisibility}}" />
+            </StackPanel>
+         </Grid>
+      </Border>
+
+      <!-- ==== toolbar ==== -->
+      <Grid Grid.Row="1" Margin="0,16,0,10">
+         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+         </Grid.ColumnDefinitions>
+
+         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <ComboBox x:Name="profilesCombo" Width="220" MinWidth="200" MaxWidth="320" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" IsEnabled="{Binding CanChangeProfile}" ToolTip="Release profile" Tag="Release profile">
+               <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+               <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem" BasedOn="{StaticResource fieldComboItemStyle}"><Setter Property="IsEnabled" Value="{Binding IsValid}"/><Setter Property="ToolTip" Value="{Binding Error}"/></Style></ComboBox.ItemContainerStyle>
+            </ComboBox>
+            <Button x:Name="profileActions" Style="{StaticResource rowActionButtonStyle}" Margin="0,0,8,0" ToolTip="Profile actions" AutomationProperties.Name="Profile actions" Click="ProfileMenuClick" IsEnabled="{Binding CanChangeProfile}">
+               <fa:FontAwesome Icon="Solid_EllipsisVertical"/>
+               <Button.ContextMenu>
+                  <ContextMenu Style="{StaticResource surfaceContextMenuStyle}">
+                     <MenuItem Header="New profile" Command="{Binding Commands[NewProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_Plus"/></MenuItem.Icon></MenuItem>
+                     <MenuItem Header="Duplicate" Command="{Binding Commands[DuplicateProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Regular_Copy"/></MenuItem.Icon></MenuItem>
+                     <MenuItem Header="Rename" Command="{Binding Commands[RenameProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_PenToSquare"/></MenuItem.Icon></MenuItem>
+                     <MenuItem Header="Delete" Command="{Binding Commands[DeleteProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_TrashCan"/></MenuItem.Icon></MenuItem>
+                     <Separator/>
+                     <MenuItem Header="Import..." Command="{Binding Commands[ImportProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_FileImport"/></MenuItem.Icon></MenuItem>
+                     <MenuItem Header="Export..." Command="{Binding Commands[ExportProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_FileExport"/></MenuItem.Icon></MenuItem>
+                     <Separator/>
+                     <MenuItem Header="Open folder" Command="{Binding Commands[OpenProfilesFolderCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_FolderOpen"/></MenuItem.Icon></MenuItem>
+                     <MenuItem Header="Profiles folder..." Command="{Binding Commands[ProfilesFolderCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_Gear"/></MenuItem.Icon></MenuItem>
+                  </ContextMenu>
+               </Button.ContextMenu>
+            </Button>
+
+            <Button Style="{StaticResource outlinedButtonStyle}"
+                    Margin="0,0,8,0"
+                    Command="{Binding Commands[SettingsCommand]}"
+                    ToolTip="Source, target and signing key of this profile">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_Gear" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Settings" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <Button Style="{StaticResource filledButtonStyle}"
+                    Command="{Binding Commands[PrepareCommand]}"
+                    ToolTip="Empty the local publish folder and run dotnet publish into it">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_Hammer" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Prepare" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </StackPanel>
+
+         <Border Grid.Column="1"
+                 Width="1"
+                 Height="22"
+                 Margin="14,0"
+                 VerticalAlignment="Center"
+                 Background="{StaticResource outlineBrush}" />
+
+         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Style="{StaticResource outlinedButtonStyle}"
+                    Command="{Binding Commands[CompareCommand]}"
+                    ToolTip="Hash the local publish folder and compare it with the release at the target">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_CodeCompare" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Compare" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <Button Style="{StaticResource outlinedButtonStyle}"
+                    Margin="8,0,0,0"
+                    Command="{Binding Commands[SyncCommand]}"
+                    ToolTip="Publish the compared files to the target and sign release.json">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_CloudArrowUp" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Sync" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <Button Style="{StaticResource outlinedButtonStyle}"
+                    Margin="8,0,0,0"
+                    Command="{Binding Commands[VerifyCommand]}"
+                    ToolTip="Check the signature and every file of the release at the target">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_ShieldHalved" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Verify" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <Button Style="{StaticResource textDangerButtonStyle}"
+                    Margin="8,0,0,0"
+                    Command="{Binding Commands[CancelCommand]}"
+                    Visibility="{Binding IsRunning, Converter={StaticResource boolToVisibility}}"
+                    ToolTip="Stop the operation that is running">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_Xmark" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Cancel" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </StackPanel>
+
+         <StackPanel Grid.Row="1" Grid.ColumnSpan="5" HorizontalAlignment="Right" Margin="0,8,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Style="{StaticResource verifyChipStyle}" Margin="0,0,8,0" MaxWidth="360">
+               <TextBlock Text="{Binding VerifyCaption}" TextTrimming="CharacterEllipsis" ToolTip="{Binding VerifyCaption}" />
+            </Border>
+            <Border Style="{StaticResource chipStyle}"
+                    Visibility="{Binding HasComparison, Converter={StaticResource boolToVisibility}}">
+               <TextBlock Text="{Binding TargetReleaseCaption}" />
+            </Border>
+            <CheckBox Style="{StaticResource checkBoxStyle}"
+                      Margin="16,0,0,0"
+                      Content="Hide unchanged"
+                      IsChecked="{Binding HideUnchanged}" />
+         </StackPanel>
+      </Grid>
+
+      <!-- ==== comparison list ==== -->
+      <Border Grid.Row="2" Style="{StaticResource cardStyle}">
+         <Grid>
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="{StaticResource surfaceStrongBrush}"
+                    BorderBrush="{StaticResource dividerBrush}"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="13,13,0,0">
+               <Grid Margin="20,0" Height="40">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding SummaryCaption}" Style="{StaticResource groupCaptionStyle}" />
+                  <TextBlock Grid.Column="1" Text="{Binding UploadCaption}" Style="{StaticResource secondaryCellStyle}" />
+               </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1"
+                          Padding="12,12,12,4"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding HasComparison, Converter={StaticResource boolToVisibility}}">
+               <ItemsControl ItemsSource="{Binding Groups}" Grid.IsSharedSizeScope="True">
+                  <ItemsControl.ItemTemplate>
+                     <DataTemplate>
+                        <Border Style="{StaticResource innerCardStyle}" Margin="0,0,0,10">
+                           <StackPanel>
+                              <ToggleButton Style="{StaticResource groupHeaderToggleStyle}"
+                                            IsChecked="{Binding IsExpanded}">
+                                 <Grid>
+                                    <Grid.ColumnDefinitions>
+                                       <ColumnDefinition Width="Auto" />
+                                       <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource groupCaptionStyle}" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="14,0,0,0"
+                                               Text="{Binding CountsCaption}"
+                                               Style="{StaticResource secondaryCellStyle}" />
+                                 </Grid>
+                              </ToggleButton>
+                              <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource boolToVisibility}}">
+                                 <ItemsControl ItemsSource="{Binding Rows}"
+                                               ItemTemplate="{StaticResource diffRowTemplate}"
+                                               Margin="0,4" />
+                                 <TextBlock Text="Nothing to show - every file in this group is unchanged."
+                                            Margin="20,8,20,12"
+                                            Style="{StaticResource secondaryCellStyle}"
+                                            Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+                              </StackPanel>
+                           </StackPanel>
+                        </Border>
+                     </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+               </ItemsControl>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding IsEmptyState, Converter={StaticResource boolToVisibility}}">
+               <fa:FontAwesome Icon="Solid_LayerGroup" FontSize="34" Opacity="0.4" HorizontalAlignment="Center"/>
+               <TextBlock Text="No release profile yet" FontSize="16" FontWeight="SemiBold" Margin="0,14,0,8" HorizontalAlignment="Center"/>
+               <TextBlock Text="A profile keeps the source, target and signing key of one application." HorizontalAlignment="Center"/>
+               <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
+                  <Button Style="{StaticResource filledButtonStyle}" Content="New profile" Command="{Binding Commands[NewProfileCommand]}"/>
+                  <Button Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0" Content="Import profile" Command="{Binding Commands[ImportProfileCommand]}"/>
+               </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Row="1"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        >
+               <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding HasComparison}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding IsEmptyState}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+               <fa:FontAwesome Icon="Solid_BoxOpen" FontSize="34" Opacity="0.35" HorizontalAlignment="Center" />
+               <TextBlock Text="Nothing compared yet"
+                          Margin="0,14,0,0"
+                          FontSize="15"
+                          FontWeight="SemiBold"
+                          HorizontalAlignment="Center" />
+               <TextBlock Text="Prepare a publish, or Compare an existing publish folder with the target."
+                          Margin="0,4,0,0"
+                          Style="{StaticResource secondaryCellStyle}"
+                          HorizontalAlignment="Center" />
+            </StackPanel>
+         </Grid>
+      </Border>
+
+      <!-- ==== activity ==== -->
+      <Border Grid.Row="3" Margin="0,14,0,0" Style="{StaticResource cardStyle}">
+         <Grid>
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="150" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="18,10,10,6">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+               </Grid.ColumnDefinitions>
+               <TextBlock Text="ACTIVITY" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center" />
+               <TextBlock Grid.Column="1"
+                          Margin="16,0"
+                          Text="{Binding ProgressCaption}"
+                          Style="{StaticResource secondaryCellStyle}" />
+               <Button Grid.Column="2"
+                       Style="{StaticResource rowActionButtonStyle}"
+                       Command="{Binding Commands[ClearLogCommand]}"
+                       ToolTip="Clear the log">
+                  <fa:FontAwesome Icon="Solid_Eraser" />
+               </Button>
+            </Grid>
+
+            <ProgressBar Grid.Row="1"
+                         Margin="18,0,18,6"
+                         Style="{StaticResource hairlineProgressStyle}"
+                         Value="{Binding ProgressPercent, Mode=OneWay}"
+                         IsIndeterminate="{Binding IsProgressIndeterminate}"
+                         Visibility="{Binding IsRunning, Converter={StaticResource boolToVisibility}}" />
+
+            <TextBox x:Name="logBox"
+                     Grid.Row="2"
+                     Margin="12,0,12,12"
+                     Padding="6"
+                     IsReadOnly="True"
+                     BorderThickness="0"
+                     Background="Transparent"
+                     Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     FontFamily="Consolas"
+                     FontSize="11.5"
+                     TextWrapping="NoWrap"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto"
+                     Text="{Binding LogText, Mode=OneWay}" />
+         </Grid>
+      </Border>
+   </Grid>
+</UserControl>

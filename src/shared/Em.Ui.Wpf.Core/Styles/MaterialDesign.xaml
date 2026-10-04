@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      The whole shared design language in one file. A screen merges this and then only has to
+      declare what is really its own - the tints of its records, the template of its rows.
+
+         <UserControl.Resources>
+            <ResourceDictionary>
+               <ResourceDictionary.MergedDictionaries>
+                  <ResourceDictionary
+                     Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+               </ResourceDictionary.MergedDictionaries>
+               … the screen's own styles …
+            </ResourceDictionary>
+         </UserControl.Resources>
+
+      A screen that wants only a part of it may merge that part on its own instead: each file
+      below merges whatever it needs, so Chips.xaml or Cards.xaml works just as well alone.
+
+      Two rules hold the whole set together:
+
+      - every surface, outline and divider is a translucent grey, so nothing here names a
+        theme colour and the same markup reads correctly on the light and the dark theme;
+      - the one colour taken from the theme is the accent, and it is spent only on the state
+        that says "this is the thing in hand" - the primary button, the current tab, the
+        focused field, the choice that is on.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Typography.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/FlatIconButton.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Buttons.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Chips.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Progress.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Inputs.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Collections.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Menus.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Cards.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Tabs.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/SideSheet.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Window.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

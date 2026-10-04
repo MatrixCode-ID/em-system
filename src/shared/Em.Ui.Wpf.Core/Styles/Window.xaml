@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      The chrome of a window that draws its own title bar: the minimize, maximize/restore and
+      close buttons at its top right corner. Shared by the main window and by EmWindow, so every
+      window of the application wears the same caption buttons.
+
+      The glyphs come from Segoe Fluent Icons (Segoe MDL2 Assets on older Windows), the font the
+      system caption buttons use: E921 minimize, E922 maximize, E923 restore, E8BB close.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <Style x:Key="captionButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Button">
+               <Border x:Name="stateLayer" Background="{TemplateBinding Background}">
+                  <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource statePressedBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- Close turns red under the pointer, as the system one does: it is the one caption button
+        whose action cannot be taken back with another click. -->
+   <Style x:Key="closeCaptionButtonStyle" TargetType="Button" BasedOn="{StaticResource captionButtonStyle}">
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Button">
+               <Border x:Name="stateLayer" Background="{TemplateBinding Background}">
+                  <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource dangerBrush}" />
+                     <Setter Property="Foreground" Value="White" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Opacity" Value="0.8" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+</ResourceDictionary>

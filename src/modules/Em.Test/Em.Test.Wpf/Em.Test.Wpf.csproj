@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <RootNamespace>Em.Test.Wpf</RootNamespace>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\shared\Em.Ui.Wpf.Core\Em.Ui.Wpf.Core.csproj" />
+        <ProjectReference Include="..\Em.Test.Models\Em.Test.Models.csproj" />
+        <ProjectReference Include="..\Em.Test.Models.Ui\Em.Test.Models.Ui.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+{
+  "publishedAtUtc": "2026-09-27T10:15:00Z",
+  "files": [
+    {
+      "path": "Sample.App.dll",
+      "size": 45,
+      "sha256": "e2af0f406059ead24d0e82cc17ac0dcf9108bdf109781c4832093d54a5518a94"
+    },
+    {
+      "path": "empty.dat",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "readme.txt",
+      "size": 87,
+      "sha256": "9ba601920c6d90aa1a6b6f1089a78918bd6c964c3ce47fe18acb6e1eac8f85b4"
+    },
+    {
+      "path": "runtimes/win-x64/native/sample-native.dll",
+      "size": 43,
+      "sha256": "92d85a0e22f048d78545766cc2c92a15eadaea33dbe668ee82968d407a2f7700"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Em.Test.Api</RootNamespace>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\backend\Em.Api.Core\Em.Api.Core.csproj" />
+        <ProjectReference Include="..\Em.Test.Models\Em.Test.Models.csproj" />
+    </ItemGroup>
+
+</Project>

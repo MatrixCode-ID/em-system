@@ -1,0 +1,120 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      Progress is shown as a hairline under the caption it belongs to, never as a boxed bar: the
+      caption says what is happening, the line only says how far along it is.
+
+      The track is the translucent outline grey and the indicator is the theme accent, so it reads
+      on the light and the dark theme alike. An indeterminate bar - work whose length cannot be
+      measured - fills the track and breathes instead of moving, which WPF gives a custom
+      template for free: the indicator is sized to the whole track while IsIndeterminate is set.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <Style x:Key="hairlineProgressStyle" TargetType="ProgressBar">
+      <Setter Property="Height" Value="3" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Margin" Value="0,3,0,1" />
+      <Setter Property="Minimum" Value="0" />
+      <Setter Property="Maximum" Value="100" />
+      <Setter Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ProgressBar">
+               <Grid>
+                  <Border x:Name="PART_Track" CornerRadius="1.5" Background="{StaticResource outlineBrush}" />
+                  <Border x:Name="PART_Indicator"
+                          HorizontalAlignment="Left"
+                          CornerRadius="1.5"
+                          Background="{TemplateBinding Foreground}" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsIndeterminate" Value="True">
+                     <Trigger.EnterActions>
+                        <BeginStoryboard x:Name="breathe">
+                           <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                              <DoubleAnimation Storyboard.TargetName="PART_Indicator"
+                                               Storyboard.TargetProperty="Opacity"
+                                               From="1"
+                                               To="0.25"
+                                               Duration="0:0:0.8" />
+                           </Storyboard>
+                        </BeginStoryboard>
+                     </Trigger.EnterActions>
+                     <Trigger.ExitActions>
+                        <StopStoryboard BeginStoryboardName="breathe" />
+                     </Trigger.ExitActions>
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- A count pinned to the corner of an icon button: how many of something are under way. -->
+   <Style x:Key="countBadgeStyle" TargetType="Border">
+      <Setter Property="MinWidth" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Background" Value="{DynamicResource themeAccentBrush}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource themeOnAccentBrush}" />
+      <Setter Property="TextElement.FontSize" Value="10" />
+      <Setter Property="TextElement.FontWeight" Value="Bold" />
+   </Style>
+
+   <!-- A dot pinned to the corner of an icon button: something here is worth a look. The accent
+        by default; a screen switches it to dangerBrush when what waits is a failure. -->
+   <Style x:Key="attentionDotStyle" TargetType="Ellipse">
+      <Setter Property="Width" Value="8" />
+      <Setter Property="Height" Value="8" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Fill" Value="{DynamicResource themeAccentBrush}" />
+   </Style>
+
+   <Style x:Key="materialVerticalScrollBarStyle" TargetType="ScrollBar">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ScrollBar">
+               <Track x:Name="PART_Track" IsDirectionReversed="True">
+                  <Track.DecreaseRepeatButton>
+                     <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False">
+                        <RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent" /></ControlTemplate></RepeatButton.Template>
+                     </RepeatButton>
+                  </Track.DecreaseRepeatButton>
+                  <Track.Thumb>
+                     <Thumb MinHeight="18">
+                        <Thumb.Template>
+                           <ControlTemplate TargetType="Thumb">
+                              <Border x:Name="thumb" Margin="2" CornerRadius="3" Background="{StaticResource outlineStrongBrush}" />
+                              <ControlTemplate.Triggers>
+                                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="thumb" Property="Background" Value="{StaticResource outlineBrush}" /></Trigger>
+                                 <Trigger Property="IsDragging" Value="True"><Setter TargetName="thumb" Property="Background" Value="{StaticResource outlineStrongBrush}" /></Trigger>
+                              </ControlTemplate.Triggers>
+                           </ControlTemplate>
+                        </Thumb.Template>
+                     </Thumb>
+                  </Track.Thumb>
+                  <Track.IncreaseRepeatButton>
+                     <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False">
+                        <RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent" /></ControlTemplate></RepeatButton.Template>
+                     </RepeatButton>
+                  </Track.IncreaseRepeatButton>
+               </Track>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+</ResourceDictionary>

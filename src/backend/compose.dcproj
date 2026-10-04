@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0">
+  <!-- Explicit, conditional SDK imports keep dotnet build/pack usable without VS Container Tools. -->
+  <PropertyGroup>
+    <DockerSdkPath>$(MSBuildExtensionsPath)\Sdks\Microsoft.Docker.Sdk\Sdk</DockerSdkPath>
+  </PropertyGroup>
+  <Import Project="$(DockerSdkPath)\Sdk.props" Condition="Exists('$(DockerSdkPath)\Sdk.props')" />
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <ProjectGuid>788b57c7-9a3d-43fd-97bd-128b68e982ee</ProjectGuid>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerComposeBaseFilePath>compose</DockerComposeBaseFilePath>
+    <DockerComposeProjectName>em-api</DockerComposeProjectName>
+    <DockerDevelopmentMode>Regular</DockerDevelopmentMode>
+    <DockerServiceName>em-api</DockerServiceName>
+    <DockerLaunchAction>None</DockerLaunchAction>
+    <IsPackable>false</IsPackable>
+    <RestoreProjectStyle>None</RestoreProjectStyle>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="compose.yml" />
+    <None Include=".env.example" />
+    <None Include="Properties\launchSettings.json" />
+    <None Include="..\..\.dockerignore" Link=".dockerignore" />
+  </ItemGroup>
+  <!-- CLI builds compile the .NET projects; use docker compose to build containers. -->
+  <Target Name="Build" Condition="!Exists('$(DockerSdkPath)\Sdk.targets')" />
+  <Target Name="Clean" Condition="!Exists('$(DockerSdkPath)\Sdk.targets')" />
+  <Target Name="Rebuild" Condition="!Exists('$(DockerSdkPath)\Sdk.targets')" />
+  <Target Name="Restore" Condition="!Exists('$(DockerSdkPath)\Sdk.targets')" />
+  <Import Project="$(DockerSdkPath)\Sdk.targets" Condition="Exists('$(DockerSdkPath)\Sdk.targets')" />
+</Project>

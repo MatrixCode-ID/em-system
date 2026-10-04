@@ -1,0 +1,261 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.SpaNavigationHost"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.DataContext>
+        <local:SpaNavigationHostVm />
+    </UserControl.DataContext>
+    <UserControl.Resources>
+        <!-- Flat, browser-like toolbar buttons - plain WPF, no third party control library. -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary
+                    Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/FlatIconButton.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Same translucent grey the toolbar buttons use, so the account menu darkens a light
+                 theme and lightens a dark one without naming a colour of either. -->
+            <SolidColorBrush x:Key="accountMenuOutline" Color="#33808080" />
+            <SolidColorBrush x:Key="accountMenuDivider" Color="#26808080" />
+
+            <!-- The account button is the toolbar's only ToggleButton. It reuses the toolbar style
+                 (which targets ButtonBase for exactly this reason) and only adds what a drop-down
+                 needs: room for the caret beside the glyph, and a pressed-looking background for as
+                 long as the menu is open. -->
+            <Style x:Key="accountButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource flatIconButtonStyle}">
+                <Setter Property="Width" Value="54" />
+                <!-- A third-party default ToggleButton style (applied by the host) can have an IsChecked trigger that forces
+                     Foreground to black, and an explicit style of ours does not displace it - only a
+                     setter of our own does. Pinned to the inherited foreground so it stays theme
+                     agnostic. -->
+                <Setter Property="Foreground"
+                        Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Background" Value="{StaticResource flatIconButtonPressedBackground}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource flatIconButtonPressedBorder}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- One row of the account menu: full width, icon then label, highlight under the mouse.
+                 A disabled row keeps its place but dims, so the menu does not change shape depending
+                 on what happens to be available. -->
+            <Style x:Key="accountMenuItemStyle" TargetType="Button">
+                <Setter Property="Height" Value="34" />
+                <Setter Property="Padding" Value="10,0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="highlight"
+                                    CornerRadius="6"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="Stretch"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="highlight" Property="Background" Value="{DynamicResource flatIconButtonHoverBackground}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="highlight" Property="Background" Value="{DynamicResource flatIconButtonPressedBackground}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="highlight" Property="Opacity" Value="0.4" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="6,4" Visibility="{Binding IsToolbarVisible}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <!-- Back / forward / reload / home, in the order a browser toolbar puts them.
+                 Each glyph carries its own FontSize instead of inheriting one, so an ambient
+                 font size from the host window cannot resize the icons and push them off the
+                 centre line the title sits on. -->
+            <Button Command="{Binding Commands[Back]}" Grid.Column="0" Margin="2,0" ToolTip="Back" Visibility="{Binding IsBackVisible}" Style="{StaticResource flatIconButtonStyle}">
+                <fa:FontAwesome FontSize="18" Icon="Solid_ArrowLeft" />
+            </Button>
+            <Button Command="{Binding Commands[Forward]}" Grid.Column="1" Margin="2,0" ToolTip="Forward" Visibility="{Binding IsForwardVisible}" Style="{StaticResource flatIconButtonStyle}">
+                <fa:FontAwesome FontSize="18" Icon="Solid_ArrowRight" />
+            </Button>
+            <Button Command="{Binding Commands[Reload]}" Grid.Column="2" Margin="2,0" ToolTip="Reload" Visibility="{Binding IsReloadVisible}" Style="{StaticResource flatIconButtonStyle}">
+                <fa:FontAwesome FontSize="18" Icon="Solid_ArrowRotateRight" />
+            </Button>
+            <Button Command="{Binding Commands[Home]}" Grid.Column="3" Margin="2,0" ToolTip="Home" Visibility="{Binding IsHomeVisible}" Style="{StaticResource flatIconButtonStyle}">
+                <fa:FontAwesome FontSize="18" Icon="Solid_House" />
+            </Button>
+            <Button Command="{Binding Commands[DetachWindow]}" Grid.Column="4" Margin="2,0" ToolTip="Detach Window" Visibility="{Binding IsDetachVisible}" Style="{StaticResource flatIconButtonStyle}">
+                <fa:FontAwesome FontSize="18" Icon="Solid_UpRightFromSquare" />
+            </Button>
+            <Button Command="{Binding Commands[ColorTheme]}" Grid.Column="6" Margin="2,0" ToolTip="Color Theme" Visibility="{Binding IsColorThemeVisible}" Style="{StaticResource flatIconButtonStyle}">
+                <fa:FontAwesome FontSize="18" Icon="Solid_CircleHalfStroke" />
+            </Button>
+            <!-- The account button. A ToggleButton rather than a Button because the drop-down it
+                 opens has to be able to say it is open: both it and the popup are bound to the same
+                 IsUserMenuOpen, so neither can be left showing a state the other is not in, and a
+                 command inside the menu closes the menu simply by writing to that one property. -->
+            <ToggleButton x:Name="accountButton"
+                          Grid.Column="7"
+                          Margin="2,0"
+                          ToolTip="{Binding ActiveUserDisplayName}"
+                          Visibility="{Binding IsUserVisible}"
+                          IsChecked="{Binding IsUserMenuOpen, Mode=TwoWay}"
+                          Style="{StaticResource accountButtonStyle}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Initials rather than a generic person glyph, so the button says which account
+                         is signed in without spelling the whole name out on the toolbar. This disc is
+                         where a profile picture goes once the user record carries one - the image
+                         replaces the TextBlock and the Border keeps clipping it round. -->
+                    <Border Width="24" Height="24" CornerRadius="12" Background="{Binding ActiveUserAvatarBrush}">
+                        <TextBlock Text="{Binding ActiveUserInitials}"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <fa:FontAwesome FontSize="9" Margin="5,1,0,0" VerticalAlignment="Center" Icon="Solid_ChevronDown" />
+                </StackPanel>
+            </ToggleButton>
+            <!-- StaysOpen="False" is what dismisses the menu on a click anywhere else; the popup
+                 takes the mouse for as long as it is open, so that click never reaches the button
+                 underneath and cannot reopen what it just closed.
+                 The offset lines the menu's right edge up with the button's: the popup is placed
+                 from the button's left edge, so it is pulled back by its own width (250) plus the
+                 8px the border is inset to leave room for its shadow, less the button's 54. -->
+            <Popup PlacementTarget="{Binding ElementName=accountButton}"
+                   Placement="Bottom"
+                   HorizontalOffset="-204"
+                   VerticalOffset="2"
+                   AllowsTransparency="True"
+                   PopupAnimation="Fade"
+                   Focusable="False"
+                   StaysOpen="False"
+                   IsOpen="{Binding IsUserMenuOpen, Mode=TwoWay}">
+                <!-- The margin is what leaves room for the shadow; without it the popup clips its
+                     own drop shadow away. -->
+                <Border Width="250"
+                        Margin="8,0,8,8"
+                        Padding="6"
+                        CornerRadius="10"
+                        Background="{DynamicResource themePopupBackgroundBrush}"
+                        BorderBrush="{StaticResource accountMenuOutline}"
+                        BorderThickness="1">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270"
+                                          Opacity="0.3" Color="#000000" />
+                    </Border.Effect>
+                    <StackPanel>
+                        <!-- Who is signed in, stated once at the top so every row below it is read
+                             as being about that account. -->
+                        <Grid Margin="4,6,4,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- Same avatar as the toolbar button, only larger; a profile picture
+                                 would replace the initials in both places at once. -->
+                            <Border Grid.Column="0"
+                                    Width="38" Height="38"
+                                    CornerRadius="19"
+                                    Background="{Binding ActiveUserAvatarBrush}">
+                                <TextBlock Text="{Binding ActiveUserInitials}"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ActiveUserDisplayName}"
+                                           FontSize="13" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding ActiveUserAccount}"
+                                           FontSize="11" Opacity="0.7"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Grid>
+                        <Border Height="1" Margin="0,0,0,6" Background="{StaticResource accountMenuDivider}" />
+                        <Button Command="{Binding Commands[ChangePasswordCommand]}"
+                                Style="{StaticResource accountMenuItemStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <fa:FontAwesome FontSize="13" Width="18" Icon="Solid_Key" VerticalAlignment="Center" />
+                                <TextBlock Text="Change Password" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Border Height="1" Margin="0,6" Background="{StaticResource accountMenuDivider}" />
+                        <Button Command="{Binding Commands[SignOutCommand]}"
+                                Style="{StaticResource accountMenuItemStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <fa:FontAwesome FontSize="13" Width="18" Icon="Solid_RightFromBracket" VerticalAlignment="Center" />
+                                <TextBlock Text="Sign Out" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Popup>
+            <!-- Code and caption live in one TextBlock so they lay out as a single line of text.
+                 BaselineAlignment centres the caption against the code instead of dropping it
+                 onto the shared baseline, where it would sit visibly lower than the icons. -->
+            <TextBlock Grid.Column="5"
+                       Visibility="{Binding IsTitleVisible}"
+                       Margin="16,0,8,0"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" Padding="0, 0, 0, 4">
+                <Run FontSize="22" FontWeight="Bold" Text="{Binding Entry.Title, Mode=OneWay}" />
+                <Run FontSize="22" FontWeight="Bold" Text="&#160;&#160;" />
+                <Run FontSize="13" Text="{Binding Navigation.Subtitle, Mode=OneWay}" />
+            </TextBlock>
+          
+        </Grid>
+        <!-- ClipToBounds keeps a navigation body inside its own area. Without it a body that draws
+             past its bounds (e.g. the login screen's decorative circles, which sit on a negative
+             margin) still takes mouse input over the navigation bar above - the buttons there stop
+             responding to the mouse while keyboard focus still reaches them. -->
+        <!-- The body area is clipped as a whole as well, so a screen sliding in or out never draws
+             past the window edge. outgoingSnapshot is a picture of the screen being left, not the
+             screen itself: that body stays in the stack and may be shown again - or moved to a
+             detached window - before the slide has finished. -->
+        <Grid Grid.Row="1" ClipToBounds="True">
+            <!-- Keep keyboard focus on the body's controls rather than its presentation frame. -->
+            <ContentControl x:Name="bodyHost" Content="{Binding NavigationBody, Mode=OneWay}" ClipToBounds="True"
+                            Focusable="False" IsTabStop="False" FocusVisualStyle="{x:Null}">
+                <ContentControl.RenderTransform>
+                    <TranslateTransform x:Name="bodyShift" />
+                </ContentControl.RenderTransform>
+            </ContentControl>
+            <Image x:Name="outgoingSnapshot" Visibility="Collapsed" IsHitTestVisible="False" Stretch="None"
+                   HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Image.RenderTransform>
+                    <TranslateTransform x:Name="outgoingShift" />
+                </Image.RenderTransform>
+            </Image>
+        </Grid>
+    </Grid>
+</UserControl>

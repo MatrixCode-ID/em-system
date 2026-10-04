@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Em.Api Compose" type="docker-deploy" factoryName="docker-compose">
+    <deployment type="docker-compose">
+      <settings>
+        <option name="sourceFilePath" value="$PROJECT_DIR$/compose.yml" />
+        <option name="services">
+          <list>
+            <option value="em-api" />
+          </list>
+        </option>
+        <option name="runCliOptions" value="--build" />
+      </settings>
+    </deployment>
+    <method v="2" />
+  </configuration>
+</component>

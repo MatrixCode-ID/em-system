@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="../shared/Em.Libs/Em.Libs.csproj" />
+  <Project Path="../shared/Em.Ui.Core/Em.Ui.Core.csproj" />
+  <Project Path="../shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj" />
+  <Folder Name="/modules/Em.Test/">
+    <Project Path="../modules/Em.Test/Em.Test.Models/Em.Test.Models.csproj" />
+    <Project Path="../modules/Em.Test/Em.Test.Models.Ui/Em.Test.Models.Ui.csproj" />
+    <Project Path="../modules/Em.Test/Em.Test.Wpf/Em.Test.Wpf.csproj" />
+  </Folder>
+  <Project Path="Em.Ui.Wpf/Em.Ui.Wpf.csproj" />
+</Solution>

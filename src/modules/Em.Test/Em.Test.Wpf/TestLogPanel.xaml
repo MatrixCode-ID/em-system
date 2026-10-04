@@ -1,0 +1,79 @@
+<UserControl x:Class="Em.Test.Wpf.TestLogPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="260" d:DesignWidth="600">
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Border Style="{StaticResource cardStyle}">
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+         </Grid.RowDefinitions>
+
+         <Grid Grid.Row="0" Margin="20,12,14,8">
+            <TextBlock Text="RESULTS" VerticalAlignment="Center" Style="{StaticResource sectionCaptionStyle}" />
+            <Button HorizontalAlignment="Right"
+                    Style="{StaticResource rowActionButtonStyle}"
+                    ToolTip="Clear the results"
+                    Click="OnClearClick">
+               <fa:FontAwesome Icon="Solid_Broom" />
+            </Button>
+         </Grid>
+
+         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="list">
+               <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="{x:Type local:TestLogEntry}">
+                     <Border Padding="20,8" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0">
+                        <Grid>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                           </Grid.ColumnDefinitions>
+                           <fa:FontAwesome x:Name="statusIcon"
+                                           Icon="Solid_CircleCheck"
+                                           Margin="0,3,10,0"
+                                           VerticalAlignment="Top"
+                                           Foreground="{StaticResource successBrush}" />
+                           <StackPanel Grid.Column="1">
+                              <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                              <TextBlock Text="{Binding Detail}"
+                                         Margin="0,2,0,0"
+                                         FontFamily="Consolas"
+                                         FontSize="12"
+                                         Opacity="0.85"
+                                         TextWrapping="Wrap" />
+                           </StackPanel>
+                           <StackPanel Grid.Column="2" Margin="12,0,0,0" HorizontalAlignment="Right">
+                              <TextBlock Text="{Binding Time}" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                              <TextBlock Text="{Binding Elapsed}" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                           </StackPanel>
+                        </Grid>
+                     </Border>
+                     <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsError}" Value="True">
+                           <Setter TargetName="statusIcon" Property="Icon" Value="Solid_CircleXmark" />
+                           <Setter TargetName="statusIcon" Property="Foreground" Value="{StaticResource dangerBrush}" />
+                        </DataTrigger>
+                     </DataTemplate.Triggers>
+                  </DataTemplate>
+               </ItemsControl.ItemTemplate>
+            </ItemsControl>
+         </ScrollViewer>
+      </Grid>
+   </Border>
+</UserControl>

@@ -1,0 +1,8 @@
+# Product identity baked into launcher.exe by build.rs. Build for another product by pointing the
+# LAUNCHER_PRODUCT environment variable at a different file with the same fields.
+
+app_name  = "Em System"            # must match builder.ApplicationName of the host
+publisher = "Matrix Code"
+app_exe   = "Em.Ui.Wpf.exe"
+app_id    = "MatrixCode.EmSystem"   # AUMID and the name of the Uninstall key
+icon      = "../../shared/Em.Ui.Wpf.Core/Assets/Icons/Logo.ico"   # relative to this file

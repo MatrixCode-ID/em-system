@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+   Satu grup di pohon menu home, berikut seluruh isinya. Grup anak digambar dengan control yang sama
+   - template di bawah menyebut dirinya sendiri - jadi kedalaman pohonnya ditentukan MenuPath, bukan
+   oleh berapa tingkat yang kebetulan pernah ditulis di sini. MAUI tidak punya Expander, jadi yang
+   membuka dan menutup adalah IsVisible pada isinya, dengan chevron di kepala sebagai penandanya.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
+             x:Class="Em.Ui.Maui.Navigations.MenuGroupView">
+
+   <VerticalStackLayout Spacing="8">
+
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" HeightRequest="36"
+            Margin="{Binding Indent}">
+         <Grid.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding Commands[ToggleCommand]}" />
+         </Grid.GestureRecognizers>
+         <controls:FontIcon Grid.Column="0" Glyph="{Binding ChevronGlyph}" IconSize="12"
+                            VerticalOptions="Center"
+                            TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+         <Label Grid.Column="1" Text="{Binding Header}" Style="{StaticResource menuGroupHeaderStyle}" />
+      </Grid>
+
+      <VerticalStackLayout Spacing="8" IsVisible="{Binding IsExpanded}" Margin="{Binding Indent}">
+
+         <!-- Kartu milik grup ini lebih dulu, baru grup yang bersarang di bawahnya - urutan yang sama
+              dengan cara tingkatannya dibaca. -->
+         <VerticalStackLayout Spacing="10"
+                              BindableLayout.ItemsSource="{Binding Items}"
+                              BindableLayout.ItemTemplate="{StaticResource navigationTileTemplate}" />
+
+         <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Groups}">
+            <BindableLayout.ItemTemplate>
+               <DataTemplate>
+                  <local:MenuGroupView />
+               </DataTemplate>
+            </BindableLayout.ItemTemplate>
+         </VerticalStackLayout>
+      </VerticalStackLayout>
+   </VerticalStackLayout>
+</ContentView>

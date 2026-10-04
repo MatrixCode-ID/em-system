@@ -1,0 +1,135 @@
+<UserControl x:Class="Em.Test.Wpf.TestItemEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls;assembly=Em.Ui.Wpf.Core"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="900">
+   <UserControl.DataContext>
+      <local:TestItemEditorVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="170" />
+         </Grid.RowDefinitions>
+
+         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <Border Margin="22,12,22,0" Style="{StaticResource cardStyle}" Padding="26,20"
+                    Visibility="{Binding HasItem, Converter={StaticResource boolToVisibility}}">
+               <Grid>
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="24" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <Grid.RowDefinitions>
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="Auto" />
+                  </Grid.RowDefinitions>
+
+                  <!-- ==== header ==== -->
+                  <Grid Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,18">
+                     <StackPanel>
+                        <TextBlock Text="{Binding Heading}" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Subheading}" Margin="0,4,0,0" Style="{StaticResource fieldHelpStyle}" />
+                     </StackPanel>
+                     <Border HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Border.Style>
+                           <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+                              <Setter Property="Visibility" Value="Collapsed" />
+                              <Style.Triggers>
+                                 <DataTrigger Binding="{Binding HasUnsavedChanges}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                 </DataTrigger>
+                              </Style.Triggers>
+                           </Style>
+                        </Border.Style>
+                        <TextBlock Text="Unsaved changes" />
+                     </Border>
+                  </Grid>
+
+                  <!-- ==== fields ==== -->
+                  <StackPanel Grid.Row="1" Grid.Column="0">
+                     <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Tag="Unique, up to 30 characters"
+                              Text="{Binding Item.cTestItemCode, UpdateSourceTrigger=PropertyChanged}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="2">
+                     <TextBlock Text="State" Style="{StaticResource fieldLabelStyle}" />
+                     <ComboBox Style="{StaticResource fieldComboStyle}"
+                               ItemsSource="{Binding States}"
+                               SelectedItem="{Binding Item.cTestItemState}" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="0,16,0,0">
+                     <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Tag="Up to 100 characters"
+                              Text="{Binding Item.cTestItemName, UpdateSourceTrigger=PropertyChanged}" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,16,0,0">
+                     <TextBlock Text="Quantity" Style="{StaticResource fieldLabelStyle}" />
+                     <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}"
+                                          Minimum="0" Maximum="1000000"
+                                          Value="{Binding Item.cTestItemQty, Mode=TwoWay}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,16,0,0">
+                     <TextBlock Text="Price" Style="{StaticResource fieldLabelStyle}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}"
+                              Text="{Binding Item.cTestItemPrice, StringFormat=N2, UpdateSourceTrigger=LostFocus}" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Margin="0,16,0,0">
+                     <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Height="72" AcceptsReturn="True"
+                              TextWrapping="Wrap" VerticalContentAlignment="Top" Tag="Optional, up to 500 characters"
+                              Text="{Binding Item.cTestItemNote, UpdateSourceTrigger=PropertyChanged}" />
+                  </StackPanel>
+
+                  <!-- ==== actions ==== -->
+                  <WrapPanel Grid.Row="5" Grid.ColumnSpan="3" Margin="0,22,0,0">
+                     <Button Style="{StaticResource testPrimaryButtonStyle}"
+                             Command="{Binding Commands[SaveCommand]}">
+                        <StackPanel Orientation="Horizontal">
+                           <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}" />
+                           <TextBlock Text="Save" VerticalAlignment="Center" />
+                        </StackPanel>
+                     </Button>
+                     <Button Style="{StaticResource testButtonStyle}" Content="Discard changes"
+                             Command="{Binding Commands[DiscardCommand]}" />
+                     <Button Style="{StaticResource testButtonStyle}" Content="Reload from server"
+                             Command="{Binding Commands[ReloadServerCommand]}" />
+                     <Button Style="{StaticResource testButtonStyle}" Content="Propose as change (approval)"
+                             ToolTip="Sends these values as a data-approval request instead of saving them directly"
+                             Command="{Binding Commands[ProposeChangeCommand]}" />
+                     <Button Style="{StaticResource testButtonStyle}" Content="Close"
+                             Command="{Binding Commands[CloseCommand]}" />
+                  </WrapPanel>
+               </Grid>
+            </Border>
+         </ScrollViewer>
+
+         <local:TestLogPanel Grid.Row="1" Margin="22,8,22,22" Entries="{Binding Entries}" />
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</UserControl>

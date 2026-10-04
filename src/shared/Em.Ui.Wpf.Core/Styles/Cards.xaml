@@ -1,0 +1,119 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts">
+
+   <!--
+      The surfaces a screen is laid out on: the card that holds a list, the header strip at the
+      top of that card, the line between two of its rows, and the header that folds a card away.
+
+      Nesting is expressed by weight rather than by a second colour - an inner card sits on the
+      quiet surface, its header on the strong one - so a card inside a card still reads as
+      being inside it.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <!-- The card a section of a screen lives in. -->
+   <Style x:Key="cardStyle" TargetType="Border">
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Background" Value="{StaticResource surfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+   </Style>
+
+   <!-- The same card one step quieter, for a table or a group inside a card. -->
+   <Style x:Key="innerCardStyle" TargetType="Border">
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Background" Value="{StaticResource surfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+   </Style>
+
+   <!-- The strip at the top of an inner card: column captions, or the name of the group. The
+        corner radius is one less than the card's own, which is what keeps the strip inside the
+        border rather than cutting across it. -->
+   <Style x:Key="innerCardHeaderStyle" TargetType="Border">
+      <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource dividerBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="CornerRadius" Value="11,11,0,0" />
+   </Style>
+
+   <!-- The line between two rows of a table. -->
+   <Style x:Key="rowDividerStyle" TargetType="Border">
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Background" Value="{StaticResource dividerBrush}" />
+   </Style>
+
+   <!-- ============================================================
+        FOLDING GROUP
+        The header of a card that can be folded away. It is a
+        ToggleButton, and the body under it is an ordinary panel whose
+        Visibility reads that toggle through the converter below:
+
+           <ToggleButton x:Name="groupX" Style="{StaticResource groupHeaderToggleStyle}"
+                         IsChecked="True"> ... caption ... </ToggleButton>
+           <StackPanel Visibility="{Binding IsChecked, ElementName=groupX,
+                                            Converter={StaticResource boolToVisibility}}">
+
+        which is a working disclosure with no handler behind it.
+        ============================================================ -->
+   <BooleanToVisibilityConverter x:Key="boolToVisibility" />
+
+   <Style x:Key="groupHeaderToggleStyle" TargetType="ToggleButton">
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <!-- Keeps the theme's checked-state Foreground off the caption: a third-party theme's
+           ToggleButton style (applied by the host) turns it black while IsChecked, which is meant for its own accent
+           filled chrome and is unreadable over ours. -->
+      <Setter Property="Foreground"
+              Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+               <Border x:Name="strip"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource dividerBrush}"
+                       BorderThickness="0,0,0,1"
+                       CornerRadius="11,11,0,0">
+                  <Grid Height="40" Margin="18,0">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+
+                     <fa:FontAwesome x:Name="chevron"
+                                     Grid.Column="0"
+                                     Icon="Solid_ChevronDown"
+                                     FontSize="9"
+                                     Opacity="0.55"
+                                     VerticalAlignment="Center" />
+
+                     <ContentPresenter Grid.Column="1"
+                                       Margin="12,0,0,0"
+                                       VerticalAlignment="Center" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="strip" Property="Background"
+                             Value="{StaticResource statePressedBrush}" />
+                     <Setter TargetName="chevron" Property="Opacity" Value="1" />
+                  </Trigger>
+                  <!-- Folded: the header is the whole card now, so it takes the card's rounded
+                       shape back and drops the divider it was resting on. -->
+                  <Trigger Property="IsChecked" Value="False">
+                     <Setter TargetName="chevron" Property="Icon" Value="Solid_ChevronRight" />
+                     <Setter TargetName="strip" Property="BorderThickness" Value="0" />
+                     <Setter TargetName="strip" Property="CornerRadius" Value="11" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,248 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.PdfViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1200">
+   <UserControl.DataContext>
+      <local:PdfViewerVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <Style x:Key="toolGroupStyle" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,18,0" />
+         </Style>
+
+         <Style x:Key="highlightStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource warningBrush}" />
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                  <Setter Property="Background" Value="{DynamicResource themeAccentBrush}" />
+                  <Setter Property="Opacity" Value="0.45" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+         </Grid.RowDefinitions>
+
+         <!-- ==== tool strip ==== -->
+         <DockPanel Grid.Row="0" Margin="22,12,22,10" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Style="{StaticResource toolGroupStyle}">
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       ToolTip="Previous page"
+                       Command="{Binding Commands[PreviousPageCommand]}">
+                  <fa:FontAwesome Icon="Solid_ChevronUp" />
+               </Button>
+               <Border Style="{StaticResource searchFieldStyle}" Width="58" Margin="6,0">
+                  <TextBox Margin="10,0"
+                           HorizontalContentAlignment="Center"
+                           Style="{StaticResource searchBoxStyle}"
+                           Text="{Binding PageNumberText, UpdateSourceTrigger=PropertyChanged}">
+                     <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding Commands[GoToPageCommand]}" />
+                     </TextBox.InputBindings>
+                  </TextBox>
+               </Border>
+               <TextBlock VerticalAlignment="Center" Style="{StaticResource secondaryCellStyle}"
+                          Text="{Binding PageCountCaption}" />
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       Margin="6,0,0,0"
+                       ToolTip="Next page"
+                       Command="{Binding Commands[NextPageCommand]}">
+                  <fa:FontAwesome Icon="Solid_ChevronDown" />
+               </Button>
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Left" Style="{StaticResource toolGroupStyle}">
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       ToolTip="Zoom out"
+                       Command="{Binding Commands[ZoomOutCommand]}">
+                  <fa:FontAwesome Icon="Solid_MagnifyingGlassMinus" />
+               </Button>
+               <TextBlock Width="48"
+                          TextAlignment="Center"
+                          VerticalAlignment="Center"
+                          Style="{StaticResource secondaryCellStyle}"
+                          Text="{Binding ZoomCaption}" />
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       ToolTip="Zoom in"
+                       Command="{Binding Commands[ZoomInCommand]}">
+                  <fa:FontAwesome Icon="Solid_MagnifyingGlassPlus" />
+               </Button>
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       Margin="4,0,0,0"
+                       ToolTip="Fit width"
+                       Command="{Binding Commands[FitWidthCommand]}">
+                  <fa:FontAwesome Icon="Solid_ArrowsLeftRight" />
+               </Button>
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Left" Style="{StaticResource toolGroupStyle}">
+               <Border Style="{StaticResource searchFieldStyle}" Width="220">
+                  <Grid Margin="14,0">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+
+                     <fa:FontAwesome Grid.Column="0"
+                                     Icon="Solid_MagnifyingGlass"
+                                     FontSize="12"
+                                     Opacity="0.6"
+                                     VerticalAlignment="Center" />
+                     <TextBox Grid.Column="1"
+                              Margin="11,0,0,0"
+                              Tag="Find in document"
+                              Style="{StaticResource searchBoxStyle}"
+                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.InputBindings>
+                           <KeyBinding Key="Enter" Command="{Binding Commands[FindNextCommand]}" />
+                           <KeyBinding Key="Enter" Modifiers="Shift" Command="{Binding Commands[FindPreviousCommand]}" />
+                        </TextBox.InputBindings>
+                     </TextBox>
+                  </Grid>
+               </Border>
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       Margin="6,0,0,0"
+                       ToolTip="Previous match"
+                       Command="{Binding Commands[FindPreviousCommand]}">
+                  <fa:FontAwesome Icon="Solid_AngleUp" />
+               </Button>
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       ToolTip="Next match"
+                       Command="{Binding Commands[FindNextCommand]}">
+                  <fa:FontAwesome Icon="Solid_AngleDown" />
+               </Button>
+               <TextBlock Margin="6,0,0,0"
+                          VerticalAlignment="Center"
+                          Style="{StaticResource secondaryCellStyle}"
+                          Text="{Binding SearchCaption}" />
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       ToolTip="Reload document"
+                       Command="{Binding Commands[RefreshCommand]}">
+                  <fa:FontAwesome Icon="Solid_ArrowsRotate" />
+               </Button>
+               <Button Margin="10,0,0,0"
+                       Style="{StaticResource compactOutlinedButtonStyle}"
+                       Command="{Binding Commands[SaveAsCommand]}">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Download" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Save as" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Button Margin="10,0,0,0"
+                       Style="{StaticResource compactFilledButtonStyle}"
+                       Command="{Binding Commands[PrintCommand]}">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Print" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Print" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+            </StackPanel>
+         </DockPanel>
+
+         <!-- ==== pages ==== -->
+         <Border Grid.Row="1" Margin="22,0,22,22" Style="{StaticResource cardStyle}">
+            <Grid>
+               <ScrollViewer x:Name="PageScroller"
+                             Focusable="True"
+                             HorizontalScrollBarVisibility="Auto"
+                             VerticalScrollBarVisibility="Auto"
+                             ScrollChanged="PageScroller_ScrollChanged"
+                             PreviewMouseWheel="PageScroller_PreviewMouseWheel">
+                  <ItemsControl ItemsSource="{Binding Pages}"
+                                Margin="{Binding PagesMargin}"
+                                HorizontalAlignment="Center">
+                     <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                           <Border Width="{Binding Width}"
+                                   Height="{Binding Height}"
+                                   Margin="{Binding DataContext.PageMargin,
+                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   Background="White"
+                                   BorderBrush="{StaticResource outlineStrongBrush}"
+                                   BorderThickness="1"
+                                   SnapsToDevicePixels="True">
+                              <Grid>
+                                 <Image Source="{Binding Bitmap}"
+                                        Stretch="Fill"
+                                        RenderOptions.BitmapScalingMode="HighQuality" />
+                                 <ItemsControl ItemsSource="{Binding Highlights}" IsHitTestVisible="False">
+                                    <ItemsControl.ItemsPanel>
+                                       <ItemsPanelTemplate>
+                                          <Canvas />
+                                       </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemContainerStyle>
+                                       <Style TargetType="ContentPresenter">
+                                          <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                                          <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                                       </Style>
+                                    </ItemsControl.ItemContainerStyle>
+                                    <ItemsControl.ItemTemplate>
+                                       <DataTemplate>
+                                          <Border Width="{Binding Width}"
+                                                  Height="{Binding Height}"
+                                                  Style="{StaticResource highlightStyle}" />
+                                       </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                 </ItemsControl>
+                              </Grid>
+                           </Border>
+                        </DataTemplate>
+                     </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+               </ScrollViewer>
+
+               <StackPanel VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Margin="40"
+                           IsHitTestVisible="False"
+                           Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}">
+                  <fa:FontAwesome Icon="Solid_FilePdf"
+                                  FontSize="34"
+                                  Opacity="0.35"
+                                  HorizontalAlignment="Center" />
+                  <TextBlock Text="The document could not be opened"
+                             Margin="0,14,0,0"
+                             FontSize="15"
+                             FontWeight="SemiBold"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding ErrorMessage}"
+                             Margin="0,4,0,0"
+                             MaxWidth="560"
+                             TextAlignment="Center"
+                             Style="{StaticResource fieldHelpStyle}"
+                             HorizontalAlignment="Center" />
+               </StackPanel>
+            </Grid>
+         </Border>
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</UserControl>

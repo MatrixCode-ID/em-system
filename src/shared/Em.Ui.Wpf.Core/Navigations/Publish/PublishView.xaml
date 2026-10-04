@@ -1,0 +1,300 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.Publish.PublishView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:fa="http://schemas.fontawesome.com/icons/fonts" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="{DynamicResource themeWindowBackgroundBrush}" AllowDrop="True" Drop="PackagesDrop" DragOver="PackagesDragOver">
+   <!--
+      Publisher shared by the NuGet and the Container manager. One toolbar over the page, as in
+      UserManager: on the left the switch between Publish and History (a segmented control, so
+      there is no tab inside the manager's own tabs), then the tools of the page in hand.
+      Publish: profile tools, a Profiles card, three information cards, the operation strip,
+      release notes, the artifact table and the live log. History: run tools, the run list and
+      the selected run.
+   -->
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
+         </ResourceDictionary.MergedDictionaries>
+         <Style TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/></Style>
+         <Style x:Key="tbFilled" TargetType="Button" BasedOn="{StaticResource filledButtonStyle}"><Setter Property="Margin" Value="0,0,8,0"/></Style>
+         <Style x:Key="tbOutlined" TargetType="Button" BasedOn="{StaticResource outlinedButtonStyle}"><Setter Property="Margin" Value="0,0,8,0"/></Style>
+         <Style x:Key="tbDanger" TargetType="Button" BasedOn="{StaticResource dangerOutlinedButtonStyle}"><Setter Property="Margin" Value="0,0,8,0"/></Style>
+         <Style x:Key="cornerRefresh" TargetType="Button" BasedOn="{StaticResource rowActionButtonStyle}"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+         <Style x:Key="captionText" TargetType="TextBlock" BasedOn="{StaticResource sectionCaptionStyle}"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+         <Style x:Key="infoText" TargetType="TextBlock" BasedOn="{StaticResource primaryCellStyle}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextTrimming" Value="None"/>
+         </Style>
+         <Style x:Key="infoMuted" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextTrimming" Value="None"/>
+         </Style>
+         <Style x:Key="tableHeader" TargetType="TextBlock" BasedOn="{StaticResource columnHeaderStyle}"><Setter Property="Margin" Value="0,0,12,0"/></Style>
+         <Style x:Key="tableCell" TargetType="TextBlock" BasedOn="{StaticResource primaryCellStyle}"><Setter Property="Margin" Value="0,0,12,0"/></Style>
+         <Style x:Key="tableCellMuted" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}"><Setter Property="Margin" Value="0,0,12,0"/></Style>
+         <Style TargetType="ListBox" BasedOn="{StaticResource surfaceListBoxStyle}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource listRowStyle}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+         </Style>
+         <Style x:Key="compactList" TargetType="ListBox" BasedOn="{StaticResource surfaceListBoxStyle}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource listRowCompactStyle}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+         </Style>
+         <Style x:Key="multilineField" TargetType="TextBox" BasedOn="{StaticResource fieldBoxStyle}">
+            <Setter Property="Height" Value="Auto"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+         </Style>
+      </ResourceDictionary>
+   </UserControl.Resources>
+   <Grid>
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <!-- ===== toolbar: page switch, then the tools of the page ===== -->
+      <Grid Grid.Row="0" Margin="22,12,22,10">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+         </Grid.ColumnDefinitions>
+         <Border CornerRadius="15" Padding="2" Background="{StaticResource surfaceBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+               <RadioButton x:Name="pagePublish" GroupName="publishPage" Style="{StaticResource segmentStyle}" Content="Publish" IsChecked="True" Checked="PageChanged"/>
+               <RadioButton x:Name="pageHistory" GroupName="publishPage" Style="{StaticResource segmentStyle}" Content="History" Checked="PageChanged"/>
+            </StackPanel>
+         </Border>
+         <Border Grid.Column="1" Style="{StaticResource toolbarSeparatorStyle}"/>
+         <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+         <Grid>
+            <StackPanel x:Name="profilePanel" Orientation="Horizontal" VerticalAlignment="Center">
+               <Button Click="CreateClick" Style="{StaticResource tbFilled}" ToolTip="Create a publish profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New Profile" VerticalAlignment="Center"/></StackPanel></Button>
+               <Border Style="{StaticResource toolbarSeparatorStyle}"/>
+               <Button Click="ImportClick" Style="{StaticResource tbOutlined}" ToolTip="Open or import a profile file"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FolderOpen" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Import" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="EditClick" Style="{StaticResource tbOutlined}" ToolTip="Edit the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_PenToSquare" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Edit" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="DuplicateClick" Style="{StaticResource tbOutlined}" ToolTip="Duplicate the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Regular_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Duplicate" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="ExportClick" Style="{StaticResource tbOutlined}" ToolTip="Export the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FileExport" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Export" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="DeleteClick" Style="{StaticResource tbDanger}" ToolTip="Delete the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Delete" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="MoreClick" Style="{StaticResource tbOutlined}" Margin="0" ToolTip="More profile actions" AutomationProperties.Name="More profile actions">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_EllipsisVertical" Style="{StaticResource buttonIconStyle}" Margin="0"/></StackPanel>
+                  <Button.ContextMenu><ContextMenu Style="{StaticResource surfaceContextMenuStyle}">
+                     <MenuItem Header="Create profile from .slnx" Click="CreateSolution" Style="{StaticResource surfaceMenuItemStyle}"/>
+                     <Separator/>
+                     <MenuItem Header="Refresh profiles" Click="RefreshClick" Style="{StaticResource surfaceMenuItemStyle}"/>
+                     <MenuItem Header="Open profiles folder" Click="OpenProfiles" Style="{StaticResource surfaceMenuItemStyle}"/>
+                     <MenuItem Header="Publisher settings" Click="SettingsClick" Style="{StaticResource surfaceMenuItemStyle}"/>
+                  </ContextMenu></Button.ContextMenu>
+               </Button>
+            </StackPanel>
+            <StackPanel x:Name="historyPanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+               <Button Click="HistoryRefresh" Style="{StaticResource tbFilled}" ToolTip="Reload the run list"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel></Button>
+               <CheckBox x:Name="allHistory" Content="All profiles (including deleted)" IsChecked="True" Style="{StaticResource checkBoxStyle}" Margin="4,0,0,0" VerticalAlignment="Center" Click="HistoryRefresh"/>
+               <Border Style="{StaticResource toolbarSeparatorStyle}"/>
+               <Button Click="OpenLog" Style="{StaticResource tbOutlined}" ToolTip="Open the log of the selected run"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FileLines" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Open Log" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="OpenLogs" Style="{StaticResource tbOutlined}" ToolTip="Open the logs folder"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FolderOpen" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Logs Folder" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="ExportLog" Style="{StaticResource tbOutlined}" ToolTip="Export the selected log as a zip"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FileExport" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Export" VerticalAlignment="Center"/></StackPanel></Button>
+               <Border Style="{StaticResource toolbarSeparatorStyle}"/>
+               <Button Click="DeleteRun" Style="{StaticResource tbDanger}" ToolTip="Delete the selected run"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Delete Run" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button Click="DeleteRuns" Style="{StaticResource tbDanger}" Margin="0" ToolTip="Delete every run of the profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Delete All" VerticalAlignment="Center"/></StackPanel></Button>
+            </StackPanel>
+         </Grid>
+         </ScrollViewer>
+      </Grid>
+
+      <!-- ===== Publish page ===== -->
+      <Grid x:Name="publishPage" Grid.Row="1" Margin="22,0,22,22">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="*"/>
+         </Grid.ColumnDefinitions>
+         <Border Style="{StaticResource cardStyle}">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                  <DockPanel>
+                     <Button DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshClick" ToolTip="Refresh profiles" AutomationProperties.Name="Refresh profiles"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                     <TextBlock Text="PROFILES" Style="{StaticResource captionText}"/>
+                  </DockPanel>
+               </Border>
+               <ListBox x:Name="profileList" Grid.Row="1" Style="{StaticResource compactList}" SelectionChanged="ProfileSelected"/>
+            </Grid>
+         </Border>
+
+         <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*" MinHeight="120"/>
+               <RowDefinition Height="150"/>
+            </Grid.RowDefinitions>
+
+            <!-- information cards: source, target, tools. Each reloads on its own. -->
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="12"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="12"/>
+                  <ColumnDefinition Width="*"/>
+               </Grid.ColumnDefinitions>
+               <Border Style="{StaticResource cardStyle}" Padding="16,8,8,12">
+                  <DockPanel>
+                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                        <Button x:Name="sourceRefresh" DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshSource" ToolTip="Refresh Source information" AutomationProperties.Name="Refresh Source information"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                        <TextBlock Text="SOURCE" Style="{StaticResource captionText}"/>
+                     </DockPanel>
+                     <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0"><TextBlock x:Name="sourceText" Style="{StaticResource infoText}" Text="Select or create a publish profile."/></ScrollViewer>
+                  </DockPanel>
+               </Border>
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="16,8,8,12">
+                  <DockPanel>
+                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                        <Button x:Name="targetRefresh" DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshTarget" ToolTip="Refresh Target information" AutomationProperties.Name="Refresh Target information"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="OpenManager" ToolTip="Open target manager" AutomationProperties.Name="Open target manager"><fa:FontAwesome Icon="Solid_ArrowUpRightFromSquare" FontSize="12"/></Button>
+                        <TextBlock Text="TARGET" Style="{StaticResource captionText}"/>
+                     </DockPanel>
+                     <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                        <StackPanel>
+                           <Grid>
+                              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                              <TextBlock x:Name="targetText" Style="{StaticResource infoText}" VerticalAlignment="Center"/>
+                              <Button Grid.Column="1" Style="{StaticResource rowActionButtonStyle}" Margin="6,0,0,0" VerticalAlignment="Center" Click="CopyTarget" ToolTip="Copy full target address" AutomationProperties.Name="Copy full target address"><fa:FontAwesome Icon="Solid_Copy" FontSize="12"/></Button>
+                           </Grid>
+                           <TextBlock x:Name="lastVersion" Style="{StaticResource infoMuted}"/>
+                        </StackPanel>
+                     </ScrollViewer>
+                  </DockPanel>
+               </Border>
+               <Border Grid.Column="4" Style="{StaticResource cardStyle}" Padding="16,8,8,12">
+                  <DockPanel>
+                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                        <Button x:Name="toolsRefresh" DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshTools" ToolTip="Refresh Tools information" AutomationProperties.Name="Refresh Tools information"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                        <TextBlock Text="TOOLS" Style="{StaticResource captionText}"/>
+                     </DockPanel>
+                     <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0"><TextBlock x:Name="toolsText" Style="{StaticResource infoText}" Text="Check the required local SDK and Docker tools."/></ScrollViewer>
+                  </DockPanel>
+               </Border>
+            </Grid>
+
+            <!-- operation strip: in the order they are used, one filled action -->
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+               <StackPanel x:Name="operations" Orientation="Horizontal">
+                  <Button Click="CheckClick" Style="{StaticResource tbOutlined}" ToolTip="Check the tools and the profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ListCheck" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Check" VerticalAlignment="Center"/></StackPanel></Button>
+                  <Button x:Name="prepare" Click="PrepareClick" Style="{StaticResource tbOutlined}" ToolTip="Build the artifacts"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Hammer" Style="{StaticResource buttonIconStyle}"/><TextBlock x:Name="prepareText" Text="Prepare" VerticalAlignment="Center"/></StackPanel></Button>
+                  <Button x:Name="addPackages" Click="AddPackagesClick" Style="{StaticResource tbOutlined}" ToolTip="Add existing .nupkg files, or drop them on this page"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_BoxArchive" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Add Packages" VerticalAlignment="Center"/></StackPanel></Button>
+                  <Button Click="PushClick" Style="{StaticResource tbOutlined}" ToolTip="Push the prepared artifacts"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_CloudArrowUp" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Push" VerticalAlignment="Center"/></StackPanel></Button>
+                  <Button Click="VerifyClick" Style="{StaticResource tbOutlined}" ToolTip="Verify what was pushed"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ShieldHalved" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Verify" VerticalAlignment="Center"/></StackPanel></Button>
+                  <Border Style="{StaticResource toolbarSeparatorStyle}"/>
+                  <Button x:Name="combined" Click="CombinedClick" Style="{StaticResource tbFilled}" ToolTip="Check, prepare and push in one run"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Rocket" Style="{StaticResource buttonIconStyle}"/><TextBlock x:Name="combinedText" Text="Prepare &amp; Push" VerticalAlignment="Center"/></StackPanel></Button>
+                  <Button x:Name="cancel" Click="CancelClick" IsEnabled="False" Style="{StaticResource tbOutlined}" Margin="0" ToolTip="Cancel the running operation"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Ban" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Cancel" VerticalAlignment="Center"/></StackPanel></Button>
+               </StackPanel>
+            </ScrollViewer>
+
+            <!-- release notes and the message line -->
+            <Grid Grid.Row="2" Margin="0,0,0,12">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+               </Grid.ColumnDefinitions>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+               </Grid.RowDefinitions>
+               <TextBlock Text="Release notes" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,6"/>
+               <TextBox Grid.Row="1" x:Name="notes" Style="{StaticResource multilineField}" AcceptsReturn="True" MinHeight="64" MaxHeight="90" VerticalScrollBarVisibility="Auto"/>
+               <TextBlock Grid.Row="0" Grid.Column="1" x:Name="message" Style="{StaticResource infoMuted}" HorizontalAlignment="Right" VerticalAlignment="Center" MaxWidth="520"/>
+            </Grid>
+
+            <!-- the artifacts of the run, as a table -->
+            <Border Grid.Row="3" Style="{StaticResource cardStyle}" Margin="0,0,0,12">
+               <Grid>
+                  <Grid.RowDefinitions>
+                     <RowDefinition Height="Auto"/>
+                     <RowDefinition Height="*"/>
+                  </Grid.RowDefinitions>
+                  <Border Style="{StaticResource innerCardHeaderStyle}" CornerRadius="13,13,0,0" Height="38">
+                     <Grid Margin="24,0,20,0">
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="260"/>
+                           <ColumnDefinition Width="100"/>
+                           <ColumnDefinition Width="220"/>
+                           <ColumnDefinition Width="100"/>
+                           <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="ARTIFACT" Style="{StaticResource tableHeader}"/>
+                        <TextBlock Grid.Column="1" Text="VERSION" Style="{StaticResource tableHeader}"/>
+                        <TextBlock Grid.Column="2" Text="TARGET" Style="{StaticResource tableHeader}"/>
+                        <TextBlock Grid.Column="3" Text="RESULT" Style="{StaticResource tableHeader}"/>
+                        <TextBlock Grid.Column="4" Text="MESSAGE" Style="{StaticResource tableHeader}"/>
+                     </Grid>
+                  </Border>
+                  <ListBox x:Name="artifacts" Grid.Row="1">
+                     <ListBox.ItemTemplate>
+                        <DataTemplate>
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="260"/>
+                                 <ColumnDefinition Width="100"/>
+                                 <ColumnDefinition Width="220"/>
+                                 <ColumnDefinition Width="100"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <CheckBox Grid.Column="0" IsChecked="{Binding Selected}" Style="{StaticResource checkBoxStyle}" Margin="0,0,12,0" VerticalAlignment="Center"><TextBlock Text="{Binding Id}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="220"/></CheckBox>
+                              <TextBlock Grid.Column="1" Text="{Binding Version}" Style="{StaticResource tableCell}"/>
+                              <TextBlock Grid.Column="2" Text="{Binding Target}" Style="{StaticResource tableCellMuted}" ToolTip="{Binding Target}"/>
+                              <TextBlock Grid.Column="3" Text="{Binding Result}" Style="{StaticResource tableCell}"/>
+                              <TextBlock Grid.Column="4" Style="{StaticResource tableCellMuted}" TextWrapping="Wrap" TextTrimming="None"><Run Text="{Binding Message, Mode=OneWay}"/><Run Text=" "/><Run Text="{Binding Verification, Mode=OneWay}"/></TextBlock>
+                           </Grid>
+                        </DataTemplate>
+                     </ListBox.ItemTemplate>
+                  </ListBox>
+               </Grid>
+            </Border>
+
+            <TextBox Grid.Row="4" x:Name="liveLog" Style="{StaticResource multilineField}" IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/>
+         </Grid>
+      </Grid>
+
+      <!-- ===== History page ===== -->
+      <Grid x:Name="historyPage" Grid.Row="1" Margin="22,0,22,22" Visibility="Collapsed">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360"/>
+            <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="*"/>
+         </Grid.ColumnDefinitions>
+         <Border Style="{StaticResource cardStyle}">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                  <TextBlock Text="RUNS" Style="{StaticResource captionText}"/>
+               </Border>
+               <ListBox x:Name="history" Grid.Row="1" Style="{StaticResource compactList}" SelectionChanged="HistorySelected" DisplayMemberPath="Run"/>
+            </Grid>
+         </Border>
+         <Border Grid.Column="2" Style="{StaticResource cardStyle}">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                  <TextBlock Text="RUN DETAIL" Style="{StaticResource captionText}"/>
+               </Border>
+               <TextBox x:Name="historyDetail" Grid.Row="1" Style="{StaticResource multilineField}" BorderThickness="0" Background="Transparent" IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" Margin="6"/>
+            </Grid>
+         </Border>
+      </Grid>
+   </Grid>
+</UserControl>

@@ -1,0 +1,124 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.LoginControlMaterial"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared"
+             xmlns:core="clr-namespace:Em.Ui.Core.Shared;assembly=Em.Ui.Core"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             MinWidth="480" MinHeight="520" Foreground="{DynamicResource themeWindowForegroundBrush}">
+   <UserControl.DataContext><local:LoginControlVm /></UserControl.DataContext>
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+         <Style x:Key="loginThemeButtonStyle" TargetType="Button" BasedOn="{StaticResource materialIconButtonStyle}">
+            <Setter Property="CommandParameter" Value="{x:Static core:ThemeVariant.Light}" />
+            <Setter Property="ToolTip" Value="Switch to light mode" />
+            <Style.Triggers><DataTrigger Binding="{Binding LightModeSelected}" Value="True">
+               <Setter Property="CommandParameter" Value="{x:Static core:ThemeVariant.Dark}" />
+               <Setter Property="ToolTip" Value="Switch to dark mode" />
+            </DataTrigger></Style.Triggers>
+         </Style>
+         <Style x:Key="loginStatusDotStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="8" /><Setter Property="Height" Value="8" />
+            <Setter Property="Fill" Value="{DynamicResource themeOutlineBrush}" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="{x:Static local:ServerProbeStatus.Connected}"><Setter Property="Fill" Value="{StaticResource successBrush}" /></DataTrigger>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="{x:Static local:ServerProbeStatus.Unreachable}"><Setter Property="Fill" Value="{StaticResource dangerBrush}" /></DataTrigger>
+               <DataTrigger Binding="{Binding ProbeStatus}" Value="{x:Static local:ServerProbeStatus.Probing}">
+                  <Setter Property="Fill" Value="{StaticResource warningBrush}" />
+                  <DataTrigger.EnterActions><BeginStoryboard x:Name="probePulse"><Storyboard>
+                     <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.3" Duration="0:0:0.7" AutoReverse="True" RepeatBehavior="Forever" />
+                  </Storyboard></BeginStoryboard></DataTrigger.EnterActions>
+                  <DataTrigger.ExitActions><RemoveStoryboard BeginStoryboardName="probePulse" /></DataTrigger.ExitActions>
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+      </ResourceDictionary>
+   </UserControl.Resources>
+   <Grid>
+      <Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+         <GradientStop Color="{DynamicResource themePrimaryContainerColor}" Offset="0" />
+         <GradientStop Color="{DynamicResource themeSurfaceContainerLowColor}" Offset="0.5" />
+         <GradientStop Color="{DynamicResource themeSurfaceColor}" Offset="1" />
+      </LinearGradientBrush></Grid.Background>
+      <Image x:Name="backgroundImage" Stretch="UniformToFill" Visibility="Collapsed" RenderOptions.BitmapScalingMode="HighQuality" />
+      <Rectangle x:Name="backgroundScrim" Fill="{DynamicResource themeScrimBrush}" Opacity="0.35" Visibility="Collapsed" />
+      <Grid>
+         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+         <Border HorizontalAlignment="Right" Margin="16,12" CornerRadius="20" Background="{DynamicResource themeSurfaceContainerBrush}">
+            <StackPanel Orientation="Horizontal">
+               <Button Style="{StaticResource loginThemeButtonStyle}" Command="{Binding Commands[ChangeThemeCommand]}"><fa:FontAwesome Icon="Solid_CircleHalfStroke" FontSize="16" /></Button>
+               <Button Style="{StaticResource materialTonalButtonStyle}" Command="{Binding Commands[ConnectionConfigCommand]}" ToolTip="Manage API server connections">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_NetworkWired" Margin="0,0,8,0" VerticalAlignment="Center" /><TextBlock Text="Connections" /></StackPanel>
+               </Button>
+            </StackPanel>
+         </Border>
+         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+            <Border MaxWidth="440" Margin="16,12,16,20" Padding="32" CornerRadius="28" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Background="{DynamicResource themeSurfaceContainerBrush}" BorderThickness="1" BorderBrush="{DynamicResource themeOutlineVariantBrush}">
+               <Border.Effect><DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.18" /></Border.Effect>
+               <StackPanel KeyboardNavigation.TabNavigation="Local">
+                  <Grid Margin="0,0,0,24">
+                     <Grid.ColumnDefinitions><ColumnDefinition Width="56" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                     <Border Width="56" Height="56" CornerRadius="16" Padding="11" Background="{DynamicResource themePrimaryContainerBrush}">
+                        <Image x:Name="brandLogo" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                     </Border>
+                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="brandTitle" Style="{StaticResource typeTitleLargeStyle}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="brandTagline" Style="{StaticResource typeBodySmallStyle}" TextTrimming="CharacterEllipsis" />
+                     </StackPanel>
+                  </Grid>
+                  <TextBlock Text="Sign in" Style="{StaticResource typeHeadlineSmallStyle}" />
+                  <TextBlock Text="Use your pre-registered account to continue." Style="{StaticResource typeBodyMediumStyle}" TextWrapping="Wrap" Margin="0,6,0,24" />
+                  <Border x:Name="errorStrip" Background="{DynamicResource themeErrorContainerBrush}" Padding="12" CornerRadius="12" Margin="0,0,0,16" ToolTip="{Binding SignInErrorDetail}">
+                     <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Visible" /><Style.Triggers><DataTrigger Binding="{Binding SignInError}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></Border.Style>
+                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <fa:FontAwesome Icon="Solid_TriangleExclamation" Foreground="{DynamicResource themeOnErrorContainerBrush}" />
+                        <TextBlock Grid.Column="1" Text="{Binding SignInError}" TextWrapping="Wrap" Margin="10,0,0,0" Foreground="{DynamicResource themeOnErrorContainerBrush}" Style="{StaticResource typeBodySmallStyle}" />
+                     </Grid>
+                  </Border>
+                  <Border x:Name="noticeStrip" Background="{StaticResource warningChipBrush}" Padding="12" CornerRadius="12" Margin="0,0,0,16">
+                     <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Visible" /><Style.Triggers><DataTrigger Binding="{Binding SessionEndedNotice}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></Border.Style>
+                     <TextBlock Text="{Binding SessionEndedNotice}" TextWrapping="Wrap" Style="{StaticResource typeBodySmallStyle}" />
+                  </Border>
+                  <ComboBox x:Name="connectionEdit" TabIndex="0" Style="{StaticResource materialComboFieldStyle}" shared:FieldLabel.Text="Server connection"
+                            ItemsSource="{Binding ApiConnections}" SelectedItem="{Binding SelectedConnection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                     <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding ProfileName}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock x:Name="connectionHelp" Text="Pick the server you are signing in to — the button below stays off until you do." TextWrapping="Wrap" Margin="0,4,0,16">
+                     <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource typeBodySmallStyle}"><Setter Property="Visibility" Value="Hidden" /><Style.Triggers><DataTrigger Binding="{Binding SelectedConnection}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                  </TextBlock>
+                  <TextBox x:Name="usernameEdit" TabIndex="1" Style="{StaticResource materialTextFieldStyle}" shared:FieldLabel.Text="Username" Margin="0,0,0,16"
+                           PreviewKeyDown="CredentialField_PreviewKeyDown" Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" />
+                  <PasswordBox x:Name="passwordEdit" TabIndex="2" Style="{StaticResource materialPasswordFieldStyle}" shared:FieldLabel.Text="Password" Margin="0,0,0,16" PasswordChanged="PasswordEdit_PasswordChanged" />
+                  <CheckBox TabIndex="3" Style="{StaticResource materialCheckBoxStyle}" Content="Keep me signed in on this computer" IsChecked="{Binding RememberMe, Mode=TwoWay}" Margin="0,0,0,24" />
+                  <Button x:Name="signInButton" TabIndex="4" Style="{StaticResource materialFilledButtonStyle}" IsDefault="True" Command="{Binding Commands[SignInCommand]}" Content="Sign in" />
+                  <StackPanel x:Name="busyPanel" Margin="0,16,0,16">
+                     <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Hidden" /><Style.Triggers><DataTrigger Binding="{Binding InWaiting}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+                     <ProgressBar Height="4" IsIndeterminate="True" BorderThickness="0" Foreground="{DynamicResource themeAccentBrush}" Background="{DynamicResource themeOutlineVariantBrush}" />
+                     <TextBlock Text="{Binding WaiterText}" Style="{StaticResource typeBodySmallStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                  </StackPanel>
+                  <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource themeOutlineVariantBrush}" Padding="0,16,0,0">
+                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource materialAssistChipStyle}" ToolTip="{Binding ServerStatusDetail}">
+                           <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                              <Ellipse Style="{StaticResource loginStatusDotStyle}" />
+                              <TextBlock Grid.Column="1" Text="{Binding ServerStatusText}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="8,0,0,0" Style="{StaticResource typeLabelSmallStyle}" />
+                           </Grid>
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="v1.0.0" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource typeLabelSmallStyle}" />
+                     </Grid>
+                  </Border>
+               </StackPanel>
+            </Border>
+         </ScrollViewer>
+         <Border Grid.Row="2" HorizontalAlignment="Center" Margin="16,4,16,12" CornerRadius="12" Padding="10,4"
+                 Background="{DynamicResource themePrimaryContainerBrush}" BorderBrush="{DynamicResource themeOutlineVariantBrush}" BorderThickness="1">
+            <TextBlock x:Name="brandCopyright" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+                       Foreground="{DynamicResource themeOnPrimaryContainerBrush}" />
+         </Border>
+      </Grid>
+   </Grid>
+</UserControl>

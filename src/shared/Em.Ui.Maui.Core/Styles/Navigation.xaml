@@ -1,0 +1,171 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+   Bagian-bagian kerangka navigasi: bilah atas, panel account yang masuk dari kanan, dan baris-baris
+   di dalamnya.
+
+   Panel account tidak punya baris yang "sedang terbuka": setiap barisnya adalah perbuatan yang
+   dijalankan lalu selesai, bukan penanda tempat. Jadi tidak ada satu pun style di sini yang berubah
+   rupa mengikuti keadaan terpilih.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
+                    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
+                    xmlns:controls="clr-namespace:Em.Ui.Maui.Controls">
+
+   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
+        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
+        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <ResourceDictionary.MergedDictionaries>
+      <styles:Palette />
+      <ResourceDictionary Source="/Styles/Typography.xaml" />
+      <ResourceDictionary Source="/Styles/Cards.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <!-- Bilah atas: tinggi 64, sewarna halaman, dan dipisahkan dari isi hanya oleh satu garis tipis. -->
+   <Style x:Key="appBarStyle" TargetType="Grid">
+      <Setter Property="HeightRequest" Value="64" />
+      <Setter Property="ColumnSpacing" Value="4" />
+      <Setter Property="Padding" Value="4,0,8,0" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceLight}, Dark={StaticResource surfaceDark}}" />
+   </Style>
+
+   <!-- Badge akun di ujung kanan bilah atas, pembuka panel account. Bulat penuh dan sewarna bidang
+        utama, supaya terbaca sebagai foto pengguna meski isinya baru sebuah ikon. -->
+   <Style x:Key="accountBadgeStyle" TargetType="Border">
+      <Setter Property="WidthRequest" Value="36" />
+      <Setter Property="HeightRequest" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="VerticalOptions" Value="Center" />
+      <Setter Property="Margin" Value="4,0,0,0" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource primaryContainerLight}, Dark={StaticResource primaryContainerDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="18" />
+      </Setter>
+   </Style>
+
+   <!-- Panel account. Masuk dari kanan, jadi sudut lengkungnya hanya di sisi kiri - sisi kanannya
+        menempel ke tepi layar dan lengkungan di sana tidak akan pernah terlihat. -->
+   <Style x:Key="accountPanelStyle" TargetType="Border">
+      <Setter Property="WidthRequest" Value="304" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="HorizontalOptions" Value="End" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="16,0,16,0" />
+      </Setter>
+   </Style>
+
+   <!-- Card di dalam panel account: satu bidang tenang yang mengelompokkan baris-baris sejenis. -->
+   <Style x:Key="accountPanelCardStyle" TargetType="Border">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="12,6" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceContainerHighLight}, Dark={StaticResource surfaceContainerHighDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="16" />
+      </Setter>
+   </Style>
+
+   <!-- Satu baris panel: bidang sentuh setinggi 56 berbentuk pil penuh, sesuai penanda pilihan
+        Material 3. Tidak punya keadaan terpilih sama sekali - tidak satu pun baris di panel account
+        mewakili layar yang sedang terbuka; semuanya perbuatan yang dijalankan lalu selesai. -->
+   <Style x:Key="accountPanelItemStyle" TargetType="Border">
+      <Setter Property="HeightRequest" Value="56" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="BackgroundColor" Value="Transparent" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="28" />
+      </Setter>
+   </Style>
+
+   <Style x:Key="accountPanelItemLabelStyle" TargetType="Label">
+      <Setter Property="FontFamily" Value="OpenSansSemibold" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="VerticalOptions" Value="Center" />
+      <Setter Property="LineBreakMode" Value="TailTruncation" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+   </Style>
+
+   <Style x:Key="accountPanelItemIconStyle" TargetType="controls:FontIcon">
+      <Setter Property="IconSize" Value="22" />
+      <Setter Property="VerticalOptions" Value="Center" />
+      <Setter Property="TintColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+   </Style>
+
+   <!-- Satu kartu layar di menu home. Tinggal di berkas bersama, bukan di layar home, karena pohon
+        menu menggambarnya dari dua tempat: daftar layar tanpa grup, dan isi tiap grup yang bisa
+        sedalam apa pun. Perintah bukanya dibawa item itu sendiri, jadi template ini tidak perlu
+        mencari view model siapa pun di atasnya - dan karena itu ia bisa dipakai di mana saja. -->
+   <DataTemplate x:Key="navigationTileTemplate">
+      <Border Style="{StaticResource actionCardStyle}">
+         <Border.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding Commands[OpenCommand]}" />
+         </Border.GestureRecognizers>
+         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+            <controls:FontIcon Grid.Column="0"
+                               Glyph="{x:Static controls:FontIcons.WindowMaximize}" IconSize="22"
+                               VerticalOptions="Center"
+                               TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+               <Label Text="{Binding Title}" Style="{StaticResource titleTextStyle}" FontSize="15" />
+               <Label Text="{Binding Subtitle}" Style="{StaticResource supportTextStyle}"
+                      IsVisible="{Binding HasSubtitle}" />
+            </VerticalStackLayout>
+            <controls:FontIcon Grid.Column="2"
+                               Glyph="{x:Static controls:FontIcons.ArrowRight}" IconSize="18"
+                               VerticalOptions="Center" Opacity="0.55"
+                               TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+         </Grid>
+      </Border>
+   </DataTemplate>
+
+   <!-- Kepala sebuah grup menu. Seluruh barisnya jadi target tap, dan chevron di kirinya yang
+        memberi tahu apakah isinya sedang terbuka. Grup teratas memakai warna utama supaya tingkat
+        pertama terbaca sebagai pembagi besar, bukan sebagai satu baris lagi. -->
+   <Style x:Key="menuGroupHeaderStyle" TargetType="Label">
+      <Setter Property="FontFamily" Value="OpenSansSemibold" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="VerticalOptions" Value="Center" />
+      <Setter Property="LineBreakMode" Value="TailTruncation" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+      <Style.Triggers>
+         <DataTrigger TargetType="Label" Binding="{Binding Level}" Value="1">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor"
+                    Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+         </DataTrigger>
+      </Style.Triggers>
+   </Style>
+
+   <!-- Kotak pencarian di kepala layar home. Bentuknya pil penuh, mengikuti client desktop. -->
+   <Style x:Key="searchFieldStyle" TargetType="Border">
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="HeightRequest" Value="46" />
+      <Setter Property="StrokeThickness" Value="1" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}" />
+      <Setter Property="Stroke"
+              Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="23" />
+      </Setter>
+   </Style>
+
+   <!-- Tirai gelap di belakang panel account yang terbuka. Ketebalannya dianimasikan dari kode, jadi
+        yang disetel di sini hanya warnanya - dan ia mulai dari tidak terlihat sama sekali. -->
+   <Style x:Key="scrimStyle" TargetType="BoxView">
+      <Setter Property="Color" Value="{StaticResource scrimColor}" />
+      <Setter Property="Opacity" Value="0" />
+   </Style>
+</ResourceDictionary>

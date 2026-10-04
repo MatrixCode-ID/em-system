@@ -1,0 +1,198 @@
+<UserControl x:Class="Em.Test.Wpf.TestItems"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             xmlns:models="clr-namespace:Em.Test.Models.Ui;assembly=Em.Test.Models.Ui"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls;assembly=Em.Ui.Wpf.Core"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1200">
+   <UserControl.DataContext>
+      <local:TestItemsVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="170" />
+         </Grid.RowDefinitions>
+
+         <!-- ==== filter bar ==== -->
+         <Border Grid.Row="0" Margin="22,12,22,0" Style="{StaticResource cardStyle}" Padding="20,14,12,6">
+            <StackPanel>
+               <StackPanel Orientation="Horizontal">
+                  <TextBox Width="280" Margin="0,0,8,8"
+                           Style="{StaticResource searchBoxStyle}"
+                           Tag="Search by code or name"
+                           Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}">
+                     <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding Commands[SearchCommand]}" />
+                     </TextBox.InputBindings>
+                  </TextBox>
+                  <ComboBox Width="130" Margin="0,0,8,8" Style="{StaticResource fieldComboStyle}"
+                            ItemsSource="{Binding StateOptions}" DisplayMemberPath="Caption"
+                            SelectedItem="{Binding SelectedState}" />
+                  <ComboBox Width="110" Margin="0,0,8,8" Style="{StaticResource fieldComboStyle}"
+                            ItemsSource="{Binding PageSizes}" SelectedItem="{Binding PageSize}"
+                            ToolTip="Rows per page" />
+                  <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Search"
+                          Command="{Binding Commands[SearchCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Refresh"
+                          Command="{Binding Commands[RefreshCommand]}" />
+               </StackPanel>
+               <WrapPanel>
+                  <Button Style="{StaticResource testPrimaryButtonStyle}" Content="New item"
+                          Command="{Binding Commands[NewCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Seed 10 samples"
+                          Command="{Binding Commands[SeedCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Batch: add 3"
+                          Command="{Binding Commands[BatchAddCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Batch: qty +1 on this page"
+                          Command="{Binding Commands[BatchBumpCommand]}" />
+                  <Button Style="{StaticResource testDangerButtonStyle}" Content="Delete selected"
+                          Command="{Binding Commands[DeleteSelectedCommand]}"
+                          CommandParameter="{Binding SelectedItems, ElementName=itemsList}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Propose delete (approval)"
+                          Command="{Binding Commands[ProposeDeleteCommand]}"
+                          CommandParameter="{Binding SelectedItem, ElementName=itemsList}" />
+               </WrapPanel>
+            </StackPanel>
+         </Border>
+
+         <!-- ==== list ==== -->
+         <Border Grid.Row="1" Margin="22,12,22,0" Style="{StaticResource cardStyle}">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+               </Grid.RowDefinitions>
+
+               <Border Grid.Row="0"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource dividerBrush}"
+                       BorderThickness="0,0,0,1"
+                       CornerRadius="13,13,0,0">
+                  <Grid Margin="20,0,20,0" Height="36">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="50" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Grid.Column="0" Text="CODE" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="1" Text="NAME" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="2" Text="QTY" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="3" Text="PRICE" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="4" Text="STATE" Style="{StaticResource columnHeaderStyle}" />
+                  </Grid>
+               </Border>
+
+               <ListBox x:Name="itemsList"
+                        Grid.Row="1"
+                        BorderThickness="0"
+                        Background="Transparent"
+                        SelectionMode="Extended"
+                        HorizontalContentAlignment="Stretch"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        ItemsSource="{Binding Items}">
+                  <ListBox.ItemTemplate>
+                     <DataTemplate DataType="{x:Type models:TestItem}">
+                        <Grid Margin="6,6" Background="Transparent">
+                           <Grid.InputBindings>
+                              <MouseBinding MouseAction="LeftDoubleClick"
+                                            Command="{Binding DataContext.Commands[EditCommand], RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}" />
+                           </Grid.InputBindings>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="130" />
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="90" />
+                              <ColumnDefinition Width="130" />
+                              <ColumnDefinition Width="100" />
+                              <ColumnDefinition Width="50" />
+                           </Grid.ColumnDefinitions>
+                           <TextBlock Grid.Column="0" Text="{Binding cTestItemCode}" Style="{StaticResource primaryCellStyle}" />
+                           <TextBlock Grid.Column="1" Text="{Binding cTestItemName}" Style="{StaticResource secondaryCellStyle}"
+                                      TextTrimming="CharacterEllipsis" />
+                           <TextBlock Grid.Column="2" Text="{Binding cTestItemQty, StringFormat=N0}" Style="{StaticResource secondaryCellStyle}" />
+                           <TextBlock Grid.Column="3" Text="{Binding cTestItemPrice, StringFormat=N2}" Style="{StaticResource secondaryCellStyle}" />
+                           <Grid Grid.Column="4" HorizontalAlignment="Left">
+                              <Border>
+                                 <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource chipSuccessStyle}">
+                                       <Style.Triggers>
+                                          <DataTrigger Binding="{Binding cTestItemState}" Value="Disabled">
+                                             <Setter Property="Visibility" Value="Collapsed" />
+                                          </DataTrigger>
+                                       </Style.Triggers>
+                                    </Style>
+                                 </Border.Style>
+                                 <TextBlock Text="Active" />
+                              </Border>
+                              <Border>
+                                 <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+                                       <Setter Property="Visibility" Value="Collapsed" />
+                                       <Style.Triggers>
+                                          <DataTrigger Binding="{Binding cTestItemState}" Value="Disabled">
+                                             <Setter Property="Visibility" Value="Visible" />
+                                          </DataTrigger>
+                                       </Style.Triggers>
+                                    </Style>
+                                 </Border.Style>
+                                 <TextBlock Text="Disabled" />
+                              </Border>
+                           </Grid>
+                           <Button Grid.Column="5" Style="{StaticResource rowActionButtonStyle}" ToolTip="Open in the editor"
+                                   Command="{Binding DataContext.Commands[EditCommand], RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                   CommandParameter="{Binding}">
+                              <fa:FontAwesome Icon="Solid_PenToSquare" />
+                           </Button>
+                        </Grid>
+                     </DataTemplate>
+                  </ListBox.ItemTemplate>
+               </ListBox>
+
+               <TextBlock Grid.Row="1" Text="No items match. Seed some samples, or create one."
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
+                          Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+            </Grid>
+         </Border>
+
+         <!-- ==== pager ==== -->
+         <Grid Grid.Row="2" Margin="24,8,22,0">
+            <TextBlock Text="{Binding PageText}" VerticalAlignment="Center" Opacity="0.75" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+               <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="Previous page"
+                       Command="{Binding Commands[PrevPageCommand]}">
+                  <fa:FontAwesome Icon="Solid_ChevronLeft" />
+               </Button>
+               <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="Next page" Margin="6,0,0,0"
+                       Command="{Binding Commands[NextPageCommand]}">
+                  <fa:FontAwesome Icon="Solid_ChevronRight" />
+               </Button>
+            </StackPanel>
+         </Grid>
+
+         <!-- ==== results ==== -->
+         <local:TestLogPanel Grid.Row="3" Margin="22,8,22,22" Entries="{Binding Entries}" />
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</UserControl>

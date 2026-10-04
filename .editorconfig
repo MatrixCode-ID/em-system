@@ -1,0 +1,41 @@
+root = true
+
+[*]
+end_of_line = crlf
+insert_final_newline = true
+charset = utf-8
+
+[*.rs]
+indent_style = space
+indent_size = 3
+
+[*.cs]
+indent_style = space
+indent_size = 3
+tab_width = 3
+
+# Brace placement — matches Rider (types/namespaces on new line, everything else same line)
+csharp_new_line_before_open_brace = types
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# Namespace style — block-scoped (matches Rider NAMESPACE_BODY = BlockScoped)
+csharp_style_namespace_declarations = block_scoped:suggestion
+
+# Expression-bodied members (matches Rider *_BODY = ExpressionBody)
+csharp_style_expression_bodied_methods = when_possible:suggestion
+csharp_style_expression_bodied_constructors = when_possible:suggestion
+csharp_style_expression_bodied_local_functions = when_possible:suggestion
+
+# Single-line collapsing (matches Rider PLACE_SIMPLE_*_ON_SINGLE_LINE = true)
+csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_blocks = true
+
+[*.{xaml,xml,csproj,slnx}]
+indent_style = space
+indent_size = 3
+tab_width = 3

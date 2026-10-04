@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- Machine-local files that never enter the repository (emapi-config.json, debug keys), one folder per
+         repository. The default is a sibling folder (..\.artefacts\em-system); override it with an environment
+         variable or `dotnet build -p:ArtefactsPath=<path>`. Always ends with a directory separator. -->
+    <ArtefactsPath Condition="'$(ArtefactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '.artefacts', 'em-system'))</ArtefactsPath>
+    <ArtefactsPath>$([MSBuild]::EnsureTrailingSlash('$(ArtefactsPath)'))</ArtefactsPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Authors>Matrix Code</Authors>
+    <Company>Matrix Code</Company>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <PackageProjectUrl>https://github.com/MatrixCode-ID/em-system</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MatrixCode-ID/em-system</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 Matrix Code</Copyright>
+    <PackageReadmeFile Condition="Exists('$(MSBuildProjectDirectory)/README.md')">README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/README.md')">
+    <None Include="$(MSBuildProjectDirectory)/README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+</Project>

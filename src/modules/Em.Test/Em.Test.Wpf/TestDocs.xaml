@@ -1,0 +1,146 @@
+<UserControl x:Class="Em.Test.Wpf.TestDocs"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             xmlns:models="clr-namespace:Em.Test.Models;assembly=Em.Test.Models"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls;assembly=Em.Ui.Wpf.Core"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="760" d:DesignWidth="1200">
+   <UserControl.DataContext>
+      <local:TestDocsVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="140" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="170" />
+         </Grid.RowDefinitions>
+
+         <!-- ==== new draft ==== -->
+         <Border Grid.Row="0" Margin="22,12,22,0" Style="{StaticResource cardStyle}" Padding="20,14,12,6">
+            <StackPanel>
+               <TextBlock Text="NEW DRAFT" Style="{StaticResource sectionCaptionStyle}" Margin="0,0,0,10" />
+               <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="No" Style="{StaticResource testFieldLabelStyle}" />
+                  <TextBox Width="190" Margin="0,0,14,8" Style="{StaticResource fieldBoxStyle}"
+                           Text="{Binding NewNo, UpdateSourceTrigger=PropertyChanged}" />
+                  <TextBlock Text="Title" Style="{StaticResource testFieldLabelStyle}" />
+                  <TextBox Width="260" Margin="0,0,14,8" Style="{StaticResource fieldBoxStyle}"
+                           Text="{Binding NewTitle, UpdateSourceTrigger=PropertyChanged}" />
+                  <TextBlock Text="Amount" Style="{StaticResource testFieldLabelStyle}" />
+                  <TextBox Width="130" Margin="0,0,14,8" Style="{StaticResource fieldBoxStyle}"
+                           Text="{Binding NewAmount, StringFormat=N2, UpdateSourceTrigger=LostFocus}" />
+                  <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Create draft"
+                          Command="{Binding Commands[CreateCommand]}" />
+               </StackPanel>
+            </StackPanel>
+         </Border>
+
+         <!-- ==== list ==== -->
+         <Border Grid.Row="1" Margin="22,12,22,0" Style="{StaticResource cardStyle}">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+               </Grid.RowDefinitions>
+
+               <Border Grid.Row="0"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource dividerBrush}"
+                       BorderThickness="0,0,0,1"
+                       CornerRadius="13,13,0,0">
+                  <Grid Margin="20,0,20,0" Height="36">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="190" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="130" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Grid.Column="0" Text="NO" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="1" Text="TITLE" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="2" Text="AMOUNT" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="3" Text="STATUS" Style="{StaticResource columnHeaderStyle}" />
+                  </Grid>
+               </Border>
+
+               <ListBox Grid.Row="1"
+                        BorderThickness="0"
+                        Background="Transparent"
+                        HorizontalContentAlignment="Stretch"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        ItemsSource="{Binding Items}"
+                        SelectedItem="{Binding Selected}">
+                  <ListBox.ItemTemplate>
+                     <DataTemplate DataType="{x:Type models:vi_TestDoc}">
+                        <Grid Margin="6,6">
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="190" />
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="140" />
+                              <ColumnDefinition Width="130" />
+                           </Grid.ColumnDefinitions>
+                           <TextBlock Grid.Column="0" Text="{Binding cTestDocNo}" Style="{StaticResource primaryCellStyle}" />
+                           <TextBlock Grid.Column="1" Text="{Binding cTestDocTitle}" Style="{StaticResource secondaryCellStyle}"
+                                      TextTrimming="CharacterEllipsis" />
+                           <TextBlock Grid.Column="2" Text="{Binding cTestDocAmount, StringFormat=N2}" Style="{StaticResource secondaryCellStyle}" />
+                           <Border Grid.Column="3" HorizontalAlignment="Left" Style="{StaticResource chipInfoStyle}">
+                              <TextBlock Text="{Binding cTestDocStatus}" />
+                           </Border>
+                        </Grid>
+                     </DataTemplate>
+                  </ListBox.ItemTemplate>
+               </ListBox>
+
+               <TextBlock Grid.Row="1" Text="No documents yet. Create a draft above."
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
+                          Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+            </Grid>
+         </Border>
+
+         <!-- ==== actions on the selected document ==== -->
+         <Border Grid.Row="2" Margin="22,12,22,0" Style="{StaticResource cardStyle}" Padding="20,14,12,6">
+            <StackPanel>
+               <TextBlock Text="{Binding SelectionText}" Style="{StaticResource testResultTextStyle}" Margin="0,0,0,12" />
+               <WrapPanel>
+                  <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Submit for approval"
+                          Command="{Binding Commands[SubmitCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Source PDF (viewer)"
+                          Command="{Binding Commands[ViewSourcePdfCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Open in Approval Manager"
+                          Command="{Binding Commands[OpenApprovalCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="All EmTestDoc requests"
+                          Command="{Binding Commands[OpenAllApprovalsCommand]}" />
+                  <Border Width="1" Margin="4,2,12,10" Background="{StaticResource dividerBrush}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Amount = 0 (guard blocks QA)"
+                          Command="{Binding Commands[SetAmountCommand]}" CommandParameter="0" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Amount = 5,000,000"
+                          Command="{Binding Commands[SetAmountCommand]}" CommandParameter="5000000" />
+                  <Button Style="{StaticResource testDangerButtonStyle}" Content="Delete"
+                          Command="{Binding Commands[DeleteCommand]}" />
+                  <Button Style="{StaticResource testButtonStyle}" Content="Refresh"
+                          Command="{Binding Commands[RefreshCommand]}" />
+               </WrapPanel>
+            </StackPanel>
+         </Border>
+
+         <!-- ==== results ==== -->
+         <local:TestLogPanel Grid.Row="3" Margin="22,8,22,22" Entries="{Binding Entries}" />
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</UserControl>

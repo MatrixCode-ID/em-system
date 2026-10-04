@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Em.Api Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "em-api": "StartDebugging"
+      }
+    }
+  }
+}

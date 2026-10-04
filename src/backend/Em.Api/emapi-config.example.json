@@ -1,0 +1,27 @@
+{
+  // Salin ke ..\.artefacts\em-system\config\emapi-config.json di sebelah repo. Jangan commit nilai asli.
+  "database": {
+    "provider": "MicrosoftSqlServer",
+    "connectionString": "Server=localhost,1433;Database=Em;User ID=em;Password=CHANGE_ME;Encrypt=True;TrustServerCertificate=True",
+    "extra": {}
+  },
+  "admin": {
+    "initialPassword": "CHANGE_ME"
+  },
+  // Hanya public key (RSA Base64 DER PKCS#1). Kosongkan pada server publik.
+  "debugTokens": [],
+  "http": {
+    "requestTimeoutSeconds": 30,
+    "actionRateLimit": 300,
+    "proxy": { "trusted": [], "trustAny": false, "hopLimit": null }
+  },
+  "session": {
+    "tokenRetentionHours": 720
+  },
+  "storage": {
+    "taskCachePath": "./data/tasks",
+    "nuPakPath": "./data/nuget",
+    "nuPakMaxPackageMb": 250,
+    "binaryPath": "./data/binary"
+  }
+}

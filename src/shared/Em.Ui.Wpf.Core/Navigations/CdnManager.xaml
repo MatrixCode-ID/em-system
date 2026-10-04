@@ -1,0 +1,545 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.CdnManager"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:conv="clr-namespace:Em.Ui.Wpf.Converters"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+             xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1200">
+   <UserControl.DataContext>
+      <local:CdnManagerVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <conv:InverseBoolToVisibilityConverter x:Key="inverseBoolToVisibility" />
+
+         <!-- ==== archive / extract status buttons ==== -->
+         <Style x:Key="archiveButtonStyle" TargetType="Button" BasedOn="{StaticResource outlinedButtonStyle}">
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ArchiveMode}" Value="Running">
+                  <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  <Setter Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ArchiveMode}" Value="Failed">
+                  <Setter Property="Visibility" Value="Collapsed" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="archiveFailedButtonStyle" TargetType="Button" BasedOn="{StaticResource dangerOutlinedButtonStyle}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ArchiveMode}" Value="Failed">
+                  <Setter Property="Visibility" Value="Visible" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="archiveIconStyle" TargetType="fa:FontAwesome" BasedOn="{StaticResource buttonIconStyle}">
+            <Setter Property="Icon" Value="Solid_FileZipper" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ArchiveMode}" Value="Running">
+                  <Setter Property="Icon" Value="Solid_Spinner" />
+                  <Setter Property="Spin" Value="True" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ArchiveMode}" Value="Failed">
+                  <Setter Property="Icon" Value="Solid_TriangleExclamation" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="extractButtonStyle" TargetType="Button" BasedOn="{StaticResource rowActionButtonStyle}">
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding IsZip}" Value="False">
+                  <Setter Property="Visibility" Value="Hidden" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ExtractMode}" Value="Running">
+                  <Setter Property="Opacity" Value="1" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ExtractMode}" Value="Failed">
+                  <Setter Property="Opacity" Value="1" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="extractIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="Icon" Value="Solid_BoxOpen" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ExtractMode}" Value="Running">
+                  <Setter Property="Icon" Value="Solid_Spinner" />
+                  <Setter Property="Spin" Value="True" />
+                  <Setter Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ExtractMode}" Value="Failed">
+                  <Setter Property="Icon" Value="Solid_TriangleExclamation" />
+                  <Setter Property="Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ==== list row ==== -->
+         <Style x:Key="cdnRowStyle" TargetType="ListBoxItem">
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="*" />
+                           <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Border x:Name="stateLayer" Grid.Row="0" Background="Transparent" MinHeight="48">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="Auto" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <Border x:Name="selectionBar"
+                                      Grid.Column="0"
+                                      Width="3"
+                                      Margin="0,8"
+                                      CornerRadius="2"
+                                      Visibility="Hidden"
+                                      Background="{DynamicResource themeAccentBrush}" />
+                              <ContentPresenter Grid.Column="1"
+                                                Margin="21,0,20,0"
+                                                VerticalAlignment="Center" />
+                           </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Height="1" Background="{StaticResource dividerBrush}" />
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                           <Setter TargetName="selectionBar" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- ==== breadcrumb segment ==== -->
+         <Style x:Key="crumbButtonStyle" TargetType="Button" BasedOn="{StaticResource textButtonStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="shared:DropTarget.Effect" Value="Move" />
+            <Style.Triggers>
+               <Trigger Property="shared:DropTarget.IsDraggingOver" Value="True">
+                  <Setter Property="Background" Value="{StaticResource statePressedBrush}" />
+                  <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ==== drop targets ==== -->
+         <Style x:Key="rowDropFrameStyle" TargetType="Border">
+            <Setter Property="Margin" Value="-12,4,-12,4" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Background" Value="Transparent" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding IsFolder}" Value="True">
+                  <Setter Property="shared:DropTarget.Command"
+                          Value="{Binding DataContext.Commands[DropCommand], RelativeSource={RelativeSource AncestorType=ListBox}}" />
+                  <Setter Property="shared:DropTarget.Target" Value="{Binding}" />
+                  <Setter Property="shared:DropTarget.Effect" Value="Move" />
+               </DataTrigger>
+               <Trigger Property="shared:DropTarget.IsDraggingOver" Value="True">
+                  <Setter Property="Background" Value="{StaticResource statePressedBrush}" />
+                  <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="listCardStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="{StaticResource surfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding (shared:DropTarget.IsDraggingOver), ElementName=entryList}" Value="True">
+                  <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ==== empty / disabled state ==== -->
+         <Style x:Key="stateIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="FontSize" Value="34" />
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+         </Style>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <DockPanel>
+      <controls:StorageSettingsCard x:Name="settingsCard" DockPanel.Dock="Top" />
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+         </Grid.RowDefinitions>
+
+         <DockPanel Grid.Row="0" Margin="22,12,22,0">
+            <Button DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource outlinedButtonStyle}" Height="28" Width="36" Padding="0" Content="↻" ToolTip="Refresh storage information independently" Command="{Binding Commands[RefreshStorageCommand]}" />
+            <StackPanel>
+            <TextBlock Text="{Binding StorageCaption}" FontWeight="SemiBold" />
+            <TextBlock Text="Public file sizes across all CDN folders. Excludes internal/temporary, hidden/system files, symlinks and filesystem overhead."
+                       TextWrapping="Wrap" Opacity="0.65" Margin="0,4,0,0" />
+         </StackPanel>
+         </DockPanel>
+
+         <!-- ==== toolbar ==== -->
+         <Grid Grid.Row="1" Margin="22,12,22,6">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    Style="{StaticResource filledButtonStyle}"
+                    Command="{Binding Commands[UploadCommand]}"
+                    ToolTip="Upload files into this folder">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_CloudArrowUp" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Upload" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+
+            <Border Grid.Column="1"
+                    Width="1"
+                    Height="22"
+                    Margin="14,0"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource outlineBrush}" />
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+               <Button Style="{StaticResource outlinedButtonStyle}"
+                       Command="{Binding Commands[NewFolderCommand]}"
+                       ToolTip="Create a folder inside this folder">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_FolderPlus" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="New Folder" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}"
+                       Margin="8,0,0,0"
+                       Command="{Binding Commands[OpenInBrowserCommand]}"
+                       ToolTip="Open this folder in the web browser">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_ArrowUpRightFromSquare" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Open in Browser" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource archiveButtonStyle}"
+                       Margin="8,0,0,0"
+                       Command="{Binding Commands[ArchiveCommand]}"
+                       ToolTip="{Binding ArchiveTooltip}">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Style="{StaticResource archiveIconStyle}" />
+                     <TextBlock Text="{Binding ArchiveCaption}" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource archiveFailedButtonStyle}"
+                       Margin="8,0,0,0"
+                       Command="{Binding Commands[ArchiveCommand]}"
+                       ToolTip="{Binding ArchiveTooltip}">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Style="{StaticResource archiveIconStyle}" />
+                     <TextBlock Text="{Binding ArchiveCaption}" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+            </StackPanel>
+
+            <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+               <!-- MinWidth keeps the Cancel button beside it from jumping as the caption changes. -->
+               <Border Style="{StaticResource chipAccentStyle}"
+                       MinWidth="250"
+                       Visibility="{Binding IsTransferring, Converter={StaticResource boolToVisibility}}">
+                  <StackPanel>
+                     <TextBlock Text="{Binding TransferProgressCaption}" />
+                     <ProgressBar Style="{StaticResource hairlineProgressStyle}"
+                                  Value="{Binding TransferPercent, Mode=OneWay}" />
+                  </StackPanel>
+               </Border>
+               <Button Style="{StaticResource textDangerButtonStyle}"
+                       Margin="4,0,8,0"
+                       Command="{Binding Commands[CancelTransferCommand]}"
+                       Visibility="{Binding IsTransferring, Converter={StaticResource boolToVisibility}}"
+                       ToolTip="Stop the file being sent and the rest of the queue">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Xmark" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Cancel" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Border Style="{StaticResource chipStyle}"
+                       Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}">
+                  <TextBlock Text="{Binding ItemsCaption}" />
+               </Border>
+               <Border Style="{StaticResource chipStyle}"
+                       Margin="8,0,0,0"
+                       Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}">
+                  <TextBlock Text="{Binding LimitCaption}" />
+               </Border>
+               <Button Style="{StaticResource rowActionButtonStyle}"
+                       Margin="10,0,0,0"
+                       Command="{Binding Commands[RefreshCommand]}"
+                       ToolTip="Refresh">
+                  <fa:FontAwesome Icon="Solid_ArrowsRotate" />
+               </Button>
+            </StackPanel>
+         </Grid>
+
+         <!-- ==== breadcrumb ==== -->
+         <StackPanel Grid.Row="2" Margin="18,0,22,8" Orientation="Horizontal">
+            <Button Style="{StaticResource rowActionButtonStyle}"
+                    Command="{Binding Commands[GoUpCommand]}"
+                    ToolTip="Up one folder">
+               <fa:FontAwesome Icon="Solid_ArrowUp" />
+            </Button>
+            <fa:FontAwesome Icon="Solid_Cloud"
+                            Margin="8,0,2,0"
+                            FontSize="12"
+                            Opacity="0.55"
+                            VerticalAlignment="Center" />
+            <ItemsControl ItemsSource="{Binding Breadcrumbs}" VerticalAlignment="Center">
+               <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                     <StackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+               </ItemsControl.ItemsPanel>
+               <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome x:Name="separator"
+                                        Icon="Solid_ChevronRight"
+                                        FontSize="9"
+                                        Opacity="0.45"
+                                        Margin="2,0"
+                                        VerticalAlignment="Center" />
+                        <Button Style="{StaticResource crumbButtonStyle}"
+                                Content="{Binding Name}"
+                                shared:DropTarget.Command="{Binding DataContext.Commands[DropCommand],
+                                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                shared:DropTarget.Target="{Binding}"
+                                Command="{Binding DataContext.Commands[NavigateToSegmentCommand],
+                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                CommandParameter="{Binding}" />
+                     </StackPanel>
+                     <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsFirst}" Value="True">
+                           <Setter TargetName="separator" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                     </DataTemplate.Triggers>
+                  </DataTemplate>
+               </ItemsControl.ItemTemplate>
+            </ItemsControl>
+         </StackPanel>
+
+         <!-- ==== list card ==== -->
+         <Border Grid.Row="3"
+                 Margin="22,0,22,22"
+                 Style="{StaticResource listCardStyle}">
+            <Grid Grid.IsSharedSizeScope="True">
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+               </Grid.RowDefinitions>
+
+               <Border Grid.Row="0"
+                       Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource dividerBrush}"
+                       BorderThickness="0,0,0,1"
+                       CornerRadius="13,13,0,0">
+                  <Grid Margin="24,0,20,0" Height="38">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colSize" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colModified" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="colActions" />
+                     </Grid.ColumnDefinitions>
+
+                     <TextBlock Grid.Column="0" Text="NAME" Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="1" Text="SIZE" MinWidth="100" TextAlignment="Right"
+                                Style="{StaticResource columnHeaderStyle}" />
+                     <TextBlock Grid.Column="2" Text="MODIFIED" MinWidth="150" Margin="28,0,0,0"
+                                Style="{StaticResource columnHeaderStyle}" />
+                  </Grid>
+               </Border>
+
+               <ListBox x:Name="entryList"
+                        Grid.Row="1"
+                        Background="Transparent"
+                        shared:DropTarget.Command="{Binding Commands[DropCommand]}"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalContentAlignment="Stretch"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                        SelectionMode="Extended"
+                        ItemsSource="{Binding Items}"
+                        SelectedItem="{Binding SelectedItem}"
+                        ItemContainerStyle="{StaticResource cdnRowStyle}"
+                        Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}">
+                  <ListBox.ItemTemplate>
+                     <DataTemplate>
+                        <Border Style="{StaticResource rowDropFrameStyle}">
+                           <Grid Background="Transparent" MinHeight="40" shared:DragSource.Payload="{Binding}">
+                              <Grid.InputBindings>
+                                 <MouseBinding MouseAction="LeftDoubleClick"
+                                               Command="{Binding DataContext.Commands[OpenFolderCommand],
+                                                                 RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                               CommandParameter="{Binding}" />
+                              </Grid.InputBindings>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*" />
+                                 <ColumnDefinition Width="Auto" SharedSizeGroup="colSize" />
+                                 <ColumnDefinition Width="Auto" SharedSizeGroup="colModified" />
+                                 <ColumnDefinition Width="Auto" SharedSizeGroup="colActions" />
+                              </Grid.ColumnDefinitions>
+
+                              <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                 <fa:FontAwesome x:Name="entryIcon"
+                                                 Icon="{Binding Icon}"
+                                                 Width="20"
+                                                 FontSize="15"
+                                                 Opacity="0.7"
+                                                 VerticalAlignment="Center" />
+                                 <TextBlock Margin="12,0,16,0"
+                                            Style="{StaticResource primaryCellStyle}"
+                                            Text="{Binding Name}"
+                                            ToolTip="{Binding Name}" />
+                              </StackPanel>
+
+                              <TextBlock Grid.Column="1"
+                                         MinWidth="100"
+                                         TextAlignment="Right"
+                                         Style="{StaticResource secondaryCellStyle}"
+                                         Text="{Binding SizeCaption}"
+                                         ToolTip="{Binding SizeTooltip}" />
+                              <TextBlock Grid.Column="2"
+                                         MinWidth="150"
+                                         Margin="28,0,0,0"
+                                         Style="{StaticResource secondaryCellStyle}"
+                                         Text="{Binding ModifiedCaption}" />
+
+                              <StackPanel Grid.Column="3"
+                                          Margin="20,0,0,0"
+                                          Orientation="Horizontal"
+                                          VerticalAlignment="Center">
+                                 <Button Style="{StaticResource extractButtonStyle}"
+                                         ToolTip="{Binding ExtractTooltip}"
+                                         Command="{Binding DataContext.Commands[ExtractCommand],
+                                                           RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                         CommandParameter="{Binding}">
+                                    <fa:FontAwesome Style="{StaticResource extractIconStyle}" />
+                                 </Button>
+                                 <Button Style="{StaticResource rowActionButtonStyle}"
+                                         ToolTip="Copy public link"
+                                         Command="{Binding DataContext.Commands[CopyLinkCommand],
+                                                           RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                         CommandParameter="{Binding}">
+                                    <fa:FontAwesome Icon="Solid_Link" />
+                                 </Button>
+                                 <Button Style="{StaticResource rowActionButtonStyle}"
+                                         ToolTip="Download"
+                                         Command="{Binding DataContext.Commands[DownloadCommand],
+                                                           RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                         CommandParameter="{Binding}">
+                                    <fa:FontAwesome Icon="Solid_Download" />
+                                 </Button>
+                                 <Button Style="{StaticResource rowActionButtonStyle}"
+                                         ToolTip="Delete"
+                                         Command="{Binding DataContext.Commands[DeleteCommand],
+                                                           RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                         CommandParameter="{Binding}">
+                                    <fa:FontAwesome Icon="Solid_TrashCan" Foreground="{StaticResource dangerBrush}" />
+                                 </Button>
+                              </StackPanel>
+                           </Grid>
+                        </Border>
+                        <DataTemplate.Triggers>
+                           <DataTrigger Binding="{Binding IsFolder}" Value="True">
+                              <Setter TargetName="entryIcon" Property="Foreground"
+                                      Value="{DynamicResource themeAccentBrush}" />
+                              <Setter TargetName="entryIcon" Property="Opacity" Value="1" />
+                           </DataTrigger>
+                        </DataTemplate.Triggers>
+                     </DataTemplate>
+                  </ListBox.ItemTemplate>
+               </ListBox>
+
+               <StackPanel Grid.Row="1"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           IsHitTestVisible="False"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}">
+                  <fa:FontAwesome Icon="Regular_FolderOpen" Style="{StaticResource stateIconStyle}" />
+                  <TextBlock Text="This folder is empty"
+                             Margin="0,14,0,0"
+                             FontSize="15"
+                             FontWeight="SemiBold"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="Upload files, drop them here, or create a folder to publish them."
+                             Margin="0,4,0,0"
+                             Style="{StaticResource secondaryCellStyle}"
+                             HorizontalAlignment="Center" />
+               </StackPanel>
+
+               <StackPanel Grid.Row="0"
+                           Grid.RowSpan="2"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Visibility="{Binding IsCdnDisabled, Converter={StaticResource boolToVisibility}}">
+                  <fa:FontAwesome Icon="Solid_CloudArrowUp" Style="{StaticResource stateIconStyle}" FontSize="44" />
+                  <TextBlock Text="CDN is not enabled on this server"
+                             Margin="0,16,0,0"
+                             FontSize="18"
+                             FontWeight="SemiBold"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="The server does not publish a CDN folder. Use Settings with the settings management claim, save, and restart the API, then refresh."
+                             Margin="0,6,0,0"
+                             MaxWidth="420"
+                             TextWrapping="Wrap"
+                             TextAlignment="Center"
+                             Style="{StaticResource secondaryCellStyle}"
+                             HorizontalAlignment="Center" />
+               </StackPanel>
+            </Grid>
+         </Border>
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+   </DockPanel>
+</UserControl>

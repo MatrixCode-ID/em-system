@@ -1,0 +1,55 @@
+<UserControl x:Class="Em.Ui.Wpf.Controls.StorageSettingsCard"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:fa="http://schemas.fontawesome.com/icons/fonts">
+ <!--
+    The settings of a storage feature (directory, upload limit, switch) as one card in the shared
+    manager look: the state line and its own refresh in the corner, the draft below in framed
+    fields from the shared Inputs styles. Names and handlers are the ones the code behind and the
+    render harness use; only the markup around them changed.
+ -->
+ <UserControl.Resources>
+  <ResourceDictionary>
+   <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+   <Style TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+   </Style>
+  </ResourceDictionary>
+ </UserControl.Resources>
+ <Border Style="{StaticResource cardStyle}" Margin="22,12,22,22" Padding="20,12,12,20" VerticalAlignment="Top">
+  <StackPanel>
+   <DockPanel>
+    <Button x:Name="refresh" DockPanel.Dock="Right" Style="{StaticResource rowActionButtonStyle}" ToolTip="Refresh all settings/status; confirm before discarding a draft" AutomationProperties.Name="Refresh settings" Click="RefreshClick">
+     <fa:FontAwesome Icon="Solid_ArrowsRotate" />
+    </Button>
+    <TextBlock x:Name="status" Style="{StaticResource primaryCellStyle}" FontWeight="SemiBold" VerticalAlignment="Center" Text="Settings: loading..." TextWrapping="Wrap" TextTrimming="None" />
+   </DockPanel>
+   <Expander x:Name="panel" Header="Settings — applies after API restart" Margin="0,10,0,0" Foreground="{DynamicResource themeWindowForegroundBrush}" Collapsed="PanelCollapsed">
+    <StackPanel MaxWidth="680" HorizontalAlignment="Left" Margin="0,8,0,0">
+     <TextBlock x:Name="message" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,10" />
+     <StackPanel x:Name="editor" Visibility="Collapsed">
+      <CheckBox x:Name="enabled" Style="{StaticResource checkBoxStyle}" Content="Enabled on next API startup" Margin="0,0,0,14" Checked="DraftChanged" Unchecked="DraftChanged" />
+      <TextBlock Text="Directory on API server (relative to its content root)" Style="{StaticResource fieldLabelStyle}" />
+      <TextBox x:Name="directory" Style="{StaticResource fieldBoxStyle}" Margin="0,0,0,14" TextChanged="DraftChanged" />
+      <StackPanel x:Name="limitPanel" Margin="0,0,0,14">
+       <TextBlock Text="CDN maximum upload MB" Style="{StaticResource fieldLabelStyle}" />
+       <TextBox x:Name="limit" Style="{StaticResource fieldBoxStyle}" Width="180" HorizontalAlignment="Left" TextChanged="DraftChanged" />
+      </StackPanel>
+      <TextBlock x:Name="paths" Style="{StaticResource secondaryCellStyle}" TextWrapping="Wrap" TextTrimming="None" Margin="0,0,0,8" />
+      <TextBlock Text="Saving does not move/copy files or change running requests. An operator must restart the API. Registry root changes require a complete manual copy and no upload metadata." Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,16" />
+      <StackPanel Orientation="Horizontal">
+       <Button x:Name="validate" Style="{StaticResource outlinedButtonStyle}" Click="ValidateClick" Margin="0,0,8,0">
+        <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ListCheck" Style="{StaticResource buttonIconStyle}" /><TextBlock Text="Validate directory" VerticalAlignment="Center" /></StackPanel>
+       </Button>
+       <Button x:Name="save" Style="{StaticResource filledButtonStyle}" Click="SaveClick">
+        <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}" /><TextBlock Text="Save" VerticalAlignment="Center" /></StackPanel>
+       </Button>
+      </StackPanel>
+     </StackPanel>
+    </StackPanel>
+   </Expander>
+  </StackPanel>
+ </Border>
+</UserControl>

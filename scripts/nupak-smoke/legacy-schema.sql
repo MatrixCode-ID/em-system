@@ -1,0 +1,89 @@
+-- NuPak module. Run on the core database after the engine identity schema.
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+IF OBJECT_ID('dbo.ta_NuPakPrefix','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.ta_NuPakPrefix(
+  cNuPakPrefixId char(26) NOT NULL,
+  cNuPakPrefixName varchar(100) COLLATE Latin1_General_100_CI_AS NOT NULL,
+  cNuPakPrefixState int NOT NULL,
+  cNuPakPrefixDescription varchar(500) NULL,
+  ustamp datetime NOT NULL,
+  datestamp datetime NOT NULL,
+  json_object nvarchar(max) NULL,
+ PRIMARY KEY(cNuPakPrefixId), CONSTRAINT UQ_NuPakPrefix UNIQUE(cNuPakPrefixName));
+END;
+EXEC(N'CREATE OR ALTER VIEW dbo.vi_NuPakPrefix AS SELECT t.cNuPakPrefixId,t.cNuPakPrefixName,t.cNuPakPrefixState,t.cNuPakPrefixDescription,t.ustamp,t.datestamp,t.json_object FROM dbo.ta_NuPakPrefix t');
+IF OBJECT_ID('dbo.ta_NuPakPackage','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.ta_NuPakPackage(
+  cNuPakPackageId char(26) NOT NULL,
+  cNuPakPrefixId char(26) NOT NULL,
+  cNuPakPackageName varchar(128) COLLATE Latin1_General_100_CI_AS NOT NULL,
+  cNuPakPackageState int NOT NULL,
+  ustamp datetime NOT NULL,
+  datestamp datetime NOT NULL,
+  json_object nvarchar(max) NULL,
+ PRIMARY KEY(cNuPakPackageId), CONSTRAINT UQ_NuPakPackage UNIQUE(cNuPakPackageName), FOREIGN KEY(cNuPakPrefixId) REFERENCES dbo.ta_NuPakPrefix(cNuPakPrefixId));
+ CREATE INDEX IX_NuPakPackagePrefix ON dbo.ta_NuPakPackage(cNuPakPrefixId);
+END;
+EXEC(N'CREATE OR ALTER VIEW dbo.vi_NuPakPackage AS SELECT t.cNuPakPackageId,t.cNuPakPrefixId,t.cNuPakPackageName,t.cNuPakPackageState,t.ustamp,t.datestamp,t.json_object,p.cNuPakPrefixName FROM dbo.ta_NuPakPackage t JOIN dbo.ta_NuPakPrefix p ON p.cNuPakPrefixId=t.cNuPakPrefixId');
+IF OBJECT_ID('dbo.ta_NuPakVersion','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.ta_NuPakVersion(
+  cNuPakVersionId char(26) NOT NULL,
+  cNuPakPackageId char(26) NOT NULL,
+  cNuPakVersionNumber varchar(64) NOT NULL,
+  cNuPakVersionOriginal varchar(64) NOT NULL,
+  cNuPakVersionPrerelease bit NOT NULL,
+  cNuPakVersionState int NOT NULL,
+  cNuPakVersionRecycledAt datetime NULL,
+  cNuPakVersionSize bigint NOT NULL,
+  cNuPakVersionHash varchar(128) COLLATE Latin1_General_100_CS_AS NOT NULL,
+  cNuPakVersionNuspec nvarchar(max) NOT NULL,
+  cNuPakVersionTitle varchar(255) NULL,
+  cNuPakVersionDescription varchar(4000) NULL,
+  cNuPakVersionAuthors varchar(500) NULL,
+  cNuPakVersionTags varchar(1000) NULL,
+  cNuPakVersionPushedBy_cRobotId char(26) NULL,
+  ustamp datetime NOT NULL,
+  datestamp datetime NOT NULL,
+  json_object nvarchar(max) NULL,
+ PRIMARY KEY(cNuPakVersionId), CONSTRAINT UQ_NuPakVersion UNIQUE(cNuPakPackageId,cNuPakVersionNumber), FOREIGN KEY(cNuPakPackageId) REFERENCES dbo.ta_NuPakPackage(cNuPakPackageId) ON DELETE CASCADE, FOREIGN KEY(cNuPakVersionPushedBy_cRobotId) REFERENCES dbo.ta_Robot(cRobotId));
+ CREATE INDEX IX_NuPakVersionState ON dbo.ta_NuPakVersion(cNuPakVersionState,cNuPakPackageId) INCLUDE(cNuPakVersionSize);
+END;
+EXEC(N'CREATE OR ALTER VIEW dbo.vi_NuPakVersion AS SELECT t.cNuPakVersionId,t.cNuPakPackageId,t.cNuPakVersionNumber,t.cNuPakVersionOriginal,t.cNuPakVersionPrerelease,t.cNuPakVersionState,t.cNuPakVersionRecycledAt,t.cNuPakVersionSize,t.cNuPakVersionHash,t.cNuPakVersionTitle,t.cNuPakVersionDescription,t.cNuPakVersionAuthors,t.cNuPakVersionTags,t.cNuPakVersionPushedBy_cRobotId,t.ustamp,t.datestamp,t.json_object FROM dbo.ta_NuPakVersion t');
+IF OBJECT_ID('dbo.ta_NuPakPrefixRobot','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.ta_NuPakPrefixRobot(
+  cRobotId char(26) NOT NULL,
+  cNuPakPrefixId char(26) NOT NULL,
+  cNuPakPrefixRobotAccess varchar(8) NOT NULL,
+  ustamp datetime NOT NULL,
+  datestamp datetime NOT NULL,
+  json_object nvarchar(max) NULL,
+ PRIMARY KEY(cRobotId,cNuPakPrefixId), FOREIGN KEY(cNuPakPrefixId) REFERENCES dbo.ta_NuPakPrefix(cNuPakPrefixId) ON DELETE CASCADE, FOREIGN KEY(cRobotId) REFERENCES dbo.ta_Robot(cRobotId), CHECK(cNuPakPrefixRobotAccess IN ('R','W')));
+END;
+IF OBJECT_ID('dbo.ta_NuPakAudit','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.ta_NuPakAudit(
+  cNuPakAuditId char(26) NOT NULL,
+  cNuPakAuditAt datetime NOT NULL,
+  cNuPakAuditAction varchar(20) NOT NULL,
+  cNuPakAuditPackage varchar(128) NULL,
+  cNuPakAuditVersion varchar(64) NULL,
+  cNuPakAuditActorKind varchar(10) NOT NULL,
+  cNuPakAuditActorId char(26) NULL,
+  cNuPakAuditActorName varchar(255) NOT NULL,
+  cNuPakAuditResult varchar(10) NOT NULL,
+  cNuPakAuditDetail varchar(500) NULL,
+  cNuPakAuditAddress varchar(64) NULL,
+  ustamp datetime NOT NULL,
+  datestamp datetime NOT NULL,
+  json_object nvarchar(max) NULL,
+ PRIMARY KEY(cNuPakAuditId), CHECK(cNuPakAuditResult IN ('Success','Denied','Failed')));
+ CREATE INDEX IX_NuPakAuditAt ON dbo.ta_NuPakAudit(cNuPakAuditAt DESC);
+ CREATE INDEX IX_NuPakAuditPackage ON dbo.ta_NuPakAudit(cNuPakAuditPackage,cNuPakAuditVersion);
+END;
+EXEC(N'CREATE OR ALTER VIEW dbo.vi_NuPakAudit AS SELECT t.cNuPakAuditId,t.cNuPakAuditAt,t.cNuPakAuditAction,t.cNuPakAuditPackage,t.cNuPakAuditVersion,t.cNuPakAuditActorKind,t.cNuPakAuditActorId,t.cNuPakAuditActorName,t.cNuPakAuditResult,t.cNuPakAuditDetail,t.cNuPakAuditAddress,t.ustamp,t.datestamp,t.json_object FROM dbo.ta_NuPakAudit t');
+COMMIT;

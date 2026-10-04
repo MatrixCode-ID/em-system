@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Android Emulator": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

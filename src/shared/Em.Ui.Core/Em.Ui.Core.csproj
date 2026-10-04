@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Em</RootNamespace>
+        <Description>Shared UI models and services for Em System clients.</Description>
+        <Title>Em System UI core</Title>
+        <PackageTags>em-system;ui;navigation;api-client</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Em.Libs\Em.Libs.csproj" />
+    </ItemGroup>
+
+</Project>

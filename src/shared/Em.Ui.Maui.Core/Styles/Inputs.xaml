@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+   Kolom isian. Bentuknya mengikuti kotak isian "filled" Material: satu bidang tenang dengan sudut
+   lengkung di atas, tanpa garis tepi, sehingga sederet isian terbaca sebagai daftar, bukan sebagai
+   kumpulan kotak.
+
+   Isian di sini dibungkus Border bergaya inputFieldStyle, dan Entry/Picker di dalamnya dibiarkan
+   tanpa bidang sendiri - itulah kenapa keduanya bertipe implisit: sekali disetel, setiap isian di
+   dalam bungkusnya langsung ikut.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
+                    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls">
+
+   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
+        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
+        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <ResourceDictionary.MergedDictionaries>
+      <styles:Palette />
+   </ResourceDictionary.MergedDictionaries>
+
+   <Style x:Key="inputFieldStyle" TargetType="Border">
+      <Setter Property="Padding" Value="14,2" />
+      <Setter Property="StrokeThickness" Value="1" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceContainerHighLight}, Dark={StaticResource surfaceContainerHighDark}}" />
+      <Setter Property="Stroke"
+              Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="12" />
+      </Setter>
+   </Style>
+
+   <Style TargetType="Entry">
+      <Setter Property="FontFamily" Value="OpenSansRegular" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="BackgroundColor" Value="Transparent" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+      <Setter Property="PlaceholderColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+   </Style>
+
+   <Style TargetType="Picker">
+      <Setter Property="FontFamily" Value="OpenSansRegular" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="BackgroundColor" Value="Transparent" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+      <Setter Property="TitleColor"
+              Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+   </Style>
+
+   <Style TargetType="CheckBox">
+      <Setter Property="Color"
+              Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+   </Style>
+
+   <Style TargetType="ActivityIndicator">
+      <Setter Property="Color"
+              Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+   </Style>
+</ResourceDictionary>

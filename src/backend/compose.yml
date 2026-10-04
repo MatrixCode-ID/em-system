@@ -1,0 +1,35 @@
+name: em-api
+services:
+  em-api:
+    image: em-api:local
+    hostname: em-api
+    labels:
+      com.jetbrains.rider.fast.mode: "false"
+      com.microsoft.visual-studio.project-name: Em.Api
+    build:
+      context: ../..
+      dockerfile: src/backend/Em.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      EM_API_CONFIG: /run/secrets/emapi-config
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "${EM_API_BIND_ADDRESS:-127.0.0.1}:${EM_API_PORT:-5132}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - em-api-data:/app/data
+    secrets:
+      - emapi-config
+    init: true
+volumes:
+  em-api-data:
+# emapi-config.json for the container, mounted read-only at /run/secrets/emapi-config.
+secrets:
+  emapi-config:
+    file: ${EM_API_CONFIG_FILE:-../../../.artefacts/em-system/config/emapi-config.docker.json}

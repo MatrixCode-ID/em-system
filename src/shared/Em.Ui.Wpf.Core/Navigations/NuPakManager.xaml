@@ -1,0 +1,614 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:publish="clr-namespace:Em.Ui.Wpf.Navigations.Publish" xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls" xmlns:fa="http://schemas.fontawesome.com/icons/fonts" x:Class="Em.Ui.Wpf.Navigations.NuPakManager" Foreground="{DynamicResource themeWindowForegroundBrush}">
+   <!--
+      NuGet manager: the feed in hand is chosen once in a toolbar above the tabs, because every
+      tab but Publish and Settings works on it. Each tab then follows the UserManager pattern -
+      a tool strip over one card that holds the list - so the screens of the two managers read
+      alike. Lists with several fields are tables (captions over fixed columns, the last column
+      takes the rest); lists of one name and a detail are two-line rows. Every refresh is a
+      small icon button in the corner of the card it reloads.
+   -->
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
+         </ResourceDictionary.MergedDictionaries>
+         <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
+         </Style>
+         <Style x:Key="tbFilled" TargetType="Button" BasedOn="{StaticResource filledButtonStyle}">
+            <Setter Property="Margin" Value="0,0,8,0"/>
+         </Style>
+         <Style x:Key="tbOutlined" TargetType="Button" BasedOn="{StaticResource outlinedButtonStyle}">
+            <Setter Property="Margin" Value="0,0,8,0"/>
+         </Style>
+         <Style x:Key="tbDanger" TargetType="Button" BasedOn="{StaticResource dangerOutlinedButtonStyle}">
+            <Setter Property="Margin" Value="0,0,8,0"/>
+         </Style>
+         <!-- The strip over a card: tools on the left, counters and state on the right. -->
+         <Style x:Key="toolbarRow" TargetType="Grid">
+            <Setter Property="Margin" Value="22,12,22,10"/>
+         </Style>
+         <Style x:Key="bodyCard" TargetType="Border" BasedOn="{StaticResource cardStyle}">
+            <Setter Property="Margin" Value="22,0,22,22"/>
+         </Style>
+         <Style x:Key="panelCard" TargetType="Border" BasedOn="{StaticResource cardStyle}"/>
+         <Style x:Key="messageText" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}">
+            <Setter Property="Margin" Value="22,0,22,8"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextTrimming" Value="None"/>
+            <Style.Triggers>
+               <Trigger Property="Text" Value="">
+                  <Setter Property="Visibility" Value="Collapsed"/>
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+         <Style x:Key="captionText" TargetType="TextBlock" BasedOn="{StaticResource sectionCaptionStyle}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+         </Style>
+         <Style TargetType="ListBox" BasedOn="{StaticResource surfaceListBoxStyle}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource listRowStyle}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+         </Style>
+         <Style x:Key="compactList" TargetType="ListBox" BasedOn="{StaticResource surfaceListBoxStyle}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource listRowCompactStyle}"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+         </Style>
+         <Style x:Key="tabs" TargetType="TabControl" BasedOn="{StaticResource materialTabControlStyle}">
+            <Setter Property="ItemContainerStyle">
+               <Setter.Value>
+                  <Style TargetType="TabItem" BasedOn="{StaticResource materialTabItemStyle}">
+                     <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
+                  </Style>
+               </Setter.Value>
+            </Setter>
+         </Style>
+         <!-- Two-line row for a list of one name and its figures. -->
+         <Style x:Key="rowName" TargetType="TextBlock" BasedOn="{StaticResource primaryCellStyle}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+         </Style>
+         <Style x:Key="tableCell" TargetType="TextBlock" BasedOn="{StaticResource primaryCellStyle}">
+            <Setter Property="Margin" Value="0,0,12,0"/>
+         </Style>
+         <Style x:Key="tableCellMuted" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}">
+            <Setter Property="Margin" Value="0,0,12,0"/>
+         </Style>
+         <Style x:Key="tableHeader" TargetType="TextBlock" BasedOn="{StaticResource columnHeaderStyle}">
+            <Setter Property="Margin" Value="0,0,12,0"/>
+         </Style>
+         <!-- The corner refresh button of a card. -->
+         <Style x:Key="cornerRefresh" TargetType="Button" BasedOn="{StaticResource rowActionButtonStyle}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+         </Style>
+         <Style x:Key="pagerButton" TargetType="Button" BasedOn="{StaticResource rowActionButtonStyle}">
+            <Setter Property="Margin" Value="4,0,0,0"/>
+         </Style>
+      </ResourceDictionary>
+   </UserControl.Resources>
+   <Grid>
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <!-- ===== feed toolbar: choose, create, and the state of the server ===== -->
+      <Grid Grid.Row="0" Style="{StaticResource toolbarRow}">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+         </Grid.ColumnDefinitions>
+         <ComboBox x:Name="feeds" Grid.Column="0" SelectionChanged="FeedSelected" Style="{StaticResource fieldComboStyle}" Tag="Select a feed" Height="38" Width="260" Margin="0,0,4,0" Foreground="{DynamicResource themeWindowForegroundBrush}"/>
+         <Button x:Name="feedListRefresh" Grid.Column="1" Style="{StaticResource cornerRefresh}" Click="FeedListRefresh" ToolTip="Refresh feeds" AutomationProperties.Name="Refresh feeds"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+         <Border Grid.Column="2" Style="{StaticResource toolbarSeparatorStyle}"/>
+         <Button x:Name="feedCreate" Grid.Column="3" Click="CreateFeed" Style="{StaticResource tbFilled}" ToolTip="Create a new feed">
+            <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New Feed" VerticalAlignment="Center"/></StackPanel>
+         </Button>
+         <Button x:Name="feedMore" Grid.Column="4" Style="{StaticResource tbOutlined}" Click="FeedMoreClick" ToolTip="More feed actions" AutomationProperties.Name="More feed actions">
+            <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_EllipsisVertical" Style="{StaticResource buttonIconStyle}" Margin="0"/></StackPanel>
+            <Button.ContextMenu>
+               <ContextMenu Style="{StaticResource surfaceContextMenuStyle}">
+                  <MenuItem x:Name="feedUpdate" Header="Edit selected feed" Click="UpdateFeed" Style="{StaticResource surfaceMenuItemStyle}"/>
+                  <MenuItem x:Name="feedConfig" Header="Copy nuget.config example" Click="CopyConfig" Style="{StaticResource surfaceMenuItemStyle}"/>
+                  <Separator/>
+                  <MenuItem x:Name="feedDelete" Header="Delete selected feed" Click="DeleteFeed" Style="{StaticResource surfaceMenuItemStyle}"/>
+               </ContextMenu>
+            </Button.ContextMenu>
+         </Button>
+         <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
+            <Border Style="{StaticResource chipStyle}" Margin="0,0,12,0"><TextBlock x:Name="status" Text="Server status not loaded"/></Border>
+            <CheckBox x:Name="enabled" Content="Server on" Style="{StaticResource checkBoxStyle}" Click="EnabledClick" ToolTip="Enable all configured feeds" AutomationProperties.Name="NuGet server enabled" Margin="0,0,4,0"/>
+            <Button x:Name="settingsRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh server" AutomationProperties.Name="Refresh server" Click="SettingsRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+         </StackPanel>
+      </Grid>
+
+      <!-- ===== the feed in hand: address, switches and storage. Hidden until its metadata is in. ===== -->
+      <Grid Grid.Row="1">
+         <TextBlock x:Name="noFeeds" Style="{StaticResource secondaryCellStyle}" Margin="22,0,22,10" Text="Select a feed." TextWrapping="Wrap" TextTrimming="None"/>
+         <Border x:Name="feedCard" Style="{StaticResource cardStyle}" Margin="22,0,22,10" Padding="16,10,10,10">
+            <Grid>
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+               </Grid.ColumnDefinitions>
+               <StackPanel VerticalAlignment="Center">
+                  <Grid HorizontalAlignment="Left">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                     </Grid.ColumnDefinitions>
+                     <TextBlock x:Name="endpoint" FontFamily="Consolas" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                     <Button Grid.Column="1" Style="{StaticResource rowActionButtonStyle}" Margin="6,0,0,0" VerticalAlignment="Center" ToolTip="Copy address" AutomationProperties.Name="Copy address" Click="CopyAddress">
+                        <fa:FontAwesome Icon="Solid_Copy" FontSize="12"/>
+                     </Button>
+                  </Grid>
+                  <TextBlock x:Name="storage" Style="{StaticResource secondaryCellStyle}" Margin="0,2,0,0" TextWrapping="Wrap" TextTrimming="None" ToolTip="Total includes recycled versions. Changes apply immediately; switching off makes clients receive 404."/>
+               </StackPanel>
+               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                  <CheckBox x:Name="feedEnabled" Content="Feed enabled" Style="{StaticResource checkBoxStyle}" Click="FeedEnabledClick" Margin="0,0,18,0"/>
+                  <CheckBox x:Name="anonymous" Content="Anonymous read" Style="{StaticResource checkBoxStyle}" Click="AnonymousClick" Margin="0,0,10,0"/>
+                  <Button x:Name="feedRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh feed and storage" AutomationProperties.Name="Refresh feed and storage" Click="FeedDetailsRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+               </StackPanel>
+            </Grid>
+         </Border>
+      </Grid>
+      <TextBlock x:Name="message" Grid.Row="2" Style="{StaticResource messageText}"/>
+
+      <TabControl x:Name="feedWork" Grid.Row="3" Style="{StaticResource tabs}" Foreground="{DynamicResource themeWindowForegroundBrush}">
+         <TabItem Header="Publish"><publish:PublishView x:Name="publisher"/></TabItem>
+         <TabItem Header="Settings"><controls:StorageSettingsCard x:Name="settingsCard"/></TabItem>
+
+         <!-- ===== Packages: prefixes, packages of the prefix, versions of the package ===== -->
+         <TabItem Header="Packages">
+            <Grid x:Name="packageWork">
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Grid Style="{StaticResource toolbarRow}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Border Style="{StaticResource searchFieldStyle}" Height="38" CornerRadius="19" Width="300" Margin="0,0,8,0">
+                     <Grid Margin="16,0">
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="Auto"/>
+                           <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="13" Opacity="0.6" VerticalAlignment="Center"/>
+                        <TextBox x:Name="search" Grid.Column="1" Margin="12,0,0,0" Tag="Package name" ToolTip="Package name" Style="{StaticResource searchBoxStyle}"/>
+                     </Grid>
+                  </Border>
+                  <Button Grid.Column="1" Style="{StaticResource tbOutlined}" Click="SearchClick" ToolTip="Search packages of the selected prefix">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_MagnifyingGlass" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Search" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+               </Grid>
+               <Grid Grid.Row="1" Margin="22,0,22,22">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="250"/>
+                     <ColumnDefinition Width="14"/>
+                     <ColumnDefinition Width="1.2*" MinWidth="240"/>
+                     <ColumnDefinition Width="14"/>
+                     <ColumnDefinition Width="*" MinWidth="300"/>
+                  </Grid.ColumnDefinitions>
+
+                  <Border Style="{StaticResource panelCard}">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                           <DockPanel>
+                              <Button DockPanel.Dock="Right" x:Name="prefixRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh prefixes" AutomationProperties.Name="Refresh prefixes" Click="PrefixesRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                              <TextBlock Text="PREFIXES" Style="{StaticResource captionText}"/>
+                           </DockPanel>
+                        </Border>
+                        <ListBox x:Name="prefixes" Grid.Row="1" Style="{StaticResource compactList}" SelectionChanged="PrefixSelected">
+                           <ListBox.ItemTemplate>
+                              <DataTemplate>
+                                 <StackPanel>
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource rowName}" TextWrapping="Wrap"/>
+                                    <TextBlock Style="{StaticResource secondaryCellStyle}">
+                                       <Run Text="{Binding Packages, StringFormat={}{0:N0} packages, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Bytes, StringFormat={}{0:N0} B, Mode=OneWay}"/>
+                                    </TextBlock>
+                                 </StackPanel>
+                              </DataTemplate>
+                           </ListBox.ItemTemplate>
+                        </ListBox>
+                     </Grid>
+                  </Border>
+
+                  <Border Grid.Column="2" Style="{StaticResource panelCard}">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="*"/>
+                           <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                           <DockPanel>
+                              <Button DockPanel.Dock="Right" x:Name="packageRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh packages" AutomationProperties.Name="Refresh packages" Click="PackagesRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                              <TextBlock Text="PACKAGES" Style="{StaticResource captionText}"/>
+                           </DockPanel>
+                        </Border>
+                        <ListBox x:Name="packages" Grid.Row="1" Style="{StaticResource compactList}" SelectionChanged="PackageSelected"/>
+                        <Border Grid.Row="2" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0" Padding="8,6,8,6">
+                           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                              <Button Style="{StaticResource pagerButton}" Click="PackagesPrevious" ToolTip="Previous page" AutomationProperties.Name="Previous page"><fa:FontAwesome Icon="Solid_ChevronLeft"/></Button>
+                              <Button Style="{StaticResource pagerButton}" Click="PackagesNext" ToolTip="Next page" AutomationProperties.Name="Next page"><fa:FontAwesome Icon="Solid_ChevronRight"/></Button>
+                           </StackPanel>
+                        </Border>
+                     </Grid>
+                  </Border>
+
+                  <Border Grid.Column="4" Style="{StaticResource panelCard}">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="*"/>
+                           <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                           <DockPanel>
+                              <Button DockPanel.Dock="Right" x:Name="versionRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh versions" AutomationProperties.Name="Refresh versions" Click="VersionsRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                              <TextBlock Text="VERSIONS" Style="{StaticResource captionText}"/>
+                           </DockPanel>
+                        </Border>
+                        <ListBox x:Name="versions" Grid.Row="1" Style="{StaticResource compactList}" SelectionChanged="VersionSelected">
+                           <ListBox.ItemTemplate>
+                              <DataTemplate>
+                                 <StackPanel>
+                                    <TextBlock Style="{StaticResource rowName}"><Run Text="{Binding PackageName, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding Version, Mode=OneWay}"/></TextBlock>
+                                    <TextBlock Style="{StaticResource secondaryCellStyle}">
+                                       <Run Text="{Binding Bytes, StringFormat={}{0:N0} B, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding PushedBy, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding PushedAt, StringFormat=u, Mode=OneWay}"/>
+                                    </TextBlock>
+                                 </StackPanel>
+                              </DataTemplate>
+                           </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Border Grid.Row="2" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0" Padding="16,10,12,8">
+                           <StackPanel>
+                              <TextBlock x:Name="versionDetail" Style="{StaticResource secondaryCellStyle}" TextWrapping="Wrap" TextTrimming="None"/>
+                              <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                 <Button Style="{StaticResource compactDangerOutlinedButtonStyle}" Margin="0,0,8,0" Click="RecycleClick" ToolTip="Move the selected version to the recycle bin">
+                                    <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Recycle" VerticalAlignment="Center"/></StackPanel>
+                                 </Button>
+                                 <Button Style="{StaticResource compactOutlinedButtonStyle}" Margin="0,0,8,0" Click="CopyReference" ToolTip="Copy a PackageReference element">
+                                    <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Regular_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Reference" VerticalAlignment="Center"/></StackPanel>
+                                 </Button>
+                                 <Button Style="{StaticResource compactOutlinedButtonStyle}" Click="CopyCommand" ToolTip="Copy a dotnet add package command">
+                                    <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Regular_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Command" VerticalAlignment="Center"/></StackPanel>
+                                 </Button>
+                              </StackPanel>
+                           </StackPanel>
+                        </Border>
+                     </Grid>
+                  </Border>
+               </Grid>
+            </Grid>
+         </TabItem>
+
+         <!-- ===== Recycle Bin ===== -->
+         <TabItem Header="Recycle Bin">
+            <Grid x:Name="binWork">
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Grid Style="{StaticResource toolbarRow}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Button Style="{StaticResource tbFilled}" Click="RestoreClick" ToolTip="Restore the selected version">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_RotateLeft" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Restore" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Grid.Column="1" Style="{StaticResource toolbarSeparatorStyle}"/>
+                  <Button Grid.Column="2" Style="{StaticResource tbOutlined}" Click="AllBinClick" ToolTip="Show the recycle bin of every prefix">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_LayerGroup" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="All prefixes" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <StackPanel Grid.Column="4" Orientation="Horizontal">
+                     <Button x:Name="purge" Style="{StaticResource tbDanger}" Click="PurgeClick" ToolTip="Delete the selected version permanently">
+                        <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Purge" VerticalAlignment="Center"/></StackPanel>
+                     </Button>
+                     <Button x:Name="emptyBin" Style="{StaticResource tbDanger}" Margin="0" Click="EmptyClick" ToolTip="Delete every version in this recycle bin permanently">
+                        <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_BroomBall" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Empty Recycle Bin" VerticalAlignment="Center"/></StackPanel>
+                     </Button>
+                  </StackPanel>
+               </Grid>
+               <Border Grid.Row="1" Style="{StaticResource bodyCard}">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                     </Grid.RowDefinitions>
+                     <Border Style="{StaticResource innerCardHeaderStyle}" CornerRadius="13,13,0,0" Height="38">
+                        <Grid Margin="24,0,8,0">
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="260"/>
+                              <ColumnDefinition Width="120"/>
+                              <ColumnDefinition Width="120"/>
+                              <ColumnDefinition Width="180"/>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="Auto"/>
+                           </Grid.ColumnDefinitions>
+                           <TextBlock Grid.Column="0" Text="PACKAGE" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="1" Text="VERSION" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="2" Text="SIZE" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="3" Text="PUSHED BY" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="4" Text="PUSHED AT (UTC)" Style="{StaticResource tableHeader}"/>
+                           <Button Grid.Column="5" x:Name="binRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh recycle bin" AutomationProperties.Name="Refresh recycle bin" Click="BinRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                        </Grid>
+                     </Border>
+                     <ListBox x:Name="bin" Grid.Row="1">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="0,0,0,0">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="260"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                 </Grid.ColumnDefinitions>
+                                 <TextBlock Grid.Column="0" Text="{Binding PackageName}" Style="{StaticResource tableCell}" FontWeight="SemiBold"/>
+                                 <TextBlock Grid.Column="1" Text="{Binding Version}" Style="{StaticResource tableCell}"/>
+                                 <TextBlock Grid.Column="2" Text="{Binding Bytes, StringFormat={}{0:N0} B}" Style="{StaticResource tableCellMuted}"/>
+                                 <TextBlock Grid.Column="3" Text="{Binding PushedBy}" Style="{StaticResource tableCellMuted}"/>
+                                 <TextBlock Grid.Column="4" Text="{Binding PushedAt, StringFormat=u}" Style="{StaticResource tableCellMuted}"/>
+                              </Grid>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                     <Border Grid.Row="2" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0" Padding="22,6,8,6">
+                        <DockPanel>
+                           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                              <Button Style="{StaticResource pagerButton}" Click="BinPrevious" ToolTip="Previous page" AutomationProperties.Name="Previous page"><fa:FontAwesome Icon="Solid_ChevronLeft"/></Button>
+                              <Button Style="{StaticResource pagerButton}" Click="BinNext" ToolTip="Next page" AutomationProperties.Name="Next page"><fa:FontAwesome Icon="Solid_ChevronRight"/></Button>
+                           </StackPanel>
+                           <TextBlock Text="Shows the selected prefix; All prefixes shows everything." Style="{StaticResource secondaryCellStyle}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                     </Border>
+                  </Grid>
+               </Border>
+            </Grid>
+         </TabItem>
+
+         <!-- ===== Prefixes: the editor and the robots that may use the prefix ===== -->
+         <TabItem Header="Prefixes">
+            <Grid x:Name="prefixWork">
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Grid Style="{StaticResource toolbarRow}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Button Style="{StaticResource tbFilled}" Click="CreatePrefix" ToolTip="Create a prefix with the name and description below">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Create" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Grid.Column="1" Style="{StaticResource toolbarSeparatorStyle}"/>
+                  <Button Grid.Column="2" Style="{StaticResource tbOutlined}" Click="UpdatePrefix" ToolTip="Save the changes to the selected prefix">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Update selected" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Grid.Column="3" Style="{StaticResource tbDanger}" Click="DeletePrefix" ToolTip="Delete the selected prefix">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Delete selected" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Grid.Column="5" Style="{StaticResource tbOutlined}" Margin="0" Click="OpenUsers" ToolTip="Robot access is managed in User Manager, tab Robots">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Users" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Open User Manager" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+               </Grid>
+               <Grid Grid.Row="1" Margin="22,0,22,22">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="14"/>
+                     <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Border Style="{StaticResource panelCard}">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                           <DockPanel>
+                              <Button DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" ToolTip="Refresh prefixes" AutomationProperties.Name="Refresh prefixes" Click="PrefixesRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                              <TextBlock Text="PREFIX EDITOR" Style="{StaticResource captionText}"/>
+                           </DockPanel>
+                        </Border>
+                        <Grid Grid.Row="1" Margin="20,16,20,16">
+                           <Grid.RowDefinitions>
+                              <RowDefinition Height="Auto"/>
+                              <RowDefinition Height="Auto"/>
+                              <RowDefinition Height="Auto"/>
+                              <RowDefinition Height="Auto"/>
+                              <RowDefinition Height="Auto"/>
+                           </Grid.RowDefinitions>
+                           <TextBlock Text="Select a prefix in Packages to edit it, or type a new name and press Create." Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,14"/>
+                           <TextBlock Grid.Row="1" Text="Name" Style="{StaticResource fieldLabelStyle}" Margin="0,0,0,6"/>
+                           <TextBox Grid.Row="2" x:Name="prefixName" Style="{StaticResource fieldBoxStyle}" ToolTip="Package ID prefix, such as MatrixCode." Margin="0,0,0,12"/>
+                           <TextBlock Grid.Row="3" Text="Description" Style="{StaticResource fieldLabelStyle}" Margin="0,0,0,6"/>
+                           <StackPanel Grid.Row="4">
+                              <TextBox x:Name="prefixDescription" Style="{StaticResource fieldBoxStyle}" Margin="0,0,0,12"/>
+                              <CheckBox x:Name="prefixActive" Content="Active" IsChecked="True" Style="{StaticResource checkBoxStyle}" Margin="0"/>
+                           </StackPanel>
+                        </Grid>
+                     </Grid>
+                  </Border>
+                  <Border Grid.Column="2" Style="{StaticResource panelCard}">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Style="{StaticResource innerCardHeaderStyle}" Padding="16,0,8,0" Height="40">
+                           <DockPanel>
+                              <Button DockPanel.Dock="Right" x:Name="accessRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh robot access" AutomationProperties.Name="Refresh robot access" Click="AccessRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                              <TextBlock Text="ROBOT ACCESS" Style="{StaticResource captionText}"/>
+                           </DockPanel>
+                        </Border>
+                        <TextBlock Grid.Row="1" Text="Manage R (restore) / W (restore, push, recycle) in User Manager, tab Robots." Style="{StaticResource fieldHelpStyle}" Margin="20,12,20,10"/>
+                        <ListBox x:Name="access" Grid.Row="2" Style="{StaticResource compactList}"/>
+                     </Grid>
+                  </Border>
+               </Grid>
+            </Grid>
+         </TabItem>
+
+         <!-- ===== Audit ===== -->
+         <TabItem Header="Audit">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Grid Style="{StaticResource toolbarRow}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="Auto"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Button Style="{StaticResource tbFilled}" Click="AuditFilterClick" ToolTip="Apply the filters">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Filter" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Filter" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Grid.Column="1" Style="{StaticResource toolbarSeparatorStyle}"/>
+                  <CheckBox Grid.Column="3" x:Name="serverAudit" Content="Entire server" Style="{StaticResource checkBoxStyle}" Click="AuditFilterClick" Margin="0" VerticalAlignment="Center"/>
+               </Grid>
+               <!-- filter strip: one row, every field the same height and the same gap -->
+               <Grid Grid.Row="1" Margin="22,0,22,10">
+                  <Grid.Resources>
+                     <Style TargetType="TextBox" BasedOn="{StaticResource fieldBoxStyle}">
+                        <Setter Property="Height" Value="38"/>
+                        <Setter Property="Margin" Value="0,0,8,0"/>
+                     </Style>
+                     <Style TargetType="DatePicker" BasedOn="{StaticResource inlineDatePickerStyle}">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                     </Style>
+                     <Style x:Key="dateField" TargetType="Border">
+                        <Setter Property="Height" Value="38"/>
+                        <Setter Property="CornerRadius" Value="10"/>
+                        <Setter Property="Padding" Value="12,0,6,0"/>
+                        <Setter Property="Margin" Value="0,0,8,0"/>
+                        <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                     </Style>
+                  </Grid.Resources>
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="1.4*"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="*"/>
+                     <ColumnDefinition Width="1.1*"/>
+                     <ColumnDefinition Width="1.1*"/>
+                  </Grid.ColumnDefinitions>
+                  <TextBox x:Name="auditPackage" Grid.Column="0" ToolTip="Package" Tag="Package"/>
+                  <TextBox x:Name="auditVersion" Grid.Column="1" ToolTip="Version" Tag="Version"/>
+                  <TextBox x:Name="auditActor" Grid.Column="2" ToolTip="Actor" Tag="Actor"/>
+                  <TextBox x:Name="auditAction" Grid.Column="3" ToolTip="Action" Tag="Action"/>
+                  <TextBox x:Name="auditResult" Grid.Column="4" ToolTip="Result" Tag="Result"/>
+                  <Border Grid.Column="5" Style="{StaticResource dateField}">
+                     <DockPanel>
+                        <TextBlock Text="FROM" DockPanel.Dock="Left" Style="{StaticResource captionText}" Margin="0,0,8,0"/>
+                        <DatePicker x:Name="auditFrom" ToolTip="From (UTC)"/>
+                     </DockPanel>
+                  </Border>
+                  <Border Grid.Column="6" Style="{StaticResource dateField}" Margin="0">
+                     <DockPanel>
+                        <TextBlock Text="THROUGH" DockPanel.Dock="Left" Style="{StaticResource captionText}" Margin="0,0,8,0"/>
+                        <DatePicker x:Name="auditTo" ToolTip="Through (UTC)"/>
+                     </DockPanel>
+                  </Border>
+               </Grid>
+               <Border Grid.Row="2" Style="{StaticResource bodyCard}">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                     </Grid.RowDefinitions>
+                     <Border Style="{StaticResource innerCardHeaderStyle}" CornerRadius="13,13,0,0" Height="38">
+                        <Grid Margin="24,0,8,0">
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="150"/>
+                              <ColumnDefinition Width="90"/>
+                              <ColumnDefinition Width="110"/>
+                              <ColumnDefinition Width="80"/>
+                              <ColumnDefinition Width="120"/>
+                              <ColumnDefinition Width="200"/>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="Auto"/>
+                           </Grid.ColumnDefinitions>
+                           <TextBlock Grid.Column="0" Text="AT (UTC)" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="1" Text="FEED" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="2" Text="ACTION" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="3" Text="RESULT" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="4" Text="ACTOR" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="5" Text="PACKAGE" Style="{StaticResource tableHeader}"/>
+                           <TextBlock Grid.Column="6" Text="DETAIL" Style="{StaticResource tableHeader}"/>
+                           <Button Grid.Column="7" x:Name="auditRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh audit" AutomationProperties.Name="Refresh audit" Click="AuditRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                        </Grid>
+                     </Border>
+                     <ListBox x:Name="audit" Grid.Row="1">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid>
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="200"/>
+                                    <ColumnDefinition Width="*"/>
+                                 </Grid.ColumnDefinitions>
+                                 <TextBlock Grid.Column="0" Text="{Binding cNuPakAuditAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Style="{StaticResource tableCellMuted}"/>
+                                 <TextBlock Grid.Column="1" Text="{Binding cNuPakAuditFeedSlug}" Style="{StaticResource tableCell}" ToolTip="{Binding cNuPakAuditFeedName}"/>
+                                 <TextBlock Grid.Column="2" Text="{Binding cNuPakAuditAction}" Style="{StaticResource tableCell}" FontWeight="SemiBold"/>
+                                 <TextBlock Grid.Column="3" Text="{Binding cNuPakAuditResult}" Style="{StaticResource tableCell}"/>
+                                 <TextBlock Grid.Column="4" Text="{Binding cNuPakAuditActorName}" Style="{StaticResource tableCellMuted}"/>
+                                 <TextBlock Grid.Column="5" Style="{StaticResource tableCell}"><Run Text="{Binding cNuPakAuditPackage, Mode=OneWay}"/><Run Text=" "/><Run Text="{Binding cNuPakAuditVersion, Mode=OneWay}"/></TextBlock>
+                                 <TextBlock Grid.Column="6" Text="{Binding cNuPakAuditDetail}" Style="{StaticResource tableCellMuted}" ToolTip="{Binding cNuPakAuditDetail}"/>
+                              </Grid>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                     <Border Grid.Row="2" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0" Padding="22,6,8,6">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                           <Button Style="{StaticResource pagerButton}" Click="AuditPrevious" ToolTip="Previous page" AutomationProperties.Name="Previous page"><fa:FontAwesome Icon="Solid_ChevronLeft"/></Button>
+                           <Button Style="{StaticResource pagerButton}" Click="AuditNext" ToolTip="Next page" AutomationProperties.Name="Next page"><fa:FontAwesome Icon="Solid_ChevronRight"/></Button>
+                        </StackPanel>
+                     </Border>
+                  </Grid>
+               </Border>
+            </Grid>
+         </TabItem>
+      </TabControl>
+   </Grid>
+</UserControl>

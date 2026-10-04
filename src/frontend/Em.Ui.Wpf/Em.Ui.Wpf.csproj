@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <IsPackable>false</IsPackable>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UseWPF>true</UseWPF>
+        <UseWindowsForms>true</UseWindowsForms>
+        <RootNamespace>Em</RootNamespace>
+        <ApplicationIcon>..\..\shared\Em.Ui.Wpf.Core\Assets\Icons\Logo.ico</ApplicationIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Logo.svg" />
+      <Resource Include="Logo.svg" />
+      <!-- Logo.png needs no entry: the WPF SDK already picks image files up as Resource. -->
+      <None Remove="Logo.png" />
+      <Resource Include="Logo.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- The launcher/updater ships inside every release, at the root of the output and publish folders.
+           Built by src/frontend/Launcher/build-dist.ps1 and committed under dist/; never edit it by hand. -->
+      <Content Include="..\..\..\dist\launcher\launcher.exe" Link="launcher.exe" Condition="Exists('..\..\..\dist\launcher\launcher.exe')">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\shared\Em.Libs\Em.Libs.csproj" />
+      <ProjectReference Include="..\..\shared\Em.Ui.Wpf.Core\Em.Ui.Wpf.Core.csproj" />
+      <ProjectReference Include="..\..\modules\Em.Test\Em.Test.Wpf\Em.Test.Wpf.csproj" />
+    </ItemGroup>
+
+</Project>

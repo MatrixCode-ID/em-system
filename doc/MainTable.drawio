@@ -1,0 +1,831 @@
+<mxfile host="app.diagrams.net" type="device" version="24.7.17">
+  <diagram id="pmap" name="1 · Peta Relasi">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="1180" math="0" shadow="0">
+      <root>
+        <mxCell id="pmap_0" />
+        <mxCell id="1" parent="pmap_0" />
+        <mxCell id="p1_title" value="Peta Relasi Tabel EmDb" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="700" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_sub" value="24 tabel dalam 4 kelompok. Panah menunjuk ke tabel induk; kaki gagak ada di sisi “banyak”. Detail kolom ada di halaman &lt;b&gt;2 · ERD Lengkap&lt;/b&gt;." style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#607D8B;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1000" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_band_id" value="IDENTITAS &amp; AKSES" style="rounded=1;arcSize=3;html=1;fillColor=#F4F8FF;strokeColor=#6C8EBF;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#1F3B73;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="840" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_band_ct" value="KONTAK &amp; MITRA" style="rounded=1;arcSize=3;html=1;fillColor=#F5FBF4;strokeColor=#82B366;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#2C5E2E;" vertex="1" parent="1">
+          <mxGeometry x="870" y="130" width="500" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_band_pr" value="PRODUK &amp; TRANSAKSI" style="rounded=1;arcSize=3;html=1;fillColor=#FFFBF5;strokeColor=#D79B00;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#7A4E00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="560" width="1330" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_band_sy" value="SISTEM &amp; UTILITAS" style="rounded=1;arcSize=3;html=1;fillColor=#FBF8FC;strokeColor=#9673A6;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#4A2C6B;" vertex="1" parent="1">
+          <mxGeometry x="40" y="860" width="1330" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_User" value="&lt;b&gt;ta_User&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Akun pengguna aplikasi&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="190" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_UserCredential" value="&lt;b&gt;ta_UserCredential&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kredensial login milik user&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="280" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_UserClaim" value="&lt;b&gt;ta_UserClaim&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Hak akses langsung ke user&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="280" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_UserRole" value="&lt;b&gt;ta_UserRole&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Penugasan user ke role (N : N)&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="280" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Role" value="&lt;b&gt;ta_Role&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kelompok peran&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="370" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_RoleClaim" value="&lt;b&gt;ta_RoleClaim&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Hak akses milik role&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="370" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_UserSession" value="&lt;b&gt;ta_UserSession&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Sesi login user&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="190" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_SystemSession" value="&lt;b&gt;ta_SystemSession&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Sesi akun sistem / debugger&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="370" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Contact" value="&lt;b&gt;ta_Contact&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Identitas orang / organisasi&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="190" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Address" value="&lt;b&gt;ta_Address&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Alamat milik kontak&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="190" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Comm" value="&lt;b&gt;ta_Comm&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Sarana komunikasi kontak&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="262" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_BusinessPartner" value="&lt;b&gt;ta_BusinessPartner&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kontak sebagai mitra bisnis&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="400" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Emp" value="&lt;b&gt;ta_Emp&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kontak sebagai karyawan&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="400" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Product" value="&lt;b&gt;ta_Product&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Master produk&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="630" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_ProductType" value="&lt;b&gt;ta_ProductType&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Klasifikasi produk&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="630" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Unit" value="&lt;b&gt;ta_Unit&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Satuan ukur produk&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="730" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_ShoeHelper" value="&lt;b&gt;ta_ShoeHelper&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Atribut sepatu per produk&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="730" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_ProductTran" value="&lt;b&gt;ta_ProductTran&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Header transaksi produk&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="630" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_ProductTranData" value="&lt;b&gt;ta_ProductTranData&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Baris detail transaksi&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="570" y="630" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Doc" value="&lt;b&gt;ta_Doc&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Jenis dokumen transaksi&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="630" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Currency" value="&lt;b&gt;ta_Currency&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Mata uang&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="730" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Log" value="&lt;b&gt;ta_Log&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Jejak aktivitas aplikasi&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A2C6B;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="930" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_ta_Meta" value="&lt;b&gt;ta_Meta&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Konfigurasi key-value&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A2C6B;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="930" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_sysdiagrams" value="&lt;b&gt;sysdiagrams&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Tabel bawaan SQL Server — bukan bagian model&lt;/span&gt;" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#F5F5F5;strokeColor=#BDBDBD;fontColor=#9E9E9E;fontSize=12;align=center;verticalAlign=middle;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="570" y="930" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.35;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Address" target="p1_ta_Contact">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Comm" target="p1_ta_Contact">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_BusinessPartner" target="p1_ta_Contact">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.8;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Emp" target="p1_ta_Contact">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1255" y="350" />
+              <mxPoint x="1058" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=1;exitY=0.15;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Contact" target="p1_ta_Address">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=1;exitY=0.9;exitDx=0;exitDy=0;entryX=0;entryY=0.8;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Contact" target="p1_ta_Comm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_User" target="p1_ta_Contact">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="527" y="165" />
+              <mxPoint x="995" y="165" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_UserCredential" target="p1_ta_User">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_UserClaim" target="p1_ta_User">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_UserRole" target="p1_ta_User">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_UserRole" target="p1_ta_Role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_RoleClaim" target="p1_ta_Role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_UserSession" target="p1_ta_User">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Log" target="p1_ta_User">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="62" y="958" />
+              <mxPoint x="62" y="218" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Product" target="p1_ta_Unit">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="968" y="758" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_Product" target="p1_ta_ProductType">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTran" target="p1_ta_Doc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.35;exitY=0;exitDx=0;exitDy=0;entryX=0.3;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTran" target="p1_ta_BusinessPartner">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="404" y="525" />
+              <mxPoint x="953" y="525" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.65;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTran" target="p1_ta_Emp">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="467" y="540" />
+              <mxPoint x="1255" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTran" target="p1_ta_ProductTran">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="393" y="710" />
+              <mxPoint x="477" y="710" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk20" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTranData" target="p1_ta_ProductTran">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTranData" target="p1_ta_Product">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_fk22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ProductTranData" target="p1_ta_Currency">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="675" y="758" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1_fk23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1_ta_ShoeHelper" target="p1_ta_Product">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1_legend" value="&lt;span style=&quot;color:#B85450;&quot;&gt;&amp;#9473;&amp;#9473;&lt;/span&gt; ON DELETE CASCADE &amp;#160;&amp;#160; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;&amp;#9476;&amp;#9476;&lt;/span&gt; relasi logis tanpa FK &amp;#160;&amp;#160; warna kotak = kelompok tabel &amp;#160;&amp;#160; kotak abu-abu = tabel sistem SQL Server, bukan bagian model" style="rounded=1;arcSize=6;html=1;fillColor=#FAFAFA;strokeColor=#CFD8DC;align=left;verticalAlign=middle;spacingLeft=12;fontSize=11;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1080" width="1330" height="36" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="perd" name="2 · ERD Lengkap">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1840" pageHeight="2080" math="0" shadow="0">
+      <root>
+        <mxCell id="perd_0" />
+        <mxCell id="1" parent="perd_0" />
+        <mxCell id="p2_title" value="Struktur Tabel Database EmDb — ERD Lengkap" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="900" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_legend" value="&amp;#128273; &lt;b&gt;Primary key&lt;/b&gt; &amp;#160;&amp;#160; &amp;#128279; &lt;b&gt;Foreign key&lt;/b&gt; &amp;#160;&amp;#160; &amp;#9679; kolom biasa &amp;#160;&amp;#160; &amp;#8943; kolom audit standar &amp;#160;&amp;#160; &lt;span style=&quot;color:#C0392B;&quot;&gt;UQ&lt;/span&gt; unik &amp;#160; &lt;span style=&quot;color:#C0392B;&quot;&gt;UQ*&lt;/span&gt; unik gabungan &amp;#160; &lt;span style=&quot;color:#C0392B;&quot;&gt;IX&lt;/span&gt; index&lt;br/&gt;&lt;span style=&quot;color:#B85450;&quot;&gt;&amp;#9473;&amp;#9473;&lt;/span&gt; garis merah = &lt;b&gt;ON DELETE CASCADE&lt;/b&gt; (hapus induk ikut menghapus anak) &amp;#160;&amp;#160; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;&amp;#9476;&amp;#9476;&lt;/span&gt; garis putus-putus = relasi logis tanpa constraint FK &amp;#160;&amp;#160; kaki gagak selalu di sisi tabel anak (sisi N)" style="rounded=1;arcSize=6;html=1;fillColor=#FAFAFA;strokeColor=#CFD8DC;align=left;verticalAlign=middle;spacingLeft=14;fontSize=11;fontColor=#455A64;" vertex="1" parent="1">
+          <mxGeometry x="40" y="62" width="1730" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_band_id" value="IDENTITAS &amp; AKSES" style="rounded=1;arcSize=3;html=1;fillColor=#F4F8FF;strokeColor=#6C8EBF;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#1F3B73;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="1010" height="800" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_band_ct" value="KONTAK &amp; MITRA" style="rounded=1;arcSize=3;html=1;fillColor=#F5FBF4;strokeColor=#82B366;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#2C5E2E;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="120" width="680" height="800" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_band_pr" value="PRODUK &amp; TRANSAKSI" style="rounded=1;arcSize=3;html=1;fillColor=#FFFBF5;strokeColor=#D79B00;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#7A4E00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="950" width="1730" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_band_sy" value="SISTEM &amp; UTILITAS" style="rounded=1;arcSize=3;html=1;fillColor=#FBF8FC;strokeColor=#9673A6;dashed=1;dashPattern=8 8;verticalAlign=top;align=left;spacingLeft=14;spacingTop=6;fontSize=13;fontStyle=1;fontColor=#4A2C6B;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1500" width="1730" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User" value="ta_User&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Akun pengguna aplikasi&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="730" y="200" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User_cUserId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cUserId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_User">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User_cUserAccount" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserAccount &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_User">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User_cContactId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_User">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User_cUserState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_User">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User_cUserIsAdmin" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserIsAdmin &lt;span style=&quot;color:#9E9E9E;&quot;&gt;bit&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_User">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_User__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_User">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential" value="ta_UserCredential&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kredensial login milik user&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="200" width="290" height="204" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential_cCredentialId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cCredentialId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential_cUserId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cUserId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential_cCredentialType" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCredentialType &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential_cCredentialState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCredentialState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential_cCredentialKey" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCredentialKey &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential_cCredentialSecret" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCredentialSecret &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserCredential__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserCredential">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim" value="ta_UserClaim&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Hak akses langsung ke user&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="460" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim_cUserClaimId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cUserClaimId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserClaim">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim_cUserId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cUserId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserClaim">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim_cUserClaimName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserClaimName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserClaim">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim_cUserClaimStart" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserClaimStart &lt;span style=&quot;color:#9E9E9E;&quot;&gt;datetime&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserClaim">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim_cUserClaimExpiry" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserClaimExpiry &lt;span style=&quot;color:#9E9E9E;&quot;&gt;datetime&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserClaim">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserClaim__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;datestamp&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserClaim">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserRole" value="ta_UserRole&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Penugasan user ke role (N : N)&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="700" width="290" height="156" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserRole_cUserId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt;&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; &lt;b&gt;cUserId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserRole">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserRole_cRoleId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt;&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; &lt;b&gt;cRoleId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserRole">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserRole_cUserRoleStart" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserRoleStart &lt;span style=&quot;color:#9E9E9E;&quot;&gt;datetime&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserRole">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserRole_cUserRoleExpiry" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserRoleExpiry &lt;span style=&quot;color:#9E9E9E;&quot;&gt;datetime&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserRole">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserRole__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserRole">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Role" value="ta_Role&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kelompok peran&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="200" width="290" height="156" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Role_cRoleId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cRoleId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Role">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Role_cRoleName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cRoleName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Role">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Role_cRoleState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cRoleState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Role">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Role_cRoleDescription" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cRoleDescription &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Role">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Role__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Role">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_RoleClaim" value="ta_RoleClaim&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Hak akses milik role&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="420" width="290" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_RoleClaim_cRoleId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt;&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; &lt;b&gt;cRoleId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_RoleClaim">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_RoleClaim_cClaimName" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cClaimName&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_RoleClaim">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession" value="ta_UserSession&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Sesi login user&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="730" y="430" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession_cUserSessionId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cUserSessionId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserSession">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession_cUserId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cUserId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserSession">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession_cUserSessionHash" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserSessionHash &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserSession">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession_cUserSessionState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserSessionState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserSession">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession_cUserSessionExpiry" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUserSessionExpiry &lt;span style=&quot;color:#9E9E9E;&quot;&gt;datetime&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserSession">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_UserSession__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_UserSession">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession" value="ta_SystemSession&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Sesi akun sistem / debugger&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontColor=#1F3B73;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="730" y="680" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession_cSystemSessionId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cSystemSessionId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_SystemSession">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession_cSystemSessionAccountId" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cSystemSessionAccountId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;IX&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_SystemSession">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession_cSystemSessionHash" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cSystemSessionHash &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_SystemSession">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession_cSystemSessionState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cSystemSessionState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_SystemSession">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession_cSystemSessionExpiry" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cSystemSessionExpiry &lt;span style=&quot;color:#9E9E9E;&quot;&gt;datetime&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_SystemSession">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_SystemSession__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_SystemSession">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact" value="ta_Contact&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Identitas orang / organisasi&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="200" width="290" height="228" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cContactId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactFullName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cContactFullName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cContactState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactType" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cContactType &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactNote" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cContactNote &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactDefaultAddress_cAddressId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactDefaultAddress_cAddressId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact_cContactDefaultComm_cCommId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactDefaultComm_cCommId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Contact__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Contact">
+          <mxGeometry x="0" y="198" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address" value="ta_Address&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Alamat milik kontak&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="500" width="290" height="204" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address_cAddressId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cAddressId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address_cContactId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address_cAddressName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cAddressName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address_cAddressState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cAddressState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address_cAddressLocation" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cAddressLocation &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(1000)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address_cAddressZip" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cAddressZip &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(10)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Address__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Address">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm" value="ta_Comm&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Sarana komunikasi kontak&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="500" width="290" height="204" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm_cCommId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cCommId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm_cContactId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm_cCommType" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCommType &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm_cCommState" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCommState &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm_cCommValue" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCommValue &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm_cCommNote" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCommNote &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Comm__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Comm">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_BusinessPartner" value="ta_BusinessPartner&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kontak sebagai mitra bisnis&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="200" width="290" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_BusinessPartner_cBusinessPartnerId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cBusinessPartnerId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_BusinessPartner">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_BusinessPartner_cContactId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_BusinessPartner">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_BusinessPartner__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_BusinessPartner">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Emp" value="ta_Emp&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Kontak sebagai karyawan&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#D5E8D4;strokeColor=#82B366;fontColor=#2C5E2E;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="350" width="290" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Emp_cEmpId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cEmpId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(8)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Emp">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Emp_cContactId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cContactId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Emp">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Emp_cEmpPositionCurent" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cEmpPositionCurent &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Emp">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product" value="ta_Product&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Master produk&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1030" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product_cProductId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cProductId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;ULID&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Product">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product_cUnitId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cUnitId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Product">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product_cProductTypeId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cProductTypeId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Product">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product_cProductIdIsUlid" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductIdIsUlid &lt;span style=&quot;color:#9E9E9E;&quot;&gt;bit&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Product">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product_cProductName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Product">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Product_cProductSku" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductSku &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Product">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductType" value="ta_ProductType&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Klasifikasi produk&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="1030" width="290" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductType_cProductTypeId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cProductTypeId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductType">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductType_cProductTypeDescription" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTypeDescription &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductType">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Unit" value="ta_Unit&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Satuan ukur produk&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="1160" width="290" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Unit_cUnitId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cUnitId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Unit">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Unit_cUnitSymbol" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUnitSymbol &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Unit">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Unit_cUnitDesc" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cUnitDesc &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Unit">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper" value="ta_ShoeHelper&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Atribut sepatu per produk&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1250" width="290" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper_cShoeHelperId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cShoeHelperId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ShoeHelper">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper_cProductId" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ShoeHelper">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper_cShoeModel" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cShoeModel &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(4)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ShoeHelper">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper_cShoeType" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cShoeType &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ShoeHelper">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper_cShoeVersion" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cShoeVersion &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ShoeHelper">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ShoeHelper_cShoeSize" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cShoeSize &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(5)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ShoeHelper">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran" value="ta_ProductTran&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Header transaksi produk&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1030" width="290" height="324" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cProductTranId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(34)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cDocName" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cDocName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(25)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cBusinessPartnerId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cBusinessPartnerId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranEmpRef_cEmpId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cProductTranEmpRef_cEmpId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(8)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranSelRef_cProductTranId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cProductTranSelRef_cProductTranId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(34)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranRefNumber" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranRefNumber &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranStage" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranStage &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranRevision" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranRevision &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="198" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranOrder" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranOrder &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="222" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranDate" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranDate &lt;span style=&quot;color:#9E9E9E;&quot;&gt;date&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="246" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran_cProductTranNote" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranNote &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="270" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTran__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTran">
+          <mxGeometry x="0" y="294" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData" value="ta_ProductTranData&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Baris detail transaksi&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="750" y="1030" width="290" height="252" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductTranDataId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cProductTranDataId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductTranId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cProductTranId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(34)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cProductId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cCurrencyId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cCurrencyId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(25)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductTranDataOrder" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranDataOrder &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductTranDataQty" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranDataQty &lt;span style=&quot;color:#9E9E9E;&quot;&gt;decimal(18,2)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductTranDataAmountBase" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranDataAmountBase &lt;span style=&quot;color:#9E9E9E;&quot;&gt;money&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData_cProductTranDataAmountModif" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cProductTranDataAmountModif &lt;span style=&quot;color:#9E9E9E;&quot;&gt;money&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="198" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_ProductTranData__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_ProductTranData">
+          <mxGeometry x="0" y="222" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Doc" value="ta_Doc&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Jenis dokumen transaksi&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1030" width="290" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Doc_cDocName" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cDocName&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(25)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Doc">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Doc_cDocDesc" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cDocDesc &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Doc">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Doc_cDocAbv" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cDocAbv &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(7)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Doc">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Currency" value="ta_Currency&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Mata uang&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#FFE6CC;strokeColor=#D79B00;fontColor=#7A4E00;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="750" y="1320" width="290" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Currency_cCurrencyId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cCurrencyId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(25)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Currency">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Currency_cCurrencyName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cCurrencyName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Currency">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log" value="ta_Log&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Jejak aktivitas aplikasi&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A2C6B;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1590" width="290" height="396" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogId" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cLogId&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;ULID&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cUserId" value="&lt;span style=&quot;color:#5B7FB9;&quot;&gt;&amp;#128279;&lt;/span&gt; cUserId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;NULL&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogModule" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogModule &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogAction" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogAction &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogEntity" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogEntity &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogEntityId" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogEntityId &lt;span style=&quot;color:#9E9E9E;&quot;&gt;char(26)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="150" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogSource" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogSource &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(100)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="174" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogName" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogName &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(255)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="198" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogRefNumber" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogRefNumber &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="222" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogStage" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogStage &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;def 0&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="246" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogOrder" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogOrder &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;def -1&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="270" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogRevision" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogRevision &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;def 1&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="294" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogDate" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogDate &lt;span style=&quot;color:#9E9E9E;&quot;&gt;date&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="318" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log_cLogNote" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cLogNote &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="342" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Log__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp · datestamp · json_object&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Log">
+          <mxGeometry x="0" y="366" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Meta" value="ta_Meta&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Konfigurasi key-value&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A2C6B;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1590" width="290" height="132" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Meta_cMetaKey" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;cMetaKey&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(50)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Meta">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Meta_cMetaValue" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cMetaValue &lt;span style=&quot;color:#9E9E9E;&quot;&gt;nvarchar(max)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Meta">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Meta_cMetaDescription" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; cMetaDescription &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varchar(500)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Meta">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_ta_Meta__audit" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#8943;&lt;/span&gt; &lt;i&gt;&lt;span style=&quot;color:#9E9E9E;&quot;&gt;ustamp&lt;/span&gt;&lt;/i&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_ta_Meta">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_sysdiagrams" value="sysdiagrams&lt;br/&gt;&lt;span style=&quot;font-size:10px;font-weight:normal;&quot;&gt;Tabel bawaan SQL Server — bukan bagian model&lt;/span&gt;" style="swimlane;html=1;rounded=1;arcSize=6;startSize=30;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;fillColor=#E1D5E7;strokeColor=#9673A6;fontColor=#4A2C6B;swimlaneFillColor=#FFFFFF;swimlaneLine=1;shadow=1;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="750" y="1590" width="290" height="156" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_sysdiagrams_diagram_id" value="&lt;span style=&quot;color:#C79100;&quot;&gt;&amp;#128273;&lt;/span&gt; &lt;b&gt;diagram_id&lt;/b&gt; &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int IDENTITY&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_sysdiagrams">
+          <mxGeometry x="0" y="30" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_sysdiagrams_name" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; name &lt;span style=&quot;color:#9E9E9E;&quot;&gt;sysname&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_sysdiagrams">
+          <mxGeometry x="0" y="54" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_sysdiagrams_principal_id" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; principal_id &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color:#C0392B;font-size:9px;&quot;&gt;UQ*&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_sysdiagrams">
+          <mxGeometry x="0" y="78" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_sysdiagrams_version" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; version &lt;span style=&quot;color:#9E9E9E;&quot;&gt;int&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_sysdiagrams">
+          <mxGeometry x="0" y="102" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_sysdiagrams_definition" value="&lt;span style=&quot;color:#BBBBBB;&quot;&gt;&amp;#9679;&lt;/span&gt; definition &lt;span style=&quot;color:#9E9E9E;&quot;&gt;varbinary(max)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=6;overflow=hidden;points=[[0,0.5,0],[1,0.5,0]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;fontSize=11;" vertex="1" parent="p2_sysdiagrams">
+          <mxGeometry x="0" y="126" width="290" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk0" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_Address_cContactId" target="p2_ta_Contact_cContactId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk1" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_Comm_cContactId" target="p2_ta_Contact_cContactId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk2" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_BusinessPartner_cContactId" target="p2_ta_Contact_cContactId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk3" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_Emp_cContactId" target="p2_ta_Contact_cContactId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk4" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_Contact_cContactDefaultAddress_cAddressId" target="p2_ta_Address_cAddressId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk5" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_Contact_cContactDefaultComm_cCommId" target="p2_ta_Comm_cCommId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk6" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_User_cContactId" target="p2_ta_Contact_cContactId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk7" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_UserCredential_cUserId" target="p2_ta_User_cUserId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk8" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_UserClaim_cUserId" target="p2_ta_User_cUserId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk9" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_UserRole_cUserId" target="p2_ta_User_cUserId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk10" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_UserRole_cRoleId" target="p2_ta_Role_cRoleId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk11" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_RoleClaim_cRoleId" target="p2_ta_Role_cRoleId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk12" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2_ta_UserSession_cUserId" target="p2_ta_User_cUserId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2_ta_Log_cUserId" target="p2_ta_User_cUserId">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="62" y="1656" />
+              <mxPoint x="62" y="170" />
+              <mxPoint x="875" y="170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2_fk14" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_Product_cUnitId" target="p2_ta_Unit_cUnitId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk15" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_Product_cProductTypeId" target="p2_ta_ProductType_cProductTypeId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk16" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_ProductTran_cDocName" target="p2_ta_Doc_cDocName">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2_ta_ProductTran_cBusinessPartnerId" target="p2_ta_BusinessPartner_cBusinessPartnerId">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="712" y="1090" />
+              <mxPoint x="712" y="940" />
+              <mxPoint x="1800" y="940" />
+              <mxPoint x="1800" y="242" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2_fk18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2_ta_ProductTran_cProductTranEmpRef_cEmpId" target="p2_ta_Emp_cEmpId">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="726" y="1114" />
+              <mxPoint x="726" y="926" />
+              <mxPoint x="1786" y="926" />
+              <mxPoint x="1786" y="392" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2_fk19" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_ProductTran_cProductTranSelRef_cProductTranId" target="p2_ta_ProductTran_cProductTranId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk20" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#B85450;strokeWidth=1.6;" edge="1" parent="1" source="p2_ta_ProductTranData_cProductTranId" target="p2_ta_ProductTran_cProductTranId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk21" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;" edge="1" parent="1" source="p2_ta_ProductTranData_cProductId" target="p2_ta_Product_cProductId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk22" value="" style="edgeStyle=entityRelationEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2_ta_ProductTranData_cCurrencyId" target="p2_ta_Currency_cCurrencyId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_fk23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontColor=#78909C;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;jumpStyle=arc;jumpSize=8;strokeColor=#9E9E9E;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2_ta_ShoeHelper_cProductId" target="p2_ta_Product_cProductId">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040" y="1298" />
+              <mxPoint x="1040" y="1084" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2_note1" value="&lt;b&gt;Catatan&lt;/b&gt;: cSystemSessionAccountId sengaja tanpa foreign key — akun sistem tidak disimpan di ta_User." style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;fillColor=#FFF8E1;strokeColor=#FFB300;align=left;verticalAlign=middle;spacingLeft=10;fontSize=10;fontColor=#6D4C00;" vertex="1" parent="1">
+          <mxGeometry x="70" y="620" width="290" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_note2" value="&lt;b&gt;Catatan&lt;/b&gt;: kolom audit standar (ustamp, datestamp, json_object) diringkas menjadi satu baris bertanda &amp;#8943;." style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;fillColor=#FFF8E1;strokeColor=#FFB300;align=left;verticalAlign=middle;spacingLeft=10;fontSize=10;fontColor=#6D4C00;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1800" width="400" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="p2_note3" value="&lt;b&gt;ta_ShoeHelper&lt;/b&gt; menempel 1 : 1 ke ta_Product lewat index unik pada cProductId, tanpa constraint foreign key." style="rounded=1;arcSize=8;html=1;whiteSpace=wrap;fillColor=#FFF8E1;strokeColor=#FFB300;align=left;verticalAlign=middle;spacingLeft=10;fontSize=10;fontColor=#6D4C00;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="1300" width="290" height="54" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

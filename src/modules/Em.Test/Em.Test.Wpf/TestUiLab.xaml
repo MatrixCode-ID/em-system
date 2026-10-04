@@ -1,0 +1,271 @@
+<UserControl x:Class="Em.Test.Wpf.TestUiLab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared;assembly=Em.Ui.Wpf.Core"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls;assembly=Em.Ui.Wpf.Core"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="1200">
+   <UserControl.DataContext>
+      <local:TestUiLabVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <!-- A drop zone lights up while an acceptable drag is over it. -->
+         <Style x:Key="dropZoneStyle" TargetType="Border">
+            <Setter Property="MinHeight" Value="86" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineStrongBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Style.Triggers>
+               <Trigger Property="shared:DropTarget.IsDraggingOver" Value="True">
+                  <Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="3*" MinHeight="200" />
+            <RowDefinition Height="2*" MinHeight="150" />
+         </Grid.RowDefinitions>
+
+         <TabControl Grid.Row="0" Style="{StaticResource materialTabControlStyle}">
+
+            <!-- ==================== PDF VIEWER ==================== -->
+            <TabItem Header="PDF viewer">
+               <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="22,14,22,0">
+                  <StackPanel>
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="OPEN THE VIEWER" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}"
+                                      Text="The viewer opens in this window, relative to this tab. The title is its key: opening a title that is already open only brings that tab back." />
+                           <WrapPanel>
+                              <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Sample PDF, 1 page"
+                                      Command="{Binding Commands[ViewSampleCommand]}" CommandParameter="1" />
+                              <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Sample PDF, 12 pages"
+                                      Command="{Binding Commands[ViewSampleCommand]}" CommandParameter="12" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Sample PDF, 50 pages"
+                                      Command="{Binding Commands[ViewSampleCommand]}" CommandParameter="50" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Open a PDF from disk..."
+                                      Command="{Binding Commands[ViewLocalCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="A PDF that fails to load"
+                                      Command="{Binding Commands[ViewBrokenCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Same title twice"
+                                      Command="{Binding Commands[ViewTwiceCommand]}" />
+                           </WrapPanel>
+                        </StackPanel>
+                     </Border>
+
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="NAVIGATION" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}"
+                                      Text="Editors open as tabs next to this one. Asking for a title that is already open focuses it. A manager asked for from an editor, or from a detached window, always opens in the main window. An editor may refuse to be left while it holds unsaved input." />
+                           <WrapPanel>
+                              <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Open child 'Alpha'"
+                                      Command="{Binding Commands[OpenChildCommand]}" CommandParameter="Alpha" />
+                              <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Open child 'Beta'"
+                                      Command="{Binding Commands[OpenChildCommand]}" CommandParameter="Beta" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Open 'Alpha' again (focus, no reload)"
+                                      Command="{Binding Commands[OpenChildCommand]}" CommandParameter="Alpha" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Open a child without its payload"
+                                      Command="{Binding Commands[OpenWithoutPayloadCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Open an unknown navigation"
+                                      Command="{Binding Commands[OpenUnknownCommand]}" />
+                           </WrapPanel>
+                        </StackPanel>
+                     </Border>
+
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="THEME AND BRANDING" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" Text="{Binding BrandingText}" Style="{StaticResource testResultTextStyle}" />
+                           <Button Style="{StaticResource testButtonStyle}" HorizontalAlignment="Left"
+                                   Content="Switch between light and dark"
+                                   Command="{Binding Commands[ToggleThemeCommand]}" />
+                        </StackPanel>
+                     </Border>
+                  </StackPanel>
+               </ScrollViewer>
+            </TabItem>
+
+            <!-- ==================== DIALOGS ==================== -->
+            <TabItem Header="Dialogs">
+               <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="22,14,22,0">
+                  <StackPanel>
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="MESSAGE BOXES" Style="{StaticResource sectionCaptionStyle}" />
+                           <WrapPanel Margin="0,12,0,0">
+                              <Button Style="{StaticResource testButtonStyle}" Content="Info"
+                                      Command="{Binding Commands[MessageBoxCommand]}" CommandParameter="info" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Warning"
+                                      Command="{Binding Commands[MessageBoxCommand]}" CommandParameter="warning" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Error"
+                                      Command="{Binding Commands[MessageBoxCommand]}" CommandParameter="error" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Decide (Yes/No)"
+                                      Command="{Binding Commands[MessageBoxCommand]}" CommandParameter="decide" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Decide, warning"
+                                      Command="{Binding Commands[MessageBoxCommand]}" CommandParameter="decide-warning" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Yes / No / Cancel"
+                                      Command="{Binding Commands[MessageBoxCommand]}" CommandParameter="decide-cancel" />
+                           </WrapPanel>
+                        </StackPanel>
+                     </Border>
+
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="INPUT AND EXCEPTION DIALOGS" Style="{StaticResource sectionCaptionStyle}" />
+                           <WrapPanel Margin="0,12,0,0">
+                              <Button Style="{StaticResource testButtonStyle}" Content="Text input"
+                                      Command="{Binding Commands[TextInputCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Password input"
+                                      Command="{Binding Commands[PasswordInputCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Password with confirmation"
+                                      Command="{Binding Commands[PasswordConfirmCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Exception detail dialog"
+                                      Command="{Binding Commands[ExceptionDialogCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Error box from an exception"
+                                      Command="{Binding Commands[ErrorFromExceptionCommand]}" />
+                           </WrapPanel>
+                        </StackPanel>
+                     </Border>
+                  </StackPanel>
+               </ScrollViewer>
+            </TabItem>
+
+            <!-- ==================== CONTROLS ==================== -->
+            <TabItem Header="Controls">
+               <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="22,14,22,0">
+                  <StackPanel>
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="NUMERIC BOX" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}"
+                                      Text="Type digits, use the arrows or the mouse wheel, paste text. The value is clamped to 0..100 and moves in steps of 5." />
+                           <StackPanel Orientation="Horizontal">
+                              <controls:NumericBox Width="130" Style="{StaticResource fieldNumericBoxStyle}"
+                                                   Minimum="0" Maximum="100" Increment="5"
+                                                   Value="{Binding NumericValue}" />
+                              <TextBlock Margin="14,0,0,0" VerticalAlignment="Center"
+                                         Text="{Binding NumericValue, StringFormat='View model value: {0}'}" />
+                           </StackPanel>
+                        </StackPanel>
+                     </Border>
+
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="WAITING" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}"
+                                      Text="The overlay covers this screen and holds clicks; the button variant swaps its own content for dots and keeps its width." />
+                           <WrapPanel>
+                              <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Show the overlay for 3 s"
+                                      Command="{Binding Commands[OverlayCommand]}" />
+                              <Button Style="{StaticResource testButtonStyle}" Content="Wait inside this button for 3 s"
+                                      controls:ButtonWait.IsWaiting="{Binding ButtonWaiting}"
+                                      Command="{Binding Commands[ButtonWaitCommand]}" />
+                              <controls:WaitDots VerticalAlignment="Center" Margin="8,0,0,8" />
+                           </WrapPanel>
+                        </StackPanel>
+                     </Border>
+                  </StackPanel>
+               </ScrollViewer>
+            </TabItem>
+
+            <!-- ==================== DRAG AND DROP ==================== -->
+            <TabItem Header="Drag &amp; drop">
+               <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="22,14,22,0">
+                  <StackPanel>
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="FILES FROM EXPLORER" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}"
+                                      Text="Drag files from Windows Explorer. The first zone accepts anything; the second accepts only PDF files and shows a no-drop cursor for the rest - the zone decides through the command's can-execute." />
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*" />
+                                 <ColumnDefinition Width="16" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <Border Grid.Column="0" Style="{StaticResource dropZoneStyle}"
+                                      shared:DropTarget.Command="{Binding Commands[DropAnyCommand]}">
+                                 <TextBlock Text="Drop any files here" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              </Border>
+                              <Border Grid.Column="2" Style="{StaticResource dropZoneStyle}"
+                                      shared:DropTarget.Command="{Binding Commands[DropPdfCommand]}">
+                                 <TextBlock Text="Drop PDF files here: the first opens in the viewer" HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" TextWrapping="Wrap" />
+                              </Border>
+                           </Grid>
+                        </StackPanel>
+                     </Border>
+
+                     <Border Style="{StaticResource testGroupStyle}">
+                        <StackPanel>
+                           <TextBlock Text="DRAG BETWEEN CONTROLS" Style="{StaticResource sectionCaptionStyle}" />
+                           <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}"
+                                      Text="Drag a chip onto a box. A ghost follows the pointer, and the box receives the chip together with itself as the target." />
+                           <WrapPanel Margin="0,0,0,12">
+                              <ItemsControl ItemsSource="{Binding Chips}">
+                                 <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                       <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                 </ItemsControl.ItemsPanel>
+                                 <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                       <Border Style="{StaticResource chipAccentStyle}" Margin="0,0,8,0" Cursor="Hand"
+                                               shared:DragSource.Payload="{Binding}">
+                                          <TextBlock Text="{Binding}" />
+                                       </Border>
+                                    </DataTemplate>
+                                 </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                           </WrapPanel>
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*" />
+                                 <ColumnDefinition Width="16" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <Border Grid.Column="0" Style="{StaticResource dropZoneStyle}"
+                                      shared:DropTarget.Command="{Binding Commands[DropChipCommand]}"
+                                      shared:DropTarget.Target="Box one">
+                                 <TextBlock Text="{Binding BoxOneText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              </Border>
+                              <Border Grid.Column="2" Style="{StaticResource dropZoneStyle}"
+                                      shared:DropTarget.Command="{Binding Commands[DropChipCommand]}"
+                                      shared:DropTarget.Target="Box two">
+                                 <TextBlock Text="{Binding BoxTwoText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              </Border>
+                           </Grid>
+                        </StackPanel>
+                     </Border>
+                  </StackPanel>
+               </ScrollViewer>
+            </TabItem>
+         </TabControl>
+
+         <!-- ==== results ==== -->
+         <local:TestLogPanel Grid.Row="1" Margin="22,8,22,22" Entries="{Binding Entries}" />
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</UserControl>

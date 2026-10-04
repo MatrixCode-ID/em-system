@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+   Ragam tombol Material 3. Semuanya berbentuk pil penuh (tinggi 48, radius 24) dan memakai satu
+   ukuran huruf; yang membedakan hanya seberapa keras ia menuntut perhatian - dan setiap layar hanya
+   boleh punya satu tombol terisi.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:styles="clr-namespace:Em.Ui.Maui.Styles">
+
+   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
+        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
+        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <ResourceDictionary.MergedDictionaries>
+      <styles:Palette />
+   </ResourceDictionary.MergedDictionaries>
+
+   <Style x:Key="buttonBaseStyle" TargetType="Button">
+      <Setter Property="FontFamily" Value="OpenSansSemibold" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="HeightRequest" Value="48" />
+      <Setter Property="CornerRadius" Value="24" />
+      <Setter Property="Padding" Value="24,0" />
+      <Setter Property="BorderWidth" Value="0" />
+      <Setter Property="VisualStateManager.VisualStateGroups">
+         <VisualStateGroupList>
+            <VisualStateGroup x:Name="CommonStates">
+               <VisualState x:Name="Normal">
+                  <VisualState.Setters>
+                     <Setter Property="Opacity" Value="1" />
+                  </VisualState.Setters>
+               </VisualState>
+               <VisualState x:Name="Pressed">
+                  <VisualState.Setters>
+                     <Setter Property="Opacity" Value="0.75" />
+                  </VisualState.Setters>
+               </VisualState>
+               <!-- Tombol yang sedang tidak boleh ditekan diredupkan, bukan diwarnai ulang: satu
+                    aturan yang sama enak dilihat di kedua tema. -->
+               <VisualState x:Name="Disabled">
+                  <VisualState.Setters>
+                     <Setter Property="Opacity" Value="0.38" />
+                  </VisualState.Setters>
+               </VisualState>
+            </VisualStateGroup>
+         </VisualStateGroupList>
+      </Setter>
+   </Style>
+
+   <!-- Aksi utama layar, satu saja per layar. -->
+   <Style x:Key="filledButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onPrimaryLight}, Dark={StaticResource onPrimaryDark}}" />
+   </Style>
+
+   <!-- Aksi penting yang berdampingan dengan aksi utama. -->
+   <Style x:Key="tonalButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+   </Style>
+
+   <!-- Aksi kedua yang tetap perlu terlihat sebagai tombol. -->
+   <Style x:Key="outlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
+      <Setter Property="BackgroundColor" Value="Transparent" />
+      <Setter Property="BorderWidth" Value="1" />
+      <Setter Property="BorderColor"
+              Value="{AppThemeBinding Light={StaticResource outlineLight}, Dark={StaticResource outlineDark}}" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+   </Style>
+
+   <!-- Aksi paling ringan; tidak membawa bidang sendiri sama sekali. -->
+   <Style x:Key="textButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
+      <Setter Property="BackgroundColor" Value="Transparent" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+   </Style>
+</ResourceDictionary>

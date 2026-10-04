@@ -1,0 +1,501 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.DisplayExceptionData"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                 xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                 mc:Ignorable="d"
+                 Title="Exception Detail"
+                 Width="760"
+                 Height="600"
+                 MinWidth="620"
+                 MinHeight="460"
+                 WindowStyle="SingleBorderWindow"
+                 ResizeMode="NoResize"
+                 ShowInTaskbar="False"
+                 WindowStartupLocation="CenterOwner"
+                 PreviewKeyDown="DisplayExceptionData_OnPreviewKeyDown">
+
+   <!--
+      Exception dialog, dressed in the same material language as the user screens: a banner
+      saying what went wrong, one card holding the detail behind three tabs, and the actions
+      on a strip of their own at the bottom.
+
+      Two rules keep it readable on both themes, exactly as on UserManager/UserEditor:
+
+      - every surface, outline and divider is a translucent grey (#xx808080), which darkens
+        a light background and lightens a dark one without naming a theme colour;
+      - the one colour taken from the theme is the accent, read through the Em
+        theme token themeAccentBrush, so the primary button and the selected tab follow the theme.
+
+      The banner keeps a colour of its own: the danger red is mid-tone rather than themed,
+      which is what lets the same value read on a light and on a dark surface.
+   -->
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+
+         <!-- ============================================================
+              PALETTE
+              ============================================================ -->
+         <SolidColorBrush x:Key="surfaceBrush" Color="#0D808080" />
+         <SolidColorBrush x:Key="surfaceStrongBrush" Color="#1A808080" />
+         <SolidColorBrush x:Key="outlineBrush" Color="#29808080" />
+         <SolidColorBrush x:Key="outlineStrongBrush" Color="#4D808080" />
+         <SolidColorBrush x:Key="dividerBrush" Color="#1F808080" />
+
+         <!-- Material state layers: one translucent grey veil over whatever the control
+              already paints, so the same two brushes serve every button variant. -->
+         <SolidColorBrush x:Key="stateHoverBrush" Color="#1F808080" />
+         <SolidColorBrush x:Key="statePressedBrush" Color="#33808080" />
+
+         <!-- The danger colour is mid-tone on purpose: dark enough to read on a light
+              surface, light enough to read on a dark one. The two tints under it are the
+              same colour with an alpha channel, so the banner lifts whichever background
+              the theme is painting. -->
+         <SolidColorBrush x:Key="dangerBrush" Color="#E05656" />
+         <SolidColorBrush x:Key="dangerSurfaceBrush" Color="#1FE05656" />
+         <SolidColorBrush x:Key="dangerOutlineBrush" Color="#4DE05656" />
+
+         <!-- ============================================================
+              TYPOGRAPHY
+              Section captions are written upper case by hand - WPF has no
+              letter spacing, so case is the only thing separating a caption
+              from what sits under it.
+              ============================================================ -->
+         <Style x:Key="sectionCaptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.55" />
+         </Style>
+
+         <!-- A meta row is a caption over its value rather than a pair on one line: a type
+              name or a target site has no length to speak of, and stacking keeps the value
+              readable whatever it turns out to be. -->
+         <Style x:Key="metaLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.5" />
+         </Style>
+
+         <Style x:Key="metaValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+         </Style>
+
+         <!-- ============================================================
+              BUTTONS
+              Two material variants sharing one template shape: a rounded
+              container, a state layer over it, then the content. Only the
+              resting brushes differ, so a variant costs a few setters
+              rather than another template.
+              ============================================================ -->
+         <Style x:Key="materialButtonBaseStyle" TargetType="Button">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <!-- The template draws its own focus ring; the dotted default one squares off
+                 the pill shape. -->
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                     <!-- CornerRadius 19 is half the resting height, i.e. a full pill. -->
+                     <Border x:Name="shape"
+                             CornerRadius="19"
+                             Background="{TemplateBinding Background}"
+                             BorderBrush="{TemplateBinding BorderBrush}"
+                             BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                           <Border x:Name="stateLayer" CornerRadius="19" Background="Transparent" />
+                           <ContentPresenter Margin="{TemplateBinding Padding}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center" />
+                        </Grid>
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                           <Setter TargetName="shape" Property="BorderBrush"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                           <Setter TargetName="shape" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- Filled: the single primary action on the dialog - the way out of it. Accent
+              background plus a soft shadow, which is the only elevation in the layout. -->
+         <Style x:Key="filledButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="Background"
+                    Value="{DynamicResource themeAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Effect">
+               <Setter.Value>
+                  <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270" Opacity="0.28" Color="#000000" />
+               </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+               <!-- Material raises a filled button as the pointer comes over it. -->
+               <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Effect">
+                     <Setter.Value>
+                        <DropShadowEffect BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000" />
+                     </Setter.Value>
+                  </Setter>
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- Tonal: the secondary action, which still wants a surface of its own. -->
+         <Style x:Key="tonalButtonStyle" TargetType="Button" BasedOn="{StaticResource materialButtonBaseStyle}">
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+         </Style>
+
+         <!-- Icon and caption share one line inside a button. -->
+         <Style x:Key="buttonIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,0,9,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <!-- ============================================================
+              TABS
+              Material tabs: a caption with an accent underline on the
+              current one, over a single divider that runs the width of the
+              card. No box, no border - the card is already the frame.
+              ============================================================ -->
+         <Style x:Key="detailTabItemStyle" TargetType="TabItem">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="TabItem">
+                     <Border x:Name="shape" Background="Transparent" Height="46">
+                        <Grid>
+                           <!-- The pill is the object: it carries the hand cursor and it is
+                                what lights up on hover, so the pointer changes exactly where
+                                something answers to it. The band around it is only the
+                                strip's surface - a click there still selects the tab, but
+                                nothing about it looks clickable. -->
+                           <Border x:Name="stateLayer"
+                                   Margin="4,6"
+                                   CornerRadius="8"
+                                   Background="Transparent"
+                                   Cursor="Hand">
+                              <ContentPresenter ContentSource="Header"
+                                                Margin="16,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                           </Border>
+                           <!-- The underline is the whole selected state; it is hidden
+                                rather than collapsed so the caption never shifts. -->
+                           <Border x:Name="indicator"
+                                   Height="3"
+                                   Margin="10,0"
+                                   CornerRadius="2,2,0,0"
+                                   VerticalAlignment="Bottom"
+                                   Visibility="Hidden"
+                                   Background="{DynamicResource themeAccentBrush}" />
+                        </Grid>
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="indicator" Property="Visibility" Value="Visible" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                           <Setter Property="Foreground"
+                                   Value="{DynamicResource themeAccentBrush}" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <Style x:Key="detailTabControlStyle" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource detailTabItemStyle}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="TabControl">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto" />
+                           <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Background="{StaticResource surfaceStrongBrush}"
+                                BorderBrush="{StaticResource dividerBrush}"
+                                BorderThickness="0,0,0,1"
+                                CornerRadius="13,13,0,0">
+                           <TabPanel IsItemsHost="True" Margin="10,0,0,0" HorizontalAlignment="Left" />
+                        </Border>
+
+                        <ContentPresenter Grid.Row="1" ContentSource="SelectedContent" />
+                     </Grid>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- ============================================================
+              CODE PANEL
+              A stack trace is read, never typed, so the frame is a Border
+              and the box inside it drops its own chrome - the same
+              arrangement the editor's fields use. Keeping the stock TextBox
+              template is deliberate: it is what leaves the themed scroll
+              bars in place, and this panel is the one thing on the dialog
+              that actually needs them.
+              ============================================================ -->
+         <Style x:Key="codeFrameStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Style.Triggers>
+               <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="BorderBrush" Value="{StaticResource outlineStrongBrush}" />
+               </Trigger>
+               <!-- Focus is the one state the accent is spent on: it says which panel the
+                    keyboard is scrolling. -->
+               <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                  <Setter Property="BorderBrush"
+                          Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="codeBoxStyle" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <!-- The theme gives TextBox its Foreground; the caret is not themed, so it
+                 simply follows the text colour. -->
+            <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+         </Style>
+
+         <!-- The summary tab prints prose rather than a trace, so it wraps and keeps the
+              body font instead of the monospaced one. -->
+         <Style x:Key="messageBoxStyle" TargetType="TextBox" BasedOn="{StaticResource codeBoxStyle}">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+         </Style>
+
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <Grid Margin="22">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="*" />
+         <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- =========================================================
+           BANNER - what went wrong, in one line and one paragraph
+           ========================================================= -->
+      <Border Grid.Row="0"
+              CornerRadius="14"
+              Padding="18,16"
+              Background="{StaticResource dangerSurfaceBrush}"
+              BorderBrush="{StaticResource dangerOutlineBrush}"
+              BorderThickness="1">
+         <Grid>
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Icon plate: the danger colour tinted on its own Border, so lowering its
+                 opacity does not wash out the glyph drawn over it. -->
+            <Grid Width="42" Height="42" VerticalAlignment="Top">
+               <Border CornerRadius="12" Opacity="0.22" Background="{StaticResource dangerBrush}" />
+               <fa:FontAwesome Icon="Solid_TriangleExclamation"
+                               FontSize="17"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource dangerBrush}" />
+            </Grid>
+
+            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+               <TextBlock Text="{Binding ExceptionType}"
+                          FontSize="16"
+                          FontWeight="SemiBold"
+                          TextTrimming="CharacterEllipsis"
+                          ToolTip="{Binding ExceptionType}" />
+               <TextBlock Text="{Binding Message}"
+                          Margin="0,6,0,0"
+                          FontSize="12.5"
+                          Opacity="0.75"
+                          MaxHeight="74"
+                          TextWrapping="Wrap"
+                          TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+         </Grid>
+      </Border>
+
+      <!-- =========================================================
+           BODY - the detail, inside one card
+           Three tabs in the order they are needed: the facts that
+           identify the failure, the path it came down, then whatever
+           was attached to it on the way.
+           ========================================================= -->
+      <Border Grid.Row="1"
+              Margin="0,16,0,0"
+              CornerRadius="14"
+              Background="{StaticResource surfaceBrush}"
+              BorderBrush="{StaticResource outlineBrush}"
+              BorderThickness="1">
+         <TabControl Style="{StaticResource detailTabControlStyle}">
+
+            <TabItem Header="Summary">
+               <Grid Margin="22,18,22,20">
+                  <Grid.RowDefinitions>
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="Auto" />
+                     <RowDefinition Height="*" />
+                  </Grid.RowDefinitions>
+
+                  <!-- Four facts on one row: each is short and known, so they read as a
+                       strip rather than as a form. -->
+                  <Grid Grid.Row="0">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" MinWidth="110" />
+                     </Grid.ColumnDefinitions>
+
+                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="TYPE" Style="{StaticResource metaLabelStyle}" />
+                        <TextBlock Text="{Binding ExceptionType}"
+                                   Style="{StaticResource metaValueStyle}"
+                                   ToolTip="{Binding ExceptionType}" />
+                     </StackPanel>
+
+                     <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                        <TextBlock Text="SOURCE" Style="{StaticResource metaLabelStyle}" />
+                        <TextBlock Text="{Binding ExceptionSource}"
+                                   Style="{StaticResource metaValueStyle}"
+                                   ToolTip="{Binding ExceptionSource}" />
+                     </StackPanel>
+
+                     <StackPanel Grid.Column="2" Margin="0,0,16,0">
+                        <TextBlock Text="TARGET SITE" Style="{StaticResource metaLabelStyle}" />
+                        <TextBlock Text="{Binding TargetSite}"
+                                   Style="{StaticResource metaValueStyle}"
+                                   ToolTip="{Binding TargetSite}" />
+                     </StackPanel>
+
+                     <StackPanel Grid.Column="3">
+                        <TextBlock Text="HRESULT" Style="{StaticResource metaLabelStyle}" />
+                        <TextBlock Text="{Binding HResult}"
+                                   Style="{StaticResource metaValueStyle}"
+                                   FontFamily="Consolas" />
+                     </StackPanel>
+                  </Grid>
+
+                  <Border Grid.Row="1" Height="1" Margin="0,16" Background="{StaticResource dividerBrush}" />
+
+                  <Grid Grid.Row="2">
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                     </Grid.RowDefinitions>
+
+                     <TextBlock Grid.Row="0"
+                                Text="MESSAGES"
+                                Margin="0,0,0,10"
+                                Style="{StaticResource sectionCaptionStyle}" />
+
+                     <Border Grid.Row="1" Style="{StaticResource codeFrameStyle}">
+                        <TextBox Style="{StaticResource messageBoxStyle}"
+                                 Text="{Binding SerializedMessages, Mode=OneWay}" />
+                     </Border>
+                  </Grid>
+               </Grid>
+            </TabItem>
+
+            <TabItem Header="Stack Trace">
+               <Border Margin="22,18,22,20" Style="{StaticResource codeFrameStyle}">
+                  <TextBox Style="{StaticResource codeBoxStyle}"
+                           Text="{Binding StackTrace, Mode=OneWay}"
+                           AcceptsReturn="True"
+                           AcceptsTab="True"
+                           TextWrapping="NoWrap" />
+               </Border>
+            </TabItem>
+
+            <TabItem Header="Data">
+               <Border Margin="22,18,22,20" Style="{StaticResource codeFrameStyle}">
+                  <TextBox Style="{StaticResource codeBoxStyle}"
+                           Text="{Binding Data, Mode=OneWay}"
+                           AcceptsReturn="True"
+                           TextWrapping="Wrap"
+                           HorizontalScrollBarVisibility="Disabled" />
+               </Border>
+            </TabItem>
+         </TabControl>
+      </Border>
+
+      <!-- =========================================================
+           ACTIONS - take the report away, or close the dialog
+           ========================================================= -->
+      <StackPanel Grid.Row="2"
+                  Margin="0,18,0,0"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right">
+         <Button Style="{StaticResource tonalButtonStyle}"
+                 Margin="0,0,10,0"
+                 Click="CopyDetail_OnClick"
+                 ToolTip="Copy the whole report to the clipboard">
+            <StackPanel Orientation="Horizontal">
+               <fa:FontAwesome Icon="Solid_Copy" Style="{StaticResource buttonIconStyle}" />
+               <TextBlock Text="Copy Detail" VerticalAlignment="Center" />
+            </StackPanel>
+         </Button>
+
+         <Button Style="{StaticResource filledButtonStyle}"
+                 MinWidth="104"
+                 IsCancel="True"
+                 Click="Close_OnClick">
+            <TextBlock Text="Close" VerticalAlignment="Center" />
+         </Button>
+      </StackPanel>
+   </Grid>
+</windows:EmWindow>

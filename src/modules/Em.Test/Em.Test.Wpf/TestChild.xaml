@@ -1,0 +1,54 @@
+<UserControl x:Class="Em.Test.Wpf.TestChild"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="900">
+   <UserControl.DataContext>
+      <local:TestChildVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" Margin="22,12,22,0" Style="{StaticResource cardStyle}" Padding="26,20">
+         <StackPanel>
+            <TextBlock Text="{Binding Heading}" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Subheading}" Margin="0,4,0,16" Style="{StaticResource fieldHelpStyle}"
+                       TextWrapping="Wrap" />
+
+            <TextBlock Text="Draft text" Style="{StaticResource fieldLabelStyle}" />
+            <TextBox Style="{StaticResource fieldBoxStyle}" Tag="Type something, then try to leave this tab"
+                     Text="{Binding Draft, UpdateSourceTrigger=PropertyChanged}" />
+            <CheckBox Margin="0,10,0,16" Style="{StaticResource checkBoxStyle}"
+                      Content="Refuse to be left while the draft is not empty"
+                      IsChecked="{Binding BlockLeaving}" />
+
+            <WrapPanel>
+               <Button Style="{StaticResource testButtonStyle}" Content="Rename this tab"
+                       Command="{Binding Commands[RenameCommand]}" />
+               <Button Style="{StaticResource testButtonStyle}" Content="Open Test Items (a manager)"
+                       Command="{Binding Commands[OpenItemsCommand]}" />
+               <Button Style="{StaticResource testButtonStyle}" Content="View a PDF from here"
+                       Command="{Binding Commands[ViewPdfCommand]}" />
+               <Button Style="{StaticResource testButtonStyle}" Content="Close this tab"
+                       Command="{Binding Commands[CloseCommand]}" />
+            </WrapPanel>
+            <TextBlock Text="{Binding Status}" Margin="0,8,0,0" Style="{StaticResource testResultTextStyle}" />
+         </StackPanel>
+      </Border>
+   </Grid>
+</UserControl>

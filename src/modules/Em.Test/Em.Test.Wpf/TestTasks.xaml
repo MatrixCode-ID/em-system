@@ -1,0 +1,175 @@
+<UserControl x:Class="Em.Test.Wpf.TestTasks"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Test.Wpf"
+             xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared;assembly=Em.Ui.Wpf.Core"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls;assembly=Em.Ui.Wpf.Core"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="760" d:DesignWidth="1200">
+   <UserControl.DataContext>
+      <local:TestTasksVm />
+   </UserControl.DataContext>
+
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <Grid>
+      <Grid>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="150" />
+            <RowDefinition Height="170" />
+         </Grid.RowDefinitions>
+
+         <TabControl Grid.Row="0" Style="{StaticResource materialTabControlStyle}" Height="214">
+
+            <TabItem Header="Business tasks">
+               <Border Margin="22,10,22,0" Style="{StaticResource cardStyle}" Padding="20,12,12,2">
+                  <StackPanel>
+                     <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Seconds" Style="{StaticResource testFieldLabelStyle}" />
+                        <controls:NumericBox Width="90" Margin="0,0,14,8" Style="{StaticResource fieldNumericBoxStyle}"
+                                             Minimum="1" Maximum="120" Value="{Binding TaskSeconds}" />
+                        <TextBlock Text="Result" Style="{StaticResource testFieldLabelStyle}" />
+                        <ComboBox Width="110" Margin="0,0,14,8" Style="{StaticResource fieldComboStyle}"
+                                  ItemsSource="{Binding Outputs}" SelectedItem="{Binding TaskOutput}" />
+                        <CheckBox Margin="0,0,14,8" VerticalAlignment="Center" Style="{StaticResource checkBoxStyle}"
+                                  Content="Global task" IsChecked="{Binding TaskGlobal}"
+                                  ToolTip="A global task belongs to this screen; a personal one belongs to the starter and shows in the title-bar hub" />
+                        <CheckBox Margin="0,0,14,8" VerticalAlignment="Center" Style="{StaticResource checkBoxStyle}"
+                                  Content="Fail halfway" IsChecked="{Binding TaskFail}" />
+                     </StackPanel>
+                     <WrapPanel>
+                        <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Start task"
+                                Command="{Binding Commands[StartTaskCommand]}" />
+                        <Button Style="{StaticResource testButtonStyle}" Content="Start the same twice (expect 409)"
+                                Command="{Binding Commands[StartTwiceCommand]}" />
+                        <Button Style="{StaticResource testButtonStyle}" Content="Refresh list"
+                                Command="{Binding Commands[RefreshCommand]}" />
+                        <Button Style="{StaticResource testButtonStyle}" Content="Open Business Task Manager"
+                                Command="{Binding Commands[OpenNavigationCommand]}" CommandParameter="admin.tasks" />
+                     </WrapPanel>
+                  </StackPanel>
+               </Border>
+            </TabItem>
+
+            <TabItem Header="CDN">
+               <Border Margin="22,10,22,0" Style="{StaticResource cardStyle}" Padding="20,12,12,2">
+                  <StackPanel>
+                     <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Folder" Style="{StaticResource testFieldLabelStyle}" />
+                        <TextBox Width="200" Margin="0,0,14,8" Style="{StaticResource fieldBoxStyle}"
+                                 Text="{Binding CdnFolder, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="File size (KB)" Style="{StaticResource testFieldLabelStyle}" />
+                        <controls:NumericBox Width="110" Margin="0,0,14,8" Style="{StaticResource fieldNumericBoxStyle}"
+                                             Minimum="1" Maximum="20480" Increment="64" Value="{Binding CdnKb}" />
+                     </StackPanel>
+                     <WrapPanel>
+                        <Button Style="{StaticResource testPrimaryButtonStyle}" Content="Upload a sample file"
+                                Command="{Binding Commands[CdnUploadCommand]}" />
+                        <Button Style="{StaticResource testButtonStyle}" Content="List the folder"
+                                Command="{Binding Commands[CdnListCommand]}" />
+                        <Button Style="{StaticResource testButtonStyle}" Content="Archive the folder (business task)"
+                                Command="{Binding Commands[CdnArchiveCommand]}" />
+                        <Button Style="{StaticResource testDangerButtonStyle}" Content="Delete the folder"
+                                Command="{Binding Commands[CdnDeleteCommand]}" />
+                        <Button Style="{StaticResource testButtonStyle}" Content="Open CDN Manager"
+                                Command="{Binding Commands[OpenNavigationCommand]}" CommandParameter="admin.cdn" />
+                     </WrapPanel>
+                  </StackPanel>
+               </Border>
+            </TabItem>
+         </TabControl>
+
+         <!-- ==== tasks ==== -->
+         <Border Grid.Row="1" Margin="22,10,22,0" Style="{StaticResource cardStyle}">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+               </Grid.RowDefinitions>
+               <Grid Grid.Row="0" Margin="20,12,14,6">
+                  <TextBlock Text="TEST TASKS" VerticalAlignment="Center" Style="{StaticResource sectionCaptionStyle}" />
+                  <Border HorizontalAlignment="Right" Style="{StaticResource chipStyle}">
+                     <TextBlock Text="{Binding SummaryCaption}" />
+                  </Border>
+               </Grid>
+
+               <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                  <ItemsControl ItemsSource="{Binding Tasks}">
+                     <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type shared:BusinessTaskItem}">
+                           <Border Padding="20,8" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0">
+                              <Grid>
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="230" />
+                                    <ColumnDefinition Width="Auto" />
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource primaryCellStyle}" />
+                                    <TextBlock Text="{Binding Caption}" Style="{StaticResource secondaryCellStyle}" />
+                                 </StackPanel>
+                                 <Border Grid.Column="1" Style="{StaticResource chipInfoStyle}" HorizontalAlignment="Left"
+                                         VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ScopeCaption}" />
+                                 </Border>
+                                 <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StatusCaption}" FontWeight="SemiBold" />
+                                    <ProgressBar Height="4" Margin="0,4,12,0" Minimum="0" Maximum="100"
+                                                 Value="{Binding Percent, Mode=OneWay}"
+                                                 IsIndeterminate="{Binding IsIndeterminate}" />
+                                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource dangerBrush}"
+                                               TextWrapping="Wrap" FontSize="11.5" />
+                                 </StackPanel>
+                                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="Cancel"
+                                            Command="{Binding DataContext.Commands[CancelTaskCommand], RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                       <fa:FontAwesome Icon="Solid_Ban" />
+                                    </Button>
+                                    <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="Download the file result"
+                                            Command="{Binding DataContext.Commands[DownloadTaskCommand], RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                       <fa:FontAwesome Icon="Solid_Download" />
+                                    </Button>
+                                    <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="Read the JSON result"
+                                            Command="{Binding DataContext.Commands[ReadJsonTaskCommand], RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                       <fa:FontAwesome Icon="Solid_FileCode" />
+                                    </Button>
+                                    <Button Style="{StaticResource rowActionButtonStyle}" ToolTip="Clear"
+                                            Command="{Binding DataContext.Commands[ClearTaskCommand], RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}">
+                                       <fa:FontAwesome Icon="Solid_Trash" />
+                                    </Button>
+                                 </StackPanel>
+                              </Grid>
+                           </Border>
+                        </DataTemplate>
+                     </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+               </ScrollViewer>
+
+               <TextBlock Grid.Row="1" Text="No test task yet. Start one above."
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
+                          Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+            </Grid>
+         </Border>
+
+         <!-- ==== results ==== -->
+         <local:TestLogPanel Grid.Row="2" Margin="22,8,22,22" Entries="{Binding Entries}" />
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</UserControl>

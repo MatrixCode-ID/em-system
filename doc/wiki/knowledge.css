@@ -1,0 +1,33 @@
+/* Gaya isi halaman knowledge.
+   Semua aturan dibatasi ke #konten supaya tidak mengganggu kerangka app.html.
+   Bootstrap sudah menangani dasarnya; berkas ini hanya menata ritme baca. */
+
+#konten {
+  padding: 2rem 2rem 4rem;
+  max-width: 54rem;
+}
+
+#konten h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: .5rem; }
+#konten h2 {
+  font-size: 1.05rem; font-weight: 600;
+  margin-top: 2.2rem; padding-bottom: .4rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+#konten h3 { font-size: .95rem; font-weight: 600; }
+
+#konten .kicker {
+  font-size: .72rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--bs-secondary-color); margin-bottom: .35rem;
+}
+
+#konten img { max-width: 100%; border-radius: var(--bs-border-radius-lg); border: 1px solid var(--bs-border-color); }
+
+#konten code { background-color: var(--bs-tertiary-bg); padding: .12em .38em; border-radius: var(--bs-border-radius-sm); }
+#konten pre {
+  background-color: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius); padding: .8rem 1rem; font-size: .82rem;
+}
+#konten pre code { background: none; padding: 0; }
+
+@media (max-width: 576px) { #konten { padding: 1.25rem 1.1rem 3rem; } }
+@media print { #konten { max-width: none; padding: 0; } }

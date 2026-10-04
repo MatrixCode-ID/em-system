@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Em</RootNamespace>
+        <Description>Core API services and data access for Em System.</Description>
+        <Title>Em System API core</Title>
+        <PackageTags>em-system;api;aspnetcore;data-access</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+        <ProjectReference Include="..\..\shared\Em.Libs\Em.Libs.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10"/>
+        <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3"/>
+        <PackageReference Include="NuGet.Versioning" Version="7.0.0"/>
+        <PackageReference Include="Dapper" Version="2.1.66"/>
+        <PackageReference Include="PDFsharp" Version="6.2.4"/>
+        <PackageReference Include="MySqlConnector" Version="2.4.0"/>
+        <PackageReference Include="Npgsql" Version="10.0.3"/>
+        <PackageReference Include="EFCore.BulkExtensions" Version="10.0.1"/>
+        <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.14.0"/>
+
+    </ItemGroup>
+
+</Project>

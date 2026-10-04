@@ -1,0 +1,70 @@
+<p class="kicker">Beranda</p>
+<h1>Knowledge Base</h1>
+<p class="lead fs-6 text-body-secondary">
+  Halaman ini berasal dari <code>data/Index.html</code> — isinya hanya potongan body,
+  tanpa <code>&lt;head&gt;</code>. Kerangkanya datang dari <code>app.html</code>.
+</p>
+
+<img src="./pic.png" alt="Ilustrasi beranda" class="my-4">
+
+<h2>Cara membaca</h2>
+<div class="row g-3">
+  <div class="col-sm-6">
+    <div class="card h-100 border-0 bg-body-tertiary">
+      <div class="card-body">
+        <i class="fa-solid fa-folder-tree text-primary mb-2"></i>
+        <h3 class="h6">Jelajahi pohon</h3>
+        <p class="card-text small mb-0">Klik topik di panel kiri. Tanda <i class="fa-solid fa-chevron-right fa-xs"></i> membuka sub-topik di bawahnya.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card h-100 border-0 bg-body-tertiary">
+      <div class="card-body">
+        <i class="fa-solid fa-magnifying-glass text-primary mb-2"></i>
+        <h3 class="h6">Cari cepat</h3>
+        <p class="card-text small mb-0">Tekan <kbd>/</kbd> atau <kbd>Ctrl</kbd>+<kbd>K</kbd> untuk menyaring pohon berdasarkan nama folder.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card h-100 border-0 bg-body-tertiary">
+      <div class="card-body">
+        <i class="fa-solid fa-circle-half-stroke text-primary mb-2"></i>
+        <h3 class="h6">Terang atau gelap</h3>
+        <p class="card-text small mb-0">Tombol tema di kanan atas menyimpan pilihan Anda dan ikut mewarnai halaman ini.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card h-100 border-0 bg-body-tertiary">
+      <div class="card-body">
+        <i class="fa-solid fa-link text-primary mb-2"></i>
+        <h3 class="h6">Bisa di-bookmark</h3>
+        <p class="card-text small mb-0">Alamat browser ikut berubah, jadi halaman mana pun bisa disimpan atau dibagikan.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>Isi saat ini</h2>
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead><tr><th scope="col">Topik</th><th scope="col">Keterangan</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge text-bg-secondary">Aplikasi1</span></td><td>Contoh topik yang punya sub-topik</td></tr>
+      <tr><td><span class="badge text-bg-secondary">Aplikasi1 › Module1</span></td><td>Contoh topik bersarang</td></tr>
+      <tr><td><span class="badge text-bg-secondary">Aplikasi2</span></td><td>Contoh topik tanpa sub-topik</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Menambah topik baru</h2>
+<p>Buat folder baru di dalam <code>data/</code>, isi dengan <code>Index.html</code> berisi body saja, lalu klik dua kali:</p>
+<pre><code>buka-wiki.cmd</code></pre>
+<p>Navigasi dibuat ulang dan wiki terbuka sendiri di browser dengan topik baru sudah ada di dalamnya.</p>
+
+<div class="alert alert-primary d-flex gap-3 mt-4" role="note">
+  <i class="fa-solid fa-plug-circle-xmark fa-lg mt-1"></i>
+  <div>Semua berkas dibuka langsung dari disk lewat <code>file://</code> — tanpa web server, tanpa koneksi internet.</div>
+</div>

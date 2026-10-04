@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-android</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseMaui>true</UseMaui>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>Em.Ui.Maui</RootNamespace>
+        <Description>.NET MAUI UI components for Em System Android clients.</Description>
+        <Title>Em System MAUI UI core</Title>
+        <PackageTags>em-system;maui;android;ui</PackageTags>
+        <SupportedOSPlatformVersion>21.0</SupportedOSPlatformVersion>
+        <MauiXamlInflator>SourceGen</MauiXamlInflator>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Em.Libs\Em.Libs.csproj" />
+      <ProjectReference Include="..\Em.Ui.Core\Em.Ui.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+      <PackageReference Include="Ulid" Version="1.4.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <MauiImage Include="Resources\Images\*" />
+      <MauiFont Include="Resources\Fonts\*" />
+    </ItemGroup>
+
+</Project>

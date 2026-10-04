@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/shared/">
+    <Project Path="../shared/Em.Libs/Em.Libs.csproj" />
+    <Project Path="Em.Api.Core/Em.Api.Core.csproj" />
+  </Folder>
+  <Folder Name="/modules/Em.Test/">
+    <Project Path="../modules/Em.Test/Em.Test.Models/Em.Test.Models.csproj" />
+    <Project Path="../modules/Em.Test/Em.Test.Api/Em.Test.Api.csproj" />
+  </Folder>
+  <Project Path="Em.Api/Em.Api.csproj" />
+  <Project Path="compose.dcproj" />
+  <Folder Name="/Container/">
+    <File Path="compose.yml" />
+    <File Path=".env.example" />
+    <File Path="Em.Api/Dockerfile" />
+    <File Path=".run/Em.Api Compose.run.xml" />
+  </Folder>
+</Solution>

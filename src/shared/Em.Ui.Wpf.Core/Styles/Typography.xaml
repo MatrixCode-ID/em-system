@@ -1,0 +1,132 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      The handful of text roles every screen uses. None of them names a colour: the theme
+      gives the text its Foreground, and these styles only decide size, weight and how far
+      the text is faded back.
+
+      Captions are written upper case by hand in the markup that uses them - WPF has no
+      letter spacing, so case is the only thing separating a caption from the text under it.
+   -->
+
+   <!-- The caption over a section of a form or a page. -->
+   <Style x:Key="sectionCaptionStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Opacity" Value="0.55" />
+   </Style>
+
+   <!-- The same caption over a column of a table, where it has to sit on the cells' line and
+        give way when the column is too narrow for it. -->
+   <Style x:Key="columnHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource sectionCaptionStyle}">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+   </Style>
+
+   <!-- The caption of a group of rows - a module, a day, a category. Larger than a section
+        caption and not faded, because it is read as a heading rather than as a label. -->
+   <Style x:Key="groupCaptionStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+   </Style>
+
+   <!-- The field a row is identified by. -->
+   <Style x:Key="primaryCellStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+   </Style>
+
+   <!-- Everything else on the row: smaller and faded, so a row reads as one thing with
+        details rather than as a line of equals. -->
+   <Style x:Key="secondaryCellStyle" TargetType="TextBlock" BasedOn="{StaticResource primaryCellStyle}">
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="Opacity" Value="0.6" />
+   </Style>
+
+   <!-- The label over a form field, in sentence case. -->
+   <Style x:Key="fieldLabelStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="Margin" Value="2,0,0,6" />
+   </Style>
+
+   <!-- A sentence under a caption or a field that says why it is there. Wrapping, because a
+        help line that trims is a help line nobody can read. -->
+   <Style x:Key="fieldHelpStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="Opacity" Value="0.55" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+   </Style>
+
+   <!-- A recorded fact is a caption over its value rather than a pair on one line: values
+        differ wildly in length, and stacking keeps every one of them readable however narrow
+        the panel holding them ends up. -->
+   <Style x:Key="metaLabelStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="10.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Opacity" Value="0.5" />
+   </Style>
+
+   <Style x:Key="metaValueStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="Margin" Value="0,3,0,0" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+   </Style>
+
+   <Style x:Key="typeHeadlineSmallStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="24" />
+      <Setter Property="LineHeight" Value="32" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+   </Style>
+   <Style x:Key="typeTitleLargeStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="LineHeight" Value="28" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+   </Style>
+   <Style x:Key="typeTitleMediumStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="LineHeight" Value="24" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+   </Style>
+   <Style x:Key="typeBodyMediumStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="LineHeight" Value="20" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnSurfaceVariantBrush}" />
+   </Style>
+   <Style x:Key="typeBodySmallStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="LineHeight" Value="16" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnSurfaceVariantBrush}" />
+   </Style>
+   <Style x:Key="typeLabelLargeStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="LineHeight" Value="20" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+   </Style>
+   <Style x:Key="typeLabelSmallStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="LineHeight" Value="16" />
+      <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnSurfaceVariantBrush}" />
+   </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      Browser-style toolbar button: no chrome at rest, a rounded highlight under the mouse.
+
+      Built on plain WPF primitives, like everything in this library, so it needs no third party
+      control library. The highlight brushes are neutral grey with an alpha
+      channel instead of fixed colours: the same brush darkens a light theme and lightens a dark
+      one, so the style follows the application theme without binding to any theme resource key.
+   -->
+   <SolidColorBrush x:Key="flatIconButtonHoverBackground" Color="#26808080" />
+   <SolidColorBrush x:Key="flatIconButtonHoverBorder" Color="#33808080" />
+   <SolidColorBrush x:Key="flatIconButtonPressedBackground" Color="#40808080" />
+   <SolidColorBrush x:Key="flatIconButtonPressedBorder" Color="#4D808080" />
+   <SolidColorBrush x:Key="flatIconButtonFocusBorder" Color="#990F6CBD" />
+
+   <!--
+      Targets ButtonBase so ToggleButton/RepeatButton can reuse it. CornerRadius is half the
+      default height, which makes a square button a circle and a wider one a pill.
+   -->
+   <Style x:Key="flatIconButtonStyle" TargetType="ButtonBase">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <!-- Keeps the button centred when the toolbar row is taller than the button itself. -->
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="SnapsToDevicePixels" Value="True" />
+      <!-- The template draws its own focus ring; the dotted default one breaks the round shape. -->
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ButtonBase">
+               <Border x:Name="highlight"
+                       CornerRadius="16"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <ContentPresenter Margin="{TemplateBinding Padding}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="highlight" Property="Background" Value="{DynamicResource flatIconButtonHoverBackground}" />
+                     <Setter TargetName="highlight" Property="BorderBrush" Value="{DynamicResource flatIconButtonHoverBorder}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="highlight" Property="Background" Value="{DynamicResource flatIconButtonPressedBackground}" />
+                     <Setter TargetName="highlight" Property="BorderBrush" Value="{DynamicResource flatIconButtonPressedBorder}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocused" Value="True">
+                     <Setter TargetName="highlight" Property="BorderBrush" Value="{DynamicResource flatIconButtonFocusBorder}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter TargetName="highlight" Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+</ResourceDictionary>

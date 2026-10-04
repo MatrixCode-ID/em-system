@@ -1,0 +1,140 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.RobotTokenDialog"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                    xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                    mc:Ignorable="d"
+                    Title="Robot Token"
+                    Width="520"
+                    SizeToContent="Height"
+                    ResizeMode="NoResize"
+                    ShowInTaskbar="False"
+                    WindowStartupLocation="CenterOwner">
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:RobotTokenDialogVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid Margin="22,4,22,22">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- ==== banner ==== -->
+      <Grid Grid.Row="0">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+         </Grid.ColumnDefinitions>
+
+         <Grid Width="42" Height="42" VerticalAlignment="Center">
+            <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+            <fa:FontAwesome Icon="Solid_Key"
+                            FontSize="17"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource themeAccentBrush}" />
+         </Grid>
+
+         <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+            <TextBlock FontSize="16" FontWeight="SemiBold">
+               <Run Text="Token for" />
+               <Run Text="{Binding RobotName, Mode=OneWay}" />
+            </TextBlock>
+            <TextBlock Text="Use the robot name as username and this token as its password."
+                       Margin="0,4,0,0"
+                       FontSize="12.5"
+                       Opacity="0.75"
+                       TextWrapping="Wrap" />
+         </StackPanel>
+      </Grid>
+
+      <!-- ==== warning ==== -->
+      <Border Grid.Row="1"
+              Margin="0,16,0,0"
+              Padding="12,10"
+              CornerRadius="10"
+              BorderThickness="1"
+              Background="{StaticResource warningChipBrush}"
+              BorderBrush="{StaticResource warningBrush}">
+         <StackPanel>
+            <TextBlock Text="Copy the token now." FontSize="12.5" FontWeight="SemiBold" />
+            <TextBlock Text="It is shown only this once and cannot be read again. If it is lost, regenerate the token; the old one stops working at once."
+                       Margin="0,2,0,0"
+                       FontSize="12.5"
+                       TextWrapping="Wrap" />
+         </StackPanel>
+      </Border>
+
+      <!-- ==== token ==== -->
+      <StackPanel Grid.Row="2" Margin="0,18,0,0">
+         <TextBlock Text="Token" Style="{StaticResource fieldLabelStyle}" />
+         <TextBox Style="{StaticResource fieldBoxStyle}"
+                  FontFamily="Consolas"
+                  IsReadOnly="True"
+                  Text="{Binding Token, Mode=OneWay}" />
+      </StackPanel>
+
+      <!-- ==== login command ==== -->
+      <StackPanel Grid.Row="3" Margin="0,14,0,0">
+         <TextBlock Text="Container login command" Style="{StaticResource fieldLabelStyle}" Visibility="{Binding ShowContainerLogin, Converter={StaticResource boolToVisibility}}" />
+         <Border Style="{StaticResource innerCardStyle}" Padding="12,9" Visibility="{Binding ShowContainerLogin, Converter={StaticResource boolToVisibility}}">
+            <TextBlock Text="{Binding LoginPreview}"
+                       FontFamily="Consolas"
+                       FontSize="12"
+                       TextWrapping="Wrap" />
+         </Border>
+         <TextBlock Style="{StaticResource fieldHelpStyle}"
+                    Foreground="{StaticResource warningBrush}"
+                    Opacity="1"
+                    Visibility="{Binding IsInsecureHost, Converter={StaticResource boolToVisibility}}"
+                    Text="This server is reached over plain HTTP. Docker only accepts that for localhost, so docker login to this address will be refused until the server is served over HTTPS." />
+         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+            <Button Style="{StaticResource outlinedButtonStyle}"
+                    Command="{Binding Commands[CopyTokenCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Regular_Copy" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Copy token" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <Button Style="{StaticResource outlinedButtonStyle}"
+                    Margin="8,0,0,0"
+                    Command="{Binding Commands[CopyLoginCommand]}" Visibility="{Binding ShowContainerLogin, Converter={StaticResource boolToVisibility}}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Regular_Copy" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Copy docker login" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </StackPanel>
+      </StackPanel>
+
+      <!-- ==== actions ==== -->
+      <StackPanel Grid.Row="4"
+                  Margin="0,22,0,0"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right">
+         <Button Style="{StaticResource confirmAnswerButtonStyle}"
+                 MinWidth="120"
+                 IsDefault="True"
+                 IsCancel="True"
+                 Command="{Binding Commands[CloseCommand]}"
+                 Content="I have saved it" />
+      </StackPanel>
+   </Grid>
+</windows:EmWindow>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
+             x:Class="Em.Ui.Maui.Navigations.SpaNavigationHost">
+
+   <ContentPage.BindingContext>
+      <local:SpaNavigationHostVm />
+   </ContentPage.BindingContext>
+
+   <Grid>
+
+      <!-- ==== isi halaman ==== -->
+      <Grid RowDefinitions="Auto,Auto,*">
+
+         <!--
+            Bilah atas: mundur dan pulang di kiri, judul di tengah, muat ulang dan badge akun di kanan.
+            Tombol maju sengaja tidak ada di sini - di Android tidak ada gestur yang wajar untuk maju,
+            dan tombol yang tak punya gestur pendamping hanya menambah barang di bilah yang sempit.
+            Jalurnya sendiri tetap utuh: CanGoForward dan ForwardCommand masih hidup di view model,
+            tinggal dipasang kembali kalau host ini dipakai di MAUI desktop.
+         -->
+         <Grid Grid.Row="0"
+               Style="{StaticResource appBarStyle}"
+               ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+               IsVisible="{Binding IsToolbarVisible}">
+
+            <controls:IconButton Grid.Column="0"
+                                 Glyph="{x:Static controls:FontIcons.ArrowLeft}"
+                                 IsVisible="{Binding IsBackVisible}"
+                                 Command="{Binding Commands[LeadingCommand]}"
+                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+
+            <controls:IconButton Grid.Column="1"
+                                 Glyph="{x:Static controls:FontIcons.House}"
+                                 IsVisible="{Binding IsHomeVisible}"
+                                 Command="{Binding Commands[HomeCommand]}"
+                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+
+            <VerticalStackLayout Grid.Column="2" Padding="8,0" Spacing="1" VerticalOptions="Center"
+                                 IsVisible="{Binding IsTitleVisible}">
+               <Label Text="{Binding Title}" Style="{StaticResource headlineTextStyle}"
+                      FontSize="19" LineBreakMode="TailTruncation" />
+               <Label Text="{Binding Subtitle}" Style="{StaticResource supportTextStyle}"
+                      LineBreakMode="TailTruncation" IsVisible="{Binding HasSubtitle}" />
+            </VerticalStackLayout>
+
+            <controls:IconButton Grid.Column="3"
+                                 Glyph="{x:Static controls:FontIcons.RotateRight}"
+                                 IsVisible="{Binding IsReloadVisible}"
+                                 Command="{Binding Commands[ReloadCommand]}"
+                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+
+            <!-- Badge akun, pembuka panel account. Ada di setiap layar, bukan hanya di home: dialah
+                 satu-satunya jalan ke akun, server, tema, dan keluar sesudah menu samping dibuang. -->
+            <Border Grid.Column="4" Style="{StaticResource accountBadgeStyle}"
+                    IsVisible="{Binding IsUserVisible}">
+               <Border.GestureRecognizers>
+                  <TapGestureRecognizer Command="{Binding Commands[AccountPanelCommand]}" />
+               </Border.GestureRecognizers>
+               <!-- Inisial, bukan siluet orang yang sama untuk semua orang: badge ini yang
+                    memberi tahu akun siapa yang sedang masuk, tanpa perlu mengeja seluruh namanya
+                    di bilah yang sempit. Di sinilah nanti foto profil dipasang - gambarnya tinggal
+                    menggantikan Label ini, dan Border-nya tetap yang membulatkannya. -->
+               <Label Text="{Binding AccountInitials}" FontFamily="OpenSansSemibold" FontSize="13"
+                      HorizontalOptions="Center" VerticalOptions="Center"
+                      TextColor="{AppThemeBinding Light={StaticResource onPrimaryContainerLight}, Dark={StaticResource onPrimaryContainerDark}}" />
+            </Border>
+         </Grid>
+
+         <BoxView Grid.Row="1" Style="{StaticResource dividerStyle}" IsVisible="{Binding IsToolbarVisible}" />
+
+         <ContentView Grid.Row="2" x:Name="BodyHost" />
+      </Grid>
+
+      <!-- ==== tirai ==== -->
+      <BoxView x:Name="Scrim" Style="{StaticResource scrimStyle}" InputTransparent="True">
+         <BoxView.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding Commands[CloseAccountPanelCommand]}" />
+         </BoxView.GestureRecognizers>
+      </BoxView>
+
+      <!-- ==== panel account ==== -->
+      <local:AccountPanel x:Name="AccountPanelView" />
+   </Grid>
+</ContentPage>

@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>Em.Ui.Wpf</RootNamespace>
+        <Description>WPF UI components for Em System desktop clients.</Description>
+        <Title>Em System WPF UI core</Title>
+        <PackageTags>em-system;wpf;desktop;ui</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\shared\Em.Libs\Em.Libs.csproj" />
+      <ProjectReference Include="..\Em.Ui.Core\Em.Ui.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Assets\Icons\Logo.ico" />
+      <None Remove="Assets\Icons\Logo.png" />
+      <Resource Include="Assets\Icons\Logo.ico" />
+      <Resource Include="Assets\Icons\Logo.png" />
+      <None Update="Assets\Icons\Logo.svg">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FontAwesome6.Fonts" Version="2.5.1" />
+      <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
+      <PackageReference Include="PDFiumCore" Version="155.0.8057" />
+      <PackageReference Include="NuGet.Protocol" Version="7.0.3" />
+      <PackageReference Include="NuGet.Packaging" Version="7.0.3" />
+      <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.0" />
+      <PackageReference Include="Ulid" Version="1.4.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Navigations\" />
+    </ItemGroup>
+
+</Project>

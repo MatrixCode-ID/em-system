@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="id" data-bs-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penjelajah Knowledge</title>
+<link rel="stylesheet" href="bootstrap.min.css">
+<link rel="stylesheet" href="knowledge.css">
+<script>
+  // Terapkan tema sebelum halaman digambar supaya tidak ada kedipan putih.
+  (function () {
+    var pilihan = 'auto';
+    try { pilihan = localStorage.getItem('hk-tema') || 'auto'; } catch (e) {}
+    var gelap = pilihan === 'dark' || (pilihan === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-bs-theme', gelap ? 'dark' : 'light');
+  })();
+</script>
+<style>
+  :root { --sb-lebar: 296px; }
+  html, body { height: 100%; }
+  body { overflow: hidden; }
+  /* kelas display Bootstrap memakai !important, jadi [hidden] harus menang darinya */
+  [hidden] { display: none !important; }
+
+  /* ---------- kerangka ---------- */
+  #topbar { flex: 0 0 auto; }
+  #isi { flex: 1 1 auto; min-height: 0; }
+  main { min-width: 0; }
+  #gulung { scroll-behavior: smooth; }
+
+  /* ---------- panel navigasi ---------- */
+  #sidebar { --bs-offcanvas-width: 300px; }
+  #sidebar .offcanvas-body { padding: 0; }
+  .sb-inner { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+  @media (min-width: 992px) {
+    #sidebar { flex: 0 0 var(--sb-lebar); width: var(--sb-lebar); height: 100%;
+               display: flex; flex-direction: column; }
+    #sidebar .offcanvas-body { display: flex; flex-grow: 1; min-height: 0; overflow: hidden; }
+    .sb-inner { height: 100%; border-right: 1px solid var(--bs-border-color); }
+  }
+
+  /* ---------- pohon folder ---------- */
+  #nav ul { list-style: none; margin: 0; padding: 0; }
+  .tree-kids { display: none; margin-left: .85rem; padding-left: .55rem; border-left: 1px solid var(--bs-border-color); }
+  li.open > .tree-kids { display: block; }
+
+  .tree-row {
+    position: relative; display: flex; align-items: center; gap: .1rem;
+    border-radius: var(--bs-border-radius); transition: background-color .12s ease;
+  }
+  .tree-row:hover { background-color: var(--bs-tertiary-bg); }
+  .tree-row.active { background-color: var(--bs-primary-bg-subtle); }
+  .tree-row.active > a { color: var(--bs-primary-text-emphasis); font-weight: 600; }
+  .tree-row.active::before {
+    content: ""; position: absolute; inset: .28rem auto .28rem -.55rem;
+    width: 2px; border-radius: 2px; background-color: var(--bs-primary);
+  }
+
+  .tree-caret {
+    flex: none; width: 1.4rem; height: 1.75rem; padding: 0; border: 0; background: none; cursor: pointer;
+    color: var(--bs-secondary-color); font-size: .68rem; line-height: 1; transition: transform .15s ease;
+  }
+  li.open > .tree-row .tree-caret { transform: rotate(90deg); }
+  .tree-stub { flex: none; width: 1.4rem; }
+
+  .tree-row a {
+    flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .45rem;
+    padding: .3rem .45rem; border-radius: var(--bs-border-radius);
+    color: var(--bs-body-color); text-decoration: none; font-size: .875rem;
+  }
+  .tree-row a > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tree-ico { flex: none; width: 1rem; color: var(--bs-secondary-color); font-size: .8rem; }
+  .tree-row.active .tree-ico { color: var(--bs-primary); }
+  .tree-row.kosong a { color: var(--bs-secondary-color); font-style: italic; }
+
+  /* ---------- lain-lain ---------- */
+  #crumbs .breadcrumb { margin: 0; font-size: .875rem; }
+  #crumbs a { text-decoration: none; }
+  #kotakCari .form-control:focus { box-shadow: none; }
+  kbd { font-size: .7rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+  /* ---------- cetak: hanya isi halaman ---------- */
+  @media print {
+    html, body { height: auto; overflow: visible; }
+    #topbar, #sidebar { display: none !important; }
+    #isi, #gulung { display: block; overflow: visible; }
+  }
+</style>
+</head>
+
+<body class="d-flex flex-column">
+
+<header id="topbar" class="d-flex align-items-center gap-2 px-3 py-2 border-bottom bg-body-tertiary">
+  <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button"
+          data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Buka navigasi">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <nav id="crumbs" class="flex-grow-1 overflow-hidden" aria-label="Lokasi">
+    <span class="text-body-secondary small">Pilih folder di panel kiri</span>
+  </nav>
+
+  <button id="cetak" class="btn btn-sm btn-outline-secondary" type="button" hidden>
+    <i class="fa-solid fa-print"></i>
+    <span class="d-none d-sm-inline ms-1">Cetak</span>
+  </button>
+
+  <div class="dropdown">
+    <button id="temaBtn" class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false" aria-label="Ganti tema">
+      <i id="temaIko" class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+      <li><button class="dropdown-item d-flex align-items-center gap-2" data-tema="light">
+        <i class="fa-solid fa-sun fa-fw"></i> Terang <i class="fa-solid fa-check ms-auto opacity-0"></i></button></li>
+      <li><button class="dropdown-item d-flex align-items-center gap-2" data-tema="dark">
+        <i class="fa-solid fa-moon fa-fw"></i> Gelap <i class="fa-solid fa-check ms-auto opacity-0"></i></button></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><button class="dropdown-item d-flex align-items-center gap-2" data-tema="auto">
+        <i class="fa-solid fa-circle-half-stroke fa-fw"></i> Otomatis <i class="fa-solid fa-check ms-auto opacity-0"></i></button></li>
+    </ul>
+  </div>
+</header>
+
+<div id="isi" class="d-flex">
+
+  <aside id="sidebar" class="offcanvas-lg offcanvas-start" tabindex="-1" aria-labelledby="sidebarJudul">
+    <div class="offcanvas-header border-bottom">
+      <h6 class="offcanvas-title mb-0" id="sidebarJudul">Navigasi</h6>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Tutup"></button>
+    </div>
+
+    <div class="offcanvas-body">
+      <div class="sb-inner bg-body-tertiary">
+
+        <div class="d-none d-lg-flex align-items-center gap-2 px-3 py-3 border-bottom">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary"
+                style="width:2.1rem;height:2.1rem"><i class="fa-solid fa-book-open"></i></span>
+          <div class="overflow-hidden">
+            <div id="rootLabel" class="fw-semibold text-truncate lh-sm">Penjelajah Knowledge</div>
+            <div id="rootNote" class="text-body-secondary text-truncate" style="font-size:.75rem">tree.js</div>
+          </div>
+        </div>
+
+        <div class="p-2 border-bottom">
+          <div id="kotakCari" class="input-group input-group-sm">
+            <span class="input-group-text bg-body"><i class="fa-solid fa-magnifying-glass text-body-secondary"></i></span>
+            <input id="cari" type="search" class="form-control bg-body border-start-0 ps-0"
+                   placeholder="Cari folder…" aria-label="Cari folder" autocomplete="off">
+          </div>
+        </div>
+
+        <nav id="nav" class="flex-grow-1 overflow-auto p-2"></nav>
+
+        <div class="px-3 py-2 border-top text-body-secondary d-none d-lg-block" style="font-size:.72rem">
+          Tekan <kbd>/</kbd> untuk mencari
+        </div>
+
+      </div>
+    </div>
+  </aside>
+
+  <main class="flex-grow-1 d-flex flex-column">
+    <div id="gulung" class="flex-grow-1 overflow-auto" hidden>
+      <article id="konten"></article>
+    </div>
+    <div id="msg" class="flex-grow-1 d-flex align-items-center justify-content-center p-4"></div>
+  </main>
+
+</div>
+
+<script src="bootstrap.bundle.min.js"></script>
+<script src="tree.js"></script>
+<script src="konten.js"></script>
+<script>
+const el = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const flat = new Map();
+const ISI = typeof KONTEN === 'object' && KONTEN ? KONTEN : {};
+let aktif = null;
+
+/* ---------------- tema ---------------- */
+const media = matchMedia('(prefers-color-scheme: dark)');
+
+function bacaTema() {
+  try { return localStorage.getItem('hk-tema') || 'auto'; } catch (e) { return 'auto'; }
+}
+function terapkanTema(pilihan) {
+  try { localStorage.setItem('hk-tema', pilihan); } catch (e) {}
+  const nyata = pilihan === 'auto' ? (media.matches ? 'dark' : 'light') : pilihan;
+  document.documentElement.setAttribute('data-bs-theme', nyata);
+  el('temaIko').className = 'fa-solid ' + (pilihan === 'light' ? 'fa-sun'
+    : pilihan === 'dark' ? 'fa-moon' : 'fa-circle-half-stroke');
+  document.querySelectorAll('[data-tema]').forEach(b => {
+    b.querySelector('.fa-check').classList.toggle('opacity-0', b.dataset.tema !== pilihan);
+    b.classList.toggle('active', b.dataset.tema === pilihan);
+  });
+}
+document.querySelectorAll('[data-tema]').forEach(b => {
+  b.addEventListener('click', () => terapkanTema(b.dataset.tema));
+});
+media.addEventListener('change', () => { if (bacaTema() === 'auto') terapkanTema('auto'); });
+terapkanTema(bacaTema());
+
+el('cetak').addEventListener('click', () => print());
+
+/* ---------------- pohon ---------------- */
+function collect(nodes) {
+  for (const n of nodes) { flat.set(n.path, n); if (n.children) collect(n.children); }
+}
+
+function render(nodes) {
+  return '<ul>' + nodes.map(n => {
+    const kids = n.children && n.children.length;
+    const punya = ISI[n.path] !== undefined;
+    const ikon = kids ? 'fa-folder' : (punya ? 'fa-file-lines' : 'fa-folder-open');
+    return '<li data-node="' + esc(n.path) + '">'
+      + '<div class="tree-row' + (punya ? '' : ' kosong') + '" data-path="' + esc(n.path) + '">'
+      + (kids
+          ? '<button class="tree-caret" type="button" aria-label="Buka/tutup"><i class="fa-solid fa-chevron-right"></i></button>'
+          : '<span class="tree-stub"></span>')
+      + '<a href="#' + encodeURI(n.path) + '" title="' + esc(n.path) + '">'
+      + '<i class="fa-solid ' + ikon + ' tree-ico"></i><span>' + esc(n.name) + '</span></a>'
+      + '</div>'
+      + (kids ? '<div class="tree-kids">' + render(n.children) + '</div>' : '')
+      + '</li>';
+  }).join('') + '</ul>';
+}
+
+function remah(path) {
+  const bagian = path.split('/');
+  let jalan = '', item = '';
+  bagian.forEach((seg, i) => {
+    jalan = i ? jalan + '/' + seg : seg;
+    const node = flat.get(jalan);
+    const nama = esc(node ? node.name : seg);
+    item += i === bagian.length - 1
+      ? '<li class="breadcrumb-item active" aria-current="page">' + nama + '</li>'
+      : '<li class="breadcrumb-item"><a href="#' + encodeURI(jalan) + '">' + nama + '</a></li>';
+  });
+  return '<ol class="breadcrumb flex-nowrap text-nowrap overflow-hidden">' + item + '</ol>';
+}
+
+/* innerHTML tidak menjalankan <script>; buat ulang supaya halaman boleh punya skrip sendiri */
+function hidupkanSkrip(wadah) {
+  wadah.querySelectorAll('script').forEach(lama => {
+    const baru = document.createElement('script');
+    for (const a of lama.attributes) baru.setAttribute(a.name, a.value);
+    baru.textContent = lama.textContent;
+    lama.replaceWith(baru);
+  });
+}
+
+function show(path) {
+  const node = flat.get(path);
+  if (!node) return;
+  aktif = path;
+
+  document.querySelectorAll('.tree-row').forEach(r => r.classList.toggle('active', r.dataset.path === path));
+  let li = document.querySelector('li[data-node="' + CSS.escape(path) + '"]');
+  while (li) { if (li.tagName === 'LI') li.classList.add('open'); li = li.parentElement; }
+  const baris = document.querySelector('.tree-row.active');
+  if (baris) baris.scrollIntoView({ block: 'nearest' });
+
+  el('crumbs').innerHTML = remah(path);
+  document.title = node.name + ' — Penjelajah Knowledge';
+
+  const drawer = bootstrap.Offcanvas.getInstance(el('sidebar'));
+  if (drawer) drawer.hide();
+
+  const isi = ISI[path];
+  if (isi !== undefined) {
+    el('konten').innerHTML = isi;
+    hidupkanSkrip(el('konten'));
+    el('gulung').hidden = false;
+    el('gulung').scrollTop = 0;
+    el('msg').hidden = true;
+    el('cetak').hidden = false;
+  } else {
+    el('gulung').hidden = true;
+    el('konten').innerHTML = '';
+    el('cetak').hidden = true;
+    el('msg').hidden = false;
+    el('msg').innerHTML = kartu('fa-folder-open', 'Folder ini belum punya halaman',
+      'Tambahkan <code>Index.html</code> di dalam <code>' + esc(path) + '</code>, lalu jalankan ulang <code>buka-wiki.cmd</code>.');
+  }
+}
+
+function kartu(ikon, judul, teks) {
+  return '<div class="text-center text-body-secondary" style="max-width:32rem">'
+    + '<i class="fa-solid ' + ikon + ' fa-2x mb-3 opacity-50"></i>'
+    + '<h2 class="h5 text-body">' + judul + '</h2><p class="mb-0">' + teks + '</p></div>';
+}
+
+function fromHash() {
+  const p = decodeURI(location.hash.slice(1));
+  if (flat.has(p)) show(p);
+}
+
+/* ---------------- pencarian ---------------- */
+function semuaTurunan(node, set) {
+  set.add(node.path);
+  (node.children || []).forEach(c => semuaTurunan(c, set));
+}
+
+function saring(q) {
+  q = q.trim().toLowerCase();
+  const daftar = document.querySelectorAll('#nav li');
+
+  if (!q) {
+    daftar.forEach(li => { li.hidden = false; li.classList.remove('open'); });
+    el('nav').querySelector('.hasil-kosong')?.remove();
+    if (aktif) show(aktif);
+    return;
+  }
+
+  const tampil = new Set();
+  (function jalan(nodes, rantai) {
+    for (const n of nodes) {
+      const rantaiBaru = rantai.concat(n.path);
+      if (n.name.toLowerCase().includes(q)) {
+        rantaiBaru.forEach(p => tampil.add(p));
+        semuaTurunan(n, tampil);
+      }
+      jalan(n.children || [], rantaiBaru);
+    }
+  })(TREE, []);
+
+  daftar.forEach(li => {
+    const ada = tampil.has(li.dataset.node);
+    li.hidden = !ada;
+    li.classList.toggle('open', ada);
+  });
+
+  el('nav').querySelector('.hasil-kosong')?.remove();
+  if (!tampil.size) {
+    el('nav').insertAdjacentHTML('beforeend',
+      '<p class="hasil-kosong text-body-secondary small text-center py-3 mb-0">Tidak ada folder yang cocok.</p>');
+  }
+}
+
+/* ---------------- jalankan ---------------- */
+if (typeof TREE === 'undefined' || !Array.isArray(TREE) || !TREE.length) {
+  el('msg').innerHTML = '<div class="alert alert-warning shadow-sm" style="max-width:40rem">'
+    + '<h2 class="h6 alert-heading"><i class="fa-solid fa-triangle-exclamation me-2"></i>tree.js belum ada atau kosong</h2>'
+    + '<p class="mb-0">Jalankan <code>buka-wiki.cmd</code> untuk memindai folder <code>data/</code>. '
+    + 'Skrip itu menghasilkan <code>tree.js</code> dan <code>konten.js</code> di folder yang sama dengan '
+    + '<code>app.html</code>, lalu muat ulang halaman ini.</p></div>';
+} else {
+  collect(TREE);
+  if (typeof ROOT_NAME === 'string' && ROOT_NAME) el('rootLabel').textContent = ROOT_NAME;
+  el('rootNote').textContent = flat.size + ' folder';
+  el('nav').innerHTML = render(TREE);
+  el('msg').innerHTML = kartu('fa-hand-pointer', 'Pilih folder di panel kiri', 'Isinya akan tampil di sini.');
+
+  el('nav').addEventListener('click', e => {
+    const caret = e.target.closest('.tree-caret');
+    if (caret) { caret.closest('li').classList.toggle('open'); return; }
+    if (e.target.closest('.tree-row a')) setTimeout(fromHash, 0);
+  });
+  addEventListener('hashchange', fromHash);
+
+  el('cari').addEventListener('input', e => saring(e.target.value));
+  el('cari').addEventListener('keydown', e => { if (e.key === 'Escape') { e.target.value = ''; saring(''); } });
+  addEventListener('keydown', e => {
+    const ketik = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (!ketik && (e.key === '/' || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey)))) {
+      e.preventDefault(); el('cari').focus();
+    }
+  });
+
+  if (location.hash) fromHash();
+  else if (TREE[0]) location.hash = encodeURI(TREE[0].path);
+}
+</script>
+<script src="fa-solid.min.js"></script>
+<script src="fa-core.min.js"></script>
+</body>
+</html>

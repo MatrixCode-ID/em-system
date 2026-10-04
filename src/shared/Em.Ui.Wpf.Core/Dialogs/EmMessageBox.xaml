@@ -1,0 +1,133 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.EmMessageBox"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                    xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                    mc:Ignorable="d"
+                    Title=""
+                    MinWidth="360"
+                    MaxWidth="480"
+                    SizeToContent="WidthAndHeight"
+                    ResizeMode="NoResize"
+                    ShowInTaskbar="False"
+                    WindowStartupLocation="CenterOwner">
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <Style x:Key="messageIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Icon" Value="Solid_CircleInfo" />
+            <Setter Property="Foreground" Value="{StaticResource infoBrush}" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Image}" Value="Warning">
+                  <Setter Property="Icon" Value="Solid_TriangleExclamation" />
+                  <Setter Property="Foreground" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Image}" Value="Error">
+                  <Setter Property="Icon" Value="Solid_CircleXmark" />
+                  <Setter Property="Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Image}" Value="Question">
+                  <Setter Property="Icon" Value="Solid_CircleQuestion" />
+                  <Setter Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="iconPlateStyle" TargetType="Grid">
+            <Setter Property="Width" Value="42" />
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Image}" Value="None">
+                  <Setter Property="Visibility" Value="Collapsed" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:EmMessageBoxVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid Margin="22,4,22,20">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- ==== message ==== -->
+      <Grid Grid.Row="0">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+         </Grid.ColumnDefinitions>
+
+         <Grid Style="{StaticResource iconPlateStyle}">
+            <Border CornerRadius="12" Opacity="0.18"
+                    Background="{Binding Foreground, ElementName=messageIcon}" />
+            <fa:FontAwesome x:Name="messageIcon" Style="{StaticResource messageIconStyle}" />
+         </Grid>
+
+         <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Heading}"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap" />
+            <TextBox Style="{StaticResource inlineBoxStyle}"
+                     Margin="0,6,0,0"
+                     FontSize="12.5"
+                     Opacity="0.85"
+                     IsReadOnly="True"
+                     IsTabStop="False"
+                     TextWrapping="Wrap"
+                     MaxHeight="320"
+                     VerticalScrollBarVisibility="Auto"
+                     Text="{Binding Message, Mode=OneWay}" />
+         </StackPanel>
+      </Grid>
+
+      <!-- ==== actions ==== -->
+      <ItemsControl Grid.Row="1"
+                    Margin="0,22,0,0"
+                    HorizontalAlignment="Right"
+                    Focusable="False"
+                    ItemsSource="{Binding Buttons}">
+         <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+               <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+         </ItemsControl.ItemsPanel>
+         <ItemsControl.ItemTemplate>
+            <DataTemplate>
+               <Button x:Name="button"
+                       Margin="8,0,0,0"
+                       MinWidth="88"
+                       Style="{StaticResource answerButtonStyle}"
+                       Content="{Binding Caption}"
+                       IsDefault="{Binding IsDefault}"
+                       IsCancel="{Binding IsCancel}"
+                       Command="{Binding DataContext.Commands[ChooseCommand], RelativeSource={RelativeSource AncestorType=Window}}"
+                       CommandParameter="{Binding}" />
+               <DataTemplate.Triggers>
+                  <DataTrigger Binding="{Binding IsConfirm}" Value="True">
+                     <Setter TargetName="button" Property="Style" Value="{StaticResource confirmAnswerButtonStyle}" />
+                  </DataTrigger>
+               </DataTemplate.Triggers>
+            </DataTemplate>
+         </ItemsControl.ItemTemplate>
+      </ItemsControl>
+   </Grid>
+</windows:EmWindow>

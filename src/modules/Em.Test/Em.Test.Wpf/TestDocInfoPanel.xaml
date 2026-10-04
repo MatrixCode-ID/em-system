@@ -1,0 +1,15 @@
+<UserControl x:Class="Em.Test.Wpf.TestDocInfoPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Tag="Test document"
+             Padding="0,4">
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <TextBlock x:Name="text" Style="{StaticResource testResultTextStyle}" Text="Reading the document..." />
+</UserControl>

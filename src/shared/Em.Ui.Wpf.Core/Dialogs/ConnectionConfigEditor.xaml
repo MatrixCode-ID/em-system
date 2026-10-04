@@ -1,0 +1,173 @@
+﻿<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.ConnectionConfigEditor"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                    xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+                    xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                    mc:Ignorable="d"
+                    Title="Web API Server Connection"
+                    Width="600"
+                    Height="620"
+                    MinWidth="540"
+                    MinHeight="520"
+                    ResizeMode="NoResize"
+                    ShowInTaskbar="False"
+                    WindowStartupLocation="CenterOwner">
+
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <Style x:Key="fieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Margin" Value="2,0,0,6" />
+         </Style>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:ConnectionConfigEditorVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid>
+      <Grid Margin="22,4,22,22">
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+         </Grid.RowDefinitions>
+
+         <!-- ==== banner ==== -->
+         <Border Grid.Row="0"
+                 CornerRadius="14"
+                 Padding="18,16"
+                 Background="{StaticResource surfaceStrongBrush}"
+                 BorderBrush="{StaticResource outlineBrush}"
+                 BorderThickness="1">
+            <Grid>
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+               </Grid.ColumnDefinitions>
+
+               <Grid Width="42" Height="42" VerticalAlignment="Center">
+                  <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+                  <fa:FontAwesome Icon="Solid_Plug"
+                                  FontSize="17"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Foreground="{DynamicResource themeAccentBrush}" />
+               </Grid>
+
+               <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                  <TextBlock Text="Web API Server Connection"
+                             FontSize="16"
+                             FontWeight="SemiBold" />
+                  <TextBlock Text="Specify the address of the EM Web API server."
+                             Margin="0,4,0,0"
+                             FontSize="12.5"
+                             Opacity="0.75"
+                             TextWrapping="Wrap" />
+               </StackPanel>
+            </Grid>
+         </Border>
+
+         <!-- ==== fields ==== -->
+         <Border Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource cardStyle}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+               <StackPanel Margin="22,18,22,20" IsEnabled="{Binding IsNotBusy}">
+
+                  <TextBlock Text="SERVER" Margin="0,0,0,12" Style="{StaticResource sectionCaptionStyle}" />
+
+                  <TextBlock Text="Profile name" Style="{StaticResource fieldLabelStyle}" />
+                  <TextBox Style="{StaticResource fieldBoxStyle}"
+                           Margin="0,0,0,14"
+                           Tag="e.g. Production"
+                           Text="{Binding Connection.ProfileName, UpdateSourceTrigger=PropertyChanged}" />
+
+                  <TextBlock Text="Server URL" Style="{StaticResource fieldLabelStyle}" />
+                  <TextBox Style="{StaticResource fieldBoxStyle}"
+                           Tag="http://host:999"
+                           Text="{Binding Connection.Host, UpdateSourceTrigger=PropertyChanged}" />
+
+                  <TextBlock Text="ADVANCED" Margin="0,24,0,12" Style="{StaticResource sectionCaptionStyle}" />
+
+                  <TextBlock Text="Timeout (seconds)" Style="{StaticResource fieldLabelStyle}" />
+                  <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}"
+                                       Width="140"
+                                       HorizontalAlignment="Left"
+                                       Margin="0,0,0,14"
+                                       Minimum="1"
+                                       Maximum="600"
+                                       Value="{Binding Connection.Timeout}" />
+
+                  <CheckBox Style="{StaticResource checkBoxStyle}"
+                            Content="Ignore SSL certificate errors (not recommended)"
+                            IsChecked="{Binding Connection.IgnoreSslErrors}" />
+                  <TextBlock Margin="29,4,0,0"
+                             FontSize="11"
+                             Opacity="0.65"
+                             TextWrapping="Wrap"
+                             Text="Turning validation off also takes the meaning out of the RSA handshake above it: someone in the middle can present a key of their own and still pass every check. Use it only for a development server with a self-signed certificate." />
+               </StackPanel>
+            </ScrollViewer>
+         </Border>
+
+         <!-- ==== actions ==== -->
+         <Grid Grid.Row="2" Margin="0,18,0,0" IsEnabled="{Binding IsNotBusy}">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    Style="{StaticResource tonalButtonStyle}"
+                    Command="{Binding Commands[TestConnectionCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_Plug" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Test Connection" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+
+            <StackPanel Grid.Column="1"
+                        Margin="14,0,14,0"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+               <Ellipse Width="8" Height="8"
+                        VerticalAlignment="Center"
+                        Fill="{Binding StatusBrush, FallbackValue=Gray}" />
+               <TextBlock Text="{Binding StatusText, FallbackValue='Not tested'}"
+                          Margin="8,0,0,0"
+                          FontSize="12"
+                          Opacity="0.75"
+                          TextTrimming="CharacterEllipsis"
+                          VerticalAlignment="Center" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+               <Button Style="{StaticResource textButtonStyle}"
+                       Margin="0,0,8,0"
+                       IsCancel="True"
+                       Content="Cancel" />
+               <Button Style="{StaticResource filledButtonStyle}"
+                       MinWidth="96"
+                       IsDefault="True"
+                       Command="{Binding Commands[SaveCommand]}"
+                       Content="Save" />
+            </StackPanel>
+         </Grid>
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</windows:EmWindow>

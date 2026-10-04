@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../shared/Em.Libs/Em.Libs.csproj" />
+  <Project Path="../shared/Em.Ui.Core/Em.Ui.Core.csproj" />
+  <Project Path="../shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj" />
+  <Project Path="Em.Ui.Maui/Em.Ui.Maui.csproj" />
+</Solution>

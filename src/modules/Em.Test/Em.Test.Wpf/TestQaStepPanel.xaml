@@ -1,0 +1,24 @@
+<UserControl x:Class="Em.Test.Wpf.TestQaStepPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Tag="QA check"
+             Padding="0,4">
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Test.Wpf;component/TestStyles.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </UserControl.Resources>
+
+   <StackPanel>
+      <CheckBox Style="{StaticResource checkBoxStyle}"
+                Content="The document passed the quality check"
+                IsChecked="{Binding Passed}" />
+      <TextBlock Text="Remarks" Margin="0,12,0,4" Style="{StaticResource fieldLabelStyle}" />
+      <TextBox Style="{StaticResource fieldBoxStyle}" Height="64" AcceptsReturn="True" TextWrapping="Wrap"
+               VerticalContentAlignment="Top" Tag="Required when the document did not pass"
+               Text="{Binding Remarks, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBlock Text="{Binding Hint}" Margin="0,6,0,0" Style="{StaticResource fieldHelpStyle}" />
+   </StackPanel>
+</UserControl>

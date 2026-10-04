@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+   Satu pintu masuk ke seluruh bahasa desain aplikasi MAUI ini. Yang memakainya cukup menyebut berkas
+   ini sekali di App.xaml; jangan pernah menyalin palette atau style ke berkas layar masing-masing -
+   tambahkan ke salah satu berkas di bawah, dan setiap layar langsung ikut.
+
+   Urutannya mengikat: Palette lebih dulu karena seluruh berkas sesudahnya menyebut warna dari sana.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
+                    x:Class="Em.Ui.Maui.Styles.MaterialDesign">
+
+   <ResourceDictionary.MergedDictionaries>
+      <styles:Palette />
+      <ResourceDictionary Source="/Styles/Typography.xaml" />
+      <ResourceDictionary Source="/Styles/Buttons.xaml" />
+      <ResourceDictionary Source="/Styles/Cards.xaml" />
+      <ResourceDictionary Source="/Styles/Inputs.xaml" />
+      <ResourceDictionary Source="/Styles/Navigation.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <!-- Latar setiap halaman, disetel sekali di sini supaya tidak ada layar yang lupa menyebutnya dan
+        berakhir putih di tema gelap. -->
+   <Style TargetType="Page" ApplyToDerivedTypes="True">
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource surfaceLight}, Dark={StaticResource surfaceDark}}" />
+   </Style>
+
+   <Style TargetType="Label" ApplyToDerivedTypes="True" BasedOn="{StaticResource bodyTextStyle}" />
+</ResourceDictionary>

@@ -1,0 +1,470 @@
+<UserControl x:Class="Em.Ui.Wpf.Navigations.RobotManager"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+             xmlns:conv="clr-namespace:Em.Ui.Wpf.Converters"
+             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+             xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared"
+             xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1200"
+             Foreground="{DynamicResource themeWindowForegroundBrush}">
+   <UserControl.DataContext><local:RobotManagerVm /></UserControl.DataContext>
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <conv:InverseBoolToVisibilityConverter x:Key="inverseBoolToVisibility" />
+         <conv:EntityTintConverter x:Key="entityTintConverter" />
+
+         <!-- ==== empty / disabled state ==== -->
+         <Style x:Key="stateIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="FontSize" Value="34" />
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+         </Style>
+
+         <Style x:Key="stateTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,14,0,0" />
+         </Style>
+
+         <Style x:Key="stateNoteStyle" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="MaxWidth" Value="320" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+         </Style>
+
+         <!-- ==== panels ==== -->
+         <Style x:Key="panelCardStyle" TargetType="Border" BasedOn="{StaticResource cardStyle}">
+            <Setter Property="Background" Value="{StaticResource surfaceBrush}" />
+         </Style>
+
+         <Style x:Key="panelHeaderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource dividerBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="CornerRadius" Value="13,13,0,0" />
+            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="Padding" Value="18,0,10,0" />
+         </Style>
+
+         <!-- The disc that carries an entity's colour and glyph; the colour comes from the name. -->
+         <Style x:Key="tintDiscStyle" TargetType="Border">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <Style x:Key="tintDiscLargeStyle" TargetType="Border" BasedOn="{StaticResource tintDiscStyle}">
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="46" />
+            <Setter Property="CornerRadius" Value="13" />
+         </Style>
+
+         <Style x:Key="monoValueStyle" TargetType="TextBlock" BasedOn="{StaticResource metaValueStyle}">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="12" />
+         </Style>
+
+         <!-- ==== list row (roots) ==== -->
+         <Style x:Key="ctnRowStyle" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="*" />
+                           <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Border x:Name="stateLayer" Grid.Row="0" Background="Transparent" MinHeight="52">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="Auto" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <Border x:Name="selectionBar"
+                                      Grid.Column="0"
+                                      Width="3"
+                                      Margin="0,8"
+                                      CornerRadius="2"
+                                      Visibility="Hidden"
+                                      Background="{DynamicResource themeAccentBrush}" />
+                              <ContentPresenter Grid.Column="1"
+                                                Margin="13,0,12,0"
+                                                VerticalAlignment="Center" />
+                           </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Height="1" Background="{StaticResource dividerBrush}" />
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="stateLayer" Property="Background"
+                                   Value="{StaticResource statePressedBrush}" />
+                           <Setter TargetName="selectionBar" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- ==== tree ==== -->
+
+
+
+
+         <!-- ==== drop targets: a folder row takes a dragged node, a root row moves it to the top ==== -->
+
+
+
+
+         <!-- ==== token expiry chip: red once expired, yellow in the last two weeks ==== -->
+         <Style x:Key="expiryChipStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding ExpiryState}" Value="Soon">
+                  <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding ExpiryState}" Value="Expired">
+                  <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- ==== a clickable row inside a panel ==== -->
+
+
+         <!-- ==== manifest tag chip ==== -->
+
+      </ResourceDictionary>
+   </UserControl.Resources>
+<Grid>
+               <Grid Margin="22,16,22,22">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="300" />
+                     <ColumnDefinition Width="14" />
+                     <ColumnDefinition Width="*" MinWidth="320" />
+                  </Grid.ColumnDefinitions>
+
+                  <!-- ==== robot list ==== -->
+                  <Border Grid.Column="0" Style="{StaticResource panelCardStyle}">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto" />
+                           <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Style="{StaticResource panelHeaderStyle}">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*" />
+                                 <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
+                              <TextBlock Text="ROBOTS"
+                                         VerticalAlignment="Center"
+                                         Style="{StaticResource sectionCaptionStyle}" />
+                              <Button Grid.Column="1"
+                                      Style="{StaticResource rowActionButtonStyle}"
+                                      Command="{Binding Commands[NewRobotCommand]}"
+                                      ToolTip="New robot">
+                                 <fa:FontAwesome Icon="Solid_Plus" />
+                              </Button>
+                           </Grid>
+                        </Border>
+
+                        <ListBox Grid.Row="1"
+                                 Style="{StaticResource surfaceListBoxStyle}"
+                                 Foreground="{DynamicResource themeWindowForegroundBrush}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0"
+                                 HorizontalContentAlignment="Stretch"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ItemsSource="{Binding Robots}"
+                                 SelectedItem="{Binding SelectedRobot}"
+                                 IsEnabled="{Binding IsNotBusy}"
+                                 ItemContainerStyle="{StaticResource ctnRowStyle}">
+                           <ListBox.InputBindings>
+                              <KeyBinding Key="Delete" Command="{Binding Commands[DeleteRobotCommand]}" />
+                           </ListBox.InputBindings>
+                           <ListBox.ItemTemplate>
+                              <DataTemplate>
+                                 <Grid Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                       <ColumnDefinition Width="Auto" />
+                                       <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Border Grid.Column="0"
+                                            Style="{StaticResource tintDiscStyle}"
+                                            Background="{Binding Name, Converter={StaticResource entityTintConverter}}">
+                                       <fa:FontAwesome Icon="Solid_Robot"
+                                                       FontSize="13"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{Binding Name,
+                                                                            Converter={StaticResource entityTintConverter},
+                                                                            ConverterParameter=Text}" />
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                       <TextBlock x:Name="robotName"
+                                                  Text="{Binding Name}"
+                                                  FontWeight="SemiBold"
+                                                  Style="{StaticResource primaryCellStyle}"
+                                                  ToolTip="{Binding Name}" />
+                                       <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                          <Border Style="{StaticResource chipMutedStyle}"
+                                                  Margin="0,0,6,0"
+                                                  Padding="7,1"
+                                                  Visibility="{Binding IsActive, Converter={StaticResource inverseBoolToVisibility}}">
+                                             <TextBlock Text="Disabled" />
+                                          </Border>
+                                          <Border Style="{StaticResource expiryChipStyle}" Padding="7,1">
+                                             <TextBlock Text="{Binding ExpiryCaption}" />
+                                          </Border>
+                                       </StackPanel>
+                                    </StackPanel>
+                                 </Grid>
+                                 <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                       <Setter TargetName="robotName" Property="Opacity" Value="0.55" />
+                                    </DataTrigger>
+                                 </DataTemplate.Triggers>
+                              </DataTemplate>
+                           </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Grid.Row="1"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    IsHitTestVisible="False"
+                                    Visibility="{Binding HasNoRobots, Converter={StaticResource boolToVisibility}}">
+                           <fa:FontAwesome Icon="Solid_Robot" Style="{StaticResource stateIconStyle}" />
+                           <TextBlock Text="No robots yet" Style="{StaticResource stateTitleStyle}" />
+                           <TextBlock Text="A robot is a login identity shared by managers. Create one, then grant it access."
+                                      Style="{StaticResource stateNoteStyle}"
+                                      MaxWidth="240" />
+                        </StackPanel>
+                     </Grid>
+                  </Border>
+
+                  <!-- ==== robot detail ==== -->
+                  <Border Grid.Column="2" Style="{StaticResource panelCardStyle}">
+                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <Grid Margin="22,18,22,22">
+                           <StackPanel Visibility="{Binding ShowRobotDetail, Converter={StaticResource boolToVisibility}}">
+                              <Grid>
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                 </Grid.ColumnDefinitions>
+                                 <Border Style="{StaticResource tintDiscLargeStyle}"
+                                         Background="{Binding SelectedRobot.Name, Converter={StaticResource entityTintConverter}}">
+                                    <fa:FontAwesome Icon="Solid_Robot"
+                                                    FontSize="19"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="{Binding SelectedRobot.Name,
+                                                                         Converter={StaticResource entityTintConverter},
+                                                                         ConverterParameter=Text}" />
+                                 </Border>
+                                 <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding SelectedRobot.Name}"
+                                               FontSize="17"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0" DataContext="{Binding SelectedRobot}">
+                                       <Border Style="{StaticResource chipSuccessStyle}"
+                                               Margin="0,0,8,0"
+                                               Visibility="{Binding IsActive, Converter={StaticResource boolToVisibility}}">
+                                          <TextBlock Text="Active" />
+                                       </Border>
+                                       <Border Style="{StaticResource chipMutedStyle}"
+                                               Margin="0,0,8,0"
+                                               Visibility="{Binding IsActive, Converter={StaticResource inverseBoolToVisibility}}">
+                                          <TextBlock Text="Disabled" />
+                                       </Border>
+                                       <Border Style="{StaticResource expiryChipStyle}">
+                                          <TextBlock Text="{Binding ExpiryCaption}" />
+                                       </Border>
+                                    </StackPanel>
+                                 </StackPanel>
+                              </Grid>
+
+                              <WrapPanel Margin="0,16,0,0">
+                                 <Button Style="{StaticResource compactOutlinedButtonStyle}"
+                                         Margin="0,0,8,8"
+                                         Command="{Binding Commands[EditRobotCommand]}"
+                                         ToolTip="Edit the description, status and token expiry">
+                                      <StackPanel Orientation="Horizontal">
+                                         <fa:FontAwesome Icon="Solid_PenToSquare" Style="{StaticResource buttonIconStyle}" />
+                                         <TextBlock Text="Edit" VerticalAlignment="Center" />
+                                      </StackPanel>
+                                   </Button>
+                                 <Button Style="{StaticResource compactOutlinedButtonStyle}"
+                                         Margin="0,0,8,8"
+                                         Command="{Binding Commands[RegenerateRobotCommand]}"
+                                         ToolTip="Create a new token; the current one stops working at once">
+                                      <StackPanel Orientation="Horizontal">
+                                         <fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}" />
+                                         <TextBlock Text="Regenerate token" VerticalAlignment="Center" />
+                                      </StackPanel>
+                                   </Button>
+                                 <Button Style="{StaticResource compactDangerOutlinedButtonStyle}"
+                                         Margin="0,0,8,8"
+                                         Command="{Binding Commands[DeleteRobotCommand]}"
+                                         ToolTip="Delete this robot and all its access">
+                                      <StackPanel Orientation="Horizontal">
+                                         <fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}" />
+                                         <TextBlock Text="Delete" VerticalAlignment="Center" />
+                                      </StackPanel>
+                                   </Button>
+                              </WrapPanel>
+
+                              <TextBlock Text="{Binding SelectedRobot.Description}"
+                                         Margin="0,4,0,0"
+                                         TextWrapping="Wrap"
+                                         Style="{StaticResource primaryCellStyle}"
+                                         TextTrimming="None"
+                                         Visibility="{Binding SelectedRobot.HasDescription, Converter={StaticResource boolToVisibility}}" />
+
+                              <StackPanel Margin="0,16,0,0">
+                                 <TextBlock Text="OWNER ACCOUNT" Style="{StaticResource metaLabelStyle}" />
+                                 <TextBlock Text="{Binding SelectedRobot.OwnerCaption}" Style="{StaticResource metaValueStyle}" />
+                              </StackPanel>
+
+                              <UniformGrid Columns="3" Margin="0,16,0,0">
+                                 <StackPanel>
+                                    <TextBlock Text="TOKEN" Style="{StaticResource metaLabelStyle}" />
+                                    <TextBlock Text="{Binding SelectedRobot.TokenPrefixCaption}"
+                                               Style="{StaticResource monoValueStyle}"
+                                               ToolTip="The first characters of the token. The token itself cannot be read again." />
+                                 </StackPanel>
+                                 <StackPanel>
+                                    <TextBlock Text="EXPIRES" Style="{StaticResource metaLabelStyle}" />
+                                    <TextBlock Text="{Binding SelectedRobot.ExpiryDetail}" Style="{StaticResource metaValueStyle}" />
+                                 </StackPanel>
+                                 <StackPanel>
+                                    <TextBlock Text="LAST USED" Style="{StaticResource metaLabelStyle}" />
+                                    <TextBlock Text="{Binding SelectedRobot.LastUsedCaption}" Style="{StaticResource metaValueStyle}" />
+                                 </StackPanel>
+                              </UniformGrid>
+
+                              <TextBlock Text="MANAGER ACCESS"
+                                         Margin="0,24,0,10"
+                                         Style="{StaticResource sectionCaptionStyle}" />
+
+                              <Border Style="{StaticResource innerCardStyle}">
+                                 <Grid>
+                                    <ItemsControl ItemsSource="{Binding SelectedRobot.Accesses}"
+                                                  IsEnabled="{Binding IsNotBusy}">
+                                       <ItemsControl.ItemTemplate>
+                                          <DataTemplate>
+                                             <Grid MinHeight="46" Margin="14,0,12,0">
+                                                <Grid.ColumnDefinitions>
+                                                   <ColumnDefinition Width="Auto" />
+                                                   <ColumnDefinition Width="*" />
+                                                   <ColumnDefinition Width="Auto" />
+                                                   <ColumnDefinition Width="140" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0"
+                                                        Width="26"
+                                                        Height="26"
+                                                        CornerRadius="8"
+                                                        VerticalAlignment="Center"
+                                                        Background="{Binding ResourceCaption, Converter={StaticResource entityTintConverter}}">
+                                                   <fa:FontAwesome Icon="Solid_Cubes"
+                                                                   FontSize="11"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{Binding ResourceCaption,
+                                                                                        Converter={StaticResource entityTintConverter},
+                                                                                        ConverterParameter=Text}" />
+                                                </Border>
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="12,0,8,0"
+                                                           Text="{Binding ResourceCaption}"
+                                                           Style="{StaticResource primaryCellStyle}"
+                                                           ToolTip="{Binding ResourceCaption}" />
+                                                <fa:FontAwesome Grid.Column="2"
+                                                                Icon="Solid_Spinner"
+                                                                Spin="True"
+                                                                FontSize="12"
+                                                                Margin="0,0,8,0"
+                                                                Opacity="0.6"
+                                                                VerticalAlignment="Center"
+                                                                Visibility="{Binding IsSaving, Converter={StaticResource boolToVisibility}}" />
+                                                <ComboBox Grid.Column="3"
+                                                          Style="{StaticResource inlineComboStyle}"
+                                                          Foreground="{DynamicResource themeWindowForegroundBrush}"
+                                                          ItemsSource="{Binding Options}"
+                                                          SelectedItem="{Binding SelectedAccess, Mode=TwoWay}"
+                                                          IsEnabled="{Binding IsNotSaving}">
+                                                   <ComboBox.ItemTemplate>
+                                                      <DataTemplate>
+                                                         <TextBlock Text="{Binding Label}" Foreground="{DynamicResource themeWindowForegroundBrush}" />
+                                                      </DataTemplate>
+                                                   </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                             </Grid>
+                                          </DataTemplate>
+                                       </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="No manager resources are available. Create resources in their manager first."
+                                               Margin="14,14"
+                                               TextWrapping="Wrap"
+                                               Style="{StaticResource secondaryCellStyle}"
+                                               TextTrimming="None"
+                                               Visibility="{Binding HasNoResources, Converter={StaticResource boolToVisibility}}" />
+                                 </Grid>
+                              </Border>
+
+                              <TextBlock Margin="0,8,0,0"
+                                         TextWrapping="Wrap"
+                                         Style="{StaticResource secondaryCellStyle}"
+                                         TextTrimming="None"
+                                         Text="Access options are defined by each manager. Changes are saved as soon as you choose them." />
+                           </StackPanel>
+
+                           <StackPanel VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="{Binding ShowRobotDetail, Converter={StaticResource inverseBoolToVisibility}}">
+                              <fa:FontAwesome Icon="Solid_Robot" Style="{StaticResource stateIconStyle}" />
+                              <TextBlock Text="No robot selected" Style="{StaticResource stateTitleStyle}" />
+                           </StackPanel>
+                        </Grid>
+                     </ScrollViewer>
+                  </Border>
+               </Grid>
+
+<controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+</Grid>
+</UserControl>

@@ -1,0 +1,1205 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+                    xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared">
+
+   <!--
+      The things a reader types into or picks from: a search box, the form fields, a date
+      picker, a check box, a switch, and the segmented control that stands in for a short
+      exclusive set.
+
+      The accent appears in exactly one place here - the state that says "this is the control
+      the keyboard is talking to, or the choice that is currently on". Everything at rest is
+      the same translucent grey the surfaces are.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/FlatIconButton.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <!-- ============================================================
+        SEARCH FIELD
+        Plain TextBox with its chrome removed - the pill around it draws
+        the frame. The watermark is part of the template and reads the
+        box's Tag, so a search field costs one line of markup and never
+        needs a name or a sibling TextBlock.
+        ============================================================ -->
+   <Style x:Key="searchBoxStyle" TargetType="TextBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <!-- The theme gives TextBox its Foreground; the caret is not themed, so it simply
+           follows the text colour. -->
+      <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="TextBox">
+               <!-- No Padding on this Grid: TextBoxBase already insets its own text by Padding,
+                    so a margin here would indent the typed text twice while the watermark below
+                    moved only once. The watermark carries the padding itself, which keeps the
+                    two on one edge. -->
+               <Grid>
+                  <ScrollViewer x:Name="PART_ContentHost"
+                                Focusable="False"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                HorizontalScrollBarVisibility="Hidden"
+                                VerticalScrollBarVisibility="Hidden" />
+                  <!-- Watermark: the box's own Tag, shown only while it is empty. A plain
+                       Binding rather than a TemplateBinding, so the Tag object is converted to
+                       text on the way in. -->
+                  <TextBlock x:Name="watermark"
+                             Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                             Margin="{TemplateBinding Padding}"
+                             Opacity="0.45"
+                             Visibility="Collapsed"
+                             IsHitTestVisible="False"
+                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="Text" Value="">
+                     <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- The pill around a search box. A style rather than repeated markup, because a screen
+        usually carries one per list that can be searched. -->
+   <Style x:Key="searchFieldStyle" TargetType="Border">
+      <Setter Property="Height" Value="34" />
+      <Setter Property="CornerRadius" Value="17" />
+      <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+   </Style>
+
+   <!-- ============================================================
+        FRAMED FIELDS
+        One outlined field for every kind of value, for a form whose
+        fields draw their own frame. The watermark is part of the
+        template and reads the field's Tag, so a field costs one line of
+        markup and never needs a name, a code behind handler or a sibling
+        TextBlock.
+
+        The keys are the ones UserEditor declares for its own copies, so
+        moving that screen onto these is a matter of deleting its copies:
+        a local resource wins over a merged one, so the two never clash.
+        ============================================================ -->
+   <Style x:Key="fieldBoxStyle" TargetType="TextBox">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <!-- The theme gives TextBox its Foreground; the caret is not themed, so it simply
+           follows the text colour. -->
+      <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="TextBox">
+               <Border x:Name="shape"
+                       CornerRadius="10"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <!-- No Padding on this Grid: TextBoxBase already insets its own text by
+                       Padding, so the watermark carries the padding itself and lands on the
+                       same left edge as the text that replaces it. -->
+                  <Grid>
+                     <ScrollViewer x:Name="PART_ContentHost"
+                                   Focusable="False"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                   HorizontalScrollBarVisibility="Hidden"
+                                   VerticalScrollBarVisibility="Hidden" />
+                     <TextBlock x:Name="watermark"
+                                Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                Margin="{TemplateBinding Padding}"
+                                Opacity="0.45"
+                                Visibility="Collapsed"
+                                IsHitTestVisible="False"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="Text" Value="">
+                     <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                  </Trigger>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource outlineStrongBrush}" />
+                  </Trigger>
+                  <!-- Focus is the one state the accent is spent on inside a form: it says
+                       which field the keyboard is talking to. -->
+                  <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsReadOnly" Value="True">
+                     <Setter TargetName="shape" Property="Background"
+                             Value="{StaticResource surfaceBrush}" />
+                     <Setter Property="Opacity" Value="0.75" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+                  <!-- Last on purpose: a field holding something that cannot be saved stays
+                       marked while it is hovered and while it is being typed into. -->
+                  <Trigger Property="shared:FieldValidation.HasError" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource dangerBrush}" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- Password field. A PasswordBox has no Text property to trigger on, so it wears no
+        watermark - the label above it carries the meaning instead. -->
+   <Style x:Key="fieldPasswordStyle" TargetType="PasswordBox">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="PasswordBox">
+               <Border x:Name="shape"
+                       CornerRadius="10"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <ScrollViewer x:Name="PART_ContentHost"
+                                Focusable="False"
+                                VerticalAlignment="Center"
+                                HorizontalScrollBarVisibility="Hidden"
+                                VerticalScrollBarVisibility="Hidden" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource outlineStrongBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- Whole-number field: the text field above with a pair of small step buttons on its right.
+        The buttons run NumericBox's own commands, which step the value within its range. -->
+   <Style x:Key="numericStepButtonStyle" TargetType="RepeatButton" BasedOn="{StaticResource flatIconButtonStyle}">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="FontSize" Value="8" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Delay" Value="300" />
+      <Setter Property="Interval" Value="60" />
+   </Style>
+
+   <Style x:Key="fieldNumericBoxStyle" TargetType="controls:NumericBox" BasedOn="{StaticResource fieldBoxStyle}">
+      <Setter Property="Padding" Value="14,0,4,0" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="controls:NumericBox">
+               <Border x:Name="shape"
+                       CornerRadius="10"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <ScrollViewer x:Name="PART_ContentHost"
+                                   Focusable="False"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                   HorizontalScrollBarVisibility="Hidden"
+                                   VerticalScrollBarVisibility="Hidden" />
+                     <StackPanel Grid.Column="1" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <RepeatButton Style="{StaticResource numericStepButtonStyle}"
+                                      ToolTip="Increase"
+                                      Command="{x:Static controls:NumericBox.IncreaseCommand}"
+                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                           <fa:FontAwesome Icon="Solid_ChevronUp" />
+                        </RepeatButton>
+                        <RepeatButton Style="{StaticResource numericStepButtonStyle}"
+                                      ToolTip="Decrease"
+                                      Command="{x:Static controls:NumericBox.DecreaseCommand}"
+                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                           <fa:FontAwesome Icon="Solid_ChevronDown" />
+                        </RepeatButton>
+                     </StackPanel>
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource outlineStrongBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+                  <Trigger Property="shared:FieldValidation.HasError" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource dangerBrush}" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
+        DROP DOWN
+        A plain ComboBox with its chrome replaced, shaped like the text
+        fields beside it so a row of mixed editors still reads as one row.
+
+        The list is the one surface here that cannot be a translucent
+        grey: a popup floats over whatever is behind the window, so it is
+        painted with the theme's opaque popup surface.
+        ============================================================ -->
+   <Style x:Key="fieldComboItemStyle" TargetType="ComboBoxItem">
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ComboBoxItem">
+               <Border x:Name="itemSurface"
+                       CornerRadius="7"
+                       Background="Transparent"
+                       Padding="{TemplateBinding Padding}">
+                  <ContentPresenter VerticalAlignment="Center" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="itemSurface" Property="Background"
+                             Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsHighlighted" Value="True">
+                     <Setter TargetName="itemSurface" Property="Background"
+                             Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsSelected" Value="True">
+                     <Setter TargetName="itemSurface" Property="Background"
+                             Value="{StaticResource statePressedBrush}" />
+                     <Setter Property="FontWeight" Value="SemiBold" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- The floating list of every drop down here: opaque popup surface, outline, and the soft
+        shadow a menu wears. The margin is what leaves room for that shadow; without it the popup
+        clips its own shadow away. -->
+   <Style x:Key="fieldPopupBorderStyle" TargetType="Border">
+      <Setter Property="Margin" Value="8,0,8,8" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="{DynamicResource themePopupBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Effect">
+         <Setter.Value>
+            <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.3" Color="#000000" />
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- The toggle draws the field itself: the box and the chevron. The selected value is painted
+        over it by the ComboBox template, so this stays a pure piece of chrome. Foreground is pinned
+        to the ComboBox's own: a third-party ToggleButton style can turn it black while IsChecked,
+        and a setter here outranks a trigger of the theme's default style. -->
+   <Style x:Key="fieldComboToggleStyle" TargetType="ToggleButton">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Foreground"
+              Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+               <Border x:Name="shape"
+                       CornerRadius="10"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource outlineBrush}"
+                       BorderThickness="1">
+                  <Grid>
+                     <Border x:Name="stateLayer" CornerRadius="10" Background="Transparent" />
+                     <fa:FontAwesome x:Name="chevron"
+                                     Icon="Solid_ChevronDown"
+                                     FontSize="9"
+                                     Opacity="0.6"
+                                     Margin="0,0,14,0"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Center" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background"
+                             Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <!-- Open list: the chevron points the other way and the field is outlined in
+                       the accent, so it is clear which field the popup below belongs to. -->
+                  <Trigger Property="IsChecked" Value="True">
+                     <Setter TargetName="chevron" Property="Icon" Value="Solid_ChevronUp" />
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="fieldComboStyle" TargetType="ComboBox">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource fieldComboItemStyle}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ComboBox">
+               <Grid>
+                  <!-- ClickMode Press opens the list on the way down, the way a native drop down
+                       does. -->
+                  <ToggleButton Style="{StaticResource fieldComboToggleStyle}"
+                                ClickMode="Press"
+                                IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                  <!-- The selected value sits above the toggle and lets the mouse through, so
+                       clicking the text still opens the list. -->
+                  <ContentPresenter Margin="14,0,32,0"
+                                    IsHitTestVisible="False"
+                                    VerticalAlignment="Center"
+                                    Content="{TemplateBinding SelectionBoxItem}"
+                                    ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                    ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+                  <TextBlock x:Name="watermark"
+                             Margin="14,0,32,0"
+                             Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                             Opacity="0.45"
+                             Visibility="Collapsed"
+                             IsHitTestVisible="False"
+                             VerticalAlignment="Center" />
+                  <Popup x:Name="PART_Popup"
+                         Placement="Bottom"
+                         VerticalOffset="4"
+                         AllowsTransparency="True"
+                         Focusable="False"
+                         PopupAnimation="Fade"
+                         IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                     <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                             Style="{StaticResource fieldPopupBorderStyle}">
+                        <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                           <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                        </ScrollViewer>
+                     </Border>
+                  </Popup>
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="SelectedItem" Value="{x:Null}">
+                     <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
+        INLINE FIELDS
+        Editors with no frame of their own, for a screen that already
+        draws the frame around them - a field with a leading icon, a
+        filter sheet. Transparent, borderless and without padding, so the
+        surrounding shape stays the only one drawn.
+        ============================================================ -->
+   <Style x:Key="inlineBoxStyle" TargetType="TextBox" BasedOn="{StaticResource searchBoxStyle}">
+      <Setter Property="FontSize" Value="13" />
+   </Style>
+
+   <!-- No watermark here: a PasswordBox has no property a trigger could watch, so a screen that
+        wants a placeholder lays its own TextBlock over the box. -->
+   <Style x:Key="inlinePasswordStyle" TargetType="PasswordBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="PasswordBox">
+               <ScrollViewer x:Name="PART_ContentHost"
+                             Focusable="False"
+                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                             HorizontalScrollBarVisibility="Hidden"
+                             VerticalScrollBarVisibility="Hidden" />
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- A drop down with no frame: the value, a chevron on the right, and the same floating list
+        as the framed drop down. The whole field is one toggle, so a click anywhere opens it. -->
+   <Style x:Key="inlineComboToggleStyle" TargetType="ToggleButton">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Foreground"
+              Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+               <Grid Background="Transparent">
+                  <fa:FontAwesome x:Name="chevron"
+                                  Icon="Solid_ChevronDown"
+                                  FontSize="9"
+                                  Opacity="0.6"
+                                  Margin="0,0,6,0"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Center" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsChecked" Value="True">
+                     <Setter TargetName="chevron" Property="Icon" Value="Solid_ChevronUp" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="inlineComboStyle" TargetType="ComboBox">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource fieldComboItemStyle}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ComboBox">
+               <Grid>
+                  <ToggleButton Style="{StaticResource inlineComboToggleStyle}"
+                                ClickMode="Press"
+                                IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                  <ContentPresenter Margin="0,0,24,0"
+                                    IsHitTestVisible="False"
+                                    VerticalAlignment="Center"
+                                    Content="{TemplateBinding SelectionBoxItem}"
+                                    ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                    ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+                  <TextBlock x:Name="watermark"
+                             Margin="0,0,24,0"
+                             Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                             Opacity="0.45"
+                             Visibility="Collapsed"
+                             IsHitTestVisible="False"
+                             VerticalAlignment="Center" />
+                  <!-- Dropped a little lower than the editor itself, so the list clears the frame
+                       the screen draws around it; the horizontal offset cancels the margin the
+                       popup border keeps for its shadow. -->
+                  <Popup x:Name="PART_Popup"
+                         Placement="Bottom"
+                         HorizontalOffset="-8"
+                         VerticalOffset="12"
+                         AllowsTransparency="True"
+                         Focusable="False"
+                         PopupAnimation="Fade"
+                         IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                     <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                             Style="{StaticResource fieldPopupBorderStyle}">
+                        <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                           <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                        </ScrollViewer>
+                     </Border>
+                  </Popup>
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="SelectedItem" Value="{x:Null}">
+                     <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
+        CALENDAR
+        The popup of a date picker. Every part is re-templated so the
+        popup wears the same opaque surface, outline and shadow as a drop
+        down list, with state layers on the day buttons. The accent marks
+        the selected day and rings today, and nothing else.
+        ============================================================ -->
+   <Style x:Key="calendarNavButtonStyle" TargetType="Button" BasedOn="{StaticResource flatIconButtonStyle}">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="Focusable" Value="False" />
+   </Style>
+
+   <Style x:Key="calendarHeaderButtonStyle" TargetType="Button">
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Button">
+               <Border x:Name="stateLayer" CornerRadius="8" Background="Transparent" Padding="{TemplateBinding Padding}">
+                  <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource statePressedBrush}" />
+                  </Trigger>
+                  <!-- The decade view has nowhere further up to go. -->
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Cursor" Value="Arrow" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="materialCalendarDayButtonStyle" TargetType="CalendarDayButton">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Margin" Value="1" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="CalendarDayButton">
+               <Grid>
+                  <Border x:Name="shape" CornerRadius="16" Background="Transparent"
+                          BorderBrush="Transparent" BorderThickness="1" />
+                  <Border x:Name="stateLayer" CornerRadius="16" Background="Transparent" />
+                  <ContentPresenter x:Name="content" HorizontalAlignment="Center" VerticalAlignment="Center" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource statePressedBrush}" />
+                  </Trigger>
+                  <!-- Days of the neighbouring months fill the grid but are not this month. -->
+                  <Trigger Property="IsInactive" Value="True">
+                     <Setter TargetName="content" Property="Opacity" Value="0.35" />
+                  </Trigger>
+                  <Trigger Property="IsToday" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsSelected" Value="True">
+                     <Setter TargetName="shape" Property="Background" Value="{DynamicResource themeAccentBrush}" />
+                     <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                     <Setter Property="Foreground" Value="{DynamicResource themeOnAccentBrush}" />
+                     <Setter Property="FontWeight" Value="SemiBold" />
+                  </Trigger>
+                  <Trigger Property="IsBlackedOut" Value="True">
+                     <Setter TargetName="content" Property="Opacity" Value="0.25" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter TargetName="content" Property="Opacity" Value="0.25" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- A month in the year view, or a year in the decade view. -->
+   <Style x:Key="materialCalendarButtonStyle" TargetType="CalendarButton">
+      <Setter Property="Width" Value="54" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Margin" Value="2" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="CalendarButton">
+               <Grid>
+                  <Border x:Name="shape" CornerRadius="10" Background="Transparent" />
+                  <Border x:Name="stateLayer" CornerRadius="10" Background="Transparent" />
+                  <ContentPresenter x:Name="content" HorizontalAlignment="Center" VerticalAlignment="Center" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsPressed" Value="True">
+                     <Setter TargetName="stateLayer" Property="Background" Value="{StaticResource statePressedBrush}" />
+                  </Trigger>
+                  <Trigger Property="HasSelectedDays" Value="True">
+                     <Setter TargetName="shape" Property="Background" Value="{DynamicResource themeAccentBrush}" />
+                     <Setter Property="Foreground" Value="{DynamicResource themeOnAccentBrush}" />
+                     <Setter Property="FontWeight" Value="SemiBold" />
+                  </Trigger>
+                  <Trigger Property="IsInactive" Value="True">
+                     <Setter TargetName="content" Property="Opacity" Value="0.35" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="materialCalendarItemStyle" TargetType="CalendarItem">
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="CalendarItem">
+               <ControlTemplate.Resources>
+                  <!-- The weekday initials over the day grid. -->
+                  <DataTemplate x:Key="{x:Static CalendarItem.DayTitleTemplateResourceKey}">
+                     <TextBlock Text="{Binding}"
+                                FontSize="11"
+                                FontWeight="SemiBold"
+                                Opacity="0.55"
+                                Margin="0,4,0,4"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                  </DataTemplate>
+               </ControlTemplate.Resources>
+               <Grid x:Name="PART_Root">
+                  <Border Style="{StaticResource fieldPopupBorderStyle}" Padding="10">
+                     <Grid>
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto" />
+                           <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="Auto" />
+                           <ColumnDefinition Width="*" />
+                           <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button x:Name="PART_PreviousButton"
+                                Grid.Column="0"
+                                ToolTip="Previous"
+                                Style="{StaticResource calendarNavButtonStyle}">
+                           <fa:FontAwesome Icon="Solid_ChevronLeft" />
+                        </Button>
+                        <Button x:Name="PART_HeaderButton"
+                                Grid.Column="1"
+                                Style="{StaticResource calendarHeaderButtonStyle}" />
+                        <Button x:Name="PART_NextButton"
+                                Grid.Column="2"
+                                ToolTip="Next"
+                                Style="{StaticResource calendarNavButtonStyle}">
+                           <fa:FontAwesome Icon="Solid_ChevronRight" />
+                        </Button>
+
+                        <Grid x:Name="PART_MonthView"
+                              Grid.Row="1" Grid.ColumnSpan="3"
+                              Margin="0,6,0,0"
+                              HorizontalAlignment="Center"
+                              Visibility="Visible">
+                           <Grid.RowDefinitions>
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                           </Grid.RowDefinitions>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                           </Grid.ColumnDefinitions>
+                        </Grid>
+
+                        <Grid x:Name="PART_YearView"
+                              Grid.Row="1" Grid.ColumnSpan="3"
+                              Margin="0,6,0,0"
+                              HorizontalAlignment="Center"
+                              Visibility="Hidden">
+                           <Grid.RowDefinitions>
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                           </Grid.RowDefinitions>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
+                           </Grid.ColumnDefinitions>
+                        </Grid>
+                     </Grid>
+                  </Border>
+                  <Rectangle x:Name="PART_DisabledVisual"
+                             Fill="{StaticResource surfaceStrongBrush}"
+                             RadiusX="10" RadiusY="10"
+                             Margin="8,0,8,8"
+                             Visibility="Collapsed" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter TargetName="PART_DisabledVisual" Property="Visibility" Value="Visible" />
+                  </Trigger>
+                  <DataTrigger Binding="{Binding DisplayMode, RelativeSource={RelativeSource AncestorType=Calendar}}" Value="Year">
+                     <Setter TargetName="PART_MonthView" Property="Visibility" Value="Hidden" />
+                     <Setter TargetName="PART_YearView" Property="Visibility" Value="Visible" />
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding DisplayMode, RelativeSource={RelativeSource AncestorType=Calendar}}" Value="Decade">
+                     <Setter TargetName="PART_MonthView" Property="Visibility" Value="Hidden" />
+                     <Setter TargetName="PART_YearView" Property="Visibility" Value="Visible" />
+                  </DataTrigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- Foreground is set here rather than inherited: the calendar lives in a popup, whose root
+        is outside the window, so it would otherwise inherit nothing and fall back to black. -->
+   <Style x:Key="materialCalendarStyle" TargetType="Calendar">
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="IsTodayHighlighted" Value="True" />
+      <Setter Property="CalendarItemStyle" Value="{StaticResource materialCalendarItemStyle}" />
+      <Setter Property="CalendarDayButtonStyle" Value="{StaticResource materialCalendarDayButtonStyle}" />
+      <Setter Property="CalendarButtonStyle" Value="{StaticResource materialCalendarButtonStyle}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Calendar">
+               <StackPanel x:Name="PART_Root" HorizontalAlignment="Center">
+                  <CalendarItem x:Name="PART_CalendarItem" Style="{TemplateBinding CalendarItemStyle}" />
+               </StackPanel>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
+        DATE PICKER
+        An inline field: the typed or picked date, a calendar button on
+        the right, and the calendar above in a popup. The watermark reads
+        the picker's Tag and shows while the field is empty - which is
+        while no date is picked.
+        ============================================================ -->
+   <Style x:Key="inlineDatePickerTextBoxStyle" TargetType="DatePickerTextBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="CaretBrush" Value="{Binding Foreground, RelativeSource={RelativeSource Self}}" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="DatePickerTextBox">
+               <Grid>
+                  <ScrollViewer x:Name="PART_ContentHost"
+                                Focusable="False"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                HorizontalScrollBarVisibility="Hidden"
+                                VerticalScrollBarVisibility="Hidden" />
+                  <TextBlock x:Name="watermark"
+                             Text="{Binding Tag, RelativeSource={RelativeSource AncestorType=DatePicker}}"
+                             Opacity="0.45"
+                             Visibility="Collapsed"
+                             IsHitTestVisible="False"
+                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="Text" Value="">
+                     <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="inlineDatePickerStyle" TargetType="DatePicker">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="IsTodayHighlighted" Value="True" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="CalendarStyle" Value="{StaticResource materialCalendarStyle}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="DatePicker">
+               <Grid x:Name="PART_Root">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <DatePickerTextBox x:Name="PART_TextBox"
+                                     Grid.Column="0"
+                                     Style="{StaticResource inlineDatePickerTextBoxStyle}"
+                                     Foreground="{TemplateBinding Foreground}"
+                                     FontSize="{TemplateBinding FontSize}" />
+                  <Button x:Name="PART_Button"
+                          Grid.Column="1"
+                          Margin="6,0,0,0"
+                          Width="24"
+                          Height="24"
+                          FontSize="12"
+                          Focusable="False"
+                          ToolTip="Show calendar"
+                          Style="{StaticResource flatIconButtonStyle}">
+                     <fa:FontAwesome Icon="Regular_CalendarDays" Opacity="0.7" />
+                  </Button>
+                  <!-- Placed under the whole field rather than the text box: the calendar lines
+                       up with the field's left edge, where the date itself starts. -->
+                  <Popup x:Name="PART_Popup"
+                         Placement="Bottom"
+                         VerticalOffset="6"
+                         AllowsTransparency="True"
+                         StaysOpen="False"
+                         PlacementTarget="{Binding ElementName=PART_Root}" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
+        SEGMENTED CONTROL
+        RadioButtons in one group: the group keeps exactly one facet
+        current and moves the highlight when another is clicked, which is
+        a working quick filter with no code behind it. Put them inside a
+        rounded, padded Border to get the familiar track around the set.
+        ============================================================ -->
+   <Style x:Key="segmentStyle" TargetType="RadioButton">
+      <Setter Property="Height" Value="26" />
+      <Setter Property="Padding" Value="13,0" />
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="RadioButton">
+               <Border x:Name="shape" CornerRadius="13" Background="Transparent">
+                  <ContentPresenter Margin="{TemplateBinding Padding}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="Background"
+                             Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsChecked" Value="True">
+                     <Setter TargetName="shape" Property="Background"
+                             Value="{DynamicResource themeAccentBrush}" />
+                     <Setter Property="Foreground" Value="White" />
+                     <Setter Property="FontWeight" Value="SemiBold" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
+        CHECK BOX AND SWITCH
+        A check box picks one of several things that may all be on at
+        once; a switch is for the single option that is simply on or off.
+        ============================================================ -->
+   <Style x:Key="checkBoxStyle" TargetType="CheckBox">
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="Margin" Value="0,4" />
+      <Setter Property="Cursor" Value="Hand" />
+      <!-- Left, not the default Stretch: a stretched check box keeps its transparent hit area
+           running to the end of the row, which would hand the cursor to empty space well past
+           the caption. -->
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="CheckBox">
+               <!-- Transparent background makes the whole row the click target, not just the
+                    box and the glyph. -->
+               <Grid Background="Transparent">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="Auto" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <Border x:Name="box"
+                          Grid.Column="0"
+                          Width="18"
+                          Height="18"
+                          CornerRadius="5"
+                          Background="Transparent"
+                          BorderBrush="{StaticResource outlineStrongBrush}"
+                          BorderThickness="1.4"
+                          VerticalAlignment="Center">
+                     <fa:FontAwesome x:Name="tick"
+                                     Icon="Solid_Check"
+                                     FontSize="9"
+                                     Opacity="0"
+                                     Foreground="White"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center" />
+                  </Border>
+                  <ContentPresenter Grid.Column="1" Margin="11,0,0,0" VerticalAlignment="Center" />
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsChecked" Value="True">
+                     <Setter TargetName="box" Property="Background"
+                             Value="{DynamicResource themeAccentBrush}" />
+                     <Setter TargetName="box" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                     <Setter TargetName="tick" Property="Opacity" Value="1" />
+                  </Trigger>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="box" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- The same box with no caption beside it, for a grid where the column header already says
+        what the box means. Width pins the control to the box itself: with an empty caption the
+        presenter still carries its own left margin, and that margin would be 11px of hand
+        cursor over nothing. -->
+   <Style x:Key="gridCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource checkBoxStyle}">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Margin" Value="0" />
+   </Style>
+
+   <Style x:Key="switchStyle" TargetType="ToggleButton">
+      <Setter Property="Width" Value="38" />
+      <Setter Property="Height" Value="21" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+               <Border x:Name="track"
+                       CornerRadius="11"
+                       Background="{StaticResource surfaceStrongBrush}"
+                       BorderBrush="{StaticResource outlineStrongBrush}"
+                       BorderThickness="1">
+                  <Border x:Name="thumb"
+                          Width="15"
+                          Height="15"
+                          Margin="3,0,0,0"
+                          CornerRadius="8"
+                          HorizontalAlignment="Left"
+                          Background="#99808080" />
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsChecked" Value="True">
+                     <Setter TargetName="track" Property="Background"
+                             Value="{DynamicResource themeAccentBrush}" />
+                     <Setter TargetName="track" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                     <Setter TargetName="thumb" Property="HorizontalAlignment" Value="Right" />
+                     <Setter TargetName="thumb" Property="Margin" Value="0,0,3,0" />
+                     <Setter TargetName="thumb" Property="Background" Value="White" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="materialTextFieldStyle" TargetType="TextBox">
+      <Setter Property="Height" Value="56" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="shared:FieldLabel.NotchBackground" Value="{DynamicResource themeSurfaceContainerBrush}" />
+
+      <Setter Property="Template"><Setter.Value>
+         <ControlTemplate TargetType="TextBox">
+            <Grid>
+               <Border x:Name="shape" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource themeOutlineBrush}" Background="{TemplateBinding Background}" />
+               <ScrollViewer x:Name="PART_ContentHost" Margin="16,0" VerticalAlignment="Center" />
+               <Border x:Name="labelNotch" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,0,0,0" Padding="4,0" IsHitTestVisible="False" Background="{TemplateBinding shared:FieldLabel.NotchBackground}">
+                  <Border.RenderTransform><TranslateTransform Y="18" /></Border.RenderTransform>
+                  <TextBlock x:Name="label" Text="{TemplateBinding shared:FieldLabel.Text}" FontSize="16" Foreground="{DynamicResource themeOnSurfaceVariantBrush}" />
+               </Border>
+            </Grid>
+            <ControlTemplate.Triggers>
+               <Trigger Property="shared:FieldLabel.IsFloating" Value="True"><Setter TargetName="label" Property="FontSize" Value="12" /></Trigger>
+               <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeWindowForegroundBrush}" /></Trigger>
+               <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                  <Setter TargetName="shape" Property="BorderThickness" Value="2" />
+                  <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  <Setter TargetName="label" Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+               <Trigger Property="shared:FieldValidation.HasError" Value="True">
+                  <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeErrorBrush}" />
+                  <Setter TargetName="label" Property="Foreground" Value="{DynamicResource themeErrorBrush}" />
+               </Trigger>
+               <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+            </ControlTemplate.Triggers>
+         </ControlTemplate>
+      </Setter.Value></Setter>
+   </Style>
+   <Style x:Key="materialPasswordFieldStyle" TargetType="PasswordBox">
+      <Setter Property="Height" Value="56" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="shared:FieldLabel.NotchBackground" Value="{DynamicResource themeSurfaceContainerBrush}" />
+
+      <Setter Property="Template"><Setter.Value>
+         <ControlTemplate TargetType="PasswordBox">
+            <Grid>
+               <Border x:Name="shape" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource themeOutlineBrush}" Background="{TemplateBinding Background}" />
+               <ScrollViewer x:Name="PART_ContentHost" Margin="16,0" VerticalAlignment="Center" />
+               <Border x:Name="labelNotch" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,0,0,0" Padding="4,0" IsHitTestVisible="False" Background="{TemplateBinding shared:FieldLabel.NotchBackground}">
+                  <Border.RenderTransform><TranslateTransform Y="18" /></Border.RenderTransform>
+                  <TextBlock x:Name="label" Text="{TemplateBinding shared:FieldLabel.Text}" FontSize="16" Foreground="{DynamicResource themeOnSurfaceVariantBrush}" />
+               </Border>
+            </Grid>
+            <ControlTemplate.Triggers>
+               <Trigger Property="shared:FieldLabel.IsFloating" Value="True"><Setter TargetName="label" Property="FontSize" Value="12" /></Trigger>
+               <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeWindowForegroundBrush}" /></Trigger>
+               <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                  <Setter TargetName="shape" Property="BorderThickness" Value="2" />
+                  <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  <Setter TargetName="label" Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+               <Trigger Property="shared:FieldValidation.HasError" Value="True">
+                  <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeErrorBrush}" />
+                  <Setter TargetName="label" Property="Foreground" Value="{DynamicResource themeErrorBrush}" />
+               </Trigger>
+               <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+            </ControlTemplate.Triggers>
+         </ControlTemplate>
+      </Setter.Value></Setter>
+   </Style>
+   <Style x:Key="materialComboFieldStyle" TargetType="ComboBox">
+      <Setter Property="Height" Value="56" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="shared:FieldLabel.NotchBackground" Value="{DynamicResource themeSurfaceContainerBrush}" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource fieldComboItemStyle}" />
+      <Setter Property="Template"><Setter.Value>
+         <ControlTemplate TargetType="ComboBox">
+            <Grid>
+               <Border x:Name="shape" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource themeOutlineBrush}" Background="{TemplateBinding Background}" />
+               <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                     <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="Transparent" /></ControlTemplate></ToggleButton.Template>
+                  </ToggleButton>
+                  <ContentPresenter Margin="16,0,40,0" VerticalAlignment="Center" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
+                  <fa:FontAwesome Icon="Solid_ChevronDown" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0" IsHitTestVisible="False" />
+                  <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True" IsOpen="{TemplateBinding IsDropDownOpen}" Focusable="False">
+                     <Border Style="{StaticResource fieldPopupBorderStyle}" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                        <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" /></ScrollViewer>
+                     </Border>
+                  </Popup>
+               <Border x:Name="labelNotch" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,0,0,0" Padding="4,0" IsHitTestVisible="False" Background="{TemplateBinding shared:FieldLabel.NotchBackground}">
+                  <Border.RenderTransform><TranslateTransform Y="18" /></Border.RenderTransform>
+                  <TextBlock x:Name="label" Text="{TemplateBinding shared:FieldLabel.Text}" FontSize="16" Foreground="{DynamicResource themeOnSurfaceVariantBrush}" />
+               </Border>
+            </Grid>
+            <ControlTemplate.Triggers>
+               <Trigger Property="shared:FieldLabel.IsFloating" Value="True"><Setter TargetName="label" Property="FontSize" Value="12" /></Trigger>
+               <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeWindowForegroundBrush}" /></Trigger>
+               <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                  <Setter TargetName="shape" Property="BorderThickness" Value="2" />
+                  <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  <Setter TargetName="label" Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+               </Trigger>
+               <Trigger Property="shared:FieldValidation.HasError" Value="True">
+                  <Setter TargetName="shape" Property="BorderBrush" Value="{DynamicResource themeErrorBrush}" />
+                  <Setter TargetName="label" Property="Foreground" Value="{DynamicResource themeErrorBrush}" />
+               </Trigger>
+               <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+            </ControlTemplate.Triggers>
+         </ControlTemplate>
+      </Setter.Value></Setter>
+   </Style>
+   <Style x:Key="materialCheckBoxStyle" TargetType="CheckBox">
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox">
+         <Grid Background="Transparent">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="18" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Border x:Name="box" Width="18" Height="18" CornerRadius="2" BorderThickness="2" BorderBrush="{DynamicResource themeOutlineBrush}" VerticalAlignment="Center">
+               <Path x:Name="tick" Visibility="Collapsed" Data="M 2,7 L 6,11 L 13,3" Stroke="{DynamicResource themeOnAccentBrush}" StrokeThickness="2" />
+            </Border>
+            <ContentPresenter Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
+         </Grid>
+         <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True"><Setter TargetName="box" Property="Background" Value="{DynamicResource themeAccentBrush}" /><Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" /><Setter TargetName="tick" Property="Visibility" Value="Visible" /></Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" /></Trigger>
+            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+         </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+   </Style>
+
+</ResourceDictionary>
