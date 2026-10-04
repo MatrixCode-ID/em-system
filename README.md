@@ -1,6 +1,6 @@
 # Em System
 
-Em System adalah fondasi ERP yang dikembangkan oleh **Matrix Code**. Repo ini memisahkan engine bersama, host API, serta host desktop WPF dan mobile .NET MAUI. Namespace proyek menggunakan awalan `Em`.
+Em System adalah fondasi ERP yang dikembangkan oleh **Matrix Code**. Repo ini memisahkan engine bersama, host API, serta host desktop WPF dan mobile .NET MAUI.
 
 Proyek masih dalam pengembangan. Kode Em System dirilis dengan lisensi [MIT](LICENSE); paket NuGet belum diterbitkan ke nuget.org.
 
