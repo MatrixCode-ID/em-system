@@ -38,7 +38,7 @@ internal sealed class MetaStorageSettingsPersistence(string key, Func<ApiCoreCon
       for (Exception? ex = exception; ex is not null; ex = ex.InnerException) {
          if (ex is Microsoft.Data.SqlClient.SqlException sql && sql.Number is 1205 or 2601 or 2627) return true;
          if (ex is Npgsql.PostgresException pg && pg.SqlState is "40001" or "40P01" or "23505") return true;
-         if (ex is MySql.Data.MySqlClient.MySqlException mysql && mysql.Number is 1213 or 1062) return true;
+         if (ex is MySqlConnector.MySqlException mysql && mysql.Number is 1213 or 1062) return true;
       }
       return false;
    }

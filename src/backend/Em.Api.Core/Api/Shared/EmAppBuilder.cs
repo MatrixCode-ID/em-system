@@ -558,7 +558,7 @@ namespace Em.Api.Shared
 
       /// <summary>
       /// Registers a scoped DbContext against the <see cref="DefaultConnectionName"/> connection - the
-      /// one configured through <see cref="SetDbProvider"/> - modules never call UseSqlServer/UseMySQL
+      /// one configured through <see cref="SetDbProvider"/> - modules never call UseSqlServer/UseMySql
       /// themselves. Equivalent to <see cref="AddDbContext{TContext}(string)"/> with
       /// <see cref="DefaultConnectionName"/>.
       /// <para>
@@ -575,7 +575,7 @@ namespace Em.Api.Shared
       /// <summary>
       /// Registers a scoped DbContext against the named connection - one registered through
       /// <see cref="AddExtraDbConn"/>, or <see cref="DefaultConnectionName"/> for the one configured
-      /// through <see cref="SetDbProvider"/>. Modules never call UseSqlServer/UseMySQL themselves; the
+      /// through <see cref="SetDbProvider"/>. Modules never call UseSqlServer/UseMySql themselves; the
       /// provider and connection string come from whatever <paramref name="connectionName"/> resolves to.
       /// <para>
       /// Registration order does not matter: <paramref name="connectionName"/> is only looked up once every

@@ -8,6 +8,9 @@ using Em.Api.Shared;
 // ReSharper disable once CheckNamespace
 public static class Extensions
 {
+   // UseEmProvider runs for every DbContext instance; AutoDetect opens a connection, so detect once per database.
+   private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ServerVersion> mySqlVersions = new();
+
    public static void UseEm(this WebApplicationBuilder app, Action<EmApp> svc) {
       // var emApp = new EmApp() {
       //    Builder = app,
@@ -26,7 +29,7 @@ public static class Extensions
             opt.AddInterceptors(Em.Api.Core.Approval.ApprovalDatabaseSwitch.Instance);
             break;
          case DatabaseProvider.MySql:
-            opt.UseMySQL(connectionString);
+            opt.UseMySql(connectionString, mySqlVersions.GetOrAdd(connectionString, ServerVersion.AutoDetect));
             break;
          case DatabaseProvider.PostgreSql:
             opt.UseNpgsql(connectionString);
