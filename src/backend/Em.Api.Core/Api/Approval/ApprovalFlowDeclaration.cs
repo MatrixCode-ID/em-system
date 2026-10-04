@@ -183,14 +183,13 @@ namespace Em.Api.Core.Approval
    /// </summary>
    /// <param name="Engine">Service engine yang sedang berjalan.</param>
    /// <param name="Provider">Penyedia service permintaan ini.</param>
-   /// <param name="Users">Cara mencari user nyata dari identitas lain.</param>
    /// <param name="Request">Baris request yang dikerjakan.</param>
    /// <param name="Items">
    /// Usulan perubahan request yang dikerjakan, untuk alur usulan perubahan data; kosong untuk alur dokumen.
    /// Diisi engine sebelum menyerahkan giliran ke modul, supaya hook modul bisa melihat apa yang diusulkan.
    /// </param>
    internal sealed record ApprovalRunScope(ServicesBase Engine, IServiceProvider Provider,
-      IApprovalUserLookup Users, ta_ApprovalRequest Request, IReadOnlyList<ApprovalDataItem>? Items = null);
+      ta_ApprovalRequest Request, IReadOnlyList<ApprovalDataItem>? Items = null);
 
    /// <summary>
    /// Aturan sebuah langkah yang diperiksa engine saat langkah itu ditandatangani.
@@ -304,7 +303,6 @@ namespace Em.Api.Core.Approval
             DocVersion = scope.Request.cApprovalRequestDocVersion,
             ApprovalRequestId = scope.Request.cApprovalRequestId,
             RequesterId = scope.Request.cApprovalRequestRequesterId,
-            Users = scope.Users,
             StepName = step.Name,
             SignerId = signerId
          };
@@ -557,8 +555,6 @@ namespace Em.Api.Core.Approval
       /// <summary>Pengaju request ini.</summary>
       string RequesterId { get; }
 
-      /// <summary>Cara mencari user nyata dari identitas lain.</summary>
-      IApprovalUserLookup Users { get; }
 
       /// <summary>
       /// Usulan perubahan yang dibawa request ini, per entitas. Setelah usulannya diterapkan, kunci entitas

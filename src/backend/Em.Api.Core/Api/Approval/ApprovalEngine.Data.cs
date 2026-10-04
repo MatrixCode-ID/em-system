@@ -63,7 +63,7 @@ namespace Em.Api.Core.Approval
          };
 
          var asItems = prepared.Select(r => r.Item).ToList();
-         var scope = new ApprovalRunScope(this, App.ServiceProvider, new ApprovalUserLookup(_ctx, CancellationToken.None),
+         var scope = new ApprovalRunScope(this, App.ServiceProvider,
             request, asItems);
 
          request.json_object = ApprovalRequestJson.Compose(await flow.SummaryAsync(scope), null);

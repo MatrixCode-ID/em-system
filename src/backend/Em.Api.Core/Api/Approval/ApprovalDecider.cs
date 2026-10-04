@@ -144,7 +144,7 @@ namespace Em.Api.Core.Approval
             throw new ActionException($"The note is {note.Length} characters long; the limit is {MaxNoteLength}.", 400);
          }
 
-         var scope = new ApprovalRunScope(host, host.App.ServiceProvider, new ApprovalUserLookup(ctx, Token), request);
+         var scope = new ApprovalRunScope(host, host.App.ServiceProvider, request);
 
          // 4. Claim, signer list, strictness and the guard, which together say in what capacity the
          //    caller signs: as the assigned signer, in place of one, or past a block.

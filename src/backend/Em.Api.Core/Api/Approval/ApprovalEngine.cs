@@ -82,7 +82,7 @@ namespace Em.Api.Core.Approval
             ustamp = stamp,
             datestamp = stamp
          };
-         var scope = new ApprovalRunScope(this, App.ServiceProvider, new ApprovalUserLookup(_ctx, CancellationToken.None),
+         var scope = new ApprovalRunScope(this, App.ServiceProvider,
             request);
 
          // 2. The steps that apply to this document, and the claim of the first one.

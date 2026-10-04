@@ -91,25 +91,6 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Cara engine mencari user nyata dari identitas lain, dipakai saat menentukan penanda tangan sebuah
-   /// langkah dari isi dokumennya.
-   /// </summary>
-   public interface IApprovalUserLookup
-   {
-      /// <summary>
-      /// User aktif yang terhubung ke seorang karyawan.
-      /// </summary>
-      /// <param name="employeeId">Nomor karyawan menurut data kepegawaian.</param>
-      /// <returns>Id user-nya.</returns>
-      /// <exception cref="Em.Shared.ActionException">
-      /// Dilempar kalau karyawan itu tidak punya user aktif, atau punya lebih dari satu. Keduanya dilempar
-      /// saat pengajuan, bukan saat menandatangani, supaya masalahnya jatuh ke pengaju yang bisa
-      /// memperbaikinya alih-alih menggagalkan keputusan orang lain di tengah alur.
-      /// </exception>
-      Task<string> ByEmployeeIdAsync(string employeeId);
-   }
-
-   /// <summary>
    /// Keterangan yang tersedia saat engine menanyakan sesuatu kepada modul tentang sebuah request.
    /// </summary>
    /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
@@ -131,8 +112,6 @@ namespace Em.Api.Core.Approval
       /// <summary>Pengaju request ini.</summary>
       string RequesterId { get; }
 
-      /// <summary>Cara mencari user nyata dari identitas lain.</summary>
-      IApprovalUserLookup Users { get; }
    }
 
    /// <summary>

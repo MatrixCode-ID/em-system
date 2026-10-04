@@ -99,7 +99,7 @@ namespace Em.Api.Core.Approval
             throw new ActionException($"The reason is {reason.Length} characters long; the limit is {MaxReasonLength}.", 400);
          }
 
-         var scope = new ApprovalRunScope(host, host.App.ServiceProvider, new ApprovalUserLookup(ctx, Token), request);
+         var scope = new ApprovalRunScope(host, host.App.ServiceProvider, request);
          var now = DateTime.Now;
          var stamp = DateTime.UtcNow;
          var json = ApprovalRequestJson.WithCancel(request.json_object, new ApprovalCancelRecord(me, now, reason));

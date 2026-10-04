@@ -134,7 +134,6 @@ namespace Em.Api.Core.Approval
          DocVersion = scope.Request.cApprovalRequestDocVersion,
          ApprovalRequestId = scope.Request.cApprovalRequestId,
          RequesterId = scope.Request.cApprovalRequestRequesterId,
-         Users = scope.Users,
          StepName = StepOf(stepName)?.Name ?? stepName,
          SignerId = signerId
       };
@@ -144,8 +143,7 @@ namespace Em.Api.Core.Approval
          DocKey = ApprovalKey.FromCanonical<TKey>(scope.Request.cApprovalRequestDocKey),
          DocVersion = scope.Request.cApprovalRequestDocVersion,
          ApprovalRequestId = scope.Request.cApprovalRequestId,
-         RequesterId = scope.Request.cApprovalRequestRequesterId,
-         Users = scope.Users
+         RequesterId = scope.Request.cApprovalRequestRequesterId
       };
    }
 }

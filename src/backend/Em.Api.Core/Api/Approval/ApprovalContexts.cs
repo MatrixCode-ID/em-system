@@ -16,7 +16,6 @@ namespace Em.Api.Core.Approval
       public required string DocVersion { get; init; }
       public required string ApprovalRequestId { get; init; }
       public required string RequesterId { get; init; }
-      public required IApprovalUserLookup Users { get; init; }
    }
 
    /// <summary>
@@ -43,7 +42,6 @@ namespace Em.Api.Core.Approval
       public required string DocKey { get; init; }
       public required string ApprovalRequestId { get; init; }
       public required string RequesterId { get; init; }
-      public required IApprovalUserLookup Users { get; init; }
       public required IReadOnlyList<ApprovalDataItem> Items { get; init; }
 
       /// <summary>Membangun keterangan untuk handler modul dari bahan yang dipegang engine.</summary>
@@ -53,7 +51,6 @@ namespace Em.Api.Core.Approval
          DocKey = scope.Request.cApprovalRequestDocKey,
          ApprovalRequestId = scope.Request.cApprovalRequestId,
          RequesterId = scope.Request.cApprovalRequestRequesterId,
-         Users = scope.Users,
          Items = scope.Items ?? []
       };
    }

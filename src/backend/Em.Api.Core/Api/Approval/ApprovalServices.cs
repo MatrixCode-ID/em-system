@@ -103,7 +103,7 @@ namespace Em.Api.Core.Approval
          }
 
          var scope = new ApprovalRunScope(this, App.ServiceProvider,
-            new ApprovalUserLookup(ctx, AbortToken), request);
+            request);
          var guard = await flow.EvaluateGuardAsync(scope, stepName, CallerUserId);
 
          if (guard is null || guard.IsAllowed) return new ApprovalGuardResult { Allowed = true };
@@ -217,7 +217,7 @@ namespace Em.Api.Core.Approval
          // The document is a real one, but nothing is submitted: the request only exists in memory so the
          // handlers of the module have the key and the version they ask for.
          var now = DateTime.Now;
-         var scope = new ApprovalRunScope(this, App.ServiceProvider, new ApprovalUserLookup(ctx, AbortToken),
+         var scope = new ApprovalRunScope(this, App.ServiceProvider,
             new ta_ApprovalRequest {
                cApprovalRequestId = $"{Ulid.NewUlid()}",
                cApprovalRequestKind = ApprovalKind.Document,
