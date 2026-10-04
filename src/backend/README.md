@@ -58,4 +58,4 @@ docker compose -f src/backend/compose.yml down
 
 `down` mempertahankan volume. `down --volumes` menghapus data volume, jadi gunakan hanya jika memang ingin menghapus payload.
 
-NuGet prerequisites: run em-system `doc/sqlscript/mssql/tables/040-nupak.sql` (schema version 2). See em-system `doc/engine/engine-nupak.md`. Engine host uses managed settings; EmPorium House uses `AddNuPak(config.Storage.NuPakPath, config.Storage.NuPakMaxPackageMb)`.
+NuGet prerequisites: run em-system `doc/sqlscript/mssql/tables/040-nupak.sql` and `views/vi_NuPak*.sql` (schema version 2). See em-system `doc/engine/engine-nupak.md`. Engine host uses managed settings; EmPorium House uses `AddNuPak(config.Storage.NuPakPath, config.Storage.NuPakMaxPackageMb)`.

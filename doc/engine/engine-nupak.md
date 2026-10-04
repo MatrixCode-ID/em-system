@@ -4,7 +4,7 @@ Em System serves independent NuGet V3 feeds at `/nuget/{slug}/v3/index.json`, wi
 
 ## Host setup (developers)
 
-Reference `Em.Api.Core.NuPak` and call `builder.AddNuPak("./data/nuget")` in the API host. The relative path is resolved from ContentRoot and created at startup. Optional `maxPackageMb` defaults to 250. Run `doc/sqlscript/mssql/tables/040-nupak.sql` on the core database after the engine identity schema. Reference `Em.Api.Core` and call `builder.AddNuPak()` in the WPF host. Removing the API registration removes both feed and management actions.
+Reference `Em.Api.Core.NuPak` and call `builder.AddNuPak("./data/nuget")` in the API host. The relative path is resolved from ContentRoot and created at startup. Optional `maxPackageMb` defaults to 250. Run `doc/sqlscript/mssql/tables/040-nupak.sql` on the core database after the engine identity schema, then the five `doc/sqlscript/mssql/views/vi_NuPak*.sql` files. Reference `Em.Api.Core` and call `builder.AddNuPak()` in the WPF host. Removing the API registration removes both feed and management actions.
 
 ## Using the feed
 

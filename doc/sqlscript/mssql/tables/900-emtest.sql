@@ -1,12 +1,13 @@
 /*
     Tabel module uji Em.Test (set lengkap, jalankan sekali pada database inti).
 
-    Jalankan pada database target (USE [NamaDatabase]). Aman dijalankan ulang: setiap tabel, view,
-    dan baris jenis dokumen hanya dibuat kalau belum ada.
+    Jalankan pada database target (USE [NamaDatabase]). Aman dijalankan ulang: setiap tabel dan
+    baris jenis dokumen hanya dibuat kalau belum ada. View-nya di views/vi_TestItem.sql dan
+    views/vi_TestDoc.sql.
 
     Isi:
-    - ta_TestItem / vi_TestItem : data induk sederhana untuk uji CRUD, paging, UiModel, dan data approval.
-    - ta_TestDoc  / vi_TestDoc  : dokumen transaksi untuk uji document approval (PDF + stamp).
+    - ta_TestItem               : data induk sederhana untuk uji CRUD, paging, UiModel, dan data approval.
+    - ta_TestDoc                : dokumen transaksi untuk uji document approval (PDF + stamp).
     - ta_Doc                    : dua jenis dokumen yang dipakai engine approval untuk module ini
                                   (EmTestDoc, EmTestItem). Tanpa baris ini request approval ditolak FK.
 
@@ -38,12 +39,6 @@ IF OBJECT_ID(N'[dbo].[ta_TestItem]', N'U') IS NULL
 GO
 --endregion
 
---region vi_TestItem
-IF OBJECT_ID(N'[dbo].[vi_TestItem]', N'V') IS NULL
-   EXEC (N'CREATE VIEW [dbo].[vi_TestItem] AS SELECT * FROM [dbo].[ta_TestItem]');
-GO
---endregion
-
 --region ta_TestDoc
 IF OBJECT_ID(N'[dbo].[ta_TestDoc]', N'U') IS NULL
    BEGIN
@@ -64,12 +59,6 @@ IF OBJECT_ID(N'[dbo].[ta_TestDoc]', N'U') IS NULL
          CONSTRAINT [UQ_ta_TestDoc_cTestDocNo] UNIQUE NONCLUSTERED ([cTestDocNo])
       );
    END;
-GO
---endregion
-
---region vi_TestDoc
-IF OBJECT_ID(N'[dbo].[vi_TestDoc]', N'V') IS NULL
-   EXEC (N'CREATE VIEW [dbo].[vi_TestDoc] AS SELECT * FROM [dbo].[ta_TestDoc]');
 GO
 --endregion
 

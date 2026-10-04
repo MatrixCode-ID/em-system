@@ -10,11 +10,11 @@ using Em.Test.Api;
 var app = EmApp.BuildApp(args, builder => {
    var config = Em.Api.Helper.ApplyConfig(builder);
    builder.AddManagedStorageSettings();
-   // Requires doc/sqlscript/mssql/tables/040-nupak.sql (schema version 2).
+   // Requires doc/sqlscript/mssql/tables/040-nupak.sql + views/vi_NuPak*.sql (schema version 2).
    builder.AddNuPak();
 
    // Penyimpanan berkas untuk PDF approval, dan module uji yang mencakup semua fitur engine.
-   // Module uji butuh skrip doc/sqlscript/mssql/tables/900-emtest.sql sudah dijalankan pada database inti.
+   // Module uji butuh skrip doc/sqlscript/mssql/tables/900-emtest.sql + views/vi_Test*.sql sudah dijalankan pada database inti.
    builder.AddLocalBinaryStorage(config.Storage.BinaryPath);
    builder.AddTestModule();
 });

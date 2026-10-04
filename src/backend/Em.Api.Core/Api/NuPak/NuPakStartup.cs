@@ -30,7 +30,7 @@ internal sealed class NuPakStartup(IServiceProvider services) : IHostedService
          await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(db.Versions.OrderBy(r => r.cNuPakVersionId), ct);
          await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(db.Grants.OrderBy(r => r.cRobotId), ct);
          await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(db.Audits.OrderBy(r => r.cNuPakAuditId), ct);
-      } catch (Exception ex) { throw new InvalidOperationException("NuGet module schema is unavailable. For legacy installations run doc/sqlscript/mssql/updates/20261003-NuPakMultiFeed.sql, then tables/040-nupak.sql. For new installations run tables/040-nupak.sql. Never run the old binary on this schema.", ex); }
+      } catch (Exception ex) { throw new InvalidOperationException("NuGet module schema is unavailable. For legacy installations run doc/sqlscript/mssql/updates/20261003-NuPakMultiFeed.sql, then tables/040-nupak.sql and views/vi_NuPak*.sql. For new installations run tables/040-nupak.sql and views/vi_NuPak*.sql. Never run the old binary on this schema.", ex); }
       var store = services.GetRequiredService<NuPakStore>();
       store.Initialize();
       await store.RecoverPurgesAsync(db, ct);
