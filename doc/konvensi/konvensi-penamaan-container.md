@@ -1,6 +1,6 @@
 # Konvensi penamaan container
 
-Keputusan pengguna 2026-10-04. Berlaku untuk semua image yang dibangun dari engine em-system dan repo turunannya (mis. EmPorium House): repo turunan **mengikuti dokumen ini**, tidak membuat aturan sendiri. Panduan menjalankan image ada di [setup-container.md](setup-container.md); registry yang menampung image ada di [engine-registry.md](engine-registry.md).
+Keputusan pengguna 2026-10-04. Berlaku untuk semua image yang dibangun dari engine em-system dan repo turunannya (mis. EmPorium House): repo turunan **mengikuti dokumen ini**, tidak membuat aturan sendiri. Panduan menjalankan image ada di [setup-container.md](../setup-container.md); registry yang menampung image ada di [engine-registry.md](../engine/engine-registry.md).
 
 ## Bentuk nama
 

@@ -2,7 +2,7 @@
 
 Release Manager (`admin.release`) menyiapkan client desktop dengan **Prepare**, membandingkan hasilnya
 dengan **Compare**, menerbitkan dan menandatangani dengan **Sync**, lalu memeriksa tanda tangan dan semua
-berkas dengan **Verify**. Format rilis tetap mengikuti [kontrak format rilis](release-format.md).
+berkas dengan **Verify**. Format rilis tetap mengikuti [kontrak format rilis](../release-format.md).
 Prepare memerlukan .NET SDK 10; CDN memerlukan akses CDN Manager selain akses Release Manager.
 
 ## Profile

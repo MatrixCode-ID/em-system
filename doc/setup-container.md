@@ -9,7 +9,7 @@ Kecuali disebutkan lain, semua perintah dijalankan lewat PowerShell dari **root 
 - Docker dalam mode Linux containers. Compose memakai plugin v2.24 atau lebih baru (`docker compose version`).
 - Akses internet saat build untuk image Alpine, paket apk, dan dependensi NuGet.
 - Database yang dapat dijangkau dari container. Compose hanya menjalankan API, tidak menyediakan server database.
-- Skema inti dan skema fitur yang dipakai host sudah terpasang. Host saat ini mengaktifkan managed CDN/registry, robot, binary approval, dan modul contoh `Em.Test`. Skrip SQL Server ada di `doc/sqlscript/mssql/sets/` (antara lain `Robot.sql`, `Ctn.sql`, `EmTest.sql`). Untuk database lama, jalankan migrasi yang disebutkan di panduan [storage settings](engine-storage-settings.md), [robot](engine-robots.md), [registry](engine-registry.md), dan [modul uji](engine-test-module.md).
+- Skema inti dan skema fitur yang dipakai host sudah terpasang. Host saat ini mengaktifkan managed CDN/registry, robot, binary approval, dan modul contoh `Em.Test`. Skrip SQL Server ada di `doc/sqlscript/mssql/sets/` (antara lain `Robot.sql`, `Ctn.sql`, `EmTest.sql`). Untuk database lama, jalankan migrasi yang disebutkan di panduan [storage settings](engine/engine-storage-settings.md), [robot](engine/engine-robots.md), [registry](engine/engine-registry.md), dan [modul uji](engine/engine-test-module.md).
 
 Host menerima provider MySQL/PostgreSQL, tetapi skrip di atas hanya untuk SQL Server. Untuk provider lain, siapkan skema yang sesuai sebelum startup.
 
@@ -267,4 +267,4 @@ Ping dan traceroute hanya memeriksa jaringan, dan dapat diblokir oleh jaringan h
 | Port already allocated | Hentikan instance sebelumnya atau ganti port host. |
 | Settings kembali ke default | Database, hostname, content root, dan key settings; baca panduan storage sebelum mengubah row. |
 
-NuGet prerequisites: run em-system `doc/sqlscript/mssql/sets/NuPak.sql` (schema version 2). See em-system `doc/engine-nupak.md`. Engine host uses managed settings; EmPorium House uses `AddNuPak(config.Storage.NuPakPath, config.Storage.NuPakMaxPackageMb)`.
+NuGet prerequisites: run em-system `doc/sqlscript/mssql/sets/NuPak.sql` (schema version 2). See em-system `doc/engine/engine-nupak.md`. Engine host uses managed settings; EmPorium House uses `AddNuPak(config.Storage.NuPakPath, config.Storage.NuPakMaxPackageMb)`.

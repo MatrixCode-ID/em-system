@@ -19,7 +19,7 @@ Untuk server produksi, simpan nilainya di secret manager milik platform deployme
 
 ## Pengaturan storage melalui UI
 
-Host contoh menggunakan `builder.AddManagedStorageSettings()` tanpa path/limit di `Program.cs`. Persistence di `ta_Meta`, hak Settings terpisah, dan perubahan diterapkan setelah restart API. Panduan lengkap: [pengaturan storage](../../doc/engine-storage-settings.md).
+Host contoh menggunakan `builder.AddManagedStorageSettings()` tanpa path/limit di `Program.cs`. Persistence di `ta_Meta`, hak Settings terpisah, dan perubahan diterapkan setelah restart API. Panduan lengkap: [pengaturan storage](../../doc/engine/engine-storage-settings.md).
 
 ## Container Alpine dan Compose
 
@@ -58,4 +58,4 @@ docker compose -f src/backend/compose.yml down
 
 `down` mempertahankan volume. `down --volumes` menghapus data volume, jadi gunakan hanya jika memang ingin menghapus payload.
 
-NuGet prerequisites: run em-system `doc/sqlscript/mssql/sets/NuPak.sql` (schema version 2). See em-system `doc/engine-nupak.md`. Engine host uses managed settings; EmPorium House uses `AddNuPak(config.Storage.NuPakPath, config.Storage.NuPakMaxPackageMb)`.
+NuGet prerequisites: run em-system `doc/sqlscript/mssql/sets/NuPak.sql` (schema version 2). See em-system `doc/engine/engine-nupak.md`. Engine host uses managed settings; EmPorium House uses `AddNuPak(config.Storage.NuPakPath, config.Storage.NuPakMaxPackageMb)`.

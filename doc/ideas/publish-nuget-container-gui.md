@@ -269,7 +269,7 @@ Engine tidak membawa referensi balik ke modul NuPak atau nama produk. Kontrak pr
 
 Pengguna dapat membuat profil lewat form, memilih project apa pun yang sesuai mode, mempersiapkan artefak, melihat tujuan serta versi/tag, melakukan push, dan membaca hasilnya dari manager. Tidak perlu membuat skrip publish khusus project. Jalur artefak yang sudah ada juga tersedia, dengan hasil per item, retry, cancel, dan pilihan menyimpan sensitive data terpisah atau dalam JSON. Secret tersimpan sesuai pilihan pengguna dan tetap disamarkan pada log/preview.
 
-Referensi engine yang dibaca: [ReleaseManager.xaml.cs](../../src/shared/Em.Ui.Wpf.Core/Navigations/ReleaseManager.xaml.cs), [ReleaseSettings.cs](../../src/shared/Em.Ui.Wpf.Core/Release/ReleaseSettings.cs), [ContainerManager.xaml.cs](../../src/shared/Em.Ui.Wpf.Core/Navigations/ContainerManager.xaml.cs), [engine-registry.md](../engine-registry.md), dan [engine-robots.md](../engine-robots.md). NuPak diperiksa dari layar dan panduan pada repo produk; tidak disalin ke engine.
+Referensi engine yang dibaca: [ReleaseManager.xaml.cs](../../src/shared/Em.Ui.Wpf.Core/Navigations/ReleaseManager.xaml.cs), [ReleaseSettings.cs](../../src/shared/Em.Ui.Wpf.Core/Release/ReleaseSettings.cs), [ContainerManager.xaml.cs](../../src/shared/Em.Ui.Wpf.Core/Navigations/ContainerManager.xaml.cs), [engine-registry.md](../engine/engine-registry.md), dan [engine-robots.md](../engine/engine-robots.md). NuPak diperiksa dari layar dan panduan pada repo produk; tidak disalin ke engine.
 
 ## Implementasi 2026-10-04
 

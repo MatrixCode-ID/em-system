@@ -97,7 +97,7 @@ Feed create/update/delete, global settings, purge and empty bin require
 **NuGet Settings Manage**; read/list/statistics/audit, prefix management and
 recycle/restore require **NuGet Manager Access**. There are no per-feed user claims.
 
-Existing empty installations must follow [the upgrade runbook](nuget-multifeed-upgrade.md).
+Existing empty installations must follow [the upgrade runbook](engine-nupak-multifeed-upgrade.md).
 Startup requires marker `NuPakSchemaVersion=2`, validates SQL before store recovery,
 and does not migrate automatically. Legacy `NuPakAnonymousRead` remains metadata
 only and is not inherited by new feeds. Populated legacy migrations require a

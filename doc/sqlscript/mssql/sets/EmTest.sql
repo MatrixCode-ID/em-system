@@ -10,7 +10,7 @@
     - ta_Doc                    : dua jenis dokumen yang dipakai engine approval untuk module ini
                                   (EmTestDoc, EmTestItem). Tanpa baris ini request approval ditolak FK.
 
-    Dokumentasi module: doc/engine-test-module.md
+    Dokumentasi module: doc/engine/engine-test-module.md
 */
 
 SET XACT_ABORT ON;
