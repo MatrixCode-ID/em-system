@@ -6,7 +6,7 @@ request perubahan dan approval), bahan untuk menyusun plan.
 ## Latar belakang
 
 - Semua tabel OBM punya kolom standar `Revision` (default 1) dan `Stage` (-1 void, 0 draft, >0 status yang
-  bisa diproses), lihat `doc/Struktur penamaan object database..md`. `Revision` disiapkan untuk fitur ini.
+  bisa diproses), lihat `doc/konvensi/konvensi-Dahlia.md`. `Revision` disiapkan untuk fitur ini.
 - Data hanya bisa diedit saat `Stage` 0 (draft). Dokumen yang dibuka kembali ke draft akan diedit, sehingga
   isi yang pernah berlaku hilang kalau tidak disimpan lebih dulu.
 - Pada sesi 2026-09-28 sempat diusulkan audit umum di `PgAudit` dengan snapshot JSON per penyimpanan; ide
