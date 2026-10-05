@@ -6,5 +6,5 @@ src/shared/Em.Libs/Em.Libs.csproj
 src/backend/Em.Api.Core/Em.Api.Core.csproj
 src/shared/Em.Ui.Core/Em.Ui.Core.csproj
 src/shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj
-# Ditunda sampai job build-maui aktif lagi di .github/workflows/ci.yml (keputusan pengguna 2026-10-06):
-# src/shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj
+# Butuh workload maui-android saat pack (dipasang job publish di publish-nuget.yml).
+src/shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj

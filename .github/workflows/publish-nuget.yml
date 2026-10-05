@@ -91,6 +91,10 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # EmSys.Ui.Maui.Core (net10.0-android) cannot be packed without the MAUI workload.
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
       - name: Pack
         shell: pwsh
         run: ./scripts/pack-nuget/pack-nuget.ps1 -Version $env:VERSION

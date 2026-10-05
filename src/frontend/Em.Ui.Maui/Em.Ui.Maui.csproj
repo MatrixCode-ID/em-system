@@ -34,9 +34,10 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.png" />
+		<!-- Adaptive icon as in Osha.Ui.Maui: plain white background, logo at 62% of the foreground (Android safe zone). -->
+		<MauiIcon Include="Resources\AppIcon\appicon.png" ForegroundFile="Resources\AppIcon\appiconfg.png" Color="#FFFFFF" />
 
-		<!-- Splash Screen -->
+		<!-- Splash Screen. BaseSize follows the image's aspect ratio (square here; Osha's wordmark is 256,131). -->
 		<MauiSplashScreen Include="Resources\Splash\splash.png" Color="#FAF9FD" BaseSize="256,256" />
 
 		<!-- Images -->
@@ -58,6 +59,12 @@
 	  <ProjectReference Include="..\..\shared\Em.Libs\Em.Libs.csproj" />
 	  <ProjectReference Include="..\..\shared\Em.Ui.Core\Em.Ui.Core.csproj" />
 	  <ProjectReference Include="..\..\shared\Em.Ui.Maui.Core\Em.Ui.Maui.Core.csproj" />
+	</ItemGroup>
+
+	<!-- Debug builds may sign development tokens with a private key kept outside the repository
+	     ($(ArtefactsPath)debugkey\debug-token.key). Without the file the debug key is simply not registered. -->
+	<ItemGroup Condition="'$(Configuration)' == 'Debug' And Exists('$(ArtefactsPath)debugkey/debug-token.key')">
+	  <EmbeddedResource Include="$(ArtefactsPath)debugkey/debug-token.key" LogicalName="DevelopmentToken" Visible="false" />
 	</ItemGroup>
 
 </Project>

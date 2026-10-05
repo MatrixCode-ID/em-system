@@ -21,6 +21,16 @@ public static class MauiProgram {
             opt.MinLength = 8;
             opt.SymbolRule = PasswordRuleLevel.Off;
          });
+#if DEBUG
+         // builder.AddDebug(opt => {
+         //    // 10.0.2.2 adalah alamat yang dipakai emulator Android untuk menyebut localhost mesin
+         //    // pengembang - "localhost" di dalam emulator menunjuk emulator itu sendiri.
+         //    opt.AddDebugConnection("Localhost", "http://10.0.2.2:5132", true);
+         //    if (ReadDevelopmentToken() is { } privateKey) {
+         //       opt.SetDebugKey("Development Token", privateKey);
+         //    }
+         // });
+#endif
       });
 
       return emApp.Run<App>(maui => {
@@ -34,4 +44,14 @@ public static class MauiProgram {
 #endif
       });
    }
+
+#if DEBUG
+   /// <summary>Private key yang di-embed dari ArtefactsPath saat build, atau null bila berkasnya tidak ada.</summary>
+   private static string? ReadDevelopmentToken() {
+      using var stream = typeof(MauiProgram).Assembly.GetManifestResourceStream("DevelopmentToken");
+      if (stream is null) return null;
+      using var reader = new StreamReader(stream);
+      return reader.ReadToEnd().Trim();
+   }
+#endif
 }

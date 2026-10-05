@@ -42,3 +42,23 @@ jobs:
 
       - name: Test
         run: dotnet test src/frontend/Em.Ui.Wpf.slnx --configuration Release --no-build
+
+  # Android only; the solution has no test project. The MAUI workload is not preinstalled on any runner.
+  build-maui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Restore
+        run: dotnet restore src/frontend/Em.Ui.Maui.slnx
+
+      - name: Build
+        run: dotnet build src/frontend/Em.Ui.Maui.slnx --configuration Release --no-restore
+

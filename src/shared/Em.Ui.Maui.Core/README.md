@@ -10,6 +10,8 @@ Targets .NET 10 for Android (`net10.0-android`) with Android API level 21 or lat
 
 The consuming MAUI project must set `<UseMaui>true</UseMaui>` and reference `Microsoft.Maui.Controls` explicitly, as required by the .NET MAUI SDK.
 
+The package adds its Font Awesome 7 fonts and the default `em_logo` image to the app as `MauiFont`/`MauiImage` items through its `buildTransitive` targets; the app does not need to copy them.
+
 ## Install
 
 ```sh

@@ -28,4 +28,11 @@
       <MauiFont Include="Resources\Fonts\*" />
     </ItemGroup>
 
+    <!-- The package carries the raw fonts and images; buildTransitive adds them to the consuming app. -->
+    <ItemGroup>
+      <None Include="Resources\Fonts\*" Pack="true" PackagePath="mauiresources\Fonts\" Visible="false" />
+      <None Include="Resources\Images\*" Pack="true" PackagePath="mauiresources\Images\" Visible="false" />
+      <None Include="buildTransitive\EmSys.Ui.Maui.Core.targets" Pack="true" PackagePath="buildTransitive\" />
+    </ItemGroup>
+
 </Project>

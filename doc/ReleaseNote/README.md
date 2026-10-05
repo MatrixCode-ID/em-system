@@ -7,12 +7,13 @@ doc/ReleaseNote/
 ├─ EmSys.Libs/0.1.0-alpha.1.md
 ├─ EmSys.Api.Core/0.1.0-alpha.1.md
 ├─ EmSys.Ui.Core/0.1.0-alpha.1.md
-└─ EmSys.Ui.Wpf.Core/0.1.0-alpha.1.md
+├─ EmSys.Ui.Wpf.Core/0.1.0-alpha.1.md
+└─ EmSys.Ui.Maui.Core/0.1.0-alpha.2.md
 ```
 
 - Nama folder = PackageId persis. Nama berkas = versi paket di nuget.org tanpa awalan `v` (`0.1.0-alpha.1.md`, `0.1.0-beta.2.md`, `0.1.0.md`).
 - Paket yang dirilis ditentukan oleh `scripts/pack-nuget/packages.txt`, **bukan** oleh ada-tidaknya release note. Semua paket di daftar itu dirilis bersama dengan satu versi, jadi setiap paket di daftar wajib punya berkas untuk versi tersebut, termasuk paket yang tidak berubah.
-- Paket yang sedang dikeluarkan dari daftar (saat ini `EmSys.Ui.Maui.Core`, menunggu CI MAUI) tidak diberi release note sampai kembali dirilis.
+- Paket yang dikeluarkan dari daftar tidak diberi release note sampai kembali dirilis. `EmSys.Ui.Maui.Core` sempat dikeluarkan dan masuk lagi mulai `0.1.0-alpha.2`.
 - **Menambahkan release note versi baru ke `main` = merilis.** Push/merge ke `main` yang membawa release note versi baru (lengkap untuk semua paket, belum punya tag) langsung menjalankan `publish-nuget.yml`, menunggu approval, lalu merilis dan membuat tag `v<versi>`. Satu versi per merge. Tulis release note di `work-bench` dan baru merge ke `main` saat siap rilis.
 - Untuk jalur manual, berkas harus sudah ada di `main` sebelum tag `v<versi>` dibuat. `scripts/release-nuget.cmd` menolak versi yang release note-nya belum lengkap, dan job `validate` di `publish-nuget.yml` gagal bila ada berkas yang tidak ada atau kosong di commit yang di-tag.
 - Versi mengikuti [konvensi-penamaan-nuget.md](../konvensi/konvensi-penamaan-nuget.md); prealpha tidak dirilis, jadi tidak perlu release note.

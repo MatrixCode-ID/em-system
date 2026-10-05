@@ -131,7 +131,7 @@ Sudah berjalan:
 - Repo kerja privat `em-system-work` (branch `work-bench`), repo publik `em-system` hanya `main` dan `ci-sandbox`.
 
 Masih terbuka / belum dikerjakan:
-- `EmSys.Ui.Maui.Core` ditunda: aktifkan lagi job `build-maui` di `ci.yml`, lalu buka komentar di `scripts/pack-nuget/packages.txt`.
+- ~~`EmSys.Ui.Maui.Core` ditunda~~ **Dibuka lagi 2026-10-06 (keputusan pengguna, karena osha-csm tidak boleh lagi mereferensikan folder em-system):** job `build-maui` aktif lagi di `ci.yml`, job `publish` di `publish-nuget.yml` memasang workload `maui-android` sebelum pack, dan `Em.Ui.Maui.Core` masuk `packages.txt`. Karena `0.1.0-alpha.1` sudah bertag, MAUI ikut rilis bersama lima paket di `0.1.0-alpha.2` (empat paket lain hanya membawa ikon dan release notes).
 - Trigger `pull_request` di `ci.yml` dan ruleset `main` (wajib PR + CI) belum dibuat.
 - Saat rilis, build+test jalan dua kali (CI biasa + gate di Publish NuGet); bisa dioptimalkan nanti, belum diputuskan.
 - Reservasi prefix `EmSys.*` di nuget.org: menunggu balasan email.
