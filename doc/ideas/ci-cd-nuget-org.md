@@ -56,7 +56,21 @@ Dasar pemikirannya: CI/CD menjalankan script yang sama seperti yang sekarang dip
 
 Alasan dipecah begini: supaya paham dan terbiasa baca workflow & log-nya dulu sebelum mempercayakan langkah yang auto-publish ke feed publik.
 
-**Tahap 1 sempat dibuat lalu dihapus lagi (2026-10-05):** `.github/workflows/ci.yml` sempat dibuat (trigger push ke `main`/`ci-sandbox` + `workflow_dispatch`, job tunggal `build-backend` di `ubuntu-latest`: `actions/checkout` → `actions/setup-dotnet` 10.0.x → `dotnet restore`/`dotnet build` untuk `src/backend/Em.Api.slnx` saja), tapi dihapus lagi oleh pengguna sebelum sempat di-commit/push — jadi belum pernah benar-benar dijalankan di GitHub Actions. Struktur branch yang disepakati sejauh ini: `main` (tempat tag rilis), `ci-sandbox` (coba-coba isi workflow, dipicu tiap push), `work-bench` (kerja harian, tidak memicu CI). WPF/MAUI solution belum direncanakan masuk CI karena WPF butuh runner `windows-latest` dan MAUI butuh workload tambahan.
+**Tahap 1 dibuat ulang (2026-10-05), sekarang termasuk test dan WPF:** `.github/workflows/ci.yml` — trigger push ke `main`/`ci-sandbox` + `workflow_dispatch`, dua job paralel:
+- `build-and-test-backend` di `ubuntu-latest`: `actions/checkout` → `actions/setup-dotnet` 10.0.x → `dotnet restore`/`build`/`test` untuk `src/backend/Em.Api.slnx` (mencakup `Em.Libs.Tests`, `Em.Api.Core.Tests`, `Em.Api.Core.IntegrationTests`).
+- `build-and-test-wpf` di `windows-latest` (WPF target `net10.0-windows` + `UseWPF=true`, hanya bisa di-build di Windows; **tidak perlu workload tambahan** seperti MAUI karena Windows Desktop targeting pack otomatis lewat NuGet restore saat di OS Windows): langkah sama, untuk `src/frontend/Em.Ui.Wpf.slnx` (mencakup `Em.Ui.Core.Tests`, `Em.Ui.Wpf.Core.Tests`).
+
+Database test memakai **Opsi A** dari bagian "Database test di CI" di bawah: `ubuntu-latest` tidak ada SQL Server, jadi `Em.Api.Core.IntegrationTests` otomatis skip (sudah didesain begitu), sementara unit test tetap jadi gate penuh. Branch kerja (`work-bench`, `ci-sandbox`) sudah dibuat pengguna di repo. Belum pernah di-push ke GitHub — percobaan jalan sungguhan menyusul.
+
+**Job ketiga, `build-maui`, ditambahkan (2026-10-05):** `src/frontend/Em.Ui.Maui.slnx` target `net10.0-android` saja (keputusan lama: android-only). Dicek: `Em.Ui.Maui.slnx` tidak berisi project test, jadi hanya restore+build, tanpa `dotnet test`. Beda dari WPF: workload MAUI **tidak otomatis ada** di runner manapun (beda dari Windows Desktop targeting pack WPF yang otomatis lewat NuGet), jadi perlu step tambahan `dotnet workload install maui-android` sebelum restore. Runner dipilih `ubuntu-latest` (bukan Windows/macOS) karena target android-only tidak butuh OS tertentu. **Catatan: job ini paling belum teruji dari ketiganya** — instalasi workload MAUI di CI dikenal kadang lambat/butuh troubleshooting di percobaan pertama (unduhan toolchain Android lewat NuGet); baru benar-benar diketahui jalan setelah dicoba push sungguhan.
+
+### Database test di CI
+
+Tiga opsi untuk `Em.Api.Core.IntegrationTests` (butuh SQL Server, GitHub-hosted runner tidak otomatis punya):
+
+- **Opsi A (dipakai sekarang):** `ubuntu-latest`, tidak ada SQL Server, integration test skip otomatis (sudah didesain begitu), unit test tetap jadi gate. Nol setup, tapi integration test belum benar-benar teruji di CI.
+- **Opsi B (peningkatan nanti):** `windows-latest` — runner ini **sudah ada SQL Server Express LocalDB terpasang**. LocalDB jalan di bawah identitas user Windows yang menjalankannya, otomatis cocok dengan Windows Authentication yang dipakai test project sekarang (**tidak perlu ubah kode test**). Caranya: `sqllocaldb create MSSQLLocalDB -s` di step CI, lalu set env `EM_TEST_DB_SERVER=(localdb)\MSSQLLocalDB` (variabel ini sudah didukung test project). Karena `em-system` repo publik, menit GitHub Actions gratis tak terbatas, jadi runner Windows tidak menambah biaya.
+- **Opsi C (tidak disarankan):** container `mssql/server` (Linux) sebagai `services:` di `ubuntu-latest` — SQL Server Linux/container **tidak mendukung Windows Authentication**, cuma SQL Authentication, jadi perlu ubah logika koneksi test project. Lebih invasif, keluar dari desain yang sudah ada.
 
 ## Urutan tahap (rancangan kasar, belum plan)
 
