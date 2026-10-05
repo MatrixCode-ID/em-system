@@ -1,0 +1,4 @@
+# Windows batch scripts need CRLF; a stray LF-only line can break multi-line
+# if/for blocks (pause never reached, window closes on error).
+*.cmd text eol=crlf
+*.bat text eol=crlf

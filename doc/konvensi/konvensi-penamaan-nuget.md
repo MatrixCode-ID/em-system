@@ -1,6 +1,8 @@
 # Konvensi penamaan paket NuGet
 
-Draf 2026-10-04, belum diputuskan pengguna. Berlaku untuk paket library engine em-system dan repo turunannya (mis. EmPorium House): repo turunan **mengikuti dokumen ini**, tidak membuat aturan sendiri. Aturan versi diturunkan dari [konvensi-penamaan-container.md](konvensi-penamaan-container.md); dokumen ini hanya mencatat bagian yang berbeda untuk NuGet. Cara membuat paket: bagian "Paket library" di [README](../../README.md) dan `scripts/pack-nuget.ps1`.
+Draf 2026-10-04, sebagian masih belum diputuskan pengguna (lihat "Pertanyaan terbuka"). Berlaku untuk paket library engine em-system dan repo turunannya (mis. EmPorium House): repo turunan **mengikuti dokumen ini**, tidak membuat aturan sendiri. Aturan versi diturunkan dari [konvensi-penamaan-container.md](konvensi-penamaan-container.md); dokumen ini hanya mencatat bagian yang berbeda untuk NuGet. Cara membuat paket: bagian "Paket library" di [README](../../README.md) dan `scripts/pack-nuget.ps1`; cara push ke GitHub Packages: `scripts/upload-nuget.cmd`/`upload-nuget.ps1`.
+
+Keputusan pengguna 2026-10-05: **prealpha tidak diterbitkan ke feed publik** (GitHub Packages maupun nuget.org); cukup di feed lokal `dist/nuget-pack` untuk uji sendiri. Feed publik dimulai dari **alpha**. `scripts/upload-nuget.ps1` menolak push bila `-Version` mengandung `prealpha`/`pre-alpha`.
 
 ## Nama paket
 
@@ -22,7 +24,7 @@ Format `MAJOR.MINOR.PATCH[-channel.N]`, SemVer 2.0, sama dengan konvensi contain
 
 | Channel | Versi paket | Keterangan |
 |---|---|---|
-| prealpha | `0.1.0-0.prealpha.N` | identifier `0.` di depan membuat prealpha terurut paling rendah |
+| prealpha | `0.1.0-0.prealpha.N` | identifier `0.` di depan membuat prealpha terurut paling rendah; **lokal saja**, tidak pernah di-push ke feed publik |
 | alpha | `0.1.0-alpha.N` | |
 | beta | `0.1.0-beta.N` | |
 | staging | `0.1.0-rc.N` | |
@@ -53,7 +55,7 @@ Dari tag git `v<versi>` per rilis (mis. `v0.1.0-alpha.3`), sama dengan container
 | Feed | Dipakai untuk | Catatan |
 |---|---|---|
 | lokal `dist/nuget-pack` | uji di mesin sendiri | hasil `scripts/pack-nuget.ps1`, diabaikan Git |
-| GitHub Packages `https://nuget.pkg.github.com/MatrixCode-ID/index.json` | prealpha sampai rc, dan release | pemakai wajib login dengan PAT `read:packages`, meski paketnya publik |
+| GitHub Packages `https://nuget.pkg.github.com/MatrixCode-ID/index.json` | alpha sampai rc, dan release | pemakai wajib login dengan PAT `read:packages`, meski paketnya publik |
 | nuget.org | release (opsional, menyusul) | tanpa login; versi tidak bisa dihapus, hanya unlist |
 
 Visibility paket di GitHub Packages diatur terpisah dari repo, per paket.
@@ -75,7 +77,6 @@ Floating version diselesaikan ulang saat restore, jadi build bisa berubah tanpa 
 
 ## Pertanyaan terbuka
 
-- Awalan `0.` untuk prealpha, atau prealpha tidak diterbitkan ke feed (hanya feed lokal) dan feed dimulai dari alpha.
 - Apakah konvensi container juga beralih ke `0.1.0-0.prealpha.N` agar tulisan versi image dan paket identik.
 - Kapan mulai menerbitkan ke nuget.org, dan apakah awalan `Em.` perlu didaftarkan sebagai ID prefix reservation (nama pendek berisiko sudah dipakai orang lain).
-- Default `scripts/pack-nuget.ps1` masih `0.1.0-pre-alpha.1`; disesuaikan setelah draf ini diputuskan.
+- Default `scripts/pack-nuget.ps1` dan `scripts/upload-nuget.ps1` masih `0.1.0-pre-alpha.1` (penulisan lama, beda dari bentuk tabel `0.1.0-0.prealpha.N`); hanya dipakai untuk pack lokal karena prealpha tidak di-push, tapi penulisannya belum disamakan.

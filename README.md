@@ -79,4 +79,14 @@ dotnet nuget add source "E:\em-system\dist\nuget-pack" --name EmLocal
 
 Gunakan path folder clone pada mesin masing-masing. Konsumen MAUI tetap perlu memasang workload MAUI dan mereferensikan `Microsoft.Maui.Controls` di project aplikasinya.
 
-Paket lokal ini belum merupakan rilis publik. Uji pemasangan paket dan periksa hasil build sebelum mengunggahnya ke nuget.org.
+Paket lokal ini belum merupakan rilis publik. Uji pemasangan paket dan periksa hasil build sebelum mengunggahnya.
+
+Untuk pack lalu push ke feed GitHub Packages (`https://nuget.pkg.github.com/MatrixCode-ID/index.json`, lihat [konvensi-penamaan-nuget.md](doc/konvensi/konvensi-penamaan-nuget.md)), jalankan:
+
+```cmd
+scripts\upload-nuget.cmd -Version 0.1.0-pre-alpha.1
+```
+
+Skrip selalu pack dulu, lalu tanya konfirmasi `Push ke ... ? [y/N]` sebelum benar-benar push; jawab apa pun selain `y`/`yes` untuk berhenti di pack saja. Kalau dikonfirmasi dan environment variable `EM_NUGET_PAT` belum diset, skrip minta PAT classic GitHub (scope `write:packages`, `read:packages`) lewat prompt tersembunyi — tidak pernah ditulis ke log atau file. Set `EM_NUGET_PAT` lebih dulu untuk melewati prompt itu.
+
+Skrip memerlukan `pwsh` (PowerShell 7+) di PATH; `pack-nuget.ps1` lama memakai `Get-FileHash` yang tidak selalu termuat di Windows PowerShell 5.1 bila dijalankan lewat `cmd.exe`.
