@@ -35,6 +35,11 @@ jobs:
             echo "::error::Prealpha '$version' is never published to a public feed (doc/konvensi/konvensi-penamaan-nuget.md)."
             exit 1
           fi
+          note="doc/ReleaseNote/$version.md"
+          if [[ ! -s "$note" ]]; then
+            echo "::error::Release note '$note' is missing or empty in the tagged commit."
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Require tagged commit on main
