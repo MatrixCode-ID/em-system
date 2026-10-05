@@ -16,7 +16,9 @@ Keputusan pengguna 2026-10-05: **prealpha tidak diterbitkan ke feed publik** (Gi
 | `EmSys.Api.Core` | backend engine |
 | `EmSys.Ui.Core` | tema, branding, dan dasar UI lintas platform |
 | `EmSys.Ui.Wpf.Core` | UI WPF engine |
-| `EmSys.Ui.Maui.Core` | UI MAUI engine |
+| `EmSys.Ui.Maui.Core` | UI MAUI engine (belum dirilis ke feed: ditunda sampai job CI MAUI aktif lagi, keputusan pengguna 2026-10-06) |
+
+Daftar project yang benar-benar dipaket dan dirilis ada di `scripts/pack-nuget/packages.txt`. Setiap paket yang dirilis punya release note `doc/ReleaseNote/<PackageId>/<versi>.md` ([format](../ReleaseNote/README.md)).
 
 ## Versi
 

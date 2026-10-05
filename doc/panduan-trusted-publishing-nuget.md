@@ -29,15 +29,26 @@ Panduan ini isinya langkah manual yang harus dijalankan sendiri di web UI GitHub
 
 ## C. Workflow `publish-nuget.yml` (sudah ditulis 2026-10-06)
 
-`.github/workflows/publish-nuget.yml` dipicu push tag `v*` dan berjalan dalam tiga job:
-1. `validate`: ambil versi dari tag (`v0.1.0-alpha.1` → `0.1.0-alpha.1`), tolak format non-SemVer dan prealpha, tolak tag tanpa release note `doc/ReleaseNote/<versi>.md` (atau kosong), serta tolak tag yang commit-nya tidak ada di `main`.
-2. `ci`: menjalankan ulang `ci.yml` (build + test backend dan WPF) sebagai gate.
-3. `publish` (Windows, `environment: release`): pasang workload `maui-android`, pack lima paket lewat `scripts/pack-nuget/pack-nuget.ps1`, simpan `.nupkg` sebagai artifact run, login OIDC lewat `NuGet/login@v1` (secret `NUGET_USER`), lalu `dotnet nuget push` ke nuget.org dengan `--skip-duplicate` agar run ulang bisa menuntaskan push yang sempat terputus.
+Dua cara memicu rilis:
+- **Otomatis (utama):** push ke `main` (merge PR atau push) yang mengubah `doc/ReleaseNote/**`. Versi diambil dari release note: versi yang punya berkas `doc/ReleaseNote/<PackageId>/<versi>.md` tapi belum punya tag `v<versi>`. Tidak ada versi seperti itu → workflow selesai tanpa rilis. Lebih dari satu → gagal (satu versi per merge). Bisa juga dijalankan ulang manual lewat **Actions → Publish NuGet → Run workflow** (branch `main`).
+- **Manual (cadangan):** push tag `v<versi>` lewat `scripts/release-nuget.cmd`.
 
-Required reviewers di environment `release` membuat job `publish` menunggu persetujuan setelah test lulus.
+Tiga job:
+1. `validate`: tentukan versi (dari release note atau dari tag), tolak commit yang tidak ada di `main`, format non-SemVer, prealpha, versi yang tidak lebih tinggi dari tag terakhir, dan paket di `scripts/pack-nuget/packages.txt` yang belum punya release note (atau kosong). Logika versi sama dengan skrip lokal (`scripts/release-nuget/release-common.ps1`).
+2. `ci`: menjalankan ulang `ci.yml` (build + test backend dan WPF) sebagai gate.
+3. `publish` (Windows, `environment: release`): pack paket di `packages.txt` (saat ini empat; `EmSys.Ui.Maui.Core` ditunda sampai CI MAUI aktif lagi), cocokkan jumlah `.nupkg`, simpan sebagai artifact run, login OIDC lewat `NuGet/login@v1` (secret `NUGET_USER`), `dotnet nuget push` ke nuget.org dengan `--skip-duplicate`, lalu (jalur otomatis) buat dan push tag `v<versi>`. Tag dari workflow tidak memicu run baru.
+
+**Approval:** job `publish` berhenti dengan status "Waiting" sampai disetujui reviewer environment `release`. Di repo `em-system` buka **Actions → Publish NuGet → run terbaru → Review deployments → centang `release` → Approve and deploy**. GitHub juga mengirim notifikasi/email ke reviewer. Menghapus Required reviewers dari environment `release` membuat rilis berjalan tanpa persetujuan.
 
 ## D. Uji coba
 
-Sebelum dipakai untuk channel release sungguhan, uji dulu dengan tag versi channel rendah, mis. `v0.1.0-alpha.1`, dan pastikan paket benar-benar muncul di nuget.org dengan versi/metadata yang sesuai.
+Uji pertama memakai `0.1.0-alpha.1`. Release note-nya sudah ada di `doc/ReleaseNote/<PackageId>/0.1.0-alpha.1.md` untuk keempat paket (format: [doc/ReleaseNote/README.md](ReleaseNote/README.md)).
 
-Tag dibuat lewat `scripts/release-nuget.cmd` (double-click atau dari terminal). Skrip memastikan branch `main` aktif serta working tree bersih dan sama dengan `origin/main`. Release note `doc/ReleaseNote/<versi>.md` (format: [doc/ReleaseNote/README.md](ReleaseNote/README.md)) harus sudah ada di `main`; untuk uji coba pertama buat dulu `doc/ReleaseNote/0.1.0-alpha.1.md`. Setelah itu skrip menampilkan versi terakhir di tag git `v*` dan di nuget.org (`EmSys.Libs`) serta release note yang belum dirilis, lalu menanyakan versi. Default-nya versi release note terendah yang belum dirilis; bila tidak ada, versi berikutnya: `alpha.N` naik satu, rilis `X.Y.Z` lanjut ke `X.(Y+1).0-alpha.1`, dan `0.1.0-alpha.1` bila belum ada versi; tekan Enter untuk memakai default. Versi prealpha, versi yang tidak lebih tinggi dari versi terakhir, dan tag yang sudah ada ditolak. Terakhir skrip meminta konfirmasi `y/N` sebelum membuat dan push tag. Versi juga bisa diberikan sebagai argumen (`scripts\release-nuget.cmd 0.1.0-alpha.1`) untuk melewati pertanyaan. Setelah itu pantau tab **Actions** → **Publish NuGet**, setujui job `publish` saat diminta, lalu cek <https://www.nuget.org/profiles/MatrixCode-id>.
+1. Commit di `work-bench`, push ke `private`.
+2. Merge `work-bench` ke `main`, push ke `origin`. Karena merge membawa release note baru, workflow **Publish NuGet** langsung jalan.
+3. Setujui job `publish` (lihat Approval di atas).
+4. Cek tag `v0.1.0-alpha.1` muncul di repo dan paket di <https://www.nuget.org/profiles/MatrixCode-id> (prerelease; indexing bisa beberapa menit).
+
+Rilis berikutnya: tambahkan release note versi baru untuk setiap paket di PR/merge yang sama, lalu merge ke `main`.
+
+Jalur manual `scripts/release-nuget.cmd` (dari `main`) tetap tersedia: skrip menampilkan versi terakhir di tag git dan nuget.org serta versi yang release note-nya lengkap tapi belum dirilis, menanyakan versi (default versi lengkap terendah yang belum dirilis, atau versi berikutnya), menolak prealpha, versi yang tidak naik, release note yang belum lengkap, dan tag yang sudah ada, lalu meminta konfirmasi `y/N` sebelum push tag.

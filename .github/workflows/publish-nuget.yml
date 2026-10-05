@@ -1,15 +1,21 @@
 name: Publish NuGet
 
 # File name is registered in the nuget.org Trusted Publishing policy; renaming it breaks publishing.
+# Automatic: a push to main that adds a complete set of doc/ReleaseNote/<PackageId>/<version>.md releases
+# that version and tags it. Manual fallback: push a tag v<version> (scripts/release-nuget.cmd).
+# Tags pushed by this workflow use GITHUB_TOKEN, so they do not trigger another run.
 on:
   push:
+    branches: [main]
+    paths: ['doc/ReleaseNote/**']
     tags: ['v*']
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: publish-nuget-${{ github.ref }}
+  group: publish-nuget
   cancel-in-progress: false
 
 jobs:
@@ -22,45 +28,59 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version from tag
+      - name: Resolve release version
         id: version
-        shell: bash
+        shell: pwsh
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' is not v<MAJOR.MINOR.PATCH[-channel.N]>."
-            exit 1
-          fi
-          if [[ "${version,,}" == *prealpha* || "${version,,}" == *pre-alpha* ]]; then
-            echo "::error::Prealpha '$version' is never published to a public feed (doc/konvensi/konvensi-penamaan-nuget.md)."
-            exit 1
-          fi
-          note="doc/ReleaseNote/$version.md"
-          if [[ ! -s "$note" ]]; then
-            echo "::error::Release note '$note' is missing or empty in the tagged commit."
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          $ErrorActionPreference = 'Stop'
+          . ./scripts/release-nuget/release-common.ps1
+          $repoRoot = (Get-Location).Path
+          git fetch --quiet --force --tags origin
+          git fetch --quiet --no-tags origin main
+          git merge-base --is-ancestor $env:GITHUB_SHA origin/main
+          if ($LASTEXITCODE -ne 0) { throw "Commit $env:GITHUB_SHA is not on main." }
 
-      - name: Require tagged commit on main
-        shell: bash
-        run: |
-          git fetch --no-tags origin main
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "::error::Tag '$GITHUB_REF_NAME' points to a commit that is not on main."
-            exit 1
-          fi
+          $packageIds = Get-PackageIds $repoRoot
+          $tags = @(git tag --list 'v*' | ForEach-Object { ConvertTo-SemVer ($_ -replace '^v', '') } | Where-Object { $_ })
+
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $version = $env:GITHUB_REF_NAME -replace '^v', ''
+            if (-not (ConvertTo-SemVer $version)) { throw "Tag '$env:GITHUB_REF_NAME' is not v<MAJOR.MINOR.PATCH[-channel.N]>." }
+          } else {
+            $latest = Get-Highest $tags
+            $tagged = @($tags | ForEach-Object Text)
+            $pending = @(Get-NoteVersions $repoRoot $packageIds | Where-Object { $_ -notin $tagged })
+            if (-not $pending) {
+              Write-Host '::notice::No untagged release note version; nothing to publish.'
+              "version=" >> $env:GITHUB_OUTPUT
+              exit 0
+            }
+            if ($pending.Count -gt 1) { throw "More than one untagged release note version: $($pending -join ', '). Release one version per merge." }
+            $version = $pending[0]
+            $parsed = ConvertTo-SemVer $version
+            if (-not $parsed) { throw "Release note version '$version' is not MAJOR.MINOR.PATCH[-channel.N]." }
+            if ($latest -and (Compare-SemVer $parsed $latest) -le 0) { throw "Version $version is not higher than the latest tag v$($latest.Text)." }
+          }
+
+          if (Test-PreAlpha $version) { throw "Prealpha '$version' is never published to a public feed (doc/konvensi/konvensi-penamaan-nuget.md)." }
+          $missing = Get-MissingNotes $repoRoot $packageIds $version
+          if ($missing) { throw "Release note missing or empty: $($missing -join ', ')" }
+
+          Write-Host "::notice::Releasing $version ($($packageIds -join ', '))"
+          "version=$version" >> $env:GITHUB_OUTPUT
 
   ci:
     needs: validate
+    if: needs.validate.outputs.version != ''
     uses: ./.github/workflows/ci.yml
 
   publish:
     needs: [validate, ci]
+    if: needs.validate.outputs.version != ''
     runs-on: windows-latest
     environment: release
     permissions:
-      contents: read
+      contents: write
       id-token: write
     env:
       VERSION: ${{ needs.validate.outputs.version }}
@@ -70,9 +90,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
-      - name: Install MAUI Android workload
-        run: dotnet workload install maui-android
 
       - name: Pack
         shell: pwsh
@@ -96,9 +113,20 @@ jobs:
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
-          $packages = Get-ChildItem dist/nuget-pack -Filter "*.$env:VERSION.nupkg" -File
-          if ($packages.Count -ne 5) { throw "Expected 5 packages, found $($packages.Count)." }
+          $expected = @(Get-Content scripts/pack-nuget/packages.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') }).Count
+          $packages = @(Get-ChildItem dist/nuget-pack -Filter "*.$env:VERSION.nupkg" -File)
+          if ($packages.Count -ne $expected) { throw "Expected $expected packages, found $($packages.Count)." }
           foreach ($package in $packages) {
             dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
             if ($LASTEXITCODE -ne 0) { throw "Push failed for $($package.Name)." }
           }
+
+      - name: Tag release
+        if: github.ref_type != 'tag'
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "v$env:VERSION" -m "Release $env:VERSION" $env:GITHUB_SHA
+          git push origin "v$env:VERSION"
+          if ($LASTEXITCODE -ne 0) { throw "Pushing tag v$env:VERSION failed." }

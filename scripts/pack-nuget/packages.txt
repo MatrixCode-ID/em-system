@@ -1,0 +1,10 @@
+# Project yang dipaket dan dirilis bersama dengan satu versi, satu path per baris (relatif dari root repo).
+# PackageId = nama project dengan awalan Em. diganti EmSys. (Directory.Build.props).
+# Dibaca oleh pack-nuget.ps1, release-nuget.ps1, dan job validate/publish di .github/workflows/publish-nuget.yml.
+# Setiap paket di sini wajib punya doc/ReleaseNote/<PackageId>/<versi>.md saat dirilis.
+src/shared/Em.Libs/Em.Libs.csproj
+src/backend/Em.Api.Core/Em.Api.Core.csproj
+src/shared/Em.Ui.Core/Em.Ui.Core.csproj
+src/shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj
+# Ditunda sampai job build-maui aktif lagi di .github/workflows/ci.yml (keputusan pengguna 2026-10-06):
+# src/shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj

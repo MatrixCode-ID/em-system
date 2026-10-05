@@ -8,13 +8,9 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
 $outputDir = Join-Path $repoRoot 'dist/nuget-pack'
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
-$projects = @(
-    'src/shared/Em.Libs/Em.Libs.csproj'
-    'src/backend/Em.Api.Core/Em.Api.Core.csproj'
-    'src/shared/Em.Ui.Core/Em.Ui.Core.csproj'
-    'src/shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj'
-    'src/shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj'
-)
+$projects = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'packages.txt') |
+    ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
+if (-not $projects) { throw 'packages.txt tidak berisi project.' }
 
 foreach ($project in $projects) {
     $projectPath = Join-Path $repoRoot $project

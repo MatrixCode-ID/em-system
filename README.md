@@ -65,7 +65,7 @@ Identitas produk Launcher berada di `src/frontend/Launcher/product.toml`.
 
 Ketiga solution dapat di-`dotnet pack` secara lokal; project host diberi `IsPackable=false`, sehingga hanya library `Em.*` yang menghasilkan paket. Lima library memiliki deskripsi, README paket, dan metadata lisensi MIT. Periksa isi paket dan dependensi sebelum publikasi NuGet.
 
-Untuk membuat lima paket library non-host dengan satu versi di `dist/nuget-pack`, jalankan:
+Untuk membuat paket library yang terdaftar di `scripts/pack-nuget/packages.txt` (PackageId `EmSys.*`; saat ini tanpa `EmSys.Ui.Maui.Core` sampai CI MAUI aktif lagi) dengan satu versi di `dist/nuget-pack`, jalankan `scripts\pack-nuget.cmd` atau:
 
 ```powershell
 pwsh -File scripts/pack-nuget/pack-nuget.ps1 -Version 0.1.0-pre-alpha.1
