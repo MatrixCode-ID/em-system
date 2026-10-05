@@ -45,6 +45,8 @@ Satu sampai tiga kalimat tentang perubahan paket ini di rilis ini.
 ```
 
 - Bagian yang tidak punya isi dihapus, kecuali `Ringkasan`.
+- **Isi `## Ringkasan` menjadi tab Release Notes di nuget.org** (diambil otomatis saat pack, ditambah tautan ke berkas lengkap di tag rilis). nuget.org menampilkannya sebagai teks biasa, jadi tulis Ringkasan sebagai paragraf pendek tanpa daftar, tabel, atau heading.
+- Seluruh isi release note semua paket juga digabung otomatis menjadi halaman GitHub Release `v<versi>`. Jangan menulis ulang isi ini di tempat lain.
 - Paket yang tidak berubah tetap diberi berkas, cukup `Ringkasan`: "Tidak ada perubahan; versi naik mengikuti rilis bersama paket EmSys lainnya."
 - Rilis pertama sebuah paket (`Sebelumnya: —`) berisi ringkasan isi paket itu, bukan daftar perubahan: bagian `Isi paket` menggantikan `Fitur baru`/`Perbaikan`, ditambah `Catatan pemakaian` (target framework, dependensi, namespace yang berbeda dari PackageId, perintah instal).
 - Bagian opsional `Catatan pemakaian` boleh dipakai di rilis mana pun untuk informasi yang tetap berlaku (target, dependensi, cara pasang).

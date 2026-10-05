@@ -130,3 +130,29 @@ jobs:
           git tag -a "v$env:VERSION" -m "Release $env:VERSION" $env:GITHUB_SHA
           git push origin "v$env:VERSION"
           if ($LASTEXITCODE -ne 0) { throw "Pushing tag v$env:VERSION failed." }
+
+      - name: GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          . ./scripts/release-nuget/release-common.ps1
+          $tag = "v$env:VERSION"
+          $sections = foreach ($id in Get-PackageIds (Get-Location).Path) {
+            $lines = @(Get-Content "doc/ReleaseNote/$id/$env:VERSION.md")
+            # Demote headings one level so each package becomes a section of the release page.
+            ($lines | ForEach-Object { if ($_ -match '^#') { "#$_" } else { $_ } }) -join "`n"
+          }
+          $body = "Paket NuGet ``EmSys.*`` versi $env:VERSION di nuget.org: https://www.nuget.org/profiles/MatrixCode-id`n`n" + ($sections -join "`n`n---`n`n")
+          [IO.File]::WriteAllText("$env:RUNNER_TEMP/release-body.md", $body)
+          $packages = @(Get-ChildItem dist/nuget-pack -Filter "*.$env:VERSION.nupkg" -File | ForEach-Object FullName)
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @packages --clobber
+          } else {
+            $flags = @('--verify-tag', '--title', "EmSys $env:VERSION", '--notes-file', "$env:RUNNER_TEMP/release-body.md")
+            if ($env:VERSION -match '-') { $flags += '--prerelease' } else { $flags += '--latest' }
+            gh release create $tag @packages @flags
+          }
+          if ($LASTEXITCODE -ne 0) { throw "GitHub Release for $tag failed." }

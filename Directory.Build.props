@@ -17,9 +17,15 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 Matrix Code</Copyright>
     <PackageReadmeFile Condition="Exists('$(MSBuildProjectDirectory)/README.md')">README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <!-- Written by scripts/pack-nuget/pack-nuget.ps1 from doc/ReleaseNote/<PackageId>/<version>.md (summary + link). -->
+    <PackageReleaseNotes Condition="'$(EmReleaseNotesFile)' != '' and Exists('$(EmReleaseNotesFile)')">$([System.IO.File]::ReadAllText('$(EmReleaseNotesFile)'))</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/README.md')">
     <None Include="$(MSBuildProjectDirectory)/README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)doc/assets/logo/Logo-128.png" Pack="true" PackagePath="icon.png" Visible="false" />
   </ItemGroup>
   <!-- Workaround bug MAUIR0001: Microsoft.Maui.Resizetizer 10.0.101/10.0.110 bentrok versi System.Memory
        dengan Svg.Skia saat memroses SVG berisi <filter> atau <text> (MissingMethodException pada
