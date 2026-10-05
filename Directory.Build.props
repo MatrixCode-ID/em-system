@@ -20,4 +20,11 @@
   <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/README.md')">
     <None Include="$(MSBuildProjectDirectory)/README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
+  <!-- Workaround bug MAUIR0001: Microsoft.Maui.Resizetizer 10.0.101/10.0.110 bentrok versi System.Memory
+       dengan Svg.Skia saat memroses SVG berisi <filter> atau <text> (MissingMethodException pada
+       SKImageFilter.CreateMatrixConvolution dkk.). Pin ke 10.0.100 sampai MAUI merilis versi yang sudah
+       diperbaiki. Resizetizer cuma tool build-time, aman di-pin terpisah dari $(MauiVersion). -->
+  <ItemGroup Condition="'$(UseMaui)' == 'true'">
+    <PackageReference Include="Microsoft.Maui.Resizetizer" Version="10.0.100" PrivateAssets="all" NoWarn="NU1605" />
+  </ItemGroup>
 </Project>
