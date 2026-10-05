@@ -106,13 +106,13 @@ Kasus negatif yang perlu dicoba: push ke nama yang belum dibuat (`NAME_UNKNOWN`)
 
 ## Pengujian otomatis (skrip HTTP)
 
-`scripts/registry-http-test.py` meniru klien Docker lewat HTTP (82 pemeriksaan: kasus uji wajib plan —
+`scripts/_py/registry-http-test.py` meniru klien Docker lewat HTTP (82 pemeriksaan: kasus uji wajib plan —
 routing dua segmen, NAME_INVALID, mount lintas root, hak per root, pindah image, nama tidak sah/terlalu
 panjang, NAME_UNKNOWN, robot R/W — ditambah Range, case-sensitive tag, regenerasi token, folder).
 
 ```powershell
 $env:EM_BASE_URL = "http://localhost:5132"; $env:EM_PASSWORD = "<password akun penguji>"
-python scripts/registry-http-test.py
+python scripts/_py/registry-http-test.py
 ```
 
 Membuat dan menghapus data berakhiran acak; jalankan hanya ke server dan database uji.

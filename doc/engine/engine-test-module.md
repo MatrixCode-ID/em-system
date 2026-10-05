@@ -66,7 +66,7 @@ dan jalankan Self-test: jawabannya menyesuaikan siapa penggunanya (403 yang diha
 
 ## Uji otomatis
 
-- `python scripts/em-test-http-test.py`: uji HTTP sisi server (parameter, kegagalan, batas waktu, claim, stream,
+- `python scripts/_py/em-test-http-test.py`: uji HTTP sisi server (parameter, kegagalan, batas waktu, claim, stream,
   CRUD, business task, dokumen). Butuh `EM_PASSWORD` akun yang boleh masuk; keterangan lengkap di kepala skrip.
 - Self-test di layar Console menjalankan padanan sisi client dari hampir semuanya, memakai sesi yang sedang masuk.
 

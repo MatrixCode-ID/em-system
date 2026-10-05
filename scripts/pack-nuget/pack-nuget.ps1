@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
 $outputDir = Join-Path $repoRoot 'dist/nuget-pack'
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
@@ -23,7 +23,7 @@ foreach ($project in $projects) {
         throw "dotnet pack failed for $project (exit code $LASTEXITCODE)."
     }
 
-    $packageId = [System.IO.Path]::GetFileNameWithoutExtension($projectPath)
+    $packageId = [System.IO.Path]::GetFileNameWithoutExtension($projectPath) -replace '^Em\.', 'EmSys.'
     $packagePath = Join-Path $outputDir "$packageId.$Version.nupkg"
     if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
         throw "Expected package not found: $packagePath"

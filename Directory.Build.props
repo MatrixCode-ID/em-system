@@ -9,7 +9,8 @@
   <PropertyGroup>
     <Authors>Matrix Code</Authors>
     <Company>Matrix Code</Company>
-    <PackageId>$(MSBuildProjectName)</PackageId>
+    <!-- Package IDs use the reserved nuget.org prefix EmSys. while assemblies and namespaces stay Em.* -->
+    <PackageId>$([System.Text.RegularExpressions.Regex]::Replace('$(MSBuildProjectName)', '^Em\.', 'EmSys.'))</PackageId>
     <PackageProjectUrl>https://github.com/MatrixCode-ID/em-system</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MatrixCode-ID/em-system</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

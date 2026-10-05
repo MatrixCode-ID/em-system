@@ -417,7 +417,7 @@ doc/*.bkp
 !/src/shared/Em.Ui.Wpf.Core/Navigations/Publish/
 !/src/shared/Em.Ui.Wpf.Core/Navigations/Publish/**
 
-# Hasil dotnet pack lokal (scripts/pack-nuget.ps1); tidak di-commit
+# Hasil dotnet pack lokal (scripts/pack-nuget/pack-nuget.ps1); tidak di-commit
 dist/nuget-pack/
 
 # Hasil build Launcher (src/frontend/Launcher/build-dist.ps1); dibagikan lewat GitHub Releases, tidak di-commit

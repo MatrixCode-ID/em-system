@@ -68,7 +68,7 @@ Ketiga solution dapat di-`dotnet pack` secara lokal; project host diberi `IsPack
 Untuk membuat lima paket library non-host dengan satu versi di `dist/nuget-pack`, jalankan:
 
 ```powershell
-pwsh -File scripts/pack-nuget.ps1 -Version 0.1.0-pre-alpha.1
+pwsh -File scripts/pack-nuget/pack-nuget.ps1 -Version 0.1.0-pre-alpha.1
 ```
 
 Folder tersebut dapat didaftarkan sebagai sumber NuGet lokal pada mesin yang sudah meng-clone repo:

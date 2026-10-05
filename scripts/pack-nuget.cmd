@@ -6,14 +6,14 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-pwsh.exe -NoLogo -NoProfile -File "%~dp0upload-nuget\upload-nuget.ps1" %*
-set "UPLOAD_EXIT_CODE=%errorlevel%"
+pwsh.exe -NoLogo -NoProfile -File "%~dp0pack-nuget\pack-nuget.ps1" %*
+set "PACK_EXIT_CODE=%errorlevel%"
 echo.
-if not "%UPLOAD_EXIT_CODE%"=="0" (
-    echo Upload gagal. Exit code: %UPLOAD_EXIT_CODE%
+if not "%PACK_EXIT_CODE%"=="0" (
+    echo Pack gagal. Exit code: %PACK_EXIT_CODE%
     echo Salin pesan error di atas sebelum menutup jendela.
 ) else (
-    echo Selesai. Exit code: %UPLOAD_EXIT_CODE%
+    echo Selesai. Exit code: %PACK_EXIT_CODE%
 )
 pause
-exit /b %UPLOAD_EXIT_CODE%
+exit /b %PACK_EXIT_CODE%

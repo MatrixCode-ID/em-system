@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, ci-sandbox]
   workflow_dispatch: {}
+  workflow_call: {}
 
 jobs:
   build-and-test-backend:

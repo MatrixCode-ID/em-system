@@ -1,5 +1,5 @@
 <#
-Pack lima paket library Em.* lewat scripts/pack-nuget.ps1, lalu tanya konfirmasi untuk push
+Pack lima paket library EmSys.* lewat scripts/pack-nuget/pack-nuget.ps1, lalu tanya konfirmasi untuk push
 ke feed NuGet GitHub Packages (doc/konvensi/konvensi-penamaan-nuget.md). PAT classic GitHub
 (scope write:packages, read:packages) diambil berurutan dari: environment variable
 EM_NUGET_PAT, lalu berkas ..\.artefacts\em-system\github-pat.txt, lalu prompt tersembunyi
@@ -14,10 +14,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
-$repoRoot = (Resolve-Path (Join-Path $scriptRoot '..')).Path
+$repoRoot = (Resolve-Path (Join-Path $scriptRoot '..' '..')).Path
 $outputDir = Join-Path $repoRoot 'dist/nuget-pack'
 
-& (Join-Path $scriptRoot 'pack-nuget.ps1') -Version $Version
+& (Join-Path $repoRoot 'scripts' 'pack-nuget' 'pack-nuget.ps1') -Version $Version
 if ($LASTEXITCODE -ne 0) {
     throw "pack-nuget.ps1 gagal (exit code $LASTEXITCODE)."
 }

@@ -5,12 +5,12 @@
 
 ## Gagasan
 
-Siapkan em-system supaya build, test, dan publish paket NuGet lima library engine (`Em.Libs`, `Em.Api.Core`, `Em.Ui.Core`, `Em.Ui.Wpf.Core`, `Em.Ui.Maui.Core`) berjalan otomatis lewat CI/CD (GitHub Actions), dan publish paketnya juga ke nuget.org — sekarang baru manual ke GitHub Packages lewat `scripts/upload-nuget.ps1`.
+Siapkan em-system supaya build, test, dan publish paket NuGet lima library engine (`Em.Libs`, `Em.Api.Core`, `Em.Ui.Core`, `Em.Ui.Wpf.Core`, `Em.Ui.Maui.Core`) berjalan otomatis lewat CI/CD (GitHub Actions), dan publish paketnya juga ke nuget.org — sekarang baru manual ke GitHub Packages lewat `scripts/upload-nuget/upload-nuget.ps1`.
 
 ## Kondisi sekarang
 
 - Belum ada workflow apa pun di `.github/workflows/`.
-- `scripts/pack-nuget.ps1` pack lima paket ke `dist/nuget-pack` (lokal, diabaikan Git).
+- `scripts/pack-nuget/pack-nuget.ps1` pack lima paket ke `dist/nuget-pack` (lokal, diabaikan Git).
 - `scripts/upload-nuget.cmd`/`upload-nuget.ps1` push manual+interaktif ke GitHub Packages (`https://nuget.pkg.github.com/MatrixCode-ID/index.json`): minta konfirmasi `y/N`, ambil PAT dari `EM_NUGET_PAT` → berkas artefak → prompt tersembunyi, dan menolak push kalau versi mengandung prealpha.
 - `Directory.Build.props` sudah isi `Authors`, `Company`, `RepositoryUrl`, `PackageLicenseExpression` (MIT), `PackageReadmeFile` per project kalau ada `README.md`. Belum ada `Description` per project, `PackageIcon`, SourceLink, atau symbol package (`.snupkg`).
 - Konvensi versi (`doc/konvensi/konvensi-penamaan-nuget.md`) masih draf dengan tiga pertanyaan terbuka sendiri: kapan mulai nuget.org, apakah `Em.` perlu ID prefix reservation, dan penyamaan default versi prealpha di script.
@@ -31,7 +31,7 @@ Siapkan em-system supaya build, test, dan publish paket NuGet lima library engin
 3. **Trigger CI**: tag git `v<versi>` (konsisten dengan asal angka `N` di konvensi), `workflow_dispatch` manual dengan input versi, atau tiap commit ke `main` (auto, tanpa tag)? Opsi "tiap commit" tidak otomatis cocok dengan konvensi versi yang ada (versi berasal dari tag, satu siklus channel per target versi) — commit biasa bukan satuan versi, jadi perlu skema auto-increment tersendiri (mis. angka `N` dari jumlah commit atau nomor run CI) kalau opsi ini dipilih.
 4. **Test gate di CI**: integration test butuh SQL Server — pakai service container `mssql` di job runner, atau diterima integration test tetap di-skip di CI (artinya CI bukan gate penuh untuk test itu)?
 5. **GitHub Packages vs nuget.org**: GitHub Packages tetap dipertahankan paralel untuk semua channel, atau nuget.org menggantikannya untuk channel tertentu (mis. release)?
-6. **Reservasi nama**: apakah awalan `Em.` perlu didaftarkan sebagai ID prefix reservation di nuget.org sebelum publish pertama kali, dan dengan akun/organisasi mana?
+6. **Ditutup 2026-10-06 (keputusan pengguna):** PackageId memakai prefix `EmSys.` (`EmSys.Libs`, `EmSys.Api.Core`, `EmSys.Ui.Core`, `EmSys.Ui.Wpf.Core`, `EmSys.Ui.Maui.Core`) apa pun hasil reservasi; namespace/assembly/project tetap `Em.*`. Permohonan reservasi `EmSys.*` (private) dikirim lewat email ke `account@nuget.org`; policy scope Trusted Publishing `EmSys.*`. Belum dikerjakan: ganti `PackageId` di project dan perbarui `konvensi-penamaan-nuget.md`. Riwayat diskusi: **Reservasi nama**: apakah awalan `Em.` perlu didaftarkan sebagai ID prefix reservation di nuget.org sebelum publish pertama kali, dan dengan akun/organisasi mana? **Temuan 2026-10-06:** reservasi tidak self-service (permohonan email ke `account@nuget.org`, ditinjau manual), dan kriterianya menghindari prefix < 4 karakter serta kata generik, jadi `Em.` kemungkinan ditolak. Tidak memblokir Trusted Publishing; ditunda. **Alternatif (diskusi 2026-10-06):** minta `MatrixCode.*` (cocok dengan nama organisasi, besar kemungkinan disetujui) sebagai pilihan pertama bila `Em.*` ditolak, dengan konsekuensi PackageId menjadi `MatrixCode.Em.*` (assembly/namespace tetap `Em.*`). Harus diputuskan sebelum publish pertama ke nuget.org karena ID paket permanen; bila dipilih, `konvensi-penamaan-nuget.md`, policy scope Trusted Publishing (`Em.*` → `MatrixCode.Em.*`), dan `PackageId` di project ikut berubah. Menunggu balasan email permohonan. Varian lain: `MatrixCode.Libs`, `MatrixCode.Api.Core`, dst. (tanpa `Em.`), juga tercakup reservasi `MatrixCode.*`, jadi email tidak perlu diubah. Kelemahannya: identitas engine hilang (ambigu bila organisasi menerbitkan paket produk lain) dan nama paket makin jauh dari namespace `Em.*`. Agent menyarankan `MatrixCode.Em.*`; belum diputuskan. **Arah terbaru (2026-10-06):** prefix `EmSys.*` (singkatan em-system, 5 karakter, belum dipakai siapa pun di nuget.org per pencarian 2026-10-06) diajukan sebagai pilihan utama di email, `MatrixCode.*` sebagai cadangan. PackageId menjadi `EmSys.Libs`, `EmSys.Api.Core`, `EmSys.Ui.Core`, `EmSys.Ui.Wpf.Core`, `EmSys.Ui.Maui.Core`; namespace/assembly tetap `Em.*`. Policy scope Trusted Publishing dan konvensi NuGet ikut disesuaikan setelah balasan diterima. Saran agent (2026-10-06): pakai `EmSys.*` sebagai PackageId terlepas dari hasil reservasi (reservasi hanya memberi tanda verified, tidak memblokir publish). Rename penuh namespace/assembly/project ke `EmSys` **tidak** disarankan sekarang (biaya besar: namespace, `.slnx`, `xmlns` XAML, dokumen, repo turunan, nama tipe tersimpan sebagai string); bila tetap diinginkan, waktu termurah adalah sebelum ada konsumen paket di luar organisasi. Belum diputuskan pengguna.
 7. **Script non-interaktif**: `upload-nuget.ps1` sekarang minta konfirmasi `y/N` dan prompt PAT tersembunyi — untuk CI perlu varian non-interaktif. Dibuat sebagai mode baru (`-NonInteractive` atau deteksi otomatis dari environment CI) di script yang sama, atau script terpisah khusus CI?
 8. **Kelengkapan metadata**: `Description` per project, `PackageIcon`, SourceLink + `.snupkg` — dikerjakan sebagai bagian plan CI/CD ini, atau idea/plan terpisah yang jalan lebih dulu?
 9. **Tiga pertanyaan terbuka di `konvensi-penamaan-nuget.md`** (kapan mulai nuget.org, ID prefix reservation — tumpang tindih dengan #6 di atas, penyamaan default versi prealpha di script) — ditutup dulu sebelum plan CI/CD ditulis, atau boleh dibahas paralel di sini?
@@ -98,11 +98,25 @@ Sumber: [Trusted Publishing — Microsoft Learn](https://learn.microsoft.com/nug
 - Workflow GitHub Actions butuh `permissions: id-token: write`, step `NuGet/login@v1` (input `user` = username profil nuget.org, bukan email) menghasilkan API key sementara (berlaku 1 jam), lalu `dotnet nuget push` dengan key itu ke `https://api.nuget.org/v3/index.json`.
 - Publish pertama yang sukses mengunci policy ke ID repo & owner GitHub (mencegah resurrection attack kalau repo dihapus & dibuat ulang nama sama).
 
-Pertanyaan terbuka tambahan dari referensi ini:
+Pertanyaan terbuka tambahan dari referensi ini (keputusan pengguna 2026-10-05):
 
-10. **Policy Ownership** di nuget.org: akun individu atau organisasi GitHub `MatrixCode-ID`?
-11. **Nama file workflow** yang akan didaftarkan di policy (harus persis sama dengan nama file di `.github/workflows/`) — belum ditentukan, mis. `publish-nuget.yml`.
-12. **Pakai GitHub Actions environment** (mis. `release`) untuk gate approval manual sebelum publish ke nuget.org, atau tidak perlu?
+10. ~~**Policy Ownership** di nuget.org: akun individu atau organisasi GitHub `MatrixCode-ID`?~~ **Ditutup:** organisasi `MatrixCode-ID`. Perlu dibuat/dikonfirmasi sebagai Organization terpisah di nuget.org (bukan otomatis sama dengan organisasi GitHub), akun pengguna jadi Owner di sana.
+11. **Nama file workflow** yang akan didaftarkan di policy (harus persis sama dengan nama file di `.github/workflows/`) — rencana: `publish-nuget.yml`.
+12. ~~**Pakai GitHub Actions environment** (mis. `release`) untuk gate approval manual sebelum publish ke nuget.org, atau tidak perlu?~~ **Ditutup:** ya, pakai environment `release` dengan Required reviewers di GitHub (Settings → Environments), tapi field Environment pada policy Trusted Publishing di nuget.org **dikosongkan** (tidak diisi `release`). Dengan begitu gate approval murni diatur di sisi GitHub dan bisa dimatikan kapan saja (hapus Required reviewers dari environment itu) tanpa mengubah workflow atau policy nuget.org.
+
+### Langkah setup Trusted Publishing (OIDC) — belum dijalankan
+
+A. GitHub: (1) pastikan admin organisasi `MatrixCode-ID`; (2) Settings → Environments → New environment `release`; (3) set Required reviewers di environment itu.
+
+B. nuget.org: (4) login/buat akun; (5) buat Organization `MatrixCode-ID` di nuget.org, jadi Owner; (6) opsional sekalian reservasi ID Prefix `Em.` di organisasi itu (pertanyaan #6); (7) di organisasi, Trusted Publishing → Add policy — Repository Owner `MatrixCode-ID`, Repository `em-system`, Workflow File `publish-nuget.yml`, Environment dikosongkan, Policy Scope `Em.*`.
+
+C. Setelah A & B selesai: tulis `.github/workflows/publish-nuget.yml` (`permissions: id-token: write`, job pakai `environment: release`, step `NuGet/login@v1` lalu `dotnet nuget push`, trigger tag `v<versi>`).
+
+D. Uji coba dulu dengan tag channel rendah (mis. `v0.1.0-alpha.1`) sebelum dipakai untuk channel release sungguhan.
+
+Langkah A dan B bersifat manual oleh pengguna (akun/organisasi GitHub & nuget.org, bukan tindakan di repo) — belum dijalankan per 2026-10-05.
+
+Pembaruan 2026-10-06: Organization nuget.org sudah dibuat, profil <https://www.nuget.org/profiles/MatrixCode-id>. Environment `release` di GitHub: "Deployment branches and tags" tidak diisi branch `main` (trigger dari tag), bila dibatasi pakai deployment tag rule `v*`.
 
 ## Plan turunan
 

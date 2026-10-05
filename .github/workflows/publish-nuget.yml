@@ -1,0 +1,99 @@
+name: Publish NuGet
+
+# File name is registered in the nuget.org Trusted Publishing policy; renaming it breaks publishing.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-nuget-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from tag
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not v<MAJOR.MINOR.PATCH[-channel.N]>."
+            exit 1
+          fi
+          if [[ "${version,,}" == *prealpha* || "${version,,}" == *pre-alpha* ]]; then
+            echo "::error::Prealpha '$version' is never published to a public feed (doc/konvensi/konvensi-penamaan-nuget.md)."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Require tagged commit on main
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag '$GITHUB_REF_NAME' points to a commit that is not on main."
+            exit 1
+          fi
+
+  ci:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [validate, ci]
+    runs-on: windows-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Pack
+        shell: pwsh
+        run: ./scripts/pack-nuget/pack-nuget.ps1 -Version $env:VERSION
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-${{ env.VERSION }}
+          path: dist/nuget-pack/*.${{ env.VERSION }}.nupkg
+          if-no-files-found: error
+
+      - name: NuGet login (OIDC to temporary API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      # --skip-duplicate lets a re-run finish a partially pushed release; versions are never reused.
+      - name: Push to nuget.org
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          $packages = Get-ChildItem dist/nuget-pack -Filter "*.$env:VERSION.nupkg" -File
+          if ($packages.Count -ne 5) { throw "Expected 5 packages, found $($packages.Count)." }
+          foreach ($package in $packages) {
+            dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { throw "Push failed for $($package.Name)." }
+          }
