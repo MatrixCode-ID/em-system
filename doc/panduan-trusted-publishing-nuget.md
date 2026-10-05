@@ -1,6 +1,6 @@
 # Panduan setup Trusted Publishing (OIDC) untuk publish ke nuget.org
 
-- Status: langkah manual, belum dijalankan (per 2026-10-05).
+- Status: langkah A dan B sudah dijalankan pengguna (2026-10-06): environment `release` dengan Required reviewers, secret `NUGET_USER`, organisasi nuget.org `MatrixCode-ID`, policy Trusted Publishing `EmSys.*`. Rilis pertama `0.1.0-alpha.1` terbit lewat jalur otomatis pada 2026-10-06. Email permohonan reservasi prefix `EmSys.*` disiapkan; status kirim/balasan belum tercatat.
 - Konteks dan alasan tiap keputusan: [doc/ideas/ci-cd-nuget-org.md](ideas/ci-cd-nuget-org.md).
 
 Panduan ini isinya langkah manual yang harus dijalankan sendiri di web UI GitHub dan nuget.org (bukan tindakan di repo, jadi tidak bisa dikerjakan oleh Claude/Codex). Setelah semua langkah di bawah selesai, lanjutkan ke bagian **C** untuk minta workflow `publish-nuget.yml` ditulis.

@@ -58,7 +58,7 @@ Dari tag git `v<versi>` per rilis (mis. `v0.1.0-alpha.3`), sama dengan container
 |---|---|---|
 | lokal `dist/nuget-pack` | uji di mesin sendiri | hasil `scripts/pack-nuget/pack-nuget.ps1`, diabaikan Git |
 | GitHub Packages `https://nuget.pkg.github.com/MatrixCode-ID/index.json` | alpha sampai rc, dan release | pemakai wajib login dengan PAT `read:packages`, meski paketnya publik |
-| nuget.org | release (opsional, menyusul) | tanpa login; versi tidak bisa dihapus, hanya unlist |
+| nuget.org | alpha sampai rc, dan release (mulai `0.1.0-alpha.1`, 2026-10-06) | tanpa login; versi tidak bisa dihapus, hanya unlist; dirilis otomatis oleh `publish-nuget.yml` dari release note |
 
 Visibility paket di GitHub Packages diatur terpisah dari repo, per paket.
 

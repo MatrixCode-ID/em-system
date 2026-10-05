@@ -1,7 +1,7 @@
 # CI/CD dan publish ke nuget.org
 
 - Tanggal: 2026-10-05
-- Status: diskusi
+- Status: sebagian sudah dikerjakan langsung (lihat "Rangkuman status" di bawah); sisanya diskusi
 
 ## Gagasan
 
@@ -120,4 +120,20 @@ Pembaruan 2026-10-06: Organization nuget.org sudah dibuat, profil <https://www.n
 
 ## Plan turunan
 
-Belum ada.
+Belum ada; bagian yang sudah dikerjakan langsung atas permintaan pengguna (tanpa plan) tercatat di atas dan di [doc/panduan-trusted-publishing-nuget.md](../panduan-trusted-publishing-nuget.md).
+
+## Rangkuman status (2026-10-06)
+
+Sudah berjalan:
+- CI `ci.yml` (backend Linux, WPF Windows) pada push `main`/`ci-sandbox`, bisa dipanggil sebagai reusable workflow.
+- Rilis otomatis `publish-nuget.yml`: push/merge ke `main` yang membawa release note versi baru → validate → ci → approval `release` → pack → push nuget.org (Trusted Publishing) → tag `v<versi>` → GitHub Release. Jalur tag manual `scripts/release-nuget.cmd` sebagai cadangan.
+- Paket `EmSys.Libs`, `EmSys.Api.Core`, `EmSys.Ui.Core`, `EmSys.Ui.Wpf.Core`; `0.1.0-alpha.1` terbit (tanpa ikon/release notes). Ikon, `PackageReleaseNotes`, dan GitHub Release berlaku mulai rilis berikutnya (belum pernah jalan di GitHub).
+- Repo kerja privat `em-system-work` (branch `work-bench`), repo publik `em-system` hanya `main` dan `ci-sandbox`.
+
+Masih terbuka / belum dikerjakan:
+- `EmSys.Ui.Maui.Core` ditunda: aktifkan lagi job `build-maui` di `ci.yml`, lalu buka komentar di `scripts/pack-nuget/packages.txt`.
+- Trigger `pull_request` di `ci.yml` dan ruleset `main` (wajib PR + CI) belum dibuat.
+- Saat rilis, build+test jalan dua kali (CI biasa + gate di Publish NuGet); bisa dioptimalkan nanti, belum diputuskan.
+- Reservasi prefix `EmSys.*` di nuget.org: menunggu balasan email.
+- Pertanyaan #2 (channel ke nuget.org) praktis terjawab karena alpha sudah terbit; #4 (SQL Server di CI, Opsi B LocalDB), #5 (GitHub Packages tetap paralel atau tidak), #7 (skrip upload non-interaktif, kini tidak diperlukan untuk nuget.org), #8 (Description per project sudah ada; SourceLink/`.snupkg` belum), #9 (default versi prealpha di skrip) masih terbuka.
+- Versi stabil (tanpa akhiran) diperlukan agar paket tampil tanpa centang "Include prerelease"; README paket masih menulis `--prerelease` dan perlu disesuaikan saat rilis stabil.
