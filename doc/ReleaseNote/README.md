@@ -21,35 +21,35 @@ doc/ReleaseNote/
 
 ## Format
 
-Ditulis dalam Bahasa Indonesia untuk pemakai paket (pengembang yang memasang paket itu), bukan untuk pembaca kode internal. Nama kode, API, dan perintah tetap ditulis apa adanya.
+Ditulis dalam **bahasa Inggris, wajib** (mulai `0.1.0-alpha.3`; versi sebelumnya berbahasa Indonesia dan tidak diubah) untuk pemakai paket (pengembang yang memasang paket itu), bukan untuk pembaca kode internal. Nama kode, API, dan perintah tetap ditulis apa adanya.
 
 ```markdown
 # EmSys.Api.Core 0.1.0-alpha.2
 
-Tanggal: 2026-10-07
-Sebelumnya: 0.1.0-alpha.1
+Date: 2026-10-07
+Previous: 0.1.0-alpha.1
 
-## Ringkasan
-Satu sampai tiga kalimat tentang perubahan paket ini di rilis ini.
+## Summary
+One to three sentences about what changed in this package in this release.
 
-## Perubahan yang memutus (breaking)
-- Apa yang berubah, siapa yang terdampak, dan cara menyesuaikan kode.
+## Breaking changes
+- What changed, who is affected, and how to adapt their code.
 
-## Fitur baru
+## New features
 - ...
 
-## Perbaikan
+## Fixes
 - ...
 
-## Catatan upgrade
-- Migrasi database (`doc/sqlscript/mssql/updates/...`), konfigurasi baru, atau langkah manual lain.
+## Upgrade notes
+- Database migration (`doc/sqlscript/mssql/updates/...`), new configuration, or other manual steps.
 ```
 
-- Bagian yang tidak punya isi dihapus, kecuali `Ringkasan`.
-- **Isi `## Ringkasan` menjadi tab Release Notes di nuget.org** (diambil otomatis saat pack, ditambah tautan ke berkas lengkap di tag rilis). nuget.org menampilkannya sebagai teks biasa, jadi tulis Ringkasan sebagai paragraf pendek tanpa daftar, tabel, atau heading.
+- Bagian yang tidak punya isi dihapus, kecuali `Summary`. Judul bagian ditulis dalam bahasa Inggris (`Summary`, `Breaking changes`, `New features`, `Fixes`, `Upgrade notes`, `Package contents`, `Usage notes`); pack juga masih mengenali `Ringkasan` pada note lama.
+- **Isi `## Summary` menjadi tab Release Notes di nuget.org** (diambil otomatis saat pack, ditambah tautan ke berkas lengkap di tag rilis). nuget.org menampilkannya sebagai teks biasa, jadi tulis Summary sebagai paragraf pendek tanpa daftar, tabel, atau heading.
 - Seluruh isi release note semua paket juga digabung otomatis menjadi halaman GitHub Release `v<versi>`. Jangan menulis ulang isi ini di tempat lain.
-- Paket yang tidak berubah tetap diberi berkas, cukup `Ringkasan`: "Tidak ada perubahan; versi naik mengikuti rilis bersama paket EmSys lainnya."
-- Rilis pertama sebuah paket (`Sebelumnya: —`) berisi ringkasan isi paket itu, bukan daftar perubahan: bagian `Isi paket` menggantikan `Fitur baru`/`Perbaikan`, ditambah `Catatan pemakaian` (target framework, dependensi, namespace yang berbeda dari PackageId, perintah instal).
-- Bagian opsional `Catatan pemakaian` boleh dipakai di rilis mana pun untuk informasi yang tetap berlaku (target, dependensi, cara pasang).
+- Paket yang tidak berubah tetap diberi berkas, cukup `Summary`: "No changes; the version is bumped to follow the shared release of the other EmSys packages."
+- Rilis pertama sebuah paket (`Previous: —`) berisi ringkasan isi paket itu, bukan daftar perubahan: bagian `Package contents` menggantikan `New features`/`Fixes`, ditambah `Usage notes` (target framework, dependensi, namespace yang berbeda dari PackageId, perintah instal).
+- Bagian opsional `Usage notes` boleh dipakai di rilis mana pun untuk informasi yang tetap berlaku (target, dependensi, cara pasang).
 - Perubahan yang menyentuh beberapa paket (mis. kontrak di `EmSys.Libs`, backend di `EmSys.Api.Core`, layar di `EmSys.Ui.Wpf.Core`) ditulis di masing-masing paket sesuai bagiannya, dengan menyebut paket terkait.
 - Isi diambil dari commit dan perubahan sejak versi sebelumnya pada folder project paket itu (`git log v<versi-sebelumnya>..HEAD -- <folder project>`), tanpa menyebut nama tabel/view/procedure database.
