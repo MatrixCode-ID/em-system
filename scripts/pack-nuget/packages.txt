@@ -1,10 +1,7 @@
-# Project yang dipaket dan dirilis bersama dengan satu versi, satu path per baris (relatif dari root repo).
-# PackageId = nama project dengan awalan Em. diganti EmSys. (Directory.Build.props).
-# Dibaca oleh pack-nuget.ps1, release-nuget.ps1, dan job validate/publish di .github/workflows/publish-nuget.yml.
-# Setiap paket di sini wajib punya doc/ReleaseNote/<PackageId>/<versi>.md saat dirilis.
+# Packaged libraries released together, one path per line. See doc/engine/build.md#packages
 src/shared/Em.Libs/Em.Libs.csproj
 src/backend/Em.Api.Core/Em.Api.Core.csproj
 src/shared/Em.Ui.Core/Em.Ui.Core.csproj
 src/shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj
-# Butuh workload maui-android saat pack (dipasang job publish di publish-nuget.yml).
+# Needs the maui-android workload to pack; see doc/engine/build.md#packages
 src/shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj

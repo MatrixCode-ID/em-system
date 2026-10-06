@@ -1,15 +1,13 @@
 <Project>
   <PropertyGroup>
-    <!-- Machine-local files that never enter the repository (emapi-config.json, debug keys), one folder per
-         repository. The default is a sibling folder (..\.artefacts\em-system); override it with an environment
-         variable or `dotnet build -p:ArtefactsPath=<path>`. Always ends with a directory separator. -->
+    <!-- See doc/engine/build.md#artefacts-path -->
     <ArtefactsPath Condition="'$(ArtefactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '.artefacts', 'em-system'))</ArtefactsPath>
     <ArtefactsPath>$([MSBuild]::EnsureTrailingSlash('$(ArtefactsPath)'))</ArtefactsPath>
   </PropertyGroup>
   <PropertyGroup>
     <Authors>Matrix Code</Authors>
     <Company>Matrix Code</Company>
-    <!-- Package IDs use the reserved nuget.org prefix EmSys. while assemblies and namespaces stay Em.* -->
+    <!-- See doc/engine/build.md#package-id -->
     <PackageId>$([System.Text.RegularExpressions.Regex]::Replace('$(MSBuildProjectName)', '^Em\.', 'EmSys.'))</PackageId>
     <PackageProjectUrl>https://github.com/MatrixCode-ID/em-system</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MatrixCode-ID/em-system</RepositoryUrl>
@@ -18,7 +16,7 @@
     <Copyright>Copyright (c) 2026 Matrix Code</Copyright>
     <PackageReadmeFile Condition="Exists('$(MSBuildProjectDirectory)/README.md')">README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <!-- Written by scripts/pack-nuget/pack-nuget.ps1 from doc/ReleaseNote/<PackageId>/<version>.md (summary + link). -->
+    <!-- See doc/engine/build.md#package-metadata -->
     <PackageReleaseNotes Condition="'$(EmReleaseNotesFile)' != '' and Exists('$(EmReleaseNotesFile)')">$([System.IO.File]::ReadAllText('$(EmReleaseNotesFile)'))</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)/README.md')">
@@ -27,10 +25,7 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)doc/assets/logo/Logo-128.png" Pack="true" PackagePath="icon.png" Visible="false" />
   </ItemGroup>
-  <!-- Workaround bug MAUIR0001: Microsoft.Maui.Resizetizer 10.0.101/10.0.110 bentrok versi System.Memory
-       dengan Svg.Skia saat memroses SVG berisi <filter> atau <text> (MissingMethodException pada
-       SKImageFilter.CreateMatrixConvolution dkk.). Pin ke 10.0.100 sampai MAUI merilis versi yang sudah
-       diperbaiki. Resizetizer cuma tool build-time, aman di-pin terpisah dari $(MauiVersion). -->
+  <!-- Resizetizer pin works around MAUIR0001; see doc/engine/build.md#resizetizer-pin -->
   <ItemGroup Condition="'$(UseMaui)' == 'true'">
     <PackageReference Include="Microsoft.Maui.Resizetizer" Version="10.0.100" PrivateAssets="all" NoWarn="NU1605" />
   </ItemGroup>

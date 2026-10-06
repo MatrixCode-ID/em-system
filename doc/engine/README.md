@@ -2,7 +2,8 @@
 
 Guides for the shared `Em.*` engine: what each feature does, how a host enables it, and how modules use
 it. Build and configuration of the hosts themselves are covered in [src/backend/README.md](../../src/backend/README.md)
-and [src/frontend/README.md](../../src/frontend/README.md).
+and [src/frontend/README.md](../../src/frontend/README.md);
+solutions, tests and NuGet packaging are covered in [Build and packaging](build.md).
 
 ## Server features
 
