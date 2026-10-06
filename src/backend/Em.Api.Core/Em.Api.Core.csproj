@@ -26,11 +26,15 @@
         <PackageReference Include="Npgsql" Version="10.0.3"/>
         <PackageReference Include="EFCore.BulkExtensions" Version="10.0.1"/>
         <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.14.0"/>
+        <!-- Registry deploy to Docker servers: SSH transport and compose file parsing (both MIT). -->
+        <PackageReference Include="SSH.NET" Version="2026.0.0"/>
+        <PackageReference Include="YamlDotNet" Version="18.1.0"/>
 
     </ItemGroup>
 
     <ItemGroup>
         <InternalsVisibleTo Include="Em.Api.Core.IntegrationTests"/>
+        <InternalsVisibleTo Include="Em.Api.Core.Tests"/>
     </ItemGroup>
 
 </Project>

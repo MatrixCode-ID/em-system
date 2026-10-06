@@ -16,6 +16,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand<CtnManifestItem?>(nameof(CopyDigestCommand), CopyDigestCommand, CopyDigestCommandAllowed);
          RegisterCommand<CtnManifestItem?>(nameof(CopyDigestPullCommand), CopyDigestPullCommand, CopyDigestCommandAllowed);
          RegisterContainerEditCommands();
+         RegisterDeployCommands();
       }
 
       // Dipasang selagi tree disusun ulang atau root diganti, supaya perubahan IsSelected yang datang
@@ -354,12 +355,16 @@ namespace Em.Ui.Wpf.Navigations
 
       private void OnSelectedNodeChanged() {
          Manifests.Clear();
+         ClearDeploy();
          NotifyChanged(nameof(LastPushedCaption));
          NotifyDetailChanged();
          RaiseCommandsChanged();
          if (_rebuilding) return;
 
-         if (SelectedNode is { IsFolder: false } image) _ = LoadManifestsAsync(image);
+         if (SelectedNode is { IsFolder: false } image) {
+            _ = LoadManifestsAsync(image);
+            _ = LoadDeployAsync(image);
+         }
       }
 
       // Dibaca di luar RunBusyAsync supaya berpindah dari container ke container tetap lancar: tiap

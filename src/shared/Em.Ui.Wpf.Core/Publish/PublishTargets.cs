@@ -61,6 +61,16 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
    if(!(await Images(root.Id)).Any(x=>x.Name==parts[1]&&x.IsActive))throw new InvalidDataException("Compose container missing/inactive. Open Containers.");
   }
  }
+ /// <summary>Asks the server to deploy a pushed image to its container's deploy target (the server decides whether one applies).</summary>
+ public Task<CtnDeployRunInfo> DeployAfterPush(CtnDeployPushRequest request)=>app!.ServiceProvider.GetRequiredService<ICtnServices>().PostGetMeta_CtnDeployAfterPush(request);
+ /// <summary>Deploys a digest now, ignoring the tag filter; used by Retry deploy.</summary>
+ public Task<CtnDeployRunInfo> DeployRun(string imageId,string digest,string? tag)=>app!.ServiceProvider.GetRequiredService<ICtnServices>().PostGetMeta_CtnDeployRun(imageId,digest,tag);
+ /// <summary>Id of the Built-in container root/name on the connected server.</summary>
+ public async Task<string> ImageId(string repository) {
+  var parts=repository.Split('/');if(parts.Length!=2)throw new InvalidDataException("Repository must be root/container.");
+  var root=(await Roots()).SingleOrDefault(r=>r.Name==parts[0])??throw new InvalidDataException("Root missing. Open Containers, then refresh.");
+  return (await Images(root.Id)).SingleOrDefault(i=>i.Name==parts[1])?.Id??throw new InvalidDataException("Container missing. Open Containers, then refresh.");
+ }
  public static void ValidateTag(string tag) {if(!Regex.IsMatch(tag,@"^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$",RegexOptions.CultureInvariant))throw new InvalidDataException("Version tag is required and must be a valid Docker tag.");}
  public static void ValidateHttp(string uri) {if(!Uri.TryCreate(uri,UriKind.Absolute,out var u)||u.Scheme is not ("http" or "https")||u.UserInfo.Length>0)throw new InvalidDataException("Use an HTTP(S) address without embedded credentials.");}
  public (PublishCredential Credential,string Secret) Credential(PublishProfile p,string target,string purpose="push") {

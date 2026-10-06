@@ -33,5 +33,6 @@ public partial class EmAppBuilder
       RegistryDefaults = registry;
       AddDbContext<CtnContext>();
       Services.AddScoped<IRobotAccessManager, CtnRobotAccessManager>();
+      AddContainerDeploy();
    }
 }

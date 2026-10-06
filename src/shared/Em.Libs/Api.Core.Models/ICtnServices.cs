@@ -124,6 +124,67 @@ namespace Em.Api.Core.Models
 
       #endregion
 
+      #region Deploy
+
+      /// <summary>Largest number of runs <see cref="GetMeta_CtnDeployRuns"/> returns.</summary>
+      const int DeployMaxRuns = 100;
+
+      /// <summary>The deploy target of a container, or <c>null</c> when it has none. 404 when the container does not exist.</summary>
+      Task<CtnDeployTargetInfo?> GetMeta_CtnDeployTarget(string imageId);
+
+      /// <summary>
+      /// Creates or updates the deploy target of <see cref="CtnDeployTargetSave.ImageId"/> (one per container).
+      /// 400 for invalid fields, 404 when the container does not exist.
+      /// </summary>
+      Task<CtnDeployTargetInfo> PostGetMeta_CtnDeployTargetSave(CtnDeployTargetSave request);
+
+      /// <summary>Deletes the deploy target of a container and its run history. 404 when there is none.</summary>
+      Task PostMeta_CtnDeployTargetDelete(string imageId);
+
+      /// <summary>
+      /// Tests the connection described by <paramref name="request"/> without deploying anything. Secrets left
+      /// <c>null</c> use the stored target's. With no pinned fingerprint the server's is returned in
+      /// <see cref="CtnDeployTestResult.OfferedFingerprint"/> and nothing else is run.
+      /// </summary>
+      Task<CtnDeployTestResult> PostGetMeta_CtnDeployTest(CtnDeployTargetSave request);
+
+      /// <summary>
+      /// Adds the target's registry host to Portainer as a custom registry, with the target's registry login.
+      /// 400 when the target is not a Portainer target or has no registry login.
+      /// </summary>
+      Task<CtnDeployTestResult> PostGetMeta_CtnDeployRegisterPortainerRegistry(string imageId);
+
+      /// <summary>
+      /// Creates the compose file (SSH) or the stack (Portainer) from <paramref name="composeContent"/>, then
+      /// stores the stack and its first service in the target, which switches to Stack mode. 409 when the
+      /// compose file already exists on the SSH host.
+      /// </summary>
+      Task<CtnDeployRunInfo> PostGetMeta_CtnDeployCreateStack(string imageId, string composeContent);
+
+      /// <summary>Compose template for Create stack: one service with the image variable and the container name.</summary>
+      Task<string> GetMeta_CtnDeployStackTemplate(string imageId);
+
+      /// <summary>
+      /// Called by the publisher after a successful push. Deploys when the container has an active target whose
+      /// tag filter matches one of the pushed tags; otherwise answers <see cref="CtnDeployResult.Skipped"/>
+      /// without storing a run. A failed deploy is answered with 200 and <see cref="CtnDeployResult.Failed"/>.
+      /// </summary>
+      Task<CtnDeployRunInfo> PostGetMeta_CtnDeployAfterPush(CtnDeployPushRequest request);
+
+      /// <summary>
+      /// Deploys <paramref name="digest"/> of the container now, ignoring the tag filter. 404 without a target or
+      /// when the digest is not a manifest of the container, 409 while another deploy of the target runs.
+      /// </summary>
+      Task<CtnDeployRunInfo> PostGetMeta_CtnDeployRun(string imageId, string digest, string? tag);
+
+      /// <summary>Deploys the digest of an earlier successful run again. 400 when that run did not succeed.</summary>
+      Task<CtnDeployRunInfo> PostGetMeta_CtnDeployRollback(string imageId, string runId);
+
+      /// <summary>Latest runs first, at most <paramref name="take"/> (1..<see cref="DeployMaxRuns"/>).</summary>
+      Task<CtnDeployRunInfo[]> GetMeta_CtnDeployRuns(string imageId, int take);
+
+      #endregion
+
 
    }
 }

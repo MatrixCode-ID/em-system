@@ -1,0 +1,131 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.CtnDeployHistoryDialog"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                  xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                  xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+                  xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                  mc:Ignorable="d"
+                  Title="{Binding Title}"
+                  Width="860"
+                  Height="640"
+                  MinWidth="560"
+                  MinHeight="420"
+                  ResizeMode="CanResize"
+                  ShowMinimizeButton="False"
+                  ShowInTaskbar="False"
+                  WindowStartupLocation="CenterOwner">
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:CtnDeployHistoryDialogVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid>
+      <Grid Margin="22,4,22,22">
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+         </Grid.RowDefinitions>
+
+         <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid Width="42" Height="42" VerticalAlignment="Center">
+               <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+               <fa:FontAwesome Icon="Solid_ClockRotateLeft" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource themeAccentBrush}" />
+            </Grid>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+               <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+               <TextBlock Margin="0,4,0,0" FontSize="12.5" Opacity="0.75" TextWrapping="Wrap"
+                          Text="Latest first. Rollback deploys the image of an earlier successful run again." />
+            </StackPanel>
+            <Button Grid.Column="2" Style="{StaticResource rowActionButtonStyle}" VerticalAlignment="Center"
+                    Command="{Binding Commands[RefreshCommand]}" ToolTip="Refresh the history" AutomationProperties.Name="Refresh history">
+               <fa:FontAwesome Icon="Solid_ArrowsRotate" />
+            </Button>
+         </Grid>
+
+         <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="320" MinWidth="220" />
+               <ColumnDefinition Width="12" />
+               <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource innerCardStyle}" ClipToBounds="True">
+               <Grid>
+                  <ListBox Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0"
+                           ItemContainerStyle="{StaticResource listRowStyle}"
+                           ItemsSource="{Binding Runs}" SelectedItem="{Binding SelectedRun}"
+                           AutomationProperties.Name="Deploy runs">
+                     <ListBox.ItemTemplate>
+                        <DataTemplate>
+                           <Grid Margin="0,2">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="Auto" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <Grid Width="18" Margin="0,2,8,0" VerticalAlignment="Top">
+                                 <fa:FontAwesome Icon="Solid_CircleCheck" Foreground="{StaticResource successBrush}"
+                                                 Visibility="{Binding IsSuccess, Converter={StaticResource boolToVisibility}}" />
+                                 <fa:FontAwesome Icon="Solid_CircleXmark" Foreground="{StaticResource dangerBrush}"
+                                                 Visibility="{Binding IsFailed, Converter={StaticResource boolToVisibility}}" />
+                                 <fa:FontAwesome Icon="Solid_Spinner" Foreground="{StaticResource infoBrush}"
+                                                 Visibility="{Binding IsRunning, Converter={StaticResource boolToVisibility}}" />
+                              </Grid>
+                              <StackPanel Grid.Column="1">
+                                 <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis">
+                                    <Run Text="{Binding Caption, Mode=OneWay}" />
+                                    <Run Text="{Binding ShortDigest, Mode=OneWay}" FontFamily="Consolas" FontWeight="Normal" FontSize="11.5" />
+                                 </TextBlock>
+                                 <TextBlock Text="{Binding MetaCaption}" Style="{StaticResource secondaryCellStyle}" TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                           </Grid>
+                        </DataTemplate>
+                     </ListBox.ItemTemplate>
+                  </ListBox>
+                  <TextBlock Margin="12" Text="No deploy has run yet." Style="{StaticResource secondaryCellStyle}"
+                             Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+               </Grid>
+            </Border>
+
+            <TextBox Grid.Column="2" Style="{StaticResource fieldBoxStyle}" Height="Auto" Padding="14,10" VerticalContentAlignment="Top"
+                     IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" FontSize="11.5" Text="{Binding DetailText, Mode=OneWay}" AutomationProperties.Name="Run output" />
+         </Grid>
+
+         <TextBlock Grid.Row="2" Margin="0,12,0,0" Text="{Binding ErrorText}" Foreground="{StaticResource dangerBrush}" TextWrapping="Wrap"
+                    Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}" />
+
+         <StackPanel Grid.Row="3" Margin="0,16,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource textButtonStyle}" IsCancel="True" Content="Close" />
+            <Button Style="{StaticResource dangerOutlinedButtonStyle}" Margin="8,0,0,0" Command="{Binding Commands[RollbackCommand]}"
+                    ToolTip="Deploy the image of the selected successful run again">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_RotateLeft" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Rollback" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </StackPanel>
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</windows:EmWindow>

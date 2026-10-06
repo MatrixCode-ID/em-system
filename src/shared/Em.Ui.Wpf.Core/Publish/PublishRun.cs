@@ -22,6 +22,8 @@ public sealed class PublishArtifact {
  public int? ExitCode { get; set; }
  public string Message { get; set; }="";
  public string Verification { get; set; }="Not checked";
+ /// <summary>Tags pushed for <see cref="Digest"/> in this run: the version tag and each floating tag that succeeded.</summary>
+ public List<string> PushedTags { get; set; }=[];
  public override string ToString()=>$"{Id} {Version} · {Result} · {Verification}";
 }
 public sealed class PublishRun {
@@ -40,8 +42,24 @@ public sealed class PublishRun {
  public PublishResult Result { get; set; }=PublishResult.Running;
  public List<PublishArtifact> Artifacts { get; set; }=[];
  public List<PublishStage> Stages { get; set; }=[];
+ /// <summary>Deploys the server ran after the push (Built-in registry, Auto deploy on). Kept apart from <see cref="Stages"/>: a failed
+ /// deploy does not make the publish run fail.</summary>
+ public List<PublishDeployment> Deployments { get; set; }=[];
  public JsonElement? Settings { get; set; }
  public override string ToString()=>$"{Started:g} · {ProfileName} · {Operation} · {Result}";
+}
+/// <summary>One deploy after a push: what was deployed and how it ended, as reported by the server.</summary>
+public sealed class PublishDeployment {
+ /// <summary>Pull name without host: root/name.</summary>
+ public string Repository { get; set; }="";
+ public string ImageId { get; set; }="";
+ public string Tag { get; set; }="";
+ public string Digest { get; set; }="";
+ public Em.Api.Core.Models.CtnDeployResult Result { get; set; }
+ public string Message { get; set; }="";
+ /// <summary>Server run id; empty when the deploy was skipped or the server could not be reached.</summary>
+ public string RunId { get; set; }="";
+ public override string ToString()=>$"{Repository} {Tag} · {Result} · {Message}";
 }
 public sealed record PublishStage(string Name,PublishResult Result,string Message,int? ExitCode=null);
 public sealed record HistoryEntry(string Directory,PublishRun Run);

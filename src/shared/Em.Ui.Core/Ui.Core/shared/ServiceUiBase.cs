@@ -57,6 +57,23 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
+      /// Calls a POST action of this module with its own time limit; see
+      /// <see cref="Shared.ApiClient.PostAsync{T}(TimeSpan, string, string, object[])"/>.
+      /// </summary>
+      protected Task<T> PostAsync<T>(TimeSpan timeout, string action, params object[] args) {
+         if (ApiClient == null)
+            throw new InvalidOperationException("Api Client is not ready");
+         return ApiClient!.PostAsync<T>(timeout, ModuleName, action, args);
+      }
+
+      /// <inheritdoc cref="PostAsync{T}(TimeSpan, string, object[])"/>
+      protected Task PostAsync(TimeSpan timeout, string action, params object[] args) {
+         if (ApiClient == null)
+            throw new InvalidOperationException("Api Client is not ready");
+         return ApiClient!.PostAsync(timeout, ModuleName, action, args);
+      }
+
+      /// <summary>
       /// Memanggil action ber-stream milik module ini: isi <paramref name="content"/> dikirim mentah, dan
       /// <paramref name="payload"/> - objek yang diterima parameter lain action itu - ikut di header.
       /// Tanpa batas waktu; lihat <see cref="Shared.ApiClient.PostStreamAsync(string, string, Stream, object?)"/>

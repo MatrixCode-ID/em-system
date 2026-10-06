@@ -36,10 +36,15 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   var result=await Targets.ResolveContainer(p,ct);_effective[p.Id]=result;return result;
  }
  public PreparedPublish? Prepared { get; private set; }
+ /// <summary>The run of the last operation and its log folder, for Retry deploy after Push.</summary>
+ public PublishRun? LastRun { get; private set; }
+ public string? LastRunDirectory { get; private set; }
+ // Artifacts pushed by the Push operation in progress; only these are deployed afterwards.
+ private List<(PublishProfile Profile,PublishArtifact Artifact)> _pushedNow=[];
  public event Action<string>? Output;
  public static string Fingerprint(PublishProfile profile) {
   var p=profile.Clone();p.Credentials=[];p.SensitiveDataStorage=SensitiveDataStorage.Separate;p.Name="";p.Description="";p.KeepWorkspace=false;p.RequireReleaseNotes=false;
-  if(p.NuGet!=null)p.NuGet.Target=new();if(p.Container!=null) {p.Container.Target=new();p.Container.UseMyDockerLogin=false;foreach(var service in p.Container.Compose.Services){service.Repository="";service.VersionTag="";}}
+  if(p.NuGet!=null)p.NuGet.Target=new();if(p.Container!=null) {p.Container.Target=new();p.Container.UseMyDockerLogin=false;p.Container.AutoDeploy=true;foreach(var service in p.Container.Compose.Services){service.Repository="";service.VersionTag="";}}
   return Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ProfileJson.Write(p))));
  }
  public async Task<string[]> Check(PublishProfile profile,CancellationToken ct) {
@@ -91,7 +96,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    var mask=new SecretMasker();foreach(var c in p.Credentials)mask.AddCredential(c.Username,secrets.Get(c,c.ScopeHost));
    var snapshot=p.Clone();snapshot.Credentials=[];
    var run=new PublishRun {ProfileId=p.Id,ProfileName=p.Name,Kind=p.Kind,Operation=operation,ReleaseNotes=notes,RetryOf=retry,Settings=JsonSerializer.SerializeToElement(snapshot,ProfileJson.Options)};
-   log=new(settings.Logs,run,mask);log.Output+=s=>Output?.Invoke(s);
+   log=new(settings.Logs,run,mask);log.Output+=s=>Output?.Invoke(s);LastRun=run;LastRunDirectory=log.Directory;
    work=new(settings.Work,run.Id,p.KeepWorkspace);
    if(p.Container is {} container) {
     if(container.Mode==ContainerMode.Set&&container.Set.Steps.Count==0)throw new InvalidDataException("Set requires at least one step.");
@@ -264,7 +269,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   ValidateReleaseNotes(profile,notes);
   var p=profile.Clone();
   await Execute(p,"Push",notes,async(log,work,token)=> {
-   log.Run.Artifacts=prepared.Artifacts;
+   log.Run.Artifacts=prepared.Artifacts;_pushedNow=[];
    if(p.Container?.Mode==ContainerMode.Set) {
     string? baseReference=null;bool failed=false;
     foreach(var step in p.Container.Set.Steps) {
@@ -295,6 +300,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
      log.Save();
     }
    } else foreach(var artifact in prepared.Artifacts.Where(a=>a.Selected&&a.Result!=PublishResult.Success))await PushContainer(p,artifact,log,work,token);
+   if(p.Container?.AutoDeploy==true)await DeployPushed(log);
    log.Save();
   },ct,prepared.RunId);
  }
@@ -308,7 +314,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   }
   var host=artifact.Target.Split('/')[0];var env=new Dictionary<string,string>();
   var auth=work.PathFor("docker-auth-"+Guid.NewGuid().ToString("N"));
-  artifact.Result=PublishResult.Running;log.Save();
+  artifact.Result=PublishResult.Running;artifact.PushedTags=[];log.Save();
   try {
    if(!c.UseMyDockerLogin) {
     Directory.CreateDirectory(auth);env["DOCKER_CONFIG"]=auth;var credential=Targets.Credential(p,host);log.Masker.Add(credential.Secret);
@@ -319,16 +325,61 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    var digests=await _process.RequireAsync("docker",["image","inspect","--format","{{json .RepoDigests}}",artifact.ImageId],p.Workspace,log,ct,env);
    var digest=JsonSerializer.Deserialize<string[]>(digests)?.FirstOrDefault(x=>x.StartsWith(Repository(artifact.Target)+"@",StringComparison.Ordinal));
    if(digest==null)throw new IOException("Push succeeded but matching repository digest could not be read.");artifact.Digest=digest[(digest.IndexOf('@')+1)..];
-   artifact.Result=PublishResult.Success;log.Stage(artifact.Target,PublishResult.Success,artifact.Digest);
+   artifact.Result=PublishResult.Success;artifact.PushedTags.Add(artifact.Version);_pushedNow.Add((p,artifact));log.Stage(artifact.Target,PublishResult.Success,artifact.Digest);
    // Floating tags follow the channel of the version tag (container-naming convention); a manual tag moves none.
    foreach(var extra in ContainerVersion.FloatingTagsOf(artifact.Version).Where(t=>t!=artifact.Version)) {
     ct.ThrowIfCancellationRequested();var tag=Repository(artifact.Target)+":"+extra;
-    try {await _process.RequireAsync("docker",["tag",artifact.ImageId,tag],p.Workspace,log,ct,env);await _process.RequireAsync("docker",["push",tag],p.Workspace,log,ct,env);log.Stage(tag,PublishResult.Success);}
+    try {await _process.RequireAsync("docker",["tag",artifact.ImageId,tag],p.Workspace,log,ct,env);await _process.RequireAsync("docker",["push",tag],p.Workspace,log,ct,env);artifact.PushedTags.Add(extra);log.Stage(tag,PublishResult.Success);}
     catch(OperationCanceledException){throw;}catch(Exception ex) {artifact.Result=PublishResult.Failed;artifact.Message="Version pushed; floating tag failed: "+extra;log.Stage(tag,PublishResult.Failed,ex.Message);break;}
    }
   }catch(OperationCanceledException){artifact.Result=PublishResult.Cancelled;throw;}
   catch(Exception ex){artifact.Result=PublishResult.Failed;artifact.Message=log.Masker.Mask(ex.Message);}
   finally {if(Directory.Exists(auth)) {PublishPaths.RejectLinks(auth);foreach(var file in Directory.EnumerateFiles(auth))File.Delete(file);Directory.Delete(auth);}log.Save();}
+ }
+ // Auto deploy (Container Manager deploy target): one server call per image pushed to the Built-in registry in this run. The server
+ // skips containers without an active target or whose tag filter does not match. Results go to Run.Deployments, never to Stages, so a
+ // failed deploy does not fail the publish; Retry deploy in the Publish view runs the failed ones again.
+ private async Task DeployPushed(PublishLog log) {
+  foreach(var (profile,artifact) in _pushedNow) {
+   if(profile.Container?.Target.Type!=TargetType.BuiltIn||artifact.Digest.Length==0||artifact.Result!=PublishResult.Success)continue;
+   var reference=Repository(artifact.Target);var slash=reference.IndexOf('/');
+   var host=reference[..slash];var repository=reference[(slash+1)..];
+   var deployment=new PublishDeployment {Repository=repository,Tag=artifact.Version,Digest=artifact.Digest};
+   try {
+    if(Targets.Connection.Length==0||new Uri(Targets.Connection).Authority!=host)throw new InvalidDataException("The active connection is not the registry this image was pushed to.");
+    log.Line($"Deploy {repository}@{artifact.Digest}...");
+    var run=await Targets.DeployAfterPush(new() {Repository=repository,Tags=[..artifact.PushedTags],Digest=artifact.Digest});
+    deployment.ImageId=run.ImageId;deployment.RunId=run.Id;deployment.Result=run.Result;deployment.Tag=run.Tag??artifact.Version;
+    deployment.Message=run.Result switch {
+     Em.Api.Core.Models.CtnDeployResult.Success=>"Deployed.",
+     Em.Api.Core.Models.CtnDeployResult.Skipped=>run.Output??"Skipped.",
+     _=>LastLine(run.Output)??"Deploy failed."
+    };
+    if(!string.IsNullOrEmpty(run.Output)&&run.Result!=Em.Api.Core.Models.CtnDeployResult.Skipped)foreach(var line in run.Output.Split('\n'))log.Line("  "+line.TrimEnd('\r'));
+   } catch(Exception ex) {
+    deployment.Result=Em.Api.Core.Models.CtnDeployResult.Failed;deployment.Message=log.Masker.Mask(ex.Message);
+   }
+   log.Line($"Deploy {repository}: {deployment.Result}. {deployment.Message}");
+   log.Run.Deployments.Add(deployment);log.Save();
+  }
+ }
+ private static string? LastLine(string? text)=>text?.Split('\n',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).LastOrDefault();
+ /// <summary>Runs the failed deploys of <paramref name="run"/> again (manual deploy on the server) and rewrites its result.json.</summary>
+ public async Task<int> RetryDeployments(PublishRun run,string directory) {
+  var failed=0;
+  foreach(var deployment in run.Deployments.Where(d=>d.Result==Em.Api.Core.Models.CtnDeployResult.Failed)) {
+   try {
+    if(deployment.ImageId.Length==0)deployment.ImageId=await Targets.ImageId(deployment.Repository);
+    var result=await Targets.DeployRun(deployment.ImageId,deployment.Digest,deployment.Tag.Length==0?null:deployment.Tag);
+    deployment.RunId=result.Id;deployment.Result=result.Result;deployment.Message=result.Result==Em.Api.Core.Models.CtnDeployResult.Success?"Deployed (retry).":LastLine(result.Output)??"Deploy failed.";
+   } catch(Exception ex) {deployment.Message=ex.Message;}
+   if(deployment.Result==Em.Api.Core.Models.CtnDeployResult.Failed)failed++;
+  }
+  // The stored result.json is masked; only the deployments are replaced in it, so nothing unmasked is written.
+  var file=Path.Combine(directory,"result.json");PublishPaths.RejectLinks(file);
+  var stored=JsonSerializer.Deserialize<PublishRun>(File.ReadAllText(file),ProfileJson.Options)!;stored.Deployments=run.Deployments;
+  PublishPaths.Atomic(file,ProfileJson.Write(stored));
+  return failed;
  }
  public async Task Verify(PublishProfile profile,CancellationToken ct) {
   var prepared=Prepared??throw new InvalidOperationException("No artifacts to verify.");var p=profile.Clone();

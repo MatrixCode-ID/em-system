@@ -1,8 +1,8 @@
 # Container registry: deploy otomatis ke server Docker (pull + restart)
 
 - **Tanggal:** 2026-10-07
-- **Status:** jadi plan (2026-10-07)
-- **Plan turunan:** [plan/unexecuted/registry-deploy-docker.md](../../plan/unexecuted/registry-deploy-docker.md) (keputusan teknis tambahan: satu target per container, claim Container Manager Access, kunci enkripsi di database, proxy Docker Portainer untuk CE dan BE, deploy sinkron)
+- **Status:** jadi plan (2026-10-07); plan dieksekusi 2026-10-07
+- **Plan turunan:** [plan/executed/registry-deploy-docker.md](../../plan/executed/registry-deploy-docker.md) (keputusan teknis tambahan: satu target per container, claim Container Manager Access, kunci enkripsi di database, proxy Docker Portainer untuk CE dan BE, deploy sinkron)
 - **Catatan terkait:** [doc/engine/engine-registry.md](../engine/engine-registry.md), [doc/engine/engine-publish.md](../engine/engine-publish.md), [doc/engine/engine-robots.md](../engine/engine-robots.md), [publish-nuget-container-gui.md](publish-nuget-container-gui.md)
 
 Catatan ini berisi gagasan, bukan perintah kerja. Agent tidak boleh mengeksekusinya sebelum catatan ini dijadikan plan di `plan/unexecuted/`.

@@ -18,7 +18,7 @@ namespace Em.Ui.Wpf.Navigations.Publish;
 
 public partial class PublishProfileDialog : EmWindow {
  private const double LabelWidth=170;
- private static readonly Dictionary<string,string> Captions=new() {["Credentials"]="Credentials (robot token / API key)",["MsbuildProperties"]="MSBuild properties"};
+ private static readonly Dictionary<string,string> Captions=new() {["Credentials"]="Credentials (robot token / API key)",["MsbuildProperties"]="MSBuild properties",["AutoDeploy"]="Deploy after push"};
  private static readonly string[] SourceTemplateFields=["Project","PublishSource","PublishProfile"];
  /// <summary>Tooltips keyed by declaring type and property name; shown on the label and the input, also while disabled.</summary>
  private static readonly Dictionary<string,string> Tips=new() {
@@ -43,6 +43,7 @@ public partial class PublishProfileDialog : EmWindow {
   [nameof(NuGetTarget)+".ServiceIndex"]="The v3 service index URL of the feed, for example https://nuget.example.com/v3/index.json (nuget.org: https://api.nuget.org/v3/index.json). Add a credential (API key) for its host on the Credentials tab.",
   [nameof(PublishProfile)+".KeepWorkspace"]="Keeps the temporary run folder after the run instead of deleting it: the dotnet publish output, the staging folder and generated Dockerfile of Template mode, the .nupkg files and the temporary Docker config. The folder is under the Work folder of Publisher settings (default %LOCALAPPDATA%\\Em\\Publish\\Work\\<run id>). Use it for debugging a failed build; kept folders are not cleaned up automatically.",
   [nameof(PublishProfile)+".RequireReleaseNotes"]="Refuses Push while the release notes box on the Publish page is empty, so every release carries notes in the publish history. In a Set, it applies when any step's profile requires it. Prepare is not affected.",
+  [nameof(ContainerProfile)+".AutoDeploy"]="On (default): after a successful push to the Built-in registry, the server deploys each pushed image to the deploy target of its container: it pulls the new digest on the Docker server and recreates the container. The deploy target (SSH or Portainer, tag filter) is set per container in Container Manager > Deploy; a container without an active target, or whose tag filter does not match, is skipped. Custom registries are never deployed. A failed deploy does not fail the publish; the result is shown after Push, with Retry deploy. In a Set, this option of the Set profile applies to all its steps. Off: push only.",
   [nameof(ContainerProfile)+".UseMyDockerLogin"]="Off (default): the publisher uses its own temporary Docker config and runs docker login with the push credential from the Credentials tab; your own Docker login is neither used nor changed. On: the publisher uses your existing Docker login (docker login or Docker Desktop), so no push credential is needed on the Credentials tab. Use it for registries that sign in through a credential helper or SSO. Whoever uses an exported profile must then be logged in to the same registry.",
   [nameof(DockerfileProfile)+".Secrets"]="Secrets the Dockerfile can read during the build without leaving them in the image (RUN --mount=type=secret,id=<id>). Each entry passes the secret of one credential from the Credentials tab.",
  };
@@ -78,7 +79,7 @@ public partial class PublishProfileDialog : EmWindow {
   var credentials=Tab("Credentials");Fields(credentials,Profile,["SensitiveDataStorage"]);
   Row(credentials,"",Help("Separate: DPAPI CurrentUser with optional Remember; otherwise session only. Plaintext: secrets are saved as ordinary text in this JSON file."));
   Fields(credentials,Profile,["Credentials"]);
-  var advanced=Tab("Advanced");Fields(advanced,Profile,["KeepWorkspace","RequireReleaseNotes"]);if(Profile.Container!=null)Fields(advanced,Profile.Container,["UseMyDockerLogin"]);
+  var advanced=Tab("Advanced");Fields(advanced,Profile,["KeepWorkspace","RequireReleaseNotes"]);if(Profile.Container!=null)Fields(advanced,Profile.Container,["UseMyDockerLogin","AutoDeploy"]);
  }
  /// <summary>
  /// Target tab, rebuilt when the target type changes. Built-in: the active server (read from the connection, never typed)

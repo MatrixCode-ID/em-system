@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Context untuk tabel <c>ta_Ctn*</c>. Terpisah dari <c>ApiCoreContext</c> supaya host yang tidak
-   /// menyalakan registry tidak membawa model tabel itu; didaftarkan hanya oleh
-   /// <c>EmAppBuilder.AddContainerRegistry</c>.
+   /// Context for the <c>ta_Ctn*</c> tables (registry and deploy). Separate from <c>ApiCoreContext</c> so a host
+   /// that does not enable the registry does not carry their model; registered only by
+   /// <c>EmAppBuilder.AddContainerRegistry</c> and <c>EmAppBuilder.AddManagedStorageSettings</c>.
    /// </summary>
    internal class CtnContext(DbContextOptions<CtnContext> options) : EmDbContext(options)
    {
@@ -20,12 +20,14 @@ namespace Em.Api.Core.Registry
       public DbSet<ta_CtnUpload> Uploads => Set<ta_CtnUpload>();
       public DbSet<ta_Robot> Robots => Set<ta_Robot>();
       public DbSet<ta_CtnRootRobot> RobotRoots => Set<ta_CtnRootRobot>();
+      public DbSet<ta_CtnDeploy> Deploys => Set<ta_CtnDeploy>();
+      public DbSet<ta_CtnDeployRun> DeployRuns => Set<ta_CtnDeployRun>();
 
-      /// <summary>Semua tipe entitas, untuk pengecekan startup.</summary>
+      /// <summary>Every entity type, for the startup check.</summary>
       public static readonly Type[] EntityTypes = [
          typeof(ta_CtnRoot), typeof(ta_CtnFolder), typeof(ta_CtnImage), typeof(ta_CtnManifest),
          typeof(ta_CtnTag), typeof(ta_CtnBlob), typeof(ta_CtnBlobLink), typeof(ta_CtnManifestBlob),
-         typeof(ta_CtnUpload), typeof(ta_Robot), typeof(ta_CtnRootRobot)
+         typeof(ta_CtnUpload), typeof(ta_Robot), typeof(ta_CtnRootRobot), typeof(ta_CtnDeploy), typeof(ta_CtnDeployRun)
       ];
 
       protected override void OnModelCreating(ModelBuilder modelBuilder) {

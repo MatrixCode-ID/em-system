@@ -128,4 +128,55 @@ namespace Em.Api.Core.Registry
       public DateTime ustamp { get; set; }
       public DateTime datestamp { get; set; }
    }
+
+   [Table("ta_CtnDeploy")]
+   internal class ta_CtnDeploy
+   {
+      [Key] public string cCtnDeployId { get; set; } = string.Empty;
+      public string cCtnImageId { get; set; } = string.Empty;
+      public int cCtnDeployState { get; set; }
+      public int cCtnDeployKind { get; set; }
+      public int cCtnDeployMode { get; set; }
+      public string? cCtnDeployTagFilter { get; set; }
+      public string cCtnDeployRegistryHost { get; set; } = string.Empty;
+      public string? cCtnDeployRegistryUser { get; set; }
+
+      // Credentials are encrypted by CtnDeploySecrets; never sent to a client.
+      public byte[]? cCtnDeployRegistrySecret { get; set; }
+      public string cCtnDeployHost { get; set; } = string.Empty;
+      public int? cCtnDeployPort { get; set; }
+      public string? cCtnDeployUser { get; set; }
+      public int cCtnDeployAuth { get; set; }
+      public byte[]? cCtnDeploySecret { get; set; }
+      public byte[]? cCtnDeployPassphrase { get; set; }
+      public string? cCtnDeployFingerprint { get; set; }
+      public int? cCtnDeployEndpointId { get; set; }
+      public string? cCtnDeployStack { get; set; }
+      public int? cCtnDeployStackId { get; set; }
+      public string? cCtnDeployService { get; set; }
+      public string? cCtnDeployContainer { get; set; }
+      public string? cCtnDeployImageVar { get; set; }
+      public DateTime ustamp { get; set; }
+      public DateTime datestamp { get; set; }
+      public string? json_object { get; set; }
+   }
+
+   [Table("ta_CtnDeployRun")]
+   internal class ta_CtnDeployRun
+   {
+      [Key] public string cCtnDeployRunId { get; set; } = string.Empty;
+      public string cCtnDeployId { get; set; } = string.Empty;
+      public int cCtnDeployRunTrigger { get; set; }
+      public string? cCtnDeployRunTag { get; set; }
+      public string cCtnDeployRunDigest { get; set; } = string.Empty;
+      public string? cCtnDeployRunPrevDigest { get; set; }
+      public int cCtnDeployRunResult { get; set; }
+      public string? cCtnDeployRunOutput { get; set; }
+      public string? cCtnDeployRunOldFile { get; set; }
+      public string? cCtnDeployRunBy_cUserId { get; set; }
+      public DateTime cCtnDeployRunStarted { get; set; }
+      public DateTime? cCtnDeployRunFinished { get; set; }
+      public DateTime ustamp { get; set; }
+      public DateTime datestamp { get; set; }
+   }
 }

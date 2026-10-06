@@ -1,0 +1,410 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.CtnDeployTargetDialog"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                  xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                  xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+                  xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                  mc:Ignorable="d"
+                  Title="{Binding Title}"
+                  Width="780"
+                  Height="820"
+                  MinWidth="560"
+                  MinHeight="480"
+                  ResizeMode="CanResize"
+                  ShowMinimizeButton="False"
+                  ShowInTaskbar="False"
+                  WindowStartupLocation="CenterOwner">
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <!-- One field: label 5 above its input; groups are 14 apart. -->
+         <Style x:Key="fieldStack" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,0,14" />
+         </Style>
+         <Style x:Key="pairGrid" TargetType="Grid">
+            <Setter Property="Margin" Value="0,0,0,14" />
+         </Style>
+         <Style x:Key="formLabel" TargetType="TextBlock" BasedOn="{StaticResource fieldLabelStyle}">
+            <Setter Property="Margin" Value="2,0,0,5" />
+         </Style>
+         <Style x:Key="formSection" TargetType="TextBlock" BasedOn="{StaticResource sectionCaptionStyle}">
+            <Setter Property="Margin" Value="0,6,0,12" />
+         </Style>
+         <Style x:Key="pickCombo" TargetType="ComboBox" BasedOn="{StaticResource fieldComboStyle}">
+            <Setter Property="Width" Value="170" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Tag" Value="Pick..." />
+            <Setter Property="ToolTip" Value="Pick from the last Test connection" />
+         </Style>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:CtnDeployTargetDialogVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid>
+      <Grid Margin="22,4,22,22">
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+         </Grid.RowDefinitions>
+
+         <!-- ==== banner ==== -->
+         <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid Width="42" Height="42" VerticalAlignment="Center">
+               <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+               <fa:FontAwesome Icon="Solid_Server" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource themeAccentBrush}" />
+            </Grid>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+               <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+               <TextBlock Margin="0,4,0,0" FontSize="12.5" Opacity="0.75" TextWrapping="Wrap"
+                          Text="The Docker server that pulls this container after a push and recreates it. Credentials are stored encrypted on the API server and never sent back." />
+            </StackPanel>
+         </Grid>
+
+         <!-- ==== form ==== -->
+         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+            <StackPanel>
+               <TextBlock Text="CONNECTION" Style="{StaticResource formSection}" />
+               <Grid Style="{StaticResource pairGrid}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="16" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                     <TextBlock Text="Connect with" Style="{StaticResource formLabel}" />
+                     <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Kinds}" SelectedItem="{Binding KindChoice}"
+                               AutomationProperties.Name="Connect with"
+                               ToolTip="Ssh: the API signs in to the Docker host and runs docker there. Portainer: the API calls the Portainer API with an access token." />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                     <TextBlock Text="Recreate" Style="{StaticResource formLabel}" />
+                     <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Modes}" SelectedItem="{Binding ModeChoice}"
+                               AutomationProperties.Name="Recreate"
+                               ToolTip="Stack: one service of a compose project or Portainer stack. Container: a standalone container, recreated with its old settings and the new image." />
+                  </StackPanel>
+               </Grid>
+
+               <!-- SSH -->
+               <StackPanel Visibility="{Binding IsSsh, Converter={StaticResource boolToVisibility}}">
+                  <Grid Style="{StaticResource pairGrid}">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="110" />
+                     </Grid.ColumnDefinitions>
+                     <StackPanel>
+                        <TextBlock Text="SSH host" Style="{StaticResource formLabel}" />
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="docker.example.com" AutomationProperties.Name="SSH host" />
+                     </StackPanel>
+                     <StackPanel Grid.Column="2">
+                        <TextBlock Text="Port" Style="{StaticResource formLabel}" />
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="SSH port" />
+                     </StackPanel>
+                  </Grid>
+                  <Grid Style="{StaticResource pairGrid}">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+                     <StackPanel>
+                        <TextBlock Text="SSH user" Style="{StaticResource formLabel}" />
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding User, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="deploy" AutomationProperties.Name="SSH user"
+                                 ToolTip="A user in the docker group on the host." />
+                     </StackPanel>
+                     <StackPanel Grid.Column="2">
+                        <TextBlock Text="Sign in with" Style="{StaticResource formLabel}" />
+                        <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding SshAuths}" SelectedItem="{Binding SshAuthChoice}"
+                                  AutomationProperties.Name="Sign in with" />
+                     </StackPanel>
+                  </Grid>
+
+                  <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsKeyAuth, Converter={StaticResource boolToVisibility}}">
+                     <Grid Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="*" />
+                           <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Private key" Style="{StaticResource formLabel}" Margin="2,0,0,0" VerticalAlignment="Bottom" />
+                        <Button Grid.Column="1" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[LoadKeyCommand]}"
+                                Content="Load from file..." />
+                     </Grid>
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Height="Auto" MinHeight="84" MaxHeight="160" Padding="14,10"
+                              VerticalContentAlignment="Top" AcceptsReturn="True" TextWrapping="NoWrap"
+                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                              FontFamily="Consolas" FontSize="11.5"
+                              Text="{Binding PrivateKey, UpdateSourceTrigger=PropertyChanged}" Tag="{Binding KeyHint}"
+                              AutomationProperties.Name="Private key" />
+                     <TextBlock Text="Passphrase (when the key has one)" Style="{StaticResource formLabel}" Margin="2,12,0,5" />
+                     <PasswordBox x:Name="PassphraseBox" Style="{StaticResource fieldPasswordStyle}" PasswordChanged="PassphraseChanged"
+                                  AutomationProperties.Name="Key passphrase" />
+                     <TextBlock Text="{Binding SavedCaption}" Style="{StaticResource fieldHelpStyle}"
+                                Visibility="{Binding HasSavedPassphrase, Converter={StaticResource boolToVisibility}}" />
+                  </StackPanel>
+
+                  <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsPasswordAuth, Converter={StaticResource boolToVisibility}}">
+                     <TextBlock Text="SSH password" Style="{StaticResource formLabel}" />
+                     <PasswordBox x:Name="SshPasswordBox" Style="{StaticResource fieldPasswordStyle}" PasswordChanged="PasswordChanged"
+                                  AutomationProperties.Name="SSH password" />
+                     <TextBlock Text="{Binding SavedCaption}" Style="{StaticResource fieldHelpStyle}"
+                                Visibility="{Binding HasSavedPassword, Converter={StaticResource boolToVisibility}}" />
+                  </StackPanel>
+               </StackPanel>
+
+               <!-- Portainer -->
+               <StackPanel Visibility="{Binding IsPortainer, Converter={StaticResource boolToVisibility}}">
+                  <StackPanel Style="{StaticResource fieldStack}">
+                     <TextBlock Text="Portainer address" Style="{StaticResource formLabel}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
+                              Tag="https://portainer.example.com:9443" AutomationProperties.Name="Portainer address" />
+                  </StackPanel>
+                  <StackPanel Style="{StaticResource fieldStack}">
+                     <TextBlock Text="Access token" Style="{StaticResource formLabel}" />
+                     <PasswordBox x:Name="TokenBox" Style="{StaticResource fieldPasswordStyle}" PasswordChanged="TokenChanged"
+                                  AutomationProperties.Name="Portainer access token"
+                                  ToolTip="Portainer: My account > Access tokens > Add access token." />
+                     <TextBlock Text="{Binding SavedCaption}" Style="{StaticResource fieldHelpStyle}"
+                                Visibility="{Binding HasSavedToken, Converter={StaticResource boolToVisibility}}" />
+                  </StackPanel>
+               </StackPanel>
+
+               <StackPanel Style="{StaticResource fieldStack}">
+                  <TextBlock Text="Pinned fingerprint" Style="{StaticResource formLabel}" />
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Text="{Binding FingerprintCaption}" Style="{StaticResource secondaryCellStyle}" Opacity="0.85"
+                                FontFamily="Consolas" TextWrapping="Wrap" TextTrimming="None" VerticalAlignment="Center" />
+                     <Button Grid.Column="1" Style="{StaticResource textButtonStyle}" Margin="8,0,0,0"
+                             Command="{Binding Commands[ClearFingerprintCommand]}" Content="Clear"
+                             ToolTip="Forget the pinned fingerprint; the next Test connection asks again" />
+                  </Grid>
+                  <TextBlock Style="{StaticResource fieldHelpStyle}"
+                             Text="SSH host key, or the HTTPS certificate of Portainer when the system does not trust it. A server that presents another one is refused." />
+               </StackPanel>
+
+               <TextBlock Text="TARGET" Style="{StaticResource formSection}" />
+
+               <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsSshStack, Converter={StaticResource boolToVisibility}}">
+                  <TextBlock Text="Compose folder on the host" Style="{StaticResource formLabel}" />
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SshFolder, UpdateSourceTrigger=PropertyChanged}"
+                           Tag="/opt/stacks/app" AutomationProperties.Name="Compose folder" />
+                  <TextBlock Style="{StaticResource fieldHelpStyle}"
+                             Text="Absolute path holding compose.yml (or docker-compose.yml) and its .env." />
+               </StackPanel>
+
+               <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding ShowEndpoint, Converter={StaticResource boolToVisibility}}">
+                  <TextBlock Text="Environment" Style="{StaticResource formLabel}" />
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EndpointText, UpdateSourceTrigger=PropertyChanged}"
+                              Tag="Environment id, e.g. 2" AutomationProperties.Name="Portainer environment" />
+                     <ComboBox x:Name="pickEndpoint" Grid.Column="1" Style="{StaticResource pickCombo}"
+                               ItemsSource="{Binding EndpointChoices}" SelectionChanged="PickChanged"
+                               AutomationProperties.Name="Pick environment" />
+                  </Grid>
+               </StackPanel>
+
+               <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsPortainerStack, Converter={StaticResource boolToVisibility}}">
+                  <TextBlock Text="Stack" Style="{StaticResource formLabel}" />
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding StackText, UpdateSourceTrigger=PropertyChanged}"
+                              Tag="id · name, or a new name for Create stack" AutomationProperties.Name="Portainer stack" />
+                     <ComboBox x:Name="pickStack" Grid.Column="1" Style="{StaticResource pickCombo}"
+                               ItemsSource="{Binding StackChoices}" SelectionChanged="PickChanged"
+                               AutomationProperties.Name="Pick stack" />
+                  </Grid>
+               </StackPanel>
+
+               <Grid Style="{StaticResource pairGrid}" Visibility="{Binding IsStack, Converter={StaticResource boolToVisibility}}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="16" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                     <TextBlock Text="Service" Style="{StaticResource formLabel}" />
+                     <Grid>
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="*" />
+                           <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Service, UpdateSourceTrigger=PropertyChanged}"
+                                 Tag="Compose service" AutomationProperties.Name="Compose service" />
+                        <ComboBox x:Name="pickService" Grid.Column="1" Style="{StaticResource pickCombo}" Width="110"
+                                  ItemsSource="{Binding ServiceChoices}" SelectionChanged="PickChanged"
+                                  AutomationProperties.Name="Pick service" />
+                     </Grid>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                     <TextBlock Text="Image variable" Style="{StaticResource formLabel}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding ImageVariable, UpdateSourceTrigger=PropertyChanged}"
+                              Tag="{Binding VariableHint}" AutomationProperties.Name="Image variable"
+                              ToolTip="The compose file reads the image from this variable (image: ${VARIABLE}). A plain image line is rewritten to it on the first deploy, so rollback works." />
+                  </StackPanel>
+               </Grid>
+
+               <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsContainer, Converter={StaticResource boolToVisibility}}">
+                  <TextBlock Text="Container" Style="{StaticResource formLabel}" />
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Container, UpdateSourceTrigger=PropertyChanged}"
+                              Tag="Container name" AutomationProperties.Name="Container name" />
+                     <ComboBox x:Name="pickContainer" Grid.Column="1" Style="{StaticResource pickCombo}"
+                               ItemsSource="{Binding ContainerChoices}" SelectionChanged="PickChanged"
+                               AutomationProperties.Name="Pick container" />
+                  </Grid>
+                  <TextBlock Style="{StaticResource fieldHelpStyle}"
+                             Text="Recreated with its ports, volumes, environment and networks; only the image changes. If starting the new one fails, the old one is brought back." />
+               </StackPanel>
+
+               <TextBlock Text="REGISTRY" Style="{StaticResource formSection}" />
+               <StackPanel Style="{StaticResource fieldStack}">
+                  <TextBlock Text="Registry host" Style="{StaticResource formLabel}" />
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding RegistryHost, UpdateSourceTrigger=PropertyChanged}"
+                           Tag="registry.example.com" AutomationProperties.Name="Registry host"
+                           ToolTip="Address the Docker server pulls this registry from (host[:port]). It defaults to the server this application is connected to." />
+               </StackPanel>
+               <Grid Style="{StaticResource pairGrid}">
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="16" />
+                     <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel>
+                     <TextBlock Text="Registry username" Style="{StaticResource formLabel}" />
+                     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding RegistryUser, UpdateSourceTrigger=PropertyChanged}"
+                              Tag="Robot name" AutomationProperties.Name="Registry username"
+                              ToolTip="A robot with pull access to this root (User Manager > Robots). Empty: the Docker server uses its own login." />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                     <TextBlock Text="Registry password or token" Style="{StaticResource formLabel}" />
+                     <PasswordBox x:Name="RegistryPasswordBox" Style="{StaticResource fieldPasswordStyle}"
+                                  PasswordChanged="RegistryPasswordChanged" AutomationProperties.Name="Registry password" />
+                     <TextBlock Text="{Binding SavedCaption}" Style="{StaticResource fieldHelpStyle}"
+                                Visibility="{Binding HasSavedRegistryPassword, Converter={StaticResource boolToVisibility}}" />
+                  </StackPanel>
+               </Grid>
+
+               <TextBlock Text="AUTOMATIC DEPLOY" Style="{StaticResource formSection}" />
+               <CheckBox Style="{StaticResource checkBoxStyle}" Margin="0,0,0,12" IsChecked="{Binding IsActive}"
+                         Content="Deploy after every push from the publisher" />
+               <StackPanel Style="{StaticResource fieldStack}">
+                  <TextBlock Text="Tag filter" Style="{StaticResource formLabel}" />
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding TagFilter, UpdateSourceTrigger=PropertyChanged}"
+                           Tag="Empty = every tag, e.g. *-rc.*, latest" AutomationProperties.Name="Tag filter" />
+                  <TextBlock Style="{StaticResource fieldHelpStyle}"
+                             Text="Comma-separated patterns with * and ?, case-sensitive. A push deploys when one of its tags matches. Deploy and Rollback ignore the filter." />
+               </StackPanel>
+            </StackPanel>
+         </ScrollViewer>
+
+         <!-- ==== test result and errors ==== -->
+         <StackPanel Grid.Row="2" Margin="0,12,0,0">
+            <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource dangerBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                       Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}" />
+            <Border Style="{StaticResource innerCardStyle}" Padding="12,8"
+                    Visibility="{Binding HasTestText, Converter={StaticResource boolToVisibility}}">
+               <Grid>
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                     <TextBlock Text="{Binding TestText}" TextWrapping="Wrap" FontSize="12.5">
+                        <TextBlock.Style>
+                           <Style TargetType="TextBlock">
+                              <Style.Triggers>
+                                 <DataTrigger Binding="{Binding TestFailed}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource warningBrush}" />
+                                 </DataTrigger>
+                              </Style.Triggers>
+                           </Style>
+                        </TextBlock.Style>
+                     </TextBlock>
+                  </ScrollViewer>
+                  <Button Grid.Column="1" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0" VerticalAlignment="Top"
+                          Command="{Binding Commands[RegisterPortainerCommand]}"
+                          Visibility="{Binding ShowRegisterPortainer, Converter={StaticResource boolToVisibility}}"
+                          ToolTip="Add this registry to Portainer with the registry login above">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}" />
+                        <TextBlock Text="Register in Portainer" VerticalAlignment="Center" />
+                     </StackPanel>
+                  </Button>
+               </Grid>
+            </Border>
+         </StackPanel>
+
+         <!-- ==== actions ==== -->
+         <Grid Grid.Row="3" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+               <Button Style="{StaticResource textDangerButtonStyle}" Command="{Binding Commands[DeleteCommand]}" Content="Delete target" />
+               <Button Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0" Command="{Binding Commands[CreateStackCommand]}"
+                       Visibility="{Binding IsStack, Converter={StaticResource boolToVisibility}}"
+                       ToolTip="Save, then create a compose file or Portainer stack from a template">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_FileCirclePlus" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Create stack..." VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[TestCommand]}">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_PlugCircleCheck" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Test connection" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource textButtonStyle}" Margin="8,0,0,0" IsCancel="True" Content="Cancel" />
+               <Button Style="{StaticResource filledButtonStyle}" Margin="8,0,0,0" Command="{Binding Commands[SaveCommand]}" IsDefault="True">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Save" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+            </StackPanel>
+         </Grid>
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</windows:EmWindow>

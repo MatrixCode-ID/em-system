@@ -217,6 +217,34 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
+      /// Calls a POST action with its own time limit instead of the connection's standard timeout, for actions that
+      /// are known to run long on the server (for example a container deploy).
+      /// </summary>
+      /// <param name="timeout">How long to wait for the answer before giving up with <see cref="TimeoutException"/>.</param>
+      /// <param name="controller">Target module name.</param>
+      /// <param name="action">Target action name.</param>
+      /// <param name="args">Action arguments, sent as in <see cref="PostAsync{T}(string, string, object[])"/>.</param>
+      /// <exception cref="TimeoutException">No answer within <paramref name="timeout"/>. The server may still finish the work.</exception>
+      public async Task<T> PostAsync<T>(TimeSpan timeout, string controller, string action, params object[] args) {
+         var url = $"api/{controller}/{action}";
+         var bodyJson = BuildPostBody(args);
+         using var limit = new CancellationTokenSource(timeout);
+         try {
+            return await SendAsync(() => BuildRequest(System.Net.Http.HttpMethod.Post, url,
+                  new StringContent(bodyJson, Encoding.UTF8, "application/json")),
+               request => StreamHttpClient.SendAsync(request, limit.Token).ProcessHttpResult<T>());
+         }
+         catch (OperationCanceledException) when (limit.IsCancellationRequested) {
+            throw new TimeoutException($"The server did not answer {action} within {timeout.TotalMinutes:0.#} minutes. It may still be running; check its result later.");
+         }
+      }
+
+      /// <inheritdoc cref="PostAsync{T}(TimeSpan, string, string, object[])"/>
+      public async Task PostAsync(TimeSpan timeout, string controller, string action, params object[] args) {
+         await PostAsync<object?>(timeout, controller, action, args);
+      }
+
+      /// <summary>
       /// Memanggil action ber-stream yang tidak mengembalikan nilai: isi <paramref name="content"/>
       /// dikirim mentah sebagai body request, dan <paramref name="payload"/> - kalau ada - ikut di
       /// header <see cref="Defaults.StreamPayloadHeader"/>.

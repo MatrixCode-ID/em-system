@@ -237,8 +237,24 @@ public partial class PublishView : UserControl {
   liveLog.AppendText("Check "+p.Name+Environment.NewLine+string.Join(Environment.NewLine,rows.Select(r=>"  "+r))+Environment.NewLine);liveLog.ScrollToEnd();
  });
  private async void PrepareClick(object s,RoutedEventArgs e) {if(!await ResolveVersion(false,true))return;await Operation((p,ct)=>_publisher.Prepare(p,ct));}
- private async void PushClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation((p,ct)=>_publisher.Push(p,release,ct));}
- private async void CombinedClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation(async(p,ct)=> {_publisher.ValidateReleaseNotes(p,release);await _publisher.Check(p,ct);await _publisher.Prepare(p,ct);await _publisher.Push(p,release,ct);});}
+ private async void PushClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;retryDeploy.Visibility=Visibility.Collapsed;await Operation((p,ct)=>_publisher.Push(p,release,ct));ShowDeployments();}
+ private async void CombinedClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;retryDeploy.Visibility=Visibility.Collapsed;await Operation(async(p,ct)=> {_publisher.ValidateReleaseNotes(p,release);await _publisher.Check(p,ct);await _publisher.Prepare(p,ct);await _publisher.Push(p,release,ct);});ShowDeployments();}
+ // After Push: one line on the deploys the server ran (Auto deploy), and Retry deploy while any of them failed.
+ private void ShowDeployments() {
+  if(_publisher.LastRun is not {Operation:"Push"} run||run.Deployments.Count==0) {retryDeploy.Visibility=Visibility.Collapsed;return;}
+  int Count(Em.Api.Core.Models.CtnDeployResult result)=>run.Deployments.Count(d=>d.Result==result);
+  var failed=Count(Em.Api.Core.Models.CtnDeployResult.Failed);
+  message.Text=message.Text.TrimEnd()+$" Deployed {Count(Em.Api.Core.Models.CtnDeployResult.Success)}, failed {failed}, skipped {Count(Em.Api.Core.Models.CtnDeployResult.Skipped)}."+
+   (failed>0?" "+string.Join(" ",run.Deployments.Where(d=>d.Result==Em.Api.Core.Models.CtnDeployResult.Failed).Select(d=>d.Repository+": "+d.Message))+" Fix the server, then Retry deploy.":"");
+  retryDeploy.Visibility=failed>0?Visibility.Visible:Visibility.Collapsed;
+ }
+ private async void RetryDeployClick(object s,RoutedEventArgs e) {
+  if(_cancel!=null||_publisher.LastRun is not {} run||_publisher.LastRunDirectory is not {} directory)return;
+  retryDeploy.IsEnabled=operations.IsEnabled=false;message.Text="Deploying again…";
+  try {var failed=await _publisher.RetryDeployments(run,directory);message.Text=failed==0?"Retry deploy succeeded.":$"Retry deploy: {failed} still failing.";ShowDeployments();ReloadHistory();}
+  catch(Exception ex) {message.Text=Mask(ex.Message);}
+  finally {retryDeploy.IsEnabled=operations.IsEnabled=true;}
+ }
  private string Summary(PublishProfile p) {
   var tag=p.Container?.Target.VersionTag??"";
   var floating=p.Container!=null&&UsesVersionStrip(p)?ContainerVersion.FloatingTagsOf(tag):[];

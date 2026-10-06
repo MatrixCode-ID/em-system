@@ -4,9 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Pemeriksaan sekali jalan saat registry menyala: semua tabel <c>ta_Ctn*</c> harus sudah ada dengan
-   /// kolom yang dipetakan. Tanpa ini tabel yang belum dibuat baru ketahuan saat <c>docker push</c>
-   /// pertama gagal dengan 500.
+   /// One-time check when the registry starts: every <c>ta_Ctn*</c> table must exist with the mapped columns.
+   /// Without it a missing table would only show up when the first <c>docker push</c> fails with 500.
    /// </summary>
    internal static class CtnStartupChecks
    {
@@ -14,8 +13,8 @@ namespace Em.Api.Core.Registry
          using var scope = rootServices.CreateScope();
          var db = scope.ServiceProvider.GetRequiredService<CtnContext>();
 
-         // Membaca paling banyak satu baris dengan semua kolom entitasnya: yang diperiksa ada-tidaknya
-         // tabel dan kolom, bukan isinya.
+         // Reads at most one row with every mapped column: what is checked is that the table and columns
+         // exist, not their content.
          Probe("ta_CtnRoot", () => db.Roots.OrderBy(r => r.cCtnRootId).FirstOrDefault());
          Probe("ta_CtnFolder", () => db.Folders.OrderBy(r => r.cCtnFolderId).FirstOrDefault());
          Probe("ta_CtnImage", () => db.Images.OrderBy(r => r.cCtnImageId).FirstOrDefault());
@@ -27,15 +26,21 @@ namespace Em.Api.Core.Registry
          Probe("ta_CtnUpload", () => db.Uploads.OrderBy(r => r.cCtnUploadId).FirstOrDefault());
          Probe("ta_Robot", () => db.Robots.OrderBy(r => r.cRobotId).FirstOrDefault());
          Probe("ta_CtnRootRobot", () => db.RobotRoots.OrderBy(r => r.cRobotId).FirstOrDefault());
+         Probe("ta_CtnDeploy", () => db.Deploys.OrderBy(r => r.cCtnDeployId).FirstOrDefault(),
+            "doc/sqlscript/mssql/updates/20261007-CtnDeploy.sql");
+         Probe("ta_CtnDeployRun", () => db.DeployRuns.OrderBy(r => r.cCtnDeployRunId).FirstOrDefault(),
+            "doc/sqlscript/mssql/updates/20261007-CtnDeploy.sql");
       }
 
-      private static void Probe(string table, Action read) {
+      private static void Probe(string table, Action read, string? migration = null) {
          try {
             read();
          } catch (Exception ex) {
+            // A table added after the first release also names the migration for existing databases.
             throw new InvalidOperationException(
                $"The container registry is enabled but table '{table}' cannot be read. " +
-               "Run doc/sqlscript/mssql/tables/030-registry.sql on the core database first.", ex);
+               "Run doc/sqlscript/mssql/tables/030-registry.sql on the core database first" +
+               (migration is null ? "." : $" (existing databases: {migration})."), ex);
          }
       }
    }

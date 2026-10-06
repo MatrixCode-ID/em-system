@@ -76,5 +76,45 @@ namespace Em.Api.Core
          PostAsync<CtnGcReport>(nameof(PostGetMeta_CtnGcRun), graceHours);
 
       #endregion
+
+      #region Deploy
+
+      // The server allows a deploy 15 minutes; the client waits a little longer so it hears the result.
+      private static readonly TimeSpan DeployTimeout = TimeSpan.FromMinutes(16);
+
+      public Task<CtnDeployTargetInfo?> GetMeta_CtnDeployTarget(string imageId) =>
+         GetAsync<CtnDeployTargetInfo?>(nameof(GetMeta_CtnDeployTarget), imageId);
+
+      public Task<CtnDeployTargetInfo> PostGetMeta_CtnDeployTargetSave(CtnDeployTargetSave request) =>
+         PostAsync<CtnDeployTargetInfo>(nameof(PostGetMeta_CtnDeployTargetSave), request);
+
+      public Task PostMeta_CtnDeployTargetDelete(string imageId) =>
+         PostAsync(nameof(PostMeta_CtnDeployTargetDelete), imageId);
+
+      public Task<CtnDeployTestResult> PostGetMeta_CtnDeployTest(CtnDeployTargetSave request) =>
+         PostAsync<CtnDeployTestResult>(DeployTimeout, nameof(PostGetMeta_CtnDeployTest), request);
+
+      public Task<CtnDeployTestResult> PostGetMeta_CtnDeployRegisterPortainerRegistry(string imageId) =>
+         PostAsync<CtnDeployTestResult>(DeployTimeout, nameof(PostGetMeta_CtnDeployRegisterPortainerRegistry), imageId);
+
+      public Task<CtnDeployRunInfo> PostGetMeta_CtnDeployCreateStack(string imageId, string composeContent) =>
+         PostAsync<CtnDeployRunInfo>(DeployTimeout, nameof(PostGetMeta_CtnDeployCreateStack), imageId, composeContent);
+
+      public Task<string> GetMeta_CtnDeployStackTemplate(string imageId) =>
+         GetAsync<string>(nameof(GetMeta_CtnDeployStackTemplate), imageId);
+
+      public Task<CtnDeployRunInfo> PostGetMeta_CtnDeployAfterPush(CtnDeployPushRequest request) =>
+         PostAsync<CtnDeployRunInfo>(DeployTimeout, nameof(PostGetMeta_CtnDeployAfterPush), request);
+
+      public Task<CtnDeployRunInfo> PostGetMeta_CtnDeployRun(string imageId, string digest, string? tag) =>
+         PostAsync<CtnDeployRunInfo>(DeployTimeout, nameof(PostGetMeta_CtnDeployRun), imageId, digest, tag!);
+
+      public Task<CtnDeployRunInfo> PostGetMeta_CtnDeployRollback(string imageId, string runId) =>
+         PostAsync<CtnDeployRunInfo>(DeployTimeout, nameof(PostGetMeta_CtnDeployRollback), imageId, runId);
+
+      public Task<CtnDeployRunInfo[]> GetMeta_CtnDeployRuns(string imageId, int take) =>
+         GetAsync<CtnDeployRunInfo[]>(nameof(GetMeta_CtnDeployRuns), imageId, take);
+
+      #endregion
    }
 }

@@ -1,6 +1,6 @@
 # Plan — Deploy otomatis container dari registry ke server Docker (pull + recreate)
 
-- **Status:** belum dieksekusi — semua keputusan final, siap dikerjakan tanpa bertanya
+- **Status:** dieksekusi 2026-10-07 (laporan di bagian 10)
 - **Dibuat:** 2026-10-07
 - **Eksekutor:** Claude Code
 - **Asal ide:** [doc/ideas/registry-deploy-docker.md](../../doc/ideas/registry-deploy-docker.md)
@@ -272,4 +272,48 @@ Ikuti aturan di `CLAUDE.md`. Bila `sqlcmd`, `dotnet`, atau tindakan lain ditolak
 
 ## 10. Laporan eksekusi
 
-(diisi saat eksekusi: ringkasan perubahan per seksi, hasil build/test/migrasi beserta output penting, deviasi dari plan dan alasannya, verifikasi tertunda, tindakan manual bila ada)
+Dieksekusi Claude Code, 2026-10-07, branch `work-bench`.
+
+### Ringkasan per seksi
+
+- **4.1 SQL:** `ta_CtnDeploy` dan `ta_CtnDeployRun` ditambahkan ke `tables/030-registry.sql` (header berkas diterjemahkan ke Inggris karena disentuh); migrasi idempotent `updates/20261007-CtnDeploy.sql`. FK `cCtnDeployRunBy_cUserId` memakai `ON DELETE SET NULL` (pola sama dengan owner robot). Entitas, `DbSet`, `EntityTypes`, dan `Probe` (pesan error menyebut skrip migrasi) ditambahkan.
+- **4.2 Em.Libs:** `CtnDeployDtos.cs` (enum + DTO) dan region `Deploy` di `ICtnServices` (11 action; semua GET hanya parameter sederhana). `CtnDeployRunInfo` mendapat tambahan `ImageId` (dipakai Retry deploy).
+- **4.3 Backend `Api/Registry/Deploy/`:** `CtnDeploySecrets` (AES-256-GCM, kunci `ta_Meta` `Ctn.Deploy.Key`), `CtnDeployTagFilter`, `ComposeImageRewriter` (YamlDotNet 18.1.0 hanya untuk posisi; penggantian per rentang teks), `DockerRecreatePlan`, `DockerEngineClient` (path API tanpa versi, supaya cocok dengan Docker baru yang menaikkan versi API minimum), `SshDeployShell` (SSH.NET 2026.0.0, pin host key, dial-stdio), `PortainerClient`, `CtnDeployTransports` (abstraksi transport + pin TLS), `CtnDeployExecutor` (4 alur kind x mode, Create stack, Test, Register registry), `CtnDeployRunner` (kunci per target, batas 15 menit, riwayat), `CtnDeployStore` (validasi, aturan null/""/isi, resolusi push, riwayat), `CtnDeployServices.cs` (partial `CtnServices`). Registrasi DI di `AddContainerRegistry` dan `AddManagedStorageSettings`. `PostMeta_CtnImageDelete` ikut menghapus target + riwayat secara eksplisit.
+- **4.5 WPF:** overload `ApiClient.PostAsync(TimeSpan, ...)` (+ `ServiceUiBase`), `CtnService` (timeout 16 menit untuk test/deploy/create/rollback), kartu DEPLOY di `ContainerManager.xaml` + `ContainerManagerVm.Deploy.cs`, empat dialog `EmWindow`: `CtnDeployTargetDialog`, `CtnDeployStackDialog`, `CtnDeployRunDialog`, `CtnDeployHistoryDialog`.
+- **Publisher:** `ContainerProfile.AutoDeploy` (default true, dikeluarkan dari fingerprint build sehingga mengubahnya tidak memaksa Prepare ulang), caption "Deploy after push" + teks bantuan di tab Advanced, `PublishArtifact.PushedTags`, `PublishRun.Deployments`/`PublishDeployment`, `Publisher.DeployPushed` setelah push (hanya Built-in; opsi profile Set berlaku untuk semua step), `RetryDeployments` (menulis ulang `deployments` di `result.json` yang sudah termasker), ringkasan dan tombol **Retry deploy** di `PublishView`.
+- **4.6 Test:** `tests/Em.Api.Core.Tests/Deploy/CtnDeployPureTests.cs` (tag filter, rewriter, recreate plan, secrets, masking log), `CtnDeployExecutorTests.cs` (alur dengan SSH/Docker/Portainer tiruan), `tests/Em.Api.Core.IntegrationTests/CtnDeployServiceTests.cs`.
+- **4.7 Dokumentasi:** bagian "Deploy to Docker servers" + catatan maintainer di `doc/engine/engine-registry.md` (dua screenshot dari harness render), opsi di `doc/engine/engine-publish.md`, entri `CLAUDE.md`, status catatan ide.
+
+### Hasil build, test, migrasi
+
+- `dotnet build src/backend/Em.Api.slnx --artifacts-path <scratchpad>\build-api`: lulus, tanpa warning pada berkas baru.
+- `dotnet build src/frontend/Em.Ui.Wpf.slnx --artifacts-path <scratchpad>\build-wpf`: lulus (satu error `CtnInput` tanpa `using` diperbaiki).
+- Test (output ke scratchpad): `Em.Api.Core.Tests` 71/71, `Em.Api.Core.IntegrationTests` 28/28 (SQL Server lokal, tanpa skip), `Em.Libs.Tests` 4/4, `Em.Ui.Core.Tests` 10/10, `Em.Ui.Wpf.Core.Tests` 44/44.
+- Migrasi `updates/20261007-CtnDeploy.sql` diterapkan ke tiga database di `..\.artefacts\em-system\config\db-migration-targets.md`; dijalankan dua kali pada salah satu database lokal (idempoten). Verifikasi `sys.columns`: `ta_CtnDeploy` 25 kolom, `ta_CtnDeployRun` 14 kolom di ketiga database.
+- Harness render `..\.artefacts\em-system\scripts\deploy-render` (36 PNG di `out\`): kartu (tanpa target, SSH, Portainer gagal, busy, disabled, lebar 900) dan keempat dialog (baru, tersimpan, setelah test, Portainer, busy, lebar 560, stack, run gagal, history, history busy), tema terang dan gelap. Diperiksa visual; temuan diperbaiki (lihat review).
+- Build Rider lewat MCP: **gagal hanya karena DLL host terkunci** oleh `Em.Api` yang sedang berjalan di Rider (semua error "file is locked by Em.Api"); proses tidak dihentikan. Build Rider ulang menunggu pengguna menghentikan aplikasi.
+
+### Review (sekali, setelah semua kode)
+
+- Kartu DEPLOY: tombol History dan nilai TARGET/LAST RUN terpotong di panel detail yang sempit. Diperbaiki: nilai panjang satu baris penuh dengan wrap, tiga tombol compact dalam `UniformGrid`; label **Configure** menjadi **Edit** (ikon pena) karena tetap terpotong. Keadaan tanpa target tetap memakai **Configure deploy**.
+- Dialog target menampilkan nama enum mentah; diganti label ramah ("SSH", "Stack (compose service)", "Private key", dst.).
+- Dialog History: pesan gagal rollback terhapus oleh refresh; diperbaiki.
+- Komentar Indonesia pada member yang disentuh diterjemahkan (`CtnContext`, `CtnStartupChecks`, `PostMeta_CtnImageDelete`, `AddContainerRegistry`).
+- Diperiksa tanpa temuan lain: secret tidak keluar di DTO/output/log (masker termasuk Base64 dan baris kunci privat), aturan GET per-field, `EmWindow` di semua dialog, tema enabled/disabled/busy, pemulihan recreate container, kunci per target.
+
+### Deviasi dari plan
+
+- **Smoke harness `deploy-smoke` diganti unit test di repo** (`CtnDeployExecutorTests`, 17 skenario: keempat kombinasi kind x mode, rewrite `image:`, rollback/prev digest, Create stack SSH/Portainer, pemulihan saat recreate gagal, pin fingerprint SSH/TLS, Git stack). Alasan: skenario sama, dirawat dan dijalankan berulang bersama test lain, tanpa `InternalsVisibleTo` ke project di luar repo.
+- Recreate container lepas sedikit melebihi T10: nilai Config yang berasal dari image lama (Env, Cmd, Labels, dll.) dibuang agar default image baru berlaku, volume anonim dibawa lewat nama, hostname bawaan (short id) dibuang, jaringan selain `NetworkMode` disambungkan setelah create.
+- SSH + Create stack hanya menulis `compose.yml` dan `.env` (tidak menyalakan); Deploy yang menyalakannya. Portainer create langsung menyalakan stack (perilaku Portainer).
+- Create stack tidak dicatat di riwayat deploy (bukan deploy); output dikembalikan ke dialog.
+- Label tombol kartu **Configure** menjadi **Edit** (alasan di review).
+- Pin TLS memakai format `SHA256:AA:BB:...` (hex seperti browser); pin SSH `SHA256:<base64>` seperti OpenSSH.
+
+### Verifikasi tertunda (manual oleh pengguna)
+
+Semua butir bagian 9 belum dilakukan: deploy sungguhan SSH + Stack, Portainer stack (rewrite + Env + rollback), container lepas lewat Portainer dan SSH (termasuk `docker system dial-stdio` dengan SSH.NET sungguhan), Create stack, publish dengan Auto deploy on/off dan Retry deploy, interaksi mouse kartu dan dialog di window nyata. Build solution di Rider setelah `Em.Api`/`Em.Ui.Wpf` dihentikan. Solution MAUI tidak dibangun ulang (perubahan `Em.Ui.Core` hanya overload baru).
+
+### Tindakan manual terblokir policy
+
+Tidak ada.

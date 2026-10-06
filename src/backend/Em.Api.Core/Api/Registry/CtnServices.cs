@@ -11,7 +11,7 @@ namespace Em.Api.Core.Registry
    /// disentuh kecuali berkas unggahan sementara; pembersihan blob yatim lewat <see cref="PostGetMeta_CtnGcRun"/>.
    /// </summary>
    [Module(Defaults.AdministrativeToolsModuleName)]
-   public class CtnServices : ServicesBase, ICtnServices
+   public partial class CtnServices : ServicesBase, ICtnServices
    {
       private Em.Api.Core.Storage.ManagedStorageSettings Settings => GetService<Em.Api.Core.Storage.ManagedStorageSettings>()!;
       [GetAction(claim: ICtnServices.CtnClaim)]
@@ -286,13 +286,15 @@ namespace Em.Api.Core.Registry
          await RequireImageAsync(db, imageId);
          var uploadIds = await db.Uploads.Where(u => u.cCtnImageId == imageId).Select(u => u.cCtnUploadId).ToListAsync();
 
-         // Berurutan dan eksplisit, tidak mengandalkan CASCADE: tag menunjuk manifest, jadi tag dulu.
+         // In order and explicit, not relying on CASCADE: tags point at manifests, so tags go first; the deploy
+         // target and its history go before the container.
          await using var tx = await db.Database.BeginTransactionAsync();
          await db.Tags.Where(t => t.cCtnImageId == imageId).ExecuteDeleteAsync();
          await db.ManifestBlobs.Where(b => db.Manifests.Any(m => m.cCtnManifestId == b.cCtnManifestId && m.cCtnImageId == imageId)).ExecuteDeleteAsync();
          await db.Manifests.Where(m => m.cCtnImageId == imageId).ExecuteDeleteAsync();
          await db.BlobLinks.Where(l => l.cCtnImageId == imageId).ExecuteDeleteAsync();
          await db.Uploads.Where(u => u.cCtnImageId == imageId).ExecuteDeleteAsync();
+         await Deploy.CtnDeployStore.DeleteForImageAsync(db, imageId);
          await db.Images.Where(i => i.cCtnImageId == imageId).ExecuteDeleteAsync();
          await tx.CommitAsync();
 

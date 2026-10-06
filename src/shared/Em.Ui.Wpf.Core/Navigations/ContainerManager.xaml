@@ -931,6 +931,138 @@
                                          Visibility="{Binding IsInsecureHost, Converter={StaticResource boolToVisibility}}"
                                          Text="This server is reached over plain HTTP. Docker only accepts that for localhost, so docker login and docker pull to this address will be refused until the server is served over HTTPS." />
 
+                              <!-- == deploy card: target of this container, last run, Deploy / Configure / History == -->
+                              <Border Style="{StaticResource innerCardStyle}" Margin="0,22,0,0" Padding="14,10,10,14">
+                                 <StackPanel>
+                                    <Grid>
+                                       <Grid.ColumnDefinitions>
+                                          <ColumnDefinition Width="*" />
+                                          <ColumnDefinition Width="Auto" />
+                                       </Grid.ColumnDefinitions>
+                                       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                          <fa:FontAwesome Icon="Solid_Server" Margin="0,0,8,0" VerticalAlignment="Center" Opacity="0.7" />
+                                          <TextBlock Text="DEPLOY" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center" />
+                                          <Border Style="{StaticResource chipMutedStyle}" Margin="10,0,0,0"
+                                                  Visibility="{Binding HasDeployTarget, Converter={StaticResource boolToVisibility}}">
+                                             <TextBlock Text="{Binding DeployKindCaption}" />
+                                          </Border>
+                                       </StackPanel>
+                                       <Button Grid.Column="1"
+                                               Style="{StaticResource rowActionButtonStyle}"
+                                               Command="{Binding Commands[RefreshDeployCommand]}"
+                                               ToolTip="Refresh the deploy target and its last run"
+                                               AutomationProperties.Name="Refresh deploy information">
+                                          <fa:FontAwesome Icon="Solid_ArrowsRotate" />
+                                       </Button>
+                                    </Grid>
+
+                                    <TextBlock Margin="0,8,0,0" Style="{StaticResource secondaryCellStyle}" Text="Loading..."
+                                               Visibility="{Binding ShowDeployLoading, Converter={StaticResource boolToVisibility}}" />
+
+                                    <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" TextTrimming="None"
+                                               Style="{StaticResource secondaryCellStyle}" Opacity="1"
+                                               Foreground="{StaticResource dangerBrush}" Text="{Binding DeployError}"
+                                               Visibility="{Binding HasDeployError, Converter={StaticResource boolToVisibility}}" />
+
+                                    <!-- no target yet -->
+                                    <StackPanel Margin="0,8,0,0" Visibility="{Binding ShowDeployEmpty, Converter={StaticResource boolToVisibility}}">
+                                       <TextBlock TextWrapping="Wrap" TextTrimming="None" Style="{StaticResource secondaryCellStyle}"
+                                                  Text="Pull this container on a Docker server and recreate it after every push from the publisher, over SSH or Portainer." />
+                                       <Button Style="{StaticResource outlinedButtonStyle}" Margin="0,12,0,0" HorizontalAlignment="Left"
+                                               Command="{Binding Commands[ConfigureDeployCommand]}">
+                                          <StackPanel Orientation="Horizontal">
+                                             <fa:FontAwesome Icon="Solid_Gear" Style="{StaticResource buttonIconStyle}" />
+                                             <TextBlock Text="Configure deploy" VerticalAlignment="Center" />
+                                          </StackPanel>
+                                       </Button>
+                                    </StackPanel>
+
+                                    <!-- target -->
+                                    <StackPanel Margin="0,8,0,0" Visibility="{Binding HasDeployTarget, Converter={StaticResource boolToVisibility}}">
+                                       <Grid>
+                                          <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*" />
+                                             <ColumnDefinition Width="Auto" />
+                                          </Grid.ColumnDefinitions>
+                                          <StackPanel>
+                                             <TextBlock Text="SERVER" Style="{StaticResource metaLabelStyle}" />
+                                             <TextBlock Text="{Binding DeployHostCaption}" Style="{StaticResource monoValueStyle}"
+                                                        ToolTip="{Binding DeployHostCaption}" />
+                                          </StackPanel>
+                                          <Button Grid.Column="1" Style="{StaticResource rowActionButtonStyle}" VerticalAlignment="Bottom"
+                                                  Command="{Binding Commands[CopyDeployHostCommand]}"
+                                                  ToolTip="Copy server address" AutomationProperties.Name="Copy server address">
+                                             <fa:FontAwesome Icon="Regular_Copy" />
+                                          </Button>
+                                       </Grid>
+
+                                       <StackPanel Margin="0,12,0,0">
+                                          <TextBlock Text="TARGET" Style="{StaticResource metaLabelStyle}" />
+                                          <TextBlock Text="{Binding DeployWhereCaption}" Style="{StaticResource metaValueStyle}"
+                                                     TextWrapping="Wrap" TextTrimming="None" />
+                                       </StackPanel>
+
+                                       <UniformGrid Columns="2" Margin="0,12,0,0">
+                                          <StackPanel Margin="0,0,8,0">
+                                             <TextBlock Text="TAG FILTER" Style="{StaticResource metaLabelStyle}" />
+                                             <TextBlock Text="{Binding DeployFilterCaption}" Style="{StaticResource metaValueStyle}"
+                                                        TextTrimming="CharacterEllipsis" ToolTip="{Binding DeployFilterCaption}" />
+                                          </StackPanel>
+                                          <StackPanel>
+                                             <TextBlock Text="AUTOMATIC DEPLOY" Style="{StaticResource metaLabelStyle}" />
+                                             <TextBlock Text="{Binding DeployAutoCaption}" Style="{StaticResource metaValueStyle}"
+                                                        TextTrimming="CharacterEllipsis" ToolTip="{Binding DeployAutoCaption}" />
+                                          </StackPanel>
+                                       </UniformGrid>
+
+                                       <StackPanel Margin="0,12,0,0">
+                                          <TextBlock Text="LAST RUN" Style="{StaticResource metaLabelStyle}" />
+                                          <Grid>
+                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                             </Grid.ColumnDefinitions>
+                                             <Grid Margin="0,2,6,0" VerticalAlignment="Top">
+                                                <fa:FontAwesome Icon="Solid_CircleCheck" Foreground="{StaticResource successBrush}"
+                                                                Visibility="{Binding LastDeploySucceeded, Converter={StaticResource boolToVisibility}}" />
+                                                <fa:FontAwesome Icon="Solid_CircleXmark" Foreground="{StaticResource dangerBrush}"
+                                                                Visibility="{Binding LastDeployFailed, Converter={StaticResource boolToVisibility}}" />
+                                                <fa:FontAwesome Icon="Solid_Spinner" Foreground="{StaticResource infoBrush}"
+                                                                Visibility="{Binding LastDeployRunning, Converter={StaticResource boolToVisibility}}" />
+                                             </Grid>
+                                             <TextBlock Grid.Column="1" Text="{Binding LastDeployCaption}" Style="{StaticResource metaValueStyle}"
+                                                        TextWrapping="Wrap" TextTrimming="None" />
+                                          </Grid>
+                                       </StackPanel>
+
+                                       <!-- three equal cells: the panel is narrow, so the actions share its width instead of overflowing -->
+                                       <UniformGrid Columns="3" Margin="0,14,0,0">
+                                          <Button Style="{StaticResource compactFilledButtonStyle}" Padding="8,0" Margin="0,0,4,0"
+                                                  Command="{Binding Commands[DeployNowCommand]}" ToolTip="Pick a manifest and deploy it now">
+                                             <StackPanel Orientation="Horizontal">
+                                                <fa:FontAwesome Icon="Solid_Rocket" Style="{StaticResource buttonIconStyle}" />
+                                                <TextBlock Text="Deploy" VerticalAlignment="Center" />
+                                             </StackPanel>
+                                          </Button>
+                                          <Button Style="{StaticResource compactOutlinedButtonStyle}" Padding="8,0" Margin="4,0"
+                                                  Command="{Binding Commands[ConfigureDeployCommand]}" ToolTip="Edit the deploy target">
+                                             <StackPanel Orientation="Horizontal">
+                                                <fa:FontAwesome Icon="Solid_PenToSquare" Style="{StaticResource buttonIconStyle}" />
+                                                <TextBlock Text="Edit" VerticalAlignment="Center" />
+                                             </StackPanel>
+                                          </Button>
+                                          <Button Style="{StaticResource compactOutlinedButtonStyle}" Padding="8,0" Margin="4,0,0,0"
+                                                  Command="{Binding Commands[DeployHistoryCommand]}" ToolTip="Deploy history and rollback">
+                                             <StackPanel Orientation="Horizontal">
+                                                <fa:FontAwesome Icon="Solid_ClockRotateLeft" Style="{StaticResource buttonIconStyle}" />
+                                                <TextBlock Text="History" VerticalAlignment="Center" />
+                                             </StackPanel>
+                                          </Button>
+                                       </UniformGrid>
+                                    </StackPanel>
+                                 </StackPanel>
+                              </Border>
+
                               <TextBlock Text="MANIFESTS"
                                          Margin="0,22,0,10"
                                          Style="{StaticResource sectionCaptionStyle}" />

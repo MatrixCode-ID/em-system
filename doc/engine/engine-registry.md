@@ -164,6 +164,99 @@ collection** and confirm. Changing the grace period after a review disables Run 
 `GetMeta_CtnGcReview` returns the same report without deleting anything; `PostGetMeta_CtnGcRun` returns what
 was actually removed (the blob list is capped at 1,000 rows, the counts are exact).
 
+## Deploy to Docker servers
+
+A container can have one **deploy target**: a Docker server that pulls a newly pushed image and recreates
+the container, replacing the manual "pull and recreate" step in Portainer or on the host. Restarting is not
+enough (`docker restart` keeps the old image), so the container is always recreated. The API itself is not
+meant to be deployed this way.
+
+**What triggers a deploy**
+
+- **After push, from the WPF publisher only.** When a publish profile pushes to the Built-in registry and
+  its **Deploy after push** option is on (the default), the publisher asks the server to deploy each pushed
+  image. A plain `docker push` or a CI push never deploys. The server deploys only when the container has an
+  *active* target whose tag filter matches one of the pushed tags; otherwise the answer is *skipped* and
+  nothing is recorded.
+- **Deploy** on the container's card: pick a manifest and deploy it now (the tag filter is ignored).
+- **Rollback** in History: deploy the digest of an earlier successful run again.
+
+A failed deploy never fails the publish. The publisher shows "Deployed n, failed n, skipped n" after Push and
+a **Retry deploy** button while something failed; fix the server and retry, or use Deploy on the card.
+
+**Target kinds and modes**
+
+| | Stack | Container |
+|---|---|---|
+| **SSH** | `docker compose pull` + `up -d` of one service in a compose folder on the host | the standalone container is recreated through the Docker Engine API (`docker system dial-stdio` over SSH) |
+| **Portainer** (CE or BE) | the stack is updated with a new environment and *pull image* | the standalone container is recreated through the environment's Docker proxy |
+
+**Pinning the image by variable.** A stack reads its image from a variable, `image: ${EM_IMAGE_<SERVICE>}`
+by default (another name can be set per target). A deploy sets that variable to
+`<registry host>/<root>/<name>@sha256:<digest>`: in the `.env` next to the compose file over SSH (other lines
+are kept) or in the stack environment in Portainer (other variables are kept). The digest pins exactly what
+was pushed, which is what makes rollback possible. If the service still has a fixed `image:` line, the first
+deploy rewrites only that value to `${VARIABLE}`, keeping comments and the rest of the file; the old file is
+kept in that run's history. A Portainer stack deployed **from Git** cannot be rewritten: it is redeployed with
+a fresh pull, a warning is logged, and rollback works only once the file in Git uses the variable.
+
+**Recreating a standalone container**: inspect, pull the digest, create `<name>-em-new` with the old settings
+(ports, volumes including anonymous ones, environment, labels, restart policy, networks; values that came from
+the old image are dropped so the new image's defaults apply), stop the old one, rename it to
+`<name>-em-old-<time>`, rename the new one to `<name>`, start it, and remove the old one (its volumes are
+kept). If anything fails after the old container was stopped, the new one is removed and the old one is
+renamed back and started again.
+
+**Create stack.** For a target in Stack mode, **Create stack...** opens a compose template that fills in only
+the image variable and the container name; add ports, volumes and the rest before creating it. Over SSH it
+writes `compose.yml` and `.env` in the compose folder (an existing compose file is never overwritten; press
+Deploy to start it). In Portainer it creates and starts a standalone stack with the target's stack name in the
+target's environment (Portainer 2.19 or later).
+
+### Preparing the Docker server
+
+- **SSH:** a user in the `docker` group, signing in with a private key (a passphrase is supported) or a
+  password; Docker Compose v2 for Stack mode. Stack mode needs an absolute compose folder. Container mode needs
+  `docker system dial-stdio` (Docker 18.09 or later); if it does not work, use Stack mode for that host.
+- **Portainer:** an access token (My account > Access tokens). The registry must be known to Portainer:
+  **Test connection** reports a missing registry and offers **Register in Portainer**, which adds it as a
+  custom registry with the target's registry login.
+- **Registry login:** a robot with pull (`R`) access to the root (User Manager > Robots). Over SSH the deploy
+  runs `docker login` before pulling and `docker logout` afterwards, which replaces any login the host had for
+  that registry. Without a login the host's own Docker login is used.
+- **Registry host:** the address the Docker server pulls from; it defaults to the address of the server
+  the application is connected to and can differ (for example an internal name).
+
+### In Container Manager
+
+![Deploy card](images/registry-deploy-card.png)
+
+The **DEPLOY** card in the container detail shows the server, what is recreated, the tag filter, whether
+deploy after push is on, and the last run, with **Deploy**, **Edit**, **History** and a refresh button.
+**Edit** (or **Configure deploy** on a container without a target) opens the target dialog: kind, mode, connection, target (stack, service, container, image
+variable), registry login, and automatic deploy with the tag filter. **Test connection** checks the
+connection without deploying and fills the pick lists (environments, stacks, services, containers). The first
+test shows the server's fingerprint (SSH host key, or the HTTPS certificate of Portainer when the system does
+not trust it); after you confirm it, only that fingerprint is accepted. Saved credentials are never shown
+again: leave a password box empty to keep the saved value.
+
+![Deploy target dialog](images/registry-deploy-target.png)
+
+The **tag filter** is a comma-separated list of patterns with `*` and `?`, case-sensitive, such as
+`*-rc.*, latest`. Empty means every tag. A push deploys when any of its tags (version tag plus the floating tags
+that were pushed) matches.
+
+### Security and limits
+
+- Credentials are stored encrypted (AES-256-GCM) in the database, and the key is stored in the database too.
+  Anyone who can read the database can therefore read the deploy credentials. Restrict database access
+  accordingly. Credentials are never sent to a client and are masked in deploy output.
+- One target per container. One deploy per target at a time; a second request gets 409. Like garbage
+  collection this assumes one API instance per registry.
+- A deploy runs synchronously for at most 15 minutes on the server; the client waits up to 16 minutes. A
+  disconnecting client does not stop it. A run left *Running* by a stopped API is shown as failed
+  (interrupted) after that time.
+
 ## Testing with Docker
 
 Docker allows plain HTTP to `localhost` and `127.0.0.0/8`; for any other host the Docker client requires HTTPS
@@ -204,6 +297,8 @@ It creates and deletes data with random suffixes; run it only against a test ser
 - Not implemented yet: scheduled garbage collection, filtered purge, tag retention, immutable
   tags, quotas, audit, base/derived relations, Docker-style Bearer tokens, `_catalog`.
 - Garbage collection assumes a single API instance per registry storage folder.
+- Deploy: one target per container, deploys are synchronous (15 minutes), only the WPF publisher triggers a
+  deploy after push, and a Git-based Portainer stack cannot be rewritten to the image variable.
 - Only sha256, image manifests and indexes (Docker v2 and OCI); schema 1 is rejected. Foreign layers
   (`urls`) are not checked. `DELETE` on blobs is not supported. `DELETE` of a manifest by digest answers
   409 while an index of the same container references it.
@@ -211,6 +306,15 @@ It creates and deletes data with random suffixes; run it only against a test ser
   large bodies (for example nginx `client_max_body_size 0`) and provide HTTPS for non-localhost clients.
 
 ## Maintainer notes
+
+Deploy (2026-10-07): targets and history are the tables `ta_CtnDeploy` and `ta_CtnDeployRun` in
+`030-registry.sql`; existing databases need `doc/sqlscript/mssql/updates/20261007-CtnDeploy.sql` before an API
+with this feature starts (the registry startup check refuses to start without them). The encryption key is
+`ta_Meta` key `Ctn.Deploy.Key`; changing or deleting it makes every stored credential unreadable. Code:
+`Api/Registry/Deploy/` (`CtnDeployExecutor` holds the four flows, `CtnDeployRunner` the lock and history,
+`CtnDeployStore` validation and the null/empty/value rule for credentials). The flows are unit-tested against
+fake SSH, Docker and Portainer transports in `tests/Em.Api.Core.Tests/Deploy/`; a real SSH host or Portainer
+has not been exercised by automated tests.
 
 SQL Server aggregation smoke test (harness kept outside the repo, data rolled back):
 `dotnet run --project ..\.artefacts\em-system\scripts\container-storage-smoke` from the repo root.

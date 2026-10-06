@@ -1,0 +1,92 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.CtnDeployStackDialog"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                  xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                  xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+                  xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                  mc:Ignorable="d"
+                  Title="{Binding Title}"
+                  Width="680"
+                  Height="640"
+                  MinWidth="480"
+                  MinHeight="420"
+                  ResizeMode="CanResize"
+                  ShowMinimizeButton="False"
+                  ShowInTaskbar="False"
+                  WindowStartupLocation="CenterOwner">
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:CtnDeployStackDialogVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid>
+      <Grid Margin="22,4,22,22">
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+         </Grid.RowDefinitions>
+
+         <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid Width="42" Height="42" VerticalAlignment="Center">
+               <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+               <fa:FontAwesome Icon="Solid_FileCirclePlus" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource themeAccentBrush}" />
+            </Grid>
+            <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+               <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+               <TextBlock Text="{Binding Caption}" Margin="0,4,0,0" FontSize="12.5" Opacity="0.75" TextWrapping="Wrap" />
+            </StackPanel>
+         </Grid>
+
+         <DockPanel Grid.Row="1">
+            <TextBlock DockPanel.Dock="Top" Text="Compose file" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,5" />
+            <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource fieldHelpStyle}"
+                       Text="Only the image and the container name are filled in. Add ports, volumes, environment and networks before creating it." />
+            <TextBox Style="{StaticResource fieldBoxStyle}" Height="Auto" Padding="14,10" VerticalContentAlignment="Top"
+                     AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                     HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" FontSize="12.5"
+                     Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Compose file" />
+         </DockPanel>
+
+         <StackPanel Grid.Row="2" Margin="0,12,0,0">
+            <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource dangerBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                       Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}" />
+            <TextBox Style="{StaticResource fieldBoxStyle}" Height="Auto" MaxHeight="150" Padding="14,8" VerticalContentAlignment="Top"
+                     IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11.5"
+                     Text="{Binding OutputText, Mode=OneWay}" AutomationProperties.Name="Output"
+                     Visibility="{Binding HasOutput, Converter={StaticResource boolToVisibility}}" />
+         </StackPanel>
+
+         <StackPanel Grid.Row="3" Margin="0,16,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource textButtonStyle}" IsCancel="True" Content="Close" />
+            <Button Style="{StaticResource filledButtonStyle}" Margin="8,0,0,0" Command="{Binding Commands[CreateCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_FileCirclePlus" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Create" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </StackPanel>
+      </Grid>
+
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+   </Grid>
+</windows:EmWindow>

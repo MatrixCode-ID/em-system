@@ -164,6 +164,9 @@ public sealed class ContainerProfile {
  public PublishSet Set { get; set; }=new();
  public ContainerTarget Target { get; set; }=new();
  public bool UseMyDockerLogin { get; set; }
+ /// <summary>After a push to the Built-in registry, asks the server to deploy each pushed image to the container's deploy target
+ /// (Container Manager). On by default, also for profiles saved before this option existed; a failed deploy does not fail the publish.</summary>
+ public bool AutoDeploy { get; set; }=true;
 }
 public static class ProfileJson {
  public static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy=JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive=true, WriteIndented=true, Converters={new JsonStringEnumConverter(allowIntegerValues:false)} };

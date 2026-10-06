@@ -133,6 +133,14 @@ Credentials always get new IDs, so an import never touches another profile's rem
   as environment variables. **Use my Docker login** is an explicit profile option; OCI verification and
   tag discovery may read that host's existing Docker config or credential helper without changing it or
   saving its secret.
+- **Deploy after push** (Advanced tab, container profiles, on by default; also on for profiles saved before
+  the option existed): after a successful push to the Built-in registry, the publisher asks the server to
+  deploy each pushed image (version tag plus the floating tags that succeeded) to the deploy target of its
+  container, set in Container Manager (see *Deploy to Docker servers* in engine-registry.md). Custom registries
+  are skipped. In a Set, the option of the Set profile applies to every step; for Compose each service is
+  deployed to its own container's target. Results are stored in the run's `deployments` (not as stages), so a
+  failed deploy never fails the publish; the status line shows "Deployed n, failed n, skipped n" and **Retry
+  deploy** runs the failed ones again. Toggling the option does not require a new Prepare.
 - The container version tag is set on the Publish page strip only, not in the profile form. The profile's
   **Tagging** (chosen once at creation, then fixed) decides the strip: Standard = A.B.C + channel with an automatic
   build number, Manual = one box for a free tag. The floating tags follow the channel and are pushed after the
