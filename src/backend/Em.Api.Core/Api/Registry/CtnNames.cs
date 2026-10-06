@@ -21,6 +21,11 @@ namespace Em.Api.Core.Registry
       public const int StateDisabled = 0;
       public const int StateActive = 1;
 
+      public const string ManifestDockerV2 = "application/vnd.docker.distribution.manifest.v2+json";
+      public const string ManifestDockerList = "application/vnd.docker.distribution.manifest.list.v2+json";
+      public const string ManifestOciImage = "application/vnd.oci.image.manifest.v1+json";
+      public const string ManifestOciIndex = "application/vnd.oci.image.index.v1+json";
+
       public const string AccessRead = "R";
       public const string AccessWrite = "W";
 

@@ -87,4 +87,51 @@ namespace Em.Api.Core.Models
       public string[] Tags { get; set; } = [];
    }
 
+   /// <summary>
+   /// Hasil review (dry run) atau eksekusi garbage collection registry. Semua ukuran dalam byte;
+   /// <see cref="Blobs"/> dibatasi <see cref="MaxListedBlobs"/> baris, jumlah sebenarnya di <see cref="BlobCount"/>.
+   /// </summary>
+   public class CtnGcReport
+   {
+      public const int MaxListedBlobs = 1000;
+
+      /// <summary><c>true</c> = review saja, tidak ada yang dihapus.</summary>
+      public bool DryRun { get; set; }
+
+      public int GraceHours { get; set; }
+
+      /// <summary>Batas waktu UTC: hanya yang lebih tua dari ini yang dihapus.</summary>
+      public DateTime CutoffUtc { get; set; }
+
+      public CtnGcBlob[] Blobs { get; set; } = [];
+      public int BlobCount { get; set; }
+      public long BlobBytes { get; set; }
+
+      public int StaleUploadCount { get; set; }
+      public long StaleUploadBytes { get; set; }
+
+      /// <summary>Berkas di folder blob tanpa baris metadata.</summary>
+      public int OrphanBlobFileCount { get; set; }
+      public long OrphanBlobFileBytes { get; set; }
+
+      /// <summary>Berkas di folder upload tanpa baris metadata.</summary>
+      public int OrphanUploadFileCount { get; set; }
+      public long OrphanUploadFileBytes { get; set; }
+
+      public long TotalBytes => BlobBytes + StaleUploadBytes + OrphanBlobFileBytes + OrphanUploadFileBytes;
+
+      /// <summary>Hal yang dilewati atau gagal dihapus, dalam kalimat pendek berbahasa Inggris.</summary>
+      public string[] Warnings { get; set; } = [];
+   }
+
+   /// <summary>Satu blob yatim dalam <see cref="CtnGcReport"/>.</summary>
+   public class CtnGcBlob
+   {
+      public string Digest { get; set; } = "";
+      public long Size { get; set; }
+      public DateTime CreatedAt { get; set; }
+
+      /// <summary>Container (<c>root/nama</c>) yang masih menautkannya lewat tautan lama; kosong bila tidak ada.</summary>
+      public string[] LinkedImages { get; set; } = [];
+   }
 }

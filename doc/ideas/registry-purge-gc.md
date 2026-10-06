@@ -2,7 +2,7 @@
 
 - **Tanggal:** 2026-10-06
 - **Status:** jadi plan (2026-10-06) untuk GC + review UI + hapus tag/manifest; purge berfilter, retensi, dan GC terjadwal masih diskusi
-- **Plan turunan:** [plan/unexecuted/registry-gc-review.md](../../plan/unexecuted/registry-gc-review.md)
+- **Plan turunan:** [plan/executed/registry-gc-review.md](../../plan/executed/registry-gc-review.md)
 - **Catatan terkait:** [doc/engine/engine-registry.md](../engine/engine-registry.md) ("Known limitations": GC, retensi tag, kuota, audit = tahap 2)
 
 Catatan ini berisi gagasan, bukan perintah kerja. Agent tidak boleh mengeksekusinya sebelum catatan ini dijadikan plan di `plan/unexecuted/`.
@@ -62,3 +62,7 @@ Menghapus blob yang tidak lagi direferensikan.
 6. Perlu jejak audit (siapa menghapus apa) sekarang, atau ditunda bersama fitur audit tahap 2?
 7. Apakah tag immutable/terlindung masuk cakupan yang sama, karena bersinggungan dengan pengecualian purge?
 8. Apakah perlu kolom waktu baru, misalnya waktu terakhir di-pull untuk kriteria "tidak dipakai", atau cukup `datestamp` push?
+
+## Riwayat
+
+- 2026-10-06: GC manual + review + hapus tag/manifest dieksekusi, lihat [plan/executed/registry-gc-review.md](../../plan/executed/registry-gc-review.md). Purge berfilter, retensi, dan GC terjadwal masih diskusi.

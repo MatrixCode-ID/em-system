@@ -27,6 +27,7 @@ namespace Em.Api.Core.IntegrationTests
       private string? databaseName;
       private string? connectionString;
       private string? unavailableReason;
+      private readonly List<string> extraDatabases = [];
 
       /// <summary>
       /// Connection string ke database sementara. Kalau server tidak tersedia, test pemanggilnya
@@ -69,17 +70,38 @@ namespace Em.Api.Core.IntegrationTests
          connectionString = builder.ConnectionString;
       }
 
+      /// <summary>Membuat database kosong tambahan untuk satu kelas test; ikut dihapus di DisposeAsync.</summary>
+      public async Task<string> CreateExtraDatabaseAsync(CancellationToken ct) {
+         _ = ConnectionString; // skip bila server tidak tersedia
+         var name = DatabasePrefix + Guid.NewGuid().ToString("N");
+         await using (var connection = new SqlConnection(masterConnectionString)) {
+            await connection.OpenAsync(ct);
+            await using var command = new SqlCommand($"CREATE DATABASE [{name}]", connection);
+            await command.ExecuteNonQueryAsync(ct);
+         }
+
+         lock (extraDatabases) extraDatabases.Add(name);
+         return new SqlConnectionStringBuilder(connectionString) { InitialCatalog = name }.ConnectionString;
+      }
+
       public async ValueTask DisposeAsync() {
-         if (databaseName is null || masterConnectionString is null) return;
+         if (masterConnectionString is null) return;
 
          // Pooled connections from the tests still hold the database open; drop them first.
          SqlConnection.ClearAllPools();
+         string[] names;
+         lock (extraDatabases) names = [.. extraDatabases];
+         if (databaseName is not null) names = [.. names, databaseName];
+         if (names.Length == 0) return;
+
          await using var connection = new SqlConnection(masterConnectionString);
          await connection.OpenAsync();
-         await using var command = new SqlCommand(
-            $"ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{databaseName}];",
-            connection);
-         await command.ExecuteNonQueryAsync();
+         foreach (var name in names) {
+            await using var command = new SqlCommand(
+               $"ALTER DATABASE [{name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{name}];",
+               connection);
+            await command.ExecuteNonQueryAsync();
+         }
       }
    }
 }

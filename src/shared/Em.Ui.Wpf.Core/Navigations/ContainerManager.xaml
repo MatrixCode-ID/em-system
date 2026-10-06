@@ -395,6 +395,16 @@
             </Grid>
 
             <StackPanel Grid.Column="9" Orientation="Horizontal" VerticalAlignment="Center">
+               <Button Style="{StaticResource outlinedButtonStyle}"
+                       Command="{Binding Commands[GarbageCollectionCommand]}"
+                       ToolTip="Review and remove blobs, uploads and files no manifest uses"
+                       AutomationProperties.Name="Garbage collection">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Broom" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Garbage collection" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
+               <Border Style="{StaticResource toolbarSeparatorStyle}" />
                <Border Style="{StaticResource chipStyle}" ToolTip="{Binding StorageDetail}">
                   <TextBlock Text="{Binding StorageCaption}" />
                </Border>
@@ -894,7 +904,21 @@
                               <ItemsControl ItemsSource="{Binding Manifests}">
                                  <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                       <Border Style="{StaticResource innerCardStyle}" Margin="0,0,0,8" Padding="12,10,12,6">
+                                       <Border Style="{StaticResource innerCardStyle}" Margin="0,0,0,8" Padding="12,10,12,6"
+                                               Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                          <Border.ContextMenu>
+                                             <ContextMenu>
+                                                <MenuItem Header="Delete manifest"
+                                                          Command="{Binding PlacementTarget.Tag.Commands[DeleteManifestCommand],
+                                                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext,
+                                                                             RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                   <MenuItem.Icon>
+                                                      <fa:FontAwesome Icon="Solid_TrashCan" Foreground="{StaticResource dangerBrush}" />
+                                                   </MenuItem.Icon>
+                                                </MenuItem>
+                                             </ContextMenu>
+                                          </Border.ContextMenu>
                                           <StackPanel>
                                              <ItemsControl ItemsSource="{Binding Tags}">
                                                 <ItemsControl.ItemsPanel>
@@ -906,7 +930,7 @@
                                                    <DataTemplate>
                                                       <Button Style="{StaticResource tagChipButtonStyle}"
                                                               Content="{Binding}"
-                                                              ToolTip="Copy docker pull for this tag. Right-click for more."
+                                                              ToolTip="Copy docker pull for this tag. Right-click for more, including delete."
                                                               Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                               Command="{Binding DataContext.Commands[CopyTagPullCommand],
                                                                                 RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -923,6 +947,16 @@
                                                                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                                          CommandParameter="{Binding PlacementTarget.Content,
                                                                                             RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                               <Separator />
+                                                               <MenuItem Header="Delete tag"
+                                                                         Command="{Binding PlacementTarget.Tag.Commands[DeleteTagCommand],
+                                                                                           RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                         CommandParameter="{Binding PlacementTarget.Content,
+                                                                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                                  <MenuItem.Icon>
+                                                                     <fa:FontAwesome Icon="Solid_TrashCan" Foreground="{StaticResource dangerBrush}" />
+                                                                  </MenuItem.Icon>
+                                                               </MenuItem>
                                                             </ContextMenu>
                                                          </Button.ContextMenu>
                                                       </Button>
@@ -957,6 +991,14 @@
                                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                            CommandParameter="{Binding}">
                                                       <fa:FontAwesome Icon="Solid_Download" />
+                                                   </Button>
+                                                   <Button Style="{StaticResource rowActionButtonStyle}"
+                                                           ToolTip="Delete manifest"
+                                                           AutomationProperties.Name="Delete manifest"
+                                                           Command="{Binding DataContext.Commands[DeleteManifestCommand],
+                                                                             RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           CommandParameter="{Binding}">
+                                                      <fa:FontAwesome Icon="Solid_TrashCan" Foreground="{StaticResource dangerBrush}" />
                                                    </Button>
                                                 </StackPanel>
                                              </Grid>

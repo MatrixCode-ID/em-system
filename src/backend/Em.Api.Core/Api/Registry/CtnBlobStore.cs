@@ -86,7 +86,7 @@ namespace Em.Api.Core.Registry
          try {
             File.Delete(UploadPath(uploadId));
          } catch (IOException) {
-            // Berkas sementara; sisanya akan dibersihkan pembersihan unggahan basi (tahap 2).
+            // Berkas sementara; sisanya dibersihkan garbage collection.
          }
       }
 

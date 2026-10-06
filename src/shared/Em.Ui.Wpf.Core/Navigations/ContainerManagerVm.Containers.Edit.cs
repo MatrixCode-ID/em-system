@@ -20,11 +20,14 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(MoveNodeCommand), MoveNodeCommand, MoveNodeCommandAllowed);
          RegisterCommand(nameof(DeleteNodeCommand), DeleteNodeCommand, DeleteNodeCommandAllowed);
          RegisterCommand<object?>(nameof(DropCommand), DropCommand, DropCommandAllowed);
+         RegisterCommand<string?>(nameof(DeleteTagCommand), DeleteTagCommand, DeleteTagCommandAllowed);
+         RegisterCommand<CtnManifestItem?>(nameof(DeleteManifestCommand), DeleteManifestCommand, DeleteManifestCommandAllowed);
+         RegisterCommand(nameof(GarbageCollectionCommand), GarbageCollectionCommand, GarbageCollectionCommandAllowed);
       }
 
       private const string MetadataOnlyNote =
-         "Only the metadata is removed. The layer files stay on disk until garbage collection, " +
-         "which is not built yet, so disk space is not freed right away.";
+         "Only the metadata is removed. The layer files stay on disk until you run Garbage collection " +
+         "from the toolbar.";
 
       #region Data
 
@@ -237,6 +240,54 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Hanya untuk container yang dipilih, atau folder yang sudah kosong.</summary>
       public bool DeleteNodeCommandAllowed() =>
          CanAct && SelectedNode is { } node && (!node.IsFolder || node.Children.Count == 0);
+
+      #endregion
+
+      #region Tag and manifest
+
+      /// <summary>Menghapus satu tag container yang dipilih; manifest-nya tetap ada.</summary>
+      public async Task DeleteTagCommand(string? tag) {
+         if (string.IsNullOrEmpty(tag) || SelectedNode?.Image is not { } image || DialogOwner is not { } owner) return;
+         var node = SelectedNode;
+         if (owner.ShowMboxDecideWarning(
+                $"Delete tag '{tag}' from '{image.FullName}'?\n\n" +
+                "The manifest stays and can still be pulled by digest.", "Delete Tag") != MessageBoxResult.Yes) return;
+
+         await RunMutationAsync("Deleting tag...", "Delete Tag",
+            () => Service.PostMeta_CtnTagDelete(node.Id, tag),
+            () => ReadTreeAsync(node.Id));
+      }
+
+      public bool DeleteTagCommandAllowed(string? tag) => CanAct && SelectedNode?.Image is not null && !string.IsNullOrEmpty(tag);
+
+      /// <summary>Menghapus satu manifest beserta tag-nya. Ditolak server (409) bila masih dirujuk index.</summary>
+      public async Task DeleteManifestCommand(CtnManifestItem? manifest) {
+         if (manifest is null || SelectedNode?.Image is not { } image || DialogOwner is not { } owner) return;
+         var node = SelectedNode;
+         var tags = manifest.HasTags ? $"Tags removed with it: {string.Join(", ", manifest.Tags)}." : "It has no tags.";
+         if (owner.ShowMboxDecideWarning(
+                $"Delete manifest {manifest.ShortDigest} from '{image.FullName}'?\n\n{tags}\n\n" +
+                $"{MetadataOnlyNote}\n\nThis cannot be undone.", "Delete Manifest") != MessageBoxResult.Yes) return;
+
+         await RunMutationAsync("Deleting manifest...", "Delete Manifest",
+            () => Service.PostMeta_CtnManifestDelete(node.Id, manifest.Info.Id),
+            () => ReadTreeAsync(node.Id));
+      }
+
+      public bool DeleteManifestCommandAllowed(CtnManifestItem? manifest) => CanAct && SelectedNode?.Image is not null && manifest is not null;
+
+      #endregion
+
+      #region Garbage collection
+
+      /// <summary>Membuka dialog review garbage collection; storage dibaca ulang bila GC dijalankan.</summary>
+      public async Task GarbageCollectionCommand() {
+         var dialog = new CtnGcDialog(Service) { Owner = DialogOwner };
+         dialog.ShowDialog();
+         if (dialog.Vm.HasRun) await RefreshStorageCommand();
+      }
+
+      public bool GarbageCollectionCommandAllowed() => CanAct;
 
       #endregion
 

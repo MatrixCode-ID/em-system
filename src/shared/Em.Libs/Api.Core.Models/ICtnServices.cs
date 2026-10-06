@@ -82,12 +82,45 @@ namespace Em.Api.Core.Models
 
       /// <summary>
       /// Menghapus container beserta manifest, tag, dan tautan blob-nya. Berkas blob di disk dibersihkan
-      /// garbage collection (tahap 2), bukan di sini.
+      /// lewat <see cref="PostGetMeta_CtnGcRun"/>.
       /// </summary>
       Task PostMeta_CtnImageDelete(string imageId);
 
       /// <summary>Manifest sebuah container berikut tag-nya, yang terbaru lebih dulu.</summary>
       Task<CtnManifestInfo[]> GetMeta_CtnImageManifests(string imageId);
+
+      /// <summary>
+      /// Menghapus satu tag. Manifest-nya tetap ada dan masih bisa di-pull lewat digest. 404 bila tag tidak ada.
+      /// </summary>
+      Task PostMeta_CtnTagDelete(string imageId, string tag);
+
+      /// <summary>
+      /// Menghapus satu manifest beserta tag yang menunjuknya. Hanya metadata; blob-nya menjadi kandidat
+      /// garbage collection. 404 bila tidak ada, 409 bila masih dirujuk manifest list/index di container yang sama.
+      /// </summary>
+      Task PostMeta_CtnManifestDelete(string imageId, string manifestId);
+
+      #endregion
+
+      #region Garbage collection
+
+      /// <summary>Masa tenggang bawaan (jam) untuk garbage collection.</summary>
+      const int GcDefaultGraceHours = 24;
+
+      /// <summary>Masa tenggang terbesar yang diterima (jam).</summary>
+      const int GcMaxGraceHours = 720;
+
+      /// <summary>
+      /// Dry run: apa yang akan dihapus garbage collection dengan masa tenggang <paramref name="graceHours"/>
+      /// (1..<see cref="GcMaxGraceHours"/>, selain itu 400). Tidak mengubah apa pun.
+      /// </summary>
+      Task<CtnGcReport> GetMeta_CtnGcReview(int graceHours);
+
+      /// <summary>
+      /// Menjalankan garbage collection: blob yatim, upload basi, dan berkas tanpa metadata yang lebih tua dari
+      /// masa tenggang. Laporan berisi yang benar-benar dihapus. 409 bila GC lain sedang berjalan.
+      /// </summary>
+      Task<CtnGcReport> PostGetMeta_CtnGcRun(int graceHours);
 
       #endregion
 

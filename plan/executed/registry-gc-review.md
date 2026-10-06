@@ -782,3 +782,46 @@ Tinggi dan jarak mengikuti style toolbar yang sudah dipakai StackPanel itu (tomb
    - Catatan: `doc/engine/engine-registry.md` **sudah berstatus modified sebelum plan ini** (pekerjaan lain yang belum di-commit). Sebelum mengedit, jalankan `git diff doc/engine/engine-registry.md` dan simpan ringkasannya di laporan. Karena hunk tidak bisa dipisahkan dengan aman tanpa `git add -p` (interaktif, tidak didukung), **commit berkas itu utuh** dan sebutkan di pesan commit serta laporan bahwa perubahan dokumentasi sebelumnya ikut masuk.
    - Pesan commit bahasa Indonesia, mis. judul `Tambah garbage collection registry dengan review dan hapus tag/manifest`, isi 3–6 baris poin, diakhiri baris `Co-Authored-By` sesuai instruksi sistem yang berlaku saat eksekusi. Tanpa push.
 4. Beri tahu pengguna: apa yang selesai, angka tes, verifikasi tertunda, dan skrip manual PowerShell (bila ada) beserta cara menjalankannya.
+
+---
+
+## Laporan eksekusi (2026-10-06)
+
+Dieksekusi oleh Claude Code (Sonnet 5.5) di branch `work-bench`. Semua kode Langkah 1–9 ditulis dulu; build, tes, render, dan review dilakukan sesudahnya.
+
+### Ringkasan perubahan
+
+- **Kontrak (`Em.Libs`)**: `CtnGcReport`/`CtnGcBlob` di `CtnDtos.cs`; `ICtnServices` mendapat `PostMeta_CtnTagDelete`, `PostMeta_CtnManifestDelete`, `GetMeta_CtnGcReview`, `PostGetMeta_CtnGcRun`, konstanta `GcDefaultGraceHours` (24) dan `GcMaxGraceHours` (720).
+- **Backend (`Em.Api.Core/Api/Registry`)**: `CtnBlobGate` (kunci per proses), `CtnManifestDeletion` (cek index perujuk + hapus bersama, dipakai layanan dan `DELETE /v2/.../manifests/<digest>` → 409), `CtnGarbageCollector` (blob yatim, upload basi, berkas blob/upload tanpa metadata; dry run dan run; `RunLock` 409), konstanta media type dipindah ke `CtnNames`, kunci `CtnBlobGate` di `CompleteUploadAsync` dan `TryMountAsync`, action baru di `CtnServices`.
+- **WPF (`Em.Ui.Wpf.Core`)**: `CtnService` (4 method), `CtnGcDialog` (+Vm, XAML), toolbar tombol **Garbage collection**, **Delete tag** (menu klik kanan chip), **Delete manifest** (ikon tong sampah + menu klik kanan), `MetadataOnlyNote` diperbarui.
+- **Tes**: `InternalsVisibleTo` ke `Em.Api.Core.IntegrationTests`, `SqlServerDatabase.CreateExtraDatabaseAsync`, `RegistryFixture`, `CtnGarbageCollectorTests` (11 kasus termasuk theory 0/721), `CtnManifestDeletionTests` (2 kasus).
+- **Dokumen**: `doc/engine/engine-registry.md` (bagian Garbage collection baru + screenshot `doc/engine/images/registry-gc-review.png`), `doc/ideas/registry-purge-gc.md` (Riwayat), `claude.md`.
+
+### Keputusan tambahan yang diambil sendiri
+
+- `RunCommandAllowed` memakai "ada item untuk dibersihkan" (jumlah blob/upload/berkas > 0), bukan `TotalBytes > 0` seperti di plan, supaya blob berukuran 0 byte tetap bisa dibersihkan.
+- Daftar blob dialog dibungkus `Border` `innerCardStyle` dan `ListBox BorderThickness="0"`, karena border bawaan ListBox tampak putih di tema gelap.
+- `inverseBoolToVisibility` didefinisikan lokal di dialog (resource itu lokal di `ContainerManager.xaml`).
+- `monoValueStyle`/`metaValueStyle` juga lokal di `ContainerManager.xaml`, jadi dialog memakai `gcMonoStyle` sendiri.
+- `GraceHours` memakai `Get(ICtnServices.GcDefaultGraceHours)`; versi awal `Get<int?>() ?? ...` melempar `NullReferenceException` pada setter (ketahuan oleh harness render, sudah diperbaiki).
+- Tidak ada implementasi `ICtnServices` lain (MAUI tidak punya `CtnService`), jadi tidak ada yang ditambahkan di sana.
+- `doc/engine/engine-registry.md` sudah berstatus modified sebelum plan ini (hanya tautan ke user guide di paragraf pembuka, +3/-1 baris); berkas itu ikut di-commit utuh bersama perubahan GC. `doc/engine/README.md` (baris tautan user guide), `engine-registry-guide*.md`, `images/registry-guide/`, dan `doc/ideas/publish-ui-review.md` **tidak** di-stage.
+- `doc/engine/engine-registry-guide.md` dan `.id.md` mungkin perlu bagian Garbage collection/Delete tag/Delete manifest (tidak diubah, milik pekerjaan lain).
+
+### Hasil build dan tes
+
+- `dotnet build src/backend/Em.Api.slnx`, `src/frontend/Em.Ui.Wpf.slnx`, `src/frontend/Em.Ui.Maui.slnx`: 0 error, 0 warning.
+- `dotnet test src/backend/Em.Api.slnx`: 31 lulus, 0 gagal, 0 skip (SQL Server lokal tersedia, jadi tes integrasi benar-benar jalan). `dotnet test src/frontend/Em.Ui.Wpf.slnx`: 6 lulus.
+- Tidak ada tes `Run_SecondConcurrentRun_Returns409` (opsional, sulit dibuat deterministik); 409 GC kedua hanya diverifikasi lewat pembacaan kode.
+
+### Render (harness `..\.artefacts\em-system\scripts\registry-gc-render`, PNG di `..\.artefacts\em-system\registry-gc-render`)
+
+Terang dan gelap, semua diperiksa dengan Read: `*-manager-1200`, `*-manager-900`, `*-manager-disabled` (container terpilih, dua manifest, tombol hapus merah redup saat disabled), `*-gc-empty`, `*-gc-review`, `*-gc-busy` (overlay menunggu 1,2 detik agar tampil), `*-gc-run-disabled`, `*-gc-removed`, `*-gc-nothing`, `*-gc-error`, `*-gc-narrow-480`. Tidak ada area putih di tema gelap, teks tidak terpotong tidak wajar. Pada lebar 900 toolbar Container Manager terpotong (tombol Garbage collection dan chip storage), sama seperti perilaku lama pada lebar itu (lihat `container-manager-render\light-narrow.png`); tidak diubah.
+
+### Verifikasi tertunda
+
+- **Uji HTTP end-to-end** (review, hapus tag/manifest, run lewat API/WPF nyata): API tidak berjalan di mesin ini dan butuh password admin. Jalankan API lokal lalu uji lewat Container Manager, atau tulis skrip sekali pakai di `..\.artefacts\em-system\scripts\registry-gc-http\`.
+- **Docker sungguhan**: docker tersedia tetapi registry tidak berjalan. Skrip manual: `plan/registry-gc-review-manual/registry-gc-docker-check.ps1` (tidak dijalankan agent). Cara: set `$env:EM_REGISTRY_TOKEN` ke token robot dengan hak Write, lalu dari root repo `pwsh -File plan/registry-gc-review-manual/registry-gc-docker-check.ps1 -Registry localhost:5132 -Image acme/gc-check -RobotName <robot>`. Hasil yang diperiksa: push dan DELETE manifest (202), GET tag 404, push ulang + pull berhasil; lalu langkah manual Review/Run di UI (blob muda harus tidak terdaftar).
+- **Interaksi mouse nyata**: menu klik kanan chip tag dan baris manifest (ikon di `MenuItem.Icon` belum dilihat di window nyata), klik tombol hapus/GC, dialog konfirmasi, Copy digest di dialog GC. Hanya render statis yang diperiksa.
+- **Harness hanya mem-render**: eksekusi Run melalui UI (konfirmasi + refresh storage setelah `HasRun`) belum dijalankan dengan server nyata.
+- **Residual risk** (di luar cakupan plan): `PutManifestAsync` memeriksa tautan blob sebelum transaksi tanpa `CtnBlobGate`; blob yatim lama (tautan sudah tua) yang dirujuk manifest baru dapat terhapus GC di celah sangat sempit antara pemeriksaan dan penyimpanan `ManifestBlobs`. Layak dicatat sebagai ide di `doc/ideas/` bila ingin ditutup.

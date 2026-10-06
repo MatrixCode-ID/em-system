@@ -8,8 +8,7 @@ namespace Em.Api.Core.Registry
    /// <summary>
    /// Sisi pengelolaan container registry: root, folder dan container bernama, semuanya di balik satu claim <see cref="ICtnServices.CtnClaim"/>. Push dan pull tidak lewat
    /// sini - itu jalur <c>/v2</c> di <see cref="CtnRegistryEndpoint"/>. Berkas blob di disk tidak
-   /// disentuh kecuali berkas unggahan sementara; pembersihan blob yatim adalah garbage collection
-   /// (tahap 2).
+   /// disentuh kecuali berkas unggahan sementara; pembersihan blob yatim lewat <see cref="PostGetMeta_CtnGcRun"/>.
    /// </summary>
    [Module(Defaults.AdministrativeToolsModuleName)]
    public class CtnServices : ServicesBase, ICtnServices
@@ -326,6 +325,39 @@ namespace Em.Api.Core.Registry
             Tags = tags.Where(t => t.cCtnManifestId == m.cCtnManifestId).Select(t => t.cCtnTagName).ToArray()
          }).ToArray();
       }
+
+      [PostAction(claim: ICtnServices.CtnClaim)]
+      public async Task PostMeta_CtnTagDelete(string imageId, string tag) {
+         var db = Db;
+         await RequireImageAsync(db, imageId);
+         var rows = await db.Tags.Where(t => t.cCtnImageId == imageId && t.cCtnTagName == tag).ExecuteDeleteAsync(AbortToken);
+         if (rows == 0) throw new ActionException($"Tag '{tag}' was not found.", 404);
+      }
+
+      [PostAction(claim: ICtnServices.CtnClaim)]
+      public async Task PostMeta_CtnManifestDelete(string imageId, string manifestId) {
+         var db = Db;
+         await RequireImageAsync(db, imageId);
+         var digest = await db.Manifests.Where(m => m.cCtnManifestId == manifestId && m.cCtnImageId == imageId)
+            .Select(m => m.cCtnManifestDigest).SingleOrDefaultAsync(AbortToken) ?? throw NotFound("Manifest");
+         if (await CtnManifestDeletion.FindReferencingIndexAsync(db, imageId, digest, AbortToken) is { } index) {
+            throw new ActionException($"Manifest is referenced by index '{index}'; delete the index first.", 409);
+         }
+
+         await CtnManifestDeletion.DeleteAsync(db, manifestId, AbortToken);
+      }
+
+      #endregion
+
+      #region Garbage collection
+
+      [GetAction(claim: ICtnServices.CtnClaim)]
+      public Task<CtnGcReport> GetMeta_CtnGcReview(int graceHours) =>
+         new CtnGarbageCollector(Db, Store).RunAsync(graceHours, dryRun: true, AbortToken);
+
+      [PostAction(claim: ICtnServices.CtnClaim)]
+      public Task<CtnGcReport> PostGetMeta_CtnGcRun(int graceHours) =>
+         new CtnGarbageCollector(Db, Store).RunAsync(graceHours, dryRun: false, AbortToken);
 
       #endregion
 

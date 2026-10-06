@@ -24,11 +24,6 @@ namespace Em.Api.Core.Registry
    {
       private const int MaxManifestSize = 4 * 1024 * 1024;
 
-      private const string ManifestDockerV2 = "application/vnd.docker.distribution.manifest.v2+json";
-      private const string ManifestDockerList = "application/vnd.docker.distribution.manifest.list.v2+json";
-      private const string ManifestOciImage = "application/vnd.oci.image.manifest.v1+json";
-      private const string ManifestOciIndex = "application/vnd.oci.image.index.v1+json";
-
       // Request yang sedang dilayani, dibawa ke setiap handler supaya parameternya tidak berderet.
       private sealed class Call
       {
@@ -347,11 +342,11 @@ namespace Em.Api.Core.Registry
          if (CtnNames.IsValidDigest(reference)) {
             var manifest = await FindManifestAsync(c, reference) ??
                            throw new CtnRegistryException(404, "MANIFEST_UNKNOWN", $"Manifest '{reference}' is unknown.");
-            await using var tx = await c.Db.Database.BeginTransactionAsync(c.Ct);
-            await c.Db.Tags.Where(t => t.cCtnManifestId == manifest.cCtnManifestId).ExecuteDeleteAsync(c.Ct);
-            await c.Db.ManifestBlobs.Where(b => b.cCtnManifestId == manifest.cCtnManifestId).ExecuteDeleteAsync(c.Ct);
-            await c.Db.Manifests.Where(m => m.cCtnManifestId == manifest.cCtnManifestId).ExecuteDeleteAsync(c.Ct);
-            await tx.CommitAsync(c.Ct);
+            if (await CtnManifestDeletion.FindReferencingIndexAsync(c.Db, imageId, manifest.cCtnManifestDigest, c.Ct) is { } index) {
+               throw new CtnRegistryException(409, "DENIED", $"Manifest '{reference}' is referenced by index '{index}'; delete the index first.");
+            }
+
+            await CtnManifestDeletion.DeleteAsync(c.Db, manifest.cCtnManifestId, c.Ct);
          } else {
             var deleted = await c.Db.Tags.Where(t => t.cCtnImageId == imageId && t.cCtnTagName == reference).ExecuteDeleteAsync(c.Ct);
             if (deleted == 0) {
@@ -390,7 +385,7 @@ namespace Em.Api.Core.Registry
             var blobs = new List<BlobRef>();
             var children = new List<string>();
             switch (mediaType) {
-               case ManifestDockerV2 or ManifestOciImage:
+               case CtnNames.ManifestDockerV2 or CtnNames.ManifestOciImage:
                   if (!root.TryGetProperty("config", out var config) || config.ValueKind != JsonValueKind.Object) {
                      throw new CtnRegistryException(400, "MANIFEST_INVALID", "The manifest has no config.");
                   }
@@ -408,7 +403,7 @@ namespace Em.Api.Core.Registry
                   }
 
                   break;
-               case ManifestDockerList or ManifestOciIndex:
+               case CtnNames.ManifestDockerList or CtnNames.ManifestOciIndex:
                   if (!root.TryGetProperty("manifests", out var manifests) || manifests.ValueKind != JsonValueKind.Array) {
                      throw new CtnRegistryException(400, "MANIFEST_INVALID", "The manifest list has no manifests.");
                   }
@@ -548,12 +543,16 @@ namespace Em.Api.Core.Registry
             select image.cCtnImageId).SingleOrDefaultAsync(c.Ct);
          if (sourceImageId is null) return false;
 
-         var blobId = await c.Db.BlobLinks.Where(l => l.cCtnImageId == sourceImageId)
-            .Join(c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest), l => l.cCtnBlobId, b => b.cCtnBlobId, (_, b) => b.cCtnBlobId)
-            .SingleOrDefaultAsync(c.Ct);
-         if (blobId is null || !c.Store.BlobExists(digest)) return false;
+         // Kunci menahan garbage collection selama blob sumber dicek dan ditautkan ke container ini.
+         using (await CtnBlobGate.EnterAsync(c.Ct)) {
+            var blobId = await c.Db.BlobLinks.Where(l => l.cCtnImageId == sourceImageId)
+               .Join(c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest), l => l.cCtnBlobId, b => b.cCtnBlobId, (_, b) => b.cCtnBlobId)
+               .SingleOrDefaultAsync(c.Ct);
+            if (blobId is null || !c.Store.BlobExists(digest)) return false;
 
-         await LinkBlobAsync(c, blobId);
+            await LinkBlobAsync(c, blobId);
+         }
+
          c.Http.Response.StatusCode = StatusCodes.Status201Created;
          c.Http.Response.Headers.Location = $"{c.BasePath}/{c.FullName}/blobs/{digest}";
          c.Http.Response.Headers["Docker-Content-Digest"] = digest;
@@ -623,23 +622,27 @@ namespace Em.Api.Core.Registry
          }
 
          var size = new FileInfo(path).Length;
-         c.Store.CommitUpload(uploadId, digest);
+         // Kunci dipegang dari pemindahan berkas sampai tautan tersimpan, supaya garbage collection tidak menyapu blob ini di tengah jalan.
+         using (await CtnBlobGate.EnterAsync(c.Ct)) {
+            c.Store.CommitUpload(uploadId, digest);
 
-         var blobId = await c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest).Select(b => b.cCtnBlobId).SingleOrDefaultAsync(c.Ct);
-         if (blobId is null) {
-            var now = DateTime.UtcNow;
-            blobId = $"{Ulid.NewUlid()}";
-            c.Db.Blobs.Add(new ta_CtnBlob { cCtnBlobId = blobId, cCtnBlobDigest = digest, cCtnBlobSize = size, ustamp = now, datestamp = now });
-            try {
-               await c.Db.SaveChangesAsync(c.Ct);
-            } catch (DbUpdateException) {
-               // Kemungkinan besar blob yang sama dicatat request lain di saat yang sama; ambil miliknya.
-               c.Db.ChangeTracker.Clear();
-               blobId = await c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest).Select(b => b.cCtnBlobId).SingleOrDefaultAsync(c.Ct) ?? throw new CtnRegistryException(500, "UNKNOWN", "The blob could not be recorded.");
+            var blobId = await c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest).Select(b => b.cCtnBlobId).SingleOrDefaultAsync(c.Ct);
+            if (blobId is null) {
+               var now = DateTime.UtcNow;
+               blobId = $"{Ulid.NewUlid()}";
+               c.Db.Blobs.Add(new ta_CtnBlob { cCtnBlobId = blobId, cCtnBlobDigest = digest, cCtnBlobSize = size, ustamp = now, datestamp = now });
+               try {
+                  await c.Db.SaveChangesAsync(c.Ct);
+               } catch (DbUpdateException) {
+                  // Kemungkinan besar blob yang sama dicatat request lain di saat yang sama; ambil miliknya.
+                  c.Db.ChangeTracker.Clear();
+                  blobId = await c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest).Select(b => b.cCtnBlobId).SingleOrDefaultAsync(c.Ct) ?? throw new CtnRegistryException(500, "UNKNOWN", "The blob could not be recorded.");
+               }
             }
+
+            await LinkBlobAsync(c, blobId);
          }
 
-         await LinkBlobAsync(c, blobId);
          await c.Db.Uploads.Where(u => u.cCtnUploadId == uploadId).ExecuteDeleteAsync(c.Ct);
 
          c.Http.Response.StatusCode = StatusCodes.Status201Created;

@@ -59,6 +59,22 @@ namespace Em.Api.Core
       public Task<CtnManifestInfo[]> GetMeta_CtnImageManifests(string imageId) =>
          GetAsync<CtnManifestInfo[]>(nameof(GetMeta_CtnImageManifests), imageId);
 
+      public Task PostMeta_CtnTagDelete(string imageId, string tag) =>
+         PostAsync(nameof(PostMeta_CtnTagDelete), imageId, tag);
+
+      public Task PostMeta_CtnManifestDelete(string imageId, string manifestId) =>
+         PostAsync(nameof(PostMeta_CtnManifestDelete), imageId, manifestId);
+
+      #endregion
+
+      #region Garbage collection
+
+      public Task<CtnGcReport> GetMeta_CtnGcReview(int graceHours) =>
+         GetAsync<CtnGcReport>(nameof(GetMeta_CtnGcReview), graceHours);
+
+      public Task<CtnGcReport> PostGetMeta_CtnGcRun(int graceHours) =>
+         PostAsync<CtnGcReport>(nameof(PostGetMeta_CtnGcRun), graceHours);
+
       #endregion
    }
 }

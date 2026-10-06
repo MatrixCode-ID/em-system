@@ -29,4 +29,8 @@
 
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="Em.Api.Core.IntegrationTests"/>
+    </ItemGroup>
+
 </Project>
