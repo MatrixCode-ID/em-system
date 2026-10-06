@@ -254,7 +254,6 @@ public partial class PublishView : UserControl {
  private void PackagesDragOver(object s,DragEventArgs e) {e.Effects=_kind==PublishKind.NuGet&&_cancel==null&&e.Data.GetDataPresent(DataFormats.FileDrop)?DragDropEffects.Copy:DragDropEffects.None;e.Handled=true;}
  private void PackagesDrop(object s,DragEventArgs e) {if(_kind==PublishKind.NuGet&&e.Data.GetData(DataFormats.FileDrop) is string[] files)AddPackages(files);}
  private void CopyTarget(object s,RoutedEventArgs e) {try {Clipboard.SetText(targetText.Text);}catch(System.Runtime.InteropServices.COMException ex){message.Text=ex.Message;}}
- private async void OpenManager(object s,RoutedEventArgs e) {if(_app!=null)await _app.NavigateTo(_kind==PublishKind.NuGet?"admin.nupak":"admin.container");}
  private static bool Confirm(string text)=>MessageBox.Show(text,"Publisher",MessageBoxButton.YesNo,MessageBoxImage.Warning)==MessageBoxResult.Yes;
  private void OpenFolder(string folder) {try {Directory.CreateDirectory(folder);Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});}catch(Exception ex){message.Text=ex.Message;}}
  private async void DockerInsecureClick(object s,RoutedEventArgs e) {

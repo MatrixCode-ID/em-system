@@ -201,7 +201,6 @@
                   <DockPanel>
                      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                         <Button x:Name="targetRefresh" DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshTarget" ToolTip="Refresh Target information" AutomationProperties.Name="Refresh Target information"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="OpenManager" ToolTip="Open target manager" AutomationProperties.Name="Open target manager"><fa:FontAwesome Icon="Solid_ArrowUpRightFromSquare" FontSize="12"/></Button>
                         <TextBlock Text="TARGET" Style="{StaticResource captionText}"/>
                      </DockPanel>
                      <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
