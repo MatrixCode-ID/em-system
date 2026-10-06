@@ -1,10 +1,14 @@
 using System.IO;
 using System.IO.Compression;
 using System.Diagnostics;
+using System.ComponentModel;
+using System.Net;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Threading;
+using Em.Ui.Wpf.Controls;
 using Em.Ui.Wpf.Core;
 using Em.Ui.Wpf.Publish;
 using Microsoft.Win32;
@@ -23,9 +27,15 @@ public partial class PublishView : UserControl {
  private bool _reloadingProfiles;
  private CancellationTokenSource? _cancel;
  private readonly HashSet<string> _cards=[];
+ private readonly DispatcherTimer _versionTimer=new() {Interval=TimeSpan.FromMilliseconds(400)};
+ private bool _syncingVersion,_versionDirty,_resolvingVersion;
  private ProfileEntry? Entry=>profileList.SelectedItem as ProfileEntry;
  private PublishProfile? Profile=>Entry?.Profile;
- public PublishView() {InitializeComponent();Attach(null,PublishKind.NuGet);}
+ public PublishView() {
+  InitializeComponent();versionChannel.ItemsSource=ContainerVersion.Channels;_versionTimer.Tick+=VersionTick;
+  foreach(var box in new[]{versionMajor,versionMinor,versionPatch})DependencyPropertyDescriptor.FromProperty(NumericBox.ValueProperty,typeof(NumericBox)).AddValueChanged(box,VersionEdited);
+  Attach(null,PublishKind.NuGet);
+ }
  public void Attach(EmApp? app,PublishKind kind) {
   _app=app;_kind=kind;_settings=new(app);_store=new(_settings.Profiles);_targets=new(app,Secrets);SetPublisher();
   prepareText.Text=kind==PublishKind.NuGet?"Prepare":"Build";combinedText.Text=kind==PublishKind.NuGet?"Prepare & Push":"Build & Push";
@@ -37,6 +47,72 @@ public partial class PublishView : UserControl {
   try {profileList.ItemsSource=_store.List(_kind);profileList.SelectedItem=((IReadOnlyList<ProfileEntry>)profileList.ItemsSource).FirstOrDefault(x=>x.Profile?.Id==id);}
   finally {_reloadingProfiles=false;}
   ProfileSelected(profileList,new SelectionChangedEventArgs(Selector.SelectionChangedEvent,Array.Empty<object>(),Array.Empty<object>()));
+ }
+ // ===== version strip: A.B.C and the channel, shown for a Container profile that pushes one image =====
+ private static bool UsesVersionStrip(PublishProfile p)=>p.Container is {Mode:not (ContainerMode.Set or ContainerMode.Compose)};
+ private ContainerVersion VersionInput()=>new(versionMajor.Value,versionMinor.Value,versionPatch.Value,versionChannel.SelectedItem as string??ContainerVersion.First.Channel);
+ private void LoadVersion(PublishProfile? p) {
+  _versionTimer.Stop();_versionDirty=false;
+  var show=p!=null&&UsesVersionStrip(p);versionGroup.Visibility=show?Visibility.Visible:Visibility.Collapsed;if(!show)return;
+  var tag=p!.Container!.Target.VersionTag;var managed=ContainerVersion.TryParse(tag,out var v);
+  _syncingVersion=true;
+  try {versionMajor.Value=v.Major;versionMinor.Value=v.Minor;versionPatch.Value=v.Patch;versionChannel.SelectedItem=v.Channel;}
+  finally {_syncingVersion=false;}
+  versionGroup.ToolTip=managed||tag.Length==0?null:$"This profile uses the custom tag '{tag}'. Change a value here to switch to a versioned tag.";
+ }
+ private void VersionEdited(object? s,EventArgs e) {if(_syncingVersion)return;_versionDirty=true;_versionTimer.Stop();_versionTimer.Start();}
+ private void VersionChannelChanged(object s,SelectionChangedEventArgs e)=>VersionEdited(s,e);
+ private async void VersionTick(object? s,EventArgs e) {
+  _versionTimer.Stop();if(_cancel!=null)return;
+  if(_resolvingVersion) {_versionTimer.Start();return;}
+  await ResolveVersion(false,false);
+ }
+ private async Task<bool> ResolveVersion(bool strict,bool announce) {
+  if(_cancel!=null||_resolvingVersion||Profile==null)return false;
+  _resolvingVersion=true;
+  try {
+   if(announce&&versionGroup.Visibility==Visibility.Visible)message.Text="Reading the tags on the registry…";
+   await ApplyVersion(strict);return true;
+  }catch(Exception ex){message.Text=Mask(ex.Message);return false;}
+  finally {_resolvingVersion=false;}
+ }
+ // Existing tags of the image: what this profile pushed before (local history) and what the registry lists now.
+ private async Task<(HashSet<string> Local,HashSet<string> Remote,bool RemoteKnown,string? Reference)> TakenTags(PublishProfile probe) {
+  var local=PublishLog.History(_settings.Logs).SelectMany(h=>h.Run.Artifacts).Where(a=>a.ProfileId==probe.Id&&a.Result==PublishResult.Success).Select(a=>a.Version).ToHashSet();
+  var remote=new HashSet<string>();string? reference=null;
+  try {
+   reference=await _targets.ResolveContainer(probe,CancellationToken.None);
+   foreach(var tag in await new OciClient(_targets).Tags(reference,await _targets.OciCredential(probe,reference.Split('/')[0],CancellationToken.None),CancellationToken.None))remote.Add(tag);
+   return (local,remote,true,reference);
+  }
+  catch(HttpRequestException ex) when(ex.StatusCode==HttpStatusCode.NotFound) {return (local,remote,true,reference);}
+  catch(Exception) {return (local,remote,false,reference);}
+ }
+ // Works out the tag the strip stands for and stores it in the profile and its file, so the choice survives
+ // reselecting. strict: the tag is about to be pushed, so an unreadable registry or a taken release tag is an error.
+ private async Task ApplyVersion(bool strict) {
+  if(Entry is not {Profile: {} stored} entry||!UsesVersionStrip(stored))return;
+  var current=stored.Container!.Target.VersionTag;
+  if(!_versionDirty&&current.Length>0&&!ContainerVersion.TryParse(current,out _))return;
+  var input=VersionInput();var probe=stored.Clone();probe.Container!.Target.VersionTag=input.Tag(1);
+  var taken=await TakenTags(probe);
+  if(Entry!=entry)return;
+  var tag=input.Tag(input.NextNumber(taken.Local.Union(taken.Remote)));
+  var exists=input.IsRelease&&taken.RemoteKnown&&taken.Remote.Contains(tag);
+  if(strict&&!taken.RemoteKnown)throw new InvalidDataException("The tags on the registry could not be read, so the next build number cannot be chosen safely. Check the target and the credential, then try again.");
+  if(strict&&exists)throw new InvalidDataException($"Version tag {tag} already exists on the registry. Version tags are never overwritten; raise the version number.");
+  if(current!=tag) {
+   stored.Container.Target.VersionTag=tag;
+   try {var saved=_store.Save(stored,entry);ReplaceEntry(entry,saved);}
+   catch(Exception ex) {message.Text="Version tag not saved to the profile file: "+Mask(ex.Message);}
+  }
+  if(taken.Reference!=null)targetText.Text=taken.Reference[..taken.Reference.LastIndexOf(':')]+":"+tag;
+  if(exists)message.Text=$"Version tag {tag} already exists on the registry; raise the version number before pushing.";
+ }
+ private void ReplaceEntry(ProfileEntry old,ProfileEntry saved) {
+  _reloadingProfiles=true;
+  try {profileList.ItemsSource=((IReadOnlyList<ProfileEntry>)profileList.ItemsSource).Select(x=>x==old?saved:x).ToArray();profileList.SelectedItem=saved;}
+  finally {_reloadingProfiles=false;}
  }
  private void ReloadHistory() {history.ItemsSource=PublishLog.History(_settings.Logs,allHistory.IsChecked==true?null:Profile?.Id);}
  private async Task Operation(Func<PublishProfile,CancellationToken,Task> action) {
@@ -54,7 +130,7 @@ public partial class PublishView : UserControl {
  }
  private void ProfileSelected(object sender,SelectionChangedEventArgs e) {
   if(_reloadingProfiles)return;
-  if(_publisherProfileId!=Profile?.Id)SetPublisher();BindArtifacts();if(Profile is not {} p) {sourceText.Text=Entry?.Error??"Select a profile.";targetText.Text="";return;}
+  if(_publisherProfileId!=Profile?.Id)SetPublisher();BindArtifacts();LoadVersion(Profile);if(Profile is not {} p) {sourceText.Text=Entry?.Error??"Select a profile.";targetText.Text="";return;}
   _settings.LastProfile=p.Id;sourceText.Text=p.Name+"\n"+p.Workspace;targetText.Text=p.Kind==PublishKind.NuGet?p.NuGet!.Target.Type+" · "+p.NuGet.Target.Feed+" "+p.NuGet.Target.ServiceIndex:p.Container!.Mode+" · "+p.Container.Target.Host+"/"+p.Container.Target.Repository+":"+p.Container.Target.VersionTag;
   toolsText.Text="Refresh Tools or Check.";lastVersion.Text="";message.Text="Profile loaded. Check before preparing.";ReloadHistory();
  }
@@ -132,9 +208,9 @@ public partial class PublishView : UserControl {
  });
  private async void RefreshTools(object s,RoutedEventArgs e)=>await Card("tools",toolsRefresh,async p=> {var rows=await new PublishProcessRunner().CheckTools(p,CancellationToken.None);if(Profile?.Id==p.Id)toolsText.Text=string.Join("\n",rows);});
  private async void CheckClick(object s,RoutedEventArgs e)=>await Operation(async(p,ct)=> {var rows=await _publisher.Check(p,ct);toolsText.Text=string.Join("\n",rows);});
- private async void PrepareClick(object s,RoutedEventArgs e)=>await Operation((p,ct)=>_publisher.Prepare(p,ct));
- private async void PushClick(object s,RoutedEventArgs e) {if(Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation((p,ct)=>_publisher.Push(p,release,ct));}
- private async void CombinedClick(object s,RoutedEventArgs e) {if(Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation(async(p,ct)=> {_publisher.ValidateReleaseNotes(p,release);await _publisher.Check(p,ct);await _publisher.Prepare(p,ct);await _publisher.Push(p,release,ct);});}
+ private async void PrepareClick(object s,RoutedEventArgs e) {if(!await ResolveVersion(false,true))return;await Operation((p,ct)=>_publisher.Prepare(p,ct));}
+ private async void PushClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation((p,ct)=>_publisher.Push(p,release,ct));}
+ private async void CombinedClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation(async(p,ct)=> {_publisher.ValidateReleaseNotes(p,release);await _publisher.Check(p,ct);await _publisher.Prepare(p,ct);await _publisher.Push(p,release,ct);});}
  private string Summary(PublishProfile p)=>$"Publish {p.Name}?\n{targetText.Text}\nVersion: {p.NuGet?.VersionOverride ?? p.Container?.Target.VersionTag}\n"+(p.Container?.Target.ExtraTags.Contains("latest")==true?"Warning: latest will be overwritten after the version tag succeeds.\n":"")+"Review the selected artifacts and target before continuing.";
  private async void VerifyClick(object s,RoutedEventArgs e)=>await Operation((p,ct)=>_publisher.Verify(p,ct));
  private void CancelClick(object s,RoutedEventArgs e)=>_cancel?.Cancel();

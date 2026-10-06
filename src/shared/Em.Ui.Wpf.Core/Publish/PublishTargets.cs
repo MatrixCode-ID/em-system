@@ -173,10 +173,13 @@ public sealed class OciClient(PublishTargets targets) {
    return method==HttpMethod.Head?response.Headers.TryGetValues("Docker-Content-Digest",out var digest)?digest.Single():throw new IOException("Registry did not return a manifest digest."):await response.Content.ReadAsStringAsync(ct);
   }finally {second?.Dispose();}
  }
- public async Task<string> LatestTag(string reference,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
+ public async Task<string[]> Tags(string reference,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
   using var tags=JsonDocument.Parse(await Request(reference,"tags/list",HttpMethod.Get,credential,ct));
-  var list=tags.RootElement.GetProperty("tags");if(list.ValueKind!=JsonValueKind.Array)return "not available";
-  var values=list.EnumerateArray().Select(x=>x.GetString()!).Where(x=>x!="latest").ToArray();
+  var list=tags.RootElement.GetProperty("tags");
+  return list.ValueKind==JsonValueKind.Array?list.EnumerateArray().Select(x=>x.GetString()!).ToArray():[];
+ }
+ public async Task<string> LatestTag(string reference,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
+  var values=(await Tags(reference,credential,ct)).Where(x=>x!="latest").ToArray();
   return values.OrderByDescending(v=>NuGet.Versioning.NuGetVersion.TryParse(v,out var version)?version:null).ThenByDescending(v=>v,StringComparer.Ordinal).FirstOrDefault()??"not available";
  }
 }
