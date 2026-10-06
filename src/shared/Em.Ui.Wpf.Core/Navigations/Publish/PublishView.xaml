@@ -117,6 +117,7 @@
                <Button Click="EditClick" Style="{StaticResource tbOutlined}" ToolTip="Edit the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_PenToSquare" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Edit" VerticalAlignment="Center"/></StackPanel></Button>
                <Button Click="DuplicateClick" Style="{StaticResource tbOutlined}" ToolTip="Duplicate the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Regular_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Duplicate" VerticalAlignment="Center"/></StackPanel></Button>
                <Button Click="ExportClick" Style="{StaticResource tbOutlined}" ToolTip="Export the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FileExport" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Export" VerticalAlignment="Center"/></StackPanel></Button>
+               <Button x:Name="toolsButton" Click="ToolsClick" Style="{StaticResource tbOutlined}" ToolTip="Check the local tools this profile needs (.NET SDK, Docker)"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Wrench" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Tools" VerticalAlignment="Center"/></StackPanel></Button>
                <Button Click="DeleteClick" Style="{StaticResource tbDanger}" ToolTip="Delete the selected profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Delete" VerticalAlignment="Center"/></StackPanel></Button>
                <Button Click="MoreClick" Style="{StaticResource tbOutlined}" Margin="0" ToolTip="More profile actions" AutomationProperties.Name="More profile actions">
                   <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_EllipsisVertical" Style="{StaticResource buttonIconStyle}" Margin="0"/></StackPanel>
@@ -180,11 +181,9 @@
                <RowDefinition Height="150"/>
             </Grid.RowDefinitions>
 
-            <!-- information cards: source, target, tools. Each reloads on its own. -->
+            <!-- information cards: source and target, each reloads on its own. Local tools live in the Tools dialog. -->
             <Grid Grid.Row="0" Margin="0,0,0,12">
                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="12"/>
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="12"/>
                   <ColumnDefinition Width="*"/>
@@ -195,7 +194,7 @@
                         <Button x:Name="sourceRefresh" DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshSource" ToolTip="Refresh Source information" AutomationProperties.Name="Refresh Source information"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
                         <TextBlock Text="SOURCE" Style="{StaticResource captionText}"/>
                      </DockPanel>
-                     <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0"><TextBlock x:Name="sourceText" Style="{StaticResource infoText}" Text="Select or create a publish profile."/></ScrollViewer>
+                     <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0"><TextBlock x:Name="sourceText" Style="{StaticResource infoText}" Text="Select or create a publish profile."/></ScrollViewer>
                   </DockPanel>
                </Border>
                <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="16,8,8,12">
@@ -205,7 +204,7 @@
                         <Button DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="OpenManager" ToolTip="Open target manager" AutomationProperties.Name="Open target manager"><fa:FontAwesome Icon="Solid_ArrowUpRightFromSquare" FontSize="12"/></Button>
                         <TextBlock Text="TARGET" Style="{StaticResource captionText}"/>
                      </DockPanel>
-                     <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                     <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                         <StackPanel>
                            <Grid>
                               <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -215,15 +214,6 @@
                            <TextBlock x:Name="lastVersion" Style="{StaticResource infoMuted}"/>
                         </StackPanel>
                      </ScrollViewer>
-                  </DockPanel>
-               </Border>
-               <Border Grid.Column="4" Style="{StaticResource cardStyle}" Padding="16,8,8,12">
-                  <DockPanel>
-                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
-                        <Button x:Name="toolsRefresh" DockPanel.Dock="Right" Style="{StaticResource cornerRefresh}" Click="RefreshTools" ToolTip="Refresh Tools information" AutomationProperties.Name="Refresh Tools information"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
-                        <TextBlock Text="TOOLS" Style="{StaticResource captionText}"/>
-                     </DockPanel>
-                     <ScrollViewer MaxHeight="96" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0"><TextBlock x:Name="toolsText" Style="{StaticResource infoText}" Text="Check the required local SDK and Docker tools."/></ScrollViewer>
                   </DockPanel>
                </Border>
             </Grid>

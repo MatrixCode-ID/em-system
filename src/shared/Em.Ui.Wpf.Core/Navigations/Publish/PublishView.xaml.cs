@@ -153,7 +153,7 @@ public partial class PublishView : UserControl {
   if(_reloadingProfiles)return;
   if(_publisherProfileId!=Profile?.Id)SetPublisher();BindArtifacts();LoadVersion(Profile);if(Profile is not {} p) {sourceText.Text=Entry?.Error??"Select a profile.";targetText.Text="";return;}
   _settings.LastProfile=p.Id;sourceText.Text=p.Name+"\n"+p.Workspace;targetText.Text=p.Kind==PublishKind.NuGet?p.NuGet!.Target.Type+" · "+p.NuGet.Target.Feed+" "+p.NuGet.Target.ServiceIndex:p.Container!.Mode+" · "+p.Container.Target.Host+"/"+p.Container.Target.Repository+":"+p.Container.Target.VersionTag;
-  toolsText.Text="Refresh Tools or Check.";lastVersion.Text="";message.Text="Profile loaded. Check before preparing.";ReloadHistory();
+  lastVersion.Text="";message.Text="Profile loaded. Check before preparing.";ReloadHistory();
  }
  private void OpenEditor(PublishProfile draft,ProfileEntry? previous=null) {
   var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs,isNew:previous==null) {Owner=Window.GetWindow(this)};
@@ -227,8 +227,15 @@ public partial class PublishView : UserControl {
   if(p.Kind==PublishKind.Container&&p.Container!.Mode!=ContainerMode.Set) {try {remote=await new OciClient(_targets).LatestTag(target,await _targets.OciCredential(p,target.Split('/')[0],CancellationToken.None),CancellationToken.None);}catch(Exception){remote="not available";}}
   if(Profile?.Id==p.Id) {targetText.Text=target;lastVersion.Text="Last local version: "+latest+(remote.Length>0?" · Latest remote tag: "+remote:"");}
  });
- private async void RefreshTools(object s,RoutedEventArgs e)=>await Card("tools",toolsRefresh,async p=> {var rows=await new PublishProcessRunner().CheckTools(p,CancellationToken.None);if(Profile?.Id==p.Id)toolsText.Text=string.Join("\n",rows);});
- private async void CheckClick(object s,RoutedEventArgs e)=>await Operation(async(p,ct)=> {var rows=await _publisher.Check(p,ct);toolsText.Text=string.Join("\n",rows);});
+ private void ToolsClick(object s,RoutedEventArgs e) {
+  if(Profile==null) {message.Text="Select a profile to check its tools.";return;}
+  new ToolsDialog(Profile.Clone()) {Owner=Window.GetWindow(this)}.ShowDialog();
+ }
+ // Check's findings (tool versions, registry warnings, the resolved target) go to the live log, where longer output has room.
+ private async void CheckClick(object s,RoutedEventArgs e)=>await Operation(async(p,ct)=> {
+  var rows=await _publisher.Check(p,ct);
+  liveLog.AppendText("Check "+p.Name+Environment.NewLine+string.Join(Environment.NewLine,rows.Select(r=>"  "+r))+Environment.NewLine);liveLog.ScrollToEnd();
+ });
  private async void PrepareClick(object s,RoutedEventArgs e) {if(!await ResolveVersion(false,true))return;await Operation((p,ct)=>_publisher.Prepare(p,ct));}
  private async void PushClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation((p,ct)=>_publisher.Push(p,release,ct));}
  private async void CombinedClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation(async(p,ct)=> {_publisher.ValidateReleaseNotes(p,release);await _publisher.Check(p,ct);await _publisher.Prepare(p,ct);await _publisher.Push(p,release,ct);});}

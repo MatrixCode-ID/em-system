@@ -116,15 +116,39 @@ public sealed class PublishProcessRunner {
   log.Stage(executable, result.ExitCode==0?PublishResult.Success:PublishResult.Failed,"",result.ExitCode);
   if(result.ExitCode!=0)throw new IOException($"{executable} exited with code {result.ExitCode}. See the masked output log.");return result.Output;
  }
- public async Task<string[]> CheckTools(PublishProfile p,CancellationToken ct) {
-  var checks=new List<(string Tool,string[] Args,string Repair)>();
-  if(p.Kind==PublishKind.NuGet||p.Container?.Mode is ContainerMode.Template or ContainerMode.Set)checks.Add(("dotnet",["--version"],"Install the .NET SDK required by global.json."));
-  if(p.Kind==PublishKind.Container) { checks.Add(("docker",["version","--format","json"],"Start Docker Desktop/daemon and select the correct Docker context."));
-   if(p.Container?.Mode==ContainerMode.Compose)checks.Add(("docker",["compose","version"],"Install Docker Compose v2."));
-   if(!string.IsNullOrWhiteSpace(p.Container?.Dockerfile.Platform))checks.Add(("docker",["buildx","version"],"Install Docker Buildx for the selected platform.")); }
-  var rows=new List<string>();foreach(var item in checks) {
-   try {var result=await RunAsync(item.Tool,item.Args,p.Workspace,ct:ct);rows.Add(result.ExitCode==0?$"{item.Tool}: {result.Output.Trim()}":item.Repair);}
-   catch(System.ComponentModel.Win32Exception) {rows.Add(item.Repair);}
-  }return rows.ToArray();
+ /// <summary>One line per tool: "name: version" when it works, otherwise the repair hint (which starts with Install/Start).</summary>
+ public async Task<string[]> CheckTools(PublishProfile p,CancellationToken ct)=>
+  (await CheckToolsDetailed(p,ct)).Select(x=>x.Ok?$"{x.Name}: {x.Detail}":x.Detail).ToArray();
+ /// <summary>Runs the local tools the profile needs and returns a short result per tool, for the Tools dialog and Check.</summary>
+ public async Task<ToolCheck[]> CheckToolsDetailed(PublishProfile p,CancellationToken ct) {
+  var checks=new List<(string Name,string Tool,string[] Args,string Purpose,string Repair)>();
+  if(p.Kind==PublishKind.NuGet||p.Container?.Mode is ContainerMode.Template or ContainerMode.Set)
+   checks.Add((".NET SDK","dotnet",["--version"],p.Kind==PublishKind.NuGet?"Packs the projects.":"Publishes the .NET project for Template mode.","Install the .NET SDK required by global.json."));
+  if(p.Kind==PublishKind.Container) {
+   checks.Add(("Docker","docker",["version","--format","json"],"Builds, tags and pushes the image.","Start Docker Desktop/daemon and select the correct Docker context."));
+   if(p.Container?.Mode==ContainerMode.Compose)checks.Add(("Docker Compose","docker",["compose","version","--short"],"Builds the selected Compose services.","Install Docker Compose v2."));
+   if(!string.IsNullOrWhiteSpace(p.Container?.Dockerfile.Platform))checks.Add(("Docker Buildx","docker",["buildx","version"],"Builds for the platform "+p.Container!.Dockerfile.Platform+".","Install Docker Buildx for the selected platform."));
+  }
+  var rows=new List<ToolCheck>();
+  foreach(var item in checks) {
+   try {var result=await RunAsync(item.Tool,item.Args,p.Workspace,ct:ct);rows.Add(result.ExitCode==0?new(item.Name,true,Summarize(item.Tool,item.Args,result.Output),item.Purpose):new(item.Name,false,item.Repair,item.Purpose));}
+   catch(System.ComponentModel.Win32Exception) {rows.Add(new(item.Name,false,item.Repair,item.Purpose));}
+  }
+  return rows.ToArray();
+ }
+ // `docker version --format json` prints the whole client and server description; only the versions are useful here.
+ private static string Summarize(string tool,string[] args,string output) {
+  if(tool=="docker"&&args[0]=="version") {
+   try {
+    using var json=JsonDocument.Parse(output);var root=json.RootElement;
+    string? Get(string section,string name)=>root.TryGetProperty(section,out var s)&&s.ValueKind==JsonValueKind.Object&&s.TryGetProperty(name,out var v)?v.GetString():null;
+    var server=Get("Server","Version");var platform=Get("Server","Os") is {} os?os+"/"+Get("Server","Arch"):null;
+    return "client "+(Get("Client","Version")??"?")+" · server "+(server??"not reachable")+(platform!=null?" ("+platform+")":"");
+   } catch(JsonException) {}
+  }
+  var first=output.Split('\n',StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).FirstOrDefault()??"";
+  return first.Length>120?first[..120]+"…":first;
  }
 }
+/// <summary>The result of one local tool check: whether it works, its version or the repair hint, and why the profile needs it.</summary>
+public sealed record ToolCheck(string Name,bool Ok,string Detail,string Purpose);

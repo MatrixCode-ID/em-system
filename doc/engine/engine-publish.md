@@ -123,7 +123,9 @@ Credentials always get new IDs, so an import never touches another profile's rem
 ## Tools and runtime behavior
 
 - Requires the .NET SDK 8 or later for metadata evaluation (the project's own SDK and `global.json` still
-  apply), a Docker daemon for images, Compose v2 for Compose, and Buildx for platform builds.
+  apply), a Docker daemon for images, Compose v2 for Compose, and Buildx for platform builds. The
+  **Tools** button on the Publish toolbar opens a read-only dialog that checks the tools the selected profile
+  needs and shows each version or repair hint; **Check** writes its findings to the live log.
 - NuGet pushes run in-process through NuGet.Protocol, so API keys never appear in process arguments. A
   version that sits in the target recycle bin still fails and needs a manual restore or purge. Only
   `.nupkg` is supported.
