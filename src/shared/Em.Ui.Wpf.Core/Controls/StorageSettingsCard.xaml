@@ -26,8 +26,8 @@
     </Button>
     <TextBlock x:Name="status" Style="{StaticResource primaryCellStyle}" FontWeight="SemiBold" VerticalAlignment="Center" Text="Settings: loading..." TextWrapping="Wrap" TextTrimming="None" />
    </DockPanel>
-   <Expander x:Name="panel" Header="Settings — applies after API restart" Margin="0,10,0,0" Foreground="{DynamicResource themeWindowForegroundBrush}" Collapsed="PanelCollapsed">
-    <StackPanel MaxWidth="680" HorizontalAlignment="Left" Margin="0,8,0,0">
+   <Expander x:Name="panel" Style="{StaticResource sectionExpanderStyle}" Header="Settings — applies after API restart" Margin="-8,10,0,0" Foreground="{DynamicResource themeWindowForegroundBrush}" Collapsed="PanelCollapsed">
+    <StackPanel MaxWidth="680" HorizontalAlignment="Left">
      <TextBlock x:Name="message" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,10" />
      <StackPanel x:Name="editor" Visibility="Collapsed">
       <CheckBox x:Name="enabled" Style="{StaticResource checkBoxStyle}" Content="Enabled on next API startup" Margin="0,0,0,14" Checked="DraftChanged" Unchecked="DraftChanged" />

@@ -200,19 +200,42 @@ local files.
 | 1 | **Source** card | Profile name and workspace. Its refresh lists the projects behind a Template profile |
 | 2 | **Target** card | The full target `host/root/container:tag`. Refresh resolves it against the server and shows the last version pushed from this computer and the latest tag in the registry. The other buttons copy the target and open the Containers tab |
 | 3 | **Tools** card | Versions of the tools the profile needs (Docker, and the .NET SDK for Template and Set) |
-| 4 | **Check** | Validates the profile, the workspace and the tools, and that the root and container exist and are active. It also checks that a credential exists for the registry host. It does not log in |
-| 5 | **Build** | Builds the image locally, without pushing. The artifact appears in the table |
-| 6 | **Push** | After a confirmation, logs in with the robot, pushes the version tag, then every extra tag. It needs a Build from the same session; if the source or build settings changed since, build again |
-| 7 | **Verify** | Reads the manifest of the version tag from the registry and compares its digest with the pushed one |
-| 8 | **Build & Push** | Check, Build and Push in one run with one confirmation |
-| 9 | **Cancel** | Stops the running operation. Only processes started by the publisher are stopped. Review partial results before retrying |
-| 10 | **Release notes** | Stored with the run. Required when the profile has **Require Release Notes** |
-| 11 | Message line | The state of the last operation, or its error. "Operation completed" only means it ended without an error; read the **Result** column |
-| 12 | Artifacts | One row per image: the checkbox selects it for Push and Verify; **Version**, **Target**, **Result** (`NotRun`, `Running`, `Success`, `Failed`, `Cancelled`) and **Message** (errors and the verification result) |
-| 13 | Live log | Output of the Docker commands. A line `<tag>: digest: sha256:... size: ...` means that tag was pushed. `Layer already exists` on extra tags is normal, because the version tag already uploaded the layers |
+| 4 | Version tag | The only place the image tag is set (see [Version tag](#version-tag) below). With Standard tagging: **A.B.C** and the channel; the muted text after it lists the floating tags this build will move, for example `+ alpha`. With Manual tagging: one box for the whole tag |
+| 5 | **Check** | Validates the profile, the workspace and the tools, and that the root and container exist and are active. It also checks that a credential exists for the registry host. It does not log in |
+| 6 | **Build** | Builds the image locally, without pushing. The artifact appears in the table |
+| 7 | **Push** | After a confirmation, logs in with the robot, pushes the version tag, then the floating tags of its channel. It needs a Build from the same session; if the source or build settings changed since, build again |
+| 8 | **Verify** | Reads the manifest of the version tag from the registry and compares its digest with the pushed one |
+| 9 | **Build & Push** | Check, Build and Push in one run with one confirmation |
+| 10 | **Cancel** | Stops the running operation. Only processes started by the publisher are stopped. Review partial results before retrying |
+| 11 | **Release notes** | Stored with the run. Required when the profile has **Require Release Notes** |
+| 12 | Message line | The state of the last operation, or its error. "Operation completed" only means it ended without an error; read the **Result** column |
+| 13 | Artifacts | One row per image: the checkbox selects it for Push and Verify; **Version**, **Target**, **Result** (`NotRun`, `Running`, `Success`, `Failed`, `Cancelled`) and **Message** (errors and the verification result) |
+| 14 | Live log | Output of the Docker commands. A line `<tag>: digest: sha256:... size: ...` means that tag was pushed. `Layer already exists` on floating tags is normal, because the version tag already uploaded the layers |
 
 Build, Push and Verify work on the artifacts built in the current session of the application. After restarting
 it, run **Build** (or **Build & Push**) again. Items that already succeeded are skipped when a push is retried.
+
+### Version tag
+
+The tag is typed on the Publish page (control 4), not in the profile form. How it is typed depends on the profile's
+**Tagging**, chosen once when the profile is created (Target tab, field 5) and fixed after that: switching one image
+between versioned and free tags would mix both kinds in its repository. For the other kind, create a new profile.
+**Standard** follows [container-naming](../convention/container-naming.md) with the spin edits and the channel;
+**Manual** shows one box for a free tag. The value is saved into the profile, so it is still there the next time the
+profile is selected. The strip is shown for the Dockerfile, LocalImage and Template modes; Compose
+sets a tag per service in the profile form, and Set uses the tag of each step's own profile.
+
+| Channel | Version tag | Floating tags moved after it |
+| --- | --- | --- |
+| **prealpha**, **alpha**, **beta**, **rc** | `A.B.C-channel.N`. N is not typed: it is one above the highest N the registry and this computer's history already hold for that A.B.C and channel | The channel tag only, for example `alpha` |
+| **release** | `A.B.C`. Refused when the registry already has it; version tags are never overwritten | `release`, `latest`, `A.B` and `A`. The push confirmation warns that `latest` moves |
+| Manual tagging | The text typed in the single box, for example `dev` or `hotfix-login` | None |
+
+A manual tag must be a valid Docker tag and is refused when it looks like a version tag (`1.0.0`, `0.2.0-beta.1`:
+use a Standard profile) or like a floating tag (`latest`, `release`, a channel name, `1` or `1.2`). A manual tag can
+be pushed again over itself. Extra tags typed in older profiles are no longer used and are dropped the next time the
+profile is saved. An older profile that holds a free tag is Standard; Build stops with a message until a version is
+chosen on the strip, or recreate it as a Manual profile.
 
 ### Profile form
 
@@ -227,7 +250,7 @@ copy with a new ID, and **Cancel** discards the changes. Errors appear above the
 | --- | --- | --- |
 | 1 | **Name** | Shown in the profile list and the history |
 | 2 | **Description** | Optional |
-| 3 | **Workspace** and **Browse folder** | The base folder. Every relative path in the profile (context, Dockerfile, project) starts here |
+| 3 | **Workspace** and the folder button | The base folder. Every relative path in the profile (context, Dockerfile, project) starts here |
 | 4 | **Project**, **Publish Source**, **Publish Profile** | Used by the Template mode only: the host project to `dotnet publish`, and whether its settings come from the form fields (**Fields**) or from a `.pubxml` publish profile (**PublishProfile**) |
 | 5 | **Re-read project information** | Reads the project (or solution) and lets you choose the container host project |
 
@@ -243,15 +266,16 @@ copy with a new ID, and **Cancel** discards the changes. Errors appear above the
 | 4 | **Target** | The Dockerfile stage to build (`--target`). Empty builds the last stage |
 | 5 | **Platform** | For example `linux/amd64` (`--platform`). Leave it empty to build for the local Docker engine; when set, Buildx is required |
 | 6 | **Build Args**, **Named Contexts**, **Secrets** | `--build-arg KEY=value`, `--build-context name=path`, and BuildKit secrets whose value comes from a profile credential (never written to the Dockerfile or the log) |
-| 7 | **Local Image** and **Select local image** | For the LocalImage mode: an image that already exists in the local Docker, chosen from a list |
-| 8 | **.NET template**, **Compose**, **Ordered Set** | Settings of the other modes |
+
+The section under **Mode** shows only the settings of the chosen mode and changes as soon as the mode does; the
+settings of the other modes are kept in the profile. The folder buttons next to a path open a file or folder picker.
 
 | Mode | Use it when |
 | --- | --- |
 | **Dockerfile** | The repository has a Dockerfile. Fields 2 to 6 apply |
-| **LocalImage** | The image is already built locally; the publisher only tags and pushes it |
+| **LocalImage** | The image is already built locally; the publisher only tags and pushes it. **Select local image** lists the images in the local Docker |
 | **Template** | A .NET project without its own Dockerfile. The publisher runs `dotnet publish` (runtime, framework, self-contained, or a `.pubxml`), copies the output selected by the **File Set** into a generated Dockerfile (base image, working directory, environment, ports, time zone, entrypoint, extra `RUN` lines), or uses an existing Dockerfile against that output. **Preview generated Dockerfile** and **Preview file set from folder** show the result first |
-| **Compose** | A `compose.yml` with `build:` services. **Read Compose build services** lists them; each selected service gets its own `root/container` and version tag. Only `build` runs, never `up` |
+| **Compose** | A `compose.yml` with `build:` services. **Read Compose build services** lists them; each selected service gets its own repository and version tag, set in this form (the version strip is not used). Only `build` runs, never `up` |
 | **Set** | Several profiles in order, for example a Base image and an App image built on it. Steps choose Build and Push; named file lists split one publish output between the images |
 
 #### Target
@@ -260,20 +284,23 @@ copy with a new ID, and **Cancel** discards the changes. Errors appear above the
 
 | # | Field | What it means |
 | --- | --- | --- |
-| 1 | **Type** | **BuiltIn**: the registry of the server you are connected to. **Custom**: any other registry (for example GHCR) |
-| 2 | **Server**, **Root**, **Container** | The built-in destination. Filled by button 6; the server is read-only and has to match the active connection |
-| 3 | **Host**, **Repository** | The Custom destination, for example `ghcr.io` and `acme/api` |
-| 4 | **Version Tag** | Required. The fixed tag of this build, for example `1.0.0-alpha.1`. By convention it is never overwritten |
-| 5 | **Extra Tags** and **Import lines from .txt** | One tag per line, pushed after the version tag, for example the channel tag `alpha`. They are not added automatically. Adding `latest` shows a warning before the push |
-| 6 | **Use active built-in server and select destination** | Shows two lists under the button: choose the root, then the container. The message `Built-in target: root/container` confirms the choice |
-| 7 | Server address | The active connection, with a copy button. Paste it into the credential's **Scope Host** |
-| 8 | **Refresh latest versions** | Shows the last version pushed from this computer and the latest tag in the registry |
+| 1 | **Type** | **BuiltIn**: the registry of the server you are connected to. **Custom**: any other registry (for example GHCR). The rest of the section changes with it |
+| 2 | **Server** | BuiltIn only. The active connection, with a copy button; it is not typed. Paste it into the credential's **Scope Host**. When the application is not connected, a note says to connect first or switch to Custom |
+| 3 | **Root**, **Container** | BuiltIn only. The destination on that server. Filled by button 4, or typed |
+| 4 | **Select destination** | BuiltIn only, enabled while connected. Shows two lists under the button: choose the root, then the container. Fields 3 update and the message `Built-in target: root/container` confirms the choice |
+| 5 | **Tagging** | **Standard** or **Manual**, see [Version tag](#version-tag). Chosen in **New Profile** only; an existing profile shows it as text |
+| 6 | **Refresh latest versions** | Shows the last version pushed from this computer and the latest tag in the registry |
 
-Known issues with button 6 (see [publish-ui-review](../ideas/publish-ui-review.md)):
-- The lists show `Em.Api.Core.Models.CtnRootInfo` instead of the root or container names. Rely on the
+With **Custom**, the section shows **Host** (the registry host with its port, without `http://`, for example
+`ghcr.io` or `registry.example.com:5000`) and **Repository** (for example `acme/api`) instead of fields 2 to 4. Add a
+push credential for that host under Credentials, and tick **Allow Http** there for a plain-HTTP registry. A
+destination chosen on another server shows a note asking to select it again. The version tag is not set here; see
+[Version tag](#version-tag).
+
+Known issues with button 4 (see [publish-ui-review](../ideas/publish-ui-review.md)):
+- The lists may show `Em.Api.Core.Models.CtnRootInfo` instead of the root or container names. Rely on the
   confirmation message `Built-in target: root/container`.
 - A root without containers gives an empty second list, without a message. Create the container first.
-- Each click adds another pair of lists below the old one. Use the bottom pair.
 
 #### Credentials
 
@@ -282,16 +309,15 @@ Known issues with button 6 (see [publish-ui-review](../ideas/publish-ui-review.m
 | # | Field | What it means |
 | --- | --- | --- |
 | 1 | **Sensitive Data Storage** | **Separate** (default): secrets are kept outside the profile file, encrypted for your Windows account. **Plaintext**: secrets are written into the profile JSON as plain text; anyone who can read the file can use them |
-| 2 | **Id** | Generated reference of the credential |
-| 3 | **Purpose** | Keep `push` for a registry login |
-| 4 | **Scope Host** | The registry host with its port when there is one, for example `registry.example.com`. A leading `https://` and letter case are ignored. A credential is never sent to another host, so a host that does not match gives "No credential for host '...'". A built-in destination uses the host of the active connection, so check that connection too |
-| 5 | **Username** | The robot name |
-| 6 | **Secret** | The robot token |
-| 7 | **Remember** | Keeps the secret for the next sessions (Windows DPAPI, current user). Without it the secret lasts until the application closes |
-| 8 | **Remove item** | Removes this credential |
-| 9 | **Add Credentials** | Adds another credential, for example for a second registry used by `FROM` |
+| 2 | **Purpose** | Keep `push` for a registry login |
+| 3 | **Scope Host** | The registry host with its port when there is one, for example `registry.example.com`. A leading `https://` and letter case are ignored. A credential is never sent to another host, so a host that does not match gives "No credential for host '...'". A built-in destination uses the host of the active connection, so check that connection too |
+| 4 | **Username** | The robot name |
+| 5 | **Secret** | The robot token |
+| 6 | **Allow Http**, **Remember** | **Allow Http**: see below. **Remember** keeps the secret for the next sessions (Windows DPAPI, current user); without it the secret lasts until the application closes |
+| 7 | Remove (bin icon) | Removes this credential |
+| 8 | **Add** | Adds another credential, for example for a second registry used by `FROM` |
 
-Each credential also has **Allow Http**, below **Remember**. It makes the publisher's own registry requests (Verify and
+**Allow Http** makes the publisher's own registry requests (Verify and
 tag discovery) use plain `http://` for that host. It does not change how Docker pushes: the Docker daemon decides
 between https and http, so a plain-HTTP registry must also be listed under `insecure-registries` in Docker. **Check**
 reads Docker's registry settings and prints a `Warning:` line when the host would be refused, or when it is

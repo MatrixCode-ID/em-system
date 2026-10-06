@@ -1,3 +1,4 @@
+using Em.Ui.Wpf.Windows;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -7,7 +8,7 @@ namespace Em.Ui.Wpf.Navigations;
 /// Dialog kecil untuk membuat atau mengubah feed NuGet: slug (hanya saat membuat), nama, dan deskripsi.
 /// Dialog hanya mengumpulkan teks; validasi dan penyimpanan tetap di layanan.
 /// </summary>
-public sealed class NuPakFeedDialog : Window
+public sealed class NuPakFeedDialog : EmWindow
 {
    private readonly TextBox _slug = new();
    private readonly TextBox _name = new();
@@ -27,8 +28,7 @@ public sealed class NuPakFeedDialog : Window
       ResizeMode = ResizeMode.NoResize;
       WindowStartupLocation = WindowStartupLocation.CenterOwner;
       Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml", UriKind.Relative) });
-      SetResourceReference(BackgroundProperty, "themeWindowBackgroundBrush");
-      SetResourceReference(ForegroundProperty, "themeWindowForegroundBrush");
+      ShowMinimizeButton = false;
 
       var panel = new StackPanel { Margin = new Thickness(22) };
       Content = panel;

@@ -14,6 +14,9 @@ public enum MissingEntry { Error, Warning }
 public enum FileListMode { IncludeOnly, Exclude }
 public enum DockerfileSource { Generated, ExistingFile }
 public enum PublishSource { Fields, PublishProfile }
+/// <summary>How a container profile names its image: Standard = A.B.C + channel with an automatic build number and
+/// floating tags (container-naming convention); Manual = a free tag typed on the publish strip, no floating tags.</summary>
+public enum TaggingMode { Standard, Manual }
 public sealed class PublishProfile
 {
  public int FormatVersion { get; set; } = 1;
@@ -78,8 +81,10 @@ public sealed class ContainerTarget {
  public string Container { get; set; }="";
  public string Host { get; set; }="";
  public string Repository { get; set; }="";
+ /// <summary>Chosen in the profile; decides what the publish strip shows (spin edits + channel, or one tag box).</summary>
+ public TaggingMode Tagging { get; set; }
+ /// <summary>The version tag, set from the publish strip (A.B.C + channel, or a manual tag), not from the profile dialog.</summary>
  public string VersionTag { get; set; }="";
- public List<string> ExtraTags { get; set; }=[];
 }
 public sealed class BuildSecret { public string Id { get; set; }=""; public string CredentialRef { get; set; }=""; }
 public sealed class DockerfileProfile {

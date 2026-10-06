@@ -131,8 +131,11 @@ Credentials always get new IDs, so an import never touches another profile's rem
   as environment variables. **Use my Docker login** is an explicit profile option; OCI verification and
   tag discovery may read that host's existing Docker config or credential helper without changing it or
   saving its secret.
-- Version tags are pushed before additional tags. `latest` is optional and may overwrite a previous
-  release.
+- The container version tag is set on the Publish page strip only, not in the profile form. The profile's
+  **Tagging** (chosen once at creation, then fixed) decides the strip: Standard = A.B.C + channel with an automatic
+  build number, Manual = one box for a free tag. The floating tags follow the channel and are pushed after the
+  version tag: a prerelease moves its channel tag, release moves `release`, `latest`, `A.B` and `A`, a manual tag
+  moves none (doc/convention/container-naming.md). Compose sets a tag per service in the form.
 - Work cleanup validates ownership and containment; user source and output folders are never removed.
   Prepared packages and shared publish output stay with their run so a later Push can use the snapshot.
 - Logs contain masked output, stage exit codes, effective destinations, artifacts, separate verification

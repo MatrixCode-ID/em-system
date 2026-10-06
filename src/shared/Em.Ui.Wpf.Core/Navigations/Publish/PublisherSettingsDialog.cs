@@ -1,3 +1,4 @@
+using Em.Ui.Wpf.Windows;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -7,11 +8,11 @@ using Microsoft.Win32;
 
 namespace Em.Ui.Wpf.Navigations.Publish;
 
-public sealed class PublisherSettingsDialog : Window {
+public sealed class PublisherSettingsDialog : EmWindow {
  public PublisherSettingsDialog(PublisherSettings settings) {
   Title="Publisher settings";Width=900;Height=430;WindowStartupLocation=WindowStartupLocation.CenterOwner;
   Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});
-  SetResourceReference(BackgroundProperty,"themeWindowBackgroundBrush");SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");
+  ShowMinimizeButton=false;
   var panel=new StackPanel {Margin=new Thickness(22)};Content=panel;var inputs=new List<TextBox>();var error=new TextBlock {TextWrapping=TextWrapping.Wrap};error.SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");
   foreach(var item in new[]{("Profiles",settings.Profiles,PublisherSettings.DefaultProfiles),("Logs",settings.Logs,PublisherSettings.DefaultLogs),("Work",settings.Work,PublisherSettings.DefaultWork)}) {
    var label=new TextBlock {Text=item.Item1,Margin=new Thickness(0,12,0,6)};label.SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");panel.Children.Add(label);

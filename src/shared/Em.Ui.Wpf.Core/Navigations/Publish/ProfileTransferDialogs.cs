@@ -1,3 +1,4 @@
+using Em.Ui.Wpf.Windows;
 using System.Windows;
 using System.Windows.Controls;
 using Em.Ui.Wpf.Publish;
@@ -8,7 +9,7 @@ namespace Em.Ui.Wpf.Navigations.Publish;
 /// Pilihan saat mengekspor profil: tanpa secret, atau dengan secret sebagai berkas terenkripsi (passphrase)
 /// atau plain text. Dibangun lewat kode, mengikuti <see cref="PublisherSettingsDialog"/>.
 /// </summary>
-public sealed class ExportProfileDialog : Window {
+public sealed class ExportProfileDialog : EmWindow {
  private readonly CheckBox _include=new() {Content="Include sensitive data (passwords and tokens)"};
  private readonly RadioButton _encrypted=new() {Content="Encrypted with a passphrase (recommended)",IsChecked=true,GroupName="mode",Margin=new Thickness(0,8,0,0)};
  private readonly RadioButton _plain=new() {Content="Plain text - anyone who opens the file can read the secrets",GroupName="mode",Margin=new Thickness(0,8,0,0)};
@@ -26,7 +27,7 @@ public sealed class ExportProfileDialog : Window {
  public ExportProfileDialog(string profileName) {
   Title="Export profile";Width=560;SizeToContent=SizeToContent.Height;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;
   Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});
-  SetResourceReference(BackgroundProperty,"themeWindowBackgroundBrush");SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");
+  ShowMinimizeButton=false;
   var panel=new StackPanel {Margin=new Thickness(22)};Content=panel;
   panel.Children.Add(Label($"Export '{profileName}'. Without sensitive data the file has no passwords, and on the other computer they must be entered again.",new Thickness(0,0,0,12)));
   panel.Children.Add(_include);panel.Children.Add(_options);
@@ -64,14 +65,14 @@ public sealed class ExportProfileDialog : Window {
 }
 
 /// <summary>Meminta passphrase untuk membuka berkas profil terenkripsi.</summary>
-public sealed class PassphraseDialog : Window {
+public sealed class PassphraseDialog : EmWindow {
  /// <summary>Passphrase yang diketik pengguna.</summary>
  public string Passphrase { get; private set; }="";
 
  public PassphraseDialog(string fileName) {
   Title="Encrypted profile";Width=480;SizeToContent=SizeToContent.Height;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;
   Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});
-  SetResourceReference(BackgroundProperty,"themeWindowBackgroundBrush");SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");
+  ShowMinimizeButton=false;
   var panel=new StackPanel {Margin=new Thickness(22)};Content=panel;
   var label=new TextBlock {Text=$"'{fileName}' is encrypted. Enter the passphrase used when it was exported.",TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,10)};
   label.SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");panel.Children.Add(label);

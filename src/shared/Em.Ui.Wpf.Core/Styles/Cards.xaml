@@ -116,4 +116,80 @@
       </Setter>
    </Style>
 
+   <!-- ============================================================
+        COLLAPSIBLE SECTION
+        A foldable section inside a card, form or dialog, in the same look as the navigation
+        groups of the default home: chevron, caption, and a rule fading out to the right. A
+        plain-text header is drawn bold in the accent colour; a header given as an element keeps
+        its own look (a nested section can pass a neutral TextBlock). The content is indented by
+        Padding, so a section inside a section needs no margin of its own.
+        ============================================================ -->
+   <LinearGradientBrush x:Key="sectionRuleBrush" StartPoint="0,0" EndPoint="1,0">
+      <GradientStop Color="#44808080" Offset="0" />
+      <GradientStop Color="#00808080" Offset="1" />
+   </LinearGradientBrush>
+
+   <Style x:Key="sectionToggleStyle" TargetType="ToggleButton">
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+               <Border x:Name="headerSurface" CornerRadius="8" Background="Transparent"
+                       BorderBrush="Transparent" BorderThickness="1" Padding="8,6">
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+                     <fa:FontAwesome x:Name="chevron" Icon="Solid_ChevronDown" FontSize="11" Width="14"
+                                     Opacity="0.75" Foreground="{TemplateBinding Foreground}"
+                                     TextAlignment="Center" VerticalAlignment="Center" />
+                     <ContentPresenter Grid.Column="1" Margin="9,0,12,0" VerticalAlignment="Center"
+                                       TextElement.Foreground="{DynamicResource themeAccentBrush}"
+                                       TextElement.FontWeight="Bold" TextElement.FontSize="13" />
+                     <Border Grid.Column="2" Height="1" VerticalAlignment="Center"
+                             Background="{StaticResource sectionRuleBrush}" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsChecked" Value="False">
+                     <Setter TargetName="chevron" Property="Icon" Value="Solid_ChevronRight" />
+                  </Trigger>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="headerSurface" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocused" Value="True">
+                     <Setter TargetName="headerSurface" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style x:Key="sectionExpanderStyle" TargetType="Expander">
+      <Setter Property="Padding" Value="22,8,0,4" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="Expander">
+               <StackPanel>
+                  <ToggleButton Style="{StaticResource sectionToggleStyle}"
+                                Foreground="{TemplateBinding Foreground}"
+                                Content="{TemplateBinding Header}"
+                                ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                  <ContentPresenter x:Name="sectionContent" Visibility="Collapsed" Margin="{TemplateBinding Padding}" />
+               </StackPanel>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsExpanded" Value="True">
+                     <Setter TargetName="sectionContent" Property="Visibility" Value="Visible" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
 </ResourceDictionary>

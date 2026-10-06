@@ -232,17 +232,25 @@
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
                <ScrollViewer.Resources><Style TargetType="ScrollBar" BasedOn="{StaticResource stripScrollBar}"/></ScrollViewer.Resources>
                <StackPanel x:Name="operations" Orientation="Horizontal">
-                  <!-- Version tag of the image (Container profiles that push one image): A.B.C and the channel.
-                       On a prerelease channel the build number N is taken from the registry, not typed. -->
+                  <!-- Version tag of the image (Container profiles that push one image): the only place the tag is set.
+                       A.B.C and the channel; on a prerelease channel the build number N is taken from the registry, not typed.
+                       The channel also decides the floating tags pushed after it. A profile with Tagging = Manual shows one tag box instead. -->
                   <StackPanel x:Name="versionGroup" Orientation="Horizontal" Visibility="Collapsed" VerticalAlignment="Center">
-                     <controls:NumericBox x:Name="versionMajor" Style="{StaticResource versionNumberBox}" ToolTip="Major" AutomationProperties.Name="Version major"/>
-                     <TextBlock Text="." Style="{StaticResource versionDot}"/>
-                     <controls:NumericBox x:Name="versionMinor" Style="{StaticResource versionNumberBox}" ToolTip="Minor" AutomationProperties.Name="Version minor"/>
-                     <TextBlock Text="." Style="{StaticResource versionDot}"/>
-                     <controls:NumericBox x:Name="versionPatch" Style="{StaticResource versionNumberBox}" ToolTip="Patch" AutomationProperties.Name="Version patch"/>
-                     <ComboBox x:Name="versionChannel" Style="{StaticResource fieldComboStyle}" Height="38" Width="104" Margin="8,0,0,0" SelectionChanged="VersionChannelChanged"
-                               ToolTip="Release channel. Prerelease channels (prealpha, alpha, beta, rc) number the build automatically; release uses the bare A.B.C."
+                     <StackPanel x:Name="versionNumbers" Orientation="Horizontal">
+                        <controls:NumericBox x:Name="versionMajor" Style="{StaticResource versionNumberBox}" ToolTip="Major" AutomationProperties.Name="Version major"/>
+                        <TextBlock Text="." Style="{StaticResource versionDot}"/>
+                        <controls:NumericBox x:Name="versionMinor" Style="{StaticResource versionNumberBox}" ToolTip="Minor" AutomationProperties.Name="Version minor"/>
+                        <TextBlock Text="." Style="{StaticResource versionDot}"/>
+                        <controls:NumericBox x:Name="versionPatch" Style="{StaticResource versionNumberBox}" ToolTip="Patch" AutomationProperties.Name="Version patch"/>
+                     </StackPanel>
+                     <TextBox x:Name="manualTag" Style="{StaticResource fieldBoxStyle}" Height="38" Width="240" Visibility="Collapsed" TextChanged="ManualTagChanged"
+                              ToolTip="Image tag (profile Tagging: Manual), e.g. dev or hotfix-login. Not a version tag and not a floating tag; no floating tags are moved."
+                              AutomationProperties.Name="Manual tag"/>
+                     <ComboBox x:Name="versionChannel" Style="{StaticResource fieldComboStyle}" Height="38" Width="112" Margin="8,0,0,0" SelectionChanged="VersionChannelChanged"
+                               ToolTip="Release channel. Prerelease channels (prealpha, alpha, beta, rc) number the build automatically; release uses the bare A.B.C. For a free tag, set Tagging to Manual in the profile."
                                AutomationProperties.Name="Release channel"/>
+                     <TextBlock x:Name="floatingText" Style="{StaticResource infoMuted}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                ToolTip="Floating tags moved to this build after the version tag, following the channel."/>
                      <Border Style="{StaticResource toolbarSeparatorStyle}"/>
                   </StackPanel>
                   <Button Click="CheckClick" Style="{StaticResource tbOutlined}" ToolTip="Check the tools and the profile"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ListCheck" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Check" VerticalAlignment="Center"/></StackPanel></Button>

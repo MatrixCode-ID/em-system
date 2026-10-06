@@ -51,17 +51,25 @@ public partial class PublishView : UserControl {
  // ===== version strip: A.B.C and the channel, shown for a Container profile that pushes one image =====
  private static bool UsesVersionStrip(PublishProfile p)=>p.Container is {Mode:not (ContainerMode.Set or ContainerMode.Compose)};
  private ContainerVersion VersionInput()=>new(versionMajor.Value,versionMinor.Value,versionPatch.Value,versionChannel.SelectedItem as string??ContainerVersion.First.Channel);
+ private static bool IsManual(PublishProfile p)=>p.Container?.Target.Tagging==TaggingMode.Manual;
+ // Standard tagging: spin edits + channel. Manual tagging (chosen in the profile): one box for the whole tag.
+ private void ShowVersionMode(bool manual) {
+  var standard=manual?Visibility.Collapsed:Visibility.Visible;
+  versionNumbers.Visibility=standard;versionChannel.Visibility=standard;manualTag.Visibility=manual?Visibility.Visible:Visibility.Collapsed;
+ }
+ private static string FloatingText(string tag)=>ContainerVersion.FloatingTagsOf(tag) is {Length:>0} tags?"+ "+string.Join(", ",tags):"";
  private void LoadVersion(PublishProfile? p) {
   _versionTimer.Stop();_versionDirty=false;
   var show=p!=null&&UsesVersionStrip(p);versionGroup.Visibility=show?Visibility.Visible:Visibility.Collapsed;if(!show)return;
-  var tag=p!.Container!.Target.VersionTag;var managed=ContainerVersion.TryParse(tag,out var v);
+  var tag=p!.Container!.Target.VersionTag;var manual=IsManual(p);ContainerVersion.TryParse(tag,out var v);
   _syncingVersion=true;
-  try {versionMajor.Value=v.Major;versionMinor.Value=v.Minor;versionPatch.Value=v.Patch;versionChannel.SelectedItem=v.Channel;}
+  try {versionMajor.Value=v.Major;versionMinor.Value=v.Minor;versionPatch.Value=v.Patch;versionChannel.SelectedItem=v.Channel;manualTag.Text=manual?tag:"";}
   finally {_syncingVersion=false;}
-  versionGroup.ToolTip=managed||tag.Length==0?null:$"This profile uses the custom tag '{tag}'. Change a value here to switch to a versioned tag.";
+  ShowVersionMode(manual);floatingText.Text=manual?"":FloatingText(tag);
  }
  private void VersionEdited(object? s,EventArgs e) {if(_syncingVersion)return;_versionDirty=true;_versionTimer.Stop();_versionTimer.Start();}
  private void VersionChannelChanged(object s,SelectionChangedEventArgs e)=>VersionEdited(s,e);
+ private void ManualTagChanged(object s,TextChangedEventArgs e)=>VersionEdited(s,e);
  private async void VersionTick(object? s,EventArgs e) {
   _versionTimer.Stop();if(_cancel!=null)return;
   if(_resolvingVersion) {_versionTimer.Start();return;}
@@ -93,7 +101,17 @@ public partial class PublishView : UserControl {
  private async Task ApplyVersion(bool strict) {
   if(Entry is not {Profile: {} stored} entry||!UsesVersionStrip(stored))return;
   var current=stored.Container!.Target.VersionTag;
-  if(!_versionDirty&&current.Length>0&&!ContainerVersion.TryParse(current,out _))return;
+  if(IsManual(stored)) {
+   var manual=manualTag.Text.Trim();
+   ContainerVersion.ValidateManual(manual); // ResolveVersion shows the message and stops Build/Push
+   if(current!=manual)SaveVersionTag(entry,stored,manual);
+   floatingText.Text="";
+   try {var reference=await _targets.ResolveContainer(stored,CancellationToken.None);if(Entry==entry)targetText.Text=reference;}catch(Exception){}
+   return;
+  }
+  // A standard profile still holding a free tag (e.g. from before Tagging existed) is not silently renamed.
+  if(!_versionDirty&&current.Length>0&&!ContainerVersion.TryParse(current,out _))
+   throw new InvalidDataException($"The profile's tag '{current}' is not a standard version. Set Tagging to Manual in the profile to keep it, or change the version here.");
   var input=VersionInput();var probe=stored.Clone();probe.Container!.Target.VersionTag=input.Tag(1);
   var taken=await TakenTags(probe);
   if(Entry!=entry)return;
@@ -101,13 +119,16 @@ public partial class PublishView : UserControl {
   var exists=input.IsRelease&&taken.RemoteKnown&&taken.Remote.Contains(tag);
   if(strict&&!taken.RemoteKnown)throw new InvalidDataException("The tags on the registry could not be read, so the next build number cannot be chosen safely. Check the target and the credential, then try again.");
   if(strict&&exists)throw new InvalidDataException($"Version tag {tag} already exists on the registry. Version tags are never overwritten; raise the version number.");
-  if(current!=tag) {
-   stored.Container.Target.VersionTag=tag;
-   try {var saved=_store.Save(stored,entry);ReplaceEntry(entry,saved);}
-   catch(Exception ex) {message.Text="Version tag not saved to the profile file: "+Mask(ex.Message);}
-  }
+  if(current!=tag)SaveVersionTag(entry,stored,tag);
+  floatingText.Text=FloatingText(tag);
   if(taken.Reference!=null)targetText.Text=taken.Reference[..taken.Reference.LastIndexOf(':')]+":"+tag;
   if(exists)message.Text=$"Version tag {tag} already exists on the registry; raise the version number before pushing.";
+ }
+ // The strip owns the tag: store it in the profile and its file so the choice survives reselecting.
+ private void SaveVersionTag(ProfileEntry entry,PublishProfile stored,string tag) {
+  stored.Container!.Target.VersionTag=tag;
+  try {var saved=_store.Save(stored,entry);ReplaceEntry(entry,saved);}
+  catch(Exception ex) {message.Text="Version tag not saved to the profile file: "+Mask(ex.Message);}
  }
  private void ReplaceEntry(ProfileEntry old,ProfileEntry saved) {
   _reloadingProfiles=true;
@@ -135,7 +156,7 @@ public partial class PublishView : UserControl {
   toolsText.Text="Refresh Tools or Check.";lastVersion.Text="";message.Text="Profile loaded. Check before preparing.";ReloadHistory();
  }
  private void OpenEditor(PublishProfile draft,ProfileEntry? previous=null) {
-  var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs) {Owner=Window.GetWindow(this)};
+  var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs,isNew:previous==null) {Owner=Window.GetWindow(this)};
   if(dialog.ShowDialog()!=true)return;
   try {
    var result=dialog.Profile;
@@ -211,7 +232,14 @@ public partial class PublishView : UserControl {
  private async void PrepareClick(object s,RoutedEventArgs e) {if(!await ResolveVersion(false,true))return;await Operation((p,ct)=>_publisher.Prepare(p,ct));}
  private async void PushClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation((p,ct)=>_publisher.Push(p,release,ct));}
  private async void CombinedClick(object s,RoutedEventArgs e) {if(Profile==null||!await ResolveVersion(true,true)||Profile==null||!Confirm(Summary(Profile)))return;var release=notes.Text;await Operation(async(p,ct)=> {_publisher.ValidateReleaseNotes(p,release);await _publisher.Check(p,ct);await _publisher.Prepare(p,ct);await _publisher.Push(p,release,ct);});}
- private string Summary(PublishProfile p)=>$"Publish {p.Name}?\n{targetText.Text}\nVersion: {p.NuGet?.VersionOverride ?? p.Container?.Target.VersionTag}\n"+(p.Container?.Target.ExtraTags.Contains("latest")==true?"Warning: latest will be overwritten after the version tag succeeds.\n":"")+"Review the selected artifacts and target before continuing.";
+ private string Summary(PublishProfile p) {
+  var tag=p.Container?.Target.VersionTag??"";
+  var floating=p.Container!=null&&UsesVersionStrip(p)?ContainerVersion.FloatingTagsOf(tag):[];
+  return $"Publish {p.Name}?\n{targetText.Text}\nVersion: {p.NuGet?.VersionOverride ?? tag}\n"+
+   (floating.Length>0?"Floating tags moved to this build: "+string.Join(", ",floating)+"\n":"")+
+   (floating.Contains("latest")?"Warning: latest will point to this build after the version tag succeeds.\n":"")+
+   "Review the selected artifacts and target before continuing.";
+ }
  private async void VerifyClick(object s,RoutedEventArgs e)=>await Operation((p,ct)=>_publisher.Verify(p,ct));
  private void CancelClick(object s,RoutedEventArgs e)=>_cancel?.Cancel();
  private void AddPackagesClick(object s,RoutedEventArgs e) {var picker=new OpenFileDialog {Filter="NuGet packages (*.nupkg)|*.nupkg",Multiselect=true};if(picker.ShowDialog()==true)AddPackages(picker.FileNames);}

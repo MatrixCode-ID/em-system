@@ -201,19 +201,41 @@ kerja adalah berkas lokal.
 | 1 | Kartu **Source** | Nama profil dan workspace. Refresh-nya menampilkan project di balik profil Template |
 | 2 | Kartu **Target** | Target lengkap `host/root/container:tag`. Refresh mencocokkannya ke server dan menampilkan versi terakhir yang di-push dari komputer ini serta tag terbaru di registry. Tombol lain menyalin target dan membuka tab Containers |
 | 3 | Kartu **Tools** | Versi alat yang dibutuhkan profil (Docker, dan .NET SDK untuk Template dan Set) |
-| 4 | **Check** | Memvalidasi profil, workspace, dan alat, serta memastikan root dan container ada dan aktif. Juga memastikan ada kredensial untuk host registry. Tidak melakukan login |
-| 5 | **Build** | Membangun image secara lokal, tanpa push. Artifact muncul di tabel |
-| 6 | **Push** | Setelah konfirmasi, login dengan robot, push version tag, lalu setiap extra tag. Butuh Build dari sesi yang sama; kalau pengaturan source atau build berubah sejak itu, build ulang |
-| 7 | **Verify** | Membaca manifest version tag dari registry dan membandingkan digest-nya dengan hasil push |
-| 8 | **Build & Push** | Check, Build, dan Push dalam satu run dengan satu konfirmasi |
-| 9 | **Cancel** | Menghentikan operasi yang berjalan. Hanya proses yang dimulai publisher yang dihentikan. Periksa hasil parsial sebelum mencoba lagi |
-| 10 | **Release notes** | Disimpan bersama run. Wajib kalau profil mengaktifkan **Require Release Notes** |
-| 11 | Baris pesan | Keadaan operasi terakhir atau error-nya. "Operation completed" hanya berarti operasi selesai tanpa error; baca kolom **Result** |
-| 12 | Artifacts | Satu baris per image: checkbox memilihnya untuk Push dan Verify; **Version**, **Target**, **Result** (`NotRun`, `Running`, `Success`, `Failed`, `Cancelled`), dan **Message** (error dan hasil verifikasi) |
-| 13 | Log langsung | Output perintah Docker. Baris `<tag>: digest: sha256:... size: ...` berarti tag itu sudah ter-push. `Layer already exists` pada extra tag itu normal, karena version tag sudah mengunggah layer-nya |
+| 4 | Version tag | Satu-satunya tempat tag image ditentukan (lihat [Version tag](#version-tag) di bawah). Dengan Tagging Standard: **A.B.C** dan channel; teks redup di sebelahnya menampilkan tag mengambang yang ikut dipindah build ini, misalnya `+ alpha`. Dengan Tagging Manual: satu kotak untuk seluruh tag |
+| 5 | **Check** | Memvalidasi profil, workspace, dan alat, serta memastikan root dan container ada dan aktif. Juga memastikan ada kredensial untuk host registry. Tidak melakukan login |
+| 6 | **Build** | Membangun image secara lokal, tanpa push. Artifact muncul di tabel |
+| 7 | **Push** | Setelah konfirmasi, login dengan robot, push version tag, lalu tag mengambang milik channel-nya. Butuh Build dari sesi yang sama; kalau pengaturan source atau build berubah sejak itu, build ulang |
+| 8 | **Verify** | Membaca manifest version tag dari registry dan membandingkan digest-nya dengan hasil push |
+| 9 | **Build & Push** | Check, Build, dan Push dalam satu run dengan satu konfirmasi |
+| 10 | **Cancel** | Menghentikan operasi yang berjalan. Hanya proses yang dimulai publisher yang dihentikan. Periksa hasil parsial sebelum mencoba lagi |
+| 11 | **Release notes** | Disimpan bersama run. Wajib kalau profil mengaktifkan **Require Release Notes** |
+| 12 | Baris pesan | Keadaan operasi terakhir atau error-nya. "Operation completed" hanya berarti operasi selesai tanpa error; baca kolom **Result** |
+| 13 | Artifacts | Satu baris per image: checkbox memilihnya untuk Push dan Verify; **Version**, **Target**, **Result** (`NotRun`, `Running`, `Success`, `Failed`, `Cancelled`), dan **Message** (error dan hasil verifikasi) |
+| 14 | Log langsung | Output perintah Docker. Baris `<tag>: digest: sha256:... size: ...` berarti tag itu sudah ter-push. `Layer already exists` pada tag mengambang itu normal, karena version tag sudah mengunggah layer-nya |
 
 Build, Push, dan Verify bekerja pada artifact yang dibangun di sesi aplikasi saat ini. Setelah aplikasi dibuka
 ulang, jalankan **Build** (atau **Build & Push**) lagi. Item yang sudah berhasil dilewati saat push diulang.
+
+### Version tag
+
+Tag diisi di halaman Publish (kontrol 4), bukan di form profil. Cara mengisinya mengikuti **Tagging** profil, yang
+dipilih sekali saat profil dibuat (tab Target, field 5) dan tidak bisa diubah sesudahnya: memindahkan satu image antara
+tag versi dan tag bebas akan mencampur keduanya di repository-nya. Untuk jenis lain, buat profil baru. **Standard**
+mengikuti [container-naming](../convention/container-naming.md) dengan spin edit dan channel; **Manual** menampilkan
+satu kotak untuk tag bebas. Nilainya disimpan ke profil, jadi tetap ada saat profil dipilih lagi. Strip ini tampil untuk mode Dockerfile, LocalImage, dan Template; Compose mengatur tag per service di form
+profil, dan Set memakai tag dari profil masing-masing step.
+
+| Channel | Version tag | Tag mengambang yang dipindah setelahnya |
+| --- | --- | --- |
+| **prealpha**, **alpha**, **beta**, **rc** | `A.B.C-channel.N`. N tidak diketik: satu di atas N tertinggi yang sudah ada di registry dan riwayat komputer ini untuk A.B.C dan channel itu | Hanya tag channel, misalnya `alpha` |
+| **release** | `A.B.C`. Ditolak bila registry sudah memilikinya; version tag tidak pernah ditimpa | `release`, `latest`, `A.B`, dan `A`. Konfirmasi push memperingatkan bahwa `latest` ikut pindah |
+| Tagging Manual | Teks di kotak tunggal, misalnya `dev` atau `hotfix-login` | Tidak ada |
+
+Tag manual harus tag Docker yang valid dan ditolak bila berbentuk version tag (`1.0.0`, `0.2.0-beta.1`: pakai profil Standard)
+atau tag mengambang (`latest`, `release`, nama channel, `1` atau `1.2`). Tag manual boleh di-push ulang menimpa dirinya
+sendiri. Extra tag yang diketik di profil lama tidak dipakai lagi dan hilang saat profil disimpan berikutnya. Profil
+lama yang menyimpan tag bebas dianggap Standard; Build berhenti dengan pesan sampai versi dipilih di strip, atau buat
+ulang sebagai profil Manual.
 
 ### Form profil
 
@@ -228,7 +250,7 @@ menyimpan salinan dengan ID baru, dan **Cancel** membuang perubahan. Error tampi
 | --- | --- | --- |
 | 1 | **Name** | Tampil di daftar profil dan riwayat |
 | 2 | **Description** | Opsional |
-| 3 | **Workspace** dan **Browse folder** | Folder dasar. Semua path relatif di profil (context, Dockerfile, project) dihitung dari sini |
+| 3 | **Workspace** dan tombol folder | Folder dasar. Semua path relatif di profil (context, Dockerfile, project) dihitung dari sini |
 | 4 | **Project**, **Publish Source**, **Publish Profile** | Hanya untuk mode Template: project host yang di-`dotnet publish`, dan apakah pengaturannya diambil dari field form (**Fields**) atau dari publish profile `.pubxml` (**PublishProfile**) |
 | 5 | **Re-read project information** | Membaca project (atau solution) dan memilih project host container |
 
@@ -244,15 +266,16 @@ menyimpan salinan dengan ID baru, dan **Cancel** membuang perubahan. Error tampi
 | 4 | **Target** | Stage Dockerfile yang di-build (`--target`). Kosong berarti stage terakhir |
 | 5 | **Platform** | Misalnya `linux/amd64` (`--platform`). Kosongkan untuk build sesuai engine Docker lokal; kalau diisi, Buildx wajib ada |
 | 6 | **Build Args**, **Named Contexts**, **Secrets** | `--build-arg KEY=value`, `--build-context name=path`, dan secret BuildKit yang nilainya diambil dari kredensial profil (tidak pernah ditulis ke Dockerfile atau log) |
-| 7 | **Local Image** dan **Select local image** | Untuk mode LocalImage: image yang sudah ada di Docker lokal, dipilih dari daftar |
-| 8 | **.NET template**, **Compose**, **Ordered Set** | Pengaturan mode-mode lain |
+
+Seksi di bawah **Mode** hanya menampilkan pengaturan mode yang dipilih dan langsung berganti saat mode diubah;
+pengaturan mode lain tetap tersimpan di profil. Tombol folder di sebelah path membuka pemilih berkas atau folder.
 
 | Mode | Dipakai bila |
 | --- | --- |
 | **Dockerfile** | Repository sudah punya Dockerfile. Field 2 sampai 6 berlaku |
-| **LocalImage** | Image sudah di-build secara lokal; publisher hanya memberi tag dan mem-push |
+| **LocalImage** | Image sudah di-build secara lokal; publisher hanya memberi tag dan mem-push. **Select local image** menampilkan image di Docker lokal |
 | **Template** | Project .NET tanpa Dockerfile sendiri. Publisher menjalankan `dotnet publish` (runtime, framework, self-contained, atau `.pubxml`), menyalin output yang dipilih **File Set** ke Dockerfile yang dibuatkan (base image, working directory, environment, port, zona waktu, entrypoint, baris `RUN` tambahan), atau memakai Dockerfile yang sudah ada terhadap output itu. **Preview generated Dockerfile** dan **Preview file set from folder** menampilkan hasilnya lebih dulu |
-| **Compose** | `compose.yml` dengan service ber-`build:`. **Read Compose build services** menampilkan daftarnya; setiap service yang dipilih mendapat `root/container` dan version tag sendiri. Hanya `build` yang dijalankan, tidak pernah `up` |
+| **Compose** | `compose.yml` dengan service ber-`build:`. **Read Compose build services** menampilkan daftarnya; setiap service yang dipilih mendapat repository dan version tag sendiri, diatur di form ini (strip versi tidak dipakai). Hanya `build` yang dijalankan, tidak pernah `up` |
 | **Set** | Beberapa profil berurutan, misalnya image Base lalu image App di atasnya. Setiap step memilih Build dan Push; named file list membagi satu output publish ke beberapa image |
 
 #### Target
@@ -261,21 +284,24 @@ menyimpan salinan dengan ID baru, dan **Cancel** membuang perubahan. Error tampi
 
 | # | Field | Arti |
 | --- | --- | --- |
-| 1 | **Type** | **BuiltIn**: registry di server yang sedang terhubung. **Custom**: registry lain (misalnya GHCR) |
-| 2 | **Server**, **Root**, **Container** | Tujuan built-in. Diisi oleh tombol 6; server hanya-baca dan harus sama dengan koneksi aktif |
-| 3 | **Host**, **Repository** | Tujuan Custom, misalnya `ghcr.io` dan `acme/api` |
-| 4 | **Version Tag** | Wajib. Tag tetap untuk build ini, misalnya `1.0.0-alpha.1`. Menurut konvensi tidak pernah ditimpa |
-| 5 | **Extra Tags** dan **Import lines from .txt** | Satu tag per baris, di-push setelah version tag, misalnya tag channel `alpha`. Tidak ditambahkan otomatis. Menambahkan `latest` memunculkan peringatan sebelum push |
-| 6 | **Use active built-in server and select destination** | Menampilkan dua daftar di bawah tombol: pilih root, lalu container. Pesan `Built-in target: root/container` menandakan pilihan sudah tersimpan |
-| 7 | Alamat server | Koneksi aktif, dengan tombol salin. Tempelkan ke **Scope Host** kredensial |
-| 8 | **Refresh latest versions** | Menampilkan versi terakhir yang di-push dari komputer ini dan tag terbaru di registry |
+| 1 | **Type** | **BuiltIn**: registry di server yang sedang terhubung. **Custom**: registry lain (misalnya GHCR). Isi seksi lainnya berganti mengikuti pilihan ini |
+| 2 | **Server** | Hanya BuiltIn. Koneksi aktif, dengan tombol salin; tidak diketik. Tempelkan ke **Scope Host** kredensial. Bila aplikasi belum terhubung, muncul catatan untuk menghubungkan dulu atau beralih ke Custom |
+| 3 | **Root**, **Container** | Hanya BuiltIn. Tujuan di server itu. Diisi oleh tombol 4, atau diketik |
+| 4 | **Select destination** | Hanya BuiltIn, aktif selama terhubung. Menampilkan dua daftar di bawah tombol: pilih root, lalu container. Field 3 ikut diperbarui dan pesan `Built-in target: root/container` menandakan pilihan sudah tersimpan |
+| 5 | **Tagging** | **Standard** atau **Manual**, lihat [Version tag](#version-tag). Hanya bisa dipilih di **New Profile**; profil yang sudah ada menampilkannya sebagai teks |
+| 6 | **Refresh latest versions** | Menampilkan versi terakhir yang di-push dari komputer ini dan tag terbaru di registry |
 
-Masalah yang diketahui pada tombol 6 (lihat [publish-ui-review](../ideas/publish-ui-review.md)):
-- Daftarnya menampilkan `Em.Api.Core.Models.CtnRootInfo`, bukan nama root atau container. Jadi, andalkan
+Dengan **Custom**, seksi ini menampilkan **Host** (host registry beserta port-nya, tanpa `http://`, misalnya `ghcr.io`
+atau `registry.example.com:5000`) dan **Repository** (misalnya `acme/api`) menggantikan field 2 sampai 4. Tambahkan
+kredensial push untuk host itu di Credentials, dan centang **Allow Http** di sana untuk registry HTTP polos. Tujuan
+yang dipilih di server lain memunculkan catatan agar dipilih ulang. Version tag tidak diatur di sini; lihat
+[Version tag](#version-tag).
+
+Masalah yang diketahui pada tombol 4 (lihat [publish-ui-review](../ideas/publish-ui-review.md)):
+- Daftarnya bisa menampilkan `Em.Api.Core.Models.CtnRootInfo`, bukan nama root atau container. Jadi, andalkan
   pesan konfirmasi `Built-in target: root/container`.
 - Root yang belum punya container menghasilkan daftar kedua yang kosong tanpa pesan apa pun. Buat containernya
   lebih dulu.
-- Setiap klik menambah pasangan daftar baru di bawah yang lama. Pakai pasangan yang paling bawah.
 
 #### Credentials
 
@@ -284,16 +310,15 @@ Masalah yang diketahui pada tombol 6 (lihat [publish-ui-review](../ideas/publish
 | # | Field | Arti |
 | --- | --- | --- |
 | 1 | **Sensitive Data Storage** | **Separate** (bawaan): secret disimpan di luar berkas profil, terenkripsi untuk akun Windows Anda. **Plaintext**: secret ditulis ke JSON profil sebagai teks biasa; siapa pun yang bisa membaca berkasnya bisa memakainya |
-| 2 | **Id** | Referensi kredensial yang dibuat otomatis |
-| 3 | **Purpose** | Biarkan `push` untuk login registry |
-| 4 | **Scope Host** | Host registry beserta port-nya bila ada, misalnya `registry.example.com`. Awalan `https://` dan huruf besar-kecil diabaikan. Kredensial tidak pernah dikirim ke host lain, jadi host yang tidak cocok memunculkan "No credential for host '...'". Host registry pada tujuan bawaan diambil dari koneksi yang aktif, jadi periksa koneksi itu juga. |
-| 5 | **Username** | Nama robot |
-| 6 | **Secret** | Token robot |
-| 7 | **Remember** | Menyimpan secret untuk sesi berikutnya (Windows DPAPI, user saat ini). Tanpa ini secret hanya bertahan sampai aplikasi ditutup |
-| 8 | **Remove item** | Menghapus kredensial ini |
-| 9 | **Add Credentials** | Menambah kredensial lain, misalnya untuk registry kedua yang dipakai `FROM` |
+| 2 | **Purpose** | Biarkan `push` untuk login registry |
+| 3 | **Scope Host** | Host registry beserta port-nya bila ada, misalnya `registry.example.com`. Awalan `https://` dan huruf besar-kecil diabaikan. Kredensial tidak pernah dikirim ke host lain, jadi host yang tidak cocok memunculkan "No credential for host '...'". Host registry pada tujuan bawaan diambil dari koneksi yang aktif, jadi periksa koneksi itu juga. |
+| 4 | **Username** | Nama robot |
+| 5 | **Secret** | Token robot |
+| 6 | **Allow Http**, **Remember** | **Allow Http**: lihat di bawah. **Remember** menyimpan secret untuk sesi berikutnya (Windows DPAPI, user saat ini); tanpa ini secret hanya bertahan sampai aplikasi ditutup |
+| 7 | Hapus (ikon tong sampah) | Menghapus kredensial ini |
+| 8 | **Add** | Menambah kredensial lain, misalnya untuk registry kedua yang dipakai `FROM` |
 
-Setiap kredensial juga punya **Allow Http**, di bawah **Remember**. Opsi ini membuat permintaan registry milik publisher
+**Allow Http** membuat permintaan registry milik publisher
 sendiri (Verify dan penemuan tag) memakai `http://` polos untuk host itu. Ia tidak mengubah cara Docker melakukan
 push: daemon Docker yang memilih https atau http, sehingga registry HTTP polos juga harus terdaftar di
 `insecure-registries` Docker. **Check** membaca pengaturan registry Docker dan menampilkan baris `Warning:` bila

@@ -1,3 +1,4 @@
+using System.IO;
 using Em.Ui.Wpf.Publish;
 
 namespace Em.Ui.Wpf.Core.Tests
@@ -51,6 +52,34 @@ namespace Em.Ui.Wpf.Core.Tests
       [Fact]
       public void NextNumber_RestartsWhenTheTargetVersionChanges() {
          Assert.Equal(1, new ContainerVersion(0, 2, 0, "alpha").NextNumber(["0.1.0-alpha.4"]));
+      }
+
+      // container-naming.md: a prerelease moves only its channel tag; release moves release, latest, A.B and A.
+      [Theory]
+      [InlineData("0.2.0-beta.3", "beta")]
+      [InlineData("1.2.3", "release,latest,1.2,1")]
+      [InlineData("dev", "")]
+      public void FloatingTagsOf_FollowsTheChannel(string tag, string expected) {
+         Assert.Equal(expected.Length == 0 ? [] : expected.Split(','), ContainerVersion.FloatingTagsOf(tag));
+      }
+
+      [Theory]
+      [InlineData("dev")]
+      [InlineData("hotfix-login")]
+      public void ValidateManual_AcceptsFreeTags(string tag) {
+         ContainerVersion.ValidateManual(tag);
+      }
+
+      [Theory]
+      [InlineData("")]
+      [InlineData("1.0.0")]
+      [InlineData("0.2.0-beta.1")]
+      [InlineData("latest")]
+      [InlineData("alpha")]
+      [InlineData("0.1")]
+      [InlineData("bad tag")]
+      public void ValidateManual_RejectsVersionFloatingAndInvalidTags(string tag) {
+         Assert.Throws<InvalidDataException>(() => ContainerVersion.ValidateManual(tag));
       }
    }
 }

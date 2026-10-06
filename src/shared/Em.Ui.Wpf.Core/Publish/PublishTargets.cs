@@ -50,7 +50,7 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
    if(!image.IsActive)throw new InvalidDataException("Container is inactive.");repo=t.Root+"/"+t.Container;
   }
   if(host.Contains('/')||host.Length==0||!Regex.IsMatch(repo,@"^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)*$"))throw new InvalidDataException("Registry host/repository is invalid.");
-  ValidateTag(t.VersionTag);foreach(var tag in t.ExtraTags)ValidateTag(tag);return host+"/"+repo+":"+t.VersionTag;
+  ValidateTag(t.VersionTag);return host+"/"+repo+":"+t.VersionTag;
  }
  public async Task ValidateComposeTarget(PublishProfile p,ComposeService mapping) {
   ValidateTag(mapping.VersionTag);

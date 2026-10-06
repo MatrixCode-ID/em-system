@@ -320,10 +320,11 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    var digest=JsonSerializer.Deserialize<string[]>(digests)?.FirstOrDefault(x=>x.StartsWith(Repository(artifact.Target)+"@",StringComparison.Ordinal));
    if(digest==null)throw new IOException("Push succeeded but matching repository digest could not be read.");artifact.Digest=digest[(digest.IndexOf('@')+1)..];
    artifact.Result=PublishResult.Success;log.Stage(artifact.Target,PublishResult.Success,artifact.Digest);
-   foreach(var extra in c.Target.ExtraTags.Distinct().Where(t=>t!=artifact.Version)) {
+   // Floating tags follow the channel of the version tag (container-naming convention); a manual tag moves none.
+   foreach(var extra in ContainerVersion.FloatingTagsOf(artifact.Version).Where(t=>t!=artifact.Version)) {
     ct.ThrowIfCancellationRequested();var tag=Repository(artifact.Target)+":"+extra;
     try {await _process.RequireAsync("docker",["tag",artifact.ImageId,tag],p.Workspace,log,ct,env);await _process.RequireAsync("docker",["push",tag],p.Workspace,log,ct,env);log.Stage(tag,PublishResult.Success);}
-    catch(OperationCanceledException){throw;}catch(Exception ex) {artifact.Result=PublishResult.Failed;artifact.Message="Version pushed; additional tag failed: "+extra;log.Stage(tag,PublishResult.Failed,ex.Message);break;}
+    catch(OperationCanceledException){throw;}catch(Exception ex) {artifact.Result=PublishResult.Failed;artifact.Message="Version pushed; floating tag failed: "+extra;log.Stage(tag,PublishResult.Failed,ex.Message);break;}
    }
   }catch(OperationCanceledException){artifact.Result=PublishResult.Cancelled;throw;}
   catch(Exception ex){artifact.Result=PublishResult.Failed;artifact.Message=log.Masker.Mask(ex.Message);}
