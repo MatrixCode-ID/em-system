@@ -49,8 +49,6 @@ dotnet run --project src/backend/Em.Api/Em.Api.csproj
 
 Panduan lebih lanjut tersedia di [`src/backend/README.md`](src/backend/README.md).
 
-Untuk menjalankan API dalam container, lihat [setup Docker Compose dan docker run beserta variabel konfigurasi](doc/setup-container.md).
-
 ## Frontend dan Launcher
 
 Host WPF dan MAUI memakai engine UI bersama tanpa modul bisnis dari proyek asal. Lihat [`src/frontend/README.md`](src/frontend/README.md) untuk rincian frontend. Untuk menghasilkan Launcher yang disertakan dalam output WPF:

@@ -23,8 +23,6 @@ Host contoh menggunakan `builder.AddManagedStorageSettings()` tanpa path/limit d
 
 ## Container Alpine dan Compose
 
-Panduan lengkap setup **Docker Compose maupun `docker run`**, daftar variabel beserta default, persistence, update, dan troubleshooting tersedia di [Setup container Em.Api](../../doc/setup-container.md).
-
 Dockerfile memakai `alpine:3.23` untuk semua stage. `apk add dotnet10-sdk` mengunduh SDK .NET 10 saat build; image akhir hanya memiliki ASP.NET runtime, ICU lengkap, timezone/Kerberos, `ping` (iputils), `traceroute`, dan `nano`. Tidak ada base image dari Microsoft. [Dukungan .NET pada Alpine](https://learn.microsoft.com/en-us/dotnet/core/install/linux-alpine).
 
 Prasyarat: Docker dengan Linux containers dan Compose v2.24 atau lebih baru. Container memakai berkas config sendiri, `..\.artefacts\em-system\config\emapi-config.docker.json`, yang di-mount read-only ke `/run/secrets/emapi-config`. Isinya sama dengan config lokal, kecuali database pada host ditulis `host.docker.internal,1433` dengan SQL login. Dari root repo, siapkan sekali:
