@@ -89,8 +89,8 @@ namespace Em.Test.Models
 
       Task<vi_TestItem[]> GetVi_TestItems_InPage(int page, int pageSize);
 
-      /// <summary>Pencarian dengan syarat berbentuk DTO: parameter record/class berjalan sebagai JSON di query.</summary>
-      Task<TestItemPage> GetVi_TestItems_Search(TestItemQuery query);
+      /// <summary>Pencarian dengan satu parameter query per syarat: GET tidak membawa objek atau JSON.</summary>
+      Task<TestItemPage> GetVi_TestItems_Search(string? search, TestItemState? state, int page, int pageSize);
 
       #endregion
 
@@ -116,9 +116,6 @@ namespace Em.Test.Models
       /// <summary>Echo dengan parameter bertipe sederhana, masing-masing satu parameter query.</summary>
       Task<TestEchoResult> GetMeta_TestEchoSimple(string text, int number, decimal amount, bool flag, DateTime when,
          TestItemState state);
-
-      /// <summary>Echo dengan satu DTO yang berjalan sebagai JSON di query.</summary>
-      Task<TestEchoResult> GetMeta_TestEcho(TestEchoRequest request);
 
       /// <summary>Echo lewat POST: DTO dan array sebagai argumen posisional di body.</summary>
       Task<TestEchoResult> PostGetMeta_TestEcho(TestEchoRequest request, string[] tags);

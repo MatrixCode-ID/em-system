@@ -39,10 +39,6 @@ namespace Em.Test.Api
             Text = text, Number = number, Amount = amount, Flag = flag, When = when, State = state
          }));
 
-      [GetAction]
-      public Task<TestEchoResult> GetMeta_TestEcho(TestEchoRequest request) =>
-         Task.FromResult(Echo("GET JSON parameter", request));
-
       [PostAction]
       public Task<TestEchoResult> PostGetMeta_TestEcho(TestEchoRequest request, string[] tags) {
          request.Tags = tags;

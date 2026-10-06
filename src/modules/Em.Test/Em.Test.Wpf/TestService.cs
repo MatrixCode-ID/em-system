@@ -26,17 +26,17 @@ namespace Em.Test.Wpf
 
       public Task PostTa_TestItem_New(ta_TestItem data) => PostAsync(nameof(PostTa_TestItem_New), data);
 
-      public Task PostTa_TestItem_NewBatch(ta_TestItem[] datas) => PostAsync(nameof(PostTa_TestItem_NewBatch), datas);
+      public Task PostTa_TestItem_NewBatch(ta_TestItem[] datas) => PostAsync(nameof(PostTa_TestItem_NewBatch), (object)datas);
 
       public Task PostTa_TestItem_Update(ta_TestItem data) => PostAsync(nameof(PostTa_TestItem_Update), data);
 
       public Task PostTa_TestItem_UpdateBatch(ta_TestItem[] datas) =>
-         PostAsync(nameof(PostTa_TestItem_UpdateBatch), datas);
+         PostAsync(nameof(PostTa_TestItem_UpdateBatch), (object)datas);
 
       public Task PostTa_TestItem_Delete(ta_TestItem data) => PostAsync(nameof(PostTa_TestItem_Delete), data);
 
       public Task PostTa_TestItem_DeleteBatch(ta_TestItem[] datas) =>
-         PostAsync(nameof(PostTa_TestItem_DeleteBatch), datas);
+         PostAsync(nameof(PostTa_TestItem_DeleteBatch), (object)datas);
 
       #endregion
 
@@ -69,8 +69,8 @@ namespace Em.Test.Wpf
       public Task<vi_TestItem[]> GetVi_TestItems_InPage(int page, int pageSize) =>
          GetAsync<vi_TestItem[]>(nameof(GetVi_TestItems_InPage), page, pageSize);
 
-      public Task<TestItemPage> GetVi_TestItems_Search(TestItemQuery query) =>
-         GetAsync<TestItemPage>(nameof(GetVi_TestItems_Search), query);
+      public Task<TestItemPage> GetVi_TestItems_Search(string? search, TestItemState? state, int page, int pageSize) =>
+         GetAsync<TestItemPage>(nameof(GetVi_TestItems_Search), search, state, page, pageSize);
 
       #endregion
 
@@ -97,9 +97,6 @@ namespace Em.Test.Wpf
       public Task<TestEchoResult> GetMeta_TestEchoSimple(string text, int number, decimal amount, bool flag,
          DateTime when, TestItemState state) =>
          GetAsync<TestEchoResult>(nameof(GetMeta_TestEchoSimple), text, number, amount, flag, when, state);
-
-      public Task<TestEchoResult> GetMeta_TestEcho(TestEchoRequest request) =>
-         GetAsync<TestEchoResult>(nameof(GetMeta_TestEcho), request);
 
       public Task<TestEchoResult> PostGetMeta_TestEcho(TestEchoRequest request, string[] tags) =>
          PostAsync<TestEchoResult>(nameof(PostGetMeta_TestEcho), request, tags);

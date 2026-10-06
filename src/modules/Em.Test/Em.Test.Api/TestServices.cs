@@ -179,18 +179,16 @@ namespace Em.Test.Api
       }
 
       [GetAction]
-      public async Task<TestItemPage> GetVi_TestItems_Search(TestItemQuery query) {
-         var page = query.Page;
-         var pageSize = query.PageSize;
+      public async Task<TestItemPage> GetVi_TestItems_Search(string? search, TestItemState? state, int page, int pageSize) {
          NormalizePaging(ref page, ref pageSize);
 
          var rows = ctx.vi_TestItems.AsQueryable();
-         if (!string.IsNullOrWhiteSpace(query.Search)) {
-            var term = query.Search.Trim();
+         if (!string.IsNullOrWhiteSpace(search)) {
+            var term = search.Trim();
             rows = rows.Where(r => r.cTestItemCode.Contains(term) || r.cTestItemName.Contains(term));
          }
 
-         if (query.State is { } state) rows = rows.Where(r => r.cTestItemState == state);
+         if (state is { } wanted) rows = rows.Where(r => r.cTestItemState == wanted);
 
          var total = await rows.CountAsync(AbortToken);
          var items = await rows.OrderBy(r => r.cTestItemCode)

@@ -154,8 +154,6 @@
                                       Command="{Binding Commands[PingCommand]}" />
                               <Button Style="{StaticResource testButtonStyle}" Content="GET simple parameters"
                                       Command="{Binding Commands[EchoSimpleCommand]}" />
-                              <Button Style="{StaticResource testButtonStyle}" Content="GET JSON parameter"
-                                      Command="{Binding Commands[EchoJsonCommand]}" />
                               <Button Style="{StaticResource testButtonStyle}" Content="POST body"
                                       Command="{Binding Commands[EchoPostCommand]}" />
                            </WrapPanel>

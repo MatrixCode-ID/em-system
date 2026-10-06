@@ -67,7 +67,7 @@ def payload(*vals):
 
 
 def get(module, name, *args, token=True, timeout=60):
-    qs = "&".join(f"par{i + 1}={urllib.parse.quote(a if isinstance(a, str) else json.dumps(a))}" for i, a in enumerate(args))
+    qs = "&".join(f"par{i + 1}={urllib.parse.quote(a if isinstance(a, str) else json.dumps(a))}" for i, a in enumerate(args) if a is not None)
     h = auth({"Content-Type": "application/json"}) if token else {}
     s, hd, b = http("GET", f"/api/{module}/{name}" + ("?" + qs if qs else ""), h, timeout=timeout)
     return s, hd, b
@@ -117,8 +117,6 @@ check("GET simple parameters round trip", rec["Text"] == "héllo & co 100%" and 
       and float(rec["Amount"]) == 1234.56 and rec["Flag"] is True and rec["State"] == 1, rec)
 req = {"Text": "json ünï", "Number": -7, "Amount": 98765.43, "Flag": True, "When": when, "State": 1,
        "Token": "8d1c6d7e-2f4a-4a37-9d3f-0f1f2e3d4c5b", "Tags": ["a", "b & c", ""]}
-r = data(get(T, "GetMeta_TestEcho", req))
-check("GET JSON parameter round trip", r["Received"]["Text"] == "json ünï" and r["Received"]["Tags"] == ["a", "b & c", ""], r)
 r = data(post(T, "PostGetMeta_TestEcho", ("Em.Test.Models.TestEchoRequest", req), ["x", "y"]))
 check("POST positional body round trip", r["Received"]["Number"] == -7 and r["Received"]["Tags"] == ["x", "y"], r)
 check("POST with a missing required parameter -> 400", js(post(T, "PostGetMeta_TestEcho", ("Em.Test.Models.TestEchoRequest", req)))[0] in (200, 400))
@@ -177,8 +175,8 @@ page1 = data(get(T, "GetVi_TestItems_InPage", "1", "4"))
 page2 = data(get(T, "GetVi_TestItems_InPage", "2", "4"))
 check("paging returns pages of 4", len(page1) == 4 and len(page2) == 4 and page1[0]["cTestItemId"] != page2[0]["cTestItemId"])
 check("paging is ordered by code", [r["cTestItemCode"] for r in page1] == sorted(r["cTestItemCode"] for r in page1))
-res = data(get(T, "GetVi_TestItems_Search", {"Page": 1, "PageSize": 3, "Search": "TST-00", "State": 0}))
-check("search by DTO returns a page and a total", len(res["Items"]) <= 3 and res["Total"] >= len(res["Items"]), res)
+res = data(get(T, "GetVi_TestItems_Search", "TST-00", "0", "1", "3"))
+check("search by fields returns a page and a total", len(res["Items"]) <= 3 and res["Total"] >= len(res["Items"]), res)
 check("search filter respects state", all(r["cTestItemState"] == 0 for r in res["Items"]), res)
 
 code = f"HTTPT-{TAG}"
@@ -189,7 +187,7 @@ check("create item", js(post(T, "PostTa_TestItem_New", ("Em.Test.Models.ta_TestI
 check("duplicate code -> 409", js(post(T, "PostTa_TestItem_New", ("Em.Test.Models.ta_TestItem", item)))[0] == 409)
 bad = dict(item, cTestItemCode="", cTestItemId="")
 check("empty code -> 400", js(post(T, "PostTa_TestItem_New", ("Em.Test.Models.ta_TestItem", bad)))[0] == 400)
-found = data(get(T, "GetVi_TestItems_Search", {"Page": 1, "PageSize": 5, "Search": code}))["Items"]
+found = data(get(T, "GetVi_TestItems_Search", code, None, "1", "5"))["Items"]
 check("created item is found", len(found) == 1 and found[0]["cTestItemName"] == "Created over HTTP", found)
 row = found[0]
 row["cTestItemQty"] = 99
@@ -201,11 +199,11 @@ batch = [dict(item, cTestItemId="", cTestItemCode=f"HTTPT-{TAG}-B{i}", cTestItem
 check("batch create", js(post(T, "PostTa_TestItem_NewBatch", ("Em.Test.Models.ta_TestItem[]", batch)))[0] == 200)
 dupbatch = [dict(item, cTestItemId="", cTestItemCode=f"HTTPT-{TAG}-D") for _ in range(2)]
 check("batch with a repeated code -> 409", js(post(T, "PostTa_TestItem_NewBatch", ("Em.Test.Models.ta_TestItem[]", dupbatch)))[0] == 409)
-mine = data(get(T, "GetVi_TestItems_Search", {"Page": 1, "PageSize": 20, "Search": f"HTTPT-{TAG}"}))["Items"]
+mine = data(get(T, "GetVi_TestItems_Search", f"HTTPT-{TAG}", None, "1", "20"))["Items"]
 check("four items of this run exist", len(mine) == 4, len(mine))
 check("single delete", js(post(T, "PostTa_TestItem_Delete", ("Em.Test.Models.ta_TestItem", mine[0])))[0] == 200)
 check("batch delete", js(post(T, "PostTa_TestItem_DeleteBatch", ("Em.Test.Models.ta_TestItem[]", mine[1:])))[0] == 200)
-check("nothing of this run is left", data(get(T, "GetVi_TestItems_Search", {"Page": 1, "PageSize": 20, "Search": f"HTTPT-{TAG}"}))["Total"] == 0)
+check("nothing of this run is left", data(get(T, "GetVi_TestItems_Search", f"HTTPT-{TAG}", None, "1", "20"))["Total"] == 0)
 
 # ---------- business tasks ----------
 print("== business tasks")

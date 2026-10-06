@@ -33,7 +33,7 @@ namespace Em.Test.Models.Ui
 
       /// <summary>Satu halaman item dari pencarian di server, bersama jumlah seluruh hasilnya.</summary>
       public static async Task<(TestItem[] Items, int Total)> SearchAsync(IEmApp app, TestItemQuery query) {
-         var page = await Api(app).GetVi_TestItems_Search(query);
+         var page = await Api(app).GetVi_TestItems_Search(query.Search, query.State, query.Page, query.PageSize);
          return ([.. page.Items.Select(r => Build(app, r))], page.Total);
       }
 

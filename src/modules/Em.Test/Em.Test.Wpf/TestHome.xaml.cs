@@ -39,7 +39,6 @@ namespace Em.Test.Wpf
          RegisterCommand(nameof(PublicPingCommand), PublicPingCommand);
          RegisterCommand(nameof(PingCommand), PingCommand);
          RegisterCommand(nameof(EchoSimpleCommand), EchoSimpleCommand);
-         RegisterCommand(nameof(EchoJsonCommand), EchoJsonCommand);
          RegisterCommand(nameof(EchoPostCommand), EchoPostCommand);
          RegisterCommand(nameof(FailCommand), FailCommand);
          RegisterCommand(nameof(SlowCommand), SlowCommand);
@@ -177,14 +176,6 @@ namespace Em.Test.Wpf
             var result = await Service.GetMeta_TestEchoSimple(EchoText, EchoNumber, 1234.56m, true, sent,
                TestItemState.Disabled);
             return Compare(result.Received, EchoText, EchoNumber, sent) + $"  via {result.Via}";
-         });
-
-      public Task EchoJsonCommand() =>
-         RunAsync("Echo: GET JSON parameter", async () => {
-            var request = SampleRequest();
-            var result = await Service.GetMeta_TestEcho(request);
-            return Compare(result.Received, request.Text, request.Number, request.When, request.Tags) +
-                   $"  via {result.Via}";
          });
 
       public Task EchoPostCommand() =>
@@ -339,10 +330,6 @@ namespace Em.Test.Wpf
                   TestItemState.Disabled);
                return Compare(r.Received, request.Text, request.Number, request.When);
             });
-            await Case("Echo: GET JSON parameter", async () => {
-               var r = await Service.GetMeta_TestEcho(request);
-               return Compare(r.Received, request.Text, request.Number, request.When, request.Tags);
-            });
             await Case("Echo: POST body", async () => {
                var r = await Service.PostGetMeta_TestEcho(request, request.Tags);
                return Compare(r.Received, request.Text, request.Number, request.When, request.Tags);
@@ -392,7 +379,7 @@ namespace Em.Test.Wpf
                return table == view ? $"{table} item(s) in both" : throw new InvalidOperationException($"table {table} != view {view}");
             });
             await Case("Items: search returns a page and a total", async () => {
-               var page = await Service.GetVi_TestItems_Search(new TestItemQuery { Page = 1, PageSize = 3 });
+               var page = await Service.GetVi_TestItems_Search(null, null, 1, 3);
                return page.Items.Length <= 3 && page.Total >= page.Items.Length
                   ? $"{page.Items.Length} of {page.Total} item(s)"
                   : throw new InvalidOperationException("Page size or total is inconsistent.");
