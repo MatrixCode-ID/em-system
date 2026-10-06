@@ -393,7 +393,7 @@ namespace Em.Ui.Wpf.Core
          app.AddNavigation(RequireClaim(new Navigation {
             Name="admin.nupak", Title="NuGet Manager", Subtitle="Packages, feeds and prefixes", OrderIndex=85,
             Description="Manage NuGet feeds", BodyType=BodyType.Of<NuPakManager>(), Kind=NavigationKind.Manager, EmApp=app,
-            RequireParameter=false, IsMenuVisible=true, MenuPath=MenuPath.Set("Tools/Administrative"),
+            RequireParameter=false, IsMenuVisible=false,
             NavigationIcon=EFontAwesomeIcon.Solid_Box.CreateImageSource(System.Windows.Media.Brushes.Gray)
          }, "Administrative Tools:" + INuPakServices.ManagerClaim));
       }

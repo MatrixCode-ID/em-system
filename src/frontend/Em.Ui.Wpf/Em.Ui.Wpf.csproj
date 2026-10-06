@@ -29,6 +29,13 @@
       </Content>
     </ItemGroup>
 
+    <!-- Debug builds embed the developer private key from the local artefacts folder
+         ($(ArtefactsPath)debugkey\debug-token.key). Without the file the debug key is simply not registered.
+         Never embedded in Release. -->
+    <ItemGroup Condition="'$(Configuration)' == 'Debug' And Exists('$(ArtefactsPath)debugkey/debug-token.key')">
+      <EmbeddedResource Include="$(ArtefactsPath)debugkey/debug-token.key" LogicalName="DevelopmentToken" Visible="false" />
+    </ItemGroup>
+
     <ItemGroup>
       <ProjectReference Include="..\..\shared\Em.Libs\Em.Libs.csproj" />
       <ProjectReference Include="..\..\shared\Em.Ui.Wpf.Core\Em.Ui.Wpf.Core.csproj" />

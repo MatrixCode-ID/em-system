@@ -1,3 +1,4 @@
+using System.IO;
 using Em.Test.Wpf;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
@@ -25,7 +26,25 @@ internal static class Program
          });
          builder.EnableAnimation = true;
          builder.AddTestModule();
+#if DEBUG
+         builder.AddDebug(opt => {
+            opt.AddDebugConnection("Localhost", "http://localhost:5132", true);
+            if (ReadDevelopmentToken() is { } privateKey) {
+               opt.SetDebugKey("Development Token", privateKey);
+            }
+         });
+#endif
       });
       emApp.Run();
    }
+
+#if DEBUG
+   /// <summary>Private key yang di-embed dari ArtefactsPath saat build, atau null bila berkasnya tidak ada.</summary>
+   private static string? ReadDevelopmentToken() {
+      using var stream = typeof(Program).Assembly.GetManifestResourceStream("DevelopmentToken");
+      if (stream is null) return null;
+      using var reader = new StreamReader(stream);
+      return reader.ReadToEnd().Trim();
+   }
+#endif
 }
