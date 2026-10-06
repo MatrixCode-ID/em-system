@@ -41,6 +41,9 @@ public partial class PublishProfileDialog : EmWindow {
   [nameof(NuGetTarget)+".Type"]="Where the packages are pushed. BuiltIn: a NuPak feed on the em-system server this application is connected to (NuGet Manager), picked with Select destination. Custom: any NuGet v3 feed, typed by hand as Service Index, with a credential on the Credentials tab.",
   [nameof(NuGetTarget)+".Feed"]="The NuPak feed on the connected server that receives the packages. Fill it with Select destination: a typed name does not record the Server, and publishing then fails. The feed must be enabled and have an active prefix for every package ID.",
   [nameof(NuGetTarget)+".ServiceIndex"]="The v3 service index URL of the feed, for example https://nuget.example.com/v3/index.json (nuget.org: https://api.nuget.org/v3/index.json). Add a credential (API key) for its host on the Credentials tab.",
+  [nameof(PublishProfile)+".KeepWorkspace"]="Keeps the temporary run folder after the run instead of deleting it: the dotnet publish output, the staging folder and generated Dockerfile of Template mode, the .nupkg files and the temporary Docker config. The folder is under the Work folder of Publisher settings (default %LOCALAPPDATA%\\Em\\Publish\\Work\\<run id>). Use it for debugging a failed build; kept folders are not cleaned up automatically.",
+  [nameof(PublishProfile)+".RequireReleaseNotes"]="Refuses Push while the release notes box on the Publish page is empty, so every release carries notes in the publish history. In a Set, it applies when any step's profile requires it. Prepare is not affected.",
+  [nameof(ContainerProfile)+".UseMyDockerLogin"]="Off (default): the publisher uses its own temporary Docker config and runs docker login with the push credential from the Credentials tab; your own Docker login is neither used nor changed. On: the publisher uses your existing Docker login (docker login or Docker Desktop), so no push credential is needed on the Credentials tab. Use it for registries that sign in through a credential helper or SSO. Whoever uses an exported profile must then be logged in to the same registry.",
   [nameof(DockerfileProfile)+".Secrets"]="Secrets the Dockerfile can read during the build without leaving them in the image (RUN --mount=type=secret,id=<id>). Each entry passes the secret of one credential from the Credentials tab.",
  };
  public PublishProfile Profile { get; }
@@ -228,16 +231,24 @@ public partial class PublishProfileDialog : EmWindow {
   if(tip==null)row.Children.Add(caption);
   else {
    // A visible info mark next to the label: nobody hovers a plain label hoping for help.
-   var info=new FontAwesome();info.SetResourceReference(StyleProperty,"fieldInfoIconStyle");AutomationProperties.SetName(info,"About "+label);
+   var info=InfoIcon(label,tip);
    caption.Margin=new Thickness(0);caption.TextWrapping=TextWrapping.NoWrap;caption.TextTrimming=TextTrimming.CharacterEllipsis;
    var head=new DockPanel {VerticalAlignment=caption.VerticalAlignment,Margin=new Thickness(2,top?13:0,12,0),LastChildFill=false};head.Children.Add(caption);head.Children.Add(info);
    row.Children.Add(head);
-   foreach(var element in new FrameworkElement[] {info,caption,input}) {element.ToolTip=Tip(tip);ToolTipService.SetShowOnDisabled(element,true);ToolTipService.SetShowDuration(element,30000);ToolTipService.SetInitialShowDelay(element,element==info?100:600);}
+   foreach(var element in new FrameworkElement[] {caption,input})SetTip(element,tip);
    AutomationProperties.SetHelpText(input,tip);
   }
   Grid.SetColumn(input,1);row.Children.Add(input);
   if(action!=null) {action.Margin=new Thickness(8,0,0,0);action.VerticalAlignment=top?VerticalAlignment.Top:VerticalAlignment.Center;Grid.SetColumn(action,2);row.Children.Add(action);}
   panel.Children.Add(row);return row;
+ }
+ /// <summary>The info mark placed after a label or a checkbox caption; its tooltip opens quickly because it exists only for that.</summary>
+ private static FontAwesome InfoIcon(string label,string tip) {
+  var info=new FontAwesome();info.SetResourceReference(StyleProperty,"fieldInfoIconStyle");AutomationProperties.SetName(info,"About "+label);
+  SetTip(info,tip,100);return info;
+ }
+ private static void SetTip(FrameworkElement element,string tip,int delay=600) {
+  element.ToolTip=Tip(tip);ToolTipService.SetShowOnDisabled(element,true);ToolTipService.SetShowDuration(element,30000);ToolTipService.SetInitialShowDelay(element,delay);
  }
  /// <summary>A wrapping tooltip in theme colours; the default system tooltip stays light in the dark theme.</summary>
  private static ToolTip Tip(string text) {
@@ -299,7 +310,14 @@ public partial class PublishProfileDialog : EmWindow {
      browse=IconButton(EFontAwesomeIcon.Solid_FolderOpen,"Browse folder",()=> {var picker=new OpenFolderDialog();if(picker.ShowDialog()==true)field.Text=property.Name=="Workspace"?picker.FolderName:Path.GetRelativePath(Path.GetFullPath(Profile.Workspace),picker.FolderName);return Task.CompletedTask;});
     _rows[key]=Row(panel,label,field,browse,tip:tip);
    } else if(type==typeof(bool)) {
-    var check=new CheckBox {Content=label,IsChecked=value as bool?,HorizontalAlignment=HorizontalAlignment.Left};check.Checked+=(_,_)=>property.SetValue(obj,true);check.Unchecked+=(_,_)=>property.SetValue(obj,false);Row(panel,"",check);
+    var check=new CheckBox {Content=label,IsChecked=value as bool?,HorizontalAlignment=HorizontalAlignment.Left};check.Checked+=(_,_)=>property.SetValue(obj,true);check.Unchecked+=(_,_)=>property.SetValue(obj,false);
+    if(tip==null)_rows[key]=Row(panel,"",check);
+    else {
+     // A checkbox carries its caption itself, so the info mark goes right after it instead of in the label column.
+     SetTip(check,tip);AutomationProperties.SetHelpText(check,tip);
+     var cell=new StackPanel {Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Left};cell.Children.Add(check);cell.Children.Add(InfoIcon(label,tip));
+     _rows[key]=Row(panel,"",cell);
+    }
    } else if(type.IsEnum) {
     var combo=new ComboBox {ItemsSource=Enum.GetValues(type),SelectedItem=value};combo.SelectionChanged+=(_,_)=> {if(combo.SelectedItem!=null)property.SetValue(obj,combo.SelectedItem);};
     if(obj is ContainerProfile&&property.Name=="Mode")combo.SelectionChanged+=(_,_)=>_modeChanged?.Invoke();
