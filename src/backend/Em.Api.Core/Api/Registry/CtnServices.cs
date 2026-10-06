@@ -315,6 +315,20 @@ namespace Em.Api.Core.Registry
          var robots = await db.Robots.Where(r => robotIds.Contains(r.cRobotId))
             .ToDictionaryAsync(r => r.cRobotId, r => r.cRobotName, AbortToken);
 
+         // Blob tiap manifest diperiksa ke storage (ada dan ukurannya sama, tanpa hash): database bisa dipakai
+         // bersama folder storage lain, sehingga metadata tidak selalu punya berkasnya.
+         var manifestIds = manifests.Select(m => m.cCtnManifestId).ToList();
+         var links = await db.ManifestBlobs.Where(l => manifestIds.Contains(l.cCtnManifestId))
+            .Join(db.Blobs, l => l.cCtnBlobId, b => b.cCtnBlobId,
+               (l, b) => new { l.cCtnManifestId, b.cCtnBlobDigest, b.cCtnBlobSize })
+            .ToListAsync(AbortToken);
+         var intact = new Dictionary<string, bool>(StringComparer.Ordinal);
+         foreach (var blob in links.DistinctBy(l => l.cCtnBlobDigest)) {
+            intact[blob.cCtnBlobDigest] = blob.cCtnBlobDigest.Length == 71 && Store.BlobIntact(blob.cCtnBlobDigest, blob.cCtnBlobSize);
+         }
+
+         var blobsByManifest = links.ToLookup(l => l.cCtnManifestId, l => l.cCtnBlobDigest);
+
          return manifests.Select(m => new CtnManifestInfo {
             Id = m.cCtnManifestId,
             Digest = m.cCtnManifestDigest,
@@ -322,7 +336,9 @@ namespace Em.Api.Core.Registry
             Size = m.cCtnManifestSize,
             PushedAt = m.datestamp,
             PushedBy = m.cCtnManifestPushedBy_cRobotId is { } id ? robots.GetValueOrDefault(id) : null,
-            Tags = tags.Where(t => t.cCtnManifestId == m.cCtnManifestId).Select(t => t.cCtnTagName).ToArray()
+            Tags = tags.Where(t => t.cCtnManifestId == m.cCtnManifestId).Select(t => t.cCtnTagName).ToArray(),
+            BlobCount = blobsByManifest[m.cCtnManifestId].Distinct().Count(),
+            MissingBlobCount = blobsByManifest[m.cCtnManifestId].Distinct().Count(d => !intact[d])
          }).ToArray();
       }
 

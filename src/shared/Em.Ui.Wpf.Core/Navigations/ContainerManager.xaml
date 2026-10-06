@@ -628,6 +628,12 @@
                                                 Margin="0,0,10,0"
                                                 Orientation="Horizontal"
                                                 VerticalAlignment="Center">
+                                       <fa:FontAwesome Icon="Solid_TriangleExclamation"
+                                                       Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource dangerBrush}"
+                                                       ToolTip="Blobs missing from server storage - cannot be pulled"
+                                                       Visibility="{Binding HasMissingBlobs, Converter={StaticResource boolToVisibility}}" />
                                        <Border Style="{StaticResource chipMutedStyle}"
                                                Margin="0,0,8,0"
                                                Padding="7,1"
@@ -825,16 +831,48 @@
                                                ToolTip="{Binding SelectedNode.Image.FullName}" />
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                        <Border Style="{StaticResource chipSuccessStyle}"
-                                               Visibility="{Binding SelectedNode.IsActive, Converter={StaticResource boolToVisibility}}">
+                                               Visibility="{Binding ShowActiveChip, Converter={StaticResource boolToVisibility}}">
                                           <TextBlock Text="Active" />
                                        </Border>
                                        <Border Style="{StaticResource chipMutedStyle}"
                                                Visibility="{Binding SelectedNode.IsActive, Converter={StaticResource inverseBoolToVisibility}}">
                                           <TextBlock Text="Disabled" />
                                        </Border>
+                                       <Border Style="{StaticResource chipDangerStyle}" Margin="6,0,0,0"
+                                               Visibility="{Binding HasMissingBlobs, Converter={StaticResource boolToVisibility}}">
+                                          <StackPanel Orientation="Horizontal">
+                                             <fa:FontAwesome Icon="Solid_TriangleExclamation" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                             <TextBlock Text="Broken - blobs missing" FontWeight="SemiBold" />
+                                          </StackPanel>
+                                       </Border>
                                     </StackPanel>
                                  </StackPanel>
                               </Grid>
+
+                              <Border Margin="0,16,0,0" Padding="14,12"
+                                      CornerRadius="8" BorderThickness="1"
+                                      Background="{StaticResource dangerChipBrush}"
+                                      BorderBrush="{StaticResource dangerBrush}"
+                                      Visibility="{Binding HasMissingBlobs, Converter={StaticResource boolToVisibility}}">
+                                 <Grid>
+                                    <Grid.ColumnDefinitions>
+                                       <ColumnDefinition Width="Auto" />
+                                       <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <fa:FontAwesome Icon="Solid_TriangleExclamation" FontSize="20"
+                                                    Foreground="{StaticResource dangerBrush}"
+                                                    VerticalAlignment="Top" Margin="0,2,12,0" />
+                                    <StackPanel Grid.Column="1">
+                                       <TextBlock Text="This container cannot be pulled"
+                                                  FontSize="14" FontWeight="SemiBold"
+                                                  Foreground="{StaticResource dangerBrush}" />
+                                       <TextBlock Text="{Binding MissingBlobBanner}" Margin="0,4,0,0"
+                                                  TextWrapping="Wrap" TextTrimming="None"
+                                                  Style="{StaticResource secondaryCellStyle}"
+                                                  Foreground="{StaticResource dangerBrush}" Opacity="1" />
+                                    </StackPanel>
+                                 </Grid>
+                              </Border>
 
 
                               <TextBlock Text="{Binding SelectedNode.Description}"
@@ -1012,6 +1050,23 @@
                                                         TextTrimming="None">
                                                 <Run Text="{Binding MetaCaption, Mode=OneWay}" />
                                              </TextBlock>
+                                             <Grid Margin="0,0,0,6"
+                                                   Visibility="{Binding HasMissingBlobs, Converter={StaticResource boolToVisibility}}">
+                                                <Grid.ColumnDefinitions>
+                                                   <ColumnDefinition Width="Auto" />
+                                                   <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <fa:FontAwesome Icon="Solid_TriangleExclamation"
+                                                                Foreground="{StaticResource warningBrush}"
+                                                                VerticalAlignment="Top" Margin="0,2,6,0" />
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding MissingBlobCaption}"
+                                                           TextWrapping="Wrap"
+                                                           TextTrimming="None"
+                                                           Style="{StaticResource secondaryCellStyle}"
+                                                           Foreground="{StaticResource warningBrush}"
+                                                           Opacity="1" />
+                                             </Grid>
                                           </StackPanel>
                                        </Border>
                                     </DataTemplate>

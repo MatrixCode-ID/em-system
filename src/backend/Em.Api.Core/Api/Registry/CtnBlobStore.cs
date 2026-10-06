@@ -118,5 +118,14 @@ namespace Em.Api.Core.Registry
       }
 
       public bool BlobExists(string digest) => File.Exists(BlobPath(digest));
+
+      /// <summary>
+      /// Berkas blob ada dan ukurannya sama dengan yang dicatat. Hash isinya tidak dihitung: pemeriksaan ini
+      /// dipakai untuk menandai blob yang hilang di daftar, bukan untuk membuktikan isinya utuh.
+      /// </summary>
+      public bool BlobIntact(string digest, long size) {
+         var info = new FileInfo(BlobPath(digest));
+         return info.Exists && info.Length == size;
+      }
    }
 }

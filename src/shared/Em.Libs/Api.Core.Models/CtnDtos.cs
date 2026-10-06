@@ -85,6 +85,15 @@ namespace Em.Api.Core.Models
       public string? PushedBy { get; set; }
 
       public string[] Tags { get; set; } = [];
+
+      /// <summary>Jumlah blob (config dan layer) yang dirujuk manifest ini.</summary>
+      public int BlobCount { get; set; }
+
+      /// <summary>
+      /// Jumlah blob yang tercatat di database tetapi berkasnya tidak ada di storage server (atau ukurannya
+      /// berbeda). Image dengan nilai di atas nol tidak bisa di-pull sampai berkasnya dipulihkan.
+      /// </summary>
+      public int MissingBlobCount { get; set; }
    }
 
    /// <summary>

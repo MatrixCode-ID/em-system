@@ -202,6 +202,15 @@ namespace Em.Ui.Wpf.Navigations
          set => Set(value, _ => NotifyChanged(nameof(Icon)));
       }
 
+      /// <summary>
+      /// <c>true</c> kalau container ini terbukti punya blob yang hilang dari storage server. Baru diketahui
+      /// setelah manifest container dibaca (saat dipilih), dan hilang lagi saat tree dibaca ulang.
+      /// </summary>
+      public bool HasMissingBlobs {
+         get => Get<bool>();
+         internal set => Set(value);
+      }
+
       /// <summary>Simpul ini yang dipilih; dipasang dua arah oleh gaya item TreeView.</summary>
       public bool IsSelected {
          get => Get<bool>();
@@ -243,6 +252,16 @@ namespace Em.Ui.Wpf.Navigations
       /// Ukuran manifest itu sendiri - bukan ukuran image atau layer-nya, yang tidak dilaporkan server.
       /// </summary>
       public string SizeCaption => $"Manifest size {CdnManagerVm.FormatSize(Info.Size)}";
+
+      /// <summary><c>true</c> kalau ada blob manifest ini yang berkasnya tidak ada di storage server.</summary>
+      public bool HasMissingBlobs => Info.MissingBlobCount > 0;
+
+      /// <summary>Peringatan blob hilang; kosong kalau semua blob ada.</summary>
+      public string MissingBlobCaption => Info.MissingBlobCount switch {
+         0 => "",
+         var missing => $"{missing} of {Info.BlobCount} blob(s) missing from server storage - this image cannot be pulled " +
+                        "until the files are restored. The database may be shared with a server whose storage holds them."
+      };
 
       /// <summary>Satu baris keterangan: ukuran manifest, waktu push, dan pengirimnya.</summary>
       public string MetaCaption => $"{SizeCaption} · pushed {PushedCaption} · {PushedByCaption}";

@@ -287,7 +287,9 @@ namespace Em.Api.Core
          if (_ctnStore.IsEnabled || _storageSettings.Managed) CtnStartupChecks.VerifyTables(_rootServiceProvider);
          if (_storageSettings.Managed && _ctnStore.IsEnabled) {
             using var scope = _rootServiceProvider.CreateScope();
-            RegistryStorageIntegrity.VerifyStartup(scope.ServiceProvider.GetRequiredService<CtnContext>(), _ctnStore.RootPath);
+            RegistryStorageIntegrity.CheckStartup(
+               scope.ServiceProvider.GetRequiredService<CtnContext>(), _ctnStore,
+               scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<CtnBlobStore>());
          }
          // Before the first request, like the seeding above: results of the previous run are loaded and
          // leftovers wiped before anyone can ask for them. On shutdown every live task is cancelled.

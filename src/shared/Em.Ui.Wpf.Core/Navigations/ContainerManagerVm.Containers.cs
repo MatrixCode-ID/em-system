@@ -55,7 +55,34 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary><c>true</c> selama manifest container yang dipilih sedang dibaca.</summary>
       public bool IsManifestsLoading {
          get => Get<bool>();
-         private set => Set(value);
+         private set => Set(value, _ => NotifyHealthChanged());
+      }
+
+      /// <summary>Jumlah manifest container terpilih yang punya blob hilang dari storage server.</summary>
+      public int MissingBlobManifestCount => Manifests.Count(m => m.HasMissingBlobs);
+
+      /// <summary>
+      /// <c>true</c> kalau container terpilih tidak lengkap di storage. Ini keadaan nyata image, terpisah dari
+      /// status Active/Disabled yang diatur admin, jadi ditampilkan sebagai chip dan banner tersendiri.
+      /// </summary>
+      public bool HasMissingBlobs => MissingBlobManifestCount > 0;
+
+      /// <summary>Chip "Active" hanya tampil bila container aktif dan terbukti lengkap.</summary>
+      public bool ShowActiveChip => SelectedNode is { IsActive: true } && !IsManifestsLoading && !HasMissingBlobs;
+
+      /// <summary>Teks banner untuk container yang blob-nya hilang; kosong kalau lengkap.</summary>
+      public string MissingBlobBanner => MissingBlobManifestCount switch {
+         0 => "",
+         var missing => $"{missing} of {Manifests.Count} manifest(s) reference blobs that are not in this server's storage. " +
+                        "Pulling this container will fail, including by tag: an index only points at the broken manifests. " +
+                        "The database is probably shared with another server whose storage holds the files."
+      };
+
+      private void NotifyHealthChanged() {
+         NotifyChanged(nameof(MissingBlobManifestCount));
+         NotifyChanged(nameof(HasMissingBlobs));
+         NotifyChanged(nameof(ShowActiveChip));
+         NotifyChanged(nameof(MissingBlobBanner));
       }
 
       /// <summary>Server belum punya satu root pun.</summary>
@@ -347,6 +374,8 @@ namespace Em.Ui.Wpf.Navigations
             Manifests.Clear();
             foreach (var manifest in manifests) Manifests.Add(new CtnManifestItem(manifest));
             NotifyChanged(nameof(LastPushedCaption));
+            node.HasMissingBlobs = manifests.Any(m => m.MissingBlobCount > 0);
+            NotifyHealthChanged();
          }
          catch (ActionException x) when (x.StatusCode == 404) {
             // Container dihapus orang lain: tree dibaca ulang supaya hilang dari layar.
@@ -370,6 +399,7 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(DetailPullName));
          NotifyChanged(nameof(FolderSummary));
          NotifyChanged(nameof(EditNodeCaption));
+         NotifyHealthChanged();
       }
 
       #endregion
