@@ -20,7 +20,24 @@ public partial class PublishProfileDialog : EmWindow {
  private const double LabelWidth=170;
  private static readonly Dictionary<string,string> Captions=new() {["Credentials"]="Credentials (robot token / API key)",["MsbuildProperties"]="MSBuild properties"};
  private static readonly string[] SourceTemplateFields=["Project","PublishSource","PublishProfile"];
+ /// <summary>Tooltips keyed by declaring type and property name; shown on the label and the input, also while disabled.</summary>
+ private static readonly Dictionary<string,string> Tips=new() {
+  [nameof(PublishProfile)+".Workspace"]="Root folder of the source code. Relative paths in this profile (project, Dockerfile, Compose file, publish profile) are resolved from here, and build commands run in this folder.",
+  [nameof(ContainerProfile)+".Mode"]="How the image is produced. Dockerfile: build an existing Dockerfile. LocalImage: push an image already in the local Docker. Template: dotnet publish a .NET project into a generated image. Compose: build selected Compose services. Set: an ordered Base and App build. Mode-specific options are on the Build tab.",
+  [nameof(TemplateProfile)+".Project"]="The executable or web project (.csproj) that Template mode publishes, relative to Workspace. Use Re-read project information to pick a host project. Used only when Mode is Template.",
+  [nameof(TemplateProfile)+".PublishSource"]="Where the dotnet publish options come from. Fields: Runtime, Framework and Self-contained on the Build tab. PublishProfile: the project's .pubxml file below; those fields are then ignored. Used only when Mode is Template.",
+  [nameof(TemplateProfile)+".PublishProfile"]="The .pubxml file passed as -p:PublishProfile, relative to Workspace (or a profile name inside the project). Its PublishDir is replaced by the run workspace. Used only when Publish Source is PublishProfile.",
+  [nameof(DockerfileProfile)+".Context"]="The build context: the folder sent to Docker, relative to Workspace (. is the Workspace itself). COPY and ADD in the Dockerfile can only read files inside it. Passed as the last argument of docker build.",
+  [nameof(DockerfileProfile)+".File"]="The Dockerfile to build, relative to Workspace. Passed as -f, so it may live outside the context folder.",
+  [nameof(DockerfileProfile)+".Target"]="Optional. The stage of a multi-stage Dockerfile to stop at (the name in FROM ... AS <name>), passed as --target. Empty builds the last stage.",
+  [nameof(DockerfileProfile)+".Platform"]="Optional. The platform of the image, such as linux/amd64 or linux/arm64, passed as --platform. Empty uses the platform of the Docker daemon. Another platform needs Buildx with emulation.",
+  [nameof(DockerfileProfile)+".BuildArgs"]="Values for ARG instructions in the Dockerfile, passed as --build-arg Key=Value. Do not put passwords or tokens here: build args can be read from the image history. Use Secrets instead.",
+  [nameof(DockerfileProfile)+".NamedContexts"]="Extra folders the Dockerfile can read by name, passed as --build-context Key=Value. Key is the name used in COPY --from=<Key> or FROM <Key>; Value is a folder relative to Workspace.",
+  [nameof(DockerfileProfile)+".Secrets"]="Secrets the Dockerfile can read during the build without leaving them in the image (RUN --mount=type=secret,id=<id>). Each entry passes the secret of one credential from the Credentials tab.",
+ };
  public PublishProfile Profile { get; }
+ private readonly Dictionary<string,Grid> _rows=[];
+ private FrameworkElement? _readProjects;
  public bool SaveAs { get; private set; }
  private readonly PublishTargets _targets;
  private readonly PublishSecretStore _secrets;
@@ -34,14 +51,14 @@ public partial class PublishProfileDialog : EmWindow {
  public PublishProfileDialog(PublishProfile profile,PublishTargets targets,PublishSecretStore secrets,string logs,bool isNew=false) {
   InitializeComponent();_isNew=isNew;Profile=profile.Clone();foreach(var c in Profile.Credentials)c.Remember=secrets.IsRemembered(c);_targets=targets;_secrets=secrets;_logs=logs;
   var source=Tab("Source");Fields(source,Profile,["Name","Description","Workspace"]);
-  if(Profile.NuGet is {} n)Fields(source,n,["Sources"]);else Fields(source,Profile.Container!.Template,SourceTemplateFields);
-  var projects=new StackPanel();Actions(source,("Re-read project information",EFontAwesomeIcon.Solid_ArrowsRotate,async()=>await ReadProjects(projects)));source.Children.Add(projects);
+  if(Profile.NuGet is {} n)Fields(source,n,["Sources"]);else {var c=Profile.Container!;Fields(source,c,["Mode"]);Fields(source,c.Template,SourceTemplateFields);}
+  var projects=new StackPanel();_readProjects=Actions(source,("Re-read project information",EFontAwesomeIcon.Solid_ArrowsRotate,async()=>await ReadProjects(projects)));source.Children.Add(projects);
   var build=Tab("Build");
   if(Profile.NuGet is {} nuget)Fields(build,nuget,["Configuration","VersionOverride","MsbuildProperties","DuplicateHandling"]);
   else {
-   var container=Profile.Container!;Fields(build,container,["Mode"]);
-   var mode=new StackPanel();build.Children.Add(mode);
-   _modeChanged=()=> {mode.Children.Clear();BuildMode(mode,container);};_modeChanged();
+   // Mode is chosen on the Source tab; this tab shows only the options of the chosen mode, without a collapsible panel.
+   var container=Profile.Container!;
+   _modeChanged=()=> {build.Children.Clear();Row(build,"",Help("Options for Mode "+container.Mode+". Change the mode on the Source tab."));BuildMode(build,container);UpdateTemplateFields();};_modeChanged();
   }
   var target=Tab("Target");
   void BuildTarget() {target.Children.Clear();TargetTab(target);}
@@ -105,9 +122,9 @@ public partial class PublishProfileDialog : EmWindow {
  }
  private void BuildMode(Panel panel,ContainerProfile container) {
   switch(container.Mode) {
-   case ContainerMode.Dockerfile:Group(panel,"Dockerfile",container.Dockerfile);break;
+   case ContainerMode.Dockerfile:Fields(panel,container.Dockerfile);break;
    case ContainerMode.LocalImage: {
-    var section=Section(panel,"Local image");var fields=Sub(section);section.Children.Add(fields);Fields(fields,container,["LocalImage"]);
+    var section=panel;var fields=Sub(section);section.Children.Add(fields);Fields(fields,container,["LocalImage"]);
     var images=Sub(section);
     Actions(section,("Select local image",EFontAwesomeIcon.Brands_Docker,async()=> {
      var result=await new PublishProcessRunner().RunAsync("docker",["image","ls","--format","json"],Profile.Workspace);
@@ -119,13 +136,13 @@ public partial class PublishProfileDialog : EmWindow {
     section.Children.Add(images);break;
    }
    case ContainerMode.Template: {
-    var section=Group(panel,".NET template",container.Template,SourceTemplateFields);
-    Actions(section,("Preview generated Dockerfile",EFontAwesomeIcon.Solid_Eye,()=> {ShowText("Dockerfile preview",TemplateBuilder.Dockerfile(container.Template));return Task.CompletedTask;}),
+    Fields(panel,container.Template,null,SourceTemplateFields);
+    Actions(panel,("Preview generated Dockerfile",EFontAwesomeIcon.Solid_Eye,()=> {ShowText("Dockerfile preview",TemplateBuilder.Dockerfile(container.Template));return Task.CompletedTask;}),
      ("Preview file set from folder",EFontAwesomeIcon.Solid_FolderOpen,()=> {var picker=new OpenFolderDialog {Title="Choose an existing publish output for preview"};if(picker.ShowDialog()==true)ShowText("File set preview",string.Join("\n",TemplateBuilder.SelectFiles(picker.FolderName,container.Template.FileSet,container.Set.FileLists)));return Task.CompletedTask;}));
     break;
    }
    case ContainerMode.Compose: {
-    var compose=container.Compose;var section=Section(panel,"Compose (build only)");var fields=Sub(section);section.Children.Add(fields);
+    var compose=container.Compose;var section=panel;Row(section,"",Help("Compose builds the selected services only and never runs up."));var fields=Sub(section);section.Children.Add(fields);
     void RefreshCompose() {fields.Children.Clear();Fields(fields,compose);}
     RefreshCompose();
     var services=Sub(section);
@@ -143,20 +160,57 @@ public partial class PublishProfileDialog : EmWindow {
     }));
     section.Children.Add(services);break;
    }
-   case ContainerMode.Set:Group(panel,"Ordered set / shared file lists",container.Set);break;
+   case ContainerMode.Set:Fields(panel,container.Set);break;
   }
  }
- private StackPanel Tab(string name) {var panel=new StackPanel {Margin=new Thickness(6,16,16,4)};var tab=new TabItem {Header=name,Content=new ScrollViewer {Content=panel,VerticalScrollBarVisibility=ScrollBarVisibility.Auto}};tab.SetResourceReference(StyleProperty,"materialTabItemStyle");tabs.Items.Add(tab);return panel;}
+ /// <summary>
+ /// Enables the Template rows on the Source tab only when they take effect: Project and Publish Source for Mode Template,
+ /// Publish Profile only when Publish Source is PublishProfile. Values are kept when disabled.
+ /// </summary>
+ private void UpdateTemplateFields() {
+  if(Profile.Container is not {} container)return;
+  var template=container.Mode==ContainerMode.Template;
+  EnableRow(nameof(TemplateProfile)+".Project",template);
+  EnableRow(nameof(TemplateProfile)+".PublishSource",template);
+  EnableRow(nameof(TemplateProfile)+".PublishProfile",template&&container.Template.PublishSource==PublishSource.PublishProfile);
+  // Re-read picks the Template host project, so it follows the same rule.
+  if(_readProjects!=null)_readProjects.IsEnabled=template;
+ }
+ private void EnableRow(string key,bool enabled) {
+  if(!_rows.TryGetValue(key,out var row))return;
+  row.IsEnabled=enabled;
+  // Labels have no disabled look of their own; dim them like the inputs. The info mark stays full so the reason stays findable.
+  if(row.Tag is TextBlock caption)caption.Opacity=enabled?0.7:0.35;
+ }
+ private StackPanel Tab(string name) {var panel=new StackPanel {Margin=new Thickness(6,16,16,4)};var tab=new TabItem {Header=name,Content=new ScrollViewer {Content=panel,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,Focusable=false,FocusVisualStyle=null}};tab.SetResourceReference(StyleProperty,"materialTabItemStyle");tabs.Items.Add(tab);return panel;}
  private static string Label(string name)=>Captions.TryGetValue(name,out var caption)?caption:Regex.Replace(name,"([a-z])([A-Z])","$1 $2");
  private static TextBlock Help(string text) {var help=new TextBlock {Text=text,Margin=new Thickness(2,0,0,0)};help.SetResourceReference(StyleProperty,"fieldHelpStyle");return help;}
  /// <summary>One form row: label column on the left, the input filling the middle, an optional action (browse/import) right of the input.</summary>
- private static void Row(Panel panel,string label,FrameworkElement input,FrameworkElement? action=null,bool top=false) {
+ private static Grid Row(Panel panel,string label,FrameworkElement input,FrameworkElement? action=null,bool top=false,string? tip=null) {
   var row=new Grid {Margin=new Thickness(0,0,0,12)};
   row.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(LabelColumn(panel))});row.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(1,GridUnitType.Star)});row.ColumnDefinitions.Add(new ColumnDefinition {Width=GridLength.Auto});
   var caption=new TextBlock {Text=label,TextWrapping=TextWrapping.Wrap,VerticalAlignment=top?VerticalAlignment.Top:VerticalAlignment.Center,Margin=new Thickness(2,top?13:0,12,0)};caption.SetResourceReference(StyleProperty,"fieldLabelStyle");
-  row.Children.Add(caption);Grid.SetColumn(input,1);row.Children.Add(input);
+  row.Tag=caption;
+  if(tip==null)row.Children.Add(caption);
+  else {
+   // A visible info mark next to the label: nobody hovers a plain label hoping for help.
+   var info=new FontAwesome();info.SetResourceReference(StyleProperty,"fieldInfoIconStyle");AutomationProperties.SetName(info,"About "+label);
+   caption.Margin=new Thickness(0);caption.TextWrapping=TextWrapping.NoWrap;caption.TextTrimming=TextTrimming.CharacterEllipsis;
+   var head=new DockPanel {VerticalAlignment=caption.VerticalAlignment,Margin=new Thickness(2,top?13:0,12,0),LastChildFill=false};head.Children.Add(caption);head.Children.Add(info);
+   row.Children.Add(head);
+   foreach(var element in new FrameworkElement[] {info,caption,input}) {element.ToolTip=Tip(tip);ToolTipService.SetShowOnDisabled(element,true);ToolTipService.SetShowDuration(element,30000);ToolTipService.SetInitialShowDelay(element,element==info?100:600);}
+   AutomationProperties.SetHelpText(input,tip);
+  }
+  Grid.SetColumn(input,1);row.Children.Add(input);
   if(action!=null) {action.Margin=new Thickness(8,0,0,0);action.VerticalAlignment=top?VerticalAlignment.Top:VerticalAlignment.Center;Grid.SetColumn(action,2);row.Children.Add(action);}
-  panel.Children.Add(row);
+  panel.Children.Add(row);return row;
+ }
+ /// <summary>A wrapping tooltip in theme colours; the default system tooltip stays light in the dark theme.</summary>
+ private static ToolTip Tip(string text) {
+  var block=new TextBlock {Text=text,TextWrapping=TextWrapping.Wrap,MaxWidth=420};block.SetResourceReference(TextBlock.ForegroundProperty,"themeWindowForegroundBrush");
+  var tip=new ToolTip {Content=block,Padding=new Thickness(10,6,10,6)};
+  tip.SetResourceReference(BackgroundProperty,"themePopupBackgroundBrush");tip.SetResourceReference(BorderBrushProperty,"themeOutlineBrush");tip.SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");
+  return tip;
  }
  /// <summary>Horizontal offset of a panel from the tab edge (stored in Tag), so nested label columns shrink and inputs stay aligned.</summary>
  /// <summary>A plain child panel that keeps the parent's indent, so its rows stay on the same input column.</summary>
@@ -192,6 +246,7 @@ public partial class PublishProfileDialog : EmWindow {
    // Internal ids and the built-in server are never typed: ids are generated, the server comes from the connection.
    if(property.Name is "NeedsSecret" or "SecretRef" or "Id")continue;
    var type=property.PropertyType;var value=property.GetValue(obj);var label=Label(property.Name);
+   var key=obj.GetType().Name+"."+property.Name;var tip=Tips.GetValueOrDefault(key);
    if(type==typeof(string)||type==typeof(int)) {
     if(property.Name=="Secret"&&obj is PublishCredential credential) {
      var secret=new PasswordBox {Password=credential.Secret??_secrets.Get(credential,credential.ScopeHost)??""};
@@ -208,25 +263,26 @@ public partial class PublishProfileDialog : EmWindow {
      browse=IconButton(EFontAwesomeIcon.Solid_FolderOpen,"Browse "+label,()=> {var picker=new OpenFileDialog {Filter=property.Name is "Path" or "Project"?"Project / solution|*.csproj;*.sln;*.slnx|All files|*.*":"All files|*.*"};if(picker.ShowDialog()==true)field.Text=Path.GetRelativePath(Path.GetFullPath(Profile.Workspace),picker.FileName);return Task.CompletedTask;});
     else if(property.Name is "Workspace" or "Context" or "ProjectDirectory")
      browse=IconButton(EFontAwesomeIcon.Solid_FolderOpen,"Browse folder",()=> {var picker=new OpenFolderDialog();if(picker.ShowDialog()==true)field.Text=property.Name=="Workspace"?picker.FolderName:Path.GetRelativePath(Path.GetFullPath(Profile.Workspace),picker.FolderName);return Task.CompletedTask;});
-    Row(panel,label,field,browse);
+    _rows[key]=Row(panel,label,field,browse,tip:tip);
    } else if(type==typeof(bool)) {
     var check=new CheckBox {Content=label,IsChecked=value as bool?,HorizontalAlignment=HorizontalAlignment.Left};check.Checked+=(_,_)=>property.SetValue(obj,true);check.Unchecked+=(_,_)=>property.SetValue(obj,false);Row(panel,"",check);
    } else if(type.IsEnum) {
     var combo=new ComboBox {ItemsSource=Enum.GetValues(type),SelectedItem=value};combo.SelectionChanged+=(_,_)=> {if(combo.SelectedItem!=null)property.SetValue(obj,combo.SelectedItem);};
     if(obj is ContainerProfile&&property.Name=="Mode")combo.SelectionChanged+=(_,_)=>_modeChanged?.Invoke();
     if(obj is ContainerTarget or NuGetTarget&&property.Name=="Type")combo.SelectionChanged+=(_,_)=>_targetTypeChanged?.Invoke();
-    Row(panel,label,combo);
+    if(obj is TemplateProfile&&property.Name=="PublishSource")combo.SelectionChanged+=(_,_)=>UpdateTemplateFields();
+    _rows[key]=Row(panel,label,combo,tip:tip);
    } else if(type==typeof(List<string>)) {
     var field=new TextBox {Text=string.Join("\n",(List<string>)value!),Height=double.NaN,Padding=new Thickness(14,10,14,10),VerticalContentAlignment=VerticalAlignment.Top,AcceptsReturn=true,MinHeight=62,MaxHeight=160,VerticalScrollBarVisibility=ScrollBarVisibility.Auto};
     field.TextChanged+=(_,_)=>property.SetValue(obj,field.Text.Split(['\r','\n'],StringSplitOptions.RemoveEmptyEntries).Select(s=>s.Trim()).Where(s=>s.Length>0).ToList());
     var import=IconButton(EFontAwesomeIcon.Solid_FileImport,"Import lines from .txt",()=> {var picker=new OpenFileDialog {Filter="Text file|*.txt"};if(picker.ShowDialog()==true)field.Text=File.ReadAllText(picker.FileName);return Task.CompletedTask;});
-    Row(panel,label,field,import,top:true);
-   } else if(type.IsGenericType&&type.GetGenericTypeDefinition()==typeof(List<>))ListEditor(panel,label,(IList)value!,type.GenericTypeArguments[0]);
+    _rows[key]=Row(panel,label,field,import,top:true,tip:tip);
+   } else if(type.IsGenericType&&type.GetGenericTypeDefinition()==typeof(List<>))ListEditor(panel,label,(IList)value!,type.GenericTypeArguments[0],tip);
    else if(value!=null)Group(panel,label,value);
   }
  }
  /// <summary>A list of objects: a caption, one card per item with a remove button, and an Add button.</summary>
- private void ListEditor(Panel panel,string label,IList list,Type itemType) {
+ private void ListEditor(Panel panel,string label,IList list,Type itemType,string? tip=null) {
   var cell=new StackPanel();var entries=new StackPanel();cell.Children.Add(entries);var indent=Indent(panel)+LabelColumn(panel)+15;
   void AddRow(object item) {
    var fields=new StackPanel {Tag=indent};var body=new DockPanel();var card=new Border {Child=body,Padding=new Thickness(14,12,8,0),Margin=new Thickness(0,0,0,10)};card.SetResourceReference(StyleProperty,"innerCardStyle");
@@ -236,7 +292,7 @@ public partial class PublishProfileDialog : EmWindow {
   }
   foreach(var item in list)AddRow(item!);
   var add=TextButton("Add",EFontAwesomeIcon.Solid_Plus,()=> {var item=Activator.CreateInstance(itemType)!;list.Add(item);AddRow(item);return Task.CompletedTask;});
-  AutomationProperties.SetName(add,"Add to "+label);cell.Children.Add(add);Row(panel,label,cell,top:true);
+  AutomationProperties.SetName(add,"Add to "+label);cell.Children.Add(add);Row(panel,label,cell,top:true,tip:tip);
  }
  private async Task ReadProjects(Panel panel) {
   var reader=new ProjectReader(new PublishProcessRunner());var sources=Profile.NuGet?.Sources.Select(s=>Profile.Resolve(s.Path)).ToArray()??[Profile.Resolve(Profile.Container!.Template.Project)];

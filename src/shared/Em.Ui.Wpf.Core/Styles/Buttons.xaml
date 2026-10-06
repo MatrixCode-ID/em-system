@@ -227,6 +227,25 @@
       <Setter Property="VerticalAlignment" Value="Center" />
    </Style>
 
+   <!-- The small info mark right of a form label that carries a tooltip: it tells the reader
+        that help exists, which a tooltip on a plain label never does. Muted like the label,
+        accent on hover; it keeps full strength when the row is disabled, because that is when
+        the reason is wanted most (set ToolTipService.ShowOnDisabled on it). -->
+   <Style x:Key="fieldInfoIconStyle" TargetType="fa:FontAwesome">
+      <Setter Property="Icon" Value="Regular_CircleQuestion" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="6,0,0,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Cursor" Value="Help" />
+      <Setter Property="Foreground" Value="{DynamicResource themeOnSurfaceVariantBrush}" />
+      <Style.Triggers>
+         <Trigger Property="IsMouseOver" Value="True">
+            <Setter Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+         </Trigger>
+      </Style.Triggers>
+   </Style>
+
    <!-- Small in-place actions - the pencil on a row, the arrows on a pager, the cross that
         closes a panel: the shared flat icon button, one size down. It targets ButtonBase, so a
         ToggleButton can wear it wherever the action is really a piece of state. -->
