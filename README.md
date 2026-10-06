@@ -1,90 +1,136 @@
 # Em System
 
-Em System adalah fondasi ERP yang dikembangkan oleh **Matrix Code**. Repo ini memisahkan engine bersama, host API, serta host desktop WPF dan mobile .NET MAUI.
+Em System is an ERP foundation developed by **Matrix Code**. This repository contains the shared engine,
+the API host, a WPF desktop host and a .NET MAUI (Android) host.
 
-Proyek masih dalam pengembangan. Kode Em System dirilis dengan lisensi [MIT](LICENSE); paket NuGet belum diterbitkan ke nuget.org.
+The project is under active development (alpha). The code is released under the [MIT](LICENSE) license,
+and the engine libraries are published to nuget.org as `EmSys.*` prerelease packages.
 
-## Struktur proyek
+## Project layout
 
-| Lokasi | Isi |
+| Location | Contents |
 | --- | --- |
-| `src/backend/Em.Api` | Host server HTTP |
-| `src/backend/Em.Api.Core` | Engine dan layanan inti API |
-| `src/shared/Em.Libs` | Tipe dan utilitas bersama |
-| `src/shared/Em.Ui.Core` | Engine UI bersama |
-| `src/shared/Em.Ui.Wpf.Core` | Komponen UI WPF |
-| `src/shared/Em.Ui.Maui.Core` | Komponen UI .NET MAUI |
-| `src/frontend/Em.Ui.Wpf` | Host aplikasi desktop |
-| `src/frontend/Em.Ui.Maui` | Host aplikasi Android |
-| `src/frontend/Launcher` | Installer dan updater desktop berbasis Rust |
+| `src/backend/Em.Api` | HTTP server host |
+| `src/backend/Em.Api.Core` | API engine and core services |
+| `src/shared/Em.Libs` | Shared contracts, types and utilities |
+| `src/shared/Em.Ui.Core` | Shared UI engine (themes, branding, UI models) |
+| `src/shared/Em.Ui.Wpf.Core` | WPF UI engine |
+| `src/shared/Em.Ui.Maui.Core` | .NET MAUI UI engine |
+| `src/frontend/Em.Ui.Wpf` | Desktop application host |
+| `src/frontend/Em.Ui.Maui` | Android application host |
+| `src/frontend/Launcher` | Rust-based desktop installer and updater |
+| `src/modules/Em.Test` | Sample/test module that exercises most engine features |
+| `tests/` | Automated tests ([tests/README.md](tests/README.md)) |
+| `doc/` | Engine guides, conventions, SQL scripts and release notes |
 
-Setiap host memiliki solution sendiri: `src/backend/Em.Api.slnx`, `src/frontend/Em.Ui.Wpf.slnx`, dan `src/frontend/Em.Ui.Maui.slnx`. Solution di root tidak digunakan.
+Each host has its own solution: `src/backend/Em.Api.slnx`, `src/frontend/Em.Ui.Wpf.slnx` and
+`src/frontend/Em.Ui.Maui.slnx`. There is no solution at the repository root.
 
-## Persyaratan
+## Requirements
 
-- .NET SDK 10 untuk semua proyek .NET.
-- Windows untuk membangun dan menjalankan host WPF.
-- Workload Android/.NET MAUI beserta Android SDK untuk host MAUI.
-- Untuk membangun Launcher: Rust, PowerShell 7, dan Visual Studio Build Tools dengan toolchain MSVC x64.
+- .NET SDK 10 for every .NET project.
+- Windows to build and run the WPF host.
+- The Android/.NET MAUI workload and the Android SDK for the MAUI host.
+- To build the Launcher: Rust, PowerShell 7, and Visual Studio Build Tools with the MSVC x64 toolchain.
 
-## Build
+## Build and test
 
-Jalankan dari root repo:
+From the repository root:
 
 ```powershell
 dotnet build src/backend/Em.Api.slnx
 dotnet build src/frontend/Em.Ui.Wpf.slnx
 dotnet build src/frontend/Em.Ui.Maui.slnx
+
+dotnet test src/backend/Em.Api.slnx
+dotnet test src/frontend/Em.Ui.Wpf.slnx
 ```
 
-## Konfigurasi dan menjalankan API
+## Configure and run the API
 
-Salin [`emapi-config.example.json`](src/backend/Em.Api/emapi-config.example.json) ke `..\.artefacts\em-system\config\emapi-config.json` (folder di sebelah repo, dapat diganti lewat properti MSBuild `ArtefactsPath`), lalu isi `database.connectionString` dan `admin.initialPassword`. `database.provider` dapat bernilai `MicrosoftSqlServer`, `MySql`, atau `PostgreSql`. `debugTokens` opsional dan berisi public key RSA untuk akses debug, bukan private key.
+1. Create the database by running the SQL Server scripts in `doc/sqlscript/mssql/` in order: `sets/`, then
+   `tables/` by number, then `views/`. The `updates/` folder only migrates older databases. Scripts are
+   provided for SQL Server only; `900-emtest.sql` is needed only for the sample test module.
+2. Copy [`emapi-config.example.json`](src/backend/Em.Api/emapi-config.example.json) to
+   `..\.artefacts\em-system\config\emapi-config.json` (a folder next to the repository; change it with the
+   MSBuild property `ArtefactsPath`), then fill in `database.connectionString` and
+   `admin.initialPassword`. `database.provider` can be `MicrosoftSqlServer`, `MySql` or `PostgreSql`.
+   `debugTokens` is optional and holds RSA **public** keys for debug access, never private keys.
+3. Run the host:
 
-Berkas itu berada di luar repo, disalin ke output build, dan tidak ikut `dotnet publish`. Environment variable `EM_DB_CONNECTION_STRING`, `EM_DB_PROVIDER`, `EM_ADMIN_INITIAL_PASSWORD`, dan `EM_DEBUG_TOKEN` mengesampingkan nilai berkas; `EM_API_CONFIG` dapat menunjuk berkas di lokasi lain. Untuk deployment, berikan rahasia melalui secret manager lingkungan server.
+   ```powershell
+   dotnet run --project src/backend/Em.Api/Em.Api.csproj
+   ```
 
-```powershell
-dotnet run --project src/backend/Em.Api/Em.Api.csproj
-```
+The configuration file lives outside the repository, is copied to the build output, and is not included
+in `dotnet publish`. The environment variables `EM_DB_CONNECTION_STRING`, `EM_DB_PROVIDER`,
+`EM_ADMIN_INITIAL_PASSWORD` and `EM_DEBUG_TOKEN` override the file, and `EM_API_CONFIG` can point to a file
+elsewhere. In deployments, supply secrets through the server's secret manager.
 
-Panduan lebih lanjut tersedia di [`src/backend/README.md`](src/backend/README.md).
+More details, including the container image and Docker Compose: [src/backend/README.md](src/backend/README.md).
 
-## Frontend dan Launcher
+## Frontend and Launcher
 
-Host WPF dan MAUI memakai engine UI bersama tanpa modul bisnis dari proyek asal. Lihat [`src/frontend/README.md`](src/frontend/README.md) untuk rincian frontend. Untuk menghasilkan Launcher yang disertakan dalam output WPF:
+The WPF and MAUI hosts use the shared UI engine without business modules. See
+[src/frontend/README.md](src/frontend/README.md). To build the Launcher that ships with the WPF output:
 
 ```powershell
 pwsh -File src/frontend/Launcher/build-dist.ps1
 ```
 
-Identitas produk Launcher berada di `src/frontend/Launcher/product.toml`.
+The Launcher's product identity is in `src/frontend/Launcher/product.toml`.
 
-## Paket library
+## NuGet packages
 
-Ketiga solution dapat di-`dotnet pack` secara lokal; project host diberi `IsPackable=false`, sehingga hanya library `Em.*` yang menghasilkan paket. Lima library memiliki deskripsi, README paket, dan metadata lisensi MIT. Periksa isi paket dan dependensi sebelum publikasi NuGet.
+The five engine libraries are published together with one version. Project, assembly and namespace names
+stay `Em.*`; package IDs use the `EmSys.` prefix.
 
-Untuk membuat paket library yang terdaftar di `scripts/pack-nuget/packages.txt` (PackageId `EmSys.*`; saat ini tanpa `EmSys.Ui.Maui.Core` sampai CI MAUI aktif lagi) dengan satu versi di `dist/nuget-pack`, jalankan `scripts\pack-nuget.cmd` atau:
+| Package | Contents |
+| --- | --- |
+| `EmSys.Libs` | Shared API and UI contracts |
+| `EmSys.Api.Core` | Backend engine |
+| `EmSys.Ui.Core` | Cross-platform UI foundation: themes, branding, UI models |
+| `EmSys.Ui.Wpf.Core` | WPF UI engine |
+| `EmSys.Ui.Maui.Core` | .NET MAUI UI engine |
+
+```xml
+<PackageReference Include="EmSys.Api.Core" Version="0.1.0-alpha.2" />
+```
+
+MAUI consumers also need the MAUI workload and a reference to `Microsoft.Maui.Controls` in their app
+project. Versioning and feeds: [NuGet package naming](doc/convention/nuget-naming.md).
+
+### Releasing
+
+Releases are automated. Merging a commit to `main` that adds release notes for a new version
+(`doc/ReleaseNote/<PackageId>/<version>.md` for every package in `scripts/pack-nuget/packages.txt`) runs the
+`publish-nuget.yml` workflow. The workflow publishes that version to nuget.org and creates the `v<version>`
+tag and GitHub Release. Release note format: [doc/ReleaseNote/README.md](doc/ReleaseNote/README.md).
+`scripts\release-nuget.cmd` is a manual fallback.
+
+### Local packages
+
+`scripts\pack-nuget.cmd` (or `pwsh -File scripts/pack-nuget/pack-nuget.ps1 -Version <version>`) packs every
+library listed in `scripts/pack-nuget/packages.txt` into `dist/nuget-pack`. Register that folder as a local
+source with the path of your own clone:
 
 ```powershell
-pwsh -File scripts/pack-nuget/pack-nuget.ps1 -Version 0.1.0-pre-alpha.1
+dotnet nuget add source "<repo>\dist\nuget-pack" --name EmLocal
 ```
 
-Folder tersebut dapat didaftarkan sebagai sumber NuGet lokal pada mesin yang sudah meng-clone repo:
+`scripts\upload-nuget.cmd -Version <version>` packs, then asks `Push ke ... ? [y/N]` before pushing to
+GitHub Packages (`https://nuget.pkg.github.com/MatrixCode-ID/index.json`). Any answer other than `y`/`yes`
+stops after packing. The GitHub classic PAT (`write:packages`, `read:packages`) is read from `EM_NUGET_PAT`,
+or asked for through a hidden prompt; it is never written to a log or file. Prealpha versions are never
+pushed to a public feed.
 
-```powershell
-dotnet nuget add source "E:\em-system\dist\nuget-pack" --name EmLocal
-```
+The scripts need `pwsh` (PowerShell 7+) on the `PATH`.
 
-Gunakan path folder clone pada mesin masing-masing. Konsumen MAUI tetap perlu memasang workload MAUI dan mereferensikan `Microsoft.Maui.Controls` di project aplikasinya.
+## Documentation
 
-Paket lokal ini belum merupakan rilis publik. Uji pemasangan paket dan periksa hasil build sebelum mengunggahnya.
-
-Untuk pack lalu push ke feed GitHub Packages (`https://nuget.pkg.github.com/MatrixCode-ID/index.json`, lihat [konvensi-penamaan-nuget.md](doc/konvensi/konvensi-penamaan-nuget.md)), jalankan:
-
-```cmd
-scripts\upload-nuget.cmd -Version 0.1.0-pre-alpha.1
-```
-
-Skrip selalu pack dulu, lalu tanya konfirmasi `Push ke ... ? [y/N]` sebelum benar-benar push; jawab apa pun selain `y`/`yes` untuk berhenti di pack saja. Kalau dikonfirmasi dan environment variable `EM_NUGET_PAT` belum diset, skrip minta PAT classic GitHub (scope `write:packages`, `read:packages`) lewat prompt tersembunyi — tidak pernah ditulis ke log atau file. Set `EM_NUGET_PAT` lebih dulu untuk melewati prompt itu.
-
-Skrip memerlukan `pwsh` (PowerShell 7+) di PATH; `pack-nuget.ps1` lama memakai `Get-FileHash` yang tidak selalu termuat di Windows PowerShell 5.1 bila dijalankan lewat `cmd.exe`.
+- [Engine guides](doc/engine/README.md): approval, CDN, container registry, NuGet server, storage settings,
+  robots, publishing, Release Manager, login branding, and the test module.
+- Conventions: [Dahlia Convention: database and C# model naming](doc/convention/dahlia-convention.md),
+  [container image naming](doc/convention/container-naming.md),
+  [NuGet package naming](doc/convention/nuget-naming.md).
+- [Desktop release format](doc/release-format.md).

@@ -1,94 +1,113 @@
-# Pengaturan storage CDN dan container registry
+# Storage settings (CDN, container registry, NuGet)
 
-Host contoh cukup memanggil `builder.AddManagedStorageSettings()` di `Program.cs`.
-Default pertama: CDN aktif di `./data/cdn`, batas upload 200 MB, registry aktif di
-`./data/container-registry`. Nilai tersimpan dibaca sebelum store/middleware dibentuk.
-Save tidak mengganti snapshot aktif, membatalkan task, atau memindahkan data; perubahan
-berlaku setelah operator melakukan shutdown/restart API secara normal.
+With managed storage settings, operators enable, disable and relocate the CDN, container registry and
+NuGet stores from the WPF managers instead of editing `Program.cs`.
 
-## Persistence di ta_Meta
+```csharp
+builder.AddManagedStorageSettings();
+builder.AddNuPak();   // optional: the NuGet store also uses managed settings
+```
 
-Sesuai arahan pengguna saat eksekusi, konfigurasi memakai satu dokumen JSON di
-`ta_Meta.cMetaValue`, bukan file runtime. `cMetaKey` berbentuk
-`Em.StorageSettings:<SHA256(machine name + content root + hostId)>`.
-Default `hostId` adalah `default`. Overload builder menerima ID dan defaults eksplisit
-untuk host lain. Key membedakan host yang berbagi DB; ini tidak menyinkronkan node.
-Machine name/content root/ID harus stabil saat deployment. Jika berubah, operator harus
-menyalin row konfigurasi ke key baru setelah memastikan path sesuai host baru.
-Container memerlukan hostname stabil dan volume payload persisten yang writable bagi
-akun API. Permission filesystem tetap divalidasi oleh akun proses API.
+Defaults on first start:
 
-Dokumen berisi `Version=1`, `Revision`, `Cdn` dan `Registry`. Bagian fitur berisi
-`Enabled`, `Directory`, dan `MaxUploadMb` (hanya berlaku pada CDN). Tidak ada secret.
-Defaults dipakai ketika row belum ada; Save pertama membuat row. Save memakai transaksi
-serializable dan expected revision. CDN dan registry berbagi revision, sehingga Save
-bersamaan dapat menghasilkan 409; refresh lalu terapkan ulang draft. Update satu fitur
-mempertahankan fitur lain. Perubahan aktif tidak ikut berubah ketika row direfresh.
-Row invalid/versi unsupported menggagalkan startup; pulihkan row dari backup DB atau
-koreksi JSON, kemudian restart. Jangan hapus row untuk reset tanpa mencatat path lama.
-Tidak diperlukan DDL baru karena `ta_Meta` sudah ada. Siapkan skema inti dan registry
-(`doc/sqlscript/mssql/tables/010-core.sql` dan `tables/030-registry.sql`; migrasi robot bila skema lama) sebelum startup
-managed, termasuk ketika registry dinonaktifkan. Startup tetap memeriksa tabel registry.
+| Store | Enabled | Directory | Upload limit |
+| --- | --- | --- | --- |
+| CDN | yes | `./data/cdn` | 200 MB |
+| Container registry | yes | `./data/container-registry` | n/a |
+| NuGet | yes | `./data/nuget` | 250 MB (1–4096) |
 
-## Hak dan layar WPF
+Overloads accept a host ID and explicit defaults:
+`AddManagedStorageSettings(hostId, cdn, registry)` and `AddManagedStorageSettings(hostId, cdn, registry, nuget)`.
 
-Manager/status umum memakai claim lama: `CDN Manager Access` atau
-`Container Manager Access`. Action detail, Validate, dan Save memakai claim baru
-`CDN Settings Manage` atau `Container Registry Settings Manage` dalam module
-`Administrative Tools`. Claim terdaftar melalui atribut action engine; berikan lewat
-User/Role Manager. Hak lama tidak otomatis mendapat hak konfigurasi. Administrator
-mengikuti mekanisme claim administrator yang ada. Status umum tidak memuat path server.
+Stored values are read before stores and middleware are created. **Save does not affect the running
+server**: it does not swap the active snapshot, cancel tasks or move data. Changes apply after a normal API
+shutdown and restart.
 
-Card Settings ada di kedua manager WPF dan tetap tampil ketika layanan nonaktif.
-Refresh kecil memperbarui status/config card; reload draft meminta konfirmasi.
-Toggle menyunting draft saja. Save/Validate mencegah request ganda, konflik ditampilkan
-dan draft dipertahankan sampai pengguna refresh secara eksplisit. Menutup panel atau
-meninggalkan navigasi memberi konfirmasi untuk draft belum tersimpan.
-Area isi menggunakan status aktif API, bukan toggle draft. Home menampilkan disabled
-dan pending restart; kegagalan membaca ukuran ditampilkan unavailable.
-MAUI tidak mendapat manager baru.
+Managed mode cannot be combined with the static calls `EnableCdn`/`AddContainerRegistry` (or
+`AddNuPak(path, maxPackageMb)`), and cannot be registered twice. Static hosts report `Managed=false`; the
+UI does not offer Save and the API rejects it with 409.
 
-## Directory dan integritas
+![Storage settings card](images/storage-settings.png)
 
-Path adalah filesystem API, relatif terhadap `ContentRootPath`; bukan folder client.
-GET status/detail tidak membuat folder. Validate memeriksa parent yang sudah ada dengan
-probe unik baca/tulis, lalu membersihkannya; kegagalan cleanup ditampilkan. Save enabled
-membuat directory yang diperlukan secara eksplisit. Directory disabled boleh kosong;
-path nonkosong tetap diperiksa. Save tidak menyalin/memindahkan/menghapus payload.
+## Persistence
 
-Path tidak boleh melalui symlink/reparse point; tree CDN juga diperiksa agar tidak
-berisi link ke storage/config lain atau file secret yang dikenal (`emapi-config.json`, `em.local.json`,
-`secrets.local.json`, `.env*`, `.git`). Path Windows ambigu (trailing dot/space,
-device/reserved names, alternate stream, short-name alias) ditolak. CDN dan registry tidak boleh overlap
-(ancestor/descendant), termasuk dengan root fitur lain yang masih aktif sampai restart,
-binary approval dan cache task. Directory aplikasi hanya mengizinkan payload di bawah
-`data`; binaries/configuration/application root ditolak. Host lain harus memakai root
-dedikasi dan tidak menaruh secret dalam directory payload publik CDN.
+The configuration is one JSON document in `ta_Meta.cMetaValue`, not a runtime file. The key is
+`Em.StorageSettings:<SHA256(machine name + content root + hostId)>`, with `hostId` defaulting to
+`default`. The key separates hosts sharing one database; it does not synchronize nodes.
 
-Validate/Save perubahan root atau enable kembali registry memeriksa seluruh blob metadata (termasuk blob retained/orphan),
-ukuran dan SHA256 file target. Target tidak lengkap ditolak. Row upload yang masih ada
-menolak perubahan root; selesaikan/batalkan dan bersihkan upload lewat prosedur registry
-operator dahulu. Startup mengulangi pemeriksaan blob ketika registry managed aktif,
-termasuk startup setelah perpindahan. File uploads tidak dijanjikan dapat di-resume.
-Pemeriksaan Save bukan snapshot filesystem/DB sepanjang masa: concurrent push dan
-perubahan manual masih mungkin setelah pemeriksaan; startup memeriksa ulang. Pemeriksaan
-hash seluruh metadata bisa mahal pada registry besar. Metadata manifest berada di DB.
+- Machine name, content root and host ID must stay stable across deployments. If one changes, the
+  operator copies the configuration row to the new key after checking that the paths suit the new host.
+- Containers need a stable hostname and a persistent payload volume writable by the API account.
+- The document contains `Version=1`, `Revision` and one section per feature with `Enabled`, `Directory`
+  and `MaxUploadMb` (CDN and NuGet only). It holds no secrets.
+- Defaults apply until the first Save creates the row. Save uses a serializable transaction and an
+  expected revision. All features share one revision, so concurrent saves can return 409: refresh, then
+  apply the draft again. Saving one feature keeps the others.
+- An invalid row or unsupported version fails startup. Restore the row from a database backup or fix the
+  JSON, then restart. Do not delete the row to reset it without recording the old paths.
+- No new DDL is needed (`ta_Meta` already exists), but the core and registry schemas
+  (`tables/010-core.sql`, `tables/030-registry.sql`) must exist before a managed startup, even when the
+  registry is disabled. With NuGet, `tables/040-nupak.sql` and its views are required too.
 
-Mode statis `EnableCdn`/`AddContainerRegistry` tetap tersedia bagi host library lama.
-Status menyatakan Managed=false; UI tidak menawarkan Save dan API menolaknya dengan 409.
-Menggabungkan managed dan statis dalam host yang sama ditolak saat registrasi.
+## Claims and WPF screens
 
-## Verifikasi terisolasi
+| Area | Manager/status claim | Settings claim (detail, Validate, Save) |
+| --- | --- | --- |
+| CDN | `CDN Manager Access` | `CDN Settings Manage` |
+| Container registry | `Container Manager Access` | `Container Registry Settings Manage` |
+| NuGet | `NuGet Manager Access` | `NuGet Settings Manage` |
 
-`dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-smoke\StorageSettingsSmoke.csproj`
-memakai directory temp unik dan persistence fixture tanpa menyentuh payload/database host.
-Tambahkan `-- --sql` untuk membuat database SQL Server fixture unik melalui koneksi lokal,
-menguji `ta_Meta`, lalu menghapus hanya database fixture yang dibuat pengujian.
-SQL fixture membuat tabel dari model EF dalam database baru, lalu menguji persistence,
-HTTP dengan token user sungguhan, claim manager/settings, restart, CDN Range/upload,
-streaming upload selama Save pending, serta login/push/pull blob OCI dan grant robot.
-Fixture memakai dispatcher dan pemetaan publik engine, bukan Program.cs host produksi;
-inisialisasi admin/business task host tidak dijalankan. Ini bukan uji Docker CLI.
-`dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-render\StorageSettingsRender.csproj`
-merender card enabled/disabled dan transisi busy pada kedua tema tanpa window tampil;
-PNG disimpan pada output build script. Interaksi mouse terhadap server perlu uji operator.
+All claims belong to module `Administrative Tools` and are granted in User/Role Manager. A manager claim
+does not imply the settings claim; administrators follow the usual administrator rule. The general status
+never includes server paths.
+
+- Each manager has a **Settings** card that stays visible while the service is disabled.
+- The small refresh button reloads the card's status and configuration; reloading over a draft asks for
+  confirmation. Toggles only edit the draft.
+- Save and Validate prevent duplicate requests. Conflicts are shown and the draft is kept until the user
+  explicitly refreshes. Closing the panel or navigating away with unsaved changes asks for confirmation.
+- The content area follows the API's active state, not the draft toggle. The home screen shows disabled
+  and pending-restart states; a failed size read is shown as unavailable.
+- MAUI has no storage manager screens.
+
+## Directories and integrity
+
+Paths are on the API server's filesystem, relative to `ContentRootPath`; they are not client folders.
+
+- GET status/detail never creates folders. Validate probes the existing parent with a unique read/write
+  test file, then removes it; a cleanup failure is reported. Saving an enabled store creates the needed
+  directory. A disabled store may have an empty path; a non-empty path is still checked. Save never
+  copies, moves or deletes payload.
+- Paths may not pass through symlinks or reparse points. The CDN tree is also checked for links to other
+  storage or configuration, and for known secret files (`emapi-config.json`, `em.local.json`,
+  `secrets.local.json`, `.env*`, `.git`).
+- Ambiguous Windows paths are rejected: trailing dot or space, device or reserved names, alternate data
+  streams, short-name aliases.
+- Stores may not overlap each other (ancestor/descendant), including the roots still active until restart,
+  approval binary storage and the task cache. Inside the application directory only `data` may hold
+  payload; binaries, configuration and the application root are rejected. Other hosts should use dedicated
+  roots and never put secrets in the public CDN directory.
+
+Registry specifics:
+
+- Validate/Save of a new root, or re-enabling the registry, checks every blob in metadata (including
+  retained or orphaned blobs) for size and SHA-256 in the target. An incomplete target is rejected.
+- Existing upload rows block a root change; finish or cancel and clean up uploads first. Interrupted
+  uploads are not guaranteed to resume.
+- Startup repeats the blob check while managed registry storage is enabled, including the first start after
+  a move. The Save check is not a lasting snapshot: concurrent pushes or manual changes are still possible
+  afterwards, which is why startup checks again. Hashing all blobs can be slow on a large registry.
+  Manifest metadata lives in the database.
+
+## Maintainer notes
+
+Harnesses kept outside the repo, run from the repo root:
+
+- `dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-smoke\StorageSettingsSmoke.csproj`
+  uses a unique temp directory and an in-memory persistence fixture. Add `-- --sql` to create a unique
+  SQL Server fixture database through the local connection; it tests `ta_Meta`, HTTP with a real user
+  token, manager/settings claims, restart, CDN Range/upload, streaming upload while Save is pending, and
+  OCI login/push/pull with robot grants, then drops only the database it created. It uses the engine's
+  public dispatcher and mappings, not the production `Program.cs`, and is not a Docker CLI test.
+- `dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-render\StorageSettingsRender.csproj`
+  renders the settings card enabled, disabled and busy in both themes without showing a window.

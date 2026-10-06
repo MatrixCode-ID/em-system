@@ -1,79 +1,92 @@
-# Module uji Em.Test
+# Em.Test test module
 
-Module contoh sekaligus alat uji: satu module yang memakai hampir semua fitur engine, sehingga fitur itu bisa dites
-dari layar tanpa menulis module bisnis. Ia juga contoh lengkap bagi penulis module baru (kontrak, service server,
-service client, UI model, layar, claim, approval).
+`Em.Test` is a sample module that doubles as a test tool. It uses almost every engine feature, so those
+features can be exercised from the UI without writing a business module. It is also a complete reference
+for authors of new modules: contracts, server service, client service, UI model, screens, claims and
+approval.
 
-## Isi dan letak
+## Projects
 
 `src/modules/Em.Test/`
 
-| Proyek | Isi |
+| Project | Contents |
 | --- | --- |
-| `Em.Test.Models` | entitas, DTO, enum, dan kontrak `ITestServices` (nama module `test`, daftar claim) |
-| `Em.Test.Api` | `TestServices` (server), context data sendiri, PDF contoh, sumber hub, dua alur approval, `AddTestModule` |
-| `Em.Test.Models.Ui` | UI model `TestItem` (pelacakan perubahan, batal, baris baru) |
-| `Em.Test.Wpf` | `TestService` (client), layar-layar uji, panel approval, `AddTestModule` |
+| `Em.Test.Models` | Entities, DTOs, enums and the `ITestServices` contract (module name `test`, claim list) |
+| `Em.Test.Api` | `TestServices` (server), its own data context, sample PDF, hub source, two approval flows, `AddTestModule` |
+| `Em.Test.Models.Ui` | UI model `TestItem` (change tracking, undo, new rows) |
+| `Em.Test.Wpf` | `TestService` (client), test screens, approval panels, `AddTestModule` |
 
-Terpasang di `Em.Api` (`builder.AddTestModule()` plus `AddLocalBinaryStorage` untuk PDF approval) dan di `Em.Ui.Wpf`.
-Untuk melepasnya dari aplikasi nyata: hapus dua baris `AddTestModule` dan `ProjectReference`-nya.
+It is wired into `Em.Api` (`builder.AddTestModule()`, plus `AddLocalBinaryStorage` for approval PDFs) and
+into `Em.Ui.Wpf`. To remove it from a real application, delete the two `AddTestModule` lines and their
+`ProjectReference` entries.
 
-## Menjalankan
+## Running
 
-1. Jalankan `doc/sqlscript/mssql/tables/900-emtest.sql` lalu `views/vi_TestItem.sql` dan `views/vi_TestDoc.sql` pada
-   database inti (aman diulang). Skrip membuat tabel dan view uji
-   dan dua jenis dokumen approval (`EmTestDoc`, `EmTestItem`) di daftar jenis dokumen.
-2. Jalankan `Em.Api` dan `Em.Ui.Wpf`, masuk, lalu buka menu **Em Test**. Semua layar butuh claim `test:Run Tests`
-   (administrator dan mode debug lolos).
+1. Run `doc/sqlscript/mssql/tables/900-emtest.sql`, then `views/vi_TestItem.sql` and
+   `views/vi_TestDoc.sql` on the core database (safe to run again). The scripts create the test tables and
+   views and two approval document types (`EmTestDoc`, `EmTestItem`).
+2. Start `Em.Api` and `Em.Ui.Wpf`, sign in, and open the **Em Test** menu. Every screen requires the claim
+   `test:Run Tests` (administrators and debug mode pass).
 
-## Claim
+| Screen | Navigation | Covers |
+| --- | --- | --- |
+| Em Test Console | `test.home` | Probes, self-test and launcher |
+| Test Items | `test.items` | Lists, paging, UiModel, data approval |
+| Test Documents | `test.docs` | Document approval and PDF stamp |
+| Test Tasks & CDN | `test.tasks` | Business tasks and CDN files |
+| Test UI Lab | `test.ui` | PDF viewer, navigation, dialogs, controls |
+| Test Item Editor | `test.items.editor` | Editor with payload (opened from Test Items) |
+| Test Child | `test.ui.child` | Navigation lifecycle probe (opened from Test UI Lab) |
 
-| Claim | Dipakai untuk |
+## Claims
+
+| Claim | Used for |
 | --- | --- |
-| `Run Tests` | membuka layar dan memanggil action tanpa claim sendiri |
-| `Edit Items` | menambah dan mengubah item dan dokumen (termasuk batch) |
-| `Delete Items` | menghapus item dan dokumen |
-| `Run Probes` | action probe yang lebih sempit dari akses module |
-| `Approve Item Change` | menyetujui usulan perubahan item; pemegangnya menyimpan langsung |
-| `Prepared By`, `QA Check`, `Approved By A`, `Approved By B`, `View EmTestDoc` | langkah dan pembaca alur dokumen (terdaftar otomatis) |
+| `Run Tests` | Opening the screens and calling actions without their own claim |
+| `Edit Items` | Adding and changing items and documents (including batch) |
+| `Delete Items` | Deleting items and documents |
+| `Run Probes` | Probe actions narrower than module access |
+| `Approve Item Change` | Approving proposed item changes; holders save directly |
+| `Prepared By`, `QA Check`, `Approved By A`, `Approved By B`, `View EmTestDoc` | Steps and reader of the document flow (registered automatically) |
 
-Untuk menguji gerbang claim, buat satu user non-admin, satu role, lalu berikan claim satu per satu di Role Manager
-dan jalankan Self-test: jawabannya menyesuaikan siapa penggunanya (403 yang diharapkan ikut dihitung lulus).
+To test claim gates, create one non-admin user and one role, grant the claims one at a time in Role
+Manager, and run the self-test. The expected results adapt to the current user (an expected 403 counts as
+a pass).
 
-## Fitur dan tempat mengujinya
+## Features and where to test them
 
-| Fitur engine | Layar / tombol |
+| Engine feature | Screen / button |
 | --- | --- |
-| Action GET/POST, binding parameter sederhana, DTO di query, body posisional, array | Console > Actions |
-| Action publik, claim per action, admin-only, self-or-admin | Console > Session & claims |
-| Kegagalan berstatus (400-503) dan exception tak terduga (harus 500 polos) | Console > Actions |
-| Batas waktu action (5 detik) dan tanpa batas | Console > Actions |
-| Stream unggah dan unduh dengan pembanding hash/byte | Console > Actions > Streams |
-| Self-test: semua probe dengan hasil yang diharapkan | Console > Self-test |
-| CRUD tabel, view, batch, paging, pencarian dengan DTO | Test Items |
-| UiModel: dirty-tracking, batal, muat ulang, baris baru; editor ber-payload; tolak keluar saat belum disimpan | Test Item Editor |
-| Data approval (usulan tambah/ubah/hapus, simpan langsung bila memegang claim persetujuan) | Test Items, Test Item Editor |
-| Document approval: level, langkah paralel, four-eyes, guard + penembus, isian langkah, stamp PDF, tarik kembali | Test Documents + Approval Manager |
-| Panel approval: isian langkah QA, kartu info, tombol Source document, hub | Approval Manager, hub MY TASKS |
-| Business task personal/global, hasil JSON/berkas, batal, gagal, konflik 409, hub | Test Tasks & CDN |
-| CDN: unggah, daftar, arsip (business task), hapus | Test Tasks & CDN > CDN |
-| Viewer PDF: dari server, dari disk, gagal muat, judul sama dua kali, dari drag-drop | Test UI Lab > PDF viewer |
-| Navigasi: editor ber-payload, fokus ke judul yang sudah terbuka, payload hilang, navigasi tak dikenal, manager dari editor, ganti judul, siklus hidup | Test UI Lab, Test Child |
-| Dialog: message box, input teks, password, detail exception | Test UI Lab > Dialogs |
-| Kontrol: NumericBox, lapisan tunggu, tombol menunggu | Test UI Lab > Controls |
-| Drag-drop: berkas dari Explorer (hanya PDF), antar-kontrol | Test UI Lab > Drag & drop |
-| Tema terang/gelap dan branding | Test UI Lab |
+| GET/POST actions, simple parameter binding, DTO in query, positional body, arrays | Console > Actions |
+| Public actions, per-action claims, admin-only, self-or-admin | Console > Session & claims |
+| Status failures (400–503) and unexpected exceptions (must be a plain 500) | Console > Actions |
+| Action timeout (5 seconds) and no timeout | Console > Actions |
+| Upload and download streams with hash/byte comparison | Console > Actions > Streams |
+| Self-test: every probe with its expected result | Console > Self-test |
+| Table CRUD, views, batch, paging, search with DTO | Test Items |
+| UiModel: dirty tracking, undo, reload, new rows; editor with payload; refuse leaving with unsaved changes | Test Item Editor |
+| Data approval (propose add/change/delete, save directly with the approve claim) | Test Items, Test Item Editor |
+| Document approval: levels, parallel steps, four-eyes, guard + override, step input, PDF stamp, withdraw | Test Documents + Approval Manager |
+| Approval panels: QA step input, info card, Source document button, hub | Approval Manager, MY TASKS hub |
+| Personal/global business tasks, JSON/file results, cancel, failure, 409 conflict, hub | Test Tasks & CDN |
+| CDN: upload, list, archive (business task), delete | Test Tasks & CDN > CDN |
+| PDF viewer: from server, from disk, load failure, same title twice, from drag and drop | Test UI Lab > PDF viewer |
+| Navigation: editor with payload, focus an already open title, missing payload, unknown navigation, manager from editor, title change, lifecycle | Test UI Lab, Test Child |
+| Dialogs: message box, text input, password, exception details | Test UI Lab > Dialogs |
+| Controls: NumericBox, wait overlay, waiting button | Test UI Lab > Controls |
+| Drag and drop: files from Explorer (PDF only), between controls | Test UI Lab > Drag & drop |
+| Light/dark theme and branding | Test UI Lab |
 
-## Uji otomatis
+## Automated tests
 
-- `python scripts/_py/em-test-http-test.py`: uji HTTP sisi server (parameter, kegagalan, batas waktu, claim, stream,
-  CRUD, business task, dokumen). Butuh `EM_PASSWORD` akun yang boleh masuk; keterangan lengkap di kepala skrip.
-- Self-test di layar Console menjalankan padanan sisi client dari hampir semuanya, memakai sesi yang sedang masuk.
+- `python scripts/_py/em-test-http-test.py`: server-side HTTP tests (parameters, failures, timeouts,
+  claims, streams, CRUD, business tasks, documents). It needs `EM_PASSWORD` for an account that can sign in;
+  details are in the script header.
+- The Console **Self-test** runs the client-side equivalent of almost all of them with the signed-in
+  session.
 
-## Batas yang diketahui
+## Known limitations
 
-- Akun sistem (admin bawaan, debugger) tidak bisa mengajukan atau menandatangani approval, karena engine mewajibkan
-  user nyata. Uji alur approval dengan user biasa.
-- Tidak ada layar MAUI dan tidak ada uji koneksi database kedua (`AddExtraDbConn`).
-- Layar uji sudah dimuat dan dirender headless (terang dan gelap), tetapi belum dijalankan terhadap server dengan
-  mouse: lihat laporan eksekusi untuk daftar yang belum teruji.
+- System accounts (built-in admin, debugger) cannot submit or sign approvals because the engine requires a
+  real user. Test approval flows with a regular user.
+- No MAUI screens, and no test for a second database connection (`AddExtraDbConn`).

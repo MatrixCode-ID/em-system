@@ -1,6 +1,6 @@
 <#
 Pack lima paket library EmSys.* lewat scripts/pack-nuget/pack-nuget.ps1, lalu tanya konfirmasi untuk push
-ke feed NuGet GitHub Packages (doc/konvensi/konvensi-penamaan-nuget.md). PAT classic GitHub
+ke feed NuGet GitHub Packages (doc/convention/nuget-naming.md). PAT classic GitHub
 (scope write:packages, read:packages) diambil berurutan dari: environment variable
 EM_NUGET_PAT, lalu berkas ..\.artefacts\em-system\github-pat.txt, lalu prompt tersembunyi
 bila keduanya tidak ada. PAT tidak pernah ditulis ke log.
@@ -36,7 +36,7 @@ if ($answer -ne 'y' -and $answer -ne 'yes') {
 }
 
 if ($Version -match '(?i)pre-?alpha') {
-    throw "Versi '$Version' adalah prealpha. Sesuai doc/konvensi/konvensi-penamaan-nuget.md (keputusan 2026-10-05), prealpha tidak diterbitkan ke feed publik; cukup di $outputDir untuk uji lokal. Feed publik dimulai dari alpha."
+    throw "Versi '$Version' adalah prealpha. Sesuai doc/convention/nuget-naming.md (keputusan 2026-10-05), prealpha tidak diterbitkan ke feed publik; cukup di $outputDir untuk uji lokal. Feed publik dimulai dari alpha."
 }
 
 $tokenFile = Join-Path $repoRoot '..' '.artefacts' 'em-system' 'github-pat.txt'
@@ -75,4 +75,4 @@ foreach ($package in $packages) {
 }
 
 Write-Host ''
-Write-Host "Selesai. Versi $Version tidak boleh dipakai ulang di feed; bila ada kesalahan, naikkan N atau PATCH (doc/konvensi/konvensi-penamaan-nuget.md)."
+Write-Host "Selesai. Versi $Version tidak boleh dipakai ulang di feed; bila ada kesalahan, naikkan N atau PATCH (doc/convention/nuget-naming.md)."

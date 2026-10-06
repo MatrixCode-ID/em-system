@@ -16,7 +16,7 @@ doc/ReleaseNote/
 - Paket yang dikeluarkan dari daftar tidak diberi release note sampai kembali dirilis. `EmSys.Ui.Maui.Core` sempat dikeluarkan dan masuk lagi mulai `0.1.0-alpha.2`.
 - **Menambahkan release note versi baru ke `main` = merilis.** Push/merge ke `main` yang membawa release note versi baru (lengkap untuk semua paket, belum punya tag) langsung menjalankan `publish-nuget.yml`, menunggu approval, lalu merilis dan membuat tag `v<versi>`. Satu versi per merge. Tulis release note di `work-bench` dan baru merge ke `main` saat siap rilis.
 - Untuk jalur manual, berkas harus sudah ada di `main` sebelum tag `v<versi>` dibuat. `scripts/release-nuget.cmd` menolak versi yang release note-nya belum lengkap, dan job `validate` di `publish-nuget.yml` gagal bila ada berkas yang tidak ada atau kosong di commit yang di-tag.
-- Versi mengikuti [konvensi-penamaan-nuget.md](../konvensi/konvensi-penamaan-nuget.md); prealpha tidak dirilis, jadi tidak perlu release note.
+- Versi mengikuti [nuget-naming.md](../convention/nuget-naming.md); prealpha tidak dirilis, jadi tidak perlu release note.
 - Release note yang sudah terbit tidak diubah isinya. Koreksi ditulis di release note versi berikutnya.
 
 ## Format

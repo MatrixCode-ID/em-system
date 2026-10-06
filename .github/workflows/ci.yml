@@ -1,8 +1,17 @@
 name: CI
 
+# Pushes run only when something that affects the build or tests changes; doc-only pushes are skipped.
+# The path filter does not apply to workflow_dispatch or workflow_call (publish-nuget.yml always runs CI).
 on:
   push:
     branches: [main, ci-sandbox]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'Directory.Build.props'
+      - 'global.json'
+      - '.editorconfig'
+      - '.github/workflows/ci.yml'
   workflow_dispatch: {}
   workflow_call: {}
 

@@ -62,7 +62,7 @@ jobs:
             if ($latest -and (Compare-SemVer $parsed $latest) -le 0) { throw "Version $version is not higher than the latest tag v$($latest.Text)." }
           }
 
-          if (Test-PreAlpha $version) { throw "Prealpha '$version' is never published to a public feed (doc/konvensi/konvensi-penamaan-nuget.md)." }
+          if (Test-PreAlpha $version) { throw "Prealpha '$version' is never published to a public feed (doc/convention/nuget-naming.md)." }
           $missing = Get-MissingNotes $repoRoot $packageIds $version
           if ($missing) { throw "Release note missing or empty: $($missing -join ', ')" }
 

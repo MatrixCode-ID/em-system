@@ -1,43 +1,56 @@
-# Test
+# Tests
 
-Project test engine `Em.*`, memakai **xUnit v3** (`xunit.v3`, Microsoft Testing Platform v2). Pengaturan bersama ada di [Directory.Build.props](Directory.Build.props): paket test, `OutputType=Exe`, `IsPackable=false`, dan `using Xunit`.
+Automated tests for the `Em.*` engine, using **xUnit v3** (`xunit.v3` on Microsoft Testing Platform v2).
+Shared settings live in [Directory.Build.props](Directory.Build.props): test packages, `OutputType=Exe`,
+`IsPackable=false` and a global `using Xunit`.
 
-| Project | Menguji | Solution |
-|---|---|---|
-| `Em.Libs.Tests` | `Em.Libs` (mis. `Crc32`) | `src/backend/Em.Api.slnx` |
-| `Em.Api.Core.Tests` | `Em.Api.Core` tanpa database (mis. `BinaryStorageKey`) | `src/backend/Em.Api.slnx` |
-| `Em.Api.Core.IntegrationTests` | `Em.Api.Core` terhadap SQL Server | `src/backend/Em.Api.slnx` |
-| `Em.Ui.Core.Tests` | `Em.Ui.Core` (tema) | `src/frontend/Em.Ui.Wpf.slnx` |
-| `Em.Ui.Wpf.Core.Tests` | `Em.Ui.Wpf.Core` (resource style bersama, `[WpfFact]`/`[WpfTheory]` dari `Xunit.StaFact`) | `src/frontend/Em.Ui.Wpf.slnx` |
+| Project | Tests | Solution |
+| --- | --- | --- |
+| `Em.Libs.Tests` | `Em.Libs` (for example `Crc32`) | `src/backend/Em.Api.slnx` |
+| `Em.Api.Core.Tests` | `Em.Api.Core` without a database (for example `BinaryStorageKey`) | `src/backend/Em.Api.slnx` |
+| `Em.Api.Core.IntegrationTests` | `Em.Api.Core` against SQL Server | `src/backend/Em.Api.slnx` |
+| `Em.Ui.Core.Tests` | `Em.Ui.Core` (themes) | `src/frontend/Em.Ui.Wpf.slnx` |
+| `Em.Ui.Wpf.Core.Tests` | `Em.Ui.Wpf.Core` shared style resources (`[WpfFact]`/`[WpfTheory]` from `Xunit.StaFact`) | `src/frontend/Em.Ui.Wpf.slnx` |
 
-Penamaan: `<Project>.Tests` untuk unit test, `<Project>.IntegrationTests` untuk test yang butuh layanan luar.
+Naming: `<Project>.Tests` for unit tests, `<Project>.IntegrationTests` for tests that need an external
+service.
 
-## Menjalankan
+## Running
 
 ```powershell
 dotnet test src/backend/Em.Api.slnx
 dotnet test src/frontend/Em.Ui.Wpf.slnx
 ```
 
-Atau lewat Test Explorer di Visual Studio / Rider setelah membuka salah satu solution di atas. Satu project bisa juga dijalankan langsung sebagai executable (`dotnet run --project tests/Em.Libs.Tests`).
+You can also use Test Explorer in Visual Studio or Rider after opening one of these solutions, or run a
+single project directly as an executable (`dotnet run --project tests/Em.Libs.Tests`).
 
-`global.json` di root repo memilih runner `Microsoft.Testing.Platform` untuk `dotnet test`. Ini wajib: di .NET 10 SDK, project MTP v2 ditolak oleh mode VSTest (`Testing with VSTest target is no longer supported...`). Akibatnya semua project test di repo ini harus memakai MTP; jangan menambah project test VSTest-only (mis. xUnit v2).
+The root `global.json` selects the `Microsoft.Testing.Platform` runner for `dotnet test`. This is required:
+the .NET 10 SDK rejects MTP v2 projects in VSTest mode (`Testing with VSTest target is no longer
+supported...`). Every test project in this repository must therefore use MTP; do not add VSTest-only
+projects (such as xUnit v2).
 
-## Test integrasi
+## Integration tests
 
-`Em.Api.Core.IntegrationTests` membuat database sementara `EmSystem_IntegrationTest_<guid>` sekali per run lalu menghapusnya di akhir.
+`Em.Api.Core.IntegrationTests` creates a temporary database `EmSystem_IntegrationTest_<guid>` once per run
+and drops it at the end.
 
-- Server default `(local)` dengan **Windows Authentication** (tanpa password). Akun Windows yang menjalankan test butuh hak membuat database (`dbcreator`).
-- Ganti server lewat environment variable `EM_TEST_DB_SERVER`, mis. `.\SQLEXPRESS` atau `(localdb)\MSSQLLocalDB`:
+- The default server is `(local)` with **Windows Authentication** (no password). The Windows account
+  running the tests needs permission to create databases (`dbcreator`).
+- Use another server through the `EM_TEST_DB_SERVER` environment variable, for example `.\SQLEXPRESS` or
+  `(localdb)\MSSQLLocalDB`:
 
   ```powershell
   $env:EM_TEST_DB_SERVER = '(localdb)\MSSQLLocalDB'
   dotnet test src/backend/Em.Api.slnx
   ```
 
-- Bila server tidak terjangkau, test integrasi di-skip dengan alasannya, bukan gagal.
-- Run yang terputus paksa bisa meninggalkan database. Periksa dengan `SELECT name FROM sys.databases WHERE name LIKE 'EmSystem_IntegrationTest_%'` lalu hapus manual.
+- If the server cannot be reached, the integration tests are skipped with a reason instead of failing.
+- A run that is killed can leave its database behind. Find leftovers with
+  `SELECT name FROM sys.databases WHERE name LIKE 'EmSystem_IntegrationTest_%'` and drop them manually.
 
-## Yang tidak ditaruh di sini
+## What does not belong here
 
-Folder ini hanya untuk test yang dirawat dan dijalankan berulang. Harness verifikasi sekali pakai (smoke terhadap database, render layar WPF ke PNG, skrip uji HTTP) disimpan di luar repo pada `..\.artefacts\em-system\scripts\`; lihat aturan "Alat uji sementara" di [claude.md](../claude.md).
+This folder is only for tests that are maintained and run repeatedly. One-off verification harnesses
+(database smoke tests, WPF screen renders to PNG, single-use HTTP scripts) are kept outside the repository
+in `..\.artefacts\em-system\scripts\`. HTTP test scripts that are maintained live in `scripts/_py/`.

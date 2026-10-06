@@ -78,7 +78,7 @@ $Version = $Version.Trim() -replace '^v', ''
 $parsed = ConvertTo-SemVer $Version
 if (-not $parsed) { throw "Versi '$Version' bukan format MAJOR.MINOR.PATCH[-channel.N]." }
 if ($Version -match '(?i)pre-?alpha') {
-    throw "Versi '$Version' adalah prealpha. Sesuai doc/konvensi/konvensi-penamaan-nuget.md, prealpha tidak diterbitkan ke feed publik."
+    throw "Versi '$Version' adalah prealpha. Sesuai doc/convention/nuget-naming.md, prealpha tidak diterbitkan ke feed publik."
 }
 if ($latest -and (Compare-SemVer $parsed $latest) -le 0) {
     throw "Versi '$Version' tidak lebih tinggi dari versi terakhir '$($latest.Text)'. Versi tidak pernah dipakai ulang atau mundur."

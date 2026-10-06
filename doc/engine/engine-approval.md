@@ -1,75 +1,76 @@
-# Engine approval — cara memakai dari modul
+# Approval engine
 
-Panduan untuk penulis modul pemakai. Dokumen ini hanya menjelaskan permukaan publiknya.
+A guide for module authors. It covers only the public surface of the approval engine.
 
-Engine menyediakan dua jenis persetujuan. Keduanya memakai satu set tabel request, satu set action
-(`core.approval`), satu Approval Manager, dan satu hub MY TASKS.
+The engine offers two kinds of approval. Both share one set of request tables, one action service
+(`core.approval`), one **Approval Manager** screen and one **MY TASKS** hub.
 
 | | Document approval | Data approval |
 | --- | --- | --- |
-| Untuk | dokumen transaksi yang ditandatangani beberapa pihak (pesanan, kontrak, …) | perubahan data induk (customer, vendor, …) |
-| Dokumen/datanya | **sudah ada**; request menjadi gerbang statusnya | **belum berubah**; usulannya tinggal di request sampai disetujui |
-| Langkah | beberapa level, tiap level berisi langkah paralel, tiap langkah punya claim | satu keputusan: pemegang claim persetujuan |
-| Hasil | PDF ber-stamp tanda tangan | perubahan diterapkan ke tabel modul, dengan perbandingan tiga nilai |
-| Daftar di builder | `AddDocumentApproval<TServices, TKey>(docType, flow)` | `AddDataApproval<TServices>(docType, approveClaim, flow)` |
+| Used for | Transaction documents signed by several parties (orders, contracts, …) | Changes to master data (customers, vendors, …) |
+| The document/data | **Already exists**; the request gates its status | **Not changed yet**; the proposal stays in the request until approved |
+| Steps | Several levels, each with parallel steps; every step has its own claim | One decision by a holder of the approve claim |
+| Result | A PDF stamped with the signatures | The change is applied to the module's tables after a three-way comparison |
+| Builder call | `AddDocumentApproval<TServices, TKey>(docType, flow)` | `AddDataApproval<TServices>(docType, approveClaim, flow)` |
 
-Semua registrasi hanya di fase builder (`EmAppBuilder`), tidak pernah saat runtime.
+Everything is registered on the API builder (`EmAppBuilder`) during startup, never at runtime.
 
-## Yang disediakan engine, yang disediakan modul
+## Engine vs. module responsibilities
 
-Engine **tidak tahu tabel modul**. Kunci (termasuk composite key), pemuatan data, penerapan perubahan,
-dan validasi disuplai modul lewat deklarasi di `flow`. Jadi modul yang datanya di tabel warisan — tanpa
-kolom standar, tanpa id ULID, dengan composite key — bisa memakainya. Kunci dokumen/entitas adalah
-`record` yang tiap bagiannya bertanda `[KeyPart(n)]`; engine menerjemahkannya ke bentuk tersimpan dan
-kembali, handler modul menerima record apa adanya.
+The engine **does not know the module's tables**. Keys (including composite keys), loading data,
+applying changes and validation are supplied by the module through the `flow` declaration. This lets
+modules whose data lives in legacy tables (no standard columns, no ULID IDs, composite keys) use it too.
+A document or entity key is a `record` whose parts are marked `[KeyPart(n)]`. The engine converts it to
+its stored form and back, and module handlers receive the record as is.
 
 ### Document approval
 
 ```csharp
 builder.AddDocumentApproval<OrderServices, OrderKey>("SalesOrder", flow => {
-   flow.Level(1, l => l.Step("Prepared By", slot));              // peminta menandatangani otomatis saat mengajukan
+   flow.Level(1, l => l.Step("Prepared By", slot));              // the requester signs automatically on submit
    flow.Level(2, l => l.Step("Checked By", slot, distinctFrom: "Prepared By",
-                             signers: async c => [...]));         // id user penanda tangan, dibaca dari isi dokumen
-   flow.Level(3, l => {                                           // langkah satu level berjalan paralel
+                             signers: async c => [...]));         // signer user IDs, read from the document
+   flow.Level(3, l => {                                           // steps within one level run in parallel
          l.Step("Approved By A", slotA);
          l.Step("Approved By B", slotB, guard: GuardAsync, input: BInput());
       },
-      onCompleted: c => Task.CompletedTask);                      // dipanggil saat seluruh level selesai
-   flow.Pdf(c => c.Services.RenderAsync(c.DocKey))                // Task<Stream>: PDF dasar yang akan di-stamp
-       .PdfLayout((c, pdf) => LocateAsync(pdf))                   // opsional: posisi kotak per dokumen (lihat PDF)
-       .Summary(c => c.Services.SummarizeAsync(c.DocKey))         // ringkasan untuk daftar & hub
-       .RequireOpen()                                             // dokumen harus masih terbuka saat diajukan
+      onCompleted: c => Task.CompletedTask);                      // called when the whole level is done
+   flow.Pdf(c => c.Services.RenderAsync(c.DocKey))                // Task<Stream>: the base PDF to stamp
+       .PdfLayout((c, pdf) => LocateAsync(pdf))                   // optional: per-document box positions (see PDF)
+       .Summary(c => c.Services.SummarizeAsync(c.DocKey))         // summary for lists and the hub
+       .RequireOpen()                                             // the document must still be open on submit
        .OnSigning(...).OnSigned(...).OnFinishing(...).OnFinished(...)
        .OnRejecting(...).OnRejected(...).OnReinstating(...);
 });
 ```
 
-- **Claim** setiap langkah dan claim pembaca (`View {docType}`, lihat `EmAppBuilder.ApprovalViewClaimName`)
-  didaftarkan otomatis pada modul `TServices`; jangan mendaftarkannya lagi. Nama langkah menjadi nama claim.
-- **Langkah pertama** ditandatangani peminta saat pengajuan dan tidak boleh meminta isian.
-- **`signers:`** menetapkan penanda tangan saat pengajuan (`when:` membuat sebuah langkah ikut hanya
-  bila syaratnya terpenuhi untuk dokumen itu). Selain penanda tangan itu, pemegang claim yang
-  sama boleh menggantikan (wajib beralasan, stamp memuat *a.n.*), kecuali langkah `strict`.
-- **`distinctFrom:`** four-eyes: dua langkah tidak boleh ditandatangani orang yang sama (saklar
-  administrator mengecualikan).
-- **`guard:`** menahan persetujuan sebuah langkah dengan alasan, dan bisa menyebut claim *penembus* —
-  pemegangnya boleh menyetujui dengan alasan; stamp memberi tanda OVERRIDE.
-- **`input:`** isian per langkah (`StepInput<TServices, TKey, TPayload>`): `Check(slot, ...)` dan
-  `Text(slot, ...)` menentukan apa yang digambar ke PDF; `Validate` memeriksa; `OnSigned` menerapkan
-  akibatnya ke dokumen **di transaksi yang sama**. Untuk penolakan, isian yang bisa diterima tetap
-  digambar; payload yang tidak bisa diterima tidak menggagalkan penolakan. Yang menentukan sah-tidaknya
-  penolakan adalah `OnSigning` milik modul.
-- **Hook** `OnSigning`/`OnSigned`/`OnFinishing`/`OnRejecting`/`OnReinstating` berjalan di dalam transaksi
-  keputusan (gagal = semuanya dibatalkan). `OnFinished`/`OnRejected` berjalan sesudah commit; kegagalannya
-  hanya dicatat.
-- **Reinstate** (tarik kembali, lalu ajukan ulang): request pending → `-2`, request selesai → `-3`;
-  pengajuan ulang tersambung lewat `ReinstateOf`. `OnReinstating` boleh menolak.
+- **Claims.** Every step claim and the reader claim (`View {docType}`, see
+  `EmAppBuilder.ApprovalViewClaimName`) are registered automatically on module `TServices`. Do not register
+  them again. The step name becomes the claim name.
+- **First step.** The requester signs it on submit, so it cannot ask for input.
+- **`signers:`** fixes the signers on submit (`when:` includes a step only when its condition holds for
+  that document). Other holders of the same claim may sign on their behalf (a reason is required and the
+  stamp shows *on behalf of*), unless the step is `strict`.
+- **`distinctFrom:`** enforces four-eyes: the two steps cannot be signed by the same person. The
+  administrator switch is exempt.
+- **`guard:`** blocks approval of a step with a reason, and may name an *override* claim. Holders of that
+  claim may approve with a reason; the stamp is marked OVERRIDE.
+- **`input:`** defines per-step input (`StepInput<TServices, TKey, TPayload>`). `Check(slot, ...)` and
+  `Text(slot, ...)` define what is drawn on the PDF, `Validate` checks it, and `OnSigned` applies its effect
+  to the document **in the same transaction**. On rejection, acceptable input is still drawn and an
+  unacceptable payload does not fail the rejection. Whether a rejection is allowed is decided by the
+  module's `OnSigning`.
+- **Hooks.** `OnSigning`, `OnSigned`, `OnFinishing`, `OnRejecting` and `OnReinstating` run inside the
+  decision transaction; a failure rolls everything back. `OnFinished` and `OnRejected` run after commit;
+  their failures are only logged.
+- **Reinstate** (withdraw, then submit again): a pending request becomes `-2`, a finished request `-3`. The
+  new submission links to the old one through `ReinstateOf`. `OnReinstating` may refuse.
 
 ### Data approval
 
 ```csharp
 builder.AddDataApproval<CustomerServices>("Customer", approveClaim: "Approve Update", flow => {
-   // urutan `order` = urutan penerapan: induk sebelum anaknya
+   // `order` is the apply order: parents before children
    flow.Entity<CustomerKey>("Customer", (c, key) => c.Services.LoadAsync(key),
          (c, request) => c.Services.ApplyAsync(request), order: 0)
       .Entity<ContactKey>("Contact", (c, key) => c.Services.LoadContactAsync(key),
@@ -79,101 +80,104 @@ builder.AddDataApproval<CustomerServices>("Customer", approveClaim: "Approve Upd
 });
 ```
 
-- Pemegang claim persetujuan **menyimpan langsung** tanpa menunggu siapa pun (request tercatat sebagai
-  disetujui sendiri); yang lain meninggalkan request yang menunggu mereka.
-- **Perbandingan tiga nilai** per kolom: *lama* (saat diajukan), *sekarang* (isi tabel saat disetujui),
-  *usulan*. Sekarang = lama → diterapkan; sekarang = usulan → dilewati; selain itu **konflik**. Seluruh
-  entitas dibandingkan dulu sebelum satu pun diterapkan. Konflik membatalkan keputusan itu dan dicatat
-  supaya approver melihat nilai sekarang; approver boleh **menerapkan tetap** (`Override`, wajib
-  beralasan, item bertanda *Overridden*) — kecuali entitasnya sudah tidak ada (hanya bisa ditolak).
-- Entitas baru: modul mengembalikan kunci sebenarnya dari `apply`; entitas lain dalam request yang masih
-  memakai kunci sementara diganti otomatis, jadi induk dan anak boleh berbagi satu request.
+- A holder of the approve claim **saves directly** without waiting for anyone (the request is recorded as
+  self-approved). Anyone else leaves a request that waits for an approver.
+- **Three-way comparison** per column: *original* (at submit), *current* (table content at approval) and
+  *proposed*. Current = original → applied; current = proposed → skipped; anything else is a **conflict**.
+  All entities are compared before any is applied. A conflict cancels that decision and is recorded so the
+  approver sees the current values. The approver may **apply anyway** (`Override`, reason required, item
+  marked *Overridden*), unless the entity no longer exists, in which case it can only be rejected.
+- New entities: the module returns the real key from `apply`. Other entities in the request that still use
+  the temporary key are updated automatically, so a parent and its children can share one request.
 
-## Transaksi lintas database
+## Cross-database transactions
 
-Satu keputusan = satu koneksi + satu transaksi SQL Server yang mencakup database inti dan database
-modul, **tanpa MSDTC** (`ApprovalTransaction`). Context modul yang ikut serta adalah yang diminta service
-modulnya lewat **constructor**; context yang diambil lewat `GetService` atau lewat service modul lain
-**tidak ikut** transaksi dan tidak diperiksa startup. Semua database yang ikut harus satu server dengan satu
-login; `ApprovalStartupChecks` menolak aplikasi yang melanggarnya sebelum request pertama.
+One decision uses one connection and one SQL Server transaction that spans the core database and the
+module databases, **without MSDTC** (`ApprovalTransaction`). A module context takes part only when the
+module service requests it through its **constructor**. A context obtained through `GetService`, or through
+another module's service, is **not** enlisted and is not checked at startup. All participating databases
+must be on one server with one login; `ApprovalStartupChecks` rejects the application before the first
+request otherwise.
 
-## Tabel
+## Tables
 
-Tujuh tabel di database inti aplikasi: request, langkah, penanda tangan langkah, item, kunci item, kolom
-item, komentar. Skripnya `doc/sqlscript/mssql/tables/020-approval.sql`, termasuk tabel jenis dokumen
-(`ta_Doc`) yang dirujuk FK; baris jenis dokumennya tetap diisi aplikasi/modul pemakai. Dua hal yang merupakan perilaku engine, bukan optimasi:
+Seven tables in the application's core database: request, step, step signer, item, item key, item column
+and comment. The script is `doc/sqlscript/mssql/tables/020-approval.sql`. It also creates the document type
+table referenced by the foreign keys; the document type rows themselves are inserted by the application or
+module. Two parts of the schema are engine behavior, not optimizations:
 
-1. Unique index tersaring pada (jenis dokumen, kunci, versi) `WHERE Stage = Pending` — penjaga balapan
-   dua pengajuan bersamaan.
-2. Foreign key peminta, penanda tangan, atas-nama, dan daftar penanda tangan ke tabel user — inilah yang
-   membuat **akun sistem** (admin bawaan, debugger) gagal menandatangani. Approval adalah pengecualian
-   dari aturan "admin bisa semua"; user nyata dengan saklar administrator menyala tetap boleh.
+1. A filtered unique index on (document type, key, version) `WHERE Stage = Pending` guards against two
+   concurrent submissions.
+2. Foreign keys from requester, signer, on-behalf-of and the signer list to the user table. This is what
+   makes **system accounts** (the built-in admin and the debugger) unable to sign. Approval is an exception
+   to "admin can do everything"; a real user with the administrator switch turned on can still sign.
 
-Jenis dokumen harus sudah terdaftar di daftar jenis dokumen aplikasi; yang tidak terdaftar ditolak
-database saat request pertama.
+The document type must already be registered in the application's document type list. An unregistered
+type is rejected by the database on the first request.
 
-## Action (`core.approval`)
+## Actions (`core.approval`)
 
-Semua `GetMeta_`/`PostMeta_`/`PostGetMeta_` — claim-nya dinamis (per jenis dokumen dan langkah), jadi
-service engine didaftarkan `enforceClaims: false` dan memeriksa sendiri.
+All actions are `GetMeta_`/`PostMeta_`/`PostGetMeta_`. Their claims are dynamic (per document type and
+step), so the engine service is registered with `enforceClaims: false` and checks access itself.
 
-| Action | Fungsi |
+| Action | Purpose |
 | --- | --- |
-| `GetMeta_ApprovalDocumentTypes` | jenis dokumen yang boleh dilihat pemanggil |
-| `GetMeta_ApprovalRequests(query)` | daftar berhalaman, dibatasi di server ke jenis yang boleh dilihat |
-| `GetMeta_ApprovalRequestsByDoc(docType, docKey)` | seluruh request satu dokumen |
-| `GetMeta_ApprovalRequest(id)` | rincian: langkah, perubahan, timeline |
-| `GetMeta_ApprovalRequestPdf(id)` | PDF ber-stamp, dibuat saat diminta |
-| `GetMeta_ApprovalGuard(id, step)` | status blokir sebuah langkah beserta siapa yang boleh menembus |
-| `PostGetMeta_ApprovalDecide(decisions[])` | setujui/tolak; satu transaksi **per keputusan** |
-| `PostMeta_ApprovalCancel(id, reason)` | tarik kembali |
-| `PostMeta_ApprovalComment(id, note)` | komentar |
-| `GetMeta_UserHubTasks` | daftar pekerjaan user aktif (hub) |
-| `GetMeta_ApprovalSlotCalibration(...)` | PDF kalibrasi: menggambar seluruh kotak di atas dokumen asli |
+| `GetMeta_ApprovalDocumentTypes` | Document types the caller may view |
+| `GetMeta_ApprovalRequests(query)` | Paged list, limited on the server to types the caller may view |
+| `GetMeta_ApprovalRequestsByDoc(docType, docKey)` | All requests for one document |
+| `GetMeta_ApprovalRequest(id)` | Details: steps, changes, timeline |
+| `GetMeta_ApprovalRequestPdf(id)` | Stamped PDF, generated on demand |
+| `GetMeta_ApprovalGuard(id, step)` | Block status of a step and who may override it |
+| `PostGetMeta_ApprovalDecide(decisions[])` | Approve/reject; one transaction **per decision** |
+| `PostMeta_ApprovalCancel(id, reason)` | Withdraw |
+| `PostMeta_ApprovalComment(id, note)` | Comment |
+| `GetMeta_UserHubTasks` | Task list for the current user (hub) |
+| `GetMeta_ApprovalSlotCalibration(...)` | Calibration PDF: draws every box over the real document |
 
-**Hak melihat** sebuah request = memegang claim langkah mana pun di alurnya, claim pembaca jenis dokumen
-itu, atau saklar administrator. Keputusan yang gagal **tidak** membawa ringkasan request kembali kepada
-pemanggil yang tidak boleh melihatnya.
+**Permission to view** a request means holding any step claim in its flow, the reader claim for that
+document type, or the administrator switch. A failed decision does **not** return the request summary to a
+caller who may not view it.
 
-## PDF dan stamp
+## PDF and stamps
 
-- `flow.Pdf(...)` menghasilkan PDF dasar saat pengajuan; engine menyimpannya lewat `IBinaryStorage`
-  (`builder.AddLocalBinaryStorage(path)` — folder di mesin server, tanpa alamat publik; kunci yang
-  mengandung `\`, `.`/`..`, atau path absolut ditolak).
-- Tiap langkah punya **slot** (`ApprovalSlot.At(x, y, w, h, page)`, milimeter dari kiri atas halaman).
-  Daftar kotak **dibekukan per request saat diajukan**; mengubah deklarasi tidak mengubah request lama.
-- **`PdfLayout`** memetakan posisi deklarasi ke posisi nyata di dokumen ini (mis. tabel tanda tangan
-  yang bergeser karena jumlah baris; `null` = kotak tidak ada di dokumen ini). Dipanggil saat pengajuan
-  dan oleh kalibrasi, dengan salinan PDF di memori.
-- `ApprovalSheet()` menambahkan lembar pengesahan untuk langkah yang tidak punya kotak.
-- Setiap tanda tangan membawa kode verifikasi; kode terakhir dicetak di tepi halaman. Layar pengecek
-  kode belum dibangun.
+- `flow.Pdf(...)` produces the base PDF on submit. The engine stores it through `IBinaryStorage`
+  (`builder.AddLocalBinaryStorage(path)`: a folder on the server machine without a public address; keys
+  containing `\`, `.`/`..` or an absolute path are rejected).
+- Every step has a **slot** (`ApprovalSlot.At(x, y, w, h, page)`, millimeters from the top left of the
+  page). The list of boxes is **frozen per request on submit**; changing the declaration does not affect
+  existing requests.
+- **`PdfLayout`** maps declared positions to the actual positions in this document (for example a
+  signature table that moves with the number of rows; `null` means the box is not in this document). It is
+  called on submit and by calibration, with an in-memory copy of the PDF.
+- `ApprovalSheet()` adds an approval sheet for steps without a box.
+- Every signature carries a verification code; the latest code is printed in the page margin. A screen for
+  checking the code has not been built yet.
 
-## UI (WPF)
+## WPF UI
 
-Approval Manager (`ApprovalManager`, tanpa DevExpress) dipakai tiga cara dengan data yang sama: dari menu
-Tools, dari hub (terfilter), dan tertanam di layar dokumen (tab Approval, dengan Sebelumnya/Berikutnya
-di mode buka dokumen). Modul pemakai memperluasnya lewat builder UI:
+The **Approval Manager** (`ApprovalManager`, no DevExpress dependency) shows the same data in three
+places: from the Tools menu, from the hub (filtered), and embedded in a document screen (Approval tab, with
+Previous/Next when opened for a document). Modules extend it through the UI builder:
 
-- `AddApprovalStepPanel<TView, TViewModel>(docType, step)` — panel isian untuk satu langkah.
-- `AddApprovalInfoPanel<TView>(docType, steps, input, order)` — panel keterangan tambahan.
-- `AddApprovalDocumentOpener(docType, navigationName, payloadFactory)` — tombol *Source document*; aktif
-  hanya bila pemanggil boleh membuka layar tujuannya.
+- `AddApprovalStepPanel<TView, TViewModel>(docType, step)`: input panel for one step.
+- `AddApprovalInfoPanel<TView>(docType, steps, input, order)`: additional information panel.
+- `AddApprovalDocumentOpener(docType, navigationName, payloadFactory)`: the *Source document* button,
+  enabled only when the caller may open the target screen.
 
-**Mode ringkas.** `ApprovalManagerNavigationPayload.Compact = true` untuk menanam layar ini di ruang sempit
-(mis. flyout di layar modul). Isinya satu kolom: usulan perubahan dan keputusan. Daftar request hanya muncul
-sebagai pemilih bila ada lebih dari satu, tautan ke layar lain (Open, Open tab, Source document) dan kartu info
-disembunyikan, dan riwayat (timeline) tertutup sampai dibuka. Hosting flyout-nya urusan layar pemakai
-(pola `sheetScrimStyle` + `sheetToggleStyle`); contohnya editor CML.
+**Compact mode.** Set `ApprovalManagerNavigationPayload.Compact = true` to embed the screen in a narrow
+space, such as a flyout in a module screen. It shows a single column with the proposed changes and the
+decision. The request list appears only as a picker when there is more than one request; links to other
+screens (Open, Open tab, Source document) and info cards are hidden; the timeline stays collapsed until
+opened. Hosting the flyout is up to the consuming screen (pattern: `sheetScrimStyle` + `sheetToggleStyle`).
 
-Hub MY TASKS digabung dari semua `IHubTaskSource` yang terdaftar (`AddHubTaskSource<T>()`); sumber
-approval sudah terdaftar otomatis. Daftarnya **dihitung**, bukan disimpan, jadi sebuah tugas hilang
-sendiri dari daftar orang lain begitu satu orang mengerjakannya. Control approval dan hub belum ada di
-MAUI; client service-nya ada.
+The **MY TASKS** hub merges every registered `IHubTaskSource` (`AddHubTaskSource<T>()`); the approval
+source is registered automatically. The list is **computed**, not stored, so a task disappears from
+everyone else's list as soon as one person completes it. The approval controls and hub are not available
+in MAUI yet; the client services are.
 
-## Batas yang diketahui
+## Known limitations
 
-Yang paling perlu diingat
-modul pemakai: perbandingan konflik membaca nilai lalu handler membaca ulang barisnya tanpa kunci baris
-(ada jendela kecil antara keduanya); dan hook modul yang mengambil context lewat `GetService` tidak ikut
-transaksi.
+- The conflict comparison reads the values, then the module handler reads the row again without a row
+  lock, leaving a small window between the two.
+- Module hooks that obtain a context through `GetService` are not part of the decision transaction.
+- System accounts (built-in admin, debugger) cannot submit or sign; test with real users.

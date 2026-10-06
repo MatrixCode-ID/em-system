@@ -54,7 +54,7 @@ Hal yang masih menunggu keputusan pengguna saat context dibersihkan:
 - `main` 4 commit di depan `origin/main` (belum di-push): `7ef81b3`, `03092b8`, `1fc2b59`, `82a2f13`.
 - 15 folder `scripts/*-smoke` dan `scripts/*-render` sudah dihapus pengguna di working tree tetapi **belum di-commit**, dan tidak ada salinannya di `..\.artefacts\em-system\scripts\`. Pilihan: (A) pulihkan dari git ke `..\.artefacts\em-system\scripts\`, sesuaikan `ProjectReference`, commit penghapusan, perbarui kalimat terakhir aturan "Alat uji sementara" di `claude.md`; (B) commit penghapusan saja dan perbarui kalimat itu.
 - `src/frontend/Launcher/CLAUDE.md` baris 75 dan 210 serta komentar `src/frontend/Em.Ui.Wpf/Em.Ui.Wpf.csproj` baris 25 masih menyuruh meng-commit `dist/launcher/launcher.exe`, padahal kini diabaikan Git.
-- `doc/konvensi/konvensi-penamaan-nuget.md` masih draf dengan 4 pertanyaan terbuka; default `scripts/pack-nuget.ps1` (`0.1.0-pre-alpha.1`) menunggu keputusan itu.
+- `doc/convention/nuget-naming.md` masih draf dengan 4 pertanyaan terbuka; default `scripts/pack-nuget.ps1` (`0.1.0-pre-alpha.1`) menunggu keputusan itu.
 - Script `.cmd` publish NuGet ke GitHub Packages (default hanya pack, push hanya dengan argumen eksplisit dan PAT dari env) belum dibuat; pengguna minta jangan push paket selama masih tes.
 - Lisensi `Oracle.EntityFrameworkCore` yang terbawa `EFCore.BulkExtensions` 10.0.1 belum dicek.
 

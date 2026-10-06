@@ -1,98 +1,118 @@
-# Engine container registry — cara memakai dan menguji
+# Container registry
 
-Registry terintegrasi di `Em.Api.Core` (folder `Api/Registry/`), seperti CDN dan approval.
-Dokumen ini: cara menyalakan, cara membuat root/container/robot tanpa UI, dan cara mengujinya.
-Layar WPF **Container Manager** sudah ada (lihat bagian "Container Manager (WPF)" di bawah).
+The API host includes an OCI container registry (`/v2`) built into `Em.Api.Core` (`Api/Registry/`), next
+to the CDN and the approval engine. This page covers enabling it, creating roots, containers and robots,
+the WPF **Container Manager**, and testing.
 
-## Menyalakan
+![Container Manager with a container selected](images/container-manager.png)
 
-Untuk instalasi lama, jalankan migrasi pada [engine-robots.md](engine-robots.md) dahulu.
+## Enabling
 
-1. Jalankan `doc/sqlscript/mssql/tables/030-registry.sql` pada database inti sesudah `tables/010-core.sql` (yang membuat `ta_Robot`); instalasi baru, aman diulang.
-2. Di `Program.cs` host (sudah aktif di `Em.Api`):
+1. Run `doc/sqlscript/mssql/tables/030-registry.sql` on the core database after `tables/010-core.sql`
+   (which creates `ta_Robot`). The script is safe to run again. Older databases must first run the robot
+   migrations described in [Robots](engine-robots.md).
+2. In the host `Program.cs`, either:
+   - call `builder.AddManagedStorageSettings()` (recommended; used by `Em.Api`). The registry is enabled by
+     default at `./data/container-registry` and can be turned off or moved from the Container Manager
+     Settings card. See [Storage settings](engine-storage-settings.md). Or:
+   - call `builder.AddContainerRegistry(localStorePath: "./data/container-registry")` for a fixed path.
 
-   ```csharp
-   builder.AddContainerRegistry(localStorePath: "./data/container-registry");
-   ```
-
-   Path relatif dihitung dari folder konten aplikasi. Isi layer disimpan di sana (`blobs/sha256/..`);
-   unggahan sementara di `uploads/`. Panggilan kedua ditolak. Tanpa panggilan ini `/v2` menjawab 404
-   dan layanan manajemen menjawab 404.
-3. Saat startup, server memeriksa semua tabel `ta_Ctn*`; kalau ada yang belum dibuat, startup gagal
-   dengan pesan yang menyebut skripnya. Karena `Em.Api` sekarang menyalakan registry, database yang
-   belum dijalankan skripnya tidak bisa dipakai menjalankan `Em.Api` sampai skripnya dijalankan (atau
-   baris `AddContainerRegistry` dikomentari).
+   Relative paths resolve from the application content root. Layer content is stored in `blobs/sha256/..`
+   and temporary uploads in `uploads/`. A second registration is rejected. Without a registry, `/v2` and
+   the management actions return 404.
+3. On startup the server checks every `ta_Ctn*` table. If any is missing, startup fails with a message
+   naming the script. Managed storage settings require the registry tables even when the registry is
+   disabled.
 
 ## Model
 
-- Nama pull: **`host/root/nama`, tepat dua segmen** (`localhost:5132/acme/api:v1`). Tiga segmen atau
-  lebih → `NAME_INVALID`. Huruf kecil, angka, pemisah `.`, `_`, `-` (root maks 64, nama maks 128).
-- **Root** = pemilik: unit hak. **Folder** hanya pengelompokan di dalam root (maks 8 tingkat, tidak
-  muncul di nama pull). **Container** (`root/nama`) harus dibuat dulu lewat layanan manajemen; push ke nama
-  yang belum terdaftar → `NAME_UNKNOWN`. Push tidak pernah membuat nama.
-- **Robot** = akun `docker login` (nama + token). Hak per root: `R` (pull) atau `W` (push, mencakup
-  pull). Robot tanpa baris hak di sebuah root tidak bisa melihat root itu (`NAME_UNKNOWN`). Satu robot
-  boleh `W` di `acme` dan `R` di `server` — itu yang membuat `FROM host/server/base` + push ke
-  `host/acme/api` cukup dengan satu login, termasuk mount layer base dari `server`.
-- Pengelolaan container memakai claim `Container Manager Access`; identitas, token dan hak robot
-  memakai `User Manager Access`. Keduanya berada di module `Administrative Tools`.
-  Robot dapat dipakai beberapa manager: lihat [engine-robots.md](engine-robots.md).
-- Token berentropi 256 bit, ditampilkan **sekali**; yang disimpan hash SHA-256. Satu robot satu
-  token; `PostGetMeta_RobotRegenerate` membuat yang baru dan yang lama langsung tidak berlaku.
-- Semua waktu UTC.
+- Pull names are **`host/root/name`, exactly two segments** (`localhost:5132/acme/api:v1`). Three or more
+  segments return `NAME_INVALID`. Lowercase letters, digits and the separators `.`, `_`, `-` are allowed
+  (root up to 64 characters, name up to 128).
+- A **root** is the owner and the unit of access. **Folders** only group containers inside a root (up to 8
+  levels) and do not appear in the pull name. A **container** (`root/name`) must be created through the
+  management actions first; pushing to an unregistered name returns `NAME_UNKNOWN`. A push never creates a
+  name.
+- A **robot** is a `docker login` account (name + token). Access is granted per root: `R` (pull) or `W`
+  (push, which includes pull). A robot without a grant on a root cannot see it (`NAME_UNKNOWN`). One robot
+  can have `W` on `acme` and `R` on `server`, so `FROM host/server/base` plus a push to `host/acme/api`
+  works with one login, including mounting base layers from `server`.
+- Managing containers requires the `Container Manager Access` claim; robot identities, tokens and grants
+  require `User Manager Access`. Both claims belong to module `Administrative Tools`. Robots can be shared
+  by several managers; see [Robots](engine-robots.md).
+- Tokens have 256 bits of entropy and are shown **once**; only their SHA-256 hash is stored. One robot has
+  one token. `PostGetMeta_RobotRegenerate` issues a new token and the old one stops working immediately.
+- All times are UTC.
 
-## Membuat root, container, robot tanpa UI
+## Creating roots, containers and robots without the UI
 
-Action dipanggil lewat `POST /api/Administrative%20Tools/<Action>` dengan `Authorization: Bearer <token>`
-(token dari `POST /api/core.credential/PostGetMeta_SignIn`) dan body JSON array parameter
-(`[{"ParameterType":"System.String","ParameterOrdinal":0,"ValueData":"acme"}, ...]`; parameter `null`
-dihilangkan). Action GET memakai query `?par1=..&par2=..`. Akun `admin` bawaan hanya bisa masuk bila
-`AdminUserEnable` di `ta_Meta` bernilai `True` (diubah langsung di database); atau pakai akun biasa
-yang memegang claim di atas. Bentuk jawaban: `{"HasData":..,"Data":..,"StatusCode":..,"ErrorMessage":..}`.
+Actions are called with `POST /api/Administrative%20Tools/<Action>` and `Authorization: Bearer <token>`
+(token from `POST /api/core.credential/PostGetMeta_SignIn`). The body is a JSON array of parameters
+(`[{"ParameterType":"System.String","ParameterOrdinal":0,"ValueData":"acme"}, ...]`; omit `null`
+parameters). GET actions use the query string `?par1=..&par2=..`. Responses have the shape
+`{"HasData":..,"Data":..,"StatusCode":..,"ErrorMessage":..}`.
 
-Urutan untuk uji pertama (parameter berurutan sesuai `ICtnServices` dan `IRobotServices`):
+Sign in with a regular account that holds the claims above. The built-in `admin` account can sign in only
+while `AdminUserEnable` in `ta_Meta` is `True` (changed directly in the database).
 
-| Langkah | Action | Parameter |
+Order for a first test (parameters follow `ICtnServices` and `IRobotServices`):
+
+| Step | Action | Parameters |
 | --- | --- | --- |
 | Root | `PostGetMeta_CtnRootCreate` | `name`, `description?` |
-| Folder (opsional) | `PostGetMeta_CtnFolderCreate` | `rootId`, `parentFolderId?`, `name` |
+| Folder (optional) | `PostGetMeta_CtnFolderCreate` | `rootId`, `parentFolderId?`, `name` |
 | Container | `PostGetMeta_CtnImageCreate` | `rootId`, `folderId?`, `name`, `description?` |
-| Robot | `PostGetMeta_RobotCreate` | `name`, `description?`, `tokenExpiry?` — **simpan `Token`** |
-| Hak | `PostMeta_RobotAccessSet` | `robotId`, `managerId` (`Container`), `resourceId` (`rootId`), `access` (`R`/`W`) |
+| Robot | `PostGetMeta_RobotCreate` | `name`, `description?`, `tokenExpiry?`, `ownerUserId?`; **keep the returned `Token`** |
+| Grant | `PostMeta_RobotAccessSet` | `robotId`, `managerId` (`Container`), `resourceId` (root ID), `access` (`R`/`W`) |
 
-Lainnya: `GetMeta_CtnRoots`, `GetMeta_CtnTree(rootId)`, `GetMeta_CtnImageManifests(imageId)`,
-`GetMeta_Robots`, `PostGetMeta_CtnImageMove`, `PostGetMeta_CtnFolderMove/Rename`,
-`PostMeta_CtnImageUpdate/Delete`, `PostMeta_RobotUpdate/Delete`, `PostMeta_RobotAccessSet (access kosong)`,
-`PostMeta_CtnRootUpdate/Delete`, `PostMeta_CtnFolderDelete`. Menghapus image/robot/root/folder hanya
-menghapus metadata; berkas layer di disk menunggu garbage collection (tahap 2).
+Other actions: `GetMeta_CtnRoots`, `GetMeta_CtnTree(rootId)`, `GetMeta_CtnImageManifests(imageId)`,
+`GetMeta_Robots`, `PostGetMeta_CtnImageMove`, `PostGetMeta_CtnFolderMove`, `PostGetMeta_CtnFolderRename`,
+`PostMeta_CtnImageUpdate`, `PostMeta_CtnImageDelete`, `PostMeta_RobotUpdate`, `PostMeta_RobotDelete`,
+`PostMeta_RobotAccessSet` with an empty access (revoke), `PostMeta_CtnRootUpdate`, `PostMeta_CtnRootDelete`,
+`PostMeta_CtnFolderDelete`. Deleting an image, robot, root or folder removes metadata only; layer files
+stay on disk until garbage collection is implemented.
 
 ## Container Manager (WPF)
 
-Layar bawaan `Em.Ui.Wpf.Core`: menu **Container Manager** di daftar Tools (navigasi `admin.container`), muncul hanya
-untuk akun yang memegang claim `Administrative Tools:Container Manager Access` (atau administrator).
-Yang belum teruji: layar terhadap server, docker sungguhan, dan drag-drop dengan mouse.
+A built-in `Em.Ui.Wpf.Core` screen: **Container Manager** in the Tools list (navigation `admin.container`),
+visible only to accounts holding `Administrative Tools:Container Manager Access` (or administrators).
 
-- **Containers**: daftar root (kiri), tree folder dan container root terpilih (tengah), detail item
-  terpilih (kanan). Buat/edit/hapus root, folder, container; pindah lewat menu "Move to..." atau drag-drop
-  (hanya di root yang sama, nama pull tidak berubah). Detail container menampilkan manifest (tag, digest,
-  ukuran manifest, waktu push, pengirim) dan menyalin nama pull, `docker pull` per tag atau digest, serta
-  `docker tag` + `docker push` (klik kanan tag). Nama root, container, dan robot tidak bisa diganti setelah
-  dibuat; folder bisa diganti namanya.
-- **User Manager → Robots**: daftar robot, buat/edit/hapus, **Regenerate token**, dan tabel hak per root
-  (*No access / Read / Write*) yang langsung dikirim saat pilihan diganti. Token muncul **sekali** di dialog
-  setelah robot dibuat atau token dibuat ulang; lupa token berarti Regenerate (token lama langsung mati).
-- Host untuk perintah `docker` diambil dari koneksi aktif (`host[:port]`, tanpa skema). Alamat HTTP polos ke
-  selain `localhost` ditandai: Docker menolaknya sampai server memakai HTTPS.
-- Server tanpa `AddContainerRegistry` menjawab 404; Container Manager lalu hanya menampilkan "Container registry is
-  not enabled on this server."
-- Pintasan: F5 muat ulang; Delete menghapus baris terpilih (dengan konfirmasi); F2 mengganti nama folder atau
-  mengedit container; klik kanan membuka menu.
-- Tidak ada (batas kontrak): ukuran image/layer, hapus tag atau manifest, polling otomatis. Hapus container
-  hanya membuang metadata; ruang disk baru kembali sesudah garbage collection (tahap 2).
+- **Containers** tab: the list of roots (left), the folder/container tree of the selected root (center) and
+  details of the selected item (right). Create, edit and delete roots, folders and containers; move items
+  with "Move to..." or drag and drop (within the same root only; the pull name does not change). Container
+  details list manifests (tag, digest, manifest size, push time, pusher) and copy the pull name,
+  `docker pull` by tag or digest, and `docker tag` + `docker push` (right-click a tag). Root, container and
+  robot names cannot be changed after creation; folders can be renamed.
+- **Publish** and **Settings** tabs: see [Publish](engine-publish.md) and
+  [Storage settings](engine-storage-settings.md).
+- Robots are managed in **User Manager → Robots**: create, edit, delete, **Regenerate token**, and the
+  per-root grant table (*No access / Read / Write*), sent as soon as a choice changes. The token appears
+  **once** in a dialog after creation or regeneration; a lost token means Regenerate (the old token stops
+  working).
+- The host for `docker` commands comes from the active connection (`host[:port]`, without a scheme). Plain
+  HTTP to anything other than `localhost` is flagged: Docker refuses it until the server uses HTTPS.
+- A server without a registry returns 404, and the screen shows "Container registry is not enabled on this
+  server."
+- Shortcuts: F5 reloads; Delete removes the selected row (with confirmation); F2 renames a folder or edits a
+  container; right-click opens the context menu.
+- Not available (by design): image/layer sizes, deleting tags or manifests, automatic polling.
 
-## Pengujian di desktop (docker sungguhan)
+## Storage size
 
-Docker Desktop mengizinkan HTTP biasa ke `localhost`; selain itu klien Docker mewajibkan HTTPS.
+`ICtnServices.GetMeta_CtnStorageSize()` is a GET action with claim **Container Manager Access**. It returns
+`CtnStorageInfo` with `BlobBytes`, `ManifestBytes` and `TotalBytes` (64-bit bytes). The total is every
+stored blob (counted once, even when shared by many images) plus manifest payloads in the database. Blobs
+still stored after an image is deleted are included. The numbers come from registry metadata and exclude
+temporary uploads, database/filesystem overhead and disk capacity.
+
+The **Container Manager** card on the default home screen shows the total, with a small refresh button in
+its top right corner that reloads only that card. The Container Manager screen shows the global total,
+the blob/manifest breakdown and a scope note above its panels. A disabled registry or a failed request is
+shown as a status, never as zero.
+
+## Testing with Docker
+
+Docker Desktop allows plain HTTP to `localhost`; for any other host the Docker client requires HTTPS.
 
 ```powershell
 docker login localhost:5132 -u acme-ci -p <token>
@@ -101,59 +121,33 @@ docker push localhost:5132/acme/api:v1
 docker pull localhost:5132/acme/api:v1
 ```
 
-Kasus negatif yang perlu dicoba: push ke nama yang belum dibuat (`NAME_UNKNOWN`), push dengan robot
-`R` (`DENIED`), nama tiga segmen (`NAME_INVALID`), huruf besar (`NAME_INVALID`).
+Negative cases worth trying: push to a name that was not created (`NAME_UNKNOWN`), push with an `R` robot
+(`DENIED`), a three-segment name (`NAME_INVALID`), uppercase letters (`NAME_INVALID`).
 
-## Pengujian otomatis (skrip HTTP)
+## Automated HTTP test
 
-`scripts/_py/registry-http-test.py` meniru klien Docker lewat HTTP (82 pemeriksaan: kasus uji wajib plan —
-routing dua segmen, NAME_INVALID, mount lintas root, hak per root, pindah image, nama tidak sah/terlalu
-panjang, NAME_UNKNOWN, robot R/W — ditambah Range, case-sensitive tag, regenerasi token, folder).
+`scripts/_py/registry-http-test.py` imitates the Docker client over HTTP (82 checks: two-segment routing,
+`NAME_INVALID`, cross-root mount, per-root access, moving images, invalid/too-long names, `NAME_UNKNOWN`,
+R/W robots, Range, case-sensitive tags, token regeneration and folders).
 
 ```powershell
-$env:EM_BASE_URL = "http://localhost:5132"; $env:EM_PASSWORD = "<password akun penguji>"
+$env:EM_BASE_URL = "http://localhost:5132"; $env:EM_PASSWORD = "<test account password>"
 python scripts/_py/registry-http-test.py
 ```
 
-Membuat dan menghapus data berakhiran acak; jalankan hanya ke server dan database uji.
+It creates and deletes data with random suffixes; run it only against a test server and database.
 
-## Cek ukuran storage
+## Known limitations
 
-`ICtnServices.GetMeta_CtnStorageSize()` adalah action GET dengan claim **Container Manager Access**.
-DTO `CtnStorageInfo` mengembalikan `BlobBytes`, `ManifestBytes`, dan `TotalBytes` dalam byte (64-bit).
-Total merupakan jumlah seluruh blob tersimpan (satu kali per blob, meskipun dipakai banyak image)
-ditambah payload manifest di database. Blob yang masih tersimpan setelah image dihapus ikut dihitung.
-Angka berasal dari metadata registry; tidak mencakup upload sementara, overhead database/filesystem,
-atau kapasitas/free space volume disk. Tidak memerlukan migrasi database.
+- DDL scripts exist for SQL Server only. The code itself is provider-agnostic (EF Core).
+- Not implemented yet: garbage collection of orphaned blobs and stale uploads, tag retention, immutable
+  tags, quotas, audit, base/derived relations, Docker-style Bearer tokens, `_catalog`.
+- Only sha256, image manifests and indexes (Docker v2 and OCI); schema 1 is rejected. Foreign layers
+  (`urls`) are not checked. `DELETE` on blobs is not supported.
+- The Kestrel body size limit is lifted per request for blob uploads. A reverse proxy in front must allow
+  large bodies (for example nginx `client_max_body_size 0`) and provide HTTPS for non-localhost clients.
 
-WPF DefaultHomeControl menampilkan total pada card **Container Manager** saat home dimuat ulang.
-Tombol refresh kecil di pojok kanan atas card memperbarui storage card tersebut; tombol dinonaktifkan
-selama request berlangsung dan tidak membuka layar manager.
-Container Manager menampilkan total global, rincian blob/manifest, dan keterangan cakupan di atas panel.
-Refresh serta pembacaan ulang root setelah perubahan membaca ulang angka. Registry nonaktif atau
-request gagal menampilkan status, bukan angka nol yang menyesatkan.
+## Maintainer notes
 
-Uji agregasi SQL Server: `dotnet run --project ..\.artefacts\em-system\scripts\container-storage-smoke` dari root repo.
-Data uji menggunakan transaksi yang selalu di-rollback.
-
-## Batas yang diketahui
-
-
-- Skrip DDL hanya MSSQL. Sudah dijalankan di SQL Server (konfirmasi pengguna 2026-10-02), tetapi pemakaian tabelnya
-  oleh registry dan Container Manager belum diuji end-to-end (lihat laporan eksekusi plan).
-  Kodenya provider-agnostik (EF Core) dan lulus uji penuh di PostgreSQL dengan skema hasil EF.
-- Tahap 2 belum ada: garbage collection blob yatim dan unggahan basi, retensi tag, tag immutable,
-  kuota, audit, relasi base-turunan, token Bearer ala Docker, `_catalog`.
-- Hanya sha256, manifest image dan index (Docker v2 dan OCI); schema 1 ditolak. Layer asing (`urls`)
-  tidak dicek. `DELETE blob` tidak didukung.
-- Batas ukuran body Kestrel dimatikan per request untuk unggahan blob; reverse proxy di depannya harus
-  mengizinkan body besar (mis. nginx `client_max_body_size 0`) dan HTTPS bagi klien non-localhost.
-
-
-## Pengaturan storage melalui UI
-
-Host contoh menggunakan `builder.AddManagedStorageSettings()` tanpa path/limit di `Program.cs`. Persistence di `ta_Meta`, hak Settings terpisah, dan perubahan diterapkan setelah restart API. Panduan lengkap: [pengaturan storage](engine-storage-settings.md).
-
-## Publish from WPF
-
-The manager includes a shared Publish tab and publish history. Configure host-scoped robot credentials independently of the GUI session. See [engine-publish.md](engine-publish.md) for profiles, Prepare/Push/Verify, file sets, Compose and ordered Base/App Sets.
+SQL Server aggregation smoke test (harness kept outside the repo, data rolled back):
+`dotnet run --project ..\.artefacts\em-system\scripts\container-storage-smoke` from the repo root.

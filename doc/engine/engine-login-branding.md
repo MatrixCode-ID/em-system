@@ -1,6 +1,7 @@
-# Branding login WPF
+# WPF login branding
 
-Layar login WPF memakai `LoginStyle.Material` secara default. Pengembang memilih tampilan melalui `ApplyBranding`; pengguna akhir tidak mendapat tombol pemilihan tampilan.
+The WPF login screen uses `LoginStyle.Material` by default. The developer chooses the style through
+`ApplyBranding`; end users do not get a style switch.
 
 ```csharp
 builder.ApplyBranding(new BrandingInfo {
@@ -12,10 +13,33 @@ builder.ApplyBranding(new BrandingInfo {
 });
 ```
 
-Sesuaikan nama assembly dan tandai gambar sebagai WPF `Resource`. URI absolut ke gambar juga diterima. Core memuat bitmap (PNG, JPEG, BMP, ICO); format lain memerlukan `ILogoImageLoader` yang didaftarkan aplikasi. Lebar sekitar 1920 piksel disarankan. Bitmap yang lebih besar didekode dengan lebar maksimum 1920 tanpa memperbesar gambar kecil. Gambar memenuhi latar dengan `UniformToFill`, sehingga tepinya dapat terpotong.
+## Background images
 
-Gambar mode aktif dicoba terlebih dahulu. Jika kosong atau gagal dimuat, gambar mode lain dicoba. Jika hanya satu gambar tersedia, kedua mode memakainya. Mode gelap yang meminjam gambar terang memakai lapisan `Scrim` dengan opacity 0,35; gambar gelap sendiri tidak diredupkan. Jika keduanya gagal, latar menjadi gradien tonal dari `PrimaryContainer`, melalui `SurfaceContainerLow`, ke `Surface`, mengikuti tema aktif. Ganti tema memuat ulang pilihan gambar dan lapisan redup.
+- Adjust the assembly name and mark the images as WPF `Resource`. Absolute image URIs are accepted too.
+- The core loads bitmaps (PNG, JPEG, BMP, ICO). Other formats need an `ILogoImageLoader` registered by the
+  application (`AddLogoImageLoader<T>()`).
+- A width of about 1920 pixels is recommended. Larger bitmaps are decoded at a maximum width of 1920;
+  smaller images are not scaled up. The image fills the background with `UniformToFill`, so its edges may
+  be cropped.
 
-Untuk memakai tampilan lama, atur `LoginStyle = LoginStyle.Classic`. Classic mengabaikan kedua properti background dan tetap memakai `Description`. Material menampilkan logo, judul, tagline, dan hak cipta; `Description` tidak ditampilkan. MAUI belum memakai `LoginStyle`, `LightLoginBackground`, atau `DarkLoginBackground`.
+The image for the active theme is tried first. If it is empty or fails to load, the other theme's image is
+tried. If only one image exists, both themes use it. Dark mode borrowing the light image adds a `Scrim`
+layer at 0.35 opacity; a dedicated dark image is not dimmed. If both fail, the background becomes a tonal
+gradient from `PrimaryContainer` through `SurfaceContainerLow` to `Surface`, following the active theme.
+Switching themes reloads the image choice and the dimming layer.
 
-Style Material baru memakai kunci tersendiri di dictionary bersama. Field memakai `shared:FieldLabel.Text` untuk label mengambang; `Tag` tetap bebas. Latar takik dapat diatur melalui `FieldLabel.NotchBackground`, error melalui `FieldValidation.HasError`. Animasi label mengikuti `EnableAnimation` aplikasi; pemakai field di layar lain dapat memasang `FieldLabel.EnableAnimation` pada induknya.
+## Classic style
+
+Set `LoginStyle = LoginStyle.Classic` for the older layout. Classic ignores both background properties and
+still shows `Description`. Material shows the logo, title, tagline and copyright; it does not show
+`Description`. MAUI does not use `LoginStyle`, `LightLoginBackground` or `DarkLoginBackground` yet.
+
+## Material fields
+
+The Material styles use their own keys in the shared resource dictionary.
+
+- `shared:FieldLabel.Text` sets the floating label; `Tag` remains free for other uses.
+- `FieldLabel.NotchBackground` sets the background behind the label notch.
+- `FieldValidation.HasError` shows the error state.
+- Label animation follows the application's `EnableAnimation`. Other screens using these fields can set
+  `FieldLabel.EnableAnimation` on a parent element.

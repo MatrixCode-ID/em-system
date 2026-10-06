@@ -5,7 +5,7 @@ namespace Em.Api.Core.Registry
 {
    // Semua entitas registry internal: baris-barisnya tidak pernah keluar dari server apa adanya, yang
    // keluar adalah DTO di Em.Libs. Dipetakan lewat CtnContext.OnModelCreating, bukan DbSet publik.
-   // Kolom mengikuti doc/konvensi/konvensi-Dahlia.md; kunci gabungan didaftarkan di CtnContext.
+   // Kolom mengikuti doc/convention/dahlia-convention.md; kunci gabungan didaftarkan di CtnContext.
 
    [Table("ta_CtnRoot")]
    internal class ta_CtnRoot
