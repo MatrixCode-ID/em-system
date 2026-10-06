@@ -33,6 +33,14 @@ public partial class PublishProfileDialog : EmWindow {
   [nameof(DockerfileProfile)+".Platform"]="Optional. The platform of the image, such as linux/amd64 or linux/arm64, passed as --platform. Empty uses the platform of the Docker daemon. Another platform needs Buildx with emulation.",
   [nameof(DockerfileProfile)+".BuildArgs"]="Values for ARG instructions in the Dockerfile, passed as --build-arg Key=Value. Do not put passwords or tokens here: build args can be read from the image history. Use Secrets instead.",
   [nameof(DockerfileProfile)+".NamedContexts"]="Extra folders the Dockerfile can read by name, passed as --build-context Key=Value. Key is the name used in COPY --from=<Key> or FROM <Key>; Value is a folder relative to Workspace.",
+  [nameof(ContainerTarget)+".Type"]="Where the image is pushed. BuiltIn: the container registry of the em-system server this application is connected to (Container Manager); the destination is picked from the server with Select destination. Custom: any other OCI registry (Docker Hub, GHCR, your own), typed by hand as Host and Repository, with a push credential on the Credentials tab.",
+  [nameof(ContainerTarget)+".Root"]="The top-level group in Container Manager, like an organization or namespace (for example osha). Robot access is granted per root. Fill it with Select destination: a typed name does not record the Server, and publishing then fails. The root must exist and be active.",
+  [nameof(ContainerTarget)+".Container"]="The image (repository) inside the root (for example osha-api). The image is pushed to <server>/<root>/<container>:<tag>. It must already exist and be active in Container Manager; publishing does not create it. Fill it with Select destination.",
+  [nameof(ContainerTarget)+".Host"]="The registry address without http:// or a path, with a port when needed: registry.example.com:5000, ghcr.io, docker.io. Add a push credential for this host on the Credentials tab; tick Allow Http there for a plain-HTTP registry.",
+  [nameof(ContainerTarget)+".Repository"]="The image path on that registry, lower case, segments separated by /: team/app or myuser/app. The image is pushed to <host>/<repository>:<tag>.",
+  [nameof(NuGetTarget)+".Type"]="Where the packages are pushed. BuiltIn: a NuPak feed on the em-system server this application is connected to (NuGet Manager), picked with Select destination. Custom: any NuGet v3 feed, typed by hand as Service Index, with a credential on the Credentials tab.",
+  [nameof(NuGetTarget)+".Feed"]="The NuPak feed on the connected server that receives the packages. Fill it with Select destination: a typed name does not record the Server, and publishing then fails. The feed must be enabled and have an active prefix for every package ID.",
+  [nameof(NuGetTarget)+".ServiceIndex"]="The v3 service index URL of the feed, for example https://nuget.example.com/v3/index.json (nuget.org: https://api.nuget.org/v3/index.json). Add a credential (API key) for its host on the Credentials tab.",
   [nameof(DockerfileProfile)+".Secrets"]="Secrets the Dockerfile can read during the build without leaving them in the image (RUN --mount=type=secret,id=<id>). Each entry passes the secret of one credential from the Credentials tab.",
  };
  public PublishProfile Profile { get; }
@@ -81,7 +89,8 @@ public partial class PublishProfileDialog : EmWindow {
    var connected=_targets.Connection.Length>0;
    var addressText=new TextBlock {Text=connected?_targets.Connection:"Not connected",TextWrapping=TextWrapping.NoWrap,TextTrimming=TextTrimming.CharacterEllipsis,MaxWidth=480,VerticalAlignment=VerticalAlignment.Center,ToolTip=connected?_targets.Connection:null};
    var copy=new Button {Content=new FontAwesome {Icon=EFontAwesomeIcon.Regular_Copy},ToolTip="Copy server address",IsEnabled=connected,Margin=new Thickness(6,0,0,0)};copy.SetResourceReference(StyleProperty,"rowActionButtonStyle");AutomationProperties.SetName(copy,"Copy server address");copy.Click+=(_,_)=>Clipboard.SetText(_targets.Connection);
-   var address=new StackPanel {Orientation=Orientation.Horizontal};address.Children.Add(addressText);address.Children.Add(copy);Row(section,"Server",address);
+   var address=new StackPanel {Orientation=Orientation.Horizontal};address.Children.Add(addressText);address.Children.Add(copy);
+   Row(section,"Server",address,tip:"The em-system server this application is connected to; it comes from the active connection and cannot be typed. Select destination records it in the profile, and publishing refuses to run while the application is connected to a different server, so an image or package never goes to the wrong server by accident. After switching servers, select the destination again.");
    var saved=destination is ContainerTarget c?c.Server:((NuGetTarget)destination).Server;
    if(!connected)Row(section,"",Help("Built-in publishes to the server this application is connected to. Connect first, or switch Type to Custom."));
    else if(saved.Length>0&&saved!=_targets.Scope)Row(section,"",Help("This destination was chosen on another server ("+saved+"). Select the destination again."));
@@ -89,7 +98,8 @@ public partial class PublishProfileDialog : EmWindow {
    void RefreshFields() {fields.Children.Clear();Fields(fields,destination,container?["Root","Container"]:["Feed"]);}
    RefreshFields();
    var pickers=Sub(section);
-   Actions(section,("Select destination",EFontAwesomeIcon.Solid_Server,async()=>await BuiltIn(pickers,RefreshFields))).IsEnabled=connected;
+   var select=Actions(section,("Select destination",EFontAwesomeIcon.Solid_Server,async()=>await BuiltIn(pickers,RefreshFields)));select.IsEnabled=connected;
+   select.ToolTip=Tip(container?"Loads the roots and images from the connected server; pick a root, then an image, to fill Server, Root and Container.":"Loads the feeds from the connected server; picking one fills Server and Feed.");ToolTipService.SetShowOnDisabled(select,true);
    section.Children.Add(pickers);
   } else {
    Fields(section,destination,container?["Host","Repository"]:["ServiceIndex"]);
@@ -119,6 +129,30 @@ public partial class PublishProfileDialog : EmWindow {
    if(Profile.Container!=null&&Profile.Container.Mode!=ContainerMode.Set) {try {var reference=await _targets.ResolveContainer(Profile,CancellationToken.None);remote=await new OciClient(_targets).LatestTag(reference,await _targets.OciCredential(Profile,reference.Split('/')[0],CancellationToken.None),CancellationToken.None);}catch(Exception){}}
    message.Text="Last local version: "+local+" · Latest remote tag: "+remote;
   }));
+  // The longer story behind the fields above, closed by default so it does not push the form down.
+  var builtIn=destination is ContainerTarget {Type:TargetType.BuiltIn} or NuGetTarget {Type:TargetType.BuiltIn};
+  var explain=Section(tab,"How this destination works");((Expander)explain.Parent).IsExpanded=false;
+  string[] lines=(container,builtIn) switch {
+   (true,true)=>[
+    "The image is pushed to <server>/<root>/<container>:<tag>. Server comes from the active connection, Root and Container are names in Container Manager, and the tag is set on the Publish page according to Tagging.",
+    "Why Select destination: this application is signed in to the server, so it can list the roots and images for you to pick instead of typing names that may be misspelled. Picking also records the Server in the profile.",
+    "Why the Server is recorded: publishing compares it with the server the application is connected to and refuses to run when they differ, so an image never goes to the wrong server after switching connections. After switching servers, select the destination again.",
+    "Before the first publish, create the root and the image in Container Manager and keep both active. Publishing does not create them."],
+   (true,false)=>[
+    "The image is pushed to <host>/<repository>:<tag>, and the tag is set on the Publish page according to Tagging.",
+    "Why there is no Select destination: OCI registries have no standard, always-available way to list their repositories, so Host and Repository are typed.",
+    "Add a push credential for the host on the Credentials tab (username and token or password). For a registry without TLS, tick Allow Http on that credential."],
+   (false,true)=>[
+    "Packages are pushed to the service index of the chosen feed on the connected server.",
+    "Why Select destination: this application is signed in to the server, so it can list the feeds for you to pick. Picking also records the Server in the profile.",
+    "Why the Server is recorded: publishing compares it with the server the application is connected to and refuses to run when they differ, so a package never goes to the wrong server after switching connections. After switching servers, select the destination again.",
+    "Before the first publish, create and enable the feed in NuGet Manager, and add an active prefix that covers every package ID on its Prefixes tab."],
+   _=>[
+    "Packages are pushed to the NuGet v3 feed at Service Index.",
+    "Why there is no Select destination: a NuGet feed has no standard way to list other feeds, so the service index URL is typed.",
+    "Add a credential for the feed's host on the Credentials tab; for nuget.org the secret is an API key."],
+  };
+  foreach(var line in lines) {var help=Help(line);help.Margin=new Thickness(2,0,0,10);explain.Children.Add(help);}
  }
  private void BuildMode(Panel panel,ContainerProfile container) {
   switch(container.Mode) {
