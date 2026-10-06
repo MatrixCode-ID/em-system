@@ -13,7 +13,9 @@ var app = EmApp.BuildApp(args, builder => {
    builder.AddNuPak();
 
    builder.AddLocalBinaryStorage(config.Storage.BinaryPath);
-   builder.AddTestModule();
+   if (config.IsModuleEnabled("test")) {
+      builder.AddTestModule();
+   }
 });
 
 app.Run();

@@ -65,7 +65,7 @@ dotnet test src/frontend/Em.Ui.Wpf.slnx
 The configuration file lives outside the repository, is copied to the build output, and is not included
 in `dotnet publish`. The environment variables `EM_DB_CONNECTION_STRING`, `EM_DB_PROVIDER`,
 `EM_ADMIN_INITIAL_PASSWORD` and `EM_DEBUG_TOKEN` override the file, and `EM_API_CONFIG` can point to a file
-elsewhere. In deployments, supply secrets through the server's secret manager.
+elsewhere. The sample test module is off unless `"modules": { "test": true }` or `EM_MODULE_TEST=true` is set. In deployments, supply secrets through the server's secret manager.
 
 More details, including the container image and Docker Compose: [src/backend/README.md](src/backend/README.md).
 

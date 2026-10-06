@@ -68,7 +68,26 @@ internal static class Helper
          config.DebugTokens.RemoveAll(t => string.Equals(t.Name, token.Name, StringComparison.OrdinalIgnoreCase));
          config.DebugTokens.Add(token);
       }
+
+      // EM_MODULE_<NAME>=true|false switches modules["<name>"], e.g. EM_MODULE_TEST=true from Compose or docker run -e.
+      foreach (var entry in Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>()) {
+         if (entry.Key is not string name || !name.StartsWith(ModuleVariablePrefix, StringComparison.OrdinalIgnoreCase)) continue;
+         var module = name[ModuleVariablePrefix.Length..];
+         if (module.Length == 0 || Read(name) is not { } value) continue;
+         if (!bool.TryParse(value, out var enabled)) {
+            throw new InvalidOperationException($"{name} must be true or false.");
+         }
+
+         foreach (var key in config.Modules.Keys.Where(k => string.Equals(k, module, StringComparison.OrdinalIgnoreCase)).ToList()) {
+            config.Modules.Remove(key);
+         }
+
+         config.Modules[module] = enabled;
+      }
    }
+
+   /// <summary>Prefix environment variable saklar modul; sisa namanya adalah nama modul (<c>EM_MODULE_TEST</c> → <c>test</c>).</summary>
+   public const string ModuleVariablePrefix = "EM_MODULE_";
 
    private static string? Read(string name) =>
       Environment.GetEnvironmentVariable(name) is { } value && !string.IsNullOrWhiteSpace(value) ? value : null;

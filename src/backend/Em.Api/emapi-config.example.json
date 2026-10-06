@@ -23,5 +23,9 @@
     "nuPakPath": "./data/nuget",
     "nuPakMaxPackageMb": 250,
     "binaryPath": "./data/binary"
+  },
+  // Modul opsional; yang tidak disebut mati. Bisa ditimpa EM_MODULE_<NAMA>=true|false (mis. EM_MODULE_TEST).
+  "modules": {
+    "test": false
   }
 }

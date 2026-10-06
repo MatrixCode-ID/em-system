@@ -20,12 +20,31 @@ It is wired into `Em.Api` (`builder.AddTestModule()`, plus `AddLocalBinaryStorag
 into `Em.Ui.Wpf`. To remove it from a real application, delete the two `AddTestModule` lines and their
 `ProjectReference` entries.
 
+### Enabling and disabling
+
+The module is **off by default**. `Em.Api` installs it only when the API configuration switches it on:
+
+```jsonc
+// emapi-config.json
+"modules": { "test": true }
+```
+
+The environment variable `EM_MODULE_TEST=true|false` overrides the file, so a container can switch it from
+Compose (`environment:` or the `.env` file) or with `docker run -e EM_MODULE_TEST=true`. The general rule is
+`EM_MODULE_<NAME>` for `modules.<name>`; a host reads a switch with `EmApiConfig.IsModuleEnabled("name")`.
+
+`Em.Ui.Wpf` always registers the client side. Its menu follows the server: once the client has loaded the
+server's claim catalog, a navigation whose module (or required claim) the server does not declare is hidden
+and refused for everyone, administrators and debug mode included. With the module off on the server, the
+**Em Test** menu therefore disappears; no client setting is needed.
+
 ## Running
 
 1. Run `doc/sqlscript/mssql/tables/900-emtest.sql`, then `views/vi_TestItem.sql` and
    `views/vi_TestDoc.sql` on the core database (safe to run again). The scripts create the test tables and
    views and two approval document types (`EmTestDoc`, `EmTestItem`).
-2. Start `Em.Api` and `Em.Ui.Wpf`, sign in, and open the **Em Test** menu. Every screen requires the claim
+2. Switch the module on (`"modules": { "test": true }` or `EM_MODULE_TEST=true`, see above).
+3. Start `Em.Api` and `Em.Ui.Wpf`, sign in, and open the **Em Test** menu. Every screen requires the claim
    `test:Run Tests` (administrators and debug mode pass).
 
 | Screen | Navigation | Covers |

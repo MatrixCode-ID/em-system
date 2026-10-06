@@ -200,10 +200,17 @@ namespace Em.Ui.Maui.Core
       /// <summary>
       /// Apakah <paramref name="navigation"/> boleh dibuka pengguna yang sedang aktif - dipakai baik
       /// oleh menu home maupun oleh <see cref="NavigateTo(Navigation,object?)"/>, supaya yang
-      /// disembunyikan dan yang ditolak tidak pernah berbeda. Mode debug melewati seluruh pengecekan.
+      /// disembunyikan dan yang ditolak tidak pernah berbeda. Mode debug melewati pengecekan hak, tetapi
+      /// tidak pengecekan modul: setelah katalog server dimuat, navigasi yang modulnya tidak dideklarasikan
+      /// server (mis. module uji yang dimatikan) ditolak untuk siapa pun.
       /// </summary>
       /// <param name="navigation">Navigasi yang hendak dibuka.</param>
-      public bool CanOpen(Navigation navigation) => IsDebugMode || NavigationAccess.CanOpen(navigation, ActiveUser);
+      public bool CanOpen(Navigation navigation) =>
+         (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
+         (IsDebugMode || NavigationAccess.CanOpen(navigation, ActiveUser));
+
+      // Until a server has been asked, module presence is unknown and must not hide anything.
+      private bool _serverClaimsLoaded;
 
       /// <summary>
       /// Client API untuk koneksi yang sedang aktif, atau <c>null</c> kalau belum ada koneksi aktif.
@@ -597,6 +604,7 @@ namespace Em.Ui.Maui.Core
 
          _serverClaims = await ServiceProvider.GetRequiredService<ICredentialServices>()
             .GetMeta_AllClaimActions();
+         _serverClaimsLoaded = true;
          RebuildClaimCatalog();
 
          if (ActiveUser is not { } user) return;

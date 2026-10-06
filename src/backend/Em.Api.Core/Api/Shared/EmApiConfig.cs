@@ -32,6 +32,25 @@ public sealed class EmApiConfig
    public SessionSection Session { get; set; } = new();
    public StorageSection Storage { get; set; } = new();
 
+   /// <summary>
+   /// Saklar modul opsional per nama (mis. <c>"modules": { "test": true }</c>). Engine tidak membacanya
+   /// sendiri; host yang memutuskan memasang modul lewat <see cref="IsModuleEnabled"/>. Nama tidak peka huruf.
+   /// </summary>
+   public Dictionary<string, bool> Modules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+   /// <summary>
+   /// Apakah modul <paramref name="name"/> dinyalakan. Modul yang tidak disebut memakai
+   /// <paramref name="defaultValue"/>, jadi modul opsional sebaiknya mati kecuali dinyalakan eksplisit.
+   /// </summary>
+   public bool IsModuleEnabled(string name, bool defaultValue = false) {
+      // System.Text.Json replaces the dictionary (and its comparer) on load, so match the name by hand.
+      foreach (var (key, enabled) in Modules) {
+         if (string.Equals(key, name, StringComparison.OrdinalIgnoreCase)) return enabled;
+      }
+
+      return defaultValue;
+   }
+
    /// <summary>Membaca berkas konfigurasi; komentar dan koma di akhir diperbolehkan.</summary>
    /// <exception cref="InvalidOperationException">Dilempar kalau isi berkas bukan JSON yang bisa dibaca.</exception>
    public static EmApiConfig Load(string path) {

@@ -189,10 +189,17 @@ namespace Em.Ui.Wpf.Core
       /// <summary>
       /// Apakah <paramref name="navigation"/> boleh dibuka pengguna yang sedang aktif - dipakai baik
       /// oleh menu home maupun oleh <see cref="NavigateTo(Navigation,object?)"/>, supaya yang
-      /// disembunyikan dan yang ditolak tidak pernah berbeda. Mode debug melewati seluruh pengecekan.
+      /// disembunyikan dan yang ditolak tidak pernah berbeda. Mode debug melewati pengecekan hak, tetapi
+      /// tidak pengecekan modul: setelah katalog server dimuat, navigasi yang modulnya tidak dideklarasikan
+      /// server (mis. module uji yang dimatikan) ditolak untuk siapa pun.
       /// </summary>
       /// <param name="navigation">Navigasi yang hendak dibuka.</param>
-      public bool CanOpen(Navigation navigation) => IsDebugMode || NavigationAccess.CanOpen(navigation, ActiveUser);
+      public bool CanOpen(Navigation navigation) =>
+         (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
+         (IsDebugMode || NavigationAccess.CanOpen(navigation, ActiveUser));
+
+      // Until a server has been asked, module presence is unknown and must not hide anything.
+      private bool _serverClaimsLoaded;
 
       // The application's built-in tools, in the order every surface lists them: the home screen of
       // the single-page layout and the Tools menu of the multi-tab window. A tool that is a
@@ -636,6 +643,7 @@ namespace Em.Ui.Wpf.Core
 
          _serverClaims = await ServiceProvider.GetRequiredService<ICredentialServices>()
             .GetMeta_AllClaimActions();
+         _serverClaimsLoaded = true;
          RebuildClaimCatalog();
 
          if (ActiveUser is not { } user) return;
