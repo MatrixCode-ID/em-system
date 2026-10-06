@@ -87,6 +87,10 @@
                      <MenuItem Header="Refresh profiles" Click="RefreshClick" Style="{StaticResource surfaceMenuItemStyle}"/>
                      <MenuItem Header="Open profiles folder" Click="OpenProfiles" Style="{StaticResource surfaceMenuItemStyle}"/>
                      <MenuItem Header="Publisher settings" Click="SettingsClick" Style="{StaticResource surfaceMenuItemStyle}"/>
+                     <Separator Tag="docker"/>
+                     <MenuItem Tag="docker" Header="Add registry to Docker insecure-registries" Click="DockerInsecureClick"
+                               ToolTip="Let Docker use plain HTTP for this profile's registry host (edits Docker's daemon.json)"
+                               Style="{StaticResource surfaceMenuItemStyle}"/>
                   </ContextMenu></Button.ContextMenu>
                </Button>
             </StackPanel>
@@ -199,19 +203,38 @@
                </StackPanel>
             </ScrollViewer>
 
-            <!-- release notes and the message line -->
+            <!-- status line under the operation strip (hidden while empty), then the release notes -->
             <Grid Grid.Row="2" Margin="0,0,0,12">
-               <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*"/>
-                  <ColumnDefinition Width="Auto"/>
-               </Grid.ColumnDefinitions>
                <Grid.RowDefinitions>
                   <RowDefinition Height="Auto"/>
                   <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
                </Grid.RowDefinitions>
-               <TextBlock Text="Release notes" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,6"/>
-               <TextBox Grid.Row="1" x:Name="notes" Style="{StaticResource multilineField}" AcceptsReturn="True" MinHeight="64" MaxHeight="90" VerticalScrollBarVisibility="Auto"/>
-               <TextBlock Grid.Row="0" Grid.Column="1" x:Name="message" Style="{StaticResource infoMuted}" HorizontalAlignment="Right" VerticalAlignment="Center" MaxWidth="520"/>
+               <Border x:Name="messageStrip" Grid.Row="0" Margin="0,0,0,12" Padding="14,10">
+                  <Border.Style>
+                     <Style TargetType="Border" BasedOn="{StaticResource innerCardStyle}">
+                        <Style.Triggers>
+                           <DataTrigger Binding="{Binding Text, ElementName=message}" Value="">
+                              <Setter Property="Visibility" Value="Collapsed"/>
+                           </DataTrigger>
+                           <DataTrigger Binding="{Binding Text, ElementName=message}" Value="{x:Null}">
+                              <Setter Property="Visibility" Value="Collapsed"/>
+                           </DataTrigger>
+                        </Style.Triggers>
+                     </Style>
+                  </Border.Style>
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                     </Grid.ColumnDefinitions>
+                     <fa:FontAwesome Icon="Solid_CircleInfo" VerticalAlignment="Top" Margin="0,2,10,0" Opacity="0.7"/>
+                     <TextBlock Grid.Column="1" x:Name="message" Style="{StaticResource infoMuted}" Opacity="1"
+                                Foreground="{DynamicResource themeWindowForegroundBrush}" VerticalAlignment="Center"/>
+                  </Grid>
+               </Border>
+               <TextBlock Grid.Row="1" Text="Release notes" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,6"/>
+               <TextBox Grid.Row="2" x:Name="notes" Style="{StaticResource multilineField}" AcceptsReturn="True" MinHeight="64" MaxHeight="90" VerticalScrollBarVisibility="Auto"/>
             </Grid>
 
             <!-- the artifacts of the run, as a table -->

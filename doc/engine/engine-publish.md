@@ -1,5 +1,7 @@
 # Publish NuGet packages and containers from WPF
 
+[Bahasa Indonesia](engine-publish.id.md)
+
 **NuGet Manager** and **Container Manager** share a **Publish** tab and a **Publish history** view.
 Publishing is a local developer operation: the signed-in GUI session only lists destinations, while a
 separately configured robot or API key performs the push. Robot ownership does not inherit the owner's
@@ -41,7 +43,8 @@ rights.
 | Remembered secrets | `LocalApplicationData\Em\Publish\Secrets` |
 
 Publisher settings can change the Profiles, Logs and Work folders; preferences are stored under the
-application's registry key. Profile files are written atomically; external edits require a reload or an
+application's registry key (so each application, for example Em System and EmPorium House, has its own
+choice, while the default folders are shared). Profile files are written atomically; external edits require a reload or an
 explicit overwrite. Import and duplicate create independent credential references. Deleting a profile
 keeps its history, and history includes deleted profiles. Run logs are kept until deleted manually.
 
@@ -96,9 +99,26 @@ makes the credential unavailable.
 
 - Credentials are scoped to the effective host (including port) and are never sent to a different host.
 - **Plaintext** stores secrets as ordinary JSON text: anyone who can read or copy that file can use them.
-  Encrypted profile JSON is not implemented.
-- Secret fields are masked. Export excludes inline secrets by default and never includes separately
-  stored secrets.
+  Profile files on disk are never encrypted; only export bundles (below) are.
+- Secret fields are masked.
+
+### Export and import with secrets
+
+**Export** asks whether to include sensitive data. The default is no: the file has paths made portable and
+no secrets, and the passwords must be entered again after import. With **Include sensitive data** you pick:
+
+- **Encrypted with a passphrase** (recommended): a bundle file, `.ctnconfig` for Container Manager profiles
+  and `.nugetconfig` for NuGet Manager profiles. The content is AES-256-GCM with a key derived from the
+  passphrase (PBKDF2-SHA256, 600,000 iterations); the passphrase is at least 8 characters, is never stored
+  and cannot be recovered. The bundle does not depend on a Windows account, so it opens on any computer.
+- **Plain text**: an ordinary `.json` file with the secrets in clear text. Anyone who can read the file can
+  use them.
+
+Secrets of a **Separate** profile are read from the session or from Remember storage; a credential with no
+stored secret is exported empty and the screen says how many. **Import** accepts `.json` and bundle files
+(it asks for the passphrase) and restores the secrets: inline for a Plaintext profile, and into Remember
+storage (DPAPI for the importing account) for a Separate profile, so the profile can push right away.
+Credentials always get new IDs, so an import never touches another profile's remembered secrets.
 
 ## Tools and runtime behavior
 
@@ -122,4 +142,4 @@ makes the credential unavailable.
 
 External registries that send bearer credentials to a separate authentication host need a separately
 scoped integration; the publisher never sends registry credentials across host boundaries. Symbols,
-encrypted profile JSON, automatic log retention and remote or MAUI builds are not implemented.
+encrypted profile files on disk, automatic log retention and remote or MAUI builds are not implemented.

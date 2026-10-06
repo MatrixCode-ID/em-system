@@ -87,17 +87,28 @@ public partial class PublishView : UserControl {
  }
  private void EditClick(object s,RoutedEventArgs e) {if(Profile!=null)OpenEditor(Profile.Clone(),Entry);}
  private void ImportClick(object s,RoutedEventArgs e) {
-  var picker=new OpenFileDialog {Filter="Publish profile (*.json)|*.json"};if(picker.ShowDialog()!=true)return;
-  try {var incoming=_store.Read(picker.FileName);if(incoming.Profile?.Kind!=_kind)throw new InvalidDataException(incoming.Error??"Profile kind does not match this manager.");ProfileEntry result;
-   try {result=_store.Import(picker.FileName);}catch(ProfileConflictException){if(!Confirm("Profile ID already exists. Import with a new ID?"))return;result=_store.Import(picker.FileName,true);}ReloadProfiles(result.Profile!.Id);
+  var picker=new OpenFileDialog {Filter="Publish profile (*.json;*.ctnconfig;*.nugetconfig)|*.json;*.ctnconfig;*.nugetconfig|All files (*.*)|*.*"};if(picker.ShowDialog()!=true)return;
+  string? passphrase=null;
+  if(ProfileBundle.IsBundleFile(picker.FileName)) {var ask=new PassphraseDialog(Path.GetFileName(picker.FileName)) {Owner=Window.GetWindow(this)};if(ask.ShowDialog()!=true)return;passphrase=ask.Passphrase;}
+  try {var incoming=_store.Read(picker.FileName,passphrase);if(incoming.Profile?.Kind!=_kind)throw new InvalidDataException(incoming.Error??"Profile kind does not match this manager.");ProfileEntry result;
+   try {result=_store.Import(picker.FileName,false,passphrase,Secrets);}catch(ProfileConflictException){if(!Confirm("Profile ID already exists. Import with a new ID?"))return;result=_store.Import(picker.FileName,true,passphrase,Secrets);}ReloadProfiles(result.Profile!.Id);
+   message.Text=incoming.Profile.Credentials.Any(c=>!string.IsNullOrEmpty(c.Secret))?"Profile imported with its secrets.":"Profile imported.";
   }catch(Exception ex){message.Text=Mask(ex.Message);}
  }
  private void DuplicateClick(object s,RoutedEventArgs e) {if(Profile==null)return;try {var copy=_store.Duplicate(Profile);ReloadProfiles(copy.Profile!.Id);}catch(Exception ex){message.Text=ex.Message;}}
  private void DeleteClick(object s,RoutedEventArgs e) {if(Entry==null||!Confirm("Delete this profile file? Publish history remains available."))return;try {_store.Delete(Entry);ReloadProfiles();}catch(Exception ex){message.Text=ex.Message;}}
  private void ExportClick(object s,RoutedEventArgs e) {
-  if(Profile==null)return;var dialog=new SaveFileDialog {Filter="Publish profile (*.json)|*.json",FileName=Profile.Name+".json"};if(dialog.ShowDialog()!=true)return;
-  var sensitive=MessageBox.Show("Include sensitive data? Default: No. Yes includes only inline plaintext secrets; Separate secrets are never inserted.","Export profile",MessageBoxButton.YesNo,MessageBoxImage.Warning,MessageBoxResult.No)==MessageBoxResult.Yes;
-  try {_store.Export(Profile,dialog.FileName,sensitive);}catch(Exception ex){message.Text=ex.Message;}
+  if(Profile==null)return;
+  var options=new ExportProfileDialog(Profile.Name) {Owner=Window.GetWindow(this)};if(options.ShowDialog()!=true)return;
+  var encrypted=options.Secrets==ExportSecrets.Encrypted;
+  var dialog=new SaveFileDialog {Filter=encrypted?(_kind==PublishKind.Container?"Container Manager profile (*.ctnconfig)|*.ctnconfig":"NuGet Manager profile (*.nugetconfig)|*.nugetconfig"):"Publish profile (*.json)|*.json",FileName=Profile.Name+(encrypted?ProfileBundle.Extension(_kind):".json")};
+  if(dialog.ShowDialog()!=true)return;
+  try {
+   var missing=_store.Export(Profile,dialog.FileName,options.Secrets,Secrets,options.Passphrase);
+   message.Text=options.Secrets==ExportSecrets.None?"Profile exported without sensitive data.":missing>0
+    ?$"Profile exported. {missing} credential(s) have no stored secret (enter or remember it first) and were exported empty."
+    :encrypted?"Profile exported, encrypted. Keep the passphrase: it cannot be recovered.":"Profile exported as plain text. Treat the file as a secret.";
+  }catch(Exception ex){message.Text=Mask(ex.Message);}
  }
  private void PageChanged(object s,RoutedEventArgs e) {
   if(publishPage is null||historyPage is null||profilePanel is null||historyPanel is null)return;
@@ -105,7 +116,7 @@ public partial class PublishView : UserControl {
   publishPage.Visibility=profilePanel.Visibility=history?Visibility.Collapsed:Visibility.Visible;
   historyPage.Visibility=historyPanel.Visibility=history?Visibility.Visible:Visibility.Collapsed;
  }
- private void MoreClick(object s,RoutedEventArgs e) {if(s is Button {ContextMenu: {} menu} button) {menu.PlacementTarget=button;menu.Placement=PlacementMode.Bottom;menu.IsOpen=true;}}
+ private void MoreClick(object s,RoutedEventArgs e) {if(s is Button {ContextMenu: {} menu} button) {foreach(var item in menu.Items.OfType<FrameworkElement>().Where(i=>Equals(i.Tag,"docker")))item.Visibility=_kind==PublishKind.Container?Visibility.Visible:Visibility.Collapsed;menu.PlacementTarget=button;menu.Placement=PlacementMode.Bottom;menu.IsOpen=true;}}
  private void RefreshClick(object s,RoutedEventArgs e)=>ReloadProfiles();
  private async void RefreshSource(object s,RoutedEventArgs e)=>await Card("source",sourceRefresh,async p=> {
   var reader=new ProjectReader(new PublishProcessRunner());var rows=new List<string>();var sources=p.NuGet?.Sources.Select(x=>p.Resolve(x.Path)).ToArray()??(p.Container?.Mode==ContainerMode.Template?[p.Resolve(p.Container.Template.Project)]:Array.Empty<string>());
@@ -135,6 +146,16 @@ public partial class PublishView : UserControl {
  private async void OpenManager(object s,RoutedEventArgs e) {if(_app!=null)await _app.NavigateTo(_kind==PublishKind.NuGet?"admin.nupak":"admin.container");}
  private static bool Confirm(string text)=>MessageBox.Show(text,"Publisher",MessageBoxButton.YesNo,MessageBoxImage.Warning)==MessageBoxResult.Yes;
  private void OpenFolder(string folder) {try {Directory.CreateDirectory(folder);Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});}catch(Exception ex){message.Text=ex.Message;}}
+ private async void DockerInsecureClick(object s,RoutedEventArgs e) {
+  if(Profile is not {Kind:PublishKind.Container} p||p.Container!.Mode==ContainerMode.Set) {message.Text="Select a container profile that pushes to one registry.";return;}
+  try {
+   var host=(await _targets.ResolveContainer(p,CancellationToken.None)).Split('/')[0];var path=DockerDaemonConfig.DefaultPath;
+   if(DockerDaemonConfig.IsListed(path,host)) {message.Text=$"'{host}' is already in insecure-registries ({path}). If it was added just now, restart Docker Desktop.";return;}
+   if(!Confirm($"Add '{host}' to insecure-registries in\n{path}?\n\nDocker will then accept plain HTTP for this host. The file is backed up first, and Docker Desktop has to be restarted for it to apply."))return;
+   var backup=DockerDaemonConfig.AddInsecureRegistry(path,host);
+   message.Text=$"Added '{host}' to {path}"+(string.IsNullOrEmpty(backup)?"":$" (backup: {backup})")+". Restart Docker Desktop (tray icon > Restart) for it to apply, then Check again.";
+  }catch(Exception ex){message.Text=Mask(ex.Message);}
+ }
  private void OpenProfiles(object s,RoutedEventArgs e)=>OpenFolder(Path.Combine(_settings.Profiles,_kind.ToString()));
  private void OpenLogs(object s,RoutedEventArgs e)=>OpenFolder(_settings.Logs);
  private void SettingsClick(object s,RoutedEventArgs e) {var dialog=new PublisherSettingsDialog(_settings){Owner=Window.GetWindow(this)};if(dialog.ShowDialog()==true)Attach(_app,_kind);}

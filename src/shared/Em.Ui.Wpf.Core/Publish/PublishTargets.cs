@@ -65,7 +65,16 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
  public static void ValidateHttp(string uri) {if(!Uri.TryCreate(uri,UriKind.Absolute,out var u)||u.Scheme is not ("http" or "https")||u.UserInfo.Length>0)throw new InvalidDataException("Use an HTTP(S) address without embedded credentials.");}
  public (PublishCredential Credential,string Secret) Credential(PublishProfile p,string target,string purpose="push") {
   var c=p.Credentials.FirstOrDefault(c=>c.Purpose==purpose&&PublishSecretStore.Host(c.ScopeHost)==PublishSecretStore.Host(target));
-  var value=c==null?null:secrets.Get(c,target);if(c==null||string.IsNullOrEmpty(value))throw new InvalidDataException("Credential perlu diisi untuk host ini.");return (c,value);
+  var value=c==null?null:secrets.Get(c,target);if(c==null||string.IsNullOrEmpty(value))throw new InvalidDataException(MissingCredential(p,target,purpose,c!=null));return (c,value);
+ }
+ // Names the host the destination resolved to and the hosts the profile does have credentials for, because a built-in
+ // destination follows the active connection and the usual cause is a credential saved for a different host.
+ private static string MissingCredential(PublishProfile p,string target,string purpose,bool hasEntry) {
+  var host=PublishSecretStore.Host(target);
+  var others=p.Credentials.Where(x=>x.Purpose==purpose&&!string.IsNullOrWhiteSpace(x.ScopeHost)).Select(x=>PublishSecretStore.Host(x.ScopeHost)).Distinct().ToArray();
+  var message=hasEntry?$"The credential for host '{host}' has no secret in this session. Enter its secret again (tick Remember to keep it)."
+   :$"No credential for host '{host}'. Add one in the profile with Scope Host '{host}'.";
+  return others.Length>0&&!others.Contains(host)?message+$" This profile only has credentials for: {string.Join(", ",others)}. A built-in destination follows the active connection; switch to that server, or add a credential for '{host}'.":message;
  }
  public async Task<SourceRepository> NuGetRepository(string index,(PublishCredential Credential,string Secret) credential,CancellationToken ct) {
   ValidateHttp(index);
@@ -143,7 +152,8 @@ internal sealed class ScopedNuGetHandlerProvider(string index,(PublishCredential
 public sealed class OciClient(PublishTargets targets) {
  public async Task<string> Request(string reference,string relative,HttpMethod method,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
   var slash=reference.IndexOf('/');var host=reference[..slash];var path=reference[(slash+1)..];var repo=path[..path.LastIndexOf(':')];
-  var url=targets.RegistryUrl(reference)+"/v2/"+repo+"/"+relative;
+  var baseUrl=credential is {Credential.AllowHttp:true}?"http://"+host:targets.RegistryUrl(reference);
+  var url=baseUrl+"/v2/"+repo+"/"+relative;
   using var handler=new HttpClientHandler {AllowAutoRedirect=false};using var http=new HttpClient(handler);
   AuthenticationHeaderValue? auth=null;
   if(credential is {} c)auth=c.Credential.Purpose=="identity-token"?new("Bearer",c.Secret):new("Basic",Convert.ToBase64String(Encoding.UTF8.GetBytes(c.Credential.Username+":"+c.Secret)));

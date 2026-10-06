@@ -21,7 +21,8 @@ and [src/frontend/README.md](../../src/frontend/README.md).
 
 | Guide | Covers |
 | --- | --- |
-| [Publish](engine-publish.md) | Publishing NuGet packages and container images from NuGet/Container Manager |
+| [Publish](engine-publish.md) ([Indonesia](engine-publish.id.md)) | Publishing NuGet packages and container images from NuGet/Container Manager |
+| [Container registry user guide](engine-registry-guide.md) ([Indonesia](engine-registry-guide.id.md)) | Step by step through Container Manager, Robots and Publish, every option on annotated screenshots |
 | [Release Manager](engine-release-manager.md) | Preparing, signing and verifying desktop client releases |
 | [Login branding](engine-login-branding.md) | Material/Classic login and background images |
 

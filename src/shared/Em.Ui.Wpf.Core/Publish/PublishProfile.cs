@@ -47,6 +47,11 @@ public sealed class PublishCredential {
  public string Username { get; set; } = "";
  public string? SecretRef { get; set; }
  public string? Secret { get; set; }
+ /// <summary>
+ /// Plain HTTP (no TLS) for this host. Applies to the publisher's own registry requests (verify, tag discovery).
+ /// Docker's own push is decided by the daemon: the host must also be listed under insecure-registries there.
+ /// </summary>
+ public bool AllowHttp { get; set; }
  [JsonIgnore] public bool Remember { get; set; }
  [JsonIgnore] public bool NeedsSecret { get; set; }
 }

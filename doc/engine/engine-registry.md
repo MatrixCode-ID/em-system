@@ -118,6 +118,21 @@ its top right corner that reloads only that card. The Container Manager screen s
 the blob/manifest breakdown and a scope note above its panels. A disabled registry or a failed request is
 shown as a status, never as zero.
 
+## Missing blobs
+
+Metadata and blob files can drift apart. The usual cause is a database shared by two servers (for example a
+test server in a container and a developer PC) while each has its own storage folder.
+
+- **Metadata without a file:** the server still starts. With managed storage it logs one warning with the
+  number of blobs that are missing or have a different size (`RegistryStorageIntegrity.CheckStartup`; size
+  only, no hashing). `GetMeta_CtnImageManifests` returns `CtnManifestInfo.BlobCount` and `MissingBlobCount`
+  for each manifest, and Container Manager shows a warning line on every manifest with missing blobs. Such an
+  image cannot be pulled until the files are restored; delete the manifest and run garbage collection to
+  remove the leftovers. Changing the storage directory is still strict: it verifies every blob, hash
+  included, and refuses an incomplete target.
+- **File without metadata:** garbage collection reports and removes these as orphan blob files once they are
+  older than the grace period; see below.
+
 ## Garbage collection
 
 Deleting tags, manifests or containers only removes metadata. **Garbage collection** (GC) frees the disk
@@ -151,7 +166,14 @@ was actually removed (the blob list is capped at 1,000 rows, the counts are exac
 
 ## Testing with Docker
 
-Docker Desktop allows plain HTTP to `localhost`; for any other host the Docker client requires HTTPS.
+Docker allows plain HTTP to `localhost` and `127.0.0.0/8`; for any other host the Docker client requires HTTPS
+unless the host is listed under `insecure-registries`. The Docker **daemon** makes the registry request, so
+`localhost` means the daemon's own network. With Docker Desktop (Linux engine in a VM) that is the VM, not
+Windows: an `Em.Api` running on Windows and bound to the Windows loopback is not reachable that way, and
+`docker login localhost:5132` ends with `Get "https://localhost:5132/v2/": ... Client.Timeout exceeded` after
+about 15 seconds. `localhost` works when the registry runs inside Docker (a container with a published port).
+For `Em.Api` on the Windows host, bind it to a non-loopback address, reach it by that address or by a name the
+daemon resolves, and add `<host>:<port>` to `insecure-registries` (Docker Desktop: Settings > Docker Engine).
 
 ```powershell
 docker login localhost:5132 -u acme-ci -p <token>

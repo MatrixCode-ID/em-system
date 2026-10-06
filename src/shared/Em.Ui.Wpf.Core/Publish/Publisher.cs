@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -53,7 +55,33 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   if(profile.Container?.Mode==ContainerMode.Set) {
    var visited=new HashSet<string>{profile.Id};foreach(var step in profile.Container.Set.Steps) {if(!visited.Add(step.ProfileId))throw new InvalidDataException("Set contains a repeated/cyclic profile.");var child=profiles.Load(step.ProfileId);if(child.Container?.Mode==ContainerMode.Set)throw new InvalidDataException("Nested Sets are not supported.");await Check(child,ct);}
   }
-  return [..tools,"Target: "+target];
+  var warnings=profile.Container is {} container&&container.Mode!=ContainerMode.Set?await DockerRegistryWarnings(profile,target,ct):[];
+  return [..tools,..warnings,"Target: "+target];
+ }
+ // Docker's daemon, not this application, decides http or https for a push, so Check reads the daemon's registry
+ // settings and says up front what would make `docker login`/push fail (a plain-HTTP host that is not insecure, or a
+ // loopback host that a VM-based Docker Desktop cannot reach). Warnings only: an unreadable `docker info` adds nothing.
+ private async Task<string[]> DockerRegistryWarnings(PublishProfile profile,string target,CancellationToken ct) {
+  var host=target.Split('/')[0];var bare=Uri.TryCreate("http://"+host,UriKind.Absolute,out var uri)?uri.Host.Trim('[',']'):host;
+  var isAddress=IPAddress.TryParse(bare,out var address);
+  var loopback=bare.Equals("localhost",StringComparison.OrdinalIgnoreCase)||isAddress&&IPAddress.IsLoopback(address!);
+  var plainHttp=profile.Credentials.Any(c=>c.Purpose=="push"&&c.AllowHttp&&PublishSecretStore.Host(c.ScopeHost)==PublishSecretStore.Host(host))
+   ||Targets.RegistryUrl(target).StartsWith("http://",StringComparison.OrdinalIgnoreCase);
+  ProcessResult info;
+  try {info=await _process.RunAsync("docker",["info","--format","{{.OperatingSystem}}|{{json .RegistryConfig}}"],profile.Workspace,ct:ct);}
+  catch(Win32Exception) {return [];}
+  var text=info.Output.Trim();var bar=text.IndexOf('|');if(info.ExitCode!=0||bar<0)return [];
+  var insecure=loopback;
+  try {
+   using var config=JsonDocument.Parse(text[(bar+1)..]);var root=config.RootElement;
+   if(root.TryGetProperty("IndexConfigs",out var indexes)&&indexes.TryGetProperty(host,out var entry)&&entry.TryGetProperty("Secure",out var secure)&&secure.ValueKind==JsonValueKind.False)insecure=true;
+   if(!insecure&&isAddress&&root.TryGetProperty("InsecureRegistryCIDRs",out var cidrs))
+    foreach(var cidr in cidrs.EnumerateArray())if(IPNetwork.TryParse(cidr.GetString()??"",out var network)&&network.Contains(address!))insecure=true;
+  } catch(JsonException) {return [];}
+  var warnings=new List<string>();
+  if(plainHttp&&!insecure)warnings.Add($"Warning: this registry speaks plain HTTP but Docker contacts '{host}' over https first and refuses it. Add '{host}' to insecure-registries (More > Add registry to Docker insecure-registries, then restart Docker Desktop), or serve the registry over https.");
+  if(loopback&&text[..bar].Contains("Docker Desktop",StringComparison.OrdinalIgnoreCase))warnings.Add($"Warning: '{host}' is this computer's loopback, but Docker Desktop's engine runs in a VM where localhost is the VM, not Windows, so login and push time out. Use this computer's LAN address (bind the server to 0.0.0.0), or run the registry as a container.");
+  return [..warnings];
  }
  private async Task<PublishRun> Execute(PublishProfile p,string operation,string notes,Func<PublishLog,RunWorkspace,CancellationToken,Task> action,CancellationToken ct,string? retry=null) {
   if(!Busy.TryAdd(p.Id,0))throw new InvalidOperationException("An operation is already active for this profile.");

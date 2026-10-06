@@ -53,8 +53,10 @@ public sealed class ProfileStore(string root) {
   var dir=PublishPaths.Inside(Root,kind.ToString());Directory.CreateDirectory(dir);
   return Directory.EnumerateFiles(dir,"*.json").Select(Read).OrderBy(x=>x.Profile?.Name??x.File).ToArray();
  }
- public ProfileEntry Read(string file) {
-  try { PublishPaths.RejectLinks(file);var p=ProfileJson.Read(File.ReadAllText(file));if(!Path.IsPathFullyQualified(p.Workspace)&&p.Workspace.Length>0)p.Workspace=Path.GetFullPath(p.Workspace,Path.GetDirectoryName(Path.GetFullPath(file))!);return new(file,p,PublishPaths.Hash(file),null); }
+ public ProfileEntry Read(string file)=>Read(file,null);
+ /// <summary>Membaca profil; berkas bundle terenkripsi (<see cref="ProfileBundle"/>) dibuka dengan <paramref name="passphrase"/>.</summary>
+ public ProfileEntry Read(string file,string? passphrase) {
+  try { PublishPaths.RejectLinks(file);var text=File.ReadAllText(file);if(ProfileBundle.IsBundleFile(file))text=ProfileBundle.Decrypt(text,passphrase??"");var p=ProfileJson.Read(text);if(!Path.IsPathFullyQualified(p.Workspace)&&p.Workspace.Length>0)p.Workspace=Path.GetFullPath(p.Workspace,Path.GetDirectoryName(Path.GetFullPath(file))!);return new(file,p,PublishPaths.Hash(file),null); }
   catch(Exception ex) when(ex is IOException or System.Text.Json.JsonException or InvalidDataException or UnauthorizedAccessException) { return new(file,null,null,ex.Message); }
  }
  public ProfileEntry Save(PublishProfile profile,ProfileEntry? previous=null,bool overwrite=false) {
@@ -64,12 +66,28 @@ public sealed class ProfileStore(string root) {
   if(File.Exists(file)&&!overwrite&&(previous?.File!=file || previous.Hash!=PublishPaths.Hash(file)))throw new ProfileConflictException();
   PublishPaths.Atomic(file,ProfileJson.Write(profile));return Read(file);
  }
- public ProfileEntry Import(string file,bool newId=false) {
-  var source=Read(file);if(source.Profile is not {} p)throw new InvalidDataException(source.Error);
+ public ProfileEntry Import(string file,bool newId=false)=>Import(file,newId,null,null);
+ /// <summary>
+ /// Mengimpor profil. Secret yang ikut dalam berkas (export plain text atau bundle terenkripsi) dipulihkan: profil
+ /// Plaintext menyimpannya inline, profil Separate memasukkannya ke <paramref name="secrets"/> (dengan
+ /// <paramref name="rememberSecrets"/>, terenkripsi DPAPI untuk akun ini) sehingga profil langsung bisa dipakai.
+ /// </summary>
+ public ProfileEntry Import(string file,bool newId,string? passphrase,PublishSecretStore? secrets,bool rememberSecrets=true) {
+  var source=Read(file,passphrase);if(source.Profile is not {} p)throw new InvalidDataException(source.Error);
   if(newId)p.Id=Guid.NewGuid().ToString("N");
+  // Checked before any secret is stored, so a conflicting import leaves nothing behind.
+  if(File.Exists(PublishPaths.Inside(Root,Path.Combine(p.Kind.ToString(),p.Id+".json"))))throw new ProfileConflictException();
   // Imported references must never access another profile's remembered credentials.
-  var refs=new Dictionary<string,string>();foreach(var c in p.Credentials) {var old=c.Id;c.Id=Guid.NewGuid().ToString("N");refs[old]=c.Id;c.SecretRef=null;if(p.SensitiveDataStorage==SensitiveDataStorage.Separate)c.Secret=null;}
+  var refs=new Dictionary<string,string>();var restore=new List<(PublishCredential Credential,string Secret)>();
+  foreach(var c in p.Credentials) {
+   var old=c.Id;c.Id=Guid.NewGuid().ToString("N");refs[old]=c.Id;c.SecretRef=null;
+   if(p.SensitiveDataStorage==SensitiveDataStorage.Separate) {
+    if(secrets!=null&&!string.IsNullOrEmpty(c.Secret)&&!string.IsNullOrWhiteSpace(c.ScopeHost))restore.Add((c,c.Secret));
+    c.Secret=null;
+   }
+  }
   if(p.Container!=null)foreach(var secret in p.Container.Dockerfile.Secrets)if(refs.TryGetValue(secret.CredentialRef,out var id))secret.CredentialRef=id;
+  foreach(var (credential,secret) in restore)secrets!.Put(credential,secret,rememberSecrets);
   return Save(p);
  }
  public ProfileEntry Duplicate(PublishProfile source) {
@@ -84,7 +102,7 @@ public sealed class ProfileStore(string root) {
  public void Delete(ProfileEntry entry) {
   var relative=Path.GetRelativePath(Root,entry.File);File.Delete(PublishPaths.Inside(Root,relative));
  }
- public void Export(PublishProfile profile,string file,bool sensitive=false) {
+ private static PublishProfile MakePortable(PublishProfile profile) {
   var p=profile.Clone();var workspace=Path.GetFullPath(p.Workspace);
   string Portable(string value) {
    if(!Path.IsPathFullyQualified(value))return value;
@@ -92,10 +110,32 @@ public sealed class ProfileStore(string root) {
   }
   if(p.NuGet!=null)foreach(var source in p.NuGet.Sources) {source.Path=Portable(source.Path);source.Projects=source.Projects.Select(Portable).ToList();}
   if(p.Container is {} c) {c.Dockerfile.Context=Portable(c.Dockerfile.Context);c.Dockerfile.File=Portable(c.Dockerfile.File);foreach(var ctx in c.Dockerfile.NamedContexts)ctx.Value=Portable(ctx.Value);c.Template.Project=Portable(c.Template.Project);c.Template.ExistingDockerfile=Portable(c.Template.ExistingDockerfile);c.Template.PublishProfile=Portable(c.Template.PublishProfile);c.Compose.File=Portable(c.Compose.File);c.Compose.ProjectDirectory=Portable(c.Compose.ProjectDirectory);}
-  p.Workspace=".";foreach(var cred in p.Credentials) {cred.SecretRef=null;if(!sensitive||p.SensitiveDataStorage==SensitiveDataStorage.Separate)cred.Secret=null;}
-  PublishPaths.Atomic(file,ProfileJson.Write(p));
+  p.Workspace=".";return p;
+ }
+ /// <summary>Export tanpa secret, atau dengan secret inline sebagai plain text.</summary>
+ public void Export(PublishProfile profile,string file,bool sensitive=false)=>Export(profile,file,sensitive?ExportSecrets.PlainText:ExportSecrets.None);
+ /// <summary>
+ /// Menulis profil ke <paramref name="file"/> dengan path yang portabel. Dengan <see cref="ExportSecrets.PlainText"/> atau
+ /// <see cref="ExportSecrets.Encrypted"/>, secret ikut: yang inline diambil dari profil, yang terpisah dibaca dari
+ /// <paramref name="secrets"/> (sesi atau Remember). Pada mode Encrypted isi berkas dienkripsi dengan
+ /// <paramref name="passphrase"/>; pada PlainText siapa pun yang membuka berkas bisa membaca secret-nya.
+ /// Mengembalikan jumlah kredensial yang tidak punya secret tersimpan sehingga diekspor kosong.
+ /// </summary>
+ public int Export(PublishProfile profile,string file,ExportSecrets mode,PublishSecretStore? secrets=null,string? passphrase=null) {
+  if(mode==ExportSecrets.Encrypted&&string.IsNullOrEmpty(passphrase))throw new InvalidDataException("A passphrase is required to encrypt the export.");
+  var found=profile.Credentials.Select(c=>mode==ExportSecrets.None?null:c.Secret??secrets?.Get(c,c.ScopeHost)).ToList();
+  var p=MakePortable(profile);var missing=0;
+  for(var i=0;i<p.Credentials.Count;i++) {
+   p.Credentials[i].SecretRef=null;p.Credentials[i].Secret=found[i];
+   if(mode!=ExportSecrets.None&&found[i]==null)missing++;
+  }
+  var json=ProfileJson.Write(p);
+  PublishPaths.Atomic(file,mode==ExportSecrets.Encrypted?ProfileBundle.Encrypt(json,passphrase!):json);
+  return missing;
  }
 }
+/// <summary>Apakah secret ikut diekspor, dan bagaimana berkasnya dilindungi.</summary>
+public enum ExportSecrets { None, PlainText, Encrypted }
 public sealed class PublishSecretStore {
  private readonly Dictionary<string,(string Host,string Secret)> _session=new();
  private static string DirectoryPath=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Em","Publish","Secrets");
