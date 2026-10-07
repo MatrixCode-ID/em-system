@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <mxfile host="Electron">
   <diagram name="Page-1" id="FvZG83UzECiTPKKNbGav">
     <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
@@ -109,4 +110,501 @@
       </root>
     </mxGraphModel>
   </diagram>
+<diagram name="Attachments proposal" id="approval-attachments-proposal">
+  <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <root>
+      <mxCell id="0" />
+      <mxCell id="1" parent="0" />
+      <mxCell id="attachment-proposal-1" value="APPROVAL EDITOR — ATTACHMENTS PROPOSAL" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=21;">
+        <mxGeometry x="40" y="18" width="1060" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-2" value="Module content stays central. Supporting files and comments share the right panel." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="40" y="50" width="1060" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-3" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#F3F5F8;">
+        <mxGeometry x="40" y="90" width="1060" height="32" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-4" value="Approval Editor · Request 001 · Pending" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="54" y="94" width="650" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-5" value="—     □     ×" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;align=right;">
+        <mxGeometry x="1005" y="94" width="80" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-6" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="40" y="122" width="1060" height="48" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-7" value="Document preview" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="54" y="133" width="144" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-8" value="Attachments (3)" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;fillColor=#EAF2FF;strokeColor=#6495D5;fontColor=#245B9E;">
+        <mxGeometry x="208" y="133" width="130" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-9" value="Refresh" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="348" y="133" width="80" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-10" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;">
+        <mxGeometry x="40" y="170" width="700" height="400" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-11" value="Module Approval Control Rendered Here" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=19;align=center;">
+        <mxGeometry x="110" y="296" width="560" height="36" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-12" value="Readonly document details and management cards" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;align=center;fontColor=#64748B;fontSize=14;">
+        <mxGeometry x="130" y="336" width="520" height="58" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-13" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="40" y="570" width="700" height="112" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-14" value="Approval progress" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="54" y="575" width="620" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-15" value="↻" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;align=center;fontSize=18;">
+        <mxGeometry x="700" y="575" width="26" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-16" value="&lt;b&gt;John Doe&lt;/b&gt;&lt;br&gt;Prepared by&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Signed&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=12;fillColor=#EFF8F2;strokeColor=#629574;">
+        <mxGeometry x="54" y="604" width="126" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-17" value="&lt;b&gt;Jane Lee&lt;/b&gt;&lt;br&gt;Checked by&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Waiting for action&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=12;fillColor=#EAF2FF;strokeColor=#6495D5;">
+        <mxGeometry x="190" y="604" width="126" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-18" value="&lt;b&gt;Alex Kim&lt;/b&gt;&lt;br&gt;Production&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Next level&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=12;fillColor=#FFFFFF;strokeColor=#B8C2CE;">
+        <mxGeometry x="326" y="604" width="126" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-19" value="&lt;b&gt;Sam Chen&lt;/b&gt;&lt;br&gt;Finance&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Next level&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=12;fillColor=#FFFFFF;strokeColor=#B8C2CE;">
+        <mxGeometry x="462" y="604" width="126" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-20" value="&lt;b&gt;Chris Ray&lt;/b&gt;&lt;br&gt;Approved by&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Next level&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=12;fillColor=#FFFFFF;strokeColor=#B8C2CE;">
+        <mxGeometry x="598" y="604" width="126" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-21" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="740" y="170" width="360" height="255" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-22" value="Attachments (3)" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=14;">
+        <mxGeometry x="754" y="179" width="240" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-23" value="↻" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="1018" y="178" width="28" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-24" value="▾" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="1056" y="178" width="28" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-25" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;">
+        <mxGeometry x="752" y="211" width="336" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-26" value="PDF" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;fillColor=#FDEDEC;strokeColor=none;fontColor=#AE423A;fontSize=10;fontStyle=1;">
+        <mxGeometry x="762" y="220" width="42" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-27" value="specification.pdf" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="814" y="215" width="260" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-28" value="240 KB · Maria · 07 Oct" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#64748B;">
+        <mxGeometry x="814" y="236" width="260" height="15" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-29" value="Preview    ·    Download" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#245B9E;fontSize=11;">
+        <mxGeometry x="814" y="253" width="260" height="17" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-30" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;">
+        <mxGeometry x="752" y="280" width="336" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-31" value="JPG" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;fillColor=#EAF2FF;strokeColor=none;fontColor=#245B9E;fontSize=10;fontStyle=1;">
+        <mxGeometry x="762" y="289" width="42" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-32" value="reference-photo.jpg" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="814" y="284" width="260" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-33" value="1.2 MB · John · 07 Oct" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#64748B;">
+        <mxGeometry x="814" y="305" width="260" height="15" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-34" value="Preview    ·    Download" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#245B9E;fontSize=11;">
+        <mxGeometry x="814" y="322" width="260" height="17" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-35" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;">
+        <mxGeometry x="752" y="349" width="336" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-36" value="XLSX" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;fillColor=#EAF7EF;strokeColor=none;fontColor=#347448;fontSize=10;fontStyle=1;">
+        <mxGeometry x="762" y="358" width="42" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-37" value="cost-summary.xlsx" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="814" y="353" width="260" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-38" value="86 KB · Maria · 07 Oct" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#64748B;">
+        <mxGeometry x="814" y="374" width="260" height="15" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-39" value="Download" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#245B9E;fontSize=11;">
+        <mxGeometry x="814" y="391" width="260" height="17" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-40" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;">
+        <mxGeometry x="740" y="425" width="360" height="257" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-41" value="Comments" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=14;">
+        <mxGeometry x="754" y="434" width="245" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-42" value="↻" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="1056" y="434" width="28" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-43" value="&lt;b&gt;Maria&lt;/b&gt; &lt;font color=&quot;#64748B&quot;&gt;· 09:10&lt;/font&gt;&lt;br&gt;Please review the attached specification." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;fillColor=#F3F5F8;">
+        <mxGeometry x="754" y="469" width="320" height="56" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-44" value="&lt;b&gt;Jane Lee&lt;/b&gt; &lt;font color=&quot;#64748B&quot;&gt;· 09:18&lt;/font&gt;&lt;br&gt;Checking the quantities before approval." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;fillColor=#EAF2FF;">
+        <mxGeometry x="754" y="535" width="320" height="56" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-45" value="Write a comment…" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;fontColor=#64748B;">
+        <mxGeometry x="754" y="611" width="242" height="54" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-46" value="Send" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;fillColor=#EAF2FF;strokeColor=#6495D5;fontColor=#245B9E;">
+        <mxGeometry x="1006" y="625" width="78" height="28" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-47" value="DESIGN NOTES" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=12;">
+        <mxGeometry x="40" y="705" width="1060" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-48" value="&lt;b&gt;Files stay discoverable&lt;/b&gt;&lt;br&gt;Collapse attachments when more space is needed. Each list scrolls independently." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#F7F9FC;">
+        <mxGeometry x="40" y="734" width="340" height="66" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-49" value="&lt;b&gt;Preview in the attachment window&lt;/b&gt;&lt;br&gt;PDF and images: show preview. Other files: show Download. Keep the document view intact." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#F7F9FC;">
+        <mxGeometry x="400" y="734" width="340" height="66" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-50" value="&lt;b&gt;Mobile uses the same content&lt;/b&gt;&lt;br&gt;Attachments open as a sheet. Comments remain a request-level discussion." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#F7F9FC;">
+        <mxGeometry x="760" y="734" width="340" height="66" as="geometry" />
+      </mxCell>
+    </root>
+  </mxGraphModel>
+</diagram>
+
+
+
+<diagram name="Attachment preview" id="approval-attachment-preview">
+  <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <root>
+      <mxCell id="0" />
+      <mxCell id="1" parent="0" />
+      <mxCell id="attachment-proposal-51" value="ATTACHMENT WINDOW — PREVIEW AVAILABLE" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=21;">
+        <mxGeometry x="40" y="18" width="1060" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-52" value="A file row or comment reference opens this window with the selected attachment." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="40" y="50" width="1060" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-53" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=2;">
+        <mxGeometry x="60" y="100" width="1000" height="600" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-54" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#F3F5F8;">
+        <mxGeometry x="60" y="100" width="1000" height="40" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-55" value="Attachments · specification.pdf" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=14;">
+        <mxGeometry x="76" y="108" width="800" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-56" value="×" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="1018" y="108" width="26" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-57" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="60" y="140" width="1000" height="48" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-58" value="PDF · 240 KB · Uploaded by Maria · 07 Oct" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="76" y="152" width="700" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-59" value="Download" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="934" y="151" width="110" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-60" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="60" y="188" width="226" height="512" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-61" value="Attachments (3)" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="76" y="200" width="190" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-62" value="&lt;b&gt;PDF&lt;/b&gt;&lt;br&gt;specification.pdf&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Preview&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#EAF2FF;strokeColor=#6495D5;">
+        <mxGeometry x="74" y="238" width="198" height="72" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-63" value="&lt;b&gt;JPG&lt;/b&gt;&lt;br&gt;reference-photo.jpg&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Preview&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;">
+        <mxGeometry x="74" y="322" width="198" height="72" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-64" value="&lt;b&gt;XLSX&lt;/b&gt;&lt;br&gt;cost-summary.xlsx&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Download&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;">
+        <mxGeometry x="74" y="406" width="198" height="72" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-65" value="Select another file to review it." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;fontSize=11;">
+        <mxGeometry x="76" y="504" width="194" height="46" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-66" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#E8EDF3;">
+        <mxGeometry x="286" y="188" width="774" height="466" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-67" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=#B8C2CE;">
+        <mxGeometry x="422" y="208" width="502" height="426" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-68" value="SPECIFICATION" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=19;">
+        <mxGeometry x="458" y="236" width="430" height="32" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-69" value="Example supporting document" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="458" y="274" width="430" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-70" value="Reference: Request 001&#10;Revision: 1&#10;Date: 07 Oct 2026" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;">
+        <mxGeometry x="458" y="312" width="430" height="64" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-71" value="&lt;table style=&quot;width:100%;border-collapse:collapse;text-align:left&quot;&gt;&lt;tr&gt;&lt;th style=&quot;padding:6px&quot;&gt;Item&lt;/th&gt;&lt;th style=&quot;padding:6px;text-align:right&quot;&gt;Quantity&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:6px&quot;&gt;Component A&lt;/td&gt;&lt;td style=&quot;padding:6px;text-align:right&quot;&gt;120&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:6px&quot;&gt;Component B&lt;/td&gt;&lt;td style=&quot;padding:6px;text-align:right&quot;&gt;40&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:6px&quot;&gt;Component C&lt;/td&gt;&lt;td style=&quot;padding:6px;text-align:right&quot;&gt;15&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;align=left;spacingLeft=14;fillColor=#FAFBFD;">
+        <mxGeometry x="458" y="396" width="430" height="128" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-72" value="Attachment content is shown as supplied." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="458" y="566" width="430" height="36" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-73" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="286" y="654" width="774" height="46" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-74" value="‹" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="482" y="664" width="30" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-75" value="Page 1 of 2" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;align=center;">
+        <mxGeometry x="522" y="664" width="110" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-76" value="›" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="642" y="664" width="30" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-77" value="−" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="756" y="664" width="30" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-78" value="100%" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;align=center;">
+        <mxGeometry x="792" y="664" width="64" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-79" value="+" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="862" y="664" width="30" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-80" value="OTHER FILE TYPES" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="60" y="724" width="1000" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-proposal-81" value="&lt;b&gt;Preview unavailable&lt;/b&gt; — cost-summary.xlsx&lt;br&gt;The attachment window shows the file details and a Download button." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=14;fillColor=#F7F9FC;">
+        <mxGeometry x="60" y="754" width="1000" height="50" as="geometry" />
+      </mxCell>
+    </root>
+  </mxGraphModel>
+</diagram>
+
+
+
+<diagram name="Comment attachments" id="approval-comment-attachments">
+  <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <root>
+      <mxCell id="0" />
+      <mxCell id="1" parent="0" />
+      <mxCell id="comment-attachment-1" value="COMMENT ATTACHMENTS — NATIVE UI PROPOSAL" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=21;">
+        <mxGeometry x="40" y="18" width="1060" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-2" value="Enlarged comment panel: photos, snips, and clickable references to files in this approval." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontColor=#64748B;">
+        <mxGeometry x="40" y="50" width="1060" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-3" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;">
+        <mxGeometry x="40" y="90" width="650" height="675" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-4" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#F3F5F8;">
+        <mxGeometry x="40" y="90" width="650" height="42" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-5" value="Comments · Request 001" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=14;">
+        <mxGeometry x="56" y="99" width="540" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-6" value="↻" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="646" y="99" width="28" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-7" value="Maria · 09:10" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;">
+        <mxGeometry x="56" y="146" width="610" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-8" value="Please review" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;">
+        <mxGeometry x="56" y="179" width="95" height="28" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-9" value="PDF  specification.pdf" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;fillColor=#EAF2FF;strokeColor=#6495D5;fontColor=#245B9E;">
+        <mxGeometry x="151" y="179" width="182" height="28" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-10" value="and compare it with these images." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;">
+        <mxGeometry x="342" y="179" width="324" height="28" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-11" value="PHOTO&lt;br&gt;Tap to enlarge" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;fillColor=#EEF5F1;fontColor=#4A7562;">
+        <mxGeometry x="56" y="218" width="184" height="102" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-12" value="SNIP&lt;br&gt;Tap to enlarge" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;fillColor=#EDF3FB;fontColor=#245B9E;">
+        <mxGeometry x="250" y="218" width="184" height="102" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-13" value="site-photo.jpg" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#64748B;">
+        <mxGeometry x="56" y="324" width="184" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-14" value="highlighted-part.png" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#64748B;">
+        <mxGeometry x="250" y="324" width="184" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-15" value="Jane Lee · 09:18" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;">
+        <mxGeometry x="56" y="359" width="610" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-16" value="Checking the highlighted part before approval." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;">
+        <mxGeometry x="56" y="385" width="610" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-17" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="40" y="429" width="650" height="336" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-18" value="Draft comment" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;">
+        <mxGeometry x="56" y="441" width="290" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-19" value="2 images added · not sent" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontColor=#64748B;align=right;">
+        <mxGeometry x="352" y="441" width="322" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-20" value="PHOTO" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;fillColor=#EEF5F1;fontColor=#4A7562;">
+        <mxGeometry x="56" y="476" width="126" height="58" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-21" value="×" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="160" y="480" width="18" height="18" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-22" value="SNIP" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;fillColor=#EDF3FB;fontColor=#245B9E;">
+        <mxGeometry x="194" y="476" width="126" height="58" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-23" value="×" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="298" y="480" width="18" height="18" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-24" value="site-photo.jpg" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#64748B;">
+        <mxGeometry x="56" y="536" width="126" height="18" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-25" value="highlighted-part.png" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#64748B;">
+        <mxGeometry x="194" y="536" width="126" height="18" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-26" value="Please compare #specification.pdf with the photo.&lt;br&gt;&lt;br&gt;Type # to find an attachment…" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fontSize=13;">
+        <mxGeometry x="56" y="565" width="618" height="76" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-27" value="Referenced file:" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#64748B;">
+        <mxGeometry x="56" y="649" width="112" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-28" value="PDF  specification.pdf   ×" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;fillColor=#EAF2FF;strokeColor=#6495D5;fontColor=#245B9E;">
+        <mxGeometry x="168" y="648" width="216" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-29" value="Open attachment window" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontColor=#64748B;fontSize=11;">
+        <mxGeometry x="394" y="649" width="180" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-30" value="Photo" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="56" y="697" width="66" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-31" value="Paste" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="130" y="697" width="66" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-32" value="Snip" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="204" y="697" width="66" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-33" value="Reference" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="278" y="697" width="94" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-34" value="Send" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;fillColor=#EAF2FF;strokeColor=#6495D5;fontColor=#245B9E;">
+        <mxGeometry x="584" y="695" width="90" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-35" value="Windows: file / paste / snip. Mobile: camera / gallery / screenshot." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#64748B;">
+        <mxGeometry x="56" y="735" width="618" height="20" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-36" value="REFERENCE PICKER" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=14;">
+        <mxGeometry x="730" y="90" width="370" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-37" value="Type # or press Reference" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontColor=#64748B;">
+        <mxGeometry x="730" y="116" width="370" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-38" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=5;">
+        <mxGeometry x="730" y="148" width="370" height="236" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-39" value="Search attachment…" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;fontColor=#64748B;">
+        <mxGeometry x="744" y="162" width="342" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-40" value="&lt;b&gt;PDF  specification.pdf&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;240 KB · Document attachment&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;fillColor=#EAF2FF;strokeColor=#6495D5;">
+        <mxGeometry x="744" y="206" width="342" height="50" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-41" value="&lt;b&gt;JPG  reference-photo.jpg&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;1.2 MB · Document attachment&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;">
+        <mxGeometry x="744" y="264" width="342" height="50" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-42" value="&lt;b&gt;JPG  site-photo.jpg&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;380 KB · Maria’s comment&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=10;">
+        <mxGeometry x="744" y="322" width="342" height="50" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-43" value="DESIGN NOTES" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=14;">
+        <mxGeometry x="730" y="405" width="370" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-44" value="&lt;b&gt;1. Reference an existing file&lt;/b&gt;&lt;br&gt;Selecting a file inserts a clickable reference. The file is not uploaded a second time." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#F7F9FC;">
+        <mxGeometry x="730" y="442" width="370" height="80" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-45" value="&lt;b&gt;2. Add a new photo or snip&lt;/b&gt;&lt;br&gt;Show removable thumbnails in the draft. Send publishes the text and images together." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#F7F9FC;">
+        <mxGeometry x="730" y="534" width="370" height="80" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-46" value="&lt;b&gt;3. Open the referenced attachment&lt;/b&gt;&lt;br&gt;Click the reference to open its file in the attachment window. Show preview if available; otherwise show Download." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#F7F9FC;">
+        <mxGeometry x="730" y="626" width="370" height="80" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-47" value="MOBILE" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontStyle=1;">
+        <mxGeometry x="730" y="727" width="370" height="20" as="geometry" />
+      </mxCell>
+      <mxCell id="comment-attachment-48" value="Use a sheet for the picker and a full-screen image preview." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;fontColor=#64748B;fontSize=11;">
+        <mxGeometry x="730" y="751" width="370" height="34" as="geometry" />
+      </mxCell>
+    </root>
+  </mxGraphModel>
+</diagram>
+
+<diagram name="Attachment download" id="approval-attachment-download">
+  <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <root>
+      <mxCell id="0" />
+      <mxCell id="1" parent="0" />
+      <mxCell id="attachment-download-51" value="ATTACHMENT WINDOW — DOWNLOAD FALLBACK" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=21;">
+        <mxGeometry x="40" y="18" width="1060" height="30" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-52" value="A file row or comment reference opens this window with the selected attachment." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="40" y="50" width="1060" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-53" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=2;">
+        <mxGeometry x="60" y="100" width="1000" height="600" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-54" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#F3F5F8;">
+        <mxGeometry x="60" y="100" width="1000" height="40" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-55" value="Attachments · cost-summary.xlsx" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=14;">
+        <mxGeometry x="76" y="108" width="800" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-56" value="×" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="1018" y="108" width="26" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-57" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="60" y="140" width="1000" height="48" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-58" value="XLSX · 86 KB · Uploaded by Maria · 07 Oct" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;">
+        <mxGeometry x="76" y="152" width="700" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-59" value="Download" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=14;">
+        <mxGeometry x="934" y="151" width="110" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-60" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;fillColor=#FAFBFD;">
+        <mxGeometry x="60" y="188" width="226" height="512" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-61" value="Attachments (3)" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="76" y="200" width="190" height="24" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-62" value="&lt;b&gt;PDF&lt;/b&gt;&lt;br&gt;specification.pdf&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Preview&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;">
+        <mxGeometry x="74" y="238" width="198" height="72" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-63" value="&lt;b&gt;JPG&lt;/b&gt;&lt;br&gt;reference-photo.jpg&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Preview&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;">
+        <mxGeometry x="74" y="322" width="198" height="72" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-64" value="&lt;b&gt;XLSX&lt;/b&gt;&lt;br&gt;cost-summary.xlsx&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Download&lt;/font&gt;" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=12;fillColor=#EAF2FF;strokeColor=#6495D5;">
+        <mxGeometry x="74" y="406" width="198" height="72" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-65" value="Select another file to review it." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#64748B;fontSize=11;">
+        <mxGeometry x="76" y="504" width="194" height="46" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-80" value="OPENED FROM A COMMENT REFERENCE" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;">
+        <mxGeometry x="60" y="724" width="1000" height="22" as="geometry" />
+      </mxCell>
+      <mxCell id="attachment-download-81" value="&lt;b&gt;#cost-summary.xlsx&lt;/b&gt; opens this window with that file selected.&lt;br&gt;Download starts when the user presses Download. Closing returns to the comment panel." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;strokeColor=#B8C2CE;fillColor=#FFFFFF;fontColor=#243245;rounded=1;arcSize=10;align=left;spacingLeft=14;fillColor=#F7F9FC;">
+        <mxGeometry x="60" y="754" width="1000" height="50" as="geometry" />
+      </mxCell>
+      <mxCell id="download-surface" value="" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=13;fontColor=#243245;strokeColor=#B8C2CE;fillColor=#FFFFFF;fillColor=#FAFBFD;">
+        <mxGeometry x="286" y="188" width="774" height="512" as="geometry" />
+      </mxCell>
+      <mxCell id="download-filetype" value="XLSX" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=13;fontColor=#243245;strokeColor=#B8C2CE;fillColor=#FFFFFF;rounded=1;arcSize=10;fillColor=#EAF7EF;strokeColor=none;fontColor=#347448;fontStyle=1;fontSize=18;">
+        <mxGeometry x="623" y="282" width="100" height="68" as="geometry" />
+      </mxCell>
+      <mxCell id="download-status" value="No preview available" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=13;fontColor=#243245;strokeColor=#B8C2CE;fillColor=#FFFFFF;strokeColor=none;fillColor=none;fontStyle=1;fontSize=20;">
+        <mxGeometry x="422" y="374" width="502" height="32" as="geometry" />
+      </mxCell>
+      <mxCell id="download-name" value="cost-summary.xlsx · 86 KB" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=13;fontColor=#243245;strokeColor=#B8C2CE;fillColor=#FFFFFF;strokeColor=none;fillColor=none;fontColor=#64748B;">
+        <mxGeometry x="422" y="418" width="502" height="26" as="geometry" />
+      </mxCell>
+      <mxCell id="download-hint" value="Download this attachment to view it on your device." parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=13;fontColor=#243245;strokeColor=#B8C2CE;fillColor=#FFFFFF;strokeColor=none;fillColor=none;">
+        <mxGeometry x="422" y="456" width="502" height="38" as="geometry" />
+      </mxCell>
+      <mxCell id="download-primary" value="Download" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=13;fontColor=#243245;strokeColor=#B8C2CE;fillColor=#FFFFFF;rounded=1;arcSize=12;fillColor=#EAF2FF;strokeColor=#6495D5;fontColor=#245B9E;">
+        <mxGeometry x="603" y="518" width="140" height="36" as="geometry" />
+      </mxCell>
+    </root>
+  </mxGraphModel>
+</diagram>
+
+
 </mxfile>
