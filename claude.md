@@ -12,6 +12,30 @@ biarkan pengguna melakukan push; jangan mencoba atau mengulang push tanpa
 permintaan eksplisit. Aturan ini mengesampingkan asumsi izin push dari alur
 kerja atau plan sebelumnya.
 
+## Uji visual (GUI) hanya atas konfirmasi; uji console langsung jalan
+
+Keputusan pengguna 2026-10-08; berlaku untuk Codex dan Claude Code, juga repo
+turunan (em-system, EmPorium House, osha-csm). Uji visual makan token (build
+lama, render PNG, membaca gambar), uji console murah.
+
+- **Uji visual/GUI** (harness render layar WPF/MAUI ke PNG, screenshot, membuka
+  aplikasi untuk dilihat): hanya untuk **GUI atau control baru**, dan hanya
+  setelah **konfirmasi pengguna** atau atas **perintah eksplisit**. Perubahan
+  pada layar yang sudah ada tidak diuji visual kecuali diminta. Bila tidak
+  dijalankan, catat verifikasi visual sebagai tertunda di laporan.
+- **Uji lewat console** (build, `dotnet test`, unit test view model, cek XAML
+  tanpa render yang melaporkan teks, smoke konsol, uji HTTP): **jalankan
+  langsung** tanpa bertanya, termasuk harness console yang dibuat agent di
+  `..\.artefacts\`.
+- Agent boleh **membuat sendiri** harness console tanpa izin terlebih dulu,
+  mis. alur login ke API lalu memanggil action GET/POST dan memeriksa
+  hasilnya, smoke service terhadap database, atau cek XAML berbasis teks.
+  Simpan di `..\.artefacts\<nama-repo>\scripts\<nama>-smoke\` sesuai aturan
+  lokasi uji; kredensial diambil dari konfigurasi lokal di `..\.artefacts\`,
+  tidak ditulis ke repo.
+- Aturan ini mengesampingkan aturan lain yang mewajibkan verifikasi
+  render/harness visual setelah implementasi.
+
 ## Penegasan lokasi uji dan skrip pengguna
 
 Keputusan pengguna 2026-10-07; berlaku untuk Codex dan Claude Code, juga repo
