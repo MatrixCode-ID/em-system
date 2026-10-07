@@ -14,4 +14,5 @@ namespace Em.Shared
 
       /// <summary>Lifetime of the access token, in seconds.</summary>
       public int ExpiresIn { get; set; }
+   }
 }

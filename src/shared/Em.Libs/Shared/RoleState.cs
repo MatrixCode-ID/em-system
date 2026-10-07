@@ -8,4 +8,5 @@ namespace Em.Shared
 
       /// <summary>The role is active.</summary>
       Active = 1,
+   }
 }

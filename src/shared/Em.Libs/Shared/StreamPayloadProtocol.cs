@@ -25,6 +25,7 @@ namespace Em.Shared
       /// accompanying the stream (file name, target folder, overwrite choice), not for data - large data
       /// belongs in the stream itself. This limit is enforced on both sides: the client refuses before
       /// sending, the server answers 400.
+      /// </summary>
       public const int MaxHeaderLength = 4096;
 
       /// <summary>

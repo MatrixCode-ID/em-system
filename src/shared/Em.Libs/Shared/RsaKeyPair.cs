@@ -20,6 +20,7 @@ namespace Em.Shared
       /// <summary>
       /// Standard padding for RSA digital signatures across the application. Uses PSS, which is stronger
       /// than PKCS#1 v1.5. Both sides (signer and verifier) must use the same value.
+      /// </summary>
       public static RSASignaturePadding DefaultSignaturePadding => RSASignaturePadding.Pss;
 
       /// <summary>
@@ -47,6 +48,7 @@ namespace Em.Shared
       /// <param name="privateKey">
       /// Private key, as Base64 of DER PKCS#1 (<c>RSA.ExportRSAPrivateKey</c>). Optional - null means this
       /// instance only carries the public key (e.g. used in the UI for encryption only, without decrypting).
+      /// </param>
       public RsaKeyPair(string publicKey, string? privateKey = null) {
          PublicKey = publicKey;
          PrivateKey = privateKey;
@@ -104,6 +106,7 @@ namespace Em.Shared
       /// <summary>
       /// Encrypts data with the public key using <see cref="DefaultPadding"/>. The data size is limited by
       /// the key size (for a 2048-bit key with OAEP SHA-256: at most 190 bytes).
+      /// </summary>
       public byte[] EncryptValue(ReadOnlySpan<byte> data) {
          using var rsa = CreateRsa();
          return rsa.Encrypt(data, DefaultPadding);
@@ -117,6 +120,7 @@ namespace Em.Shared
       /// arbitrary ciphertext from outside and leaks the result (or even only success/failure) works as a
       /// decryption oracle. To prove key ownership use <see cref="SignData"/>/<see cref="VerifyData"/>, not
       /// decryption.
+      /// </remarks>
       public byte[] DecryptValue(ReadOnlySpan<byte> data) {
          using var rsa = CreateRsa();
          return rsa.Decrypt(data, DefaultPadding);
@@ -140,6 +144,7 @@ namespace Em.Shared
       /// Verifies that <paramref name="signature"/> really is a signature over <paramref name="data"/> by
       /// the holder of the private key of <see cref="PublicKey"/>. The public key alone is enough, so it can
       /// be called on the client side.
+      /// </summary>
       /// <returns><c>true</c> when the signature is valid, <c>false</c> otherwise.</returns>
       public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) {
          using var rsa = CreateRsa();
