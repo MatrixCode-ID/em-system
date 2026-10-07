@@ -1,25 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Peran warna Material 3, diturunkan dari warna merek EM: biru #0F6CBD sebagai warna utama dan
-   teal #087B78 sebagai warna pendamping.
+<!-- The Material 3 color roles, derived from the EM brand color: blue #0F6CBD as the primary color and
+     teal #087B78 as the companion color.
 
-   Setiap peran punya sepasang kunci, berakhiran Light dan Dark. Warna tema gelap bukan versi gelap
-   dari warna tema terang, melainkan pasangannya: yang di tema terang jadi warna isi, di tema gelap
-   jadi warna teks di atas isi itu - begitu Material membalik keduanya supaya kontrasnya tetap sama.
+     Every role has a pair of keys, ending in Light and Dark. A dark theme color is not a darker version
+     of the light one but its counterpart: what is the fill color in the light theme becomes the text color
+     on that fill in the dark theme - Material flips the two so the contrast stays the same.
 
-   Yang memakainya menyebut keduanya sekaligus lewat AppThemeBinding, mis.
-   Value="{AppThemeBinding Light={StaticResource surfaceLight}, Dark={StaticResource surfaceDark}}",
-   sehingga satu markup melayani kedua tema dan pergantian tema tidak menuntut apa pun digambar ulang.
+     Its user names both at once through AppThemeBinding, e.g.
+     Value="{AppThemeBinding Light={StaticResource surfaceLight}, Dark={StaticResource surfaceDark}}",
+     so one markup serves both themes and switching theme requires nothing to be redrawn.
 
-   Nilai di sini adalah palet standar Em (LightTheme/DarkTheme di Em.Ui.Core). Saat kamus ini
-   dibuat, Palette.xaml.cs menimpanya dengan tema yang dipasang aplikasi lewat BrandingInfo, jadi
-   berkas lain cukup me-merge <styles:Palette /> dan tidak pernah menyalin nilainya sendiri.
--->
+     The values here are the standard Em palette (LightTheme/DarkTheme in Em.Ui.Core). When this
+     dictionary is created, Palette.xaml.cs overwrites them with the themes installed by the application
+     through BrandingInfo, so other files only need to merge <styles:Palette /> and never copy its values
+     themselves. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     x:Class="Em.Ui.Maui.Styles.Palette">
 
-   <!-- Warna utama: aksi tunggal yang paling penting di sebuah layar, dan penanda pilihan aktif. -->
+   <!-- The primary color: the single most important action on a screen, and the marker of the active choice. -->
    <Color x:Key="primaryLight">#0F6CBD</Color>
    <Color x:Key="primaryDark">#A6C8FF</Color>
    <Color x:Key="onPrimaryLight">#FFFFFF</Color>
@@ -29,7 +28,8 @@
    <Color x:Key="onPrimaryContainerLight">#001B3C</Color>
    <Color x:Key="onPrimaryContainerDark">#D6E3FF</Color>
 
-   <!-- Warna pendamping: penanda yang menyertai, mis. bidang terpilih di menu samping. -->
+   <!-- The companion color: a marker that goes along with the primary, e.g. the selected area in the side
+        menu. -->
    <Color x:Key="secondaryLight">#00696B</Color>
    <Color x:Key="secondaryDark">#4CDADB</Color>
    <Color x:Key="onSecondaryLight">#FFFFFF</Color>
@@ -39,7 +39,7 @@
    <Color x:Key="onSecondaryContainerLight">#002020</Color>
    <Color x:Key="onSecondaryContainerDark">#6FF7F8</Color>
 
-   <!-- Bidang: latar halaman dan segala yang berdiri di atasnya. -->
+   <!-- Surfaces: the page background and everything that stands on it. -->
    <Color x:Key="surfaceLight">#FAF9FD</Color>
    <Color x:Key="surfaceDark">#111418</Color>
    <Color x:Key="onSurfaceLight">#1A1C1E</Color>
@@ -47,7 +47,7 @@
    <Color x:Key="onSurfaceVariantLight">#43474E</Color>
    <Color x:Key="onSurfaceVariantDark">#C3C6CF</Color>
 
-   <!-- Bidang bertingkat: makin tinggi angkanya, makin dekat ia ke mata pembaca. -->
+   <!-- Layered surfaces: the higher its number, the closer it is to the reader's eye. -->
    <Color x:Key="surfaceContainerLowLight">#F4F3F7</Color>
    <Color x:Key="surfaceContainerLowDark">#191C20</Color>
    <Color x:Key="surfaceContainerLight">#EEEDF1</Color>
@@ -55,13 +55,13 @@
    <Color x:Key="surfaceContainerHighLight">#E8E7EC</Color>
    <Color x:Key="surfaceContainerHighDark">#272A2F</Color>
 
-   <!-- Garis: pembatas kartu dan kolom isian. Variant untuk garis pemisah yang lebih tenang. -->
+   <!-- Lines: the border of cards and input fields. A variant for a calmer divider line. -->
    <Color x:Key="outlineLight">#73777F</Color>
    <Color x:Key="outlineDark">#8D9199</Color>
    <Color x:Key="outlineVariantLight">#C3C6CF</Color>
    <Color x:Key="outlineVariantDark">#43474E</Color>
 
-   <!-- Kesalahan, dan tirai gelap di belakang menu samping yang sedang terbuka. -->
+   <!-- Errors, and the dark curtain behind an open side menu. -->
    <Color x:Key="errorLight">#BA1A1A</Color>
    <Color x:Key="errorDark">#FFB4AB</Color>
    <Color x:Key="errorContainerLight">#FFDAD6</Color>
@@ -70,7 +70,7 @@
    <Color x:Key="onErrorContainerDark">#FFDAD6</Color>
    <Color x:Key="scrimColor">#000000</Color>
 
-   <!-- Warna panel merek, dipakai kepala menu samping dan layar login. -->
+   <!-- The brand panel color, used by the side menu header and the login screen. -->
    <Color x:Key="brandLight">#0F6CBD</Color>
    <Color x:Key="brandDark">#12283D</Color>
 </ResourceDictionary>

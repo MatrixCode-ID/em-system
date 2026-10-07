@@ -213,15 +213,14 @@ namespace Em.Api.Core
 
       #region Helpers
 
-      // Satu tempat yang memutuskan sebuah kunci hak boleh dikirim atau tidak, dipakai baik oleh
-      // pemberian langsung maupun oleh hak milik role. Dulu ini dikerjakan server; ia dipindah ke
-      // sini karena hanya sisi ini yang mengenal katalog seutuhnya. Server hanya tahu hak yang
-      // dideklarasikan module, sedangkan AllClaims di sini adalah gabungannya dengan hak milik layar
-      // bawaan client - hak yang sah, yang tidak dimiliki module mana pun, dan yang akan ditolak
-      // server kalau server yang memeriksanya.
+      // The one place that decides whether a right key may be sent or not, used both by direct granting and
+      // by the rights of a role. This used to be done by the server; it moved here because only this side
+      // knows the whole catalog. The server only knows the rights declared by modules, while AllClaims here is
+      // their union with the rights of the client's built-in screens - valid rights that belong to no module,
+      // and that the server would refuse if it were the one checking.
       //
-      // Diperiksa tetap perlu: dibiarkan lewat, satu salah ketik akan diam-diam menjadi hak yang
-      // tidak pernah menyala dan tidak pernah kelihatan salah.
+      // Checking is still needed: if it were let through, a single typo would quietly become a right that
+      // never turns on and never looks wrong.
       private void EnsureClaimIsDeclared(string claimKey) {
          if (App.AllClaims.Any(r => string.Equals(r.Key, claimKey, StringComparison.OrdinalIgnoreCase))) return;
 

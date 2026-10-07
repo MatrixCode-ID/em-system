@@ -3,8 +3,9 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Maui.Core
 {
    /// <summary>
-   /// Base class service module di sisi MAUI: menyambungkan service ke <see cref="ApiClient"/> milik
-   /// koneksi yang sedang aktif, dan menjaga sambungan itu tetap benar saat koneksinya berganti.
+   /// Base class of module services on the MAUI side: connects the service to the <see cref="ApiClient"/>
+   /// of the connection that is currently active, and keeps that connection correct when the connection
+   /// changes.
    /// </summary>
    public abstract class ServiceMauiBase : ServiceUiBase
    {
@@ -26,9 +27,9 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Objek aplikasi MAUI milik service ini. Tipenya sengaja dipersempit dari <c>IEmApp</c> milik
-      /// <see cref="ServiceUiBase"/> jadi <see cref="EmApp"/> (covariant return), sehingga service di
-      /// layer UI langsung memakai anggota MAUI-nya tanpa perlu cast.
+      /// The MAUI application object of this service. Its type is deliberately narrowed from the <c>IEmApp</c>
+      /// of <see cref="ServiceUiBase"/> to <see cref="EmApp"/> (covariant return), so a service in the UI layer
+      /// uses its MAUI members directly without a cast.
       /// </summary>
       public override EmApp App { get; }
    }

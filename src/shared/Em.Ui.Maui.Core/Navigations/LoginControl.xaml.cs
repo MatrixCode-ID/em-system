@@ -11,9 +11,9 @@ using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
 namespace Em.Ui.Maui.Navigations
 {
    /// <summary>
-   /// Layar login: mengetik alamat server, akun, dan kata sandi, lalu membuka sesi. Layar inilah yang
-   /// dipasang aplikasi saat dibuka selama tidak ada sesi yang bisa dipulihkan, dan setiap kali sebuah
-   /// sesi berakhir.
+   /// The login screen: type the server address, account, and password, then open a session. This is the
+   /// screen the application installs when it opens as long as there is no session that can be restored,
+   /// and every time a session ends.
    /// </summary>
    public partial class LoginControl : ContentView, INavigationBody
    {
@@ -22,7 +22,7 @@ namespace Em.Ui.Maui.Navigations
          Vm.SignInSucceeded += OnSignInSucceeded;
       }
 
-      /// <summary>View model layar ini, dibaca balik dari BindingContext yang dipasang di XAML.</summary>
+      /// <summary>The view model of this screen, read back from the BindingContext set in XAML.</summary>
       public LoginControlVm Vm => (LoginControlVm)BindingContext;
 
       /// <inheritdoc />
@@ -40,8 +40,8 @@ namespace Em.Ui.Maui.Navigations
          return Task.CompletedTask;
       }
 
-      // Masuknya berhasil, jadi layar ini sudah tidak punya urusan lagi: NavigateHome membersihkan
-      // sekaligus melepas seluruh jalur navigasi, dan layar login termasuk yang dilepas di situ.
+      // Signing in succeeded, so this screen has no business left: NavigateHome clears and releases the whole
+      // navigation path at once, and the login screen is among what is released there.
       private void OnSignInSucceeded() {
          if (Vm.EmApp is not { } app) return;
          Dispatcher.Dispatch(async () => {
@@ -55,14 +55,14 @@ namespace Em.Ui.Maui.Navigations
    public class LoginControlVm : MvvmModelBase
    {
       /// <summary>
-      /// Satu-satunya jawaban untuk setiap bentuk pasangan akun/sandi yang salah. Tidak menyebut
-      /// bagian mana yang keliru - justru itu yang tidak boleh diberitahukan layar login.
+      /// The only answer for every shape of wrong account/password pair. It does not say which part is wrong -
+      /// that is exactly what the login screen must not tell.
       /// </summary>
       public const string InvalidCredentialsMessage = "The account or password is not correct.";
 
-      // Umur permintaan untuk profil yang dibuat dari alamat yang diketik di sini. Angkanya mengikuti
-      // nilai bawaan profil baru di client desktop, supaya server yang sama tidak berperilaku berbeda
-      // hanya karena dibuka dari perangkat yang berbeda.
+      // The lifetime of requests for a profile created from the address typed here. The number follows the
+      // default of a new profile in the desktop client, so the same server does not behave differently just
+      // because it is opened from a different device.
       private const int DefaultTimeoutSeconds = 30;
 
       public LoginControlVm() {
@@ -70,10 +70,10 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(ToggleThemeCommand), ToggleThemeCommand);
       }
 
-      /// <summary>Dipicu sesudah sesi benar-benar terbuka, supaya layar ini bisa ditinggalkan.</summary>
+      /// <summary>Raised after the session has really been opened, so this screen can be left.</summary>
       public event Action? SignInSucceeded;
 
-      /// <summary>Logo aplikasi yang berlaku.</summary>
+      /// <summary>The application logo that is in force.</summary>
       public ImageSource? LogoImage => EmApp is { } app ? BrandingImages.LoadLogo(app.Branding) : null;
 
       /// <summary>Judul brand aplikasi.</summary>
@@ -82,10 +82,10 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>Sub-judul brand aplikasi.</summary>
       public string BrandTagline => EmApp?.Branding.DisplayTagline ?? string.Empty;
 
-      /// <summary>Teks hak cipta brand aplikasi.</summary>
+      /// <summary>The copyright text of the application brand.</summary>
       public string BrandCopyright => EmApp?.Branding.DisplayCopyright ?? string.Empty;
 
-      /// <summary>Alamat server API yang dipakai masuk.</summary>
+      /// <summary>The API server address used to sign in.</summary>
       public string ServerUrl {
          get => Get<string>(string.Empty);
          set => Set(value, _ => {
@@ -95,14 +95,14 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// Apakah alamat server tidak boleh diketik. Di mode debug jawabannya selalu ya: daftar
-      /// servernya ditentukan saat compile, dan yang berlaku adalah yang sedang terpilih di panel
-      /// account - termasuk saat layar ini dibuka lewat Simulate Login. Di luar debug alamat inilah
-      /// satu-satunya cara menyebut server, jadi ia harus bisa diketik.
+      /// Whether the server address may not be typed. In debug mode the answer is always yes: the list of
+      /// servers is decided at compile time, and what applies is the one currently selected in the account
+      /// panel - including when this screen is opened through Simulate Login. Outside debug this address is
+      /// the only way to name the server, so it must be typeable.
       /// </summary>
       public bool IsServerLocked => EmApp?.IsDebugMode ?? false;
 
-      /// <summary>Nama akun yang diketik.</summary>
+      /// <summary>The account name that was typed.</summary>
       public string UserName {
          get => Get<string>(string.Empty);
          set => Set(value, _ => {
@@ -111,7 +111,7 @@ namespace Em.Ui.Maui.Navigations
          });
       }
 
-      /// <summary>Kata sandi yang diketik. Tidak pernah ikut tersimpan ke mana pun.</summary>
+      /// <summary>The password that was typed. It is never stored anywhere.</summary>
       public string Password {
          get => Get<string>(string.Empty);
          set => Set(value, _ => {
@@ -121,45 +121,44 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// Keterangan kenapa sesi sebelumnya berakhir, atau <c>null</c> kalau user sendiri yang keluar.
-      /// Bukan pesan kesalahan - karena itu tampilannya berbeda dari <see cref="SignInError"/>.
+      /// A note on why the previous session ended, or <c>null</c> when the user signed out by themselves. Not
+      /// an error message - which is why it looks different from <see cref="SignInError"/>.
       /// </summary>
       public string? SessionEndedNotice {
          get => Get<string?>();
          set => Set(value, _ => NotifyChanged(nameof(HasSessionEndedNotice)));
       }
 
-      /// <summary><c>true</c> kalau ada keterangan berakhirnya sesi yang perlu ditampilkan.</summary>
+      /// <summary><c>true</c> when there is a session-ended note to show.</summary>
       public bool HasSessionEndedNotice => !string.IsNullOrWhiteSpace(SessionEndedNotice);
 
-      /// <summary>Pesan kegagalan masuk yang terakhir, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>The last sign-in failure message, or <c>null</c> when there is none.</summary>
       public string? SignInError {
          get => Get<string?>();
          set => Set(value, _ => NotifyChanged(nameof(HasSignInError)));
       }
 
-      /// <summary><c>true</c> kalau ada pesan kegagalan yang perlu ditampilkan.</summary>
+      /// <summary><c>true</c> when there is a failure message to show.</summary>
       public bool HasSignInError => !string.IsNullOrWhiteSpace(SignInError);
 
       /// <summary>
-      /// Menyiapkan ulang isian layar: alamat server yang berlaku dan nama akun terakhir yang dipakai
-      /// masuk.
+      /// Prepares the fields of the screen again: the server address that applies and the last account name
+      /// used to sign in.
       /// </summary>
       public Task ReloadAsync() {
          if (EmApp is not { } app) return Task.CompletedTask;
 
          app.RetrieveApiConnections();
 
-         // "Tetap masuk" bukan lagi pilihan yang ditawarkan: satu-satunya jalan keluar adalah tombol
-         // keluar di panel account, jadi saklarnya selalu dinyalakan di sini. Saklarnya sendiri tetap
-         // ada dan tetap ditulis - jalur pemulihan sesi membacanya - hanya tidak ada lagi yang bisa
-         // mematikannya dari layar.
+         // "Stay signed in" is no longer a choice that is offered: the only way out is the sign-out button in the
+         // account panel, so its switch is always turned on here. The switch itself still exists and is still
+         // written - the session restoration path reads it - there is just nothing left on screen that can turn
+         // it off.
          app.RememberSignIn = true;
          UserName = app.RememberedUserName ?? string.Empty;
 
-         // Di debug alamatnya mengikuti koneksi yang sedang terpilih. Di luar debug yang diisikan
-         // kembali adalah alamat yang terakhir benar-benar berhasil dipakai masuk - satu-satunya
-         // profil yang tersimpan.
+         // In debug the address follows the connection currently selected. Outside debug, what is filled back in
+         // is the address that last really worked for signing in - the only profile that is stored.
          ServerUrl = app.ActiveConnection?.Host
             ?? app.UIConnections.FirstOrDefault()?.Host
             ?? string.Empty;
@@ -173,9 +172,9 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// Memeriksa pasangan akun/sandi ke server lalu membuka sesinya. Kalau berhasil, memicu
-      /// <see cref="SignInSucceeded"/>; kalau tidak, <see cref="SignInError"/> yang terisi dan layar
-      /// tetap di tempat - command ini tidak pernah melempar exception ke pemanggilnya.
+      /// Checks the account/password pair against the server and then opens its session. If it succeeds,
+      /// <see cref="SignInSucceeded"/> is raised; if not, <see cref="SignInError"/> is filled and the screen
+      /// stays where it is - this command never throws an exception to its caller.
       /// </summary>
       // Nothing may escape this method. ICommand.Execute is void, so UiCommandAsync runs it as
       // async void: an exception leaving here is rethrown on the dispatcher, and there is nothing
@@ -200,12 +199,12 @@ namespace Em.Ui.Maui.Navigations
             // what went wrong is not the pair that was typed.
             await app.BeginSessionAsync(token, remember: true);
 
-            // Alamatnya baru terbukti bisa dipakai masuk di baris-baris di atas, dan barulah sekarang
-            // ia layak disimpan. Koneksi debug tidak pernah ikut - ia milik kode, bukan penyimpanan.
+            // The address has only now been proven usable for signing in, by the lines above, and only now does it
+            // deserve to be stored. A debug connection never goes along - it belongs to the code, not to storage.
             if (!app.IsDebugMode) StoreSingleProfile(app, connection);
 
-            // Nama akun dan nama profilnya sama-sama disimpan: sesi tersimpan dititipkan per nama
-            // profil, jadi tanpa nama itu tidak ada yang bisa dipulihkan saat aplikasi dibuka lagi.
+            // The account name and the profile name are both stored: a stored session is deposited per profile name,
+            // so without that name there is nothing that can be restored when the application is opened again.
             app.RememberedUserName = UserName;
             app.RememberedProfileName = connection.ProfileName;
 
@@ -228,10 +227,10 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      // Koneksi yang kredensialnya akan diperiksa. Di debug ia sudah terpasang dan alamatnya terkunci,
-      // jadi dipakai apa adanya. Di luar debug alamat yang diketik user-lah yang menentukan: profilnya
-      // dibentuk di sini dan langsung jadi koneksi aktif, karena tanpa koneksi aktif tidak ada server
-      // yang bisa ditanyai sama sekali.
+      // The connection whose credentials will be checked. In debug it is already installed and its address is
+      // locked, so it is used as-is. Outside debug the address typed by the user decides: its profile is
+      // formed here and immediately becomes the active connection, because without an active connection there
+      // is no server that can be asked at all.
       private ApiConnection ResolveConnection(EmApp app) {
          if (app.IsDebugMode) {
             return app.ActiveConnection
@@ -241,8 +240,8 @@ namespace Em.Ui.Maui.Navigations
 
          var host = ServerUrl.Trim();
 
-         // Profil yang tersimpan dipakai ulang kalau alamatnya memang sama, supaya sesi yang sudah
-         // tertitip padanya tidak terbuang hanya karena objeknya dibuat ulang.
+         // A stored profile is reused if its address really is the same, so a session already deposited on it is
+         // not lost just because its object was created again.
          var connection = app.UIConnections.FirstOrDefault(r =>
             !r.IsDebugConnection && string.Equals(r.Host, host, StringComparison.OrdinalIgnoreCase))
             ?? new ApiConnection {
@@ -256,9 +255,9 @@ namespace Em.Ui.Maui.Navigations
          return connection;
       }
 
-      // Yang tersimpan tidak pernah lebih dari satu. Profil lain dibuang lebih dulu - berikut sesi
-      // yang tertitip padanya, karena sesi milik server lain tidak ada gunanya lagi - jadi daftar
-      // server tidak pernah menumpuk, dan server yang baru menimpa yang lama.
+      // No more than one is ever stored. Other profiles are discarded first - together with the session
+      // deposited on them, because a session of another server is of no use anymore - so the server list never
+      // piles up and a new server overwrites the old one.
       private static void StoreSingleProfile(EmApp app, ApiConnection connection) {
          app.UIConnections
             .Where(r => !r.IsDebugConnection)
@@ -269,16 +268,16 @@ namespace Em.Ui.Maui.Navigations
          app.AddApiConnection(connection);
       }
 
-      // Nama profil diturunkan dari alamatnya, bukan diketik user: ia cuma nama di penyimpanan, dan
-      // satu-satunya yang perlu dijamin adalah alamat yang sama tidak pernah melahirkan dua profil.
-      // Alamat yang tidak berbentuk URL dipakai apa adanya - menolaknya di sini hanya akan menghalangi
-      // masuk ke server yang sebenarnya bisa dihubungi.
+      // The profile name is derived from its address, not typed by the user: it is just a name in storage, and
+      // the only thing that must be guaranteed is that the same address never produces two profiles. An
+      // address that is not shaped like a URL is used as-is - refusing it here would only block signing in to
+      // a server that can in fact be reached.
       private static string DeriveProfileName(string host) =>
          Uri.TryCreate(host, UriKind.Absolute, out var uri)
             ? uri.IsDefaultPort ? uri.Host : $"{uri.Host}:{uri.Port}"
             : host;
 
-      /// <summary>Mengganti tema aplikasi ke tema yang sedang tidak dipakai.</summary>
+      /// <summary>Switches the application theme to the one that is not in use.</summary>
       public void ToggleThemeCommand() {
          if (EmApp is not { } app) return;
          app.CurrentTheme = app.IsLightTheme ? ThemeVariant.Dark : ThemeVariant.Light;
@@ -292,8 +291,8 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// Sign in baru boleh dijalankan setelah alamat server terisi: server tempat kredensialnya
-      /// diperiksa adalah alamat itu sendiri, jadi tanpa alamat tidak ada yang bisa dihubungi.
+      /// Sign in may only run after the server address is filled in: the server where the credentials are
+      /// checked is that address itself, so without an address there is nothing to contact.
       /// </summary>
       public bool SignInCommandAllowed() =>
          IsNotBusy

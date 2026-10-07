@@ -5,14 +5,15 @@ using Color = Microsoft.Maui.Graphics.Color;
 namespace Em.Ui.Maui.Styles
 {
    /// <summary>
-   /// Kamus warna tema aplikasi MAUI: sepasang kunci per peran warna, berakhiran <c>Light</c> dan
-   /// <c>Dark</c>. Nilai di berkas XAML-nya adalah palet standar Em; saat kamus ini dibuat, nilainya
-   /// ditimpa dengan tema terang dan gelap yang dipasang aplikasi lewat <c>ApplyBranding</c>.
+   /// The color dictionary of the MAUI application theme: a pair of keys per color role, ending in
+   /// <c>Light</c> and <c>Dark</c>. The values in its XAML file are the standard Em palette; when this
+   /// dictionary is created, they are overwritten with the light and dark themes installed by the
+   /// application through <c>ApplyBranding</c>.
    /// </summary>
    public partial class Palette : ResourceDictionary
    {
       /// <summary>
-      /// Membuat kamus warna dan mengisinya dari tema aplikasi.
+      /// Creates the color dictionary and fills it from the application theme.
       /// </summary>
       public Palette() {
          InitializeComponent();

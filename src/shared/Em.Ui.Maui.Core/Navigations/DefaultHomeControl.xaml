@@ -12,9 +12,9 @@
    <ScrollView>
       <VerticalStackLayout Padding="20,20,20,32" Spacing="16">
 
-         <!-- Kotak pencarian. Bentuknya saja untuk sekarang - sama seperti di client desktop, ia belum
-              tersambung ke apa pun. Penyaringnya dikerjakan nanti, saat sudah ada cukup banyak layar
-              module yang membuatnya berguna, dan sebaiknya di kedua client sekaligus. -->
+         <!-- The search box. Only its shape for now - just like on the desktop client, it is not connected to
+              anything yet. Its filter will be done later, when there are enough module screens to make it useful,
+              and preferably on both clients at once. -->
          <Border Style="{StaticResource searchFieldStyle}">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                <controls:FontIcon Grid.Column="0" Glyph="{x:Static controls:FontIcons.MagnifyingGlass}"
@@ -35,7 +35,7 @@
             </VerticalStackLayout>
          </Border>
 
-         <!-- Layar tanpa MenuPath berdiri di atas pohon, bukan di dalam salah satu grupnya. -->
+         <!-- A screen without a MenuPath stands on top of the tree, not inside one of its groups. -->
          <VerticalStackLayout Spacing="10"
                               BindableLayout.ItemsSource="{Binding RootAppMenus}"
                               BindableLayout.ItemTemplate="{StaticResource navigationTileTemplate}" />

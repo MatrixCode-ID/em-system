@@ -5,14 +5,14 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Maui.Core
 {
    /// <summary>
-   /// Menyimpan sesi tersimpan di penyimpanan aman perangkat, satu entri per profil koneksi. Di
-   /// Android isinya dikunci oleh keystore milik sistem dan hanya bisa dibuka aplikasi ini di
-   /// perangkat ini - peran yang sama dengan DPAPI di client desktop.
+   /// Stores the saved session in the device's secure storage, one entry per connection profile. On
+   /// Android its content is locked by the system keystore and can only be opened by this application on
+   /// this device - the same role as DPAPI in the desktop client.
    /// </summary>
    /// <remarks>
-   /// Penghapusan profil koneksi tidak otomatis ikut membuang sesinya di sini - beda dengan client
-   /// desktop, yang sesinya menumpang subkey milik profil. Karena itu yang menghapus atau mengganti
-   /// nama sebuah profil wajib memanggil <see cref="Clear"/> untuk nama lamanya.
+   /// Deleting a connection profile does not automatically discard its session here - unlike the desktop
+   /// client, whose session rides on the profile's subkey. So whoever deletes or renames a profile must call
+   /// <see cref="Clear"/> for its old name.
    /// </remarks>
    public sealed class SecureStorageSessionStorage(EmApp app) : ISessionStorage
    {
@@ -41,8 +41,8 @@ namespace Em.Ui.Maui.Core
             return string.IsNullOrEmpty(session?.RefreshToken) ? null : session;
          }
          catch (JsonException) {
-            // Isi yang tidak bisa dibaca tidak akan pernah bisa dibaca lagi. Dibuang sekarang supaya
-            // tidak dicoba lagi setiap kali aplikasi dibuka.
+            // Content that cannot be read will never be readable again. It is discarded now so it is not tried again
+            // every time the application is opened.
             Clear(profileName);
             return null;
          }
@@ -54,11 +54,11 @@ namespace Em.Ui.Maui.Core
          _storage.Remove(KeyOf(profileName));
       }
 
-      // Penyimpanan aman di MAUI hanya punya bentuk asynchronous, sementara ISessionStorage sengaja
-      // sinkron - ia dipanggil dari tengah alur membuka dan menutup sesi, yang tidak punya tempat
-      // untuk menunggu. Pekerjaannya dilempar ke thread pool lebih dulu, bukan ditunggu langsung,
-      // supaya lanjutannya tidak pernah mencoba kembali ke thread UI yang justru sedang menunggu -
-      // dan di situlah aplikasi akan berhenti total.
+      // Secure storage in MAUI only has an asynchronous form, while ISessionStorage is deliberately
+      // synchronous - it is called from the middle of opening and closing a session, which has no place to
+      // wait. The work is thrown to the thread pool first, not awaited directly, so its continuation never
+      // tries to return to the UI thread that is waiting - and that is where the application would stop
+      // completely.
       private static void RunBlocking(Func<Task> work) =>
          Task.Run(work).GetAwaiter().GetResult();
 

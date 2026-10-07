@@ -10,13 +10,13 @@ using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
 namespace Em.Ui.Maui.Navigations
 {
    /// <summary>
-   /// Layar home bawaan: kotak pencarian dan pohon menu layar-layar yang didaftarkan module. Dipakai
-   /// selama aplikasi tidak menyediakan home-nya sendiri lewat <c>EmAppBuilder.UseHomeNavigation</c>.
+   /// The default home screen: a search box and a tree menu of the screens registered by modules. Used as
+   /// long as the application does not provide its own home through <c>EmAppBuilder.UseHomeNavigation</c>.
    /// </summary>
    /// <remarks>
-   /// Identitas aplikasi, akun, server, tema, dan keluar tidak ada di sini - semuanya tinggal di panel
-   /// account yang dibuka dari badge di bilah atas, supaya layar ini murni berisi jalan menuju layar
-   /// lain. Nama aplikasinya sendiri sudah terbaca di judul bilah atas.
+   /// The application identity, account, server, theme, and sign-out are not here - they all live in the
+   /// account panel opened from the badge in the top bar, so this screen purely holds the way to other
+   /// screens. The application name itself is already readable in the top bar title.
    /// </remarks>
    public partial class DefaultHomeControl : ContentView, INavigationBody
    {
@@ -24,7 +24,7 @@ namespace Em.Ui.Maui.Navigations
          InitializeComponent();
       }
 
-      /// <summary>View model layar ini, dibaca balik dari BindingContext yang dipasang di XAML.</summary>
+      /// <summary>The view model of this screen, read back from the BindingContext set in XAML.</summary>
       public DefaultHomeControlVm Vm => (DefaultHomeControlVm)BindingContext;
 
       /// <inheritdoc />
@@ -41,17 +41,17 @@ namespace Em.Ui.Maui.Navigations
    }
 
    /// <summary>
-   /// Satu kartu layar di menu home. Membawa sendiri perintah bukanya, jadi template yang
-   /// menggambarnya tidak perlu tahu view model siapa pun di atasnya - dan karena itu kartu yang
-   /// sama bisa dipakai di daftar teratas maupun di dalam grup sedalam apa pun.
+   /// One screen card in the home menu. It carries its own open command, so the template that draws it
+   /// need not know any view model above it - and so the same card can be used in the top list and inside
+   /// a group as deep as needed.
    /// </summary>
    public sealed class MenuNavigationVm : MvvmModelBase
    {
       public MenuNavigationVm(EmApp app, Navigation navigation) {
          EmApp = app;
          Navigation = navigation;
-         // Judul dan keterangannya disalin sekali di sini, tidak diikat ke navigasinya: menu harus
-         // tetap terbaca sama walau navigasinya berganti judul selagi menu ini terbuka.
+         // Its title and caption are copied once here, not bound to its navigation: the menu must keep reading
+         // the same even if the navigation changes its title while this menu is open.
          Title = navigation.Title;
          Subtitle = navigation.Subtitle;
          Description = navigation.Description;
@@ -59,27 +59,27 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(OpenCommand), OpenCommand);
       }
 
-      /// <summary>Layar yang dibuka kartu ini.</summary>
+      /// <summary>The screen this card opens.</summary>
       public Navigation Navigation { get; }
 
       /// <summary>Judul di kartu.</summary>
       public string Title { get; }
 
-      /// <summary>Baris kedua di kartu.</summary>
+      /// <summary>The second line of the card.</summary>
       public string Subtitle { get; }
 
-      /// <summary>Penjelasan panjang layar ini.</summary>
+      /// <summary>The long explanation of this screen.</summary>
       public string Description { get; }
 
-      /// <summary><c>true</c> kalau ada baris kedua yang perlu digambar.</summary>
+      /// <summary><c>true</c> when there is a second line to draw.</summary>
       public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
       public Task OpenCommand() => EmApp!.NavigateTo(Navigation);
    }
 
    /// <summary>
-   /// Satu tingkat di pohon menu home, hasil pemecahan <c>Navigation.MenuPath</c>. Sebuah grup bisa
-   /// berisi kartu layar, grup lain, atau keduanya.
+   /// One level of the home menu tree, resulting from splitting <c>Navigation.MenuPath</c>. A group may hold
+   /// screen cards, other groups, or both.
    /// </summary>
    public sealed class MenuGroup : MvvmModelBase
    {
@@ -87,33 +87,39 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(ToggleCommand), ToggleCommand);
       }
 
-      /// <summary>Nama grup, yaitu satu segmen dari <c>MenuPath</c>.</summary>
+      /// <summary>
+      /// The group name, that is, one segment of <c>MenuPath</c>.
+      /// </summary>
       public required string Header { get; init; }
 
-      /// <summary>Kedalaman grup, dimulai dari 1 untuk grup teratas.</summary>
+      /// <summary>
+      /// The depth of the group, starting from 1 for the top group. Used by the view to choose a display style.
+      /// </summary>
       public required int Level { get; init; }
 
-      /// <summary>Grup anak di bawah grup ini.</summary>
+      /// <summary>
+      /// The child groups under this group.
+      /// </summary>
       public ObservableCollection<MenuGroup> Groups { get; } = [];
 
-      /// <summary>Kartu layar yang berada langsung di grup ini.</summary>
+      /// <summary>The screen cards that sit directly in this group.</summary>
       public ObservableCollection<MenuNavigationVm> Items { get; } = [];
 
       /// <summary>
-      /// Apakah isi grup ini sedang terbuka. Mulai terbuka: menu yang seluruhnya tertutup saat layar
-      /// home dibuka menyembunyikan justru apa yang dicari penggunanya.
+      /// Whether the content of this group is open. It starts open: a menu that is entirely closed when the
+      /// home screen opens hides precisely what the user is looking for.
       /// </summary>
       public bool IsExpanded {
          get => Get<bool>(true);
          set => Set(value, _ => NotifyChanged(nameof(ChevronGlyph)));
       }
 
-      /// <summary>Chevron di kepala grup: menunjuk ke bawah saat terbuka, ke kanan saat tertutup.</summary>
+      /// <summary>The chevron in the group header: pointing down when open, to the right when closed.</summary>
       public string ChevronGlyph => IsExpanded ? FontIcons.ChevronDown : FontIcons.ChevronRight;
 
       /// <summary>
-      /// Geseran ke kanan yang menandakan kedalaman grup ini. Hanya satu tingkat yang digeser tiap
-      /// kali, karena pohonnya bisa sedalam apa pun dan geseran besar akan kehabisan lebar layar.
+      /// The shift to the right that shows the depth of this group. Only one level is shifted each time,
+      /// because the tree may be as deep as anything and a large shift would run out of screen width.
       /// </summary>
       public Thickness Indent => new((Level - 1) * 12, 0, 0, 0);
 
@@ -124,24 +130,27 @@ namespace Em.Ui.Maui.Navigations
    public class DefaultHomeControlVm : MvvmModelBase
    {
       /// <summary>
-      /// Daftar datar semua layar yang tampil di menu. Cukup isi koleksi ini:
-      /// <see cref="RootAppMenus"/> dan <see cref="AppMenuGroups"/> dibangun ulang sendiri dari
-      /// <c>Navigation.MenuPath</c> setiap kali isinya berubah.
+      /// The flat list of all screens shown in the menu. Just fill this collection:
+      /// <see cref="RootAppMenus"/> and <see cref="AppMenuGroups"/> are rebuilt by themselves from
+      /// <c>Navigation.MenuPath</c> every time its content changes.
       /// </summary>
       public ObservableCollection<MenuNavigationVm> AppMenus { get; } = [];
 
-      /// <summary>Layar tanpa <c>MenuPath</c>, digambar langsung di atas tanpa grup.</summary>
+      /// <summary>Screens without a <c>MenuPath</c>, drawn directly at the top without a group.</summary>
       public ObservableCollection<MenuNavigationVm> RootAppMenus { get; } = [];
 
-      /// <summary>Grup teratas hasil pemecahan <c>MenuPath</c>, masing-masing membawa isinya sendiri.</summary>
+      /// <summary>
+      /// The top level menu groups resulting from splitting <c>MenuPath</c>; each group holds its own
+      /// sub-groups and menus.
+      /// </summary>
       public ObservableCollection<MenuGroup> AppMenuGroups { get; } = [];
 
-      /// <summary><c>true</c> kalau belum ada satu pun layar module yang tampil.</summary>
+      /// <summary><c>true</c> when no module screen is shown yet.</summary>
       public bool IsModuleListEmpty => AppMenus.Count == 0;
 
       /// <summary>
-      /// Membangun ulang isi layar: daftar layar dan pohon menunya. Dipanggil setiap kali layar ini
-      /// dibuka atau diminta memuat ulang.
+      /// Rebuilds the content of the screen: the list of screens and the menu tree. Called every time this
+      /// screen is opened or asked to reload.
       /// </summary>
       public Task ReloadAsync() {
          if (EmApp is not { } app) return Task.CompletedTask;
@@ -164,7 +173,7 @@ namespace Em.Ui.Maui.Navigations
 
          foreach (var menu in AppMenus) {
             var segments = SplitMenuPath(menu.Navigation.MenuPath);
-            // Layar tanpa jalur menu bukan kesalahan - ia hanya duduk di atas pohon.
+            // A navigation without a usable path is not an error - it simply sits above the tree.
             if (segments.Length == 0) {
                RootAppMenus.Add(menu);
                continue;
@@ -174,16 +183,15 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      // "SALES/Administration" -> ["SALES", "Administration"]. Segmen kosong dibuang supaya pemisah
-      // yang terlanjur ganda atau menggantung tidak pernah melahirkan grup tanpa nama.
+      // "SALES/Administration" -> ["SALES", "Administration"]. Empty segments are dropped so a separator that
+      // is doubled or left dangling never produces a group without a name.
       private static string[] SplitMenuPath(MenuPath? path) {
          if (path == null || path.IsEmptyPath) return [];
          return path.Path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
       }
 
-      // Menyusuri jalur segmen demi segmen, membuat grup yang belum ada, lalu mengembalikan yang
-      // paling dalam. Pembandingannya mengabaikan besar-kecil huruf supaya "Sales" dan "SALES" tetap
-      // satu grup yang sama.
+      // Walks the path segment by segment, creating the groups that do not exist yet, and returns
+      // the deepest one. Matching is case-insensitive so "Sales" and "SALES" stay one group.
       private MenuGroup ResolveGroup(string[] segments) {
          var groups = AppMenuGroups;
          MenuGroup? current = null;

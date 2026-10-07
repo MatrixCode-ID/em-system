@@ -1,5 +1,5 @@
 ﻿using Em.Ui.Core.Shared;
-// Kedua namespace punya INavigation, dan yang dimaksud di sini selalu milik Em.
+// Both namespaces have an INavigation, and the one meant here is always Em's.
 using INavigation = Em.Ui.Core.Shared.INavigation;
 using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
 
@@ -11,8 +11,8 @@ namespace Em.Ui.Maui.Core
       private NavigationStack _mainStack = null!;
 
       /// <summary>
-      /// Dipicu setiap kali sebuah perpindahan navigasi berhasil. Pengirimnya adalah navigasi yang
-      /// ditinggalkan.
+      /// Raised every time a navigation move succeeds, in any stack. Its sender is the navigation that was
+      /// left.
       /// </summary>
       public event EventHandler<NavigationEventArgs>? Navigated;
 
@@ -30,10 +30,10 @@ namespace Em.Ui.Maui.Core
 
       #region Properties
 
-      /// <summary>Seluruh navigasi yang dikenal aplikasi.</summary>
+      /// <summary>All navigations known to the application.</summary>
       public IEnumerable<Navigation> Navigations => _allNavigations;
 
-      /// <summary>Stack utama aplikasi, yang ditampilkan halaman utamanya.</summary>
+      /// <summary>The application's main stack, which is shown by its main page.</summary>
       public NavigationStack MainStack => _mainStack;
 
       #endregion
@@ -52,35 +52,33 @@ namespace Em.Ui.Maui.Core
       internal void RaiseNavigated(object sender, NavigationEventArgs args) => Navigated?.Invoke(sender, args);
 
       /// <summary>
-      /// Mencari entri berjudul <paramref name="title"/> di semua stack, home termasuk. Huruf besar dan
-      /// kecil tidak dibedakan: judul adalah kunci, dan dua judul yang hanya beda huruf menunjuk
-      /// dokumen yang sama.
+      /// Looks for the entry titled <paramref name="title"/> in all stacks, home included. Case is not
+      /// distinguished: the title is a key, and two titles that differ only in case point to the same document.
       /// </summary>
-      /// <param name="title">Judul entri yang dicari.</param>
-      /// <returns>Entrinya, atau <c>null</c> kalau judul itu belum dipakai di mana pun.</returns>
+      /// <param name="title">The title of the entry being looked for.</param>
+      /// <returns>The entry, or <c>null</c> when that title is not used anywhere yet.</returns>
       public NavigationEntry? FindEntry(string title) => MainStack.FindEntry(title);
 
       /// <summary>
-      /// Membuka navigasi bernama <paramref name="name"/> relatif ke <see cref="MainStack"/>. Dari dalam
-      /// body, pakai <see cref="NavigationEntry.NavigateTo(string,object?)"/> milik entrinya sendiri.
+      /// Opens the navigation named <paramref name="name"/> relative to <see cref="MainStack"/>. From inside a
+      /// body, use <see cref="NavigationEntry.NavigateTo(string,object?)"/> of its own entry.
       /// </summary>
-      /// <param name="name">Nama navigasi tujuan.</param>
-      /// <param name="data">Parameter untuk layar tujuan, atau <c>null</c> kalau tidak ada.</param>
+      /// <param name="name">The name of the target navigation.</param>
+      /// <param name="data">The parameter for the target screen, or <c>null</c> when there is none.</param>
       /// <returns>
-      /// <c>false</c> kalau namanya tidak dikenal, user tidak berhak membukanya, atau perpindahannya
-      /// ditolak.
+      /// <c>false</c> when the name is unknown, the user is not entitled to open it, or the move is refused.
       /// </returns>
       public Task<bool> NavigateTo(string name, object? data = null) => NavigateTo(name, data, MainStack);
 
       /// <summary>
-      /// Membuka <paramref name="targetNav"/> relatif ke <see cref="MainStack"/>. Kalau judul yang
-      /// dihasilkan sudah dipakai sebuah entri, tampilan hanya dipindahkan ke entri itu - tanpa muat
-      /// ulang dan tanpa mengganti datanya. Dari dalam body, pakai
-      /// <see cref="NavigationEntry.NavigateTo(Navigation,object?)"/> milik entrinya sendiri.
+      /// Opens <paramref name="targetNav"/> relative to <see cref="MainStack"/>. When the resulting title is
+      /// already used by an entry, the display is only moved to that entry - without reloading and without
+      /// replacing its data. From inside a body, use
+      /// <see cref="NavigationEntry.NavigateTo(Navigation,object?)"/> of its own entry.
       /// </summary>
-      /// <param name="targetNav">Navigasi tujuan.</param>
-      /// <param name="data">Parameter untuk layar tujuan, atau <c>null</c> kalau tidak ada.</param>
-      /// <returns><c>false</c> kalau user tidak berhak membukanya, atau perpindahannya ditolak.</returns>
+      /// <param name="targetNav">The target navigation.</param>
+      /// <param name="data">The parameter for the target screen, or <c>null</c> when there is none.</param>
+      /// <returns><c>false</c> when the user is not entitled to open it, or the move is refused.</returns>
       public Task<bool> NavigateTo(Navigation targetNav, object? data = null) => NavigateTo(targetNav, data, MainStack);
 
       internal Task<bool> NavigateTo(string name, object? data, NavigationStack origin) {
@@ -104,7 +102,7 @@ namespace Em.Ui.Maui.Core
          (data as NavigationPayloadBase)?.Title is { Length: > 0 } title ? title : navigation.Title;
 
       /// <inheritdoc cref="NavigateToRoot(Navigation,object?)" />
-      /// <param name="name">Nama navigasi tujuan.</param>
+      /// <param name="name">The name of the target navigation.</param>
       /// <param name="data"><inheritdoc cref="NavigateToRoot(Navigation,object?)" path="/param[@name='data']" /></param>
       public Task<bool> NavigateToRoot(string name, object? data = null) {
          var nav = _allNavigations.FirstOrDefault(r => r.Name == name);
@@ -112,18 +110,17 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Membuka <paramref name="targetNav"/> di <see cref="MainStack"/> lalu menjadikannya satu-satunya
-      /// isi stack itu, sehingga tidak ada jalan kembali ke apa pun yang tadi terbuka. Dipakai untuk
-      /// perpindahan yang memulai ulang alur aplikasi - layar login saat aplikasi dibuka dan saat sesi
-      /// berakhir.
+      /// Opens <paramref name="targetNav"/> in <see cref="MainStack"/> then makes it the only content of that
+      /// stack, so there is no way back to anything that was open before. Used for a move that restarts the
+      /// application flow - the login screen when the application is opened and when the session ends.
       /// <para>
-      /// Bedanya dengan <see cref="NavigationStack.NavigateHome"/>: home tidak ikut dipasang. Sebelum
-      /// ada yang masuk, body home memang belum boleh dibangun sama sekali.
+      /// Different from <see cref="NavigationStack.NavigateHome"/>: home is not installed. Before anyone has
+      /// signed in, the home body must not be built at all.
       /// </para>
       /// </summary>
-      /// <param name="targetNav">Navigasi yang akan menjadi akar stack yang baru.</param>
-      /// <param name="data">Parameter untuk navigasi tujuan, atau <c>null</c> kalau tidak ada.</param>
-      /// <returns><c>false</c> kalau perpindahannya dibatalkan; stack dibiarkan apa adanya.</returns>
+      /// <param name="targetNav">The navigation that becomes the root of the new stack.</param>
+      /// <param name="data">The parameter for the target navigation, or <c>null</c> when there is none.</param>
+      /// <returns><c>false</c> when the move is cancelled; the stack is left as it is.</returns>
       public Task<bool> NavigateToRoot(Navigation targetNav, object? data = null) =>
          MainStack.NavigateToRoot(targetNav, data);
 

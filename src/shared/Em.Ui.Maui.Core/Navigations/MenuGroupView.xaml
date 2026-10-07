@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Satu grup di pohon menu home, berikut seluruh isinya. Grup anak digambar dengan control yang sama
-   - template di bawah menyebut dirinya sendiri - jadi kedalaman pohonnya ditentukan MenuPath, bukan
-   oleh berapa tingkat yang kebetulan pernah ditulis di sini. MAUI tidak punya Expander, jadi yang
-   membuka dan menutup adalah IsVisible pada isinya, dengan chevron di kepala sebagai penandanya.
--->
+<!-- One group in the home menu tree, together with all its content. A child group is drawn with the same
+     control - the template below names itself - so the depth of the tree is decided by MenuPath, not by
+     how many levels happen to have been written here. MAUI has no Expander, so what opens and closes is
+     IsVisible on its content, with the chevron in the header as its marker. -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
@@ -26,8 +24,8 @@
 
       <VerticalStackLayout Spacing="8" IsVisible="{Binding IsExpanded}" Margin="{Binding Indent}">
 
-         <!-- Kartu milik grup ini lebih dulu, baru grup yang bersarang di bawahnya - urutan yang sama
-              dengan cara tingkatannya dibaca. -->
+         <!-- This group's own cards first, then the groups nested below it - the same order in which its levels
+              are read. -->
          <VerticalStackLayout Spacing="10"
                               BindableLayout.ItemsSource="{Binding Items}"
                               BindableLayout.ItemTemplate="{StaticResource navigationTileTemplate}" />

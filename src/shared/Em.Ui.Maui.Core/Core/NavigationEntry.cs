@@ -1,16 +1,16 @@
 using System.ComponentModel;
 using Em.Ui.Core.Shared;
-// Kedua namespace punya INavigation, dan yang dimaksud di sini selalu milik Em.
+// Both namespaces have an INavigation, and the one meant here is always Em's.
 using INavigation = Em.Ui.Core.Shared.INavigation;
 using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
 
 namespace Em.Ui.Maui.Core
 {
    /// <summary>
-   /// Satu tempat di sebuah <see cref="NavigationStack"/>: navigasi yang sedang terbuka berikut body,
-   /// data, dan judulnya sendiri. Dibuat oleh stack saat sebuah layar dibuka dengan judul yang belum
-   /// ada; module tidak membuatnya sendiri, melainkan menerimanya lewat
-   /// <see cref="NavigationEventArgs.Entry"/> atau <see cref="Shared.MvvmModelBase.NavigationEntry"/>.
+   /// One place in a <see cref="NavigationStack"/>: a navigation that is open together with its own body,
+   /// data, and title. Created by the stack when a screen is opened with a title that does not yet exist;
+   /// modules do not create it themselves but receive it through <see cref="NavigationEventArgs.Entry"/> or
+   /// <see cref="Shared.MvvmModelBase.NavigationEntry"/>.
    /// </summary>
    public sealed class NavigationEntry : INavigationEntry, INotifyPropertyChanged
    {
@@ -33,30 +33,30 @@ namespace Em.Ui.Maui.Core
 
       #endregion
 
-      /// <summary>Definisi layar yang dibuka entri ini.</summary>
+      /// <summary>The definition of the screen this entry opens.</summary>
       public Navigation Navigation { get; }
 
-      /// <summary>Stack yang memegang entri ini.</summary>
+      /// <summary>The stack that holds this entry.</summary>
       public NavigationStack Stack { get; }
 
-      /// <summary>Objek aplikasi pemilik entri ini.</summary>
+      /// <summary>The application object that owns this entry.</summary>
       public EmApp EmApp => Stack.EmApp;
 
       /// <summary>
-      /// Judul yang tampil, sekaligus kunci unik entri ini di seluruh aplikasi. Diganti lewat
-      /// <see cref="SetTitle"/>, bukan ditulis langsung, supaya keunikannya tetap terjaga.
+      /// The title shown, which is also this entry's unique key across the whole application. Changed through
+      /// <see cref="SetTitle"/>, not written directly, so its uniqueness stays guarded.
       /// </summary>
       public string Title { get; private set; }
 
-      /// <summary>Parameter yang dipakai saat entri ini dibuka, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>The parameter used when this entry was opened, or <c>null</c> when there is none.</summary>
       public object? Data { get; }
 
       /// <summary>
-      /// Body milik entri ini. Entri yang dibuka lewat navigasi sudah membangunnya saat dibuat; hanya
-      /// home yang menunggu sampai benar-benar ditampilkan, karena sebelum ada yang masuk body home
-      /// memang belum boleh dibangun.
+      /// The body owned by this entry. An entry opened through navigation already built it when it was
+      /// created; only home waits until it is really shown, because before anyone has signed in the home body
+      /// must not be built yet.
       /// </summary>
-      /// <exception cref="InvalidOperationException">Kalau entri ini sudah dilepas dari stack-nya.</exception>
+      /// <exception cref="InvalidOperationException">When this entry has already been released from its stack.</exception>
       public INavigationBody Body {
          get {
             // A released entry has left every stack for good; building a fresh body for it here would

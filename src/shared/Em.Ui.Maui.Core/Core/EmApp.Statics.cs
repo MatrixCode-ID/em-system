@@ -11,13 +11,14 @@ using Em.Ui.Maui.Shared;
 namespace Em.Ui.Maui.Core
 {
    /// <summary>
-   /// Objek aplikasi utama untuk sisi MAUI (analog dengan <c>EmApp</c> di backend dan di client
-   /// desktop), menampung DI container, konfigurasi navigasi/module, koneksi API tersimpan, dan tema
-   /// aplikasi. Dibuat sekali lewat <see cref="BuildApp"/> saat startup aplikasi.
+   /// The main application object for the MAUI side (analogous to <c>EmApp</c> in the backend and in the
+   /// desktop client), holding the DI container, the registered navigations and modules, the saved API
+   /// connections, and the application theme. Created once through <see cref="BuildApp"/> when the
+   /// application starts.
    /// </summary>
    /// <remarks>
-   /// Hanya mengenal satu layar pada satu waktu. Tidak ada layout bertab di sini - jalur navigasinya
-   /// satu garis lurus, persis seperti layout single page di client desktop.
+   /// It only knows one screen at a time. There is no tabbed layout here - its navigation path is a single
+   /// straight line, exactly like the single-page layout of the desktop client.
    /// </remarks>
    public partial class EmApp
    {
@@ -25,37 +26,37 @@ namespace Em.Ui.Maui.Core
 
 
       /// <summary>
-      /// Nama navigasi layar login, didaftarkan aplikasi sendiri lewat
-      /// <see cref="InitInternalNavigation"/>. Ada sebagai konstanta karena bukan cuma pendaftarnya
-      /// yang menyebut nama ini: <see cref="ShowLoginScreen"/> memakainya untuk membuka layar login,
-      /// dan menu akun memakainya saat user keluar - ketiganya harus menunjuk navigasi yang sama persis.
+      /// The navigation name of the login screen, registered by the application itself through
+      /// <see cref="InitInternalNavigation"/>. It exists as a constant because it is not only its registrar
+      /// that names it: <see cref="ShowLoginScreen"/> uses it to open the login screen, and the account menu uses it when
+      /// the user signs out - all three must point to exactly the same navigation.
       /// </summary>
       public const string LogonNavigationName = "admin.logon";
 
-      /// <summary>Nama navigasi layar ganti kata sandi milik pengguna yang sedang masuk.</summary>
+      /// <summary>The navigation name of the change password screen of the signed-in user.</summary>
       public const string ChangePasswordNavigationName = "admin.changepassword";
 
-      /// <summary>Nama navigasi layar home bawaan.</summary>
+      /// <summary>The navigation name of the default home screen.</summary>
       public const string HomeNavigationName = "Home";
 
       #endregion
 
       /// <summary>
-      /// Membangun instance <see cref="EmApp"/>: mendaftarkan service internal (hashing, penyimpan
-      /// sesi, dsb.), menjalankan callback <paramref name="builder"/> agar module bisa mendaftarkan
-      /// service dan navigasi masing-masing, lalu membangun <see cref="ServiceProvider"/> dari DI container.
+      /// Builds the <see cref="EmApp"/> instance: registers the internal services (hashing, the session
+      /// store, etc.), runs the <paramref name="builder"/> callback so modules can register their own
+      /// services and navigations, then builds the <see cref="ServiceProvider"/> from the DI container.
       /// </summary>
-      /// <param name="args">Argumen command-line aplikasi.</param>
-      /// <param name="builder">Callback konfigurasi, dipakai module untuk memanggil <c>AddServices</c>/<c>AddNavigation</c>.</param>
-      /// <returns>Instance <see cref="EmApp"/> yang siap dijalankan lewat <see cref="Run{TApp}"/>.</returns>
+      /// <param name="args">The application's command-line arguments.</param>
+      /// <param name="builder">The configuration callback, used by modules to call <c>AddServices</c>/<c>AddNavigation</c>.</param>
+      /// <returns>The <see cref="EmApp"/> instance, ready to be run through <see cref="Run{TApp}"/>.</returns>
       public static EmApp BuildApp(string[] args, Action<EmAppBuilder> builder) {
          var app = new EmApp(args);
 
          InitInternalServices(app);
          InitBuilder(app, builder);
 
-         // Ditutup di sini, bukan di ujung InitBuilder: dari luar, "selesai dibangun" berarti selesai
-         // seluruh BuildApp, dan satu-satunya tempat yang boleh menentukan saat itu adalah baris ini.
+         // Closed here, not at the end of InitBuilder: from outside, "finished being built" means all of
+         // BuildApp has finished, and the only place that may decide that moment is this line.
          app.SealInternalClaims();
 
          app._serviceProvider = app.Services.BuildServiceProvider();
@@ -63,34 +64,33 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Menyiapkan aplikasi MAUI-nya: mendaftarkan <typeparamref name="TApp"/> sebagai kelas aplikasi,
-      /// menitipkan objek ini ke container MAUI supaya bisa diminta lewat constructor, lalu
-      /// mengembalikan <see cref="MauiApp"/> yang tinggal dijalankan platform.
+      /// Prepares the MAUI application: registers <typeparamref name="TApp"/> as the application class,
+      /// hands this object to the MAUI container so it can be asked for through a constructor, then returns
+      /// the <see cref="MauiApp"/> that the platform only needs to run.
       /// </summary>
-      /// <typeparam name="TApp">Kelas <c>Application</c> milik aplikasi.</typeparam>
+      /// <typeparam name="TApp">The application's <c>Application</c> class.</typeparam>
       /// <param name="configure">
-      /// Kesempatan aplikasi menambahkan konfigurasi MAUI-nya sendiri - font, logging, handler - sebelum
-      /// dibangun. Boleh dikosongkan.
+      /// A chance for the application to add its own MAUI configuration - fonts, logging, handlers - before it
+      /// is built. May be left empty.
       /// </param>
       /// <remarks>
-      /// Inilah padanan MAUI dari <c>Run</c> di client desktop. Bedanya, yang di sana blocking sampai
-      /// aplikasi ditutup, sementara di sini siklus hidupnya dipegang platform - layar pertama baru
-      /// dipasang nanti lewat <see cref="CreateRootPage"/>.
+      /// This is the MAUI counterpart of <c>Run</c> in the desktop client. The difference is that there it
+      /// blocks until the application is closed, while here its lifecycle is held by the platform - the first
+      /// screen is only installed later through <see cref="CreateRootPage"/>.
       /// </remarks>
       public MauiApp Run<TApp>(Action<MauiAppBuilder>? configure = null) where TApp : class, IApplication {
          var mauiBuilder = MauiApp.CreateBuilder();
          mauiBuilder.UseMauiApp<TApp>();
 
-         // Font ikon didaftarkan di sini, bukan di aplikasi yang memakainya: berkas font-nya ikut
-         // dibawa library ini, jadi library ini pula yang bertanggung jawab memperkenalkannya. Kalau
-         // pendaftarannya diserahkan ke host, satu baris yang terlupa membuat seluruh ikon muncul
-         // sebagai kotak kosong tanpa pesan kesalahan apa pun.
+         // The icon font is registered here, not in the application that uses it: its font file is carried by this
+         // library, so this library is also the one responsible for introducing it. If registration were left to
+         // the host, one forgotten line would make all icons appear as empty boxes without any error message.
          mauiBuilder.ConfigureFonts(fonts =>
             fonts.AddFont("Font Awesome 7 Free-Solid-900.otf", FontIcons.FontFamily));
 
-         // Container MAUI hanya perlu tahu satu hal: objek aplikasi ini. Pendaftaran service module
-         // seluruhnya tinggal di container milik EmApp sendiri (lihat BuildApp), sama seperti di
-         // client desktop - jadi kelas Application cukup meminta EmApp lewat constructor-nya.
+         // The MAUI container only needs to know one thing: this application object. Registration of module
+         // services lives entirely in EmApp's own container (see BuildApp), just like in the desktop client - so
+         // the Application class only needs to ask for EmApp through its constructor.
          mauiBuilder.Services.AddSingleton(this);
          mauiBuilder.Services.AddSingleton<IEmApp>(this);
          mauiBuilder.Services.AddSingleton<IEmAppUi>(this);
@@ -100,9 +100,9 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Mendaftarkan service inti bawaan aplikasi ke DI container: hashing, instance
-      /// <see cref="EmApp"/> itu sendiri (lewat ketiga kontraknya), penyimpan sesi, dan service data
-      /// inti yang dipakai lintas module - saat ini data kontak dan data kredensial pengguna.
+      /// Registers the application's built-in core services into the DI container: hashing, the
+      /// <see cref="EmApp"/> instance itself (through its three contracts), and the core data services used
+      /// across modules - currently contact data and user credential data.
       /// </summary>
       private static void InitInternalServices(EmApp app) {
          app.Services.AddSingleton<IStringHasher, Argon2Hashing>();
@@ -118,8 +118,8 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Menjalankan callback <paramref name="builder"/> untuk konfigurasi dari module, lalu memasang
-      /// hasilnya ke aplikasi: nama, brand, aturan sandi, navigasi, dan konfigurasi debug.
+      /// Runs the <paramref name="builder"/> callback for configuration from modules, then prepares the main
+      /// stack according to the chosen layout and registers all the navigations that were collected.
       /// </summary>
       private static void InitBuilder(EmApp app, Action<EmAppBuilder> builder) {
          var pars = new EmAppBuilder {
@@ -131,8 +131,8 @@ namespace Em.Ui.Maui.Core
          builder(pars);
 
          app.ApplicationName = pars.ApplicationName ?? "Set ApplicationName to change!";
-         // Dibuat sesudah nama aplikasi diketahui, karena nama itulah yang jadi awalan setiap kunci
-         // pengaturan - membuatnya lebih awal berarti menulis ke awalan yang salah.
+         // Created after the application name is known, because that name is the prefix of every setting key -
+         // creating it earlier would mean writing to the wrong prefix.
          app.Settings = new AppSettings(app.ApplicationName);
 
          var home = pars.CustomHomeNavigation ?? new Navigation {
@@ -160,8 +160,8 @@ namespace Em.Ui.Maui.Core
          // Handed to the palette before App builds its resources: every style reads its colours once,
          // while it loads, so a value written any later would never reach them.
          Styles.Palette.Branding = app.Branding;
-         // Setiap property PasswordPolicy sudah membawa nilai bawaannya sendiri, jadi instance kosong
-         // adalah aturan yang berlaku kalau aplikasi tidak pernah memanggil UsePasswordPolicy.
+         // Every PasswordPolicy property already carries its own default value, so an empty instance is the rule
+         // in force when the application never calls UsePasswordPolicy.
          app.PasswordPolicy = pars.PasswordPolicy ?? new PasswordPolicy();
 
          pars.Navigations.EachOf(app.AddNavigation);
@@ -174,10 +174,10 @@ namespace Em.Ui.Maui.Core
          app.DebugConnections = [.. pars.DebugBuilder.Connections];
          app.DefaultDebugConnection = pars.DebugBuilder.DefaultConnection;
 
-         // Ditandatangani sekali di sini, sesudah callback debug selesai dan sebelum layar pertama muncul,
-         // supaya key yang salah ketik ketahuan sekarang - bukan nanti saat setiap request dijawab dengan
-         // "action not found" tanpa keterangan apa-apa. Yang diteruskan ke koneksi adalah tokennya, bukan
-         // key-nya, jadi jalur request tidak pernah menyentuh kriptografi.
+         // Signed once here, after the debug callback has finished and before the first screen appears, so a
+         // mistyped key is found now - not later when every request is answered with "action not found" without
+         // any explanation. What is passed to the connection is the token, not the key, so the request path never
+         // touches cryptography.
          var debugToken = pars.DebugBuilder.CreateDebugToken();
          app.DebugConnections.EachOf(r => r.DebugToken = debugToken);
 
@@ -211,10 +211,10 @@ namespace Em.Ui.Maui.Core
             cCommNote = "N/A"
          });
 
-      // Akun administrator bawaan tidak punya baris pengguna di mana pun - sama seperti akun
-      // debugger di atas, dan dibuatkan di sini dengan alasan yang sama: ia berdiri menggantikan
-      // seorang pengguna tanpa pernah tersimpan sebagai satu. Bedanya, akun ini benar-benar masuk
-      // lewat layar login, jadi ia ada di build apa pun, bukan cuma di mode debug.
+      // The built-in administrator account has no user row anywhere - just like the debugger account above,
+      // and it is created here for the same reason: it stands in for a user without ever being stored as one.
+      // The difference is that this account really signs in through the login screen, so it exists in any
+      // build, not only in debug mode.
       private static User CreateAdminUser(EmApp app) =>
          User.Build(app, new vi_User {
             cUserId = Defaults.AdminUserId,
@@ -238,9 +238,9 @@ namespace Em.Ui.Maui.Core
             cCommNote = "N/A"
          });
 
-      // Claim milik layar bawaan client. Masih kosong di sisi MAUI: layar pengelola pengguna dan
-      // pengelola role belum ada di sini, dan sebuah claim tanpa layar yang memakainya hanya akan
-      // muncul di daftar pemberian hak sebagai baris yang tidak mengerjakan apa-apa.
+      // The claims of the client's built-in screens. Still empty on the MAUI side: the user manager and role
+      // manager screens do not exist here yet, and a claim without a screen that uses it would only appear in
+      // the grant list as a row that does nothing.
       private static void InitInternalClaims(EmApp app) {
       }
 

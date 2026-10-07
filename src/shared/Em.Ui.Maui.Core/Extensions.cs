@@ -6,18 +6,19 @@ using Em.Ui.Maui.Shared;
 // ReSharper disable once CheckNamespace
 
 /// <summary>
-/// Kumpulan extension method untuk kebutuhan UI MAUI: konfigurasi mode debug, jalan masuk module ke
-/// claim miliknya, inisial nama untuk avatar, dan serialisasi pesan exception.
+/// A collection of extension methods for MAUI UI needs: debug mode configuration, a module's way into
+/// its claims, name initials for avatars, and exception message serialization.
 /// </summary>
 public static class Extensions
 {
    /// <summary>
-   /// Menyalakan mode debug aplikasi: koneksi debug yang dipakai dan key debug yang menandatangani
-   /// token-nya. Panggil sekali saat konfigurasi awal aplikasi, biasanya di dalam <c>#if DEBUG</c>.
+   /// Turns on the application's debug mode: the debug connection that is used and the debug key that
+   /// signs its token. Call it once during the application's initial configuration, usually inside
+   /// <c>#if DEBUG</c>.
    /// </summary>
-   /// <param name="appBuilder">Builder aplikasi yang sedang dikonfigurasi.</param>
-   /// <param name="builder">Callback yang mengisi koneksi dan key debug.</param>
-   /// <returns>Builder yang sama, supaya pemanggilannya bisa dirangkai.</returns>
+   /// <param name="appBuilder">The application builder being configured.</param>
+   /// <param name="builder">The callback that fills in the debug connections and key.</param>
+   /// <returns>The same builder, so calls can be chained.</returns>
    public static EmAppBuilder AddDebug(this EmAppBuilder appBuilder, Action<DebugBuilder> builder) {
       var obj = new DebugBuilder();
       builder(obj);
@@ -26,15 +27,15 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Jalan masuk module ke claim milik service-nya sendiri: <c>Services.Claims()["CreateNewItem"]</c>.
-   /// Tinggal di sini, bukan di <c>Em.Ui.Core</c>, karena inilah satu-satunya potongan yang perlu
-   /// tahu <see cref="EmApp"/> - <c>ClaimCollection</c> sendiri tidak menyentuh MAUI sama sekali.
-   /// Objeknya dibentuk ulang setiap pemanggilan; jangan disimpan di field.
+   /// A module's way into the claims of its own service: <c>Services.Claims()["CreateNewItem"]</c>. It
+   /// lives here, not in <c>Em.Ui.Core</c>, because this is the only piece that needs to know
+   /// <see cref="EmApp"/> - <c>ClaimCollection</c> itself does not touch MAUI at all. The object is formed
+   /// again on every call; do not keep it in a field.
    /// </summary>
-   /// <param name="services">Service module yang ditanyakan claim-nya.</param>
+   /// <param name="services">The module service whose claims are asked.</param>
    /// <exception cref="InvalidOperationException">
-   /// Dilempar kalau <paramref name="services"/> bukan turunan <see cref="ServiceMauiBase"/> - pemasangan
-   /// yang salah, bukan "tidak punya hak", jadi tidak dijawab sebagai collection kosong.
+   /// Thrown when <paramref name="services"/> does not derive from <see cref="ServiceMauiBase"/> - a wrong
+   /// setup, not "has no right", so it is not answered with an empty collection.
    /// </exception>
    public static ClaimCollection Claims(this IServices services) =>
       services is ServiceMauiBase svc
@@ -43,16 +44,16 @@ public static class Extensions
             $"Service '{services.GetType().FullName}' is not a MAUI client service, so its claims cannot be resolved.");
 
    /// <summary>
-   /// Menyusun inisial dua huruf dari sebuah nama, untuk dipakai sebagai isi lingkaran avatar -
-   /// "SYSTEM DEBUGGER" jadi "SD". Selalu menghasilkan sesuatu: <c>?</c> untuk nama yang kosong,
-   /// supaya lingkarannya tidak pernah tampil melompong.
+   /// Composes the two-letter initials of a name, to be used as the content of an avatar circle -
+   /// "SYSTEM DEBUGGER" becomes "SD". It always produces something: <c>?</c> for an empty name, so the
+   /// circle never appears empty.
    /// </summary>
-   /// <param name="name">Nama yang akan diambil inisialnya.</param>
-   /// <returns>Inisial dalam huruf besar, paling banyak dua huruf.</returns>
+   /// <param name="name">The name whose initials are taken.</param>
+   /// <returns>The initials in uppercase, at most two letters.</returns>
    /// <remarks>
-   /// Dua huruf, bukan satu: satu huruf terlalu mudah dipakai bersama separuh orang di satu
-   /// perusahaan. Nama yang cuma sepatah kata tidak punya nama belakang untuk diambil, jadi ia
-   /// menyerahkan huruf keduanya sendiri - "debugger" terbaca "DE", bukan "D" yang berdiri sendirian.
+   /// Two letters, not one: one letter is too easily shared by half the people in one company. A name of a
+   /// single word has no last name to take, so it hands over its own second letter - "debugger" reads "DE",
+   /// not a lone "D".
    /// </remarks>
    public static string ToInitials(this string? name) {
       var words = (name ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
@@ -64,12 +65,12 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menyusun ringkasan pesan dari sebuah exception beserta seluruh inner exception-nya
-   /// (termasuk <see cref="AggregateException"/> yang di-flatten), berupa teks bertingkat
-   /// (indentasi per level) untuk ditampilkan ke user/log secara ringkas.
+   /// Composes a summary of the messages of an exception together with all its inner exceptions
+   /// (including a flattened <see cref="AggregateException"/>), as tiered text (indented per level) to be
+   /// shown to the user/log concisely.
    /// </summary>
-   /// <param name="x">Exception yang akan diserialisasi.</param>
-   /// <returns>Teks ringkasan pesan exception secara bertingkat.</returns>
+   /// <param name="x">The exception to serialize.</param>
+   /// <returns>The tiered summary text of the exception messages.</returns>
    public static string SerializedMessagesDefault(this Exception x) {
       var sb = new System.Text.StringBuilder();
       var exceptions = new Stack<(Exception Exception, int Level)>();

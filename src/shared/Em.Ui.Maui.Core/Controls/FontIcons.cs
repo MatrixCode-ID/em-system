@@ -1,96 +1,96 @@
 ﻿namespace Em.Ui.Maui.Controls
 {
    /// <summary>
-   /// Kumpulan ikon Font Awesome dalam bentuk karakter glyph, siap dipasang ke
+   /// A collection of Font Awesome icons in the form of glyph characters, ready to be attached to
    /// <see cref="FontIcon.Glyph"/>.
    /// </summary>
    /// <remarks>
-   /// Client ini memakai Font Awesome 7 Free, yang berkasnya ikut dibawa library ini dan didaftarkan
-   /// sendiri olehnya saat aplikasi dibangun. Nilai di sini ditulis sebagai codepoint Unicode, bukan
-   /// nama enum dari sebuah paket: paket Font Awesome yang dipakai client WPF tidak punya target
-   /// Android, dan bagian yang netral framework pun tidak memuat codepoint-nya. Codepoint ikon lama
-   /// stabil antar versi mayor, jadi tabel ini tetap cocok dengan Font Awesome 6 di client WPF.
+   /// This client uses Font Awesome 7 Free, whose file is carried by this library and registered by it when
+   /// the application is built. The values here are written as Unicode codepoints, not as the enum names of
+   /// a package: the Font Awesome package used by the WPF client has no Android target, and even its
+   /// framework-neutral part does not carry the codepoints. The codepoints of old icons are stable across
+   /// major versions, so this table still matches Font Awesome 6 in the WPF client.
    /// </remarks>
    public static class FontIcons
    {
-      /// <summary>Nama alias font yang memuat semua glyph di class ini.</summary>
+      /// <summary>The name of the font alias that holds all the glyphs in this class.</summary>
       public const string FontFamily = "FontAwesomeSolid";
 
-      /// <summary>Panjang sisi bawaan sebuah ikon dalam satuan perangkat.</summary>
+      /// <summary>The default side length of an icon in device units.</summary>
       public const double DefaultSize = 24d;
 
-      /// <summary>Panah ke kiri, kembali ke layar sebelumnya.</summary>
+      /// <summary>A left arrow, going back to the previous screen.</summary>
       public const string ArrowLeft = "";
 
-      /// <summary>Panah ke kanan, maju ke layar berikutnya.</summary>
+      /// <summary>A right arrow, going forward to the next screen.</summary>
       public const string ArrowRight = "";
 
-      /// <summary>Panah melingkar searah jarum jam, memuat ulang isi layar.</summary>
+      /// <summary>A clockwise circular arrow, reloading the content of the screen.</summary>
       public const string RotateRight = "";
 
-      /// <summary>Rumah, layar utama.</summary>
+      /// <summary>A house, the home screen.</summary>
       public const string House = "";
 
-      /// <summary>Kaca pembesar, penanda kotak pencarian.</summary>
+      /// <summary>A magnifying glass, the mark of a search box.</summary>
       public const string MagnifyingGlass = "";
 
-      /// <summary>Panah ke bawah, penanda grup yang sedang terbuka.</summary>
+      /// <summary>A down arrow, the mark of a group that is open.</summary>
       public const string ChevronDown = "";
 
-      /// <summary>Panah ke kanan, penanda grup yang sedang tertutup.</summary>
+      /// <summary>A right arrow, the mark of a group that is closed.</summary>
       public const string ChevronRight = "";
 
-      /// <summary>Roda gigi, penanda pengaturan.</summary>
+      /// <summary>A gear, the mark of settings.</summary>
       public const string Gear = "";
 
-      /// <summary>Steker, penanda sambungan ke server.</summary>
+      /// <summary>A plug, the mark of a connection to a server.</summary>
       public const string Plug = "";
 
-      /// <summary>Panah masuk pintu, memulai sesi.</summary>
+      /// <summary>An arrow into a door, starting a session.</summary>
       public const string RightToBracket = "";
 
-      /// <summary>Panah keluar pintu, mengakhiri sesi.</summary>
+      /// <summary>An arrow out of a door, ending a session.</summary>
       public const string RightFromBracket = "";
 
-      /// <summary>Kunci, penanda kata sandi.</summary>
+      /// <summary>A key, the mark of a password.</summary>
       public const string Key = "\uf084";
 
-      /// <summary>Centang, penanda syarat yang sudah terpenuhi.</summary>
+      /// <summary>A check mark, the mark of a requirement that is met.</summary>
       public const string Check = "\uf00c";
 
-      /// <summary>Amplop, penanda alamat surel.</summary>
+      /// <summary>An envelope, the mark of an e-mail address.</summary>
       public const string Envelope = "";
 
-      /// <summary>Tanda silang, menutup panel.</summary>
+      /// <summary>A cross, closing a panel.</summary>
       public const string Xmark = "";
 
-      /// <summary>Dua bilah bertumpuk, penanda server.</summary>
+      /// <summary>Two stacked bars, the mark of a server.</summary>
       public const string Server = "";
 
-      /// <summary>Lingkaran separuh terisi, tombol ganti tema.</summary>
+      /// <summary>A half-filled circle, the theme switch button.</summary>
       /// <remarks>
-      /// Satu glyph untuk kedua arah, sama seperti client desktop: tombolnya berarti "ganti tema",
-      /// bukan "tema yang sedang aktif", jadi gambarnya tidak perlu ikut berganti. Yang menyebut tema
-      /// tujuannya adalah teks di sampingnya, di tempat yang memang punya teks.
+      /// One glyph for both directions, just like the desktop client: the button means "change theme", not "the
+      /// theme currently active", so its picture need not change. What names the target theme is the text
+      /// beside it, in a place that does have text.
       /// </remarks>
       public const string CircleHalfStroke = "\uf042";
 
-      /// <summary>Bulan sabit, penanda tema gelap.</summary>
+      /// <summary>A crescent moon, the mark of the dark theme.</summary>
       public const string Moon = "";
 
-      /// <summary>Matahari, penanda tema terang.</summary>
+      /// <summary>A sun, the mark of the light theme.</summary>
       public const string Sun = "";
 
-      /// <summary>Siluet orang, penanda pengguna.</summary>
+      /// <summary>A person silhouette, the mark of a user.</summary>
       public const string User = "";
 
-      /// <summary>Gembok terbuka, penanda pengguna yang belum masuk.</summary>
+      /// <summary>An open padlock, the mark of a user who has not signed in.</summary>
       public const string LockOpen = "";
 
-      /// <summary>Empat persegi besar, penanda kumpulan module.</summary>
+      /// <summary>Four large squares, the mark of a collection of modules.</summary>
       public const string TableCellsLarge = "";
 
-      /// <summary>Jendela, penanda sebuah layar module.</summary>
+      /// <summary>A window, the mark of a module screen.</summary>
       public const string WindowMaximize = "";
    }
 }

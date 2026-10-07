@@ -3,16 +3,16 @@ using System.Collections.ObjectModel;
 namespace Em.Ui.Maui.Shared
 {
    /// <summary>
-   /// Koleksi <see cref="UiCommandBase"/> milik satu <see cref="MvvmModelBase"/>, dengan
-   /// pencarian tambahan berdasarkan nama command.
+   /// The collection of <see cref="UiCommandBase"/> belonging to one <see cref="MvvmModelBase"/>, with an
+   /// additional lookup by command name.
    /// </summary>
    public class UiCommandBaseCollection : Collection<UiCommandBase>
    {
       /// <summary>
-      /// Mengambil command berdasarkan namanya.
+      /// Gets a command by its name.
       /// </summary>
-      /// <param name="name">Nama command yang dicari.</param>
-      /// <returns>Command dengan nama yang cocok, atau <c>null</c> jika tidak ditemukan.</returns>
+      /// <param name="name">The name of the command being looked for.</param>
+      /// <returns>The command with a matching name, or <c>null</c> when it is not found.</returns>
       public UiCommandBase? this[string name] => this.SingleOrDefault(command => command.Name == name);
    }
 }

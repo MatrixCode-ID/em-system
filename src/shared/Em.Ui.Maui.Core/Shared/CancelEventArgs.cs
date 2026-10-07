@@ -1,41 +1,41 @@
 namespace Em.Ui.Maui.Shared
 {
    /// <summary>
-   /// Argumen event yang bisa membatalkan (cancel) sebuah aksi yang sedang berjalan, dipakai
-   /// mis. pada event <c>UiCommandBase.CommandExecuting</c> untuk membatalkan eksekusi command.
+   /// Event arguments that can cancel an action in progress, used e.g. on the
+   /// <c>UiCommandBase.CommandExecuting</c> event to cancel a command's execution.
    /// </summary>
    public class CancelEventArgs : EventArgs
    {
       /// <summary>
-      /// Instance kosong dengan nilai default (tidak dibatalkan), untuk kemudahan pemakaian.
+      /// An empty instance with default values (not cancelled), for ease of use.
       /// </summary>
       public static new CancelEventArgs Empty => new();
 
       /// <summary>
-      /// Set <c>true</c> oleh listener untuk membatalkan aksi yang sedang diproses.
+      /// Set to <c>true</c> by a listener to cancel the action being processed.
       /// </summary>
       public bool Cancel { get; set; }
 
       /// <summary>
-      /// Deskripsi alasan pembatalan, dipakai sebagai pesan default jika <see cref="ThrowException"/> aktif
-      /// tanpa <see cref="ExceptionToThrow"/> yang eksplisit.
+      /// A description of the reason for cancelling, used as the default message when
+      /// <see cref="ThrowException"/> is on without an explicit <see cref="ExceptionToThrow"/>.
       /// </summary>
       public string Description { get; set; } = "";
 
       /// <summary>
-      /// Data tambahan bebas yang bisa dititipkan listener ke pemroses event.
+      /// Free additional data that a listener may leave for the event's processor.
       /// </summary>
       public object? Tag { get; set; }
 
       /// <summary>
-      /// Jika <c>true</c>, pemroses event akan melempar exception (lihat <see cref="ExceptionToThrow"/>)
-      /// alih-alih hanya membatalkan aksi secara diam-diam.
+      /// When <c>true</c>, the event's processor throws an exception (see <see cref="ExceptionToThrow"/>)
+      /// instead of just cancelling the action silently.
       /// </summary>
       public bool ThrowException { get; set; }
 
       /// <summary>
-      /// Exception spesifik yang akan dilempar jika <see cref="ThrowException"/> bernilai <c>true</c>.
-      /// Jika <c>null</c>, dipakai <see cref="OperationCanceledException"/> dengan pesan dari <see cref="Description"/>.
+      /// The specific exception to throw when <see cref="ThrowException"/> is <c>true</c>. When <c>null</c>,
+      /// an <see cref="OperationCanceledException"/> with the message from <see cref="Description"/> is used.
       /// </summary>
       public Exception? ExceptionToThrow { get; set; }
    }

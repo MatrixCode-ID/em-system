@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Panel account: masuk dari kanan saat badge di bilah atas di-tap. Susunannya dari atas ke bawah
-   adalah header akun, daftar navigasi statis, kartu server, lalu ganti tema - semuanya ikut scroll.
-   Dua hal berdiri di luar scroll: tombol tutup di pojok kanan atas dan baris keluar di kaki panel.
-   Keduanya jalan keluar, dan jalan keluar tidak boleh hilang dari layar hanya karena daftarnya
-   sedang digulung.
--->
+<!-- Account panel: enters from the right when the badge in the top bar is tapped. Its layout from top to
+     bottom is the account header, the static navigation list, the server card, then the theme switch -
+     all of which scroll. Two things stand outside the scroll: the close button at the top right and the
+     sign-out row at the foot of the panel. Both are ways out, and a way out must not disappear from the
+     screen just because the list is being scrolled. -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
@@ -21,8 +19,8 @@
    </ContentView.BindingContext>
 
    <ContentView.Resources>
-      <!-- Baris keluar yang sedang tidak boleh ditekan dipudarkan, bukan disembunyikan: yang perlu
-           diketahui pembacanya adalah bahwa tombolnya ada tapi tidak berlaku sekarang. -->
+      <!-- A sign-out row that may not be pressed right now is faded, not hidden: what the reader needs to know
+           is that the button exists but does not apply now. -->
       <Style x:Key="signOutRowStyle" TargetType="Border" BasedOn="{StaticResource accountPanelItemStyle}">
          <Style.Triggers>
             <DataTrigger TargetType="Border" Binding="{Binding IsSignOutEnabled}" Value="False">
@@ -31,8 +29,8 @@
          </Style.Triggers>
       </Style>
 
-      <!-- Baris navigasi statis yang sedang tidak boleh ditekan dipudarkan, bukan disembunyikan:
-           tempatnya tetap terbaca, hanya jelas bahwa sekarang tidak berlaku. -->
+      <!-- A static navigation row that may not be pressed right now is faded, not hidden: its place stays
+           readable, and it is only clear that it does not apply now. -->
       <Style x:Key="accountPanelItemRowStyle" TargetType="Border"
              BasedOn="{StaticResource accountPanelItemStyle}">
          <Style.Triggers>
@@ -42,7 +40,7 @@
          </Style.Triggers>
       </Style>
 
-      <!-- Satu baris navigasi statis. Seluruh bidangnya jadi target tap, bukan hanya teksnya. -->
+      <!-- One static navigation row. Its whole area is the tap target, not only its text. -->
       <DataTemplate x:Key="accountPanelItemTemplate">
          <VerticalStackLayout>
             <BoxView Style="{StaticResource dividerStyle}" Margin="16,0"
@@ -65,9 +63,8 @@
          </VerticalStackLayout>
       </DataTemplate>
 
-      <!-- Lingkaran luar titik radio. Warnanya mengikuti keadaan terpilih baris itu sendiri lewat
-           DataTrigger, bukan disetel dari kode, supaya yang menggantinya tidak perlu tahu bagaimana
-           sebuah baris digambar. -->
+      <!-- The outer circle of the radio dot. Its color follows the selected state of its own row through a
+           DataTrigger, not set from code, so whoever changes it need not know how a row is drawn. -->
       <Style x:Key="connectionMarkStyle" TargetType="shapes:Ellipse">
          <Setter Property="WidthRequest" Value="18" />
          <Setter Property="HeightRequest" Value="18" />
@@ -84,10 +81,9 @@
          </Style.Triggers>
       </Style>
 
-      <!-- Satu baris pilihan server. Titik radionya digambar sendiri dari dua lingkaran, bukan memakai
-           RadioButton: Content milik RadioButton MAUI hanya menerima teks, dan sebuah view yang
-           dititipkan ke sana berakhir tergambar sebagai nama tipenya. Menggambarnya sendiri sekaligus
-           membuat seluruh baris jadi target tap, bukan cuma titik kecil di ujung kiri. -->
+      <!-- One server choice row. Its radio dot is drawn by itself from two circles, not with a RadioButton: the
+           Content of a MAUI RadioButton only accepts text, and a view handed to it ends up drawn as its type
+           name. Drawing it itself also makes the whole row the tap target, not just a small dot at the far left. -->
       <DataTemplate x:Key="accountPanelConnectionTemplate">
          <Border Style="{StaticResource accountPanelItemStyle}">
             <Border.GestureRecognizers>
@@ -125,13 +121,13 @@
          <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="0,4,0,12">
 
-               <!-- Logo aplikasi. Tinggal di sini, bukan di layar home: home adalah daftar jalan
-                    menuju layar lain, sementara identitas aplikasi - berikut akun, server, dan
-                    temanya - seluruhnya berkumpul di panel ini. -->
+               <!-- The application logo. It lives here, not on the home screen: home is a list of ways to other
+                    screens, while the application identity - together with the account, server, and theme - is all
+                    gathered in this panel. -->
                <Image Source="{Binding LogoImage}" HeightRequest="40" Aspect="AspectFit"
                       HorizontalOptions="Center" Margin="16,4,16,12" />
 
-               <!-- ==== header akun ==== -->
+               <!-- ==== account header ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="16,14">
                      <Border Grid.Column="0" Style="{StaticResource avatarStyle}"
@@ -183,7 +179,7 @@
                   </VerticalStackLayout>
                </Border>
 
-               <!-- ==== ganti tema ==== -->
+               <!-- ==== theme switch ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}" IsVisible="{Binding IsThemeVisible}">
                   <Border Style="{StaticResource accountPanelItemStyle}">
                      <Border.GestureRecognizers>
@@ -200,7 +196,7 @@
             </VerticalStackLayout>
          </ScrollView>
 
-         <!-- ==== keluar ==== -->
+         <!-- ==== sign out ==== -->
          <VerticalStackLayout Grid.Row="2" Padding="0,0,0,12" IsVisible="{Binding CanSignOut}">
             <BoxView Style="{StaticResource dividerStyle}" Margin="16,0,16,6" />
             <Border Style="{StaticResource signOutRowStyle}" Margin="12,0"

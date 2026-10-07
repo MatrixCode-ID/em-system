@@ -13,9 +13,9 @@ using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
 namespace Em.Ui.Maui.Navigations
 {
    /// <summary>
-   /// Layar ganti kata sandi milik pengguna yang sedang masuk: sandi lama, sandi baru, dan
-   /// pengulangannya. Dibuka dari panel account, dan hanya mengubah sandi pemiliknya sendiri - bukan
-   /// sandi orang lain, yang tempatnya di layar pengelola pengguna.
+   /// The change password screen of the signed-in user: the old password, the new password, and its
+   /// repetition. Opened from the account panel, and only changes the password of its own user - not
+   /// someone else's, whose place is the user manager screen.
    /// </summary>
    public partial class ChangePasswordControl : ContentView, INavigationBody
    {
@@ -23,7 +23,7 @@ namespace Em.Ui.Maui.Navigations
          InitializeComponent();
       }
 
-      /// <summary>View model layar ini, dibaca balik dari BindingContext yang dipasang di XAML.</summary>
+      /// <summary>The view model of this screen, read back from the BindingContext set in XAML.</summary>
       public ChangePasswordControlVm Vm => (ChangePasswordControlVm)BindingContext;
 
       /// <inheritdoc />
@@ -40,15 +40,15 @@ namespace Em.Ui.Maui.Navigations
    }
 
    /// <summary>
-   /// Satu aturan kekuatan sandi sebagaimana ditampilkan di layar: kalimatnya, dan apakah sandi yang
-   /// sedang diketik sudah memenuhinya.
+   /// One password strength rule as shown on screen: its sentence, and whether the password being typed
+   /// already meets it.
    /// </summary>
    public sealed class PasswordRuleVm : NotifyPropertyBase
    {
       /// <summary>Kalimat aturannya, mis. "At least 8 characters".</summary>
       public required string Caption { get; init; }
 
-      /// <summary>Apakah sandi yang sedang diketik sudah memenuhi aturan ini.</summary>
+      /// <summary>Whether the password being typed already meets this rule.</summary>
       public bool IsMet {
          get => Get<bool>();
          set => Set(value, _ => {
@@ -57,12 +57,12 @@ namespace Em.Ui.Maui.Navigations
          });
       }
 
-      /// <summary>Centang kalau sudah terpenuhi, silang kalau belum.</summary>
+      /// <summary>A check mark when it is met, a cross when it is not.</summary>
       public string Glyph => IsMet ? FontIcons.Check : FontIcons.Xmark;
 
       /// <summary>
-      /// Warna penanda aturan ini. Abu-abu tembus pandang saat belum terpenuhi - bukan merah - karena
-      /// aturan yang belum dipenuhi selagi sandinya masih diketik bukan kesalahan, cuma belum selesai.
+      /// The marker color of this rule. A translucent gray while not yet met - not red - because a rule that
+      /// is not yet met while the password is still being typed is not an error, only unfinished.
       /// </summary>
       public Color MarkColor => IsMet ? Colors.SeaGreen : Color.FromRgba(128, 128, 128, 140);
    }
@@ -71,8 +71,8 @@ namespace Em.Ui.Maui.Navigations
    public class ChangePasswordControlVm : MvvmModelBase
    {
       /// <summary>
-      /// Satu-satunya jawaban saat sandi lama ditolak server. Sama seperti di layar login, tidak
-      /// menyebut lebih jauh dari itu.
+      /// The only answer when the old password is refused by the server. Like on the login screen, it says
+      /// nothing more than that.
       /// </summary>
       public const string InvalidCurrentPasswordMessage = "The current password is not correct.";
 
@@ -80,15 +80,15 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(SaveCommand), SaveCommand, SaveCommandAllowed);
       }
 
-      /// <summary>Aturan kekuatan sandi yang berlaku, sudah disaring ke yang benar-benar ditampilkan.</summary>
+      /// <summary>The password strength rules in force, already filtered to those that are really shown.</summary>
       public ObservableCollection<PasswordRuleVm> Rules { get; } = [];
 
-      /// <summary>Akun yang sandinya sedang diganti.</summary>
+      /// <summary>The account whose password is being changed.</summary>
       public string AccountCaption => EmApp?.ActiveUser is { } user
          ? $"Signed in as {user.cUserAccount}"
          : string.Empty;
 
-      /// <summary>Kata sandi yang berlaku sekarang.</summary>
+      /// <summary>The password that applies now.</summary>
       public string CurrentPassword {
          get => Get<string>(string.Empty);
          set => Set(value, _ => {
@@ -97,7 +97,7 @@ namespace Em.Ui.Maui.Navigations
          });
       }
 
-      /// <summary>Kata sandi baru yang diminta.</summary>
+      /// <summary>The new password that is asked for.</summary>
       public string NewPassword {
          get => Get<string>(string.Empty);
          set => Set(value, password => {
@@ -109,7 +109,7 @@ namespace Em.Ui.Maui.Navigations
          });
       }
 
-      /// <summary>Pengulangan kata sandi baru.</summary>
+      /// <summary>The repetition of the new password.</summary>
       public string ConfirmPassword {
          get => Get<string>(string.Empty);
          set => Set(value, _ => {
@@ -120,17 +120,17 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// <c>true</c> kalau kedua kotak sandi baru sudah diisi tapi isinya berbeda. Selagi kotak
-      /// pengulangannya masih kosong tidak ada yang salah - orangnya belum selesai mengetik.
+      /// <c>true</c> when both new password boxes are filled in but their content differs. While the repetition
+      /// box is still empty nothing is wrong - the person has not finished typing.
       /// </summary>
       public bool HasConfirmMismatch =>
          ConfirmPassword.Length > 0 && ConfirmPassword != NewPassword;
 
-      /// <summary><c>true</c> kalau ada aturan kekuatan sandi yang perlu digambar sama sekali.</summary>
+      /// <summary><c>true</c> when there are password strength rules to draw at all.</summary>
       public bool HasRules => Rules.Count > 0;
 
       /// <summary>
-      /// Seberapa banyak aturan yang sudah dipenuhi, 0 sampai 1, buat pengukur kekuatan sandi.
+      /// How many of the rules are met, from 0 to 1, for the password strength meter.
       /// </summary>
       public double Strength {
          get {
@@ -139,19 +139,18 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      /// <summary>Pesan kegagalan terakhir, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>The last failure message, or <c>null</c> when there is none.</summary>
       public string? SaveError {
          get => Get<string?>();
          set => Set(value, _ => NotifyChanged(nameof(HasSaveError)));
       }
 
-      /// <summary><c>true</c> kalau ada pesan kegagalan yang perlu ditampilkan.</summary>
+      /// <summary><c>true</c> when there is a failure message to show.</summary>
       public bool HasSaveError => !string.IsNullOrWhiteSpace(SaveError);
 
       /// <summary>
-      /// Mengosongkan ketiga kotak sandi dan menyusun ulang daftar aturan. Dipanggil setiap kali layar
-      /// ini dibuka: sandi yang tertinggal dari kunjungan sebelumnya tidak punya alasan untuk hidup
-      /// lebih lama dari kunjungan itu.
+      /// Empties all three password boxes and rebuilds the rule list. Called every time this screen is
+      /// opened: a password left over from a previous visit has no reason to outlive that visit.
       /// </summary>
       public Task ReloadAsync() {
          CurrentPassword = NewPassword = ConfirmPassword = string.Empty;
@@ -164,8 +163,8 @@ namespace Em.Ui.Maui.Navigations
          return Task.CompletedTask;
       }
 
-      // Daftar aturannya dibangun ulang, bukan cuma diperbarui nilainya: aturan mana saja yang tampil
-      // ditentukan PasswordPolicy milik aplikasi, dan itu baru bisa dibaca sesudah EmApp terpasang.
+      // The rule list is rebuilt, not just refreshed in value: which rules are shown is decided by the
+      // application's PasswordPolicy, and that can only be read after EmApp is attached.
       private void RefreshRules(string password) {
          if (EmApp?.PasswordPolicy is not { } policy) return;
 
@@ -202,9 +201,9 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// Mengirim penggantian sandi ke server. Kalau berhasil, layar ini ditinggalkan; kalau tidak,
-      /// <see cref="SaveError"/> yang terisi dan layarnya tetap di tempat - command ini tidak pernah
-      /// melempar exception ke pemanggilnya.
+      /// Sends the password change to the server. If it succeeds, this screen is left; if not,
+      /// <see cref="SaveError"/> is filled and the screen stays where it is - this command never throws an
+      /// exception to its caller.
       /// </summary>
       // Nothing may escape this method. ICommand.Execute is void, so UiCommandAsync runs it as
       // async void: an exception leaving here is rethrown on the dispatcher, and there is nothing
@@ -221,9 +220,8 @@ namespace Em.Ui.Maui.Navigations
             var services = app.ServiceProvider.GetRequiredService<ICredentialServices>();
             await services.PostMeta_ChangeMyPassword(CurrentPassword, NewPassword);
 
-            // Sandinya sudah berganti, jadi tidak ada lagi yang perlu dikerjakan di sini. Ketiga kotak
-            // dikosongkan lebih dulu supaya sandi yang baru saja diketik tidak tertinggal di layar
-            // yang sebentar lagi dilepas.
+            // The password has changed, so there is nothing left to do here. All three boxes are emptied first so
+            // the password that was just typed is not left on a screen that is about to be released.
             CurrentPassword = NewPassword = ConfirmPassword = string.Empty;
             ShowInfo("Password changed", "Your password has been changed.");
             if (NavigationEntry is { } entry) await entry.Stack.Backward();
@@ -242,8 +240,8 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>
-      /// Simpan baru boleh dijalankan kalau ketiga kotak terisi, kedua sandi baru sama, sandi barunya
-      /// berbeda dari yang lama, dan setiap aturan yang berstatus wajib sudah terpenuhi.
+      /// Save may only run when all three boxes are filled in, both new passwords are the same, the new
+      /// password differs from the old one, and every rule whose level is required is met.
       /// </summary>
       public bool SaveCommandAllowed() =>
          IsNotBusy

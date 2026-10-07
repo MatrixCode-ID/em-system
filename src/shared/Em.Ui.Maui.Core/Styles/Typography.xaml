@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Skala huruf Material 3, dipangkas ke tingkat yang benar-benar dipakai aplikasi ini. Nama style-nya
-   mengikuti nama tingkatannya di Material, bukan tempat pemakaiannya, supaya satu tingkat tidak
-   berganti nama setiap kali ia dipakai di layar yang berbeda.
+<!-- The Material 3 type scale, trimmed to the levels this application really uses. The style names follow
+     the names of the levels in Material, not where they are used, so one level does not change its name
+     every time it is used on a different screen.
 
-   Warna teks tidak disebut di sini kecuali untuk tingkat yang memang selalu lebih tenang; sisanya
-   mewarisi warna dari style dasarnya.
--->
+     The text color is not named here except for levels that are always calmer; the others inherit the
+     color from their base style. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:styles="clr-namespace:Em.Ui.Maui.Styles">
 
-   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
-        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
-        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <!-- Palette is merged again here, not just once in MaterialDesign.xaml: a StaticResource inside a
+        ResourceDictionary file only sees the content of that file and the dictionaries merged into it - a
+        dictionary standing beside it is not visible. -->
    <ResourceDictionary.MergedDictionaries>
       <styles:Palette />
    </ResourceDictionary.MergedDictionaries>
@@ -46,15 +44,15 @@
               Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
    </Style>
 
-   <!-- Kepala sebuah bagian: huruf kecil, tebal, dan diberi jarak antar huruf supaya ia terbaca
-        sebagai penanda kelompok, bukan sebagai baris isi. -->
+   <!-- The head of a section: small, bold, and letter-spaced so it reads as a group marker, not as a content
+        row. -->
    <Style x:Key="sectionCaptionStyle" TargetType="Label" BasedOn="{StaticResource labelTextStyle}">
       <Setter Property="FontFamily" Value="OpenSansSemibold" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="CharacterSpacing" Value="1.2" />
    </Style>
 
-   <!-- Keterangan yang menyertai baris di atasnya; sengaja lebih tenang daripada isinya sendiri. -->
+   <!-- A caption that goes with the row above it; deliberately calmer than its content itself. -->
    <Style x:Key="supportTextStyle" TargetType="Label" BasedOn="{StaticResource labelTextStyle}">
       <Setter Property="FontSize" Value="12.5" />
    </Style>

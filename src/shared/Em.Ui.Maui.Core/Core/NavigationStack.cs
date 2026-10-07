@@ -1,17 +1,17 @@
 using System.ComponentModel;
 using Em.Ui.Core.Shared;
-// Kedua namespace punya INavigation, dan yang dimaksud di sini selalu milik Em.
+// Both namespaces have an INavigation, and the one meant here is always Em's.
 using INavigation = Em.Ui.Core.Shared.INavigation;
 using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
 
 namespace Em.Ui.Maui.Core
 {
    /// <summary>
-   /// Jalur navigasi yang ditampilkan satu host: deretan <see cref="NavigationEntry"/> yang bisa
-   /// ditelusuri maju-mundur, ditambah satu home opsional di depannya. Stack utama aplikasi dipegang
-   /// <see cref="EmApp.MainStack"/>; membuka layar dilakukan lewat router
-   /// (<see cref="EmApp.NavigateTo(string,object?)"/>) atau lewat entri
-   /// (<see cref="NavigationEntry.NavigateTo(string,object?)"/>), bukan lewat stack ini langsung.
+   /// The navigation path shown by one host: a row of <see cref="NavigationEntry"/> that can be traversed
+   /// back and forth, plus one optional home in front of it. The application's main stack is held by
+   /// <see cref="EmApp.MainStack"/>; opening a screen is done through the router
+   /// (<see cref="EmApp.NavigateTo(string,object?)"/>) or through an entry
+   /// (<see cref="NavigationEntry.NavigateTo(string,object?)"/>), not through this stack directly.
    /// </summary>
    public sealed class NavigationStack : INavigationStack, INotifyPropertyChanged
    {
@@ -37,28 +37,28 @@ namespace Em.Ui.Maui.Core
 
       #region Properties
 
-      /// <summary>Objek aplikasi pemilik stack ini.</summary>
+      /// <summary>The application object that owns this stack.</summary>
       public EmApp EmApp { get; }
 
       // Read-only on purpose: every way out of the stack has to go through NavigateHome,
       // ClearForwardStacks or an entry's Close, otherwise the bodies of the dropped entries are never
       // released.
-      /// <summary>Entri-entri di jalur ini, urut dari yang pertama dibuka. Home tidak termasuk.</summary>
+      /// <summary>The entries of this path, in order from the first opened. Home is not included.</summary>
       public IReadOnlyList<NavigationEntry> Entries => _entries;
 
       /// <summary>
-      /// Entri yang sedang tampil - bisa juga <see cref="Home"/> - atau <c>null</c> kalau belum ada yang
-      /// pernah ditampilkan.
+      /// The entry currently shown - which may also be <see cref="Home"/> - or <c>null</c> when nothing has
+      /// ever been shown.
       /// </summary>
       public NavigationEntry? Current { get; private set; }
 
       /// <summary>
-      /// Entri home, atau <c>null</c> untuk stack tanpa home. Posisinya di depan jalur (bukan di dalam
-      /// <see cref="Entries"/>) dan body-nya tidak pernah dilepas.
+      /// The home entry, or <c>null</c> for a stack without home. Its position is in front of the path (not
+      /// inside <see cref="Entries"/>) and its body is never released.
       /// </summary>
       public NavigationEntry? Home { get; }
 
-      /// <summary>Apakah <see cref="Backward"/> punya tempat untuk dituju.</summary>
+      /// <summary>Whether <see cref="Backward"/> has somewhere to go.</summary>
       public bool CanGoBack {
          get {
             var index = IndexOfCurrent();
@@ -66,7 +66,7 @@ namespace Em.Ui.Maui.Core
          }
       }
 
-      /// <summary>Apakah <see cref="Forward"/> punya tempat untuk dituju.</summary>
+      /// <summary>Whether <see cref="Forward"/> has somewhere to go.</summary>
       public bool CanGoForward {
          get {
             if (Current != null && Current != Home && !_entries.Contains(Current)) return false;
@@ -75,9 +75,9 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Dipicu setiap kali isi jalur atau posisinya berubah. Host memakainya untuk menghitung ulang
-      /// tombol-tombol navigasinya: mengganti <see cref="Current"/> saja belum cukup, karena jalurnya
-      /// masih bisa berubah sesudah itu.
+      /// Raised every time the content of the path or its position changes. Hosts use it to recompute their
+      /// navigation buttons: replacing <see cref="Current"/> alone is not enough, because the path can still
+      /// change after that.
       /// </summary>
       public event EventHandler? Changed;
 

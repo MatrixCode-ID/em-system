@@ -1,28 +1,26 @@
 ﻿<?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Bagian-bagian kerangka navigasi: bilah atas, panel account yang masuk dari kanan, dan baris-baris
-   di dalamnya.
+<!-- The parts of the navigation frame: the top bar, the account panel entering from the right, and the
+     rows inside it.
 
-   Panel account tidak punya baris yang "sedang terbuka": setiap barisnya adalah perbuatan yang
-   dijalankan lalu selesai, bukan penanda tempat. Jadi tidak ada satu pun style di sini yang berubah
-   rupa mengikuti keadaan terpilih.
--->
+     The account panel has no row that is "currently open": each of its rows is an action that is run and
+     then done, not a marker of a place. So no style here changes its look according to a selected state. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
                     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
                     xmlns:controls="clr-namespace:Em.Ui.Maui.Controls">
 
-   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
-        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
-        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <!-- Palette is merged again here, not just once in MaterialDesign.xaml: a StaticResource inside a
+        ResourceDictionary file only sees the content of that file and the dictionaries merged into it - a
+        dictionary standing beside it is not visible. -->
    <ResourceDictionary.MergedDictionaries>
       <styles:Palette />
       <ResourceDictionary Source="/Styles/Typography.xaml" />
       <ResourceDictionary Source="/Styles/Cards.xaml" />
    </ResourceDictionary.MergedDictionaries>
 
-   <!-- Bilah atas: tinggi 64, sewarna halaman, dan dipisahkan dari isi hanya oleh satu garis tipis. -->
+   <!-- The top bar: height 64, the same color as the page, and separated from the content only by one thin
+        line. -->
    <Style x:Key="appBarStyle" TargetType="Grid">
       <Setter Property="HeightRequest" Value="64" />
       <Setter Property="ColumnSpacing" Value="4" />
@@ -31,8 +29,9 @@
               Value="{AppThemeBinding Light={StaticResource surfaceLight}, Dark={StaticResource surfaceDark}}" />
    </Style>
 
-   <!-- Badge akun di ujung kanan bilah atas, pembuka panel account. Bulat penuh dan sewarna bidang
-        utama, supaya terbaca sebagai foto pengguna meski isinya baru sebuah ikon. -->
+   <!-- The account badge at the right end of the top bar, which opens the account panel. Fully round and the
+        same color as the primary surface, so it reads as a user photo even though its content is only an
+        icon for now. -->
    <Style x:Key="accountBadgeStyle" TargetType="Border">
       <Setter Property="WidthRequest" Value="36" />
       <Setter Property="HeightRequest" Value="36" />
@@ -47,8 +46,8 @@
       </Setter>
    </Style>
 
-   <!-- Panel account. Masuk dari kanan, jadi sudut lengkungnya hanya di sisi kiri - sisi kanannya
-        menempel ke tepi layar dan lengkungan di sana tidak akan pernah terlihat. -->
+   <!-- The account panel. It enters from the right, so its rounded corners are only on the left side - its
+        right side sticks to the screen edge and a curve there would never be seen. -->
    <Style x:Key="accountPanelStyle" TargetType="Border">
       <Setter Property="WidthRequest" Value="304" />
       <Setter Property="Padding" Value="0" />
@@ -61,7 +60,7 @@
       </Setter>
    </Style>
 
-   <!-- Card di dalam panel account: satu bidang tenang yang mengelompokkan baris-baris sejenis. -->
+   <!-- A card inside the account panel: one calm surface that groups rows of the same kind. -->
    <Style x:Key="accountPanelCardStyle" TargetType="Border">
       <Setter Property="Padding" Value="0" />
       <Setter Property="Margin" Value="12,6" />
@@ -73,9 +72,9 @@
       </Setter>
    </Style>
 
-   <!-- Satu baris panel: bidang sentuh setinggi 56 berbentuk pil penuh, sesuai penanda pilihan
-        Material 3. Tidak punya keadaan terpilih sama sekali - tidak satu pun baris di panel account
-        mewakili layar yang sedang terbuka; semuanya perbuatan yang dijalankan lalu selesai. -->
+   <!-- One panel row: a touch area 56 high shaped as a full pill, following the Material 3 selection marker.
+        It has no selected state at all - not one row in the account panel represents the screen that is
+        open; all are actions that are run and then done. -->
    <Style x:Key="accountPanelItemStyle" TargetType="Border">
       <Setter Property="HeightRequest" Value="56" />
       <Setter Property="Padding" Value="16,0" />
@@ -102,10 +101,11 @@
               Value="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
    </Style>
 
-   <!-- Satu kartu layar di menu home. Tinggal di berkas bersama, bukan di layar home, karena pohon
-        menu menggambarnya dari dua tempat: daftar layar tanpa grup, dan isi tiap grup yang bisa
-        sedalam apa pun. Perintah bukanya dibawa item itu sendiri, jadi template ini tidak perlu
-        mencari view model siapa pun di atasnya - dan karena itu ia bisa dipakai di mana saja. -->
+   <!-- One screen card in the home menu. It lives in the shared file, not in the home screen, because the
+        menu tree draws it from two places: the list of screens without a group, and the content of each
+        group, which may be as deep as anything. Its open command is carried by the item itself, so this
+        template does not need to look up anyone's view model above it - and that is why it can be used
+        anywhere. -->
    <DataTemplate x:Key="navigationTileTemplate">
       <Border Style="{StaticResource actionCardStyle}">
          <Border.GestureRecognizers>
@@ -129,9 +129,9 @@
       </Border>
    </DataTemplate>
 
-   <!-- Kepala sebuah grup menu. Seluruh barisnya jadi target tap, dan chevron di kirinya yang
-        memberi tahu apakah isinya sedang terbuka. Grup teratas memakai warna utama supaya tingkat
-        pertama terbaca sebagai pembagi besar, bukan sebagai satu baris lagi. -->
+   <!-- The header of a menu group. Its whole row is the tap target, and the chevron on its left tells whether
+        its content is open. The top groups use the primary color so the first level reads as a big divider,
+        not as one more row. -->
    <Style x:Key="menuGroupHeaderStyle" TargetType="Label">
       <Setter Property="FontFamily" Value="OpenSansSemibold" />
       <Setter Property="FontSize" Value="12" />
@@ -148,7 +148,7 @@
       </Style.Triggers>
    </Style>
 
-   <!-- Kotak pencarian di kepala layar home. Bentuknya pil penuh, mengikuti client desktop. -->
+   <!-- The search box at the head of the home screen. Its shape is a full pill, following the desktop client. -->
    <Style x:Key="searchFieldStyle" TargetType="Border">
       <Setter Property="Padding" Value="16,0" />
       <Setter Property="HeightRequest" Value="46" />
@@ -162,8 +162,8 @@
       </Setter>
    </Style>
 
-   <!-- Tirai gelap di belakang panel account yang terbuka. Ketebalannya dianimasikan dari kode, jadi
-        yang disetel di sini hanya warnanya - dan ia mulai dari tidak terlihat sama sekali. -->
+   <!-- The dark curtain behind an open account panel. Its opacity is animated from code, so only its color is
+        set here - and it starts from not visible at all. -->
    <Style x:Key="scrimStyle" TargetType="BoxView">
       <Setter Property="Color" Value="{StaticResource scrimColor}" />
       <Setter Property="Opacity" Value="0" />

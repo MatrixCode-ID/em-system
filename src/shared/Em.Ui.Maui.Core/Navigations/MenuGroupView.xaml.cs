@@ -3,8 +3,8 @@ using Microsoft.Maui.Controls;
 namespace Em.Ui.Maui.Navigations
 {
    /// <summary>
-   /// Penggambar satu <see cref="MenuGroup"/> di layar home: kepala grup yang bisa dibuka-tutup,
-   /// kartu-kartu layar miliknya, lalu grup anaknya - yang digambar control ini juga.
+   /// The drawer of one <see cref="MenuGroup"/> on the home screen: the group header that can be opened
+   /// and closed, its screen cards, then its child groups - which this control also draws.
    /// </summary>
    public partial class MenuGroupView : ContentView
    {

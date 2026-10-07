@@ -43,10 +43,9 @@
 
                   <Label Text="SIGN IN" Style="{StaticResource sectionCaptionStyle}" />
 
-                  <!-- Alamat server diketik, bukan dipilih dari daftar: di luar debug tidak ada
-                       daftar untuk dipilih sama sekali. Di debug isian ini terkunci - servernya
-                       ditentukan saat compile, dan yang berlaku adalah yang sedang terpilih di
-                       panel account. -->
+                  <!-- The server address is typed, not chosen from a list: outside debug there is no list to choose from at
+                       all. In debug this field is locked - the server is decided at compile time, and what applies is the
+                       one currently selected in the account panel. -->
                   <VerticalStackLayout Spacing="6">
                      <Label Text="API Server" Style="{StaticResource labelTextStyle}" />
                      <Border Style="{StaticResource inputFieldStyle}">
@@ -71,9 +70,9 @@
                      </Border>
                   </VerticalStackLayout>
 
-                  <!-- Ganti tema duduk di samping tombol masuk, bukan di bilah atas: bilah itu
-                       sengaja disembunyikan selama belum ada yang masuk, dan panel account - tempat
-                       baris ganti tema tinggal di layar lain - dibuka dari sana. -->
+                  <!-- The theme switch sits beside the sign-in button, not in the top bar: that bar is deliberately hidden
+                       until someone signs in, and the account panel - where the theme switch row lives on another screen -
+                       is opened from there. -->
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                      <controls:IconButton Grid.Column="0"
                                           Glyph="{x:Static controls:FontIcons.CircleHalfStroke}" IconSize="20"

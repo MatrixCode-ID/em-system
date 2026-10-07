@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Kartu dan pemisah. Kartu di sini bertipe "filled" - ia berdiri di atas halaman lewat bidangnya
-   sendiri, bukan lewat bayangan. Bayangan sengaja tidak dipakai sama sekali: di tema gelap ia nyaris
-   tak terlihat, sehingga layar yang sama akan terbaca berbeda di dua tema.
--->
+<!-- Cards and dividers. Cards here are of the "filled" kind - they stand on the page through their own
+     surface, not through a shadow. A shadow is deliberately not used at all: in the dark theme it is
+     almost invisible, so the same screen would read differently in the two themes. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
                     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls">
 
-   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
-        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
-        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <!-- Palette is merged again here, not just once in MaterialDesign.xaml: a StaticResource inside a
+        ResourceDictionary file only sees the content of that file and the dictionaries merged into it - a
+        dictionary standing beside it is not visible. -->
    <ResourceDictionary.MergedDictionaries>
       <styles:Palette />
    </ResourceDictionary.MergedDictionaries>
@@ -26,15 +24,15 @@
       </Setter>
    </Style>
 
-   <!-- Kartu yang isinya bisa ditekan; radiusnya lebih besar supaya ia terbaca sebagai satu kesatuan
-        yang bisa disentuh, bukan sekadar bidang berisi teks. -->
+   <!-- A card whose content can be pressed; its radius is larger so it reads as a single touchable whole,
+        not just a surface holding text. -->
    <Style x:Key="actionCardStyle" TargetType="Border" BasedOn="{StaticResource cardStyle}">
       <Setter Property="Padding" Value="16" />
       <Setter Property="BackgroundColor"
               Value="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}" />
    </Style>
 
-   <!-- Kartu bergaris, untuk isi yang tidak boleh menarik perhatian lebih dari tetangganya. -->
+   <!-- An outlined card, for content that must not draw more attention than its neighbors. -->
    <Style x:Key="outlinedCardStyle" TargetType="Border" BasedOn="{StaticResource cardStyle}">
       <Setter Property="BackgroundColor" Value="Transparent" />
       <Setter Property="StrokeThickness" Value="1" />
@@ -48,7 +46,7 @@
               Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
    </Style>
 
-   <!-- Lingkaran berisi inisial, berdiri menggantikan foto yang memang tidak ada. -->
+   <!-- A circle holding initials, standing in for a photo that does not exist. -->
    <Style x:Key="avatarStyle" TargetType="Border">
       <Setter Property="WidthRequest" Value="44" />
       <Setter Property="HeightRequest" Value="44" />

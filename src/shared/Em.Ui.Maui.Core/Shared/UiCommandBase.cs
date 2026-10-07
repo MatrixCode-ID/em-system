@@ -3,18 +3,18 @@ using System.Windows.Input;
 namespace Em.Ui.Maui.Shared
 {
    /// <summary>
-   /// Base class untuk semua command UI (<see cref="ICommand"/>) di aplikasi MAUI ini, menyediakan
-   /// nama command, event lifecycle eksekusi (<see cref="CommandExecuting"/>/<see cref="CommandExecuted"/>),
-   /// dan mekanisme pembatalan eksekusi lewat <see cref="CancelEventArgs"/>.
-   /// Lihat <see cref="UiCommand"/> untuk varian sinkron dan <see cref="UiCommandAsync"/> untuk varian async.
+   /// Base class for all UI commands (<see cref="ICommand"/>) in this application, providing the
+   /// command name, the execution lifecycle events (<see cref="CommandExecuting"/>/<see cref="CommandExecuted"/>),
+   /// and the mechanism to cancel execution through <see cref="CancelEventArgs"/>.
+   /// See <see cref="UiCommand"/> for the synchronous variant and <see cref="UiCommandAsync"/> for the async variant.
    /// </summary>
    public abstract class UiCommandBase : ICommand
    {
       /// <summary>
-      /// Membuat command dengan nama tertentu.
+      /// Creates a command with a given name.
       /// </summary>
-      /// <param name="name">Nama unik command. Tidak boleh kosong.</param>
-      /// <exception cref="ArgumentException">Dilempar jika <paramref name="name"/> kosong/whitespace.</exception>
+      /// <param name="name">The unique name of the command. Must not be empty.</param>
+      /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is empty/whitespace.</exception>
       protected UiCommandBase(string name) {
          Name = string.IsNullOrWhiteSpace(name)
             ? throw new ArgumentException("Command name cannot be empty.", nameof(name))
@@ -25,23 +25,23 @@ namespace Em.Ui.Maui.Shared
       public event EventHandler? CanExecuteChanged;
 
       /// <summary>
-      /// Dipicu tepat sebelum command dieksekusi, memberi kesempatan listener membatalkan eksekusi
-      /// lewat <see cref="CancelEventArgs.Cancel"/> (atau melempar exception lewat <see cref="CancelEventArgs.ThrowException"/>).
+      /// Raised right before the command executes, giving listeners a chance to cancel the execution through
+      /// <see cref="CancelEventArgs.Cancel"/> (or throw an exception through <see cref="CancelEventArgs.ThrowException"/>).
       /// </summary>
       public event EventHandler<CancelEventArgs>? CommandExecuting;
 
       /// <summary>
-      /// Dipicu setelah command selesai dieksekusi dengan sukses (tidak dibatalkan).
+      /// Raised after the command has finished executing successfully (it was not cancelled).
       /// </summary>
       public event EventHandler? CommandExecuted;
 
       /// <summary>
-      /// Nama unik command, dipakai sebagai key pada <see cref="UiCommandBaseCollection"/>.
+      /// The unique name of the command, used as the key in <see cref="UiCommandBaseCollection"/>.
       /// </summary>
       public string Name { get; }
 
       /// <summary>
-      /// Menandakan apakah command ini dieksekusi secara asynchronous.
+      /// Indicates whether this command executes asynchronously.
       /// </summary>
       public abstract bool IsAsync { get; }
 
@@ -49,7 +49,7 @@ namespace Em.Ui.Maui.Shared
       public abstract bool CanExecute(object? parameter);
 
       /// <summary>
-      /// Overload <see cref="CanExecute(object?)"/> tanpa parameter.
+      /// The <see cref="CanExecute(object?)"/> overload without a parameter.
       /// </summary>
       public bool CanExecute() => CanExecute(null);
 
@@ -57,22 +57,22 @@ namespace Em.Ui.Maui.Shared
       public abstract void Execute(object? parameter);
 
       /// <summary>
-      /// Overload <see cref="Execute(object?)"/> tanpa parameter.
+      /// The <see cref="Execute(object?)"/> overload without a parameter.
       /// </summary>
       public void Execute() => Execute(null);
 
       /// <summary>
-      /// Memicu event <see cref="CanExecuteChanged"/>, memberi tahu UI (mis. tombol yang di-bind)
-      /// untuk mengevaluasi ulang <see cref="CanExecute(object?)"/>.
+      /// Raises the <see cref="CanExecuteChanged"/> event, telling the UI (e.g. a bound button) to evaluate
+      /// <see cref="CanExecute(object?)"/> again.
       /// </summary>
       public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 
       /// <summary>
-      /// Memicu event <see cref="CommandExecuting"/> dan mengevaluasi hasilnya: melempar exception
-      /// jika diminta lewat <see cref="CancelEventArgs.ThrowException"/>, atau mengembalikan <c>false</c>
-      /// jika listener meminta pembatalan lewat <see cref="CancelEventArgs.Cancel"/>.
+      /// Raises the <see cref="CommandExecuting"/> event and evaluates its outcome: throws an exception when
+      /// requested through <see cref="CancelEventArgs.ThrowException"/>, or returns <c>false</c> when a
+      /// listener asks for cancellation through <see cref="CancelEventArgs.Cancel"/>.
       /// </summary>
-      /// <returns><c>true</c> jika eksekusi boleh dilanjutkan; <c>false</c> jika dibatalkan.</returns>
+      /// <returns><c>true</c> when execution may continue; <c>false</c> when it is cancelled.</returns>
       protected bool OnCommandExecuting() {
          var args = new CancelEventArgs();
          CommandExecuting?.Invoke(this, args);
@@ -89,15 +89,15 @@ namespace Em.Ui.Maui.Shared
       protected void OnCommandExecuted() => CommandExecuted?.Invoke(this, EventArgs.Empty);
 
       /// <summary>
-      /// Melakukan cast parameter command mentah (<see cref="object"/>) menjadi tipe kuat <typeparamref name="T"/>,
-      /// dipakai oleh <see cref="UiCommand{T}"/>/<see cref="UiCommandAsync{T}"/>.
+      /// Casts the raw command parameter (<see cref="object"/>) to the strong type <typeparamref name="T"/>,
+      /// used by <see cref="UiCommand{T}"/>/<see cref="UiCommandAsync{T}"/>.
       /// </summary>
-      /// <typeparam name="T">Tipe target parameter.</typeparam>
-      /// <param name="parameter">Parameter mentah dari <see cref="ICommand"/>.</param>
-      /// <returns>Parameter yang sudah di-cast ke <typeparamref name="T"/>.</returns>
+      /// <typeparam name="T">The target type of the parameter.</typeparam>
+      /// <param name="parameter">The raw parameter from <see cref="ICommand"/>.</param>
+      /// <returns>The parameter cast to <typeparamref name="T"/>.</returns>
       /// <exception cref="ArgumentException">
-      /// Dilempar jika <paramref name="parameter"/> bukan bertipe <typeparamref name="T"/>
-      /// (dan bukan kasus <c>null</c> yang valid untuk tipe nullable).
+      /// Thrown when <paramref name="parameter"/> is not of type <typeparamref name="T"/>
+      /// (and is not a valid <c>null</c> case for a nullable type).
       /// </exception>
       protected static T CastParameter<T>(object? parameter) {
          if (parameter is T value) return value;

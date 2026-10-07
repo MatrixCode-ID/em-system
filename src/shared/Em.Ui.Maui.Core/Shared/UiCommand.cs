@@ -1,8 +1,8 @@
 namespace Em.Ui.Maui.Shared
 {
    /// <summary>
-   /// Implementasi <see cref="UiCommandBase"/> untuk command sinkron (non-async) dengan parameter
-   /// bertipe <see cref="object"/>. Dipakai lewat <c>MvvmModelBase.RegisterCommand</c>.
+   /// Implementation of <see cref="UiCommandBase"/> for a synchronous (non-async) command with a parameter
+   /// of type <see cref="object"/>. Used through <c>MvvmModelBase.RegisterCommand</c>.
    /// </summary>
    public class UiCommand : UiCommandBase
    {
@@ -10,12 +10,12 @@ namespace Em.Ui.Maui.Shared
       private readonly Func<object?, bool> _canExecuteHandler;
 
       /// <summary>
-      /// Membuat command sinkron baru.
+      /// Creates a new synchronous command.
       /// </summary>
-      /// <param name="name">Nama unik command, dipakai sebagai key pada <see cref="UiCommandBaseCollection"/>.</param>
-      /// <param name="executeHandler">Aksi yang dijalankan saat command dieksekusi. Wajib diisi.</param>
-      /// <param name="canExecuteHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
-      /// <exception cref="ArgumentNullException">Dilempar jika <paramref name="executeHandler"/> <c>null</c>.</exception>
+      /// <param name="name">The unique name of the command, used as the key in <see cref="UiCommandBaseCollection"/>.</param>
+      /// <param name="executeHandler">The action that runs when the command is executed. Required.</param>
+      /// <param name="canExecuteHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
+      /// <exception cref="ArgumentNullException">Thrown when <paramref name="executeHandler"/> is <c>null</c>.</exception>
       public UiCommand(
          string name,
          Action<object?> executeHandler,
@@ -42,18 +42,18 @@ namespace Em.Ui.Maui.Shared
    }
 
    /// <summary>
-   /// Varian <see cref="UiCommand"/> dengan parameter bertipe kuat <typeparamref name="T"/>,
-   /// otomatis melakukan cast parameter sebelum diteruskan ke handler.
+   /// A variant of <see cref="UiCommand"/> with a strongly typed parameter <typeparamref name="T"/>,
+   /// automatically casting the parameter before passing it to the handler.
    /// </summary>
-   /// <typeparam name="T">Tipe parameter command.</typeparam>
+   /// <typeparam name="T">The type of the command parameter.</typeparam>
    public class UiCommand<T> : UiCommand
    {
       /// <summary>
-      /// Membuat command sinkron baru dengan parameter bertipe kuat <typeparamref name="T"/>.
+      /// Creates a new synchronous command with a strongly typed parameter <typeparamref name="T"/>.
       /// </summary>
-      /// <param name="name">Nama unik command, dipakai sebagai key pada <see cref="UiCommandBaseCollection"/>.</param>
-      /// <param name="executeHandler">Aksi yang dijalankan saat command dieksekusi.</param>
-      /// <param name="canExecuteHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
+      /// <param name="name">The unique name of the command, used as the key in <see cref="UiCommandBaseCollection"/>.</param>
+      /// <param name="executeHandler">The action that runs when the command is executed.</param>
+      /// <param name="canExecuteHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
       public UiCommand(
          string name,
          Action<T> executeHandler,

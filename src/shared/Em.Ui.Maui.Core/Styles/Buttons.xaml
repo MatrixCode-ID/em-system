@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Ragam tombol Material 3. Semuanya berbentuk pil penuh (tinggi 48, radius 24) dan memakai satu
-   ukuran huruf; yang membedakan hanya seberapa keras ia menuntut perhatian - dan setiap layar hanya
-   boleh punya satu tombol terisi.
--->
+<!-- The Material 3 button variants. All are full pills (height 48, radius 24) and use one font size; what
+     tells them apart is only how loudly each demands attention - and every screen may only have one filled
+     button. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:styles="clr-namespace:Em.Ui.Maui.Styles">
 
-   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
-        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
-        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <!-- Palette is merged again here, not just once in MaterialDesign.xaml: a StaticResource inside a
+        ResourceDictionary file only sees the content of that file and the dictionaries merged into it - a
+        dictionary standing beside it is not visible. -->
    <ResourceDictionary.MergedDictionaries>
       <styles:Palette />
    </ResourceDictionary.MergedDictionaries>
@@ -35,8 +33,8 @@
                      <Setter Property="Opacity" Value="0.75" />
                   </VisualState.Setters>
                </VisualState>
-               <!-- Tombol yang sedang tidak boleh ditekan diredupkan, bukan diwarnai ulang: satu
-                    aturan yang sama enak dilihat di kedua tema. -->
+               <!-- A button that may not be pressed is dimmed, not recolored: one and the same rule looks good in both
+                    themes. -->
                <VisualState x:Name="Disabled">
                   <VisualState.Setters>
                      <Setter Property="Opacity" Value="0.38" />
@@ -47,7 +45,7 @@
       </Setter>
    </Style>
 
-   <!-- Aksi utama layar, satu saja per layar. -->
+   <!-- The main action of the screen, only one per screen. -->
    <Style x:Key="filledButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
       <Setter Property="BackgroundColor"
               Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
@@ -55,7 +53,7 @@
               Value="{AppThemeBinding Light={StaticResource onPrimaryLight}, Dark={StaticResource onPrimaryDark}}" />
    </Style>
 
-   <!-- Aksi penting yang berdampingan dengan aksi utama. -->
+   <!-- An important action beside the main action. -->
    <Style x:Key="tonalButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
       <Setter Property="BackgroundColor"
               Value="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}" />
@@ -63,7 +61,7 @@
               Value="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
    </Style>
 
-   <!-- Aksi kedua yang tetap perlu terlihat sebagai tombol. -->
+   <!-- A second action that still needs to be seen as a button. -->
    <Style x:Key="outlinedButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
       <Setter Property="BackgroundColor" Value="Transparent" />
       <Setter Property="BorderWidth" Value="1" />
@@ -73,7 +71,7 @@
               Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
    </Style>
 
-   <!-- Aksi paling ringan; tidak membawa bidang sendiri sama sekali. -->
+   <!-- The lightest action; it carries no surface of its own at all. -->
    <Style x:Key="textButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonBaseStyle}">
       <Setter Property="BackgroundColor" Value="Transparent" />
       <Setter Property="Padding" Value="12,0" />

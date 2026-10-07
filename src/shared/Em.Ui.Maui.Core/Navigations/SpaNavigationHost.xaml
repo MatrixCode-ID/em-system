@@ -11,16 +11,14 @@
 
    <Grid>
 
-      <!-- ==== isi halaman ==== -->
+      <!-- ==== page content ==== -->
       <Grid RowDefinitions="Auto,Auto,*">
 
-         <!--
-            Bilah atas: mundur dan pulang di kiri, judul di tengah, muat ulang dan badge akun di kanan.
-            Tombol maju sengaja tidak ada di sini - di Android tidak ada gestur yang wajar untuk maju,
-            dan tombol yang tak punya gestur pendamping hanya menambah barang di bilah yang sempit.
-            Jalurnya sendiri tetap utuh: CanGoForward dan ForwardCommand masih hidup di view model,
-            tinggal dipasang kembali kalau host ini dipakai di MAUI desktop.
-         -->
+         <!-- Top bar: back and home on the left, the title in the middle, reload and the account badge on the
+              right. The forward button is deliberately not here - on Android there is no natural gesture for going
+              forward, and a button without a companion gesture only adds clutter to a narrow bar. The path itself
+              stays intact: CanGoForward and ForwardCommand are still alive in the view model, ready to be attached
+              again if this host is used on MAUI desktop. -->
          <Grid Grid.Row="0"
                Style="{StaticResource appBarStyle}"
                ColumnDefinitions="Auto,Auto,*,Auto,Auto"
@@ -52,17 +50,16 @@
                                  Command="{Binding Commands[ReloadCommand]}"
                                  TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
 
-            <!-- Badge akun, pembuka panel account. Ada di setiap layar, bukan hanya di home: dialah
-                 satu-satunya jalan ke akun, server, tema, dan keluar sesudah menu samping dibuang. -->
+            <!-- The account badge, which opens the account panel. It is on every screen, not only home: it is the one
+                 and only way to the account, server, theme, and sign-out once the side menu has been dropped. -->
             <Border Grid.Column="4" Style="{StaticResource accountBadgeStyle}"
                     IsVisible="{Binding IsUserVisible}">
                <Border.GestureRecognizers>
                   <TapGestureRecognizer Command="{Binding Commands[AccountPanelCommand]}" />
                </Border.GestureRecognizers>
-               <!-- Inisial, bukan siluet orang yang sama untuk semua orang: badge ini yang
-                    memberi tahu akun siapa yang sedang masuk, tanpa perlu mengeja seluruh namanya
-                    di bilah yang sempit. Di sinilah nanti foto profil dipasang - gambarnya tinggal
-                    menggantikan Label ini, dan Border-nya tetap yang membulatkannya. -->
+               <!-- Initials, not the same person silhouette for everyone: this badge tells whose account is signed in,
+                    without having to spell out the whole name in a narrow bar. This is where a profile photo will later
+                    be placed - the picture simply replaces this Label, and the Border is still what rounds it. -->
                <Label Text="{Binding AccountInitials}" FontFamily="OpenSansSemibold" FontSize="13"
                       HorizontalOptions="Center" VerticalOptions="Center"
                       TextColor="{AppThemeBinding Light={StaticResource onPrimaryContainerLight}, Dark={StaticResource onPrimaryContainerDark}}" />

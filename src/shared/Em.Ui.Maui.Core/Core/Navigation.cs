@@ -3,51 +3,46 @@ using System.Runtime.CompilerServices;
 using Microsoft.Maui.Controls;
 using Em.Shared;
 using Em.Ui.Core.Shared;
-// Kedua namespace punya INavigation, dan yang dimaksud di sini selalu milik Em.
+// Both namespaces have an INavigation, and the one meant here is always Em's.
 using INavigation = Em.Ui.Core.Shared.INavigation;
 
 namespace Em.Ui.Maui.Core
 {
-   /// <summary>
-   /// Definisi satu layar yang bisa dibuka lewat namanya, berikut saklar-saklar tampilan yang berlaku
-   /// selama ia ditampilkan. Body dan datanya tidak dipegang di sini, melainkan oleh
-   /// <see cref="NavigationEntry"/> yang tercipta setiap kali layar ini dibuka. Didaftarkan module lewat
-   /// <c>EmAppBuilder.AddNavigation</c>.
-   /// </summary>
+   /// <summary>Definition of a screen that can be opened by name: its title, body type, menu place, and access binding.</summary>
    public sealed class Navigation : INavigation, INotifyPropertyChanged
    {
-      /// <summary>Nama unik navigasi, yaitu yang dicari <c>NavigateTo(string)</c>.</summary>
+      /// <summary>The name.</summary>
       public required string Name { get; init; }
 
-      /// <summary>Judul layar, ditampilkan di toolbar navigasi.</summary>
+      /// <summary>The title.</summary>
       public string Title { get; set; } = string.Empty;
 
-      /// <summary>Keterangan singkat di bawah judul.</summary>
+      /// <summary>The subtitle.</summary>
       public string Subtitle { get; set; } = string.Empty;
 
-      /// <summary>Penjelasan panjang, dipakai kartu menu di home.</summary>
+      /// <summary>The description.</summary>
       public string Description { get; set; } = string.Empty;
 
-      /// <summary>Letak layar ini di pohon menu home, atau <c>null</c> kalau ia tidak lewat menu.</summary>
+      /// <summary>The menu path.</summary>
       public MenuPath? MenuPath { get; set; }
 
       IBodyType INavigation.BodyType => BodyType;
 
-      /// <summary>Tipe control yang jadi body layar ini, dideklarasikan lewat <c>BodyType.Of&lt;T&gt;()</c>.</summary>
+      /// <summary>The body type.</summary>
       public required BodyType BodyType { get; init; }
 
       /// <summary>
-      /// Jenis layar ini - <see cref="NavigationKind.Manager"/> atau <see cref="NavigationKind.Editor"/>.
-      /// Wajib diisi setiap kali navigasi didaftarkan.
+      /// The kind of this screen - <see cref="NavigationKind.Manager"/> or <see cref="NavigationKind.Editor"/>.
+      /// Required every time a navigation is registered, in any layout.
       /// </summary>
       public required NavigationKind Kind { get; init; }
 
       INavigationHost INavigation.NavigationHost => EmApp;
 
-      /// <summary>Objek aplikasi pemilik navigasi ini, diisi sendiri saat navigasi didaftarkan.</summary>
+      /// <summary>The em app.</summary>
       public EmApp EmApp { get; internal set; } = null!;
 
-      /// <summary>Apakah layar ini ikut tampil di menu home.</summary>
+      /// <summary>Indicates menu visible.</summary>
       public bool IsMenuVisible {
          get;
          set => SetField(ref field, value);
@@ -56,76 +51,76 @@ namespace Em.Ui.Maui.Core
       // Per-navigation toolbar switches, read by the SPA host when it shows this navigation.
       // They default to true so a navigation only has to name what it wants hidden.
 
-      /// <summary>Apakah toolbar navigasi ikut tampil saat layar ini dibuka.</summary>
+      /// <summary>Indicates toolbar visible.</summary>
       public bool IsToolbarVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah judul layar ikut tampil di toolbar.</summary>
+      /// <summary>Indicates title visible.</summary>
       public bool IsTitleVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah tombol mundur ikut tampil.</summary>
+      /// <summary>Indicates back visible.</summary>
       public bool IsBackVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah tombol maju ikut tampil.</summary>
+      /// <summary>Indicates forward visible.</summary>
       public bool IsForwardVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah tombol muat ulang ikut tampil.</summary>
+      /// <summary>Indicates reload visible.</summary>
       public bool IsReloadVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah tombol pulang ke home ikut tampil.</summary>
+      /// <summary>Indicates home visible.</summary>
       public bool IsHomeVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah tombol ganti tema ikut tampil.</summary>
+      /// <summary>Indicates color theme visible.</summary>
       public bool IsColorThemeVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Apakah tombol akun pengguna ikut tampil.</summary>
+      /// <summary>Indicates user visible.</summary>
       public bool IsUserVisible {
          get;
          set => SetField(ref field, value);
       } = true;
 
-      /// <summary>Urutan layar ini di menu home; semakin kecil semakin di depan.</summary>
+      /// <summary>The order index.</summary>
       public required int OrderIndex { get; init; }
 
       /// <summary>
-      /// Nama module pemilik navigasi ini, diisi <see cref="Shared.EmAppBuilder"/> lewat overload
-      /// <c>AddNavigation</c> yang berikat module - <c>null</c> kalau navigasi ini didaftarkan tanpa
-      /// ikatan. Hanya builder yang boleh mengisinya, supaya ikatan module selalu berasal dari
-      /// pendaftaran, bukan ditebak belakangan.
+      /// The name of the module that owns this navigation, set by <see cref="Shared.EmAppBuilder"/> through
+      /// the module-bound <c>AddNavigation</c> overload - <c>null</c> when this navigation was registered
+      /// without a binding. Only the builder may set it, so the module binding always comes from registration,
+      /// not guessed afterwards.
       /// </summary>
       public string? ModuleName { get; internal set; }
 
       /// <summary>
-      /// Claim yang wajib dimiliki user untuk membuka navigasi ini, diisi <see cref="Shared.EmAppBuilder"/>
-      /// lewat overload <c>AddNavigation</c> yang berklaim - <c>null</c> kalau navigasi ini cukup
-      /// terikat module tanpa claim tertentu.
+      /// The claim a user must hold to open this navigation, set by <see cref="Shared.EmAppBuilder"/> through
+      /// the claim-bound <c>AddNavigation</c> overload - <c>null</c> when this navigation is only bound to the
+      /// module without a particular claim.
       /// </summary>
       public ClaimAction? RequiredClaim { get; internal set; }
 
-      /// <summary>Ikon layar ini di menu home, atau <c>null</c> kalau tidak punya.</summary>
+      /// <summary>The icon of this screen in the home menu, or <c>null</c> when it has none.</summary>
       public ImageSource? NavigationIcon { get; set; }
 
-      /// <summary>Apakah layar ini menolak dibuka tanpa parameter.</summary>
+      /// <summary>Indicates require parameter.</summary>
       public required bool RequireParameter { get; init; }
 
       #region INotifyPropertyChanged Implementation Methods

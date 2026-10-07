@@ -5,20 +5,20 @@ using Microsoft.Maui.Graphics;
 namespace Em.Ui.Maui.Controls
 {
    /// <summary>
-   /// Tombol ikon bulat ala Material: sebuah ikon di dalam bidang sentuh 48x48, dengan kilatan singkat
-   /// sebagai tanda ia benar-benar tertekan. Dipakai di app bar dan tempat lain yang aksinya cukup
-   /// diwakili satu gambar.
+   /// A Material-style round icon button: an icon inside a 48x48 touch area, with a brief flash to show it
+   /// was really pressed. Used in the app bar and other places whose action is well represented by a single
+   /// picture.
    /// </summary>
    /// <remarks>
-   /// Ditulis sebagai control sendiri, bukan <c>Button</c> ber-gambar, karena <c>Button</c> di MAUI hanya
-   /// menerima <c>ImageSource</c> - sementara ikon di sini digambar sebagai huruf font supaya warnanya
-   /// bisa ikut tema tanpa menyiapkan satu berkas gambar per warna.
+   /// Written as a control of its own, not a <c>Button</c> with an image, because a <c>Button</c> in MAUI
+   /// only accepts an <c>ImageSource</c> - while the icon here is drawn as a font letter so its color can
+   /// follow the theme without preparing one image file per color.
    /// </remarks>
    public class IconButton : ContentView
    {
-      // Lapisan keadaan saat penunjuk berada di atas tombol. Abu-abu tembus pandang, bukan warna
-      // tertentu: ia menggelapkan tema terang dan mencerahkan tema gelap, jadi satu nilai cukup untuk
-      // keduanya - aturan yang sama dipakai seluruh bahasa desain di repo ini.
+      // The state layer while the pointer is over the button. A translucent gray, not a particular color: it
+      // darkens the light theme and brightens the dark theme, so a single value is enough for both - the same
+      // rule used by the whole design language in this repo.
       private static readonly Color HoverColor = Color.FromRgba(128, 128, 128, 31);
 
       private readonly FontIcon _icon;
@@ -41,25 +41,24 @@ namespace Em.Ui.Maui.Controls
          Content = _surface;
          WidthRequest = HeightRequest = 48;
 
-         // Bidangnya selalu bulat penuh, berapa pun ukuran tombolnya - dan ukurannya memang diubah di
-         // beberapa tempat pemakaian, jadi radiusnya dihitung ulang bukan disetel sekali.
+         // The area is always fully round, whatever the button size - and the size is indeed changed at several
+         // places of use, so the radius is recomputed rather than set once.
          SizeChanged += (_, _) => _surfaceShape.CornerRadius = Math.Min(Width, Height) / 2;
 
          var tap = new TapGestureRecognizer();
          tap.Tapped += OnTapped;
          GestureRecognizers.Add(tap);
 
-         // Hover hanya ada di perangkat yang punya penunjuk - mouse di desktop, atau stylus. Di layar
-         // sentuh kedua event ini tidak pernah datang, dan yang memberi tanda di sana adalah kilatan
-         // di OnTapped. Keduanya dipasang bersama supaya control ini tidak perlu tahu ia sedang
-         // dijalankan di perangkat yang mana.
+         // Hover only exists on devices that have a pointer - a mouse on desktop, or a stylus. On a touch screen
+         // these two events never arrive, and what gives the feedback there is the flash in OnTapped. Both are
+         // attached together so this control need not know which device it is running on.
          var pointer = new PointerGestureRecognizer();
          pointer.PointerEntered += (_, _) => _surface.BackgroundColor = HoverColor;
          pointer.PointerExited += (_, _) => _surface.BackgroundColor = Colors.Transparent;
          GestureRecognizers.Add(pointer);
       }
 
-      /// <summary>Karakter glyph ikon, diambil dari <see cref="FontIcons"/>.</summary>
+      /// <summary>The icon glyph character, taken from <see cref="FontIcons"/>.</summary>
       public static readonly BindableProperty GlyphProperty = BindableProperty.Create(
          nameof(Glyph), typeof(string), typeof(IconButton), string.Empty,
          propertyChanged: (b, _, n) => ((IconButton)b)._icon.Glyph = (string)n);
@@ -81,7 +80,7 @@ namespace Em.Ui.Maui.Controls
          set => SetValue(TintColorProperty, value);
       }
 
-      /// <summary>Panjang sisi ikonnya sendiri, bukan bidang sentuhnya. Bawaannya 24.</summary>
+      /// <summary>The side length of the icon itself, not its touch area. The default is 24.</summary>
       public static readonly BindableProperty IconSizeProperty = BindableProperty.Create(
          nameof(IconSize), typeof(double), typeof(IconButton), FontIcons.DefaultSize,
          propertyChanged: (b, _, n) => ((IconButton)b)._icon.IconSize = (double)n);
@@ -92,7 +91,7 @@ namespace Em.Ui.Maui.Controls
          set => SetValue(IconSizeProperty, value);
       }
 
-      /// <summary>Perintah yang dijalankan saat tombol ditekan.</summary>
+      /// <summary>The command that runs when the button is pressed.</summary>
       public static readonly BindableProperty CommandProperty = BindableProperty.Create(
          nameof(Command), typeof(ICommand), typeof(IconButton));
 
@@ -102,7 +101,7 @@ namespace Em.Ui.Maui.Controls
          set => SetValue(CommandProperty, value);
       }
 
-      /// <summary>Parameter yang diteruskan ke <see cref="Command"/>.</summary>
+      /// <summary>The parameter passed to <see cref="Command"/>.</summary>
       public static readonly BindableProperty CommandParameterProperty = BindableProperty.Create(
          nameof(CommandParameter), typeof(object), typeof(IconButton));
 
@@ -115,10 +114,10 @@ namespace Em.Ui.Maui.Controls
       private async void OnTapped(object? sender, TappedEventArgs e) {
          if (Command is not { } command || !command.CanExecute(CommandParameter)) return;
 
-         // Kilatan singkat sebagai ganti efek riak bawaan platform, yang tidak tersedia untuk control
-         // yang menggambar dirinya sendiri seperti ini. Sengaja dijalankan sampai selesai sebelum
-         // perintahnya berjalan: perpindahan layar mengganti seluruh isi halaman, dan animasi yang
-         // masih berjalan di atas control yang sudah dibuang tidak pernah selesai.
+         // A brief flash in place of the platform's default ripple effect, which is not available for a control
+         // that draws itself like this one. Deliberately run to completion before the command runs: a screen
+         // change replaces the whole page content, and an animation still running on a disposed control never
+         // finishes.
          await this.FadeToAsync(0.4, 60);
          await this.FadeToAsync(1, 90);
          command.Execute(CommandParameter);

@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-   Kolom isian. Bentuknya mengikuti kotak isian "filled" Material: satu bidang tenang dengan sudut
-   lengkung di atas, tanpa garis tepi, sehingga sederet isian terbaca sebagai daftar, bukan sebagai
-   kumpulan kotak.
+<!-- Input fields. Their form follows the Material "filled" text field: one calm surface with rounded
+     corners on top, no border, so a row of fields reads as a list rather than a set of boxes.
 
-   Isian di sini dibungkus Border bergaya inputFieldStyle, dan Entry/Picker di dalamnya dibiarkan
-   tanpa bidang sendiri - itulah kenapa keduanya bertipe implisit: sekali disetel, setiap isian di
-   dalam bungkusnya langsung ikut.
--->
+     Fields here are wrapped in a Border with the inputFieldStyle style, and the Entry/Picker inside it are
+     left without a surface of their own - that is why both are implicit styles: set once, every field
+     inside its wrapper follows right away. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
                     xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls">
 
-   <!-- Palette digabungkan lagi di sini, bukan cukup sekali di MaterialDesign.xaml: StaticResource di
-        dalam sebuah berkas ResourceDictionary hanya melihat isi berkas itu sendiri dan kamus yang
-        digabungkan di dalamnya - kamus yang berdiri berdampingan dengannya tidak terlihat. -->
+   <!-- Palette is merged again here, not just once in MaterialDesign.xaml: a StaticResource inside a
+        ResourceDictionary file only sees the content of that file and the dictionaries merged into it - a
+        dictionary standing beside it is not visible. -->
    <ResourceDictionary.MergedDictionaries>
       <styles:Palette />
    </ResourceDictionary.MergedDictionaries>

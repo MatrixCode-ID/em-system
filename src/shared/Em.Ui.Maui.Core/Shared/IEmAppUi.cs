@@ -4,22 +4,21 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Maui.Shared
 {
    /// <summary>
-   /// Kontrak objek aplikasi khusus sisi MAUI, menambahkan hal-hal yang dibaca layar - pengaturan
-   /// brand dan aturan kata sandi - di atas kontrak dasar <see cref="IEmApp"/>. Ada supaya sebuah
-   /// layar bisa meminta keduanya dari DI container tanpa harus bergantung pada class aplikasi yang
-   /// konkret.
+   /// The contract of the MAUI-specific application object, adding what screens read - the brand
+   /// settings and the password rules - on top of the base contract <see cref="IEmApp"/>. It exists so a
+   /// screen can ask for both from the DI container without depending on the concrete application class.
    /// </summary>
    public interface IEmAppUi : IEmApp
    {
       /// <summary>
-      /// Pengaturan tampilan brand yang berlaku, selalu terisi - lihat <see cref="BrandingInfo"/>
-      /// soal nilai bawaannya.
+      /// The brand display settings in force, always filled - see <see cref="BrandingInfo"/> for its default
+      /// values.
       /// </summary>
       BrandingInfo Branding { get; }
 
       /// <summary>
-      /// Aturan kata sandi yang berlaku, selalu terisi - lihat <see cref="Shared.PasswordPolicy"/>
-      /// soal nilai bawaannya.
+      /// The password rules in force, always filled - see <see cref="Shared.PasswordPolicy"/> for its default
+      /// values.
       /// </summary>
       PasswordPolicy PasswordPolicy { get; }
    }

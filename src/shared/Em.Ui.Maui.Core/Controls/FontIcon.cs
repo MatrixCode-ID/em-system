@@ -3,13 +3,13 @@ using Microsoft.Maui.Graphics;
 namespace Em.Ui.Maui.Controls
 {
    /// <summary>
-   /// Satu ikon Font Awesome, digambar sebagai huruf dari glyph di <see cref="FontIcons"/>. Ukurannya
-   /// ditentukan <see cref="IconSize"/>, dan warnanya <see cref="TintColor"/>.
+   /// One Font Awesome icon, drawn as a letter from a glyph in <see cref="FontIcons"/>. Its size is decided
+   /// by <see cref="IconSize"/>, and its color by <see cref="TintColor"/>.
    /// </summary>
    /// <remarks>
-   /// Dibungkus sebagai control sendiri, bukan <c>Label</c> yang font-nya disetel di tiap tempat
-   /// pemakaian, supaya nama font ikonnya cukup disebut satu kali di sini - dan supaya pemakainya
-   /// bicara dalam ukuran ikon, bukan ukuran huruf.
+   /// Wrapped as a control of its own, not a <c>Label</c> whose font is set at every place of use, so the
+   /// name of the icon font only needs to be stated once here - and so its users speak in icon size, not in
+   /// letter size.
    /// </remarks>
    public class FontIcon : ContentView
    {
@@ -27,7 +27,7 @@ namespace Em.Ui.Maui.Controls
          ApplySize();
       }
 
-      /// <summary>Karakter glyph ikon, diambil dari <see cref="FontIcons"/>.</summary>
+      /// <summary>The icon glyph character, taken from <see cref="FontIcons"/>.</summary>
       public static readonly BindableProperty GlyphProperty = BindableProperty.Create(
          nameof(Glyph), typeof(string), typeof(FontIcon), string.Empty,
          propertyChanged: (b, _, n) => ((FontIcon)b)._label.Text = (string?)n ?? string.Empty);
@@ -50,7 +50,7 @@ namespace Em.Ui.Maui.Controls
       }
 
       /// <summary>
-      /// Panjang sisi ikon dalam satuan perangkat. Bawaannya <see cref="FontIcons.DefaultSize"/>.
+      /// The side length of the icon in device units. The default is <see cref="FontIcons.DefaultSize"/>.
       /// </summary>
       public static readonly BindableProperty IconSizeProperty = BindableProperty.Create(
          nameof(IconSize), typeof(double), typeof(FontIcon), FontIcons.DefaultSize,
@@ -63,9 +63,9 @@ namespace Em.Ui.Maui.Controls
       }
 
       private void ApplySize() {
-         // Bidang control dibuat sedikit lebih lapang dari huruf ikonnya sendiri: glyph Font Awesome
-         // digambar di dalam kotak em yang menyisakan ruang di atas dan bawah, dan kotak sepas huruf
-         // akan memotongnya di sebagian perangkat.
+         // The control's area is made slightly roomier than the icon letter itself: a Font Awesome glyph is drawn
+         // inside an em box that leaves space above and below, and a box that fits the letter exactly would cut it
+         // off on some devices.
          WidthRequest = HeightRequest = IconSize * 1.25;
          _label.FontSize = IconSize;
       }

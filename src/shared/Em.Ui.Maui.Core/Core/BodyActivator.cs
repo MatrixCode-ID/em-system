@@ -5,10 +5,7 @@ using Em.Ui.Maui.Shared;
 
 namespace Em.Ui.Maui.Core
 {
-   /// <summary>
-   /// Tipe control yang jadi body sebuah <see cref="Navigation"/>, berikut cara membangunnya. Dipakai
-   /// lewat <see cref="Of{T}"/> saat mendaftarkan navigasi.
-   /// </summary>
+   /// <summary>The default implementation of <see cref="IBodyType"/>, holding the type of a navigation body.</summary>
    public class BodyType : IBodyType
    {
       private BodyType(Type bodyType) {
@@ -36,10 +33,10 @@ namespace Em.Ui.Maui.Core
       #region Statics
 
       /// <summary>
-      /// Mendeklarasikan <typeparamref name="T"/> sebagai body sebuah navigasi. Control-nya baru
-      /// dibangun saat navigasinya benar-benar dibuka.
+      /// Declares <typeparamref name="T"/> as the body of a navigation. The control is only built when the
+      /// navigation is really opened.
       /// </summary>
-      /// <typeparam name="T">Control yang jadi body, harus mengimplementasikan <see cref="INavigationBody"/>.</typeparam>
+      /// <typeparam name="T">The control that becomes the body; it must implement <see cref="INavigationBody"/>.</typeparam>
       public static BodyType Of<T>() where T : View, INavigationBody => new(typeof(T));
 
       #endregion

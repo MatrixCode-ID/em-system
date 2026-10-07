@@ -6,14 +6,14 @@ using Em.Ui.Maui.Shared;
 namespace Em.Ui.Maui.Navigations
 {
    /// <summary>
-   /// Halaman utama aplikasi: bilah atas, panel account yang masuk dari kanan, dan satu tempat kosong
-   /// yang diisi body layar yang sedang dibuka. Inilah satu-satunya halaman aplikasi - berpindah layar
-   /// berarti mengganti isi tempat itu, bukan menumpuk halaman baru.
+   /// The main page of the application: the top bar, the account panel entering from the right, and one
+   /// empty place that is filled with the body of the screen being opened. This is the one and only page of
+   /// the application - changing screen means replacing the content of that place, not stacking a new page.
    /// </summary>
    public partial class SpaNavigationHost : ContentPage
    {
-      // Lama animasi tirai panel account, dan seberapa gelap ia saat panelnya terbuka penuh.
-      // Angkanya mengikuti gerak baku Material: membuka sedikit lebih lambat daripada menutup.
+      // The duration of the account panel's curtain animation, and how dark it is when the panel is fully
+      // open. The numbers follow standard Material motion: opening is slightly slower than closing.
       private const uint OpenDuration = 260;
       private const uint CloseDuration = 200;
       private const double ScrimOpacity = 0.4;
@@ -27,24 +27,24 @@ namespace Em.Ui.Maui.Navigations
 
          AccountPanelView.Vm.EmApp = app;
          AccountPanelView.Vm.HostPage = this;
-         // Panel yang menutup dirinya sendiri hanya akan meluncur keluar tanpa tirainya ikut memudar:
-         // tirai itu milik halaman ini. Jadi panel memintanya, dan halaman ini yang mengerjakan.
+         // A panel that closes itself would only slide out without its curtain fading with it: that curtain
+         // belongs to this page. So the panel asks for it, and this page does the work.
          AccountPanelView.Vm.CloseRequested += (_, _) => Vm.IsAccountPanelOpen = false;
 
          app.ActiveUserChanged += (_, _) => Vm.RefreshAccount();
          app.ActiveConnectionChanged += (_, _) => Vm.RefreshAccount();
          app.ThemeChanged += (_, _) => AccountPanelView.Vm.RefreshTheme();
-         // Sesi bisa berakhir tanpa ada yang menekan tombol keluar - umurnya habis, atau dicabut dari
-         // tempat lain. Keduanya harus mendarat di layar login lewat jalan yang sama persis.
+         // A session can end without anyone pressing the sign-out button - its lifetime ran out, or it was
+         // revoked from elsewhere. Both must land on the login screen through exactly the same way.
          app.SessionEnded += OnSessionEnded;
       }
 
-      /// <summary>View model halaman ini, dibaca balik dari BindingContext yang dipasang di XAML.</summary>
+      /// <summary>The view model of this page, read back from the BindingContext set in XAML.</summary>
       public SpaNavigationHostVm Vm => (SpaNavigationHostVm)BindingContext;
 
-      // Dua hal di bawah ini memang urusan tampilan, bukan view model: memasang control ke sebuah slot
-      // memindahkan instance-nya, bukan nilai, dan menggeser panel beserta tirainya adalah animasi
-      // atas elemen yang konkret. Keduanya tidak bisa diungkapkan sebagai binding.
+      // The two things below are indeed display business, not the view model's: attaching a control to a slot
+      // moves its instance, not a value, and sliding the panel together with its curtain is an animation on
+      // concrete elements. Neither can be expressed as a binding.
       private void VmOnPropertyChanged(object? sender, PropertyChangedEventArgs e) {
          switch (e.PropertyName) {
             case nameof(SpaNavigationHostVm.Entry):
@@ -57,9 +57,9 @@ namespace Em.Ui.Maui.Navigations
       }
 
       private async Task AnimateAccountPanelAsync(bool open) {
-         // Tirai dibuat bisa disentuh lebih dulu saat membuka, dan baru dilepas sesudah tertutup penuh
-         // saat menutup - supaya tidak pernah ada saat panel masih terlihat tapi sentuhan sudah tembus
-         // ke isi halaman di belakangnya.
+         // The curtain is made touchable first when opening, and only released after it is fully closed when
+         // closing - so there is never a moment where the panel is still visible but touches already pass
+         // through to the page content behind it.
          if (open) Scrim.InputTransparent = false;
 
          var duration = open ? OpenDuration : CloseDuration;
@@ -72,9 +72,9 @@ namespace Em.Ui.Maui.Navigations
          if (!open) Scrim.InputTransparent = true;
       }
 
-      // Tombol kembali milik perangkat adalah jalan keluar yang paling sering dipakai di Android, jadi
-      // ia harus mengerti keadaan layar: menutup panel account kalau sedang terbuka, mundur satu layar
-      // kalau masih ada jalur yang bisa ditelusuri, dan baru menyerah ke perilaku bawaan kalau tidak.
+      // The device's back button is the exit used most often on Android, so it must understand the state of
+      // the screen: close the account panel if it is open, go back one screen if there is still a path to
+      // walk, and only give up to the default behavior otherwise.
       protected override bool OnBackButtonPressed() {
          if (Vm.IsAccountPanelOpen) {
             Vm.IsAccountPanelOpen = false;
@@ -95,10 +95,7 @@ namespace Em.Ui.Maui.Navigations
       }
    }
 
-   /// <summary>
-   /// View model <see cref="SpaNavigationHost"/>: menyimpan layar yang sedang dibuka dan
-   /// perintah-perintah bilah atas.
-   /// </summary>
+   /// <summary>View model of the single-page navigation host.</summary>
    public class SpaNavigationHostVm : MvvmModelBase
    {
       public SpaNavigationHostVm() {
@@ -110,15 +107,15 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(CloseAccountPanelCommand), CloseAccountPanelCommand);
       }
 
-      /// <summary>Apakah panel account sedang terbuka. Halaman menganimasikan perpindahannya.</summary>
+      /// <summary>Whether the account panel is open. The page animates the change.</summary>
       public bool IsAccountPanelOpen {
          get => Get<bool>();
          set => Set(value);
       }
 
       /// <summary>
-      /// Stack yang ditampilkan halaman ini. Halaman mengikuti stack itu sendiri - entri yang sedang
-      /// tampil dan isi jalurnya - jadi tidak ada pihak lain yang perlu mendorong perubahan ke sini.
+      /// The stack shown by this host. The host follows that stack itself - the entry being shown and the
+      /// content of its path - so no one else needs to push changes into it.
       /// </summary>
       public NavigationStack? Stack {
          get;
@@ -138,7 +135,7 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      /// <summary>Entri yang sedang tampil, atau <c>null</c> sebelum ada yang pernah ditampilkan.</summary>
+      /// <summary>The entry being shown, or <c>null</c> before anything has ever been shown.</summary>
       public NavigationEntry? Entry {
          get;
          private set {
@@ -160,7 +157,7 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      /// <summary>Definisi layar yang sedang tampil; sumber saklar-saklar bilah atas.</summary>
+      /// <summary>The definition of the screen being shown; the source of the toolbar switches.</summary>
       public Navigation? Navigation => Entry?.Navigation;
 
       private void StackPropertyChanged(object? sender, PropertyChangedEventArgs e) {
@@ -173,27 +170,27 @@ namespace Em.Ui.Maui.Navigations
          if (e.PropertyName == nameof(NavigationEntry.Title)) NotifyChanged(nameof(Title));
       }
 
-      // Home tidak pernah jadi entri jalur navigasi, jadi "sedang di home" berarti yang tampil adalah
-      // entri home itu sendiri - atau belum ada yang tampil sama sekali.
+      // Home is never an entry of the navigation path, so "being at home" means that what is shown is the
+      // home entry itself - or that nothing has been shown at all yet.
       private bool IsAtHome => Stack?.Current is null || Stack.Current == Stack.Home;
 
-      /// <summary>Judul di bilah atas: nama aplikasi saat di home, judul entrinya saat di layar lain.</summary>
+      /// <summary>The title in the top bar: the application name at home, the title of its entry on another screen.</summary>
       public string Title => IsAtHome
          ? EmApp?.Branding.DisplayTitle ?? string.Empty
          : Entry?.Title ?? string.Empty;
 
-      /// <summary>Keterangan di bawah judul.</summary>
+      /// <summary>The caption below the title.</summary>
       public string Subtitle => IsAtHome
          ? EmApp?.Branding.DisplayTagline ?? string.Empty
          : Navigation?.Subtitle ?? string.Empty;
 
-      /// <summary><c>true</c> kalau ada keterangan yang perlu digambar di bawah judul.</summary>
+      /// <summary><c>true</c> when there is a caption to draw below the title.</summary>
       public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
 
-      /// <summary>Apakah masih ada layar di depan yang bisa dituju.</summary>
+      /// <summary>Whether there is still a screen ahead that can be gone to.</summary>
       /// <remarks>
-      /// Tidak ada tombolnya di bilah atas Android, tapi jalurnya sengaja dipertahankan: host ini bisa
-      /// dipakai lagi di MAUI desktop, tempat maju punya arti dan punya tempatnya sendiri.
+      /// There is no button for it in the Android top bar, but the path is deliberately kept: this host can be
+      /// used again in MAUI desktop, where going forward has meaning and its own place.
       /// </remarks>
       public bool CanGoForward {
          get {
@@ -204,39 +201,39 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      // Setiap saklar bilah atas dimiliki navigasinya. Tanpa navigasi sama sekali tidak ada yang perlu
-      // digambar, jadi jawabannya false - bukan nilai bawaan milik Navigation.
+      // Every top bar switch is owned by its navigation. Without a navigation at all there is nothing to draw,
+      // so the answer is false - not a default value owned by Navigation.
       public bool IsToolbarVisible => Navigation?.IsToolbarVisible ?? false;
       public bool IsTitleVisible => Navigation?.IsTitleVisible ?? false;
       public bool IsReloadVisible => Navigation?.IsReloadVisible ?? false;
 
       /// <summary>
-      /// Apakah tombol mundur perlu digambar. Di home jawabannya selalu tidak: jalur navigasinya masih
-      /// kosong, dan tombol mundur yang tidak menuju ke mana-mana hanya membingungkan.
+      /// Whether the back button needs to be drawn. At home the answer is always no: its navigation path is
+      /// still empty, and a back button that leads nowhere only confuses.
       /// </summary>
       public bool IsBackVisible => !IsAtHome && (Navigation?.IsBackVisible ?? false);
 
-      /// <summary>Apakah tombol pulang perlu digambar; seperti mundur, di home ia tidak ada gunanya.</summary>
+      /// <summary>Whether the home button needs to be drawn; like back, it is of no use at home.</summary>
       public bool IsHomeVisible => !IsAtHome && (Navigation?.IsHomeVisible ?? false);
 
       /// <summary>
-      /// Apakah badge akun perlu digambar. Berbeda dari mundur dan pulang, badge ini ada di setiap
-      /// layar termasuk home - dialah satu-satunya jalan ke panel account.
+      /// Whether the account badge needs to be drawn. Unlike back and home, this badge is on every screen
+      /// including home - it is the one and only way to the account panel.
       /// </summary>
       public bool IsUserVisible => Navigation?.IsUserVisible ?? false;
 
       /// <summary>
-      /// Inisial akun yang sedang masuk, isi lingkaran badge. Satu-satunya keterangan akun yang masih
-      /// digambar halaman ini - selebihnya milik panel account. Nama lengkap didahulukan, dan nama
-      /// akun jadi cadangan kalau kontaknya belum punya nama.
+      /// The initials of the signed-in account, the content of the badge circle. The only account information
+      /// this page still draws - the rest belongs to the account panel. The full name comes first, and the
+      /// account name is the fallback when the contact has no name yet.
       /// </summary>
       public string AccountInitials => EmApp?.ActiveUser is { } user
          ? (user.cContactFullName is { Length: > 0 } fullName ? fullName : user.cUserAccount).ToInitials()
          : "?";
 
       /// <summary>
-      /// Meminta seluruh tombol bilah atas menghitung ulang apakah dirinya masih boleh ditekan.
-      /// Dipanggil setiap kali isi jalur navigasi berubah.
+      /// Asks all top bar buttons to recompute whether they may still be pressed. Called every time the
+      /// content of the navigation path changes.
       /// </summary>
       public void RefreshNavigationCommands() {
          NotifyChanged(nameof(CanGoForward));
@@ -252,14 +249,14 @@ namespace Em.Ui.Maui.Navigations
          Commands[nameof(ReloadCommand)]?.RaiseCanExecuteChanged();
       }
 
-      /// <summary>Menggambar ulang badge akun sesudah pengguna atau servernya berganti.</summary>
+      /// <summary>Redraws the account badge after the user or the server changed.</summary>
       public void RefreshAccount() => NotifyChanged(nameof(AccountInitials));
 
-      /// <summary>Tombol paling kiri bilah atas: mundur satu layar.</summary>
+      /// <summary>The leftmost button of the top bar: go back one screen.</summary>
       public Task LeadingCommand() => Stack!.Backward();
       public bool LeadingCommandAllowed() => Stack?.CanGoBack == true;
 
-      /// <summary>Pulang ke home dari layar mana pun, tanpa perlu mundur selangkah demi selangkah.</summary>
+      /// <summary>Go home from any screen, without having to go back step by step.</summary>
       public Task HomeCommand() => Stack!.NavigateHome();
       public bool HomeCommandAllowed() => Stack?.Home is not null && !IsAtHome;
 
@@ -269,7 +266,7 @@ namespace Em.Ui.Maui.Navigations
       public Task ReloadCommand() => Entry?.Reload() ?? Task.CompletedTask;
       public bool ReloadCommandAllowed() => Entry is not null;
 
-      /// <summary>Membuka - atau menutup lagi - panel account lewat badge di bilah atas.</summary>
+      /// <summary>Opens - or closes again - the account panel through the badge in the top bar.</summary>
       public void AccountPanelCommand() => IsAccountPanelOpen = !IsAccountPanelOpen;
       public bool AccountPanelCommandAllowed() => EmApp is not null;
 
