@@ -6,7 +6,8 @@ namespace Em.Ui.Wpf.Navigations
    /// <summary>
    /// One role card on the Roles tab of the user editor: whether the open user holds that role, and for
    /// which period. Nothing here talks to the server - the card only remembers what is stored (the
-   /// baseline) next to what is on screen, and the editor sends the difference when Save is pressed.
+   /// baseline) next to what is on screen, and the editor sends the difference: at once for a stored
+   /// user, with Save for a new one.
    /// </summary>
    public class UserRoleCardVm : NotifyPropertyBase
    {
@@ -139,12 +140,21 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Whether the card may be changed at all. Off for a system account, while the editor is saving, and
-      /// while the role list is loading.
+      /// Whether the card may be changed at all. Off for a system account, while the editor or this card is
+      /// saving, and while the role list is loading.
       /// </summary>
       public bool IsEditable {
          get => Get(true);
          set => Set(value, _ => NotifyChanged(nameof(IsPeriodEnabled)));
+      }
+
+      /// <summary>
+      /// Whether the change on this card is being sent to the server. The card is locked meanwhile, so what
+      /// is accepted as stored afterwards is exactly what was sent.
+      /// </summary>
+      public bool IsSaving {
+         get => Get<bool>();
+         internal set => Set(value);
       }
 
       /// <summary>Whether the period pickers may be changed: only for a role that is switched on.</summary>

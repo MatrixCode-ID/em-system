@@ -22,25 +22,27 @@ when role changes would be lost.
 
 The search box under the header narrows the cards to the roles whose name or description contains the
 typed text, ignoring case, and shows how many roles match. Search only hides cards: a hidden card keeps
-its switch and dates, and **Save** still sends its changes. The search text stays when another account is
+its switch and dates. The search text stays when another account is
 opened or the roles are reloaded.
 
 ### Saving
 
-Role changes are saved with the editor's **Save Changes** button, together with the rest of the record:
+For a stored user a role change is stored as soon as it is made; there is no separate Save for roles:
 
-- switching a card or moving one of its dates marks the record changed, shows the *Unsaved changes* chip,
-  and makes leaving the screen ask for confirmation;
-- **Discard** puts the cards back as well;
-- a card whose expiry falls before its start shows *Expiry is before start.* and holds Save back.
+- switching a card, or moving one of its dates, sends that card's change straight away (removed:
+  `PostTa_UserRole_DeleteBatch`, new: `PostTa_UserRole_NewBatch`, period changed: `PostTa_UserRole_Update`);
+- the card shows a spinner and is locked while its change is on its way, so the stored state is exactly
+  what was sent;
+- a card whose expiry falls before its start shows *Expiry is before start.* and is not sent until the
+  period is fixed; it stays marked with the accent dot meanwhile.
 
-On Save the editor writes the user row only when it really changed (a new user is inserted first, so it has
-an id), then sends the role difference in the same order Role Manager uses: removed assignments
-(`PostTa_UserRole_DeleteBatch`), new ones (`PostTa_UserRole_NewBatch`), then one
-`PostTa_UserRole_Update` per assignment whose period changed. Every call tolerates being repeated: when the
-roles fail after the user row was stored, the role changes stay marked and the next Save sends them again.
+When a send fails, the error is shown and the card stays marked. Switching it again, or pressing
+**Save Changes**, sends it once more; Save sends every card still marked after writing the user row.
+Every call tolerates being repeated.
 
-A new user can have roles switched on before it is saved; one Save creates the user and its assignments.
+A new user has no id until its row is stored, so its cards are not sent on their own: they can be
+switched and dated as usual, stay marked, and **Save Changes** creates the user and then sends its
+assignments. From then on the cards save themselves.
 
 ### Dates
 

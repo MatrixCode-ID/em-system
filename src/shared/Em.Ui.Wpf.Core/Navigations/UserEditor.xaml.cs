@@ -437,9 +437,13 @@ namespace Em.Ui.Wpf.Navigations
       // refresh button pressed again - throws its answer away instead of painting stale cards.
       private int _rolesLoadEpoch;
 
+      // Number of cards whose change is on its way to the server.
+      private int _roleSavesRunning;
+
       /// <summary>
-      /// One card per role on the server, with the open user's assignment of it. What is switched on here is
-      /// only sent when Save is pressed, together with the rest of the record.
+      /// One card per role on the server, with the open user's assignment of it. For a stored user a card that
+      /// is switched or re-dated is sent at once; for a new user the cards wait for Save, which creates the
+      /// user first.
       /// </summary>
       public ObservableCollection<UserRoleCardVm> RoleCards { get; } = [];
 
@@ -487,6 +491,14 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Indicates at least one role card differs from what is stored.</summary>
       public bool HasRoleChanges => RoleCards.Any(c => c.IsChanged);
 
+      /// <summary>Indicates at least one role card is being sent to the server.</summary>
+      public bool IsRoleSaving => _roleSavesRunning > 0;
+
+      /// <summary>Help text under the Roles header, telling when a switched role is stored.</summary>
+      public string RolesHelpCaption => IsStored
+         ? "Switch a role on to give it to this account. Changes are saved right away."
+         : "Switch a role on to give it to this account. Roles are saved together with the new user.";
+
       /// <summary>Indicates at least one role card has an expiry that falls before its start.</summary>
       public bool HasRolePeriodError => RoleCards.Any(c => c.HasPeriodError);
 
@@ -512,7 +524,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>May run whenever the roles are not already loading and nothing is being saved.</summary>
-      public bool RefreshRolesCommandAllowed() => IsNotBusy && !IsRolesLoading && Data != null;
+      public bool RefreshRolesCommandAllowed() => IsNotBusy && !IsRolesLoading && !IsRoleSaving && Data != null;
 
       /// <summary>
       /// Loads every role and the open user's assignments of them into <see cref="RoleCards"/>. A new user and
@@ -571,15 +583,52 @@ namespace Em.Ui.Wpf.Navigations
          RoleCards.Clear();
       }
 
-      private void RoleCardChanged(object? sender, EventArgs e) => RaiseRolesChanged();
+      // A card of a stored user is sent as soon as it changes; a new user has no id yet, so its cards
+      // wait for Save. A period whose expiry falls before its start waits until it is fixed; the card
+      // stays marked meanwhile.
+      private async void RoleCardChanged(object? sender, EventArgs e) {
+         RaiseRolesChanged();
+
+         if (sender is UserRoleCardVm { IsChanged: true, HasPeriodError: false, IsSaving: false } card
+             && IsStored && !IsSystemAccount && !IsBusy && !IsRolesLoading)
+            await SaveRoleCardAsync(card);
+      }
+
+      // Sends one card's change. The card is locked while it is on its way, so the values accepted as
+      // stored afterwards are the ones that were sent. A failure leaves the card marked, so switching it
+      // again or pressing Save sends it once more. Never throws: it runs from an event handler.
+      private async Task SaveRoleCardAsync(UserRoleCardVm card) {
+         var cUserId = Data!.cUserId;
+         card.IsSaving = true;
+         _roleSavesRunning++;
+         RaiseRolesChanged();
+
+         try {
+            var services = EmApp!.ServiceProvider.GetRequiredService<ICredentialServices>();
+            var stamp = await EmApp.GetDateStampAsync();
+            var changes = UserRoleCardVm.BuildChanges(cUserId, [card], stamp);
+            await SendRoleChangesAsync(services, changes);
+            card.Accept(changes.SentRowFor(card.Role.cRoleId), DateTime.Now);
+         }
+         catch (Exception x) {
+            x.ViewExceptionDetail();
+         }
+         finally {
+            card.IsSaving = false;
+            _roleSavesRunning--;
+            RaiseRolesChanged();
+         }
+      }
 
       // A card that is switched or re-dated changes what Save, Discard and the unsaved chip say, so
       // the whole set is re-announced together - the same way the record's own changes are.
       private void RaiseRolesChanged() {
          var editable = !IsBusy && !IsRolesLoading && !IsSystemAccount;
-         foreach (var card in RoleCards) card.IsEditable = editable;
+         foreach (var card in RoleCards) card.IsEditable = editable && !card.IsSaving;
 
          NotifyChanged(nameof(HasRoleChanges));
+         NotifyChanged(nameof(IsRoleSaving));
+         NotifyChanged(nameof(RolesHelpCaption));
          NotifyChanged(nameof(HasRolePeriodError));
          NotifyChanged(nameof(IsRolesEmpty));
          NotifyChanged(nameof(IsRoleSearchEmpty));
@@ -588,21 +637,26 @@ namespace Em.Ui.Wpf.Navigations
          RaiseCommandsChanged();
       }
 
-      // Sends the difference between the cards and what is stored, in the same order the role manager
-      // uses. Every call tolerates being repeated, so a save cut off half way is finished by the next.
+      // Sends every card that is still marked - one whose own save failed, or one whose period waited
+      // for a fix - when Save is pressed. Every call tolerates being repeated, so a save cut off half
+      // way is finished by the next.
       private async Task SaveRolesAsync(string cUserId) {
          if (!HasRoleChanges || IsSystemAccount) return;
 
          var services = EmApp!.ServiceProvider.GetRequiredService<ICredentialServices>();
          var stamp = await EmApp.GetDateStampAsync();
          var changes = UserRoleCardVm.BuildChanges(cUserId, RoleCards, stamp);
-
-         if (changes.Removed.Length > 0) await services.PostTa_UserRole_DeleteBatch(changes.Removed);
-         if (changes.Added.Length > 0) await services.PostTa_UserRole_NewBatch(changes.Added);
-         foreach (var row in changes.Rescheduled) await services.PostTa_UserRole_Update(row);
+         await SendRoleChangesAsync(services, changes);
 
          var now = DateTime.Now;
          foreach (var card in RoleCards) card.Accept(changes.SentRowFor(card.Role.cRoleId), now);
+      }
+
+      // Sends a role difference in the same order the role manager uses.
+      private static async Task SendRoleChangesAsync(ICredentialServices services, UserRoleChanges changes) {
+         if (changes.Removed.Length > 0) await services.PostTa_UserRole_DeleteBatch(changes.Removed);
+         if (changes.Added.Length > 0) await services.PostTa_UserRole_NewBatch(changes.Added);
+         foreach (var row in changes.Rescheduled) await services.PostTa_UserRole_Update(row);
       }
 
       #endregion
@@ -610,11 +664,11 @@ namespace Em.Ui.Wpf.Navigations
       #region Commands
 
       /// <summary>
-      /// Saves the open row, then the role changes of the Roles tab. A new row and an existing row go through
-      /// the same door: the model itself knows which of the two applies. The row is only sent when it really
-      /// changed, because sending it always writes an update; the roles go after it, since a new user only
-      /// has an id once its row exists. When the roles fail after the row was stored, the row stays stored
-      /// and the role changes stay marked, so the next Save sends them again.
+      /// Saves the open row, then any role card still marked. A new row and an existing row go through the
+      /// same door: the model itself knows which of the two applies. The row is only sent when it really
+      /// changed, because sending it always writes an update. The roles go after it, since a new user only
+      /// has an id once its row exists; for a stored user the cards save themselves as soon as they change,
+      /// so only one whose own save failed, or whose period waited for a fix, is left for here.
       /// </summary>
       public async Task SaveCommand() {
          if (Data == null) return;
@@ -653,6 +707,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public bool SaveCommandAllowed() =>
          IsNotBusy
+         && !IsRoleSaving
          && Data != null
          && (Data.IsDirty || HasRoleChanges)
          && !string.IsNullOrWhiteSpace(Data.cUserAccount)
@@ -672,7 +727,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>May only run when there really are changes that can be discarded.</summary>
-      public bool DiscardCommandAllowed() => IsNotBusy && HasUnsavedChanges;
+      public bool DiscardCommandAllowed() => IsNotBusy && !IsRoleSaving && HasUnsavedChanges;
 
       /// <summary>Suspends the account so it cannot be used to sign in, then saves it.</summary>
       public Task SuspendCommand() {

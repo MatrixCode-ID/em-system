@@ -1807,9 +1807,9 @@
                <!-- =====================================================
                     ROLES
                     One card per role on the server, each with a switch.
-                    A role is how access is given; switching a card only
-                    marks the record changed, and Save sends it together
-                    with the rest of the form.
+                    A role is how access is given; a switched or re-dated
+                    card of a stored user is stored right away; a new
+                    user's cards wait for Save, which creates the user.
                     ===================================================== -->
                <TabItem Header="Roles">
                   <!-- The selected tab paints its header in the accent through Foreground, and the
@@ -1825,7 +1825,7 @@
                            </Grid.ColumnDefinitions>
                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                               <TextBlock Text="ROLES" Style="{StaticResource sectionCaptionStyle}" Margin="0,0,0,4" />
-                              <TextBlock Text="Switch a role on to give it to this account. Changes are saved with the Save button."
+                              <TextBlock Text="{Binding RolesHelpCaption}"
                                          Style="{StaticResource fieldHelpStyle}"
                                          Margin="0,0,16,0" />
                            </StackPanel>
@@ -1842,7 +1842,7 @@
                         </Grid>
 
                         <!-- Narrows the cards when there are many roles. It only hides cards: a hidden
-                             card keeps its changes and Save still sends them. -->
+                             card keeps its state. -->
                         <Grid Margin="0,0,0,12">
                            <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="*" MaxWidth="360" />
@@ -1968,7 +1968,11 @@
                                           <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                              <StackPanel Orientation="Horizontal">
                                                 <!-- The accent dot marks a card whose change is
-                                                     still waiting for Save. -->
+                                                     not stored yet; the spinner one being sent. -->
+                                                <fa:FontAwesome Icon="Solid_Spinner" Spin="True" FontSize="11"
+                                                                Margin="0,0,7,0" Opacity="0.7" VerticalAlignment="Center"
+                                                                ToolTip="Saving..."
+                                                                Visibility="{Binding IsSaving, Converter={StaticResource boolToVisibility}}" />
                                                 <Ellipse x:Name="changedDot" Width="7" Height="7"
                                                          Margin="0,0,7,0" VerticalAlignment="Center"
                                                          Fill="{DynamicResource themeAccentBrush}"
@@ -2065,6 +2069,9 @@
                                     <DataTrigger Binding="{Binding IsChanged}" Value="True">
                                        <Setter TargetName="changedDot" Property="Visibility" Value="Visible" />
                                        <Setter TargetName="card" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsSaving}" Value="True">
+                                       <Setter TargetName="changedDot" Property="Visibility" Value="Collapsed" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding HasPeriodError}" Value="True">
                                        <Setter TargetName="startFrame" Property="BorderBrush" Value="{StaticResource dangerBrush}" />
