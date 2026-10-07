@@ -1,16 +1,16 @@
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Batas jumlah business task yang boleh berjalan bersamaan. Task yang melebihinya tidak ditolak,
-   /// melainkan menunggu dengan status <see cref="BusinessTaskStatus.Queued"/> sampai ada yang selesai.
-   /// Disimpan di metadata server dan diubah lewat layar Business Task Manager.
+   /// Limit on the number of business tasks running at the same time. Tasks above it are not rejected
+   /// but wait with status <see cref="BusinessTaskStatus.Queued"/> until one finishes. Stored in the
+   /// server metadata and changed from the Business Task Manager screen.
    /// </summary>
    public class BusinessTaskLimit
    {
-      /// <summary>Apakah <see cref="Limit"/> berlaku untuk seluruh server atau untuk tiap user.</summary>
+      /// <summary>Whether <see cref="Limit"/> applies to the whole server or to each user.</summary>
       public BusinessTaskLimitMode Mode { get; set; }
 
-      /// <summary>Jumlah task yang boleh berjalan bersamaan; minimal <c>1</c>.</summary>
+      /// <summary>Number of tasks allowed to run at the same time; at least <c>1</c>.</summary>
       public int Limit { get; set; } = 1;
    }
 }

@@ -1,119 +1,119 @@
 namespace Em.Api.Core.Models
 {
-   /// <summary>Jenis approval: apakah data usulannya menumpang di request, atau sudah ada di dokumennya.</summary>
+   /// <summary>Approval kind: whether the proposed data is carried by the request or already lives in the document.</summary>
    public enum ApprovalKind
    {
       /// <summary>
-      /// Data usulan tinggal di request dan baru diterapkan setelah disetujui. Dipakai perubahan data
-      /// master, tempat tabel aslinya belum boleh berubah selama request masih menunggu.
+      /// The proposed data lives in the request and is applied only after approval. Used for master data
+      /// changes, where the original table must not change while the request is waiting.
       /// </summary>
       Data = 1,
 
       /// <summary>
-      /// Datanya sudah ada di dokumennya, dan request hanya menjadi gerbang bagi statusnya. Dipakai
-      /// dokumen transaksi yang perlu ditandatangani beberapa pihak.
+      /// The data already lives in the document, and the request only gates its status. Used for
+      /// transaction documents that need signatures from several parties.
       /// </summary>
       Document = 2
    }
 
    /// <summary>
-   /// Tahap hidup satu request approval. Mengikuti konvensi kolom tahap: nilai negatif berarti request
-   /// tidak berjalan lagi, nol ke atas berarti masih hidup atau selesai dengan baik.
+   /// Life-cycle stage of an approval request. Follows the stage column convention: negative values mean
+   /// the request no longer runs, zero and above mean it is alive or finished successfully.
    /// </summary>
    public enum ApprovalStage
    {
-      /// <summary>Ditarik kembali setelah seluruh langkahnya selesai. Tetap tersimpan sebagai riwayat.</summary>
+      /// <summary>Withdrawn after all its steps had finished. Kept as history.</summary>
       ReinstatedAfterFinish = -3,
 
-      /// <summary>Ditarik kembali saat masih menunggu keputusan.</summary>
+      /// <summary>Withdrawn while still waiting for a decision.</summary>
       Cancelled = -2,
 
-      /// <summary>Ditolak di salah satu langkahnya. Seluruh request berhenti.</summary>
+      /// <summary>Rejected at one of its steps. The whole request stops.</summary>
       Rejected = -1,
 
-      /// <summary>Belum diajukan.</summary>
+      /// <summary>Not submitted yet.</summary>
       Draft = 0,
 
-      /// <summary>Sudah diajukan dan masih menunggu keputusan.</summary>
+      /// <summary>Submitted and still waiting for a decision.</summary>
       Pending = 1,
 
-      /// <summary>Seluruh langkahnya sudah disetujui.</summary>
+      /// <summary>All its steps have been approved.</summary>
       Approved = 2
    }
 
    /// <summary>
-   /// Keadaan satu langkah di dalam request. Mengikuti konvensi yang sama: negatif berarti langkah itu
-   /// tidak menghasilkan tanda tangan.
+   /// State of one step within a request. Follows the same convention: negative means the step produced
+   /// no signature.
    /// </summary>
    public enum ApprovalStepStatus
    {
-      /// <summary>Dilewati karena syarat berlakunya tidak terpenuhi, atau karena request berhenti lebih dulu.</summary>
+      /// <summary>Skipped because its applicability condition was not met, or because the request stopped first.</summary>
       Skipped = -2,
 
-      /// <summary>Ditolak.</summary>
+      /// <summary>Rejected.</summary>
       Rejected = -1,
 
-      /// <summary>Masih menunggu keputusan.</summary>
+      /// <summary>Still waiting for a decision.</summary>
       Waiting = 0,
 
-      /// <summary>Sudah disetujui dan ditandatangani.</summary>
+      /// <summary>Approved and signed.</summary>
       Approved = 1
    }
 
-   /// <summary>Apa yang diusulkan atas satu entitas di dalam request data approval.</summary>
+   /// <summary>What is proposed for one entity within a data approval request.</summary>
    public enum ApprovalItemOperation
    {
-      /// <summary>Membuat entitas baru.</summary>
+      /// <summary>Creates a new entity.</summary>
       Create = 1,
 
-      /// <summary>Mengubah sebagian kolom entitas yang sudah ada.</summary>
+      /// <summary>Changes some columns of an existing entity.</summary>
       Update = 2,
 
-      /// <summary>Menandai entitas sebagai terhapus, tanpa membuangnya.</summary>
+      /// <summary>Marks the entity as deleted without removing it.</summary>
       Delete = 3,
 
-      /// <summary>Mengaktifkan kembali entitas yang sebelumnya ditandai terhapus.</summary>
+      /// <summary>Reactivates an entity previously marked as deleted.</summary>
       Reinstate = 4
    }
 
    /// <summary>
-   /// Hasil penerapan satu entitas usulan, dicatat setelah request disetujui. Ini bukan keputusan
-   /// approver - keputusan selalu berlaku untuk seluruh request - melainkan apa yang benar-benar terjadi
-   /// pada entitas itu.
+   /// Result of applying one proposed entity, recorded after the request is approved. This is not the
+   /// approver's decision - a decision always applies to the whole request - but what actually happened
+   /// to that entity.
    /// </summary>
    public enum ApprovalItemStage
    {
-      /// <summary>Tidak bisa diterapkan karena nilainya sudah berubah di luar dan penimpaan tidak diizinkan.</summary>
+      /// <summary>Could not be applied because the value changed elsewhere and overwriting was not allowed.</summary>
       Conflicted = -1,
 
-      /// <summary>Belum diterapkan.</summary>
+      /// <summary>Not applied yet.</summary>
       Pending = 0,
 
-      /// <summary>Diterapkan apa adanya.</summary>
+      /// <summary>Applied as is.</summary>
       Applied = 1,
 
-      /// <summary>Dilewati karena nilainya sudah sama dengan yang diusulkan.</summary>
+      /// <summary>Skipped because the value already equals the proposal.</summary>
       Skipped = 2,
 
-      /// <summary>Diterapkan walaupun nilainya sudah berubah di luar, atas keputusan sadar approver.</summary>
+      /// <summary>Applied even though the value had changed elsewhere, by the approver's deliberate decision.</summary>
       Overridden = 3
    }
 
-   /// <summary>Kenapa sebuah tanda tangan dianggap sah, dan atas dasar apa ia dibubuhkan.</summary>
+   /// <summary>Why a signature is considered valid, and on what basis it was given.</summary>
    public enum ApprovalSignerRole
    {
-      /// <summary>Penanda tangan yang memang ditetapkan untuk langkah itu.</summary>
+      /// <summary>The signer assigned to that step.</summary>
       Assigned = 0,
 
       /// <summary>
-      /// Pengganti: pemegang claim langkah itu yang bukan penanda tangan tercatat. Tanda tangannya
-      /// tercatat atas nama penanda tangan utama, dan alasannya wajib.
+      /// Substitute: a holder of the step's claim who is not the recorded signer. The signature is
+      /// recorded on behalf of the primary signer, and a reason is required.
       /// </summary>
       Substitute = 1,
 
       /// <summary>
-      /// Penembus blokir: pemegang claim penembus yang menandatangani walaupun syarat langkah itu belum
-      /// terpenuhi. Sifatnya darurat, jadi tanda tangannya diberi tanda khusus.
+      /// Block override: a holder of the override claim who signs even though the step's conditions are
+      /// not met yet. It is an emergency measure, so the signature is specially marked.
       /// </summary>
       Override = 2
    }

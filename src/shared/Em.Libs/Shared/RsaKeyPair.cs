@@ -3,82 +3,80 @@ using System.Security.Cryptography;
 namespace Em.Shared
 {
    /// <summary>
-   /// Pasangan public/private key RSA, dipakai oleh <c>ServicesBase.GetServerRsaKeyAsync</c>. Kelas ini generik
-   /// untuk dua mode pemakaian: pasangan lengkap (server, punya <see cref="PrivateKey"/>) atau public key saja
-   /// (client/UI, <see cref="PrivateKey"/> null karena private key tidak pernah dikirim ke client).
+   /// RSA public/private key pair, used by <c>ServicesBase.GetServerRsaKeyAsync</c>. Generic for two
+   /// modes: a full pair (server, has a <see cref="PrivateKey"/>) or public key only (client/UI,
+   /// <see cref="PrivateKey"/> is null because the private key is never sent to the client).
    /// </summary>
    public class RsaKeyPair
    {
       /// <summary>
-      /// Padding standar untuk enkripsi/dekripsi RSA di seluruh aplikasi. Memakai OAEP SHA-256, bukan PKCS#1 v1.5,
-      /// karena PKCS#1 v1.5 rentan terhadap padding oracle (serangan Bleichenbacher) kalau pihak yang mendekripsi
-      /// membocorkan perbedaan antara "padding valid" dan "padding tidak valid". Kedua sisi (server dan client)
-      /// wajib memakai nilai yang sama.
+      /// Standard padding for RSA encryption/decryption across the application. Uses OAEP SHA-256, not
+      /// PKCS#1 v1.5, because PKCS#1 v1.5 is vulnerable to padding oracles (Bleichenbacher attack) when the
+      /// decrypting party leaks the difference between "valid padding" and "invalid padding". Both sides
+      /// (server and client) must use the same value.
       /// </summary>
       public static RSAEncryptionPadding DefaultPadding => RSAEncryptionPadding.OaepSHA256;
 
       /// <summary>
-      /// Padding standar untuk tanda tangan digital RSA di seluruh aplikasi. Memakai PSS yang lebih kuat dari
-      /// PKCS#1 v1.5. Kedua sisi (yang menandatangani dan yang memverifikasi) wajib memakai nilai yang sama.
-      /// </summary>
+      /// Standard padding for RSA digital signatures across the application. Uses PSS, which is stronger
+      /// than PKCS#1 v1.5. Both sides (signer and verifier) must use the same value.
       public static RSASignaturePadding DefaultSignaturePadding => RSASignaturePadding.Pss;
 
       /// <summary>
-      /// Algoritma hash standar yang dipakai bersama <see cref="DefaultSignaturePadding"/> saat menandatangani
-      /// dan memverifikasi. Kedua sisi wajib memakai nilai yang sama.
+      /// Standard hash algorithm used together with <see cref="DefaultSignaturePadding"/> when signing and
+      /// verifying. Both sides must use the same value.
       /// </summary>
       public static HashAlgorithmName DefaultHashAlgorithm => HashAlgorithmName.SHA256;
 
       /// <summary>
-      /// Membuat instance yang hanya membawa public key, untuk pemakaian di sisi client (enkripsi dan verifikasi
-      /// tanda tangan saja, tanpa kemampuan dekripsi atau menandatangani).
+      /// Creates an instance carrying only the public key, for client-side use (encryption and signature
+      /// verification only, without decrypting or signing).
       /// </summary>
-      /// <param name="publicKey">Public key, berupa Base64 dari DER PKCS#1 (<c>RSA.ExportRSAPublicKey</c>).</param>
+      /// <param name="publicKey">Public key, as Base64 of DER PKCS#1 (<c>RSA.ExportRSAPublicKey</c>).</param>
       public static RsaKeyPair Create(string publicKey) => new RsaKeyPair(publicKey);
 
       /// <summary>
-      /// Sama seperti <see cref="Create(string)"/>, tapi menerima public key dalam bentuk raw byte DER PKCS#1
-      /// sehingga pemanggil tidak perlu meng-encode Base64 sendiri.
+      /// Same as <see cref="Create(string)"/>, but takes the public key as raw DER PKCS#1 bytes so the
+      /// caller need not Base64-encode it.
       /// </summary>
-      /// <param name="publicKey">Public key berupa raw byte DER PKCS#1.</param>
+      /// <param name="publicKey">Public key as raw DER PKCS#1 bytes.</param>
       public static RsaKeyPair Create(byte[] publicKey) => Create(Convert.ToBase64String(publicKey));
 
-      /// <param name="publicKey">Public key, berupa Base64 dari DER PKCS#1 (<c>RSA.ExportRSAPublicKey</c>).</param>
+      /// <summary>Creates a key pair from Base64 keys.</summary>
+      /// <param name="publicKey">Public key, as Base64 of DER PKCS#1 (<c>RSA.ExportRSAPublicKey</c>).</param>
       /// <param name="privateKey">
-      /// Private key, berupa Base64 dari DER PKCS#1 (<c>RSA.ExportRSAPrivateKey</c>). Opsional — null berarti
-      /// instance ini hanya membawa public key (mis. dipakai di UI untuk enkripsi saja, tanpa kemampuan dekripsi).
-      /// </param>
+      /// Private key, as Base64 of DER PKCS#1 (<c>RSA.ExportRSAPrivateKey</c>). Optional - null means this
+      /// instance only carries the public key (e.g. used in the UI for encryption only, without decrypting).
       public RsaKeyPair(string publicKey, string? privateKey = null) {
          PublicKey = publicKey;
          PrivateKey = privateKey;
       }
 
       /// <summary>
-      /// Public key dalam bentuk Base64 dari DER PKCS#1. Aman untuk dikirim ke client atau disimpan di config.
+      /// Public key as Base64 of DER PKCS#1. Safe to send to the client or keep in configuration.
       /// </summary>
       public string PublicKey { get; init; }
 
       /// <summary>
-      /// Private key dalam bentuk Base64 dari DER PKCS#1, atau <c>null</c> kalau instance ini hanya membawa
-      /// public key. Nilai ini rahasia dan tidak boleh pernah dikirim keluar dari server.
+      /// Private key as Base64 of DER PKCS#1, or <c>null</c> when this instance only carries the public key.
+      /// This value is secret and must never leave the server.
       /// </summary>
       public string? PrivateKey { get; init; }
 
       /// <summary>
-      /// True kalau instance ini punya private key (mode pasangan lengkap), false kalau hanya public key.
+      /// True when this instance has a private key (full pair mode), false when it only has the public key.
       /// </summary>
       public bool HasPrivateKey => PrivateKey is not null;
 
       /// <summary>
-      /// Mengembalikan <see cref="PublicKey"/> dalam bentuk raw byte DER PKCS#1, siap dipakai
-      /// <c>RSA.ImportRSAPublicKey</c>.
+      /// Returns <see cref="PublicKey"/> as raw DER PKCS#1 bytes, ready for <c>RSA.ImportRSAPublicKey</c>.
       /// </summary>
       public byte[] GetPublicBytes() => Convert.FromBase64String(PublicKey);
 
       /// <summary>
-      /// Mengembalikan <see cref="PrivateKey"/> dalam bentuk raw byte DER PKCS#1.
+      /// Returns <see cref="PrivateKey"/> as raw DER PKCS#1 bytes.
       /// </summary>
-      /// <exception cref="InvalidOperationException">Dilempar kalau instance ini hanya membawa public key.</exception>
+      /// <exception cref="InvalidOperationException">Thrown when this instance only carries the public key.</exception>
       public byte[] GetPrivateBytes() {
          if (PrivateKey is null) {
             throw new InvalidOperationException("This RsaKeyPair only has a public key; no private key is set.");
@@ -87,9 +85,9 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Membuat instance <see cref="RSA"/> baru yang sudah diisi key dari pasangan ini: private key kalau ada
-      /// (sehingga bisa dekripsi dan menandatangani), atau public key saja kalau tidak. Pemanggil bertanggung
-      /// jawab men-dispose hasilnya.
+      /// Creates a new <see cref="RSA"/> instance loaded with this pair's key: the private key when present
+      /// (so it can decrypt and sign), or only the public key otherwise. The caller is responsible for
+      /// disposing the result.
       /// </summary>
       public RSA CreateRsa() {
          var rsa = RSA.Create();
@@ -104,34 +102,32 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Mengenkripsi data dengan public key memakai <see cref="DefaultPadding"/>. Ukuran data yang bisa
-      /// dienkripsi terbatas oleh ukuran key (untuk key 2048 bit dengan OAEP SHA-256: maksimal 190 byte).
-      /// </summary>
+      /// Encrypts data with the public key using <see cref="DefaultPadding"/>. The data size is limited by
+      /// the key size (for a 2048-bit key with OAEP SHA-256: at most 190 bytes).
       public byte[] EncryptValue(ReadOnlySpan<byte> data) {
          using var rsa = CreateRsa();
          return rsa.Encrypt(data, DefaultPadding);
       }
 
       /// <summary>
-      /// Mendekripsi data memakai <see cref="DefaultPadding"/>. Butuh private key.
+      /// Decrypts data using <see cref="DefaultPadding"/>. Requires the private key.
       /// </summary>
       /// <remarks>
-      /// Hati-hati mengekspos method ini lewat endpoint yang bisa diakses bebas: endpoint yang mendekripsi
-      /// ciphertext arbitrer dari luar lalu membocorkan hasilnya (atau bahkan hanya membocorkan berhasil/gagal)
-      /// berfungsi sebagai decryption oracle. Untuk membuktikan kepemilikan key, pakai
-      /// <see cref="SignData"/>/<see cref="VerifyData"/>, bukan dekripsi.
-      /// </remarks>
+      /// Be careful exposing this method through an endpoint anyone can reach: an endpoint that decrypts
+      /// arbitrary ciphertext from outside and leaks the result (or even only success/failure) works as a
+      /// decryption oracle. To prove key ownership use <see cref="SignData"/>/<see cref="VerifyData"/>, not
+      /// decryption.
       public byte[] DecryptValue(ReadOnlySpan<byte> data) {
          using var rsa = CreateRsa();
          return rsa.Decrypt(data, DefaultPadding);
       }
 
       /// <summary>
-      /// Menandatangani data dengan private key memakai <see cref="DefaultHashAlgorithm"/> dan
-      /// <see cref="DefaultSignaturePadding"/>. Tidak ada batas ukuran data karena yang ditandatangani
-      /// adalah hash-nya.
+      /// Signs data with the private key using <see cref="DefaultHashAlgorithm"/> and
+      /// <see cref="DefaultSignaturePadding"/>. There is no data size limit because what is signed is its
+      /// hash.
       /// </summary>
-      /// <exception cref="InvalidOperationException">Dilempar kalau instance ini tidak punya private key.</exception>
+      /// <exception cref="InvalidOperationException">Thrown when this instance has no private key.</exception>
       public byte[] SignData(ReadOnlySpan<byte> data) {
          if (!HasPrivateKey) {
             throw new InvalidOperationException("Signing requires a private key; this RsaKeyPair only has a public key.");
@@ -141,11 +137,10 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Memverifikasi bahwa <paramref name="signature"/> memang tanda tangan atas <paramref name="data"/> oleh
-      /// pemegang private key dari <see cref="PublicKey"/>. Cukup dengan public key saja, jadi bisa dipanggil
-      /// di sisi client.
-      /// </summary>
-      /// <returns><c>true</c> kalau tanda tangan valid, <c>false</c> kalau tidak.</returns>
+      /// Verifies that <paramref name="signature"/> really is a signature over <paramref name="data"/> by
+      /// the holder of the private key of <see cref="PublicKey"/>. The public key alone is enough, so it can
+      /// be called on the client side.
+      /// <returns><c>true</c> when the signature is valid, <c>false</c> otherwise.</returns>
       public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) {
          using var rsa = CreateRsa();
          return rsa.VerifyData(data, signature, DefaultHashAlgorithm, DefaultSignaturePadding);

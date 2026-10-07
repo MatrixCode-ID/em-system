@@ -1,10 +1,9 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Marker interface kosong yang wajib diturunkan oleh setiap interface service module
-   /// (mis. <c>IEmSampleServices</c>). Dipakai dispatcher <c>EmApp</c> untuk mengenali
-   /// tipe mana yang merupakan "service" yang bisa didaftarkan dan dipetakan ke action HTTP,
-   /// tanpa menambah kontrak method apa pun.
+   /// Empty marker interface every module service interface must derive from (e.g.
+   /// <c>IContactServices</c>). The <c>EmApp</c> dispatcher uses it to recognize which types are
+   /// "services" that can be registered and mapped to HTTP actions, without adding any method contract.
    /// </summary>
    public interface IServices
    {

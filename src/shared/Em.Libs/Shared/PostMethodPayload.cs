@@ -5,26 +5,26 @@ using System.Text.Json.Nodes;
 namespace Em.Shared
 {
    /// <summary>
-   /// Representasi satu parameter pada request POST ke dispatcher <c>EmApp</c>. Body request POST
-   /// berupa JSON array dari objek ini, satu entri per parameter method target, dicocokkan
-   /// berdasarkan <see cref="ParameterOrdinal"/> (posisi parameter, bukan nama).
+   /// One parameter of a POST request to the <c>EmApp</c> dispatcher. The POST request body is a JSON
+   /// array of these objects, one entry per parameter of the target method, matched by
+   /// <see cref="ParameterOrdinal"/> (parameter position, not name).
    /// </summary>
    public class PostMethodPayload
    {
       /// <summary>
-      /// Konstruktor kosong, dipakai saat deserialisasi JSON dari body request.
+      /// Empty constructor, used when deserializing the request body.
       /// </summary>
       public PostMethodPayload() { }
 
       /// <summary>
-      /// Membuat instance <see cref="PostMethodPayload"/> dari sebuah nilai, dipakai di sisi client
-      /// (mis. frontend) untuk menyusun body request POST sebelum dikirim ke server.
+      /// Creates a <see cref="PostMethodPayload"/> from a value, used on the client side to build the POST
+      /// request body before sending it to the server.
       /// </summary>
-      /// <typeparam name="T">Tipe nilai parameter.</typeparam>
-      /// <param name="ordinal">Posisi/urutan parameter pada method target (dimulai dari 0).</param>
-      /// <param name="value">Nilai parameter. Tidak boleh <c>null</c>.</param>
-      /// <returns>Instance <see cref="PostMethodPayload"/> yang siap diserialisasi ke JSON.</returns>
-      /// <exception cref="ArgumentNullException">Dilempar jika <paramref name="value"/> <c>null</c>.</exception>
+      /// <typeparam name="T">Parameter value type.</typeparam>
+      /// <param name="ordinal">Position of the parameter in the target method (starting at 0).</param>
+      /// <param name="value">Parameter value. Must not be <c>null</c>.</param>
+      /// <returns>A <see cref="PostMethodPayload"/> ready to be serialized to JSON.</returns>
+      /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
       public static PostMethodPayload Build<T>(int ordinal, T value) {
          ArgumentNullException.ThrowIfNull(value);
          return new PostMethodPayload {
@@ -35,17 +35,17 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Versi non-generic dari <see cref="Build{T}"/>, untuk pemanggil yang argumennya sudah telanjur
-      /// bertipe <see cref="object"/> - mis. elemen sebuah <c>params object[]</c>. Kalau kasus seperti itu
-      /// memakai versi generic-nya, <c>T</c> selalu tersimpul jadi <see cref="object"/> dan
-      /// <see cref="ParameterType"/> ikut terisi <c>System.Object</c>, sehingga tidak pernah cocok dengan
-      /// tipe parameter method target di server. Di sini nama tipe diambil dari tipe nyata
-      /// <paramref name="value"/> saat runtime, jadi selalu sejalan dengan isi <see cref="ValueData"/>.
+      /// Non-generic version of <see cref="Build{T}"/>, for callers whose argument is already typed as
+      /// <see cref="object"/> - e.g. an element of a <c>params object[]</c>. If such a case used the generic
+      /// version, <c>T</c> would always be inferred as <see cref="object"/> and <see cref="ParameterType"/>
+      /// would be <c>System.Object</c>, which never matches the parameter type of the target method on the
+      /// server. Here the type name is taken from the actual runtime type of <paramref name="value"/>, so it
+      /// always matches the content of <see cref="ValueData"/>.
       /// </summary>
-      /// <param name="ordinal">Posisi/urutan parameter pada method target (dimulai dari 0).</param>
-      /// <param name="value">Nilai parameter. Tidak boleh <c>null</c>.</param>
-      /// <returns>Instance <see cref="PostMethodPayload"/> yang siap diserialisasi ke JSON.</returns>
-      /// <exception cref="ArgumentNullException">Dilempar jika <paramref name="value"/> <c>null</c>.</exception>
+      /// <param name="ordinal">Position of the parameter in the target method (starting at 0).</param>
+      /// <param name="value">Parameter value. Must not be <c>null</c>.</param>
+      /// <returns>A <see cref="PostMethodPayload"/> ready to be serialized to JSON.</returns>
+      /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
       public static PostMethodPayload Build(int ordinal, object value) {
          ArgumentNullException.ThrowIfNull(value);
          var valueType = value.GetType();
@@ -57,29 +57,29 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Nama lengkap tipe (assembly-qualified/full name) dari nilai parameter, dipakai untuk
-      /// resolusi tipe saat deserialisasi lewat <see cref="ConstructObject{T}"/>.
+      /// Full type name of the parameter value, used to resolve the type when deserializing through
+      /// <see cref="ConstructObject{T}"/>.
       /// </summary>
       public string ParameterType { get; init; } = "";
 
       /// <summary>
-      /// Posisi/urutan parameter pada method target (dimulai dari 0), dipakai untuk pencocokan
-      /// argumen secara posisional, bukan berdasarkan nama parameter.
+      /// Position of the parameter in the target method (starting at 0), used to match arguments by
+      /// position rather than by parameter name.
       /// </summary>
       public int ParameterOrdinal { get; init; }
 
       /// <summary>
-      /// Data nilai parameter dalam bentuk JSON node mentah, akan dideserialisasi ke tipe target
-      /// saat <see cref="ConstructObject{T}"/> dipanggil.
+      /// Parameter value as a raw JSON node, deserialized to the target type when
+      /// <see cref="ConstructObject{T}"/> is called.
       /// </summary>
       public JsonNode ValueData { get; init; } = null!;
 
       /// <summary>
-      /// Mencoba me-resolve <see cref="ParameterType"/> menjadi <see cref="Type"/> yang sesungguhnya,
-      /// dengan mencari lebih dulu lewat <see cref="Type.GetType(string, bool, bool)"/>, lalu
-      /// fallback mencari di semua assembly yang ter-load pada <see cref="AppDomain.CurrentDomain"/>.
+      /// Tries to resolve <see cref="ParameterType"/> into the actual <see cref="Type"/>, first through
+      /// <see cref="Type.GetType(string, bool, bool)"/>, then by searching every assembly loaded in
+      /// <see cref="AppDomain.CurrentDomain"/>.
       /// </summary>
-      /// <returns>Tipe yang ditemukan, atau <c>null</c> jika tidak ditemukan atau <see cref="ParameterType"/> kosong.</returns>
+      /// <returns>The type found, or <c>null</c> when it is not found or <see cref="ParameterType"/> is empty.</returns>
       private Type? GetResultType() {
          if (string.IsNullOrWhiteSpace(ParameterType)) {
             return null;
@@ -101,26 +101,26 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Mendeserialisasi <see cref="ValueData"/> menjadi nilai bertipe <typeparamref name="T"/>,
-      /// setelah memvalidasi bahwa <see cref="ParameterType"/> memang cocok dengan <typeparamref name="T"/>.
+      /// Deserializes <see cref="ValueData"/> into a value of type <typeparamref name="T"/>, after checking
+      /// that <see cref="ParameterType"/> is compatible with <typeparamref name="T"/>.
       /// </summary>
-      /// <typeparam name="T">Tipe yang diharapkan untuk hasil deserialisasi.</typeparam>
-      /// <param name="resultValue">Nilai hasil deserialisasi, jika berhasil; sebaliknya nilai default.</param>
-      /// <param name="errorMessage">Pesan error jika gagal; string kosong jika berhasil.</param>
-      /// <returns><c>true</c> jika deserialisasi berhasil; <c>false</c> jika gagal (lihat <paramref name="errorMessage"/>).</returns>
+      /// <typeparam name="T">Expected type of the result.</typeparam>
+      /// <param name="resultValue">The deserialized value on success; otherwise the default value.</param>
+      /// <param name="errorMessage">Error message on failure; an empty string on success.</param>
+      /// <returns><c>true</c> when deserialization succeeded; <c>false</c> when it failed (see <paramref name="errorMessage"/>).</returns>
       /// <remarks>
-      /// Pencocokan tipe dilakukan setelah <c>Nullable&lt;&gt;</c> dilepas dari kedua sisi. Ini perlu karena
-      /// nilai yang di-<c>box</c> ke <see cref="object"/> kehilangan sifat nullable-nya - <c>Build</c> hanya
-      /// melihat tipe dasarnya (mis. <c>ContactSearchType</c>), sementara parameter method target bisa saja
-      /// dideklarasikan sebagai <c>ContactSearchType?</c>. Tanpa pelepasan ini semua parameter value type
-      /// yang nullable akan selalu ditolak.
+      /// Types are compared after removing <c>Nullable&lt;&gt;</c> from both sides. This is needed because a
+      /// value boxed to <see cref="object"/> loses its nullability - <c>Build</c> only sees the underlying
+      /// type (e.g. <c>ContactSearchType</c>), while the target method parameter may be declared as
+      /// <c>ContactSearchType?</c>. Without this every nullable value type parameter would always be
+      /// rejected.
       /// <para>
-      /// Tipe turunan ikut diterima, bukan cuma yang persis sama: pengirim kerap memegang model yang lebih
-      /// lengkap daripada yang diminta method target - mis. baris hasil view yang mewarisi baris tabelnya -
-      /// dan <c>Build</c> mencatat tipe nyata nilainya, bukan tipe parameter yang dituju. Isinya tetap
-      /// dibaca sebagai <typeparamref name="T"/>, jadi kolom tambahan milik tipe turunan diabaikan dan yang
-      /// sampai ke method target tetap persis tipe yang dideklarasikannya. Arah sebaliknya tetap ditolak:
-      /// tipe induk tidak menjanjikan semua isi yang diminta turunannya.
+      /// Derived types are accepted too, not only the exact type: senders often hold a richer model than the
+      /// target method asks for - e.g. a view row inheriting its table row - and <c>Build</c> records the
+      /// value's actual type, not the target parameter type. The content is still read as
+      /// <typeparamref name="T"/>, so extra columns of the derived type are ignored and the target method
+      /// receives exactly the type it declares. The opposite direction is still rejected: a base type does
+      /// not promise everything its derived type asks for.
       /// </para>
       /// </remarks>
       public bool ConstructObject<T>(out T resultValue, out string errorMessage) {
@@ -146,8 +146,8 @@ namespace Em.Shared
          }
 
          try {
-            // Sengaja dideserialisasi ke typeof(T), bukan ke tipe hasil resolusi: untuk parameter nullable
-            // hasilnya harus berupa Nullable<T> supaya cocok saat di-assign balik ke argumen method.
+            // Deliberately deserialized to typeof(T), not to the resolved type: for nullable parameters the
+            // result must be Nullable<T> so it matches when assigned back to the method argument.
             var deserializedValue = JsonSerializer.Deserialize(ValueData.ToJsonString(), typeof(T));
 
             if (deserializedValue is T typedValue) {

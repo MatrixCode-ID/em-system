@@ -3,132 +3,140 @@ using Em.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Pengelolaan isi CDN: menelusuri folder, mengunggah file, membuat folder, menghapus, serta membuat
-   /// dan membongkar file zip. Semua action di sini mensyaratkan claim <see cref="CdnClaim"/> di module
-   /// <see cref="Defaults.AdministrativeToolsModuleName"/>, dan menjawab 404 kalau CDN tidak dinyalakan
-   /// di server. Mengunduh isinya tidak lewat sini, melainkan lewat alamat publik <c>/cdn/...</c>.
+   /// CDN content management: browsing folders, uploading files, creating folders, deleting, and creating
+   /// and extracting zip files. Every action here requires claim <see cref="CdnClaim"/> in module
+   /// <see cref="Defaults.AdministrativeToolsModuleName"/>, and answers 404 when the CDN is not enabled on
+   /// the server. Downloads do not go through here but through the public address <c>/cdn/...</c>.
    /// </summary>
    /// <remarks>
-   /// Setiap parameter <c>path</c> adalah path relatif terhadap folder akar CDN, dipisah <c>/</c>;
-   /// <c>null</c> atau string kosong berarti folder akar. Path yang mencoba keluar dari folder akar,
-   /// atau yang menyebut nama berawalan titik, ditolak 400.
+   /// Every <c>path</c> parameter is a path relative to the CDN root folder, separated by <c>/</c>;
+   /// <c>null</c> or an empty string means the root folder. Paths that try to leave the root folder, or
+   /// that name an entry starting with a dot, are rejected with 400.
    /// <para>
-   /// Membuat dan membongkar zip bisa lama, jadi keduanya berjalan sebagai business task global di
-   /// server: action-nya langsung kembali, dan statusnya dipantau lewat action status di bawah. Setiap
-   /// pemegang claim CDN - administrator maupun bukan - boleh melihat, membatalkan, dan membersihkan
-   /// task itu, termasuk yang dimulai user lain. Hanya satu archive yang boleh berjalan di seluruh
-   /// server, dan satu file zip tidak bisa dibongkar dua kali bersamaan.
+   /// Creating and extracting zips can take a long time, so both run as global business tasks on the
+   /// server: the action returns immediately, and the status is monitored through the status actions
+   /// below. Every holder of the CDN claim - administrator or not - may view, cancel and clear those
+   /// tasks, including ones started by other users. Only one archive may run on the whole server, and one
+   /// zip file cannot be extracted twice at the same time.
    /// </para>
    /// </remarks>
    public interface ICdnServices : IServices
    {
       /// <summary>
-      /// Nama claim yang membuka pengelolaan CDN, ditulis tanpa nama module-nya.
+      /// Claim name that opens CDN management, written without its module name.
       /// </summary>
       const string CdnClaim = "CDN Manager Access";
 
+      /// <summary>Claim name that allows changing the CDN storage settings, written without its module name.</summary>
       const string SettingsClaim = "CDN Settings Manage";
+
+      /// <summary>Whether the CDN is enabled, managed from the UI, and waiting for a restart.</summary>
       Task<StorageFeatureStatus> GetMeta_CdnStatus();
+
+      /// <summary>Current CDN storage settings. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageSettingsDetail> GetMeta_CdnSettings();
+
+      /// <summary>Validates a storage directory without saving it. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageDirectoryValidation> PostGetMeta_CdnValidateDirectory(StorageFeatureSettings settings);
+
+      /// <summary>Saves the CDN storage settings; they take effect after the API restarts. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageSettingsDetail> PostGetMeta_CdnSettingsSave(StorageSettingsSave request);
 
       #region Meta's
 
-      /// <summary>Total ukuran file publik di seluruh CDN. Mengabaikan file internal/sementara,
-      /// hidden/system dan symlink. Tidak mencakup overhead filesystem atau free space volume.</summary>
+      /// <summary>Total size of the public files across the CDN. Ignores internal/temporary,
+      /// hidden/system files and symlinks. Does not include filesystem overhead or free volume space.</summary>
       Task<CdnStorageInfo> GetMeta_CdnStorageSize();
 
-      /// <summary>Isi satu folder berikut batas unggahan dan alamat publiknya.</summary>
+      /// <summary>Contents of one folder plus its upload limit and public address.</summary>
       Task<CdnFolderContent> GetMeta_CdnFolder(string? path);
 
-      /// <summary>Jumlah file dan subfolder di dalam sebuah folder, dihitung sampai yang terdalam.</summary>
+      /// <summary>Number of files and subfolders inside a folder, counted down to the deepest level.</summary>
       Task<CdnItemCount> GetMeta_CdnItemCount(string path);
 
       /// <summary>
-      /// Seluruh isi sebuah folder sampai subfolder terdalam, dalam satu daftar datar: setiap folder
-      /// tampil sebelum isinya. Dipakai untuk menyalin satu folder utuh ke luar CDN.
+      /// Everything inside a folder down to the deepest subfolder, as one flat list: every folder appears
+      /// before its contents. Used to copy a whole folder out of the CDN.
       /// </summary>
       Task<CdnEntry[]> GetMeta_CdnTree(string path);
 
       /// <summary>
-      /// Mengunggah satu file ke sebuah folder. Isi file dikirim sebagai stream, jadi ukurannya tidak
-      /// dibatasi memori maupun batas waktu request - yang membatasi hanya batas ukuran unggahan CDN.
-      /// Ditolak 409 kalau nama itu sudah ada dan <see cref="CdnUploadRequest.Overwrite"/> <c>false</c>,
-      /// 400 kalau nama atau foldernya tidak sah, dan 413 kalau melebihi batas ukuran unggahan. Yang
-      /// ditolak karena nama atau konflik dijawab sebelum isi filenya dibaca; yang terputus di tengah
-      /// jalan tidak meninggalkan apa-apa di CDN.
+      /// Uploads one file to a folder. The content is sent as a stream, so its size is limited neither by
+      /// memory nor by the request timeout - only by the CDN upload size limit. Rejected with 409 when the
+      /// name exists and <see cref="CdnUploadRequest.Overwrite"/> is <c>false</c>, 400 when the name or
+      /// folder is invalid, and 413 when it exceeds the upload size limit. Rejections for names or
+      /// conflicts are answered before the content is read; an upload interrupted midway leaves nothing on
+      /// the CDN.
       /// </summary>
-      /// <param name="request">Folder tujuan, nama file, dan pilihan timpa.</param>
-      /// <param name="content">Isi file, dibaca dari awal sampai habis.</param>
+      /// <param name="request">Target folder, file name and overwrite choice.</param>
+      /// <param name="content">File content, read from start to end.</param>
       Task<CdnEntry> PostGetMeta_CdnUpload(CdnUploadRequest request, Stream content);
 
       /// <summary>
-      /// Memindahkan sebuah file atau folder ke folder lain dengan nama yang sama. Ditolak 409 kalau
-      /// nama itu sudah dipakai di folder tujuan - untuk file, kecuali <paramref name="overwrite"/>
-      /// <c>true</c>; folder tidak pernah ditimpa. Folder tidak bisa dipindah ke dalam dirinya sendiri
-      /// (400). Mengembalikan isi CDN di tempatnya yang baru.
+      /// Moves a file or folder to another folder under the same name. Rejected with 409 when the name is
+      /// already used in the target folder - for files, unless <paramref name="overwrite"/> is
+      /// <c>true</c>; folders are never overwritten. A folder cannot be moved into itself (400). Returns the
+      /// CDN item at its new location.
       /// </summary>
       Task<CdnEntry> PostGetMeta_CdnMove(string path, string? targetFolder, bool overwrite);
 
-      /// <summary>Membuat subfolder baru; ditolak 409 kalau nama itu sudah ada.</summary>
+      /// <summary>Creates a new subfolder; rejected with 409 when the name already exists.</summary>
       Task<CdnEntry> PostGetMeta_CdnCreateFolder(string? path, string folderName);
 
       /// <summary>
-      /// Menghapus sebuah file, atau sebuah folder beserta seluruh isinya. Folder akar tidak bisa
-      /// dihapus (400); yang tidak ada dijawab 404.
+      /// Deletes a file, or a folder with all its contents. The root folder cannot be deleted (400); a
+      /// missing item answers 404.
       /// </summary>
       Task PostMeta_CdnDelete(string path);
 
       /// <summary>
-      /// Mulai membuat file zip dari item yang dipilih. Nama, sumber, dan konflik diperiksa sebelum task
-      /// dimulai: 400 untuk nama yang tidak sah, 404 untuk sumber yang tidak ada, dan 409 kalau nama zip
-      /// sudah ada tanpa <see cref="CdnArchiveRequest.Overwrite"/>, atau kalau archive lain masih berjalan
-      /// (pesannya menyebut siapa yang memulainya). Folder berawalan titik di dalam sumber tidak ikut.
+      /// Starts creating a zip file from the selected items. Names, sources and conflicts are checked
+      /// before the task starts: 400 for invalid names, 404 for missing sources, and 409 when the zip name
+      /// exists without <see cref="CdnArchiveRequest.Overwrite"/>, or when another archive is still running
+      /// (the message names who started it). Dot folders inside the sources are skipped.
       /// </summary>
-      /// <returns>Potret task yang baru dimulai.</returns>
+      /// <returns>Snapshot of the newly started task.</returns>
       Task<BusinessTaskInfo> PostGetMeta_CdnArchive(CdnArchiveRequest request);
 
       /// <summary>
-      /// Task archive yang masih hidup, atau yang gagal dan belum di-clear; <c>null</c> kalau tidak ada.
+      /// The archive task that is still alive, or that failed and has not been cleared; <c>null</c> when none.
       /// </summary>
       Task<BusinessTaskInfo?> GetMeta_CdnArchiveTask();
 
-      /// <summary>Membatalkan archive yang sedang berjalan. 404 kalau tidak ada, 409 kalau sudah selesai.</summary>
+      /// <summary>Cancels the running archive. 404 when there is none, 409 when it has finished.</summary>
       Task PostMeta_CdnArchiveCancel();
 
-      /// <summary>Membersihkan archive yang sudah selesai (biasanya yang gagal). 409 kalau masih berjalan.</summary>
+      /// <summary>Clears a finished archive (usually a failed one). 409 while it is still running.</summary>
       Task PostMeta_CdnArchiveClear();
 
       /// <summary>
-      /// Memeriksa sebuah file zip sebelum dibongkar di folder tempatnya berada, lalu mengembalikan path
-      /// file yang akan tertimpa. Zip yang isinya mencoba keluar dari folder, memakai nama berawalan titik
-      /// atau nama yang tidak sah, terlalu banyak isinya, atau isinya bentrok dengan folder yang sudah ada,
-      /// ditolak 400.
+      /// Checks a zip file before extracting it into the folder that holds it, and returns the paths of
+      /// the files that would be overwritten. Zips whose entries try to leave the folder, use dot or
+      /// invalid names, have too many entries, or clash with existing folders are rejected with 400.
       /// </summary>
-      /// <param name="path">Path file zip.</param>
+      /// <param name="path">Path of the zip file.</param>
       Task<string[]> GetMeta_CdnExtractConflicts(string path);
 
       /// <summary>
-      /// Mulai membongkar file zip di folder tempatnya berada. Pemeriksaannya sama dengan
-      /// <see cref="GetMeta_CdnExtractConflicts"/>; ditambah 409 kalau ada file yang akan tertimpa tapi
-      /// <paramref name="overwrite"/> <c>false</c>, atau kalau zip yang sama sedang dibongkar. Setiap isi
-      /// dibatasi batas ukuran unggahan CDN, dan total isinya sepuluh kali batas itu. Yang dibatalkan atau
-      /// gagal tidak meninggalkan apa-apa di CDN.
+      /// Starts extracting a zip file into the folder that holds it. Checks are the same as
+      /// <see cref="GetMeta_CdnExtractConflicts"/>; plus 409 when files would be overwritten but
+      /// <paramref name="overwrite"/> is <c>false</c>, or when the same zip is already being extracted.
+      /// Each entry is limited by the CDN upload size limit, and the total by ten times that limit. A
+      /// canceled or failed extraction leaves nothing on the CDN.
       /// </summary>
-      /// <returns>Potret task yang baru dimulai.</returns>
+      /// <returns>Snapshot of the newly started task.</returns>
       Task<BusinessTaskInfo> PostGetMeta_CdnExtract(string path, bool overwrite);
 
       /// <summary>
-      /// Task bongkar zip untuk file zip yang berada langsung di <paramref name="folder"/>, yang masih
-      /// hidup atau yang gagal dan belum di-clear. <c>null</c> atau string kosong berarti folder akar.
+      /// Extraction tasks for zip files directly in <paramref name="folder"/> that are still alive, or that
+      /// failed and have not been cleared. <c>null</c> or an empty string means the root folder.
       /// </summary>
       Task<BusinessTaskInfo[]> GetMeta_CdnExtractTasks(string? folder);
 
-      /// <summary>Membatalkan pembongkaran file zip di <paramref name="path"/>.</summary>
+      /// <summary>Cancels extracting the zip file at <paramref name="path"/>.</summary>
       Task PostMeta_CdnExtractCancel(string path);
 
-      /// <summary>Membersihkan task bongkar zip di <paramref name="path"/> yang sudah selesai.</summary>
+      /// <summary>Clears the finished extraction task of the zip file at <paramref name="path"/>.</summary>
       Task PostMeta_CdnExtractClear(string path);
 
       #endregion

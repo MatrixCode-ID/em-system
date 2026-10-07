@@ -3,80 +3,79 @@ using Em.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Pemantauan business task: pekerjaan panjang yang dijalankan server di luar request, supaya
-   /// hasilnya tidak bergantung pada aplikasi client yang tetap terbuka. Task dimulai oleh action module
-   /// masing-masing, bukan lewat sini; kontrak ini hanya untuk melihat task, membatalkan, membersihkan,
-   /// mengambil hasil, dan mengatur batas jumlah task yang berjalan bersamaan.
+   /// Business task monitoring: long-running work the server runs outside a request, so the result does
+   /// not depend on the client application staying open. Tasks are started by each module's actions, not
+   /// here; this contract only views tasks, cancels them, clears them, fetches results, and sets the limit
+   /// on concurrently running tasks.
    /// </summary>
    /// <remarks>
-   /// Yang bisa dilihat lewat sini adalah task <see cref="BusinessTaskScope.Personal"/> milik pemanggil,
-   /// atau seluruh task bagi pemegang claim <see cref="ManagerClaim"/> di module
-   /// <see cref="Defaults.AdministrativeToolsModuleName"/>. Status task
-   /// <see cref="BusinessTaskScope.Global"/> milik sebuah layar module ditanyakan lewat service module itu
-   /// sendiri, bukan lewat sini. Flag <see cref="BusinessTaskInfo.CanCancel"/>,
-   /// <see cref="BusinessTaskInfo.CanClear"/>, dan <see cref="BusinessTaskInfo.CanReadResult"/> pada
-   /// setiap hasil sudah dihitung untuk pemanggilnya, jadi UI tidak perlu menebak hak.
+   /// Visible here are the caller's own <see cref="BusinessTaskScope.Personal"/> tasks, or every task for
+   /// holders of claim <see cref="ManagerClaim"/> in module
+   /// <see cref="Defaults.AdministrativeToolsModuleName"/>. The status of a
+   /// <see cref="BusinessTaskScope.Global"/> task owned by a module screen is asked through that module's
+   /// own service, not here. The flags <see cref="BusinessTaskInfo.CanCancel"/>,
+   /// <see cref="BusinessTaskInfo.CanClear"/> and <see cref="BusinessTaskInfo.CanReadResult"/> on every
+   /// result are already computed for the caller, so the UI does not need to guess rights.
    /// </remarks>
    public interface IBusinessTaskServices : IServices
    {
       /// <summary>
-      /// Nama claim yang membuka layar Business Task Manager, ditulis tanpa nama module-nya. Pemegangnya
-      /// yang bukan administrator hanya bisa melihat.
+      /// Claim name that opens the Business Task Manager screen, written without its module name. Holders
+      /// who are not administrators can only view.
       /// </summary>
       const string ManagerClaim = "Business Task Manager Access";
 
       #region Meta's
 
       /// <summary>
-      /// Seluruh task di server, personal maupun global, termasuk yang sudah selesai dan masih
-      /// tersimpan, lengkap dengan nama pemiliknya. Mensyaratkan claim <see cref="ManagerClaim"/>.
+      /// Every task on the server, personal and global, including finished ones still stored, with their
+      /// owner names. Requires claim <see cref="ManagerClaim"/>.
       /// </summary>
       Task<BusinessTaskInfo[]> GetMeta_BusinessTasks();
 
       /// <summary>
-      /// Task personal milik pemanggil, yang masih hidup maupun yang sudah selesai dan masih tersimpan.
-      /// Cukup login.
+      /// The caller's personal tasks, alive or finished and still stored. Signing in is enough.
       /// </summary>
       Task<BusinessTaskInfo[]> GetMeta_UserBusinessTasks();
 
       /// <summary>
-      /// Satu task berdasarkan id-nya. Terlihat oleh pemiliknya, administrator, dan pemegang claim
-      /// <see cref="ManagerClaim"/>; selain itu dijawab 404, sama seperti task yang tidak ada.
+      /// One task by its ID. Visible to its owner, administrators and holders of claim
+      /// <see cref="ManagerClaim"/>; anyone else gets 404, as for a task that does not exist.
       /// </summary>
       Task<BusinessTaskInfo?> GetMeta_BusinessTask(string id);
 
       /// <summary>
-      /// Membatalkan task yang masih hidup. Hanya pemiliknya atau administrator (403); task yang sudah
-      /// selesai dijawab 409. Task yang dibatalkan hilang sendiri tidak lama kemudian.
+      /// Cancels a task that is still alive. Only its owner or an administrator (403); a finished task
+      /// answers 409. A canceled task disappears on its own shortly afterwards.
       /// </summary>
       Task PostMeta_BusinessTaskCancel(string id);
 
       /// <summary>
-      /// Membersihkan task yang sudah selesai beserta hasilnya yang tersimpan. Hanya pemiliknya atau
-      /// administrator (403); task yang masih hidup dijawab 409.
+      /// Clears a finished task together with its stored result. Only its owner or an administrator
+      /// (403); a task that is still alive answers 409.
       /// </summary>
       Task PostMeta_BusinessTaskClear(string id);
 
       /// <summary>
-      /// Hasil task yang berupa data JSON, sebagai teks JSON apa adanya. Hanya pemiliknya atau
-      /// administrator; dijawab 400 kalau hasil task itu bukan JSON, dan 409 kalau task-nya belum sukses.
+      /// JSON result of a task, as the raw JSON text. Only its owner or an administrator; answers 400 when
+      /// the task's result is not JSON, and 409 when the task has not succeeded.
       /// </summary>
       Task<string> GetMeta_BusinessTaskJsonResult(string id);
 
       /// <summary>
-      /// Isi file hasil task, sebagai stream yang dibaca sampai habis lalu ditutup pemanggilnya. Hanya
-      /// pemiliknya atau administrator; dijawab 400 kalau hasil task itu bukan file, dan 409 kalau
-      /// task-nya belum sukses.
+      /// File result of a task, as a stream the caller reads to the end and then closes. Only its owner or
+      /// an administrator; answers 400 when the task's result is not a file, and 409 when the task has not
+      /// succeeded.
       /// </summary>
       Task<Stream> GetMeta_BusinessTaskFileResult(string id);
 
-      /// <summary>Batas jumlah task yang boleh berjalan bersamaan. Mensyaratkan claim <see cref="ManagerClaim"/>.</summary>
+      /// <summary>Limit on concurrently running tasks. Requires claim <see cref="ManagerClaim"/>.</summary>
       Task<BusinessTaskLimit> GetMeta_BusinessTaskLimit();
 
       /// <summary>
-      /// Mengubah batas jumlah task yang boleh berjalan bersamaan. Hanya administrator. Berlaku seketika:
-      /// task yang antri langsung dijalankan kalau batas barunya mengizinkan. Task yang sudah berjalan
-      /// tidak dihentikan walau batas barunya lebih kecil.
+      /// Changes the limit on concurrently running tasks. Administrators only. Takes effect immediately:
+      /// queued tasks start right away when the new limit allows it. Running tasks are not stopped even if
+      /// the new limit is lower.
       /// </summary>
       Task PostMeta_BusinessTaskLimit(BusinessTaskLimit limit);
 

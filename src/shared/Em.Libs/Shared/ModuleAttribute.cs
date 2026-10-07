@@ -3,33 +3,34 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Menandai sebuah class service dengan nama module, dipakai untuk pengelompokan/identifikasi
-   /// module (mis. untuk dokumentasi atau diagnostik) di sisi dispatcher.
+   /// Marks a service class with its module name, which groups actions and claims. Server and client use
+   /// <see cref="ResolveName"/> to derive the name.
    /// </summary>
-   /// <param name="name">Nama module. Jika <c>null</c>, tidak ada nama module eksplisit yang di-set.</param>
+   /// <param name="name">Module name. When <c>null</c> or empty, the type name is used.</param>
    [AttributeUsage(AttributeTargets.Class)]
    public class ModuleAttribute(string? name = null) : Attribute
    {
       /// <summary>
-      /// Nama module yang di-set lewat atribut ini, atau <c>null</c> jika tidak diisi.
+      /// Module name set through this attribute, or <c>null</c> when not set.
       /// </summary>
       public string? Name { get; } = name;
 
       /// <summary>
-      /// Menurunkan nama module dari <see cref="ModuleAttribute"/> pada <paramref name="serviceType"/>:
-      /// nama eksplisit atribut kalau ada, atau nama tipe kalau atributnya kosong. Satu-satunya tempat
-      /// aturan ini ditulis, supaya server dan client tidak pernah menurunkan nama module yang berbeda
-      /// untuk tipe yang sama.
+      /// Derives the module name from the <see cref="ModuleAttribute"/> on <paramref name="serviceType"/>:
+      /// the attribute's explicit name when present, or the type name when the attribute is empty. The only
+      /// place this rule is written, so server and client never derive different module names for the same
+      /// type.
       /// </summary>
-      /// <param name="serviceType">Tipe implementasi service yang ditandai <see cref="ModuleAttribute"/>.</param>
+      /// <param name="serviceType">Service implementation type marked with <see cref="ModuleAttribute"/>.</param>
       /// <param name="required">
-      /// <c>true</c> kalau tipe wajib membawa <see cref="ModuleAttribute"/> - dilempar kalau tidak ada.
-      /// <c>false</c> membuat tipe tanpa atribut jatuh ke nama tipenya sendiri, dipakai untuk service UI
+      /// <c>true</c> when the type must carry <see cref="ModuleAttribute"/> - throws when it does not.
+      /// <c>false</c> lets a type without the attribute fall back to its own type name, used for UI services
+      /// that have long run without this attribute.
       /// yang sudah lama berjalan tanpa atribut ini.
       /// </param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau <paramref name="required"/> <c>true</c> dan <paramref name="serviceType"/> tidak
-      /// membawa <see cref="ModuleAttribute"/>.
+      /// Thrown when <paramref name="required"/> is <c>true</c> and <paramref name="serviceType"/> does not
+      /// carry <see cref="ModuleAttribute"/>.
       /// </exception>
       public static string ResolveName(Type serviceType, bool required = true) {
          var attribute = serviceType.GetCustomAttribute<ModuleAttribute>();

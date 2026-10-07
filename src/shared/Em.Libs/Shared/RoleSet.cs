@@ -3,58 +3,55 @@ using Em.Api.Core.Models;
 namespace Em.Shared
 {
    /// <summary>
-   /// Perubahan isi satu role yang dikirim sekali jalan: hak yang ditambah dan dicabut, anggota yang
-   /// masuk, keluar, dan yang masa berlakunya diubah. Bukan baris tabel dan bukan pula daftar niat -
-   /// isinya adalah selisih antara keadaan role saat dibuka dan keadaan yang diinginkan saat tombol
-   /// simpan ditekan, jadi mencentang lalu membatalkan centang yang sama tidak meninggalkan apa pun
-   /// di sini.
+   /// Changes to the content of one role, sent in one go: claims added and revoked, members added,
+   /// removed, and members whose validity changed. Neither a table row nor a list of intentions - it is
+   /// the difference between the role's state when opened and the desired state when save is pressed, so
+   /// ticking and unticking the same box leaves nothing here.
    /// <para>
-   /// Sengaja bukan <see cref="DtoPayload{T1,T2,T3,T4,T5}"/>: payload itu mencocokkan slot
-   /// berdasarkan posisi, sedangkan tiga dari lima daftar di sini bertipe sama
-   /// (<see cref="ta_UserRole"/>). Urutan yang tertukar akan lolos compiler, lolos runtime, lalu
-   /// menambahkan anggota yang mestinya justru dicabut.
+   /// Deliberately not a <see cref="DtoPayload{T1,T2,T3,T4,T5}"/>: that payload matches slots by position,
+   /// while three of the five lists here have the same type (<see cref="ta_UserRole"/>). A swapped order
+   /// would pass the compiler and the runtime, then add members that should have been revoked.
    /// </para>
    /// <para>
-   /// Angka yang ditampilkan layar - "2 hak dan 1 penugasan berubah" - dihitung dari objek ini juga,
-   /// lewat <see cref="ClaimChangeCount"/> dan <see cref="AssignmentChangeCount"/>, supaya tidak ada
-   /// penghitung terpisah yang bisa melenceng dari apa yang benar-benar dikirim.
+   /// The numbers shown by the screen - "2 claims and 1 assignment changed" - are computed from this
+   /// object too, through <see cref="ClaimChangeCount"/> and <see cref="AssignmentChangeCount"/>, so no
+   /// separate counter can drift from what is actually sent.
    /// </para>
    /// </summary>
    public class RoleSet
    {
-      /// <summary>Role yang isinya diubah. Seluruh baris di bawah menunjuk id ini.</summary>
+      /// <summary>Role whose content changes. Every row below points at this ID.</summary>
       public required string cRoleId { get; init; }
 
-      /// <summary>Hak yang diberikan ke role ini.</summary>
+      /// <summary>Claims granted to this role.</summary>
       public ta_RoleClaim[] ClaimsGranted { get; init; } = [];
 
-      /// <summary>Hak yang dicabut dari role ini.</summary>
+      /// <summary>Claims revoked from this role.</summary>
       public ta_RoleClaim[] ClaimsRevoked { get; init; } = [];
 
-      /// <summary>Penugasan baru - user yang mulai memegang role ini.</summary>
+      /// <summary>New assignments - users who start holding this role.</summary>
       public ta_UserRole[] MembersAdded { get; init; } = [];
 
-      /// <summary>Penugasan yang dicabut - user yang berhenti memegang role ini.</summary>
+      /// <summary>Revoked assignments - users who stop holding this role.</summary>
       public ta_UserRole[] MembersRemoved { get; init; } = [];
 
       /// <summary>
-      /// Penugasan yang tetap berjalan tapi masa berlakunya berubah. Terpisah dari
-      /// <see cref="MembersRemoved"/> + <see cref="MembersAdded"/> karena mencabut lalu memberikan
-      /// ulang akan menghapus catatan kapan penugasan itu pertama kali dibuat.
+      /// Assignments that keep running but whose validity changed. Separate from
+      /// <see cref="MembersRemoved"/> + <see cref="MembersAdded"/> because revoking and granting again
+      /// would erase the record of when the assignment was first created.
       /// </summary>
       public ta_UserRole[] MembersRescheduled { get; init; } = [];
 
-      /// <summary>Banyaknya perubahan hak, yaitu yang diberikan ditambah yang dicabut.</summary>
+      /// <summary>Number of claim changes: granted plus revoked.</summary>
       public int ClaimChangeCount => ClaimsGranted.Length + ClaimsRevoked.Length;
 
-      /// <summary>Banyaknya perubahan penugasan, yaitu yang masuk, keluar, dan yang diubah masa berlakunya.</summary>
+      /// <summary>Number of assignment changes: added, removed, and those with changed validity.</summary>
       public int AssignmentChangeCount =>
          MembersAdded.Length + MembersRemoved.Length + MembersRescheduled.Length;
 
       /// <summary>
-      /// <c>true</c> kalau tidak ada satu pun perubahan di sini. Pemanggil memeriksanya sebelum
-      /// mengirim, supaya tombol simpan yang ditekan tanpa ada yang berubah tidak berubah menjadi
-      /// perjalanan ke server yang tidak menghasilkan apa-apa.
+      /// <c>true</c> when there is no change at all. Callers check it before sending, so a save pressed with
+      /// nothing changed does not become a round trip to the server that produces nothing.
       /// </summary>
       public bool IsEmpty => ClaimChangeCount == 0 && AssignmentChangeCount == 0;
    }

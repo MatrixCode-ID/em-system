@@ -1,55 +1,53 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Menandai sebuah method service (atau method interface yang diimplementasikan) sebagai
-   /// action yang bisa diakses lewat HTTP <c>GET</c> melalui dispatcher <c>EmApp</c>.
-   /// Method yang ditandai atribut ini wajib mengembalikan <c>Task</c> atau <c>Task&lt;T&gt;</c>.
+   /// Marks a service method (or an implemented interface method) as an action reachable over HTTP
+   /// <c>GET</c> through the <c>EmApp</c> dispatcher. A method with this attribute must return
+   /// <c>Task</c> or <c>Task&lt;T&gt;</c>.
    /// </summary>
    /// <param name="action">
-   /// Nama action opsional untuk override nama method sebagai identifier route.
-   /// Jika <c>null</c>, nama method itu sendiri yang dipakai sebagai nama action.
+   /// Optional action name overriding the method name as the route identifier. When <c>null</c>, the
+   /// method name itself is the action name.
    /// </param>
    /// <param name="claim">
-   /// Nama claim yang dipersyaratkan action ini, tanpa nama module - lihat <see cref="Claim"/>.
+   /// Claim name required by this action, without the module name - see <see cref="Claim"/>.
    /// </param>
    [AttributeUsage(AttributeTargets.Method)]
    public class GetActionAttribute(string? action = null, string? claim = null) : Attribute
    {
       /// <summary>
-      /// Menandai action <c>GET</c> yang batas waktunya berbeda dari batas waktu seluruh aplikasi.
-      /// Dipakai hanya kalau memang perlu - action yang tidak menyebutkannya ikut
-      /// <c>EmAppBuilder.HttpRequestTimeout</c>, dan itu yang berlaku untuk hampir semuanya.
+      /// Marks a <c>GET</c> action whose timeout differs from the application-wide timeout. Use it only when
+      /// needed - actions that do not state one follow <c>EmAppBuilder.HttpRequestTimeout</c>, which applies
+      /// to almost all of them.
       /// </summary>
       /// <param name="requestTimeoutSecond">
-      /// Batas waktu kerja action ini dalam detik. Angka positif menggantikan batas waktu
-      /// aplikasi; angka negatif berarti action ini tidak dibatasi waktu sama sekali.
+      /// Working time limit of this action in seconds. A positive number replaces the application timeout;
+      /// a negative number means this action has no time limit at all.
       /// </param>
       /// <param name="action">
-      /// Nama action opsional untuk override nama method sebagai identifier route, sama seperti
-      /// pada constructor tanpa batas waktu.
+      /// Optional action name overriding the method name as the route identifier, as in the constructor
+      /// without a timeout.
       /// </param>
       /// <param name="claim">
-      /// Nama claim yang dipersyaratkan action ini, sama seperti pada constructor tanpa batas waktu -
-      /// lihat <see cref="Claim"/>.
+      /// Claim name required by this action, as in the constructor without a timeout - see
+      /// <see cref="Claim"/>.
       /// </param>
       /// <remarks>
-      /// Ditulis sebagai overload constructor, bukan sebagai property seperti
-      /// <see cref="IsPublicAction"/>, karena argumen atribut hanya boleh bertipe konstanta -
-      /// <c>TimeSpan</c> maupun <c>int?</c> tidak sah di sana. Lewat overload, batasan itu hanya
-      /// mengenai parameternya, sehingga <see cref="RequestTimeout"/> bisa benar-benar bertipe
-      /// <c>TimeSpan?</c> dan "tidak disebut" cukup diwakili <c>null</c> - tanpa angka sandi yang
-      /// harus dihafal pembacanya.
+      /// Written as a constructor overload, not as a property like <see cref="IsPublicAction"/>, because
+      /// attribute arguments may only be constants - neither <c>TimeSpan</c> nor <c>int?</c> is valid
+      /// there. With an overload the restriction only affects the parameter, so
+      /// <see cref="RequestTimeout"/> can really be <c>TimeSpan?</c> and "not stated" is simply
+      /// <c>null</c> - with no magic number for readers to memorize.
       /// <para>
-      /// Perlu diingat saat memperpanjangnya: batas waktu di sini hanya menyatakan sampai kapan
-      /// server mau bekerja, bukan sampai kapan client mau menunggu. Client punya batas waktunya
-      /// sendiri, dan kalau batas itu tidak ikut dinaikkan, yang bertambah cuma lama server
-      /// mengerjakan jawaban yang sudah tidak ditunggu siapa-siapa.
+      /// Keep in mind when extending it: the timeout here only states how long the server is willing to
+      /// work, not how long the client is willing to wait. The client has its own timeout, and if that is
+      /// not raised too, all that grows is how long the server works on an answer nobody waits for.
       /// </para>
       /// </remarks>
       /// <exception cref="ArgumentOutOfRangeException">
-      /// Dilempar kalau <paramref name="requestTimeoutSecond"/> bernilai nol - batas waktu nol
-      /// detik membatalkan action sebelum ia sempat berjalan, jadi ia hampir pasti salah ketik dan
-      /// lebih baik berisik daripada diam.
+      /// Thrown when <paramref name="requestTimeoutSecond"/> is zero - a zero-second timeout cancels the
+      /// action before it can run, so it is almost certainly a typo and it is better to be loud than
+      /// silent.
       /// </exception>
       public GetActionAttribute(int requestTimeoutSecond, string? action = null, string? claim = null)
          : this(action, claim) {
@@ -64,54 +62,52 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Nama action yang di-override, atau <c>null</c> jika memakai nama method secara default.
+      /// Overridden action name, or <c>null</c> when the method name is used by default.
       /// </summary>
       public string? Action { get; } = action;
 
       /// <summary>
-      /// Nama claim yang dipersyaratkan action ini, ditulis tanpa nama module - module-nya diambil
-      /// dari tempat action ini terdaftar, jadi tidak perlu (dan tidak boleh) disebut ulang di sini.
+      /// Claim name required by this action, written without the module name - the module is taken from
+      /// where this action is registered, so it need not (and must not) be repeated here.
       /// </summary>
       /// <remarks>
-      /// <c>null</c> - dan itu yang berlaku untuk hampir semua action - <b>bukan</b> berarti "tanpa
-      /// syarat". Ia berarti pemanggil cukup punya claim <i>apa pun</i> milik module action ini; yang
-      /// tidak punya satu pun claim di module itu tetap ditolak. Yang berarti "tanpa syarat" hanya
-      /// <see cref="IsPublicAction"/>, dan itu properti yang berbeda.
+      /// <c>null</c> - which applies to almost every action - does <b>not</b> mean "unrestricted". It
+      /// means the caller needs <i>any</i> claim of this action's module; a caller without a single claim in
+      /// that module is still rejected. Only <see cref="IsPublicAction"/> means "unrestricted", and that is
+      /// a different property.
       /// <para>
-      /// Diisi berarti pemanggil harus punya persis claim itu di module yang sama - punya claim lain
-      /// di module yang sama tidak cukup. Dipakai untuk action yang butuh hak lebih sempit daripada
-      /// "boleh masuk ke module ini":
+      /// When set, the caller must hold exactly that claim in the same module - holding another claim of
+      /// the same module is not enough. Used for actions that need a narrower right than "may enter this
+      /// module":
       /// <c>[GetAction(claim: "ViewPricing")]</c>.
       /// </para>
       /// <para>
-      /// Administrator dan jalur token debug melewati pemeriksaan ini seluruhnya, sama seperti di sisi
-      /// UI - jadi nilai di sini tidak pernah bisa menutup pintu bagi keduanya.
+      /// Administrators and the debug token path skip this check entirely, as on the UI side - so the value
+      /// here can never lock either of them out.
       /// </para>
       /// </remarks>
       public string? Claim { get; } = claim;
 
       /// <summary>
-      /// Batas waktu khusus untuk action ini, atau <c>null</c> kalau action ini tidak menyebutkan
-      /// batas waktunya sendiri dan karena itu ikut batas waktu seluruh aplikasi.
-      /// <c>Timeout.InfiniteTimeSpan</c> berarti action ini sengaja dibiarkan tanpa batas.
+      /// Specific timeout of this action, or <c>null</c> when the action does not state its own timeout and
+      /// therefore follows the application-wide one. <c>Timeout.InfiniteTimeSpan</c> means the action is
+      /// deliberately left without a limit.
       /// </summary>
       /// <remarks>
-      /// Hanya bisa terisi lewat overload constructor yang menerima <c>requestTimeoutSecond</c> -
-      /// tidak ada cara mengisinya sebagai named argument, karena <c>TimeSpan</c> bukan tipe
-      /// argumen atribut yang sah.
+      /// Can only be set through the constructor overload taking <c>requestTimeoutSecond</c> - there is no
+      /// way to set it as a named argument, because <c>TimeSpan</c> is not a valid attribute argument type.
       /// </remarks>
       public TimeSpan? RequestTimeout { get; }
 
       /// <summary>
-      /// <c>true</c> jika action ini boleh diakses tanpa autentikasi. Default <c>false</c>, artinya action
-      /// tertutup kecuali ditandai eksplisit — action baru yang lupa dianotasi otomatis ikut tertutup, bukan
-      /// terbuka. Ditulis sebagai property (bukan parameter constructor) supaya terbaca di call site:
+      /// <c>true</c> when this action may be called without authentication. Defaults to <c>false</c>, so
+      /// actions are closed unless explicitly marked - a new action that forgot the annotation is closed,
+      /// not open. Written as a property (not a constructor parameter) so it reads at the call site:
       /// <c>[GetAction(IsPublicAction = true)]</c>.
       /// </summary>
       /// <remarks>
-      /// Ini satu-satunya penanda yang benar-benar berarti "tanpa syarat": action yang membawanya
-      /// dilayani bahkan tanpa identitas sama sekali, jadi <see cref="Claim"/> tidak pernah diperiksa
-      /// untuknya.
+      /// This is the only marker that really means "unrestricted": an action carrying it is served even
+      /// without any identity, so <see cref="Claim"/> is never checked for it.
       /// </remarks>
       public bool IsPublicAction { get; set; }
    }

@@ -3,88 +3,88 @@ using System.Text.Json.Serialization;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Potret satu business task seperti yang dilaporkan server: apa pekerjaannya, milik siapa, sudah
-   /// sampai mana, dan apa yang boleh dilakukan pemanggil terhadapnya. Nilainya berubah selama task
-   /// berjalan, jadi layar yang memantaunya memuat ulang potret ini secara berkala.
+   /// Snapshot of one business task as reported by the server: what the work is, who owns it, how far
+   /// it has got, and what the caller may do with it. The values change while the task runs, so screens
+   /// that monitor it reload this snapshot periodically.
    /// </summary>
    public class BusinessTaskInfo
    {
-      /// <summary>Id unik task ini (ULID), dipakai untuk membatalkan, membersihkan, atau mengambil hasilnya.</summary>
+      /// <summary>Unique ID of this task (ULID), used to cancel, clear or fetch its result.</summary>
       public string Id { get; set; } = "";
 
       /// <summary>
-      /// Kunci pekerjaan yang dipilih penulis action. Selama sebuah task masih hidup, task lain dengan
-      /// kunci yang sama tidak bisa dimulai: untuk task global kuncinya unik di seluruh server, untuk task
-      /// personal unik per pemilik.
+      /// Work key chosen by the action author. While a task is alive, no other task with the same key can
+      /// start: for global tasks the key is unique across the server, for personal tasks unique per
+      /// owner.
       /// </summary>
       public string Key { get; set; } = "";
 
-      /// <summary>Milik siapa task ini, dan karena itu di mana ia tampil.</summary>
+      /// <summary>Who owns this task, and therefore where it is shown.</summary>
       public BusinessTaskScope Scope { get; set; }
 
-      /// <summary>Judul yang ditampilkan ke user, mis. "Archive photos.zip".</summary>
+      /// <summary>Title shown to the user, e.g. "Archive photos.zip".</summary>
       public string Title { get; set; } = "";
 
-      /// <summary>Module yang memulai task ini.</summary>
+      /// <summary>Module that started this task.</summary>
       public string ModuleName { get; set; } = "";
 
-      /// <summary>Id user yang memulai task ini.</summary>
+      /// <summary>ID of the user who started this task.</summary>
       public string OwnerUserId { get; set; } = "";
 
-      /// <summary>Nama user yang memulai task ini, untuk ditampilkan.</summary>
+      /// <summary>Display name of the user who started this task.</summary>
       public string OwnerName { get; set; } = "";
 
-      /// <summary>Bentuk hasil yang ditinggalkan task ini setelah sukses.</summary>
+      /// <summary>Kind of result this task leaves behind after success.</summary>
       public BusinessTaskOutputKind OutputKind { get; set; }
 
-      /// <summary>Tahap yang sedang dijalani task ini.</summary>
+      /// <summary>Stage this task is currently in.</summary>
       public BusinessTaskStatus Status { get; set; }
 
       /// <summary>
-      /// Kemajuan dalam persen (0–100), atau <c>null</c> kalau kemajuannya tidak bisa diukur. Tampilkan
-      /// progress bar tak tentu untuk nilai <c>null</c>.
+      /// Progress in percent (0–100), or <c>null</c> when progress cannot be measured. Show an
+      /// indeterminate progress bar for <c>null</c>.
       /// </summary>
       public double? Percent { get; set; }
 
-      /// <summary>Keterangan singkat langkah yang sedang dikerjakan, mis. nama file yang sedang diproses.</summary>
+      /// <summary>Short description of the current step, e.g. the name of the file being processed.</summary>
       public string Caption { get; set; } = "";
 
-      /// <summary>Kapan task ini dimulai dan masuk antrian.</summary>
+      /// <summary>When this task was started and queued.</summary>
       public DateTimeOffset QueuedAt { get; set; }
 
-      /// <summary>Kapan task ini benar-benar mulai dikerjakan; <c>null</c> selama masih antri.</summary>
+      /// <summary>When this task actually started running; <c>null</c> while still queued.</summary>
       public DateTimeOffset? StartedAt { get; set; }
 
-      /// <summary>Kapan task ini selesai, apa pun hasilnya; <c>null</c> selama masih hidup.</summary>
+      /// <summary>When this task finished, whatever the outcome; <c>null</c> while still alive.</summary>
       public DateTimeOffset? FinishedAt { get; set; }
 
-      /// <summary>Pesan kesalahan kalau task ini gagal.</summary>
+      /// <summary>Error message when this task failed.</summary>
       public string? ErrorMessage { get; set; }
 
       /// <summary>
-      /// Nama navigasi yang disarankan penulis action untuk membuka hasil JSON task ini, kalau ada.
+      /// Navigation name suggested by the action author for opening this task's JSON result, if any.
       /// </summary>
       public string? NavigationName { get; set; }
 
-      /// <summary>Nama file hasil, untuk task yang hasilnya berupa file.</summary>
+      /// <summary>Result file name, for tasks whose result is a file.</summary>
       public string? ResultFileName { get; set; }
 
-      /// <summary>Jenis isi (MIME type) file hasil, kalau penulis action menyebutkannya.</summary>
+      /// <summary>Content type (MIME type) of the result file, when the action author specifies it.</summary>
       public string? ResultContentType { get; set; }
 
-      /// <summary>Ukuran hasil dalam byte, terisi setelah task yang punya hasil sukses.</summary>
+      /// <summary>Result size in bytes, filled after a task with a result succeeds.</summary>
       public long? ResultSize { get; set; }
 
-      /// <summary><c>true</c> kalau pemanggil boleh membatalkan task ini (dan task-nya masih hidup).</summary>
+      /// <summary><c>true</c> when the caller may cancel this task (and the task is still alive).</summary>
       public bool CanCancel { get; set; }
 
-      /// <summary><c>true</c> kalau pemanggil boleh membersihkan task ini (dan task-nya sudah selesai).</summary>
+      /// <summary><c>true</c> when the caller may clear this task (and the task has finished).</summary>
       public bool CanClear { get; set; }
 
-      /// <summary><c>true</c> kalau pemanggil boleh mengambil hasil task ini.</summary>
+      /// <summary><c>true</c> when the caller may fetch this task's result.</summary>
       public bool CanReadResult { get; set; }
 
-      /// <summary><c>true</c> selama task ini masih antri atau berjalan.</summary>
+      /// <summary><c>true</c> while this task is queued or running.</summary>
       [JsonIgnore]
       public bool IsAlive => Status is BusinessTaskStatus.Queued or BusinessTaskStatus.Running;
    }

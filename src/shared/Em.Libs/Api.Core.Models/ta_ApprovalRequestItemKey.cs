@@ -3,32 +3,33 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Satu bagian kunci dari sebuah entitas usulan, disimpan terpisah supaya handler modul bisa menerima
-   /// kuncinya sebagai nilai bertipe, bukan string yang harus dipecah sendiri.
+   /// One key part of a proposed entity, stored separately so module handlers can receive the key as
+   /// typed values instead of a string they must split themselves.
    /// </summary>
    /// <remarks>
-   /// Kunci entitas juga disimpan dalam bentuk kanonik di entitasnya; yang di sini adalah bentuk per
-   /// bagiannya. Keduanya sengaja ada: bentuk kanonik untuk pencarian dan pencocokan, bentuk per bagian
-   /// untuk diserahkan ke modul.
+   /// The entity key is also stored in canonical form on the entity; this is the per-part form. Both
+   /// exist on purpose: the canonical form for searching and matching, the per-part form for handing to
+   /// the module.
    /// <para>
-   /// Barisnya ramping dengan sengaja: tanpa kolom standar, kuncinya gabungan entitas dan nama bagian.
+   /// The row is deliberately lean: no standard columns, keyed by entity and part name.
    /// </para>
    /// </remarks>
    [Table("ta_ApprovalRequestItemKey")]
    public class ta_ApprovalRequestItemKey
    {
+      /// <summary>Key of the related <c>ta_ApprovalRequestItem</c> row.</summary>
       public string cApprovalRequestItemId { get; set; } = string.Empty;
 
-      /// <summary>Nama bagian kunci, seperti yang dideklarasikan modul.</summary>
+      /// <summary>Key part name, as declared by the module.</summary>
       public string cApprovalRequestItemKeyName { get; set; } = string.Empty;
 
       /// <summary>
-      /// Nilai bagian kunci itu sebagai teks. Formatnya dibakukan per tipe supaya nilai yang sama selalu
-      /// menghasilkan teks yang sama.
+      /// Value of that key part as text. The format is fixed per type so the same value always produces
+      /// the same text.
       /// </summary>
       public string? cApprovalRequestItemKeyValue { get; set; }
 
-      /// <summary>Urutan bagian ini di dalam kuncinya.</summary>
+      /// <summary>Order of this part within its key.</summary>
       public int cApprovalRequestItemKeyOrder { get; set; }
    }
 }

@@ -3,100 +3,109 @@ using Em.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Pengelolaan container registry: root, folder, dan container. Semua
-   /// action di sini mensyaratkan claim <see cref="CtnClaim"/> di module
-   /// <see cref="Defaults.AdministrativeToolsModuleName"/>, dan menjawab 404 kalau registry tidak
-   /// dinyalakan di server. Push dan pull image tidak lewat sini, melainkan lewat jalur <c>/v2</c>.
+   /// Container registry management: roots, folders and containers. Every action here requires claim
+   /// <see cref="CtnClaim"/> in module <see cref="Defaults.AdministrativeToolsModuleName"/>, and answers
+   /// 404 when the registry is not enabled on the server. Image push and pull do not go through here but
+   /// through the <c>/v2</c> endpoint.
    /// </summary>
    /// <remarks>
-   /// Push tidak pernah membuat root, folder, atau nama image baru: semuanya dibuat dulu lewat layanan
-   /// ini. Nama pull selalu dua segmen (<c>host/root/nama</c>); folder murni pengelompokan dan tidak
-   /// muncul di nama pull.
+   /// A push never creates a root, folder or container name: they are all created through this service
+   /// first. A pull name always has two segments (<c>host/root/name</c>); folders are pure grouping and do
+   /// not appear in the pull name.
    /// <para>
-   /// Identitas robot dan pemberian hak dikelola melalui <see cref="IRobotServices"/> dengan claim
+   /// Robot identities and grants are managed through <see cref="IRobotServices"/> with claim
    /// User Manager Access.
    /// </para>
    /// </remarks>
    public interface ICtnServices : IServices
    {
-      /// <summary>Nama claim yang membuka pengelolaan registry, ditulis tanpa nama module-nya.</summary>
+      /// <summary>Claim name that opens registry management, written without its module name.</summary>
       const string CtnClaim = "Container Manager Access";
 
-      /// <summary>Ukuran blob unik tersimpan dan manifest seluruh registry, termasuk blob yatim.
-      /// Tidak mencakup upload sementara atau overhead database/filesystem; berdasarkan metadata registry.</summary>
+      /// <summary>Size of the unique stored blobs and manifests across the registry, including orphan blobs.
+      /// Excludes temporary uploads and database/filesystem overhead; based on registry metadata.</summary>
       Task<CtnStorageInfo> GetMeta_CtnStorageSize();
 
+      /// <summary>Claim name that allows changing the registry storage settings, written without its module name.</summary>
       const string SettingsClaim = "Container Registry Settings Manage";
+
+      /// <summary>Whether the registry is enabled, managed from the UI, and waiting for a restart.</summary>
       Task<StorageFeatureStatus> GetMeta_CtnStatus();
+
+      /// <summary>Current registry storage settings. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageSettingsDetail> GetMeta_CtnSettings();
+
+      /// <summary>Validates a storage directory without saving it. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageDirectoryValidation> PostGetMeta_CtnValidateDirectory(StorageFeatureSettings settings);
+
+      /// <summary>Saves the registry storage settings; they take effect after the API restarts. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageSettingsDetail> PostGetMeta_CtnSettingsSave(StorageSettingsSave request);
 
       #region Root
 
-      /// <summary>Seluruh root berikut jumlah folder dan image-nya.</summary>
+      /// <summary>Every root with its folder and container counts.</summary>
       Task<CtnRootInfo[]> GetMeta_CtnRoots();
 
-      /// <summary>Membuat root. 400 untuk nama tidak sah, 409 kalau nama sudah dipakai.</summary>
+      /// <summary>Creates a root. 400 for an invalid name, 409 when the name is already used.</summary>
       Task<CtnRootInfo> PostGetMeta_CtnRootCreate(string name, string? description);
 
-      /// <summary>Mengubah deskripsi dan status aktif sebuah root.</summary>
+      /// <summary>Changes the description and active state of a root.</summary>
       Task PostMeta_CtnRootUpdate(string rootId, string? description, bool isActive);
 
-      /// <summary>Menghapus root. 409 kalau masih punya folder, image, atau hak robot.</summary>
+      /// <summary>Deletes a root. 409 while it still has folders, containers or robot grants.</summary>
       Task PostMeta_CtnRootDelete(string rootId);
 
       #endregion
 
-      #region Folder dan container
+      #region Folders and containers
 
-      /// <summary>Seluruh folder dan image sebuah root.</summary>
+      /// <summary>Every folder and container of a root.</summary>
       Task<CtnTree> GetMeta_CtnTree(string rootId);
 
-      /// <summary>Membuat folder di root (<paramref name="parentFolderId"/> kosong) atau di dalam folder lain.</summary>
+      /// <summary>Creates a folder in the root (<paramref name="parentFolderId"/> empty) or inside another folder.</summary>
       Task<CtnFolderInfo> PostGetMeta_CtnFolderCreate(string rootId, string? parentFolderId, string name);
 
-      /// <summary>Mengganti nama folder; 409 kalau saudaranya sudah memakai nama itu.</summary>
+      /// <summary>Renames a folder; 409 when a sibling already uses the name.</summary>
       Task<CtnFolderInfo> PostGetMeta_CtnFolderRename(string folderId, string name);
 
       /// <summary>
-      /// Memindahkan folder berikut isinya ke folder lain di root yang sama (atau ke root-nya bila
-      /// <paramref name="targetParentFolderId"/> kosong). Nama pull tidak berubah.
+      /// Moves a folder with its contents to another folder in the same root (or to the root when
+      /// <paramref name="targetParentFolderId"/> is empty). Pull names do not change.
       /// </summary>
       Task<CtnFolderInfo> PostGetMeta_CtnFolderMove(string folderId, string? targetParentFolderId);
 
-      /// <summary>Menghapus folder; 409 kalau masih berisi folder atau image.</summary>
+      /// <summary>Deletes a folder; 409 while it still holds folders or containers.</summary>
       Task PostMeta_CtnFolderDelete(string folderId);
 
       /// <summary>
-      /// Membuat container bernama di root dan folder tujuan. Setelah ini baru bisa di-push. 400 untuk nama
-      /// yang tidak sah atau terlalu panjang, 409 kalau nama sudah dipakai di root itu.
+      /// Creates a named container in the target root and folder. Only then can it be pushed. 400 for an
+      /// invalid or too long name, 409 when the name is already used in that root.
       /// </summary>
       Task<CtnImageInfo> PostGetMeta_CtnImageCreate(string rootId, string? folderId, string name, string? description);
 
-      /// <summary>Memindahkan container ke folder lain di root yang sama. Tidak menyalin blob dan tidak mengubah nama pull.</summary>
+      /// <summary>Moves a container to another folder in the same root. Does not copy blobs or change the pull name.</summary>
       Task<CtnImageInfo> PostGetMeta_CtnImageMove(string imageId, string? targetFolderId);
 
-      /// <summary>Mengubah deskripsi dan status aktif sebuah container.</summary>
+      /// <summary>Changes the description and active state of a container.</summary>
       Task PostMeta_CtnImageUpdate(string imageId, string? description, bool isActive);
 
       /// <summary>
-      /// Menghapus container beserta manifest, tag, dan tautan blob-nya. Berkas blob di disk dibersihkan
-      /// lewat <see cref="PostGetMeta_CtnGcRun"/>.
+      /// Deletes a container with its manifests, tags and blob links. Blob files on disk are cleaned up by
+      /// <see cref="PostGetMeta_CtnGcRun"/>.
       /// </summary>
       Task PostMeta_CtnImageDelete(string imageId);
 
-      /// <summary>Manifest sebuah container berikut tag-nya, yang terbaru lebih dulu.</summary>
+      /// <summary>Manifests of a container with their tags, newest first.</summary>
       Task<CtnManifestInfo[]> GetMeta_CtnImageManifests(string imageId);
 
       /// <summary>
-      /// Menghapus satu tag. Manifest-nya tetap ada dan masih bisa di-pull lewat digest. 404 bila tag tidak ada.
+      /// Deletes one tag. Its manifest stays and can still be pulled by digest. 404 when the tag does not exist.
       /// </summary>
       Task PostMeta_CtnTagDelete(string imageId, string tag);
 
       /// <summary>
-      /// Menghapus satu manifest beserta tag yang menunjuknya. Hanya metadata; blob-nya menjadi kandidat
-      /// garbage collection. 404 bila tidak ada, 409 bila masih dirujuk manifest list/index di container yang sama.
+      /// Deletes one manifest with the tags pointing at it. Metadata only; its blobs become garbage
+      /// collection candidates. 404 when missing, 409 while a manifest list/index in the same container still references it.
       /// </summary>
       Task PostMeta_CtnManifestDelete(string imageId, string manifestId);
 
@@ -104,21 +113,21 @@ namespace Em.Api.Core.Models
 
       #region Garbage collection
 
-      /// <summary>Masa tenggang bawaan (jam) untuk garbage collection.</summary>
+      /// <summary>Default grace period (hours) for garbage collection.</summary>
       const int GcDefaultGraceHours = 24;
 
-      /// <summary>Masa tenggang terbesar yang diterima (jam).</summary>
+      /// <summary>Largest accepted grace period (hours).</summary>
       const int GcMaxGraceHours = 720;
 
       /// <summary>
-      /// Dry run: apa yang akan dihapus garbage collection dengan masa tenggang <paramref name="graceHours"/>
-      /// (1..<see cref="GcMaxGraceHours"/>, selain itu 400). Tidak mengubah apa pun.
+      /// Dry run: what garbage collection would delete with grace period <paramref name="graceHours"/>
+      /// (1..<see cref="GcMaxGraceHours"/>, otherwise 400). Changes nothing.
       /// </summary>
       Task<CtnGcReport> GetMeta_CtnGcReview(int graceHours);
 
       /// <summary>
-      /// Menjalankan garbage collection: blob yatim, upload basi, dan berkas tanpa metadata yang lebih tua dari
-      /// masa tenggang. Laporan berisi yang benar-benar dihapus. 409 bila GC lain sedang berjalan.
+      /// Runs garbage collection: orphan blobs, stale uploads and files without metadata older than the
+      /// grace period. The report lists what was actually deleted. 409 while another GC is running.
       /// </summary>
       Task<CtnGcReport> PostGetMeta_CtnGcRun(int graceHours);
 
@@ -184,7 +193,5 @@ namespace Em.Api.Core.Models
       Task<CtnDeployRunInfo[]> GetMeta_CtnDeployRuns(string imageId, int take);
 
       #endregion
-
-
    }
 }

@@ -1,20 +1,18 @@
 namespace Em.Api.Core.Models
 {
-   /// <summary>
-   /// Bentuk hasil yang ditinggalkan sebuah business task setelah sukses.
-   /// </summary>
+   /// <summary>Kind of result a business task leaves behind after success.</summary>
    public enum BusinessTaskOutputKind
    {
       /// <summary>
-      /// Tanpa hasil yang perlu diambil: pekerjaannya sendiri adalah hasilnya (mis. membuat archive).
-      /// Task seperti ini hilang sendiri tidak lama setelah sukses.
+      /// No result to fetch: the work itself is the result (e.g. creating an archive). Such tasks
+      /// disappear on their own shortly after success.
       /// </summary>
       None = 0,
 
-      /// <summary>Hasilnya data JSON, diambil lewat action hasil JSON.</summary>
+      /// <summary>The result is JSON data, fetched through the JSON result action.</summary>
       Json = 1,
 
-      /// <summary>Hasilnya sebuah file (mis. Excel), diunduh lewat action hasil file.</summary>
+      /// <summary>The result is a file (e.g. Excel), downloaded through the file result action.</summary>
       File = 2
    }
 }

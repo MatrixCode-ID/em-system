@@ -1,25 +1,23 @@
 namespace Em.Api.Core.Models
 {
-   /// <summary>
-   /// Permintaan membuat satu file zip dari beberapa file dan folder yang berada di satu folder CDN.
-   /// </summary>
+   /// <summary>Request to create one zip file from several files and folders in one CDN folder.</summary>
    public class CdnArchiveRequest
    {
       /// <summary>
-      /// Folder tempat item sumber berada, sekaligus tempat file zip-nya ditulis. Relatif terhadap folder
-      /// akar CDN dan dipisah <c>/</c>; <c>null</c> atau string kosong berarti folder akar.
+      /// Folder holding the source items, and where the zip file is written. Relative to the CDN root
+      /// folder and separated by <c>/</c>; <c>null</c> or an empty string means the root folder.
       /// </summary>
       public string? Folder { get; set; }
 
-      /// <summary>Nama file dan folder di <see cref="Folder"/> yang dimasukkan ke zip, tanpa path.</summary>
+      /// <summary>Names of the files and folders in <see cref="Folder"/> to put into the zip, without path.</summary>
       public string[] Names { get; set; } = [];
 
-      /// <summary>Nama file zip yang dibuat, harus berakhiran <c>.zip</c>.</summary>
+      /// <summary>Name of the zip file to create; must end with <c>.zip</c>.</summary>
       public string ArchiveName { get; set; } = "";
 
       /// <summary>
-      /// <c>true</c> kalau file dengan nama <see cref="ArchiveName"/> yang sudah ada boleh ditimpa.
-      /// <c>false</c> membuat permintaan ditolak 409 sebelum task-nya dimulai.
+      /// <c>true</c> when an existing file named <see cref="ArchiveName"/> may be overwritten.
+      /// <c>false</c> makes the request fail with 409 before its task starts.
       /// </summary>
       public bool Overwrite { get; set; }
    }

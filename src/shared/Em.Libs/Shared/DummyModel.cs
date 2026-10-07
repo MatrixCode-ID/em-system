@@ -1,24 +1,23 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Model contoh (placeholder) yang dipakai untuk keperluan testing/demo binding POST,
-   /// misalnya pada action <c>PostGetDataAsync</c> di module <c>Em.Sample</c>.
-   /// Bukan model bisnis sungguhan — jangan dipakai sebagai referensi struktur data produksi.
+   /// Sample placeholder model for testing or demonstrating POST binding. Not used by the engine itself
+   /// and not a business model - do not use it as a reference for production data structures.
    /// </summary>
    public class DummyModel
    {
       /// <summary>
-      /// Nama contoh.
+      /// Sample name.
       /// </summary>
       public string Name { get; set; } = "";
 
       /// <summary>
-      /// Nilai numerik contoh.
+      /// Sample numeric value.
       /// </summary>
       public int Value { get; set; }
 
       /// <summary>
-      /// Identifier contoh berbentuk <see cref="System.Guid"/>, opsional.
+      /// Optional sample identifier of type <see cref="System.Guid"/>.
       /// </summary>
       public Guid? Guid { get; set; }
    }

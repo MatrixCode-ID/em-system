@@ -1,446 +1,446 @@
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Satu keputusan atas satu langkah. Dikirim dalam array supaya beberapa request bisa diputuskan
-   /// sekaligus, yang penting karena hampir semua request pada akhirnya disetujui.
+   /// One decision on one step. Sent in an array so several requests can be decided at once, which
+   /// matters because almost every request ends up approved.
    /// </summary>
    public class ApprovalDecision
    {
-      /// <summary>Request yang diputuskan.</summary>
+      /// <summary>Request being decided.</summary>
       public string cApprovalRequestId { get; set; } = string.Empty;
 
       /// <summary>
-      /// Langkah yang diputuskan. Wajib diisi, karena satu level bisa berisi beberapa langkah yang
-      /// menunggu bersamaan.
+      /// Step being decided. Required, because one level can hold several steps waiting at the same
+      /// time.
       /// </summary>
       public string StepName { get; set; } = string.Empty;
 
-      /// <summary><c>true</c> menyetujui, <c>false</c> menolak.</summary>
+      /// <summary><c>true</c> approves, <c>false</c> rejects.</summary>
       public bool Approve { get; set; }
 
       /// <summary>
-      /// Alasan keputusan. Boleh kosong saat menyetujui biasa; wajib saat menolak, saat menandatangani
-      /// sebagai pengganti, dan saat menembus blokir.
+      /// Reason for the decision. May be empty for a plain approval; required when rejecting, when signing
+      /// as a substitute, and when overriding a block.
       /// </summary>
       public string? Note { get; set; }
 
       /// <summary>
-      /// Isian langkah ini dalam bentuk JSON milik modul, untuk langkah yang memang meminta isian. Modul
-      /// yang memeriksa isinya; engine hanya meneruskan dan menggambarnya di PDF. Pada penolakan isian ikut
-      /// digambar kalau bisa diterima, tetapi penolakannya tidak pernah bergantung pada isian itu.
+      /// Module-owned JSON input for this step, for steps that ask for input. The module validates it; the
+      /// engine only passes it on and draws it on the PDF. On rejection the input is drawn when it is
+      /// acceptable, but the rejection never depends on it.
       /// </summary>
       public string? Payload { get; set; }
 
       /// <summary>
-      /// Tetap terapkan usulan walaupun nilainya sudah berubah di luar. Penimpaan sadar, tercatat pada
-      /// entitas yang bersangkutan. Tidak berlaku untuk entitas yang sudah tidak ada.
+      /// Applies the proposal even though the values have changed elsewhere. A deliberate overwrite,
+      /// recorded on the entity concerned. Does not apply to entities that no longer exist.
       /// </summary>
       public bool Override { get; set; }
 
       /// <summary>
-      /// Setujui walaupun syarat langkah ini belum terpenuhi. Hanya boleh dipakai pemegang claim penembus
-      /// yang dideklarasikan modul, dan alasannya wajib.
+      /// Approves even though this step's conditions are not met yet. Only holders of the override claim
+      /// declared by the module may use it, and a reason is required.
       /// </summary>
       public bool GuardOverride { get; set; }
    }
 
-   /// <summary>Hasil satu keputusan. Satu baris hasil untuk satu keputusan yang dikirim.</summary>
+   /// <summary>Result of one decision. One result row per decision sent.</summary>
    /// <remarks>
-   /// Setiap keputusan diproses dalam transaksinya sendiri, jadi satu keputusan yang gagal tidak
-   /// menggagalkan keputusan lain dalam kiriman yang sama - itulah sebabnya hasilnya berupa daftar, bukan
-   /// satu exception.
+   /// Each decision runs in its own transaction, so one failed decision does not fail the others in the
+   /// same batch - which is why the result is a list rather than a single exception.
    /// </remarks>
    public class ApprovalDecisionResult
    {
-      /// <summary>Request yang diputuskan.</summary>
+      /// <summary>Request that was decided.</summary>
       public string cApprovalRequestId { get; set; } = string.Empty;
 
-      /// <summary>Langkah yang diputuskan.</summary>
+      /// <summary>Step that was decided.</summary>
       public string StepName { get; set; } = string.Empty;
 
-      /// <summary>Keputusannya berhasil dicatat.</summary>
+      /// <summary>The decision was recorded successfully.</summary>
       public bool Success { get; set; }
 
-      /// <summary>Kenapa gagal, kalau gagal.</summary>
+      /// <summary>Why it failed, if it failed.</summary>
       public string? ErrorMessage { get; set; }
 
       /// <summary>
-      /// Kolom-kolom yang nilainya sudah berubah di luar sehingga usulan tidak bisa diterapkan apa adanya.
-      /// Terisi hanya kalau kegagalannya memang karena itu; layar menampilkannya supaya approver bisa
-      /// memilih tetap menerapkan atau menolak.
+      /// Columns whose values changed elsewhere so the proposal cannot be applied as is. Filled only when
+      /// that is the cause of the failure; the screen shows them so the approver can choose to apply
+      /// anyway or reject.
       /// </summary>
       public ApprovalConflictField[] Conflicts { get; set; } = [];
 
       /// <summary>
-      /// <c>true</c> kalau konfliknya tidak bisa ditimpa - entitasnya sudah tidak ada, jadi tidak ada yang
-      /// bisa diterapkan dan satu-satunya pilihan adalah menolak.
+      /// <c>true</c> when the conflict cannot be overridden - the entity no longer exists, so there is
+      /// nothing to apply and rejecting is the only option.
       /// </summary>
       public bool ConflictIsFinal { get; set; }
 
-      /// <summary>Keadaan request sesudah keputusan ini, supaya layar tidak perlu memuat ulang.</summary>
+      /// <summary>State of the request after this decision, so the screen does not need to reload.</summary>
       public ApprovalRequestInfo? Request { get; set; }
    }
 
-   /// <summary>Satu kolom yang nilainya sudah berubah di luar sejak request diajukan.</summary>
+   /// <summary>A column whose value changed elsewhere since the request was submitted.</summary>
    public class ApprovalConflictField
    {
-      /// <summary>Entitas tempat kolom ini berada.</summary>
+      /// <summary>Entity that owns this column.</summary>
       public string Entity { get; set; } = string.Empty;
 
-      /// <summary>Kunci entitasnya dalam bentuk yang bisa dibaca user.</summary>
+      /// <summary>Entity key in a user-readable form.</summary>
       public string EntityKey { get; set; } = string.Empty;
 
-      /// <summary>Nama kolomnya.</summary>
+      /// <summary>Column name.</summary>
       public string FieldName { get; set; } = string.Empty;
 
-      /// <summary>Nilainya saat request diajukan.</summary>
+      /// <summary>Value when the request was submitted.</summary>
       public string? OldValue { get; set; }
 
-      /// <summary>Nilai yang ditemukan sekarang.</summary>
+      /// <summary>Value found now.</summary>
       public string? CurrentValue { get; set; }
 
-      /// <summary>Nilai yang diusulkan.</summary>
+      /// <summary>Proposed value.</summary>
       public string? NewValue { get; set; }
    }
 
    /// <summary>
-   /// Satu baris daftar request: kolom standar engine ditambah ringkasan milik modul, cukup untuk
-   /// ditampilkan dan disaring tanpa memuat rinciannya.
+   /// One row of the request list: the engine's standard columns plus the module's summary, enough to
+   /// display and filter without loading the details.
    /// </summary>
    public class ApprovalRequestInfo
    {
+      /// <summary>Request ID.</summary>
       public string cApprovalRequestId { get; set; } = string.Empty;
 
-      /// <summary>Jenis dokumennya.</summary>
+      /// <summary>Document type.</summary>
       public string DocType { get; set; } = string.Empty;
 
       /// <summary>
-      /// Kunci dokumennya dalam bentuk bakunya - bentuk yang sama yang dipakai saat meminta request
-      /// sebuah dokumen, dan yang dipecah modul kalau ia perlu bagian-bagiannya.
+      /// Document key in its canonical form - the same form used when asking for a document's request,
+      /// and the one a module splits when it needs the parts.
       /// </summary>
       public string DocKey { get; set; } = string.Empty;
 
-      /// <summary>Kunci dokumennya dalam bentuk yang bisa dibaca user.</summary>
+      /// <summary>Document key in a user-readable form.</summary>
       public string DocKeyDisplay { get; set; } = string.Empty;
 
-      /// <summary>Versi dokumennya.</summary>
+      /// <summary>Document version.</summary>
       public string DocVersion { get; set; } = string.Empty;
 
-      /// <summary>Apakah data usulannya menumpang di request ini.</summary>
+      /// <summary>Whether the proposed data is carried by this request.</summary>
       public ApprovalKind Kind { get; set; }
 
-      /// <summary>Tahap hidup request ini.</summary>
+      /// <summary>Life-cycle stage of this request.</summary>
       public ApprovalStage Stage { get; set; }
 
-      /// <summary>Nama pengajunya.</summary>
+      /// <summary>Requester name.</summary>
       public string RequesterName { get; set; } = string.Empty;
 
-      /// <summary>Kapan diajukan.</summary>
+      /// <summary>When it was submitted.</summary>
       public DateTime RequestDate { get; set; }
 
-      /// <summary>Kapan selesai, kalau sudah.</summary>
+      /// <summary>When it finished, if it has.</summary>
       public DateTime? CompletedDate { get; set; }
 
-      /// <summary>Level yang sedang menunggu.</summary>
+      /// <summary>Level currently waiting.</summary>
       public int Level { get; set; }
 
-      /// <summary>Nama langkah yang sedang menunggu keputusan, dipisah koma kalau lebih dari satu.</summary>
+      /// <summary>Names of the steps waiting for a decision, comma separated when there is more than one.</summary>
       public string WaitingSteps { get; set; } = string.Empty;
 
-      /// <summary>Jumlah langkah yang sudah disetujui, dari seluruh langkah yang berlaku.</summary>
+      /// <summary>Number of approved steps, out of all applicable steps.</summary>
       public int SignedStepCount { get; set; }
 
-      /// <summary>Jumlah langkah yang berlaku pada request ini.</summary>
+      /// <summary>Number of steps that apply to this request.</summary>
       public int TotalStepCount { get; set; }
 
-      /// <summary>Request ini menunggu keputusan user yang meminta daftar ini.</summary>
+      /// <summary>This request is waiting for a decision from the user who asked for this list.</summary>
       public bool WaitingForMe { get; set; }
 
       /// <summary>
-      /// User yang meminta daftar ini boleh menandatangani langkah yang menunggu sebagai pengganti,
-      /// walaupun bukan penanda tangan tercatatnya.
+      /// The user who asked for this list may sign the waiting step as a substitute, even though they
+      /// are not its recorded signer.
       /// </summary>
       public bool CanSignAsSubstitute { get; set; }
 
-      /// <summary>Request ini punya PDF dokumen.</summary>
+      /// <summary>This request has a document PDF.</summary>
       public bool HasPdf { get; set; }
 
-      /// <summary>Berapa kali dokumen ini sudah diajukan ulang untuk versi yang sama.</summary>
+      /// <summary>How many times this document has been resubmitted for the same version.</summary>
       public int ReinstateCount { get; set; }
 
       /// <summary>
-      /// Keputusan jenis dokumen ini hanya boleh diambil setelah dokumennya dibuka, jadi layar approval
-      /// tidak menawarkannya dari daftar. Dijaga di layar saja - server tidak mencatat dokumen sudah
-      /// dibuka - karena yang dikejar adalah memastikan orangnya benar-benar melihat dokumennya.
+      /// Decisions on this document type may only be taken after the document has been opened, so the
+      /// approval screen does not offer them from the list. Enforced on the screen only - the server does
+      /// not record that the document was opened - because the goal is making sure the person actually
+      /// sees the document.
       /// </summary>
       public bool RequireOpen { get; set; }
 
       /// <summary>
-      /// Ringkasan milik modul, dipotret saat diajukan, berupa objek JSON berisi pasangan nama kolom dan
-      /// nilainya. Nama kolomnya ditentukan modul, jadi layar tidak boleh menganggapnya tetap.
+      /// Module-owned summary, captured at submission, as a JSON object of column name and value pairs.
+      /// The column names are decided by the module, so the screen must not assume they are fixed.
       /// </summary>
       public string? Summary { get; set; }
 
       /// <summary>
-      /// Aksi terakhir pada request ini, salah satu dari <see cref="ApprovalTimelineAction"/>. Komentar
-      /// bebas tidak dihitung - yang dimaksud keputusan atau pengajuan terakhir.
+      /// Last action on this request, one of <see cref="ApprovalTimelineAction"/>. Free comments do not
+      /// count - this is the last decision or submission.
       /// </summary>
       public string LastAction { get; set; } = string.Empty;
 
-      /// <summary>Nama pelaku aksi terakhir.</summary>
+      /// <summary>Name of the actor of the last action.</summary>
       public string LastActorName { get; set; } = string.Empty;
 
-      /// <summary>Kapan aksi terakhir terjadi.</summary>
+      /// <summary>When the last action happened.</summary>
       public DateTime LastActionDate { get; set; }
    }
 
    /// <summary>
-   /// Kata kunci aksi pada riwayat request, supaya layar bisa memetakannya ke ikon dan teks tanpa
-   /// menebak isi kalimat.
+   /// Action keywords in a request's history, so the screen can map them to icons and text without
+   /// guessing from sentences.
    /// </summary>
    public static class ApprovalTimelineAction
    {
-      /// <summary>Request diajukan.</summary>
+      /// <summary>The request was submitted.</summary>
       public const string Submitted = "Submitted";
 
-      /// <summary>Langkah disetujui oleh penanda tangan yang memang ditetapkan.</summary>
+      /// <summary>The step was approved by its assigned signer.</summary>
       public const string Approved = "Approved";
 
-      /// <summary>Langkah disetujui oleh pengganti, atas nama penanda tangan utama.</summary>
+      /// <summary>The step was approved by a substitute, on behalf of the primary signer.</summary>
       public const string ApprovedAsSubstitute = "ApprovedAsSubstitute";
 
-      /// <summary>Langkah disetujui dengan menembus blokirnya.</summary>
+      /// <summary>The step was approved by overriding its block.</summary>
       public const string ApprovedWithOverride = "ApprovedWithOverride";
 
-      /// <summary>Langkah ditolak dan request berhenti.</summary>
+      /// <summary>The step was rejected and the request stopped.</summary>
       public const string Rejected = "Rejected";
 
-      /// <summary>Request ditarik kembali saat masih menunggu keputusan.</summary>
+      /// <summary>The request was withdrawn while still waiting for a decision.</summary>
       public const string Cancelled = "Cancelled";
 
-      /// <summary>Request ditarik kembali setelah seluruh langkahnya selesai.</summary>
+      /// <summary>The request was withdrawn after all its steps had finished.</summary>
       public const string ReinstatedAfterFinish = "ReinstatedAfterFinish";
 
-      /// <summary>Komentar bebas.</summary>
+      /// <summary>Free comment.</summary>
       public const string Commented = "Commented";
    }
 
-   /// <summary>Rincian satu request: langkah-langkahnya, usulan perubahannya, dan riwayatnya.</summary>
+   /// <summary>Details of one request: its steps, proposed changes and history.</summary>
    public class ApprovalRequestDetail
    {
-      /// <summary>Baris ringkas request ini.</summary>
+      /// <summary>Summary row of this request.</summary>
       public ApprovalRequestInfo Info { get; set; } = new();
 
-      /// <summary>Seluruh langkahnya, berurutan per level.</summary>
+      /// <summary>All steps, ordered by level.</summary>
       public ApprovalStepInfo[] Steps { get; set; } = [];
 
       /// <summary>
-      /// Usulan perubahan per kolom, untuk request yang data usulannya menumpang di sini. Kosong untuk
-      /// request gerbang status.
+      /// Proposed changes per column, for requests that carry their proposed data. Empty for status gate
+      /// requests.
       /// </summary>
       public ApprovalConflictField[] Changes { get; set; } = [];
 
-      /// <summary>Riwayat gabungan aksi dan komentar, tersambung lintas pengajuan ulang.</summary>
+      /// <summary>Combined history of actions and comments, linked across resubmissions.</summary>
       public ApprovalTimelineEntry[] Timeline { get; set; } = [];
    }
 
-   /// <summary>Satu langkah seperti yang ditampilkan di layar.</summary>
+   /// <summary>One step as shown on the screen.</summary>
    public class ApprovalStepInfo
    {
-      /// <summary>Nama langkahnya.</summary>
+      /// <summary>Step name.</summary>
       public string StepName { get; set; } = string.Empty;
 
-      /// <summary>Level tempat langkah ini berada.</summary>
+      /// <summary>Level this step belongs to.</summary>
       public int Level { get; set; }
 
-      /// <summary>Keadaan langkah ini.</summary>
+      /// <summary>State of this step.</summary>
       public ApprovalStepStatus Status { get; set; }
 
-      /// <summary>Nama penanda tangannya, kalau sudah diputuskan.</summary>
+      /// <summary>Signer name, once decided.</summary>
       public string? SignerName { get; set; }
 
-      /// <summary>Nama penanda tangan utama yang diwakili, kalau ditandatangani pengganti atau penembus.</summary>
+      /// <summary>Name of the primary signer represented, when signed by a substitute or an override.</summary>
       public string? OnBehalfName { get; set; }
 
-      /// <summary>Atas dasar apa tanda tangannya sah.</summary>
+      /// <summary>On what basis the signature is valid.</summary>
       public ApprovalSignerRole SignerRole { get; set; }
 
-      /// <summary>Kapan ditandatangani.</summary>
+      /// <summary>When it was signed.</summary>
       public DateTime? SignedDate { get; set; }
 
-      /// <summary>Alasan keputusannya.</summary>
+      /// <summary>Reason for the decision.</summary>
       public string? Note { get; set; }
 
-      /// <summary>Kode verifikasi tanda tangan ini.</summary>
+      /// <summary>Verification code of this signature.</summary>
       public string? VerificationCode { get; set; }
 
-      /// <summary>Nama orang-orang yang ditetapkan sebagai penanda tangan langkah ini.</summary>
+      /// <summary>Names of the people assigned as signers of this step.</summary>
       public string[] AssignedSignerNames { get; set; } = [];
 
-      /// <summary>Langkah ini sedang menunggu keputusan user yang meminta data ini.</summary>
+      /// <summary>This step is waiting for a decision from the user who asked for this data.</summary>
       public bool WaitingForMe { get; set; }
 
       /// <summary>
-      /// Langkah ini menunggu keputusan, user yang meminta data ini memegang claim-nya, tapi bukan
-      /// penanda tangan yang tercatat - jadi ia hanya bisa menandatangani sebagai pengganti, dengan
-      /// alasan wajib.
+      /// This step is waiting for a decision and the user who asked for this data holds its claim, but
+      /// is not the recorded signer - so they can only sign as a substitute, with a required reason.
       /// </summary>
       public bool CanSignAsSubstitute { get; set; }
 
-      /// <summary>Langkah ini meminta isian sebelum bisa diputuskan.</summary>
+      /// <summary>This step asks for input before it can be decided.</summary>
       public bool RequiresInput { get; set; }
    }
 
-   /// <summary>Satu baris riwayat: sebuah aksi pada request, atau sebuah komentar.</summary>
+   /// <summary>One history row: an action on the request, or a comment.</summary>
    public class ApprovalTimelineEntry
    {
-      /// <summary>Kapan terjadi.</summary>
+      /// <summary>When it happened.</summary>
       public DateTime Date { get; set; }
 
-      /// <summary>Siapa pelakunya.</summary>
+      /// <summary>Who did it.</summary>
       public string ActorName { get; set; } = string.Empty;
 
-      /// <summary>Apa yang terjadi, dalam kata kunci yang bisa dipetakan layar ke ikon dan teksnya.</summary>
+      /// <summary>What happened, as a keyword the screen can map to its icon and text.</summary>
       public string Action { get; set; } = string.Empty;
 
-      /// <summary>Langkah yang bersangkutan, kalau aksinya menyangkut satu langkah.</summary>
+      /// <summary>Step concerned, when the action concerns one step.</summary>
       public string? StepName { get; set; }
 
-      /// <summary>Isi komentar atau alasannya.</summary>
+      /// <summary>Comment text or reason.</summary>
       public string? Note { get; set; }
 
       /// <summary>
-      /// Request tempat baris ini berasal. Bisa berbeda dari request yang sedang dibuka, karena riwayat
-      /// tersambung lintas pengajuan ulang.
+      /// Request this row comes from. May differ from the request being opened, because the history is
+      /// linked across resubmissions.
       /// </summary>
       public string cApprovalRequestId { get; set; } = string.Empty;
    }
 
-   /// <summary>Penyaring daftar request, dikirim apa adanya ke server supaya penyaringan tidak di client.</summary>
+   /// <summary>Request list filter, sent as is to the server so filtering does not happen on the client.</summary>
    public class ApprovalQuery
    {
       /// <summary>
-      /// Hanya request yang menunggu keputusan user ini. <c>false</c> berarti seluruh request yang boleh
-      /// ia lihat.
+      /// Only requests waiting for this user's decision. <c>false</c> means every request they may
+      /// see.
       /// </summary>
       public bool WaitingForMeOnly { get; set; }
 
       /// <summary>
-      /// Hanya request yang bisa ditandatangani user ini sebagai pengganti: ia memegang claim langkah
-      /// yang menunggu, tapi penanda tangan langkah itu ditetapkan per orang dan ia bukan salah satunya.
-      /// Terpisah dari <see cref="WaitingForMeOnly"/> karena yang ini bukan pekerjaan miliknya.
+      /// Only requests this user can sign as a substitute: they hold the claim of the waiting step, but
+      /// that step's signers are assigned per person and they are not one of them. Separate from
+      /// <see cref="WaitingForMeOnly"/> because this is not their own work.
       /// </summary>
       public bool CanSignAsSubstituteOnly { get; set; }
 
-      /// <summary>Batasi ke satu jenis dokumen.</summary>
+      /// <summary>Limits to one document type.</summary>
       public string? DocType { get; set; }
 
-      /// <summary>Batasi ke satu dokumen tertentu, dipakai panel status di layar dokumennya.</summary>
+      /// <summary>Limits to one specific document, used by the status panel on the document's screen.</summary>
       public string? DocKey { get; set; }
 
-      /// <summary>Batasi ke satu versi dokumen itu.</summary>
+      /// <summary>Limits to one version of that document.</summary>
       public string? DocVersion { get; set; }
 
-      /// <summary>Batasi ke tahap-tahap tertentu. Kosong berarti semua tahap.</summary>
+      /// <summary>Limits to specific stages. Empty means all stages.</summary>
       public ApprovalStage[] Stages { get; set; } = [];
 
-      /// <summary>Pencarian teks bebas atas kunci dokumen, nama pengaju, dan ringkasan modul.</summary>
+      /// <summary>Free-text search over the document key, requester name and module summary.</summary>
       public string? Search { get; set; }
 
-      /// <summary>Halaman yang diminta, dimulai dari satu.</summary>
+      /// <summary>Requested page, starting at one.</summary>
       public int Page { get; set; } = 1;
 
-      /// <summary>Jumlah baris per halaman.</summary>
+      /// <summary>Rows per page.</summary>
       public int PageSize { get; set; } = 50;
 
-      /// <summary>Kolom pengurut. Kosong berarti urutan bawaan, yaitu yang paling lama menunggu di atas.</summary>
+      /// <summary>Sort column. Empty means the default order, longest waiting first.</summary>
       public string? SortBy { get; set; }
 
-      /// <summary>Urutkan menurun.</summary>
+      /// <summary>Sorts descending.</summary>
       public bool SortDescending { get; set; }
    }
 
-   /// <summary>Satu halaman hasil beserta jumlah seluruhnya, supaya pager tahu ada berapa halaman.</summary>
-   /// <typeparam name="T">Jenis baris yang dihalamankan.</typeparam>
+   /// <summary>One page of results plus the total count, so the pager knows how many pages there are.</summary>
+   /// <typeparam name="T">Type of the paged rows.</typeparam>
    public class PagedResult<T>
    {
-      /// <summary>Baris pada halaman ini.</summary>
+      /// <summary>Rows on this page.</summary>
       public T[] Items { get; set; } = [];
 
-      /// <summary>Jumlah seluruh baris yang cocok dengan penyaringnya, bukan hanya di halaman ini.</summary>
+      /// <summary>Total number of rows matching the filter, not only those on this page.</summary>
       public int TotalCount { get; set; }
 
-      /// <summary>Halaman yang dikembalikan, dimulai dari satu.</summary>
+      /// <summary>Returned page, starting at one.</summary>
       public int Page { get; set; }
 
-      /// <summary>Jumlah baris per halaman yang dipakai.</summary>
+      /// <summary>Rows per page used.</summary>
       public int PageSize { get; set; }
    }
 
    /// <summary>
-   /// Hasil pemeriksaan apakah sebuah langkah boleh diputuskan sekarang. Dievaluasi ulang setiap layar
-   /// dibuka, sehingga blokir yang syaratnya sudah terpenuhi membuka sendiri.
+   /// Result of checking whether a step may be decided now. Re-evaluated every time the screen opens, so
+   /// a block whose conditions are now met lifts by itself.
    /// </summary>
    public class ApprovalGuardResult
    {
-      /// <summary>Langkah ini boleh diputuskan.</summary>
+      /// <summary>This step may be decided.</summary>
       public bool Allowed { get; set; }
 
-      /// <summary>Kenapa belum boleh, untuk ditampilkan di samping tombol yang mati.</summary>
+      /// <summary>Why it is not allowed yet, shown next to the disabled button.</summary>
       public string? Reason { get; set; }
 
       /// <summary>
-      /// Blokirnya boleh ditembus pemegang claim tertentu. Dipakai layar untuk memunculkan tombol
-      /// menyetujui dengan alasan wajib.
+      /// The block may be overridden by holders of a specific claim. The screen uses it to show an
+      /// approve button with a required reason.
       /// </summary>
       public bool CanBeOverridden { get; set; }
 
       /// <summary>
-      /// User yang meminta pemeriksaan ini memegang claim penembusnya. Layar hanya memunculkan tombol
-      /// penembus kalau ini benar.
+      /// The user who asked for this check holds the override claim. The screen only shows the override
+      /// button when this is true.
       /// </summary>
       public bool CallerCanOverride { get; set; }
    }
 
    /// <summary>
-   /// Satu baris daftar pekerjaan user aktif, apa pun sumbernya: pekerjaan panjang yang sedang berjalan,
-   /// dokumen yang menunggu tanda tangannya, atau usulan perubahan data yang menunggu keputusannya.
+   /// One row of the active user's work list, whatever its source: a long-running job in progress, a
+   /// document waiting for their signature, or a data change proposal waiting for their decision.
    /// </summary>
    /// <remarks>
-   /// Bentuknya satu untuk semua sumber supaya daftar itu bisa menampung jenis pekerjaan baru tanpa
-   /// berubah. Baris yang berarti "perlu tindakan" dihitung dari datanya, tidak disimpan, sehingga ia
-   /// hilang sendiri dari daftar orang lain begitu satu orang memutuskannya.
+   /// One shape for every source so the list can take new kinds of work without changing. Rows that
+   /// mean "action needed" are computed from the data, not stored, so they disappear from everyone
+   /// else's list as soon as one person decides.
    /// </remarks>
    public class HubTaskInfo
    {
-      /// <summary>Sumber baris ini, dipakai layar untuk mengelompokkannya.</summary>
+      /// <summary>Source of this row, used by the screen to group it.</summary>
       public string Source { get; set; } = string.Empty;
 
-      /// <summary>Penanda baris ini di dalam sumbernya.</summary>
+      /// <summary>Identifier of this row within its source.</summary>
       public string Id { get; set; } = string.Empty;
 
-      /// <summary>Judul yang ditampilkan.</summary>
+      /// <summary>Displayed title.</summary>
       public string Title { get; set; } = string.Empty;
 
-      /// <summary>Keterangan singkat di bawah judulnya.</summary>
+      /// <summary>Short description below the title.</summary>
       public string? Description { get; set; }
 
-      /// <summary>Jumlah pekerjaan yang diwakili baris ini, untuk baris yang merangkum beberapa.</summary>
+      /// <summary>Number of work items this row represents, for rows that summarize several.</summary>
       public int Count { get; set; }
 
-      /// <summary>Umur pekerjaan tertua yang diwakili baris ini.</summary>
+      /// <summary>Age of the oldest work item this row represents.</summary>
       public TimeSpan? OldestAge { get; set; }
 
-      /// <summary>Kemajuan nol sampai seratus, untuk pekerjaan yang bisa diukur.</summary>
+      /// <summary>Progress from zero to one hundred, for measurable work.</summary>
       public int? Progress { get; set; }
 
-      /// <summary>Nama aksi yang ditawarkan baris ini, misalnya membuka layarnya.</summary>
+      /// <summary>Name of the action this row offers, for example opening its screen.</summary>
       public string? ActionName { get; set; }
 
-      /// <summary>Navigasi yang dibuka aksinya, beserta penyaring yang sudah terpasang.</summary>
+      /// <summary>Navigation opened by the action, with its filter already applied.</summary>
       public string? NavigationTarget { get; set; }
 
-      /// <summary>Parameter navigasinya.</summary>
+      /// <summary>Navigation parameter.</summary>
       public string? NavigationParameter { get; set; }
    }
 }

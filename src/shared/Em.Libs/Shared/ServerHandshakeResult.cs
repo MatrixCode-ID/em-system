@@ -1,27 +1,27 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Hasil action <c>Core/Handshake</c>: public key server beserta bukti bahwa server memang memegang private
-   /// key pasangannya, yaitu tanda tangan atas nonce yang dikirim client. Dipakai bersama oleh backend (menyusun
-   /// respons) dan UI (membaca respons), jadi nama property-nya harus tetap sama di kedua sisi karena
-   /// <c>Defaults.ResponseJsonOptions</c> sengaja case-sensitive.
+   /// Result of action <c>Core/Handshake</c>: the server's public key plus proof that the server holds the
+   /// matching private key, namely a signature over the nonce the client sent. Shared by the backend
+   /// (building the response) and the UI (reading it), so the property names must stay the same on both
+   /// sides because <c>Defaults.ResponseJsonOptions</c> is deliberately case-sensitive.
    /// </summary>
    public class ServerHandshakeResult
    {
       /// <summary>
-      /// Public key RSA server, berupa Base64 dari DER PKCS#1. Jangan dipercaya sebelum <see cref="Signature"/>
-      /// berhasil diverifikasi terhadap nonce yang dikirim.
+      /// Server RSA public key, as Base64 of DER PKCS#1. Do not trust it before <see cref="Signature"/> has
+      /// been verified against the nonce that was sent.
       /// </summary>
       public string PublicKey { get; set; } = string.Empty;
 
       /// <summary>
-      /// Tanda tangan server (Base64Url) atas payload hasil <c>ProbeProtocol.BuildSignaturePayload</c>, yaitu
-      /// prefix domain diikuti nonce dari client.
+      /// Server signature (Base64Url) over the payload built by <c>ProbeProtocol.BuildSignaturePayload</c>,
+      /// i.e. the domain prefix followed by the client's nonce.
       /// </summary>
       public string Signature { get; set; } = string.Empty;
 
       /// <summary>
-      /// Ukuran key RSA server dalam bit, untuk keperluan diagnostik di sisi client.
+      /// Size of the server RSA key in bits, for diagnostics on the client side.
       /// </summary>
       public int KeySize { get; set; }
    }

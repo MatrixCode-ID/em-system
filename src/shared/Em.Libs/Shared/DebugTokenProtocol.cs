@@ -6,45 +6,45 @@ using System.Text.Json.Serialization;
 namespace Em.Shared
 {
    /// <summary>
-   /// Aturan penyusunan token debug - jalan masuk pengembang yang tidak menuntut password maupun access token.
-   /// Pengembang memegang private key di mesinnya, menandatangani sebuah payload kecil, lalu menempelkan
-   /// hasilnya ke header <see cref="Defaults.DebugTokenHeader"/>; server hanya menyimpan public key-nya dan
-   /// memverifikasi tanda tangan itu di setiap request. Kelas ini dipakai kedua sisi - client menyusun token,
-   /// server membacanya - supaya byte yang ditandatangani dan yang diverifikasi persis sama.
+   /// Rules for building the debug token - the developer entry that requires neither a password nor an
+   /// access token. The developer keeps a private key on their machine, signs a small payload, and puts the
+   /// result in header <see cref="Defaults.DebugTokenHeader"/>; the server only stores the public key and
+   /// verifies that signature on every request. Both sides use this class - the client builds the token,
+   /// the server reads it - so the signed bytes and the verified bytes are exactly the same.
    /// </summary>
    /// <remarks>
-   /// Bentuk token: <c>&lt;payload&gt;.&lt;signature&gt;</c>, keduanya Base64Url.
+   /// Token shape: <c>&lt;payload&gt;.&lt;signature&gt;</c>, both Base64Url.
    /// <para>
-   /// Yang ditandatangani adalah byte ASCII dari segmen payload itu sendiri, bukan JSON mentahnya. Dengan
-   /// begitu tidak ada urusan kanonikalisasi JSON: yang dibuktikan tanda tangan persis deretan byte yang
-   /// muncul di header, sehingga perbedaan sekecil apa pun pada payload membuat verifikasi gagal.
+   /// What is signed are the ASCII bytes of the payload segment itself, not the raw JSON. That removes any
+   /// JSON canonicalization concern: the signature proves exactly the byte sequence that appears in the
+   /// header, so even the smallest difference in the payload makes verification fail.
    /// </para>
    /// <para>
-   /// Nama key ada di dalam payload, bukan di luarnya, supaya ikut tertutup tanda tangan - kalau ditaruh di
-   /// luar, siapa pun bisa menukarnya. Server mem-parse payload dulu untuk tahu public key mana yang harus
-   /// dipakai, baru memverifikasi tanda tangannya dengan key tersebut.
+   /// The key name is inside the payload, not outside it, so it is covered by the signature - outside,
+   /// anyone could swap it. The server parses the payload first to know which public key to use, then
+   /// verifies the signature with that key.
    /// </para>
    /// </remarks>
    public static class DebugTokenProtocol
    {
       /// <summary>
-      /// Panjang maksimum token yang mau diproses. Token yang sah panjangnya sekitar 400 karakter (tanda
-      /// tangan RSA-2048 = 256 byte), jadi batas ini longgar; gunanya supaya pemanggil yang belum terbukti
-      /// apa-apa tidak bisa memaksa server men-decode blob besar.
+      /// Maximum token length that will be processed. A valid token is about 400 characters (an RSA-2048
+      /// signature is 256 bytes), so this limit is generous; it stops callers who have proven nothing from
+      /// forcing the server to decode a large blob.
       /// </summary>
       public const int MaxTokenLength = 2048;
 
       /// <summary>
-      /// Menyusun token debug yang sudah ditandatangani.
+      /// Builds a signed debug token.
       /// </summary>
       /// <param name="name">
-      /// Nama key, harus sama persis dengan nama yang didaftarkan di server. Nama inilah yang dipakai server
-      /// untuk mencari public key pasangannya.
+      /// Key name; must exactly match the name registered on the server. The server uses this name to find
+      /// the matching public key.
       /// </param>
-      /// <param name="key">Pasangan key milik pengembang; wajib membawa private key karena dipakai menandatangani.</param>
-      /// <param name="issuedAtUtc">Waktu penerbitan token dalam UTC, dipakai server untuk menghitung masa berlakunya.</param>
-      /// <exception cref="ArgumentException">Dilempar kalau <paramref name="name"/> kosong.</exception>
-      /// <exception cref="InvalidOperationException">Dilempar kalau <paramref name="key"/> tidak punya private key.</exception>
+      /// <param name="key">The developer's key pair; must carry the private key because it is used to sign.</param>
+      /// <param name="issuedAtUtc">Token issue time in UTC, used by the server to compute its validity.</param>
+      /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is empty.</exception>
+      /// <exception cref="InvalidOperationException">Thrown when <paramref name="key"/> has no private key.</exception>
       public static string Create(string name, RsaKeyPair key, DateTime issuedAtUtc) {
          if (string.IsNullOrWhiteSpace(name)) {
             throw new ArgumentException("Debug token key name must not be empty.", nameof(name));
@@ -59,17 +59,16 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Memecah token menjadi bagian-bagiannya dan membaca isi payload-nya. Method ini sengaja tidak
-      /// memverifikasi tanda tangan: hanya server yang tahu public key mana milik nama tersebut, jadi
-      /// verifikasinya dilakukan di sana dengan <paramref name="signedPayload"/> dan <paramref name="signature"/>
-      /// yang dikembalikan di sini.
+      /// Splits a token into its parts and reads its payload. This method deliberately does not verify the
+      /// signature: only the server knows which public key belongs to the name, so verification happens
+      /// there with the <paramref name="signedPayload"/> and <paramref name="signature"/> returned here.
       /// </summary>
-      /// <param name="token">Isi header token debug apa adanya.</param>
-      /// <param name="name">Nama key yang disebut token, kosong kalau token tidak terbaca.</param>
-      /// <param name="issuedAtUtc">Waktu penerbitan token dalam UTC.</param>
-      /// <param name="signedPayload">Byte yang benar-benar ditandatangani, siap diserahkan ke <c>RsaKeyPair.VerifyData</c>.</param>
-      /// <param name="signature">Tanda tangan atas <paramref name="signedPayload"/>.</param>
-      /// <returns><c>true</c> kalau token bisa dipecah dan payload-nya terbaca utuh.</returns>
+      /// <param name="token">Debug token header value as is.</param>
+      /// <param name="name">Key name the token states; empty when the token cannot be read.</param>
+      /// <param name="issuedAtUtc">Token issue time in UTC.</param>
+      /// <param name="signedPayload">Bytes that were actually signed, ready for <c>RsaKeyPair.VerifyData</c>.</param>
+      /// <param name="signature">Signature over <paramref name="signedPayload"/>.</param>
+      /// <returns><c>true</c> when the token can be split and its payload read completely.</returns>
       public static bool TryRead(string token, out string name, out DateTime issuedAtUtc,
          out byte[] signedPayload, out byte[] signature) {
          name = string.Empty;
@@ -89,8 +88,8 @@ namespace Em.Shared
          var payloadSegment = token[..separator];
          var signatureSegment = token[(separator + 1)..];
 
-         // Satu titik dan tidak lebih. Segmen ketiga berarti bentuknya bukan token ini, dan menerimanya
-         // diam-diam akan membuat byte yang diverifikasi berbeda dari byte yang ditandatangani.
+         // One dot and no more. A third segment means this is not this token shape, and accepting it
+         // silently would make the verified bytes differ from the signed bytes.
          if (signatureSegment.Contains('.')) {
             return false;
          }

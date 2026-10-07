@@ -1,29 +1,28 @@
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Isi satu folder CDN berikut keterangan yang dibutuhkan layar pengelolanya: batas ukuran unggahan
-   /// dan alamat publik folder tersebut.
+   /// Contents of one CDN folder plus what its manager screen needs: the upload size limit and the
+   /// folder's public address.
    /// </summary>
    public class CdnFolderContent
    {
       /// <summary>
-      /// Path folder ini relatif terhadap folder akar CDN, dipisah <c>/</c>; string kosong untuk akar.
+      /// Path of this folder relative to the CDN root folder, separated by <c>/</c>; an empty string for the root.
       /// </summary>
       public string Path { get; set; } = "";
 
-      /// <summary>Isi folder: subfolder lebih dulu, lalu file, masing-masing urut nama.</summary>
+      /// <summary>Folder contents: subfolders first, then files, each sorted by name.</summary>
       public CdnEntry[] Entries { get; set; } = [];
 
       /// <summary>
-      /// Batas ukuran satu file yang boleh diunggah, dalam byte. Dipakai client untuk menolak file yang
-      /// terlalu besar sebelum dikirim.
+      /// Size limit of one uploaded file, in bytes. Used by the client to reject files that are too large
+      /// before sending them.
       /// </summary>
       public long MaxFileSize { get; set; }
 
       /// <summary>
-      /// Alamat publik folder ini relatif terhadap alamat server, selalu diakhiri <c>/</c>
-      /// (mis. <c>cdn/installer/</c>). Digabung dengan alamat server untuk menyusun tautan yang bisa
-      /// dibagikan.
+      /// Public address of this folder relative to the server address, always ending with <c>/</c>
+      /// (e.g. <c>cdn/installer/</c>). Combined with the server address to build a shareable link.
       /// </summary>
       public string PublicPath { get; set; } = "";
    }

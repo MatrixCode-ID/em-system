@@ -3,108 +3,107 @@ using Em.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Kontrak approval milik engine: melihat request, memutuskannya, menarik kembali, berkomentar, dan
-   /// mengambil PDF-nya.
+   /// The engine's approval contract: viewing requests, deciding them, withdrawing them, commenting, and
+   /// fetching their PDF.
    /// </summary>
    /// <remarks>
-   /// Keputusan adalah action engine, bukan action modul: satu action untuk semua jenis dokumen, supaya
-   /// layar approval bisa memutuskan banyak request sekaligus tanpa tahu modul mana pemiliknya. Yang
-   /// disediakan modul adalah hal-hal yang hanya ia pahami - cara mengajukan, cara memuat dan menerapkan
-   /// datanya, dan isian per langkah.
+   /// Decisions are engine actions, not module actions: one action for every document type, so the
+   /// approval screen can decide many requests at once without knowing which module owns them. Modules
+   /// provide what only they understand - how to submit, how to load and apply their data, and the input
+   /// of each step.
    /// <para>
-   /// Siapa yang boleh melihat sebuah request: pemegang claim langkah mana pun di alur jenis dokumen itu
-   /// (termasuk pengajunya), pemegang claim lihat jenis dokumen itu, dan user yang saklar
-   /// administratornya menyala. Hak berkomentar sama dengan hak melihat. Pemeriksaan yang sama berlaku
-   /// untuk semua action baca di sini, termasuk PDF-nya.
+   /// Who may view a request: holders of the claim of any step in that document type's flow (including
+   /// its requester), holders of that document type's view claim, and users whose administrator switch is
+   /// on. The right to comment equals the right to view. The same check applies to every read action
+   /// here, including the PDF.
    /// </para>
    /// <para>
-   /// Approval adalah pengecualian dari aturan "administrator bisa semua" dalam satu hal: akun
-   /// administrator bawaan dan akun debugger <b>tidak bisa</b> menandatangani, karena tanda tangan harus
-   /// menunjuk user nyata. Debugger mengujinya dengan berpindah menjadi user nyata.
+   /// Approval is an exception to the "administrator can do everything" rule in one respect: the built-in
+   /// administrator account and the debugger account <b>cannot</b> sign, because a signature must point to
+   /// a real user. The debugger tests it by switching to a real user.
    /// </para>
    /// </remarks>
    public interface IApprovalServices : IServices
    {
       #region Meta's
 
-      /// <summary>Jenis dokumen approval yang boleh dilihat pemanggil, termasuk yang belum memiliki request.</summary>
+      /// <summary>Approval document types the caller may view, including those without any request yet.</summary>
       Task<string[]> GetMeta_ApprovalDocumentTypes();
 
       /// <summary>
-      /// Daftar request yang boleh dilihat pemanggil, disaring dan dihalamankan di server.
+      /// Requests the caller may view, filtered and paged on the server.
       /// </summary>
-      /// <param name="query">Penyaring, pengurut, dan halaman yang diminta.</param>
+      /// <param name="query">Filter, sort order and requested page.</param>
       Task<PagedResult<ApprovalRequestInfo>> GetMeta_ApprovalRequests(ApprovalQuery query);
 
       /// <summary>
-      /// Seluruh request untuk satu dokumen, termasuk yang sudah selesai, ditolak, dan ditarik kembali.
-      /// Dipakai panel status approval di layar dokumennya, dan dipakai client untuk mengambil keadaan
-      /// terbaru sesudah mengajukan.
+      /// Every request for one document, including finished, rejected and withdrawn ones. Used by the
+      /// approval status panel on the document's screen, and by the client to fetch the latest state after
+      /// submitting.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
-      /// <param name="docKey">Kunci dokumennya dalam bentuk kanonik.</param>
+      /// <param name="docType">Document type.</param>
+      /// <param name="docKey">Document key in canonical form.</param>
       Task<ApprovalRequestInfo[]> GetMeta_ApprovalRequestsByDoc(string docType, string docKey);
 
-      /// <summary>Rincian satu request: langkah, usulan perubahan, dan riwayatnya.</summary>
-      /// <param name="approvalRequestId">Request yang diminta.</param>
+      /// <summary>Details of one request: steps, proposed changes and history.</summary>
+      /// <param name="approvalRequestId">Requested request.</param>
       Task<ApprovalRequestDetail?> GetMeta_ApprovalRequest(string approvalRequestId);
 
       /// <summary>
-      /// PDF dokumen sebuah request, lengkap dengan tanda tangan yang sudah dibubuhkan dan isian tiap
-      /// langkah. Dibuat saat diminta dari PDF dasar yang dibekukan waktu pengajuan, jadi ia selalu
-      /// mencerminkan keadaan terakhir tanpa menyimpan satu berkas per keputusan.
+      /// The document PDF of a request, with the signatures applied so far and each step's input. Built on
+      /// request from the base PDF frozen at submission, so it always reflects the latest state without
+      /// storing one file per decision.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang PDF-nya diminta.</param>
-      /// <returns>Isi PDF-nya.</returns>
+      /// <param name="approvalRequestId">Request whose PDF is requested.</param>
+      /// <returns>The PDF content.</returns>
       Task<Stream> GetMeta_ApprovalRequestPdf(string approvalRequestId);
 
       /// <summary>
-      /// Memeriksa apakah sebuah langkah boleh diputuskan sekarang. Dipanggil ulang setiap layar dibuka
-      /// atau dimuat ulang, karena syaratnya dibaca dari keadaan saat itu - blokir yang syaratnya sudah
-      /// terpenuhi akan membuka sendiri.
+      /// Checks whether a step may be decided now. Called again every time the screen opens or reloads,
+      /// because the conditions are read from the current state - a block whose conditions are now met
+      /// lifts by itself.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang diperiksa.</param>
-      /// <param name="stepName">Langkah yang diperiksa.</param>
+      /// <param name="approvalRequestId">Request to check.</param>
+      /// <param name="stepName">Step to check.</param>
       Task<ApprovalGuardResult> GetMeta_ApprovalGuard(string approvalRequestId, string stepName);
 
       /// <summary>
-      /// Memutuskan satu langkah atau beberapa langkah sekaligus. Setiap keputusan diproses dalam
-      /// transaksinya sendiri, jadi satu yang gagal tidak menggagalkan yang lain - karena itu hasilnya
-      /// berupa daftar, satu baris per keputusan.
+      /// Decides one step or several steps at once. Each decision runs in its own transaction, so one
+      /// failure does not fail the others - which is why the result is a list, one row per decision.
       /// </summary>
-      /// <param name="decisions">Keputusan-keputusan yang diambil.</param>
+      /// <param name="decisions">Decisions taken.</param>
       Task<ApprovalDecisionResult[]> PostGetMeta_ApprovalDecide(ApprovalDecision[] decisions);
 
       /// <summary>
-      /// Menarik kembali sebuah request sehingga dokumennya bisa diedit lagi. Boleh juga untuk request
-      /// yang sudah selesai seluruhnya; dalam hal itu modul pemiliknya diberi kesempatan mencabut status
-      /// yang sudah ditulis, dan boleh menolak kalau dokumennya sudah diproses lebih lanjut.
+      /// Withdraws a request so its document can be edited again. Also allowed for a fully finished
+      /// request; in that case the owning module gets the chance to revoke the status already written, and
+      /// may refuse when the document has been processed further.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang ditarik kembali.</param>
-      /// <param name="reason">Alasan penarikan. Wajib.</param>
+      /// <param name="approvalRequestId">Request to withdraw.</param>
+      /// <param name="reason">Reason for the withdrawal. Required.</param>
       Task PostMeta_ApprovalCancel(string approvalRequestId, string reason);
 
-      /// <summary>Menulis komentar bebas pada sebuah request.</summary>
-      /// <param name="approvalRequestId">Request yang dikomentari.</param>
-      /// <param name="note">Isi komentarnya.</param>
+      /// <summary>Writes a free comment on a request.</summary>
+      /// <param name="approvalRequestId">Request to comment on.</param>
+      /// <param name="note">Comment text.</param>
       Task PostMeta_ApprovalComment(string approvalRequestId, string note);
 
       /// <summary>
-      /// Seluruh daftar pekerjaan user aktif, dikumpulkan dari semua sumber yang terdaftar: pekerjaan
-      /// panjang yang sedang berjalan, dokumen yang menunggu tanda tangannya, dan usulan perubahan data
-      /// yang menunggu keputusannya.
+      /// The active user's complete work list, collected from every registered source: long-running jobs
+      /// in progress, documents waiting for their signature, and data change proposals waiting for their
+      /// decision.
       /// </summary>
       Task<HubTaskInfo[]> GetMeta_UserHubTasks();
 
       /// <summary>
-      /// PDF contoh dengan kotak tanda tangan dan kotak isian tergambar beserta namanya, untuk mengukur
-      /// posisinya terhadap rancangan dokumen yang sebenarnya. Alat developer: hanya untuk debugger dan
-      /// user yang saklar administratornya menyala.
+      /// Sample PDF with signature boxes and input boxes drawn with their names, for measuring their
+      /// position against the actual document layout. Developer tool: only for the debugger and users
+      /// whose administrator switch is on.
       /// </summary>
-      /// <param name="docType">Jenis dokumen yang kotak-kotaknya digambar.</param>
-      /// <param name="docKey">Satu dokumen nyata sebagai dasar gambarnya.</param>
-      /// <param name="docVersion">Versi dokumen itu.</param>
-      /// <returns>Isi PDF contohnya.</returns>
+      /// <param name="docType">Document type whose boxes are drawn.</param>
+      /// <param name="docKey">One real document used as the drawing base.</param>
+      /// <param name="docVersion">Version of that document.</param>
+      /// <returns>The sample PDF content.</returns>
       Task<Stream> GetMeta_ApprovalSlotCalibration(string docType, string docKey, string docVersion);
 
       #endregion

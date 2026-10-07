@@ -1,27 +1,27 @@
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Tahap yang sedang dijalani sebuah business task, dari masuk antrian sampai selesai. Ini tahap
-   /// proses, bukan penanda aktif/nonaktif, jadi tidak ada nilai negatif di sini.
+   /// Stage a business task is in, from queued to finished. This is a process stage, not an
+   /// active/inactive marker, so there are no negative values here.
    /// </summary>
    public enum BusinessTaskStatus
    {
-      /// <summary>Menunggu giliran karena batas jumlah task yang boleh berjalan bersamaan sudah penuh.</summary>
+      /// <summary>Waiting for its turn because the limit of concurrently running tasks is reached.</summary>
       Queued = 0,
 
-      /// <summary>Sedang dikerjakan server.</summary>
+      /// <summary>Being processed by the server.</summary>
       Running = 1,
 
-      /// <summary>Selesai tanpa kesalahan.</summary>
+      /// <summary>Finished without errors.</summary>
       Succeeded = 2,
 
       /// <summary>
-      /// Berhenti karena kesalahan. Task yang gagal tetap tampil sampai di-clear, supaya penyebabnya
-      /// sempat dibaca.
+      /// Stopped because of an error. A failed task stays visible until cleared, so its cause can be
+      /// read.
       /// </summary>
       Failed = 3,
 
-      /// <summary>Dihentikan atas permintaan user, atau karena server dimatikan.</summary>
+      /// <summary>Stopped at the user's request, or because the server shut down.</summary>
       Canceled = 4
    }
 }

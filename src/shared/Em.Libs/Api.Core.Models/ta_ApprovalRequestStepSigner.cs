@@ -3,27 +3,27 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Daftar orang yang ditetapkan sebagai penanda tangan satu langkah, ditentukan saat request diajukan.
+   /// People assigned as signers of one step, determined when the request is submitted.
    /// </summary>
    /// <remarks>
-   /// Hanya ada untuk langkah yang penanda tangannya ditentukan dari isi dokumen; langkah yang terbuka
-   /// bagi semua pemegang claim-nya tidak punya baris di sini. Daftarnya dibuat sekaligus saat pengajuan,
-   /// bukan dicari ulang saat menandatangani, dengan dua alasan: kesalahan muncul di depan kepada
-   /// pengaju alih-alih menggagalkan keputusan orang lain di tengah alur, dan daftar pekerjaan tiap user
-   /// bisa dihitung tanpa memuat dokumennya.
+   /// Only exists for steps whose signers are determined from the document content; steps open to every
+   /// holder of their claim have no rows here. The list is built at submission, not looked up again when
+   /// signing, for two reasons: errors surface up front to the requester instead of failing someone
+   /// else's decision midway, and each user's work list can be computed without loading the documents.
    /// <para>
-   /// Barisnya ramping dengan sengaja: tanpa kolom standar, dan kuncinya gabungan ketiga kolom di bawah.
+   /// The row is deliberately lean: no standard columns, keyed by the three columns below.
    /// </para>
    /// </remarks>
    [Table("ta_ApprovalRequestStepSigner")]
    public class ta_ApprovalRequestStepSigner
    {
+      /// <summary>Key of the related <c>ta_ApprovalRequest</c> row.</summary>
       public string cApprovalRequestId { get; set; } = string.Empty;
 
-      /// <summary>Nama langkah yang penanda tangannya didaftar di sini.</summary>
+      /// <summary>Name of the step whose signers are listed here.</summary>
       public string cApprovalRequestStepName { get; set; } = string.Empty;
 
-      /// <summary>Orang yang ditetapkan sebagai penanda tangan langkah itu.</summary>
+      /// <summary>Person assigned as a signer of that step.</summary>
       public string cUserId { get; set; } = string.Empty;
    }
 }

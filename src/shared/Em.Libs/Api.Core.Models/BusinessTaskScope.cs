@@ -1,22 +1,22 @@
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Milik siapa sebuah business task, dan karena itu di mana ia tampil. Dipilih penulis action saat
-   /// memulai task.
+   /// Who owns a business task, and therefore where it is shown. Chosen by the action author when
+   /// starting the task.
    /// </summary>
    public enum BusinessTaskScope
    {
       /// <summary>
-      /// Milik user yang memulainya, misalnya memuat data untuk dirinya sendiri. Tampil di daftar task
-      /// pribadi user itu di jendela utama. Yang boleh membatalkan, membersihkan, dan mengambil hasilnya
-      /// hanya pemiliknya dan administrator.
+      /// Owned by the user who started it, for example loading data for themselves. Shown in that user's
+      /// personal task list in the main window. Only the owner and administrators may cancel it, clear it
+      /// and fetch its result.
       /// </summary>
       Personal = 0,
 
       /// <summary>
-      /// Milik layar module yang memintanya, misalnya membuat archive di CDN. Tampil di layar itu untuk
-      /// siapa pun yang boleh membukanya, dan siapa pun yang lolos hak action module tersebut boleh
-      /// membatalkan atau membersihkannya.
+      /// Owned by the module screen that requested it, for example creating an archive on the CDN. Shown
+      /// on that screen to anyone allowed to open it, and anyone who passes that module's action rights
+      /// may cancel or clear it.
       /// </summary>
       Global = 1
    }

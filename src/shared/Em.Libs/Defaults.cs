@@ -2,40 +2,42 @@
 
 namespace Em
 {
+   /// <summary>Constants and defaults shared by the API and its clients.</summary>
    public static class Defaults
    {
       /// <summary>
-      /// <see cref="JsonSerializerOptions"/> standar untuk komunikasi API antara backend dan UI - dipakai baik
-      /// saat backend menyusun response (<c>Results.Json</c>) maupun saat UI membaca response tersebut, supaya
-      /// penamaan property JSON konsisten di kedua sisi. Sengaja case-sensitive (tanpa naming policy) dan
-      /// mengikuti persis nama property C# (mis. <c>ValidResult</c>, bukan <c>validResult</c>), karena
-      /// <c>Em.Api.Core</c>/<c>Em.Libs</c> direncanakan jadi paket NuGet publik yang API-nya bisa dipakai
-      /// sistem lain di luar solution ini - kontrak JSON yang predictable lebih penting daripada konvensi
-      /// camelCase.
+      /// Standard <see cref="JsonSerializerOptions"/> for API communication between backend and UI - used
+      /// both when the backend builds a response (<c>Results.Json</c>) and when the UI reads it, so JSON
+      /// property naming is consistent on both sides. Deliberately case-sensitive (no naming policy) and
+      /// exactly following the C# property names (e.g. <c>ValidResult</c>, not <c>validResult</c>),
+      /// because <c>Em.Api.Core</c>/<c>Em.Libs</c> are public NuGet packages whose API can be used by
+      /// systems outside this solution - a predictable JSON contract matters more than the camelCase
+      /// convention.
       /// </summary>
       public static JsonSerializerOptions ResponseJsonOptions { get; } = new() {
          PropertyNamingPolicy = null,
          PropertyNameCaseInsensitive = false
       };
 
+      /// <summary>Default timeout of an API call, in seconds.</summary>
       public const int StandardTimeoutSeconds = 30;
 
       /// <summary>
-      /// Handler HTTP bawaan untuk memanggil API: apa adanya, dengan validasi sertifikat TLS tetap
-      /// menyala. Pakai <see cref="CreateHttpClientHandler(bool)"/> kalau validasinya memang harus
-      /// dimatikan - menyebutkan niat itu adalah satu-satunya cara mendapatkannya.
+      /// Default HTTP handler for calling the API: plain, with TLS certificate validation left on. Use
+      /// <see cref="CreateHttpClientHandler(bool)"/> when validation really must be turned off - stating
+      /// that intent is the only way to get it.
       /// </summary>
       public static HttpClientHandler DefaultHttpClientHandler => new();
 
       /// <summary>
-      /// Membuat handler HTTP yang validasi sertifikat TLS-nya bisa dimatikan. Dipisahkan dari
-      /// <see cref="DefaultHttpClientHandler"/> supaya mematikannya selalu jadi pilihan yang ditulis
-      /// pemanggilnya, bukan keadaan bawaan yang tidak pernah dipilih siapa-siapa.
+      /// Creates an HTTP handler whose TLS certificate validation can be turned off. Separate from
+      /// <see cref="DefaultHttpClientHandler"/> so turning it off is always a choice written by the caller,
+      /// not a default nobody chose.
       /// </summary>
       /// <param name="ignoreSslErrors">
-      /// <c>true</c> berarti sertifikat apa pun diterima. Ini mematikan TLS sebagai penjamin keaslian
-      /// host, sehingga handshake RSA di atasnya pun tidak lagi bisa mendeteksi pihak di tengah -
-      /// pantas dipakai hanya untuk server development bersertifikat self-signed.
+      /// <c>true</c> accepts any certificate. This disables TLS as the guarantee of the host's
+      /// authenticity, so the RSA handshake on top of it can no longer detect a man in the middle either -
+      /// only appropriate for development servers with self-signed certificates.
       /// </param>
       public static HttpClientHandler CreateHttpClientHandler(bool ignoreSslErrors) {
          var handler = new HttpClientHandler();
@@ -48,98 +50,97 @@ namespace Em
       }
 
       /// <summary>
-      /// Nama module tempat seluruh action kredensial tinggal - sign in, refresh token, sign out, dan
-      /// urusan password. Ditulis di sini supaya atribut <c>[Module]</c> di kedua sisi dan jalur
-      /// refresh di dalam client menyebut kata yang sama persis; kalau ketiganya boleh mengetik
-      /// sendiri, satu salah ketik baru ketahuan saat token tidak pernah bisa diperbarui.
+      /// Name of the module holding every credential action - sign in, refresh token, sign out and
+      /// password matters. Written here so the <c>[Module]</c> attributes on both sides and the refresh
+      /// path inside the client use exactly the same word; if each typed its own, a single typo would only
+      /// show when the token can never be refreshed.
       /// </summary>
       public const string CredentialModuleName = "core.credential";
 
       /// <summary>
-      /// Nama module alat-alat administrasi bawaan engine, mis. pengelola CDN. Claim alat-alat ini
-      /// ditulis dengan awalan nama ini, dan pencocokan claim di server membandingkannya dengan
-      /// module tempat action-nya terdaftar - jadi kedua sisi harus menyebut kata yang sama persis.
+      /// Name of the engine's built-in administrative tools module, e.g. the CDN manager. Claims of these
+      /// tools are written with this name as prefix, and claim matching on the server compares it with the
+      /// module where the action is registered - so both sides must use exactly the same word.
       /// </summary>
       public const string AdministrativeToolsModuleName = "Administrative Tools";
 
       /// <summary>
-      /// Nama module tempat seluruh action approval tinggal - melihat request, memutuskannya, menarik
-      /// kembali, dan berkomentar. Satu module untuk semua jenis dokumen, karena action-nya memang satu
-      /// untuk semuanya; hak yang berlaku justru datang dari claim module pemilik dokumennya, diperiksa
-      /// di dalam action setelah jenis dokumennya diketahui.
+      /// Name of the module holding every approval action - viewing requests, deciding, withdrawing and
+      /// commenting. One module for every document type, because the actions are the same for all of
+      /// them; the rights that apply come from the claims of the module that owns the document, checked
+      /// inside the action once the document type is known.
       /// </summary>
       public const string ApprovalModuleName = "core.approval";
 
+      /// <summary>User ID of the debugger account.</summary>
       public const string DebuggerUserId = "99999999999999999999999999";
-      
+
+      /// <summary>User ID of the built-in administrator account.</summary>
       public const string AdminUserId = "00000000000000000000000000";
 
       /// <summary>
-      /// Nama akun debugger - akun yang dipakai pengembang saat menjalankan aplikasi tanpa melewati
-      /// layar login. Sepasang dengan <see cref="AdminUserAccount"/> dan ada di sini karena alasan
-      /// yang sama: akun ini tidak punya baris pengguna, jadi namanya tidak bisa dibaca dari sana.
-      /// Nama ini hanya berarti kalau request-nya membawa token debug yang lolos verifikasi.
+      /// Account name of the debugger - the account developers use when running the application without
+      /// going through the sign-in screen. Paired with <see cref="AdminUserAccount"/> and here for the same
+      /// reason: this account has no user row, so its name cannot be read from there. The name only means
+      /// something when the request carries a debug token that passes verification.
       /// </summary>
       public const string DebuggerUserAccount = "debugger";
 
       /// <summary>
-      /// Nama header HTTP tempat token debug dikirim. Token inilah yang membuktikan bahwa pemanggil
-      /// benar-benar pengembang yang berhak, sehingga ia boleh masuk tanpa password maupun access
-      /// token. Ditulis di sini supaya server yang memeriksanya dan client yang mengirimnya menyebut
-      /// kata yang sama persis.
+      /// Name of the HTTP header carrying the debug token. This token proves the caller really is an
+      /// authorized developer, so they may enter without a password or access token. Written here so the
+      /// server that checks it and the client that sends it use exactly the same word.
       /// </summary>
       public const string DebugTokenHeader = "X-Em-Debug-Token";
 
       /// <summary>
-      /// Nama header HTTP tempat client menyebut akun yang sedang aktif di layarnya. Isinya sebuah
-      /// objek JSON yang membawa id sekaligus nama akun; bentuknya ditulis sekali di
-      /// <see cref="Shared.UserHeaderProtocol"/> supaya client yang menyusunnya dan server yang
-      /// membacanya menyebut kata yang sama persis.
+      /// Name of the HTTP header in which the client names the account active on its screen. It holds a
+      /// JSON object carrying both the ID and the account name; its shape is written once in
+      /// <see cref="Shared.UserHeaderProtocol"/> so the client that builds it and the server that reads it
+      /// use exactly the same words.
       /// <para>
-      /// Header ini tidak pernah menjadi sumber identitas dengan sendirinya - ia hanya dipercaya
-      /// kalau <see cref="DebugTokenHeader"/> ikut dikirim dan lolos verifikasi; di luar itu
-      /// identitas tetap datang dari access token.
+      /// This header is never a source of identity by itself - it is only trusted when
+      /// <see cref="DebugTokenHeader"/> is sent too and passes verification; otherwise identity still comes
+      /// from the access token.
       /// </para>
       /// </summary>
       public const string UserHeader = "X-Em-User";
 
       /// <summary>
-      /// Nama header HTTP tempat payload sebuah action ber-stream dikirim. Pada action seperti itu body
-      /// request sudah terpakai untuk isi stream-nya mentah-mentah, jadi parameter lain - paling banyak
-      /// satu objek - menumpang di header ini. Isinya disusun dan dibaca lewat
-      /// <see cref="Shared.StreamPayloadProtocol"/>, supaya client yang mengirim dan server yang
-      /// membacanya menyebut kata dan bentuk yang sama persis.
+      /// Name of the HTTP header carrying the payload of a streaming action. On such an action the request
+      /// body is already used for the raw stream content, so the other parameters - at most one object -
+      /// ride in this header. Its content is built and read through
+      /// <see cref="Shared.StreamPayloadProtocol"/>, so the client that sends it and the server that reads
+      /// it use exactly the same word and shape.
       /// </summary>
       public const string StreamPayloadHeader = "Em-X-StreamPayload";
 
       /// <summary>
-      /// Nama akun administrator bawaan, yang diketik di layar login. Akun ini tidak punya baris di
-      /// tabel pengguna, jadi namanya tidak bisa dibaca dari sana - ia ditulis di sini supaya server
-      /// yang mengenalinya saat login dan client yang menampilkannya menyebut kata yang sama persis.
-      /// Nama ini juga dipesan: tidak ada pengguna biasa yang boleh memakainya.
+      /// Account name of the built-in administrator, typed on the sign-in screen. This account has no row
+      /// in the user table, so its name cannot be read from there - it is written here so the server that
+      /// recognizes it at sign-in and the client that displays it use exactly the same word. The name is
+      /// also reserved: no regular user may take it.
       /// </summary>
       public const string AdminUserAccount = "admin";
 
       /// <summary>
-      /// Nama tampilan akun administrator bawaan - yang muncul di layar, bukan yang diketik saat
-      /// login. Sepasang dengan <see cref="AdminUserAccount"/> dan ada di sini karena alasan yang
-      /// sama: tidak ada baris pengguna yang menyimpannya.
+      /// Display name of the built-in administrator account - what appears on screen, not what is typed at
+      /// sign-in. Paired with <see cref="AdminUserAccount"/> and here for the same reason: no user row
+      /// stores it.
       /// </summary>
       public const string AdminUserFullName = "System Administrator";
 
       /// <summary>
-      /// Penanda jenis kredensial password. Nilainya ikut tersimpan di baris kredensial, jadi kedua
-      /// sisi harus menyebut kata yang sama persis - karena itu tempatnya di sini, bukan di salah
-      /// satu sisi saja: yang memeriksa password ada di server, sementara yang membuatkan baris
-      /// kosongnya saat user baru dibuat ada di client.
+      /// Marker of the password credential type. The value is stored in the credential row, so both sides
+      /// must use exactly the same word - which is why it lives here rather than on one side: the server
+      /// checks passwords, while the client creates the empty row when a new user is created.
       /// </summary>
       public const string PasswordCredentialType = "PASSWORD";
 
       /// <summary>
-      /// Nilai "tanpa batas akhir" untuk kolom masa berlaku yang tidak menerima <c>null</c>. Satu
-      /// tanggal yang jauh di depan, dipilih sebagai tanggal terjauh yang masih diterima tipe
-      /// <c>datetime</c> SQL Server, supaya perbandingan "masih berlaku" tetap berupa satu
-      /// perbandingan tanggal biasa - tanpa cabang khusus di setiap tempat yang membacanya.
+      /// "No end" value for validity columns that do not accept <c>null</c>. One date far ahead, chosen as
+      /// the latest date accepted by the SQL Server <c>datetime</c> type, so the "still valid" check stays a
+      /// single ordinary date comparison - with no special branch everywhere it is read.
       /// </summary>
       public static readonly DateTime NoExpiry = new(9999, 12, 31);
    }

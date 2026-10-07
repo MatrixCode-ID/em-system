@@ -3,39 +3,40 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Satu kolom yang diusulkan berubah, beserta ketiga nilai yang dipakai memutuskan apakah usulan itu
-   /// masih bisa diterapkan: nilai saat diajukan, nilai yang diusulkan, dan nilai yang ditemukan di
-   /// tabelnya saat disetujui.
+   /// One column proposed to change, with the three values used to decide whether the proposal can still
+   /// be applied: the value at submission, the proposed value, and the value found in the table at
+   /// approval.
    /// </summary>
    /// <remarks>
-   /// Ketiga nilai itu yang membuat perubahan dari luar aplikasi ikut tertangkap: pembandingnya isi tabel
-   /// saat keputusan diambil, bukan request lain. Nilai lama sama dengan nilai sekarang berarti usulan
-   /// masih berlaku; nilai sekarang sudah sama dengan usulan berarti kolom itu cukup dilewati; selain itu
-   /// berarti konflik.
+   /// Those three values are what catches changes made outside the application: the comparison is
+   /// against the table content when the decision is taken, not against other requests. Old value equal
+   /// to current value means the proposal still applies; current value already equal to the proposal
+   /// means the column can simply be skipped; anything else is a conflict.
    /// <para>
-   /// Barisnya ramping dengan sengaja: tanpa kolom standar, kuncinya gabungan entitas dan nama kolom.
+   /// The row is deliberately lean: no standard columns, keyed by entity and column name.
    /// </para>
    /// </remarks>
    [Table("ta_ApprovalRequestItemField")]
    public class ta_ApprovalRequestItemField
    {
+      /// <summary>Key of the related <c>ta_ApprovalRequestItem</c> row.</summary>
       public string cApprovalRequestItemId { get; set; } = string.Empty;
 
-      /// <summary>Nama kolom yang diusulkan berubah, seperti yang dipakai handler modul.</summary>
+      /// <summary>Name of the column proposed to change, as used by the module handler.</summary>
       public string cApprovalRequestItemFieldName { get; set; } = string.Empty;
 
-      /// <summary>Nilainya saat request diajukan.</summary>
+      /// <summary>Value when the request was submitted.</summary>
       public string? cApprovalRequestItemFieldOldValue { get; set; }
 
-      /// <summary>Nilai yang diusulkan.</summary>
+      /// <summary>Proposed value.</summary>
       public string? cApprovalRequestItemFieldNewValue { get; set; }
 
       /// <summary>
-      /// Nilai yang ditemukan di tabelnya saat keputusan diambil. Kosong selama request masih menunggu.
+      /// Value found in the table when the decision was taken. Empty while the request is waiting.
       /// </summary>
       public string? cApprovalRequestItemFieldCurrentValue { get; set; }
 
-      /// <summary>Urutan tampilan kolom ini, supaya daftar perubahan terbaca seperti di layarnya.</summary>
+      /// <summary>Display order of this column, so the change list reads like its screen.</summary>
       public int cApprovalRequestItemFieldOrder { get; set; }
    }
 }

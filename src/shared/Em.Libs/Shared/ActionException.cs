@@ -1,41 +1,40 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Kegagalan sebuah action yang sudah tahu status HTTP-nya sendiri. Dipakai dua arah: dilempar
-   /// service di server supaya jawabannya tidak jatuh ke 500, lalu dilempar ulang di client dengan
-   /// status yang sama saat jawaban itu dibaca — jadi pemanggil di UI bisa membedakan "kredensial
-   /// salah" dari "server tidak bisa dihubungi" tanpa mencocokkan teks pesan.
+   /// Failure of an action that already knows its own HTTP status. Used in both directions: thrown by a
+   /// service on the server so the answer does not fall back to 500, then thrown again on the client with
+   /// the same status when that answer is read - so UI callers can tell "wrong credentials" from "server
+   /// unreachable" without matching message text.
    /// <para>
-   /// Tanpa ini setiap exception dari action dibungkus jadi 500 oleh dispatcher, sehingga kesalahan
-   /// yang normal terjadi — password salah, token kedaluwarsa, permintaan yang tidak diizinkan —
-   /// tidak bisa dibedakan dari server yang benar-benar rusak.
+   /// Without it every exception from an action is wrapped as 500 by the dispatcher, so failures that
+   /// happen normally - a wrong password, an expired token, a request that is not allowed - cannot be told
+   /// apart from a server that is really broken.
    /// </para>
    /// <para>
-   /// Turunan <see cref="InvalidOperationException"/> mengikuti pola
-   /// <c>SystemAccountException</c>: pemanggil lama yang menangkap exception secara umum tidak
-   /// berubah perilakunya.
+   /// Deriving from <see cref="InvalidOperationException"/> follows the <c>SystemAccountException</c>
+   /// pattern: older callers that catch exceptions generally keep their behavior.
    /// </para>
    /// </summary>
    public class ActionException : InvalidOperationException
    {
       /// <summary>
-      /// Membuat kegagalan action berikut status HTTP yang ingin dikirim ke pemanggil.
+      /// Creates an action failure with the HTTP status to send to the caller.
       /// </summary>
       /// <param name="message">
-      /// Penjelasan yang akan sampai ke pemanggil apa adanya. Jangan menaruh keterangan yang tidak
-      /// boleh diketahui pihak luar di sini — isinya ikut terkirim ke client.
+      /// Explanation that reaches the caller as is. Do not put anything outsiders must not know here - the
+      /// content is sent to the client.
       /// </param>
       /// <param name="statusCode">
-      /// Status HTTP untuk jawaban ini. Yang lazim dipakai: <c>400</c> permintaannya sendiri keliru,
-      /// <c>401</c> pemanggilnya belum terbukti siapa, <c>403</c> pemanggilnya sudah jelas siapa
-      /// tetapi tidak berhak, <c>404</c> yang diminta tidak ada.
+      /// HTTP status of this answer. Common values: <c>400</c> the request itself is wrong, <c>401</c> the
+      /// caller's identity is not proven, <c>403</c> the caller is known but not allowed, <c>404</c> the
+      /// requested item does not exist.
       /// </param>
       public ActionException(string message, int statusCode) : base(message) {
          StatusCode = statusCode;
       }
 
       /// <summary>
-      /// Status HTTP yang dibawa kegagalan ini.
+      /// HTTP status carried by this failure.
       /// </summary>
       public int StatusCode { get; }
    }

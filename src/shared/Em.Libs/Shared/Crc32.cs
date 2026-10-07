@@ -3,23 +3,23 @@ using System.Text;
 namespace Em.Shared
 {
    /// <summary>
-   /// Perhitungan CRC32 (polinomial IEEE standar) atas sebuah teks atau deretan byte. Hasilnya
-   /// selalu sama untuk masukan yang sama - di proses mana pun, di komputer mana pun, dan di
-   /// bahasa pemrograman mana pun yang memakai polinomial yang sama.
+   /// CRC32 computation (standard IEEE polynomial) over a text or a byte sequence. The result is always the
+   /// same for the same input - in any process, on any computer, and in any programming language using the
+   /// same polynomial.
    /// <para>
-   /// Sifat itulah alasan kelas ini ada. <c>string.GetHashCode()</c> sengaja diacak ulang setiap
-   /// kali aplikasi dijalankan sebagai pengamanan, sehingga tidak bisa dipakai untuk apa pun yang
-   /// hasilnya harus tetap sama di lain waktu - misalnya memilih warna dari sebuah nama. CRC32 ini
-   /// menjawab kebutuhan itu, dan bukan alat pengamanan: jangan dipakai untuk password atau tanda
-   /// tangan (untuk itu ada <see cref="Argon2Hashing"/> dan <see cref="RsaKeyPair"/>).
+   /// That property is why this class exists. <c>string.GetHashCode()</c> is deliberately randomized every
+   /// time the application runs as a safeguard, so it cannot be used for anything whose result must stay
+   /// the same later - for example picking a color from a name. This CRC32 serves that need, and is not a
+   /// security tool: do not use it for passwords or signatures (use <see cref="Argon2Hashing"/> and
+   /// <see cref="RsaKeyPair"/> for those).
    /// </para>
    /// </summary>
    public static class Crc32
    {
       private const uint Polynomial = 0xEDB88320u;
 
-      // Dibangun sekali saat kelas ini pertama dipakai: 256 entri yang memungkinkan CRC dihitung
-      // satu byte sekaligus, bukan satu bit sekaligus.
+      // Built once when this class is first used: 256 entries that let the CRC be computed a byte at a
+      // time instead of a bit at a time.
       private static readonly uint[] Table = BuildTable();
 
       private static uint[] BuildTable() {
@@ -37,10 +37,10 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Menghitung CRC32 dari sebuah teks, dibaca sebagai byte UTF-8. Teks kosong menghasilkan 0.
+      /// Computes the CRC32 of a text, read as UTF-8 bytes. Empty text yields 0.
       /// </summary>
-      /// <param name="value">Teks yang dihitung; <c>null</c> diperlakukan sama seperti teks kosong.</param>
-      /// <returns>Nilai CRC32 dari teks tersebut.</returns>
+      /// <param name="value">Text to compute; <c>null</c> is treated like empty text.</param>
+      /// <returns>CRC32 value of the text.</returns>
       public static uint Compute(string value) {
          if (string.IsNullOrEmpty(value)) return 0u;
 
@@ -49,10 +49,10 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Menghitung CRC32 dari deretan byte apa adanya, tanpa penafsiran encoding.
+      /// Computes the CRC32 of a byte sequence as is, without interpreting any encoding.
       /// </summary>
-      /// <param name="bytes">Byte yang dihitung; deretan kosong menghasilkan 0.</param>
-      /// <returns>Nilai CRC32 dari byte tersebut.</returns>
+      /// <param name="bytes">Bytes to compute; an empty sequence yields 0.</param>
+      /// <returns>CRC32 value of the bytes.</returns>
       public static uint Compute(ReadOnlySpan<byte> bytes) {
          if (bytes.IsEmpty) return 0u;
 

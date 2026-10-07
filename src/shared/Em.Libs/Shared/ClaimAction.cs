@@ -3,22 +3,26 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Deklarasi murni satu claim: module pemiliknya dan namanya. Tidak menyimpan jawaban ("apakah
-   /// pengguna ini punya hak-nya") - itu urusan pemberian di database, bukan deklarasi ini.
+   /// Pure declaration of one claim: its owning module and its name. It holds no answer ("does this user
+   /// have the right") - that belongs to the grants in the database, not to this declaration.
    /// </summary>
    public record ClaimAction
    {
       /// <summary>
-      /// Pemisah antara nama module dan nama claim di dalam <see cref="Key"/>. Dipilih karena tidak
-      /// sah di dalam identifier C#, sehingga tidak akan pernah muncul tanpa sengaja di salah satu
-      /// bagian - berbeda dari titik (sudah dipakai nama module seperti <c>core.contact</c>) maupun
-      /// tanda hubung (wajar muncul di nama seperti <c>Read-Only</c>).
+      /// Separator between module name and claim name inside <see cref="Key"/>. Chosen because it is not
+      /// valid in a C# identifier, so it never appears by accident in either part - unlike a dot (already
+      /// used by module names such as <c>core.contact</c>) or a hyphen (natural in names such as
+      /// <c>Read-Only</c>).
       /// </summary>
       public const char Separator = ':';
 
-      // Lebar kolom cUserClaimName di ta_UserClaim.
+      // Width of column cUserClaimName in ta_UserClaim.
       private const int MaxKeyLength = 255;
 
+      /// <summary>Declares claim <paramref name="name"/> in the module of service <typeparamref name="T"/>.</summary>
+      /// <typeparam name="T">Service whose <see cref="ModuleAttribute"/> names the module.</typeparam>
+      /// <param name="name">Claim name, without <see cref="Separator"/>.</param>
+      /// <exception cref="ArgumentException">The name is empty, contains the separator, or the key is too long.</exception>
       public static ClaimAction Create<T>(string name) where T : IServices {
          var moduleName = ModuleAttribute.ResolveName(typeof(T));
 
@@ -51,14 +55,14 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Pasangan dari <see cref="Key"/>: memecah satu string kunci kembali menjadi <see cref="ModuleName"/>
-      /// dan <see cref="Name"/>. Dipakai server saat membaca baris <c>ta_UserClaim</c> - client tidak
-      /// pernah menyusun maupun memecah kunci sendiri.
+      /// Counterpart of <see cref="Key"/>: splits one key string back into <see cref="ModuleName"/> and
+      /// <see cref="Name"/>. Used by the server when reading <c>ta_UserClaim</c> rows - the client never
+      /// builds or splits keys itself.
       /// </summary>
       /// <param name="key">
-      /// Kunci berbentuk <c>module{Separator}name</c>. Kunci tanpa <see cref="Separator"/> sama sekali
-      /// berarti baris lama atau rusak, dan dikembalikan apa adanya dengan module kosong alih-alih
-      /// melempar - satu baris aneh tidak boleh mematikan seluruh layar yang membacanya.
+      /// Key of the form <c>module{Separator}name</c>. A key without any <see cref="Separator"/> means an
+      /// old or broken row, and is returned as is with an empty module instead of throwing - one odd row
+      /// must not kill the whole screen reading it.
       /// </param>
       public static ClaimAction FromKey(string key) {
          var separatorIndex = key.IndexOf(Separator);
@@ -72,13 +76,16 @@ namespace Em.Shared
          };
       }
 
+      /// <summary>Module that owns the claim.</summary>
       public required string ModuleName { get; init; }
+
+      /// <summary>Claim name within its module.</summary>
       public required string Name { get; init; }
 
       /// <summary>
-      /// Kunci gabungan tersimpan di database, <c>module:claimname</c>. Diabaikan saat serialisasi:
-      /// ia turunan dari dua properti lain, jadi mengirimnya lewat kabel berarti mengirim data yang
-      /// sama dua kali sekaligus membuka celah kunci yang tidak konsisten dengan isinya.
+      /// Combined key stored in the database, <c>module:claimname</c>. Ignored during serialization: it is
+      /// derived from the other two properties, so sending it over the wire would send the same data twice
+      /// and open the door to a key inconsistent with its parts.
       /// </summary>
       [JsonIgnore]
       public string Key => $"{ModuleName}{Separator}{Name}";

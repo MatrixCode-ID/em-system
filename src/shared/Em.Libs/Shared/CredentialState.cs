@@ -1,29 +1,29 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Status sebuah kredensial milik pengguna. Mengikuti aturan nilai yang sama seperti status
-   /// lain di aplikasi ini: nilai negatif berarti kredensialnya tidak boleh dipakai untuk masuk,
-   /// nilai nol ke atas berarti kredensialnya sudah terdaftar dan sah.
+   /// State of a user credential. Follows the same value rule as other states in this application:
+   /// negative values mean the credential must not be used to sign in, zero and above mean it is
+   /// registered.
    /// </summary>
    public enum CredentialState
    {
-      /// <summary>Sudah dihapus dan tidak bisa dipulihkan lagi.</summary>
+      /// <summary>Deleted and cannot be restored.</summary>
       Deleted = -3,
 
-      /// <summary>Dicabut, mis. karena perangkatnya hilang atau rahasianya bocor.</summary>
+      /// <summary>Revoked, e.g. because the device was lost or the secret leaked.</summary>
       Revoked = -2,
 
       /// <summary>
-      /// Sudah disiapkan tetapi belum selesai didaftarkan - misalnya barisnya sudah dibuat tetapi
-      /// penggunanya belum pernah mengisi password, atau kode pertama dari aplikasi authenticator
-      /// belum dikonfirmasi. Belum bisa dipakai untuk masuk.
+      /// Prepared but not fully registered - for example the row exists but the user has never set a
+      /// password, or the first code from an authenticator app has not been confirmed. Cannot be used to
+      /// sign in yet.
       /// </summary>
       Pending = -1,
 
-      /// <summary>Terdaftar, tetapi sementara dinonaktifkan oleh pengguna atau administrator.</summary>
+      /// <summary>Registered, but temporarily disabled by the user or an administrator.</summary>
       Inactive = 0,
 
-      /// <summary>Terdaftar dan siap dipakai untuk masuk.</summary>
+      /// <summary>Registered and ready to sign in with.</summary>
       Active = 1
    }
 }
