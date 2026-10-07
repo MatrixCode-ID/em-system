@@ -1,57 +1,57 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Satu set warna tema untuk satu mode (terang atau gelap), mengikuti peran warna Material 3.
-   /// Layar dan kontrol menyebut perannya, bukan kode warnanya, sehingga mengganti tema cukup
-   /// mengganti objek ini. Pasangan <c>On...</c> adalah warna teks/ikon yang terbaca di atas peran
-   /// pasangannya, mis. <see cref="OnPrimary"/> di atas <see cref="Primary"/>.
+   /// One set of theme colors for one mode (light or dark), following the Material 3 color roles. Screens
+   /// and controls name the role, not the color code, so changing the theme only requires swapping this
+   /// object. The <c>On...</c> pairs are the text/icon colors that read well on top of their paired role,
+   /// e.g. <see cref="OnPrimary"/> on <see cref="Primary"/>.
    /// </summary>
    /// <remarks>
-   /// Objek ini hanya data - tidak menerapkan apa pun sendiri. Tiap client (dan pustaka kontrol yang
-   /// dipakai modul, lewat <see cref="IThemeApplier"/>) membaca tema ini dan menerjemahkannya ke sistem
-   /// tampilannya masing-masing.
+   /// This object is only data - it applies nothing by itself. Each client (and the control library used
+   /// by modules, through <see cref="IThemeApplier"/>) reads this theme and translates it into its own
+   /// display system.
    /// <para>
-   /// Palet standar Em ada di <see cref="LightTheme"/> dan <see cref="DarkTheme"/>. Aplikasi yang
-   /// butuh warna lain cukup menurunkan salah satunya, atau mengganti sebagian peran lewat object
-   /// initializer, mis. <c>new LightTheme { Brand = ThemeColor.Parse("#7A1F2B") }</c>, lalu memasangnya
-   /// ke <see cref="BrandingInfo"/>.
+   /// The standard Em palettes are <see cref="LightTheme"/> and <see cref="DarkTheme"/>. An application
+   /// that needs other colors only needs to derive from one of them, or replace some roles through an
+   /// object initializer, e.g. <c>new LightTheme { Brand = ThemeColor.Parse("#7A1F2B") }</c>, then attach
+   /// it to <see cref="BrandingInfo"/>.
    /// </para>
    /// </remarks>
    public abstract class ThemeBase
    {
       /// <summary>
-      /// Membuat tema untuk mode yang diberikan. Semua peran warna masih kosong (transparan) sampai
-      /// diisi oleh kelas turunan atau object initializer.
+      /// Creates a theme for the given mode. All color roles are still empty (transparent) until filled by a
+      /// derived class or an object initializer.
       /// </summary>
-      /// <param name="variant">Mode yang dilayani tema ini.</param>
+      /// <param name="variant">The mode this theme serves.</param>
       protected ThemeBase(ThemeVariant variant) {
          Variant = variant;
       }
 
       /// <summary>
-      /// Mode yang dilayani tema ini: terang atau gelap.
+      /// The mode this theme serves: light or dark.
       /// </summary>
       public ThemeVariant Variant { get; }
 
       #region Primary
 
       /// <summary>
-      /// Warna utama: aksi tunggal yang paling penting di sebuah layar, dan penanda pilihan aktif.
+      /// Primary color: the single most important action on a screen, and the marker of the active choice.
       /// </summary>
       public ThemeColor Primary { get; init; }
 
       /// <summary>
-      /// Teks/ikon di atas <see cref="Primary"/>.
+      /// Text/icon on top of <see cref="Primary"/>.
       /// </summary>
       public ThemeColor OnPrimary { get; init; }
 
       /// <summary>
-      /// Bidang bernuansa warna utama yang lebih tenang, mis. latar item terpilih.
+      /// A calmer surface tinted with the primary color, e.g. the background of a selected item.
       /// </summary>
       public ThemeColor PrimaryContainer { get; init; }
 
       /// <summary>
-      /// Teks/ikon di atas <see cref="PrimaryContainer"/>.
+      /// Text/icon on top of <see cref="PrimaryContainer"/>.
       /// </summary>
       public ThemeColor OnPrimaryContainer { get; init; }
 
@@ -60,22 +60,22 @@ namespace Em.Ui.Core.Shared
       #region Secondary
 
       /// <summary>
-      /// Warna pendamping: penanda yang menyertai warna utama, mis. bidang terpilih di menu samping.
+      /// Companion color: a marker that accompanies the primary color, e.g. the selected area in the side menu.
       /// </summary>
       public ThemeColor Secondary { get; init; }
 
       /// <summary>
-      /// Teks/ikon di atas <see cref="Secondary"/>.
+      /// Text/icon on top of <see cref="Secondary"/>.
       /// </summary>
       public ThemeColor OnSecondary { get; init; }
 
       /// <summary>
-      /// Bidang bernuansa warna pendamping yang lebih tenang.
+      /// A calmer surface tinted with the companion color.
       /// </summary>
       public ThemeColor SecondaryContainer { get; init; }
 
       /// <summary>
-      /// Teks/ikon di atas <see cref="SecondaryContainer"/>.
+      /// Text/icon on top of <see cref="SecondaryContainer"/>.
       /// </summary>
       public ThemeColor OnSecondaryContainer { get; init; }
 
@@ -84,22 +84,22 @@ namespace Em.Ui.Core.Shared
       #region Surface
 
       /// <summary>
-      /// Latar halaman dan window.
+      /// Background of pages and windows.
       /// </summary>
       public ThemeColor Surface { get; init; }
 
       /// <summary>
-      /// Teks/ikon utama di atas semua bidang.
+      /// Main text/icon on top of all surfaces.
       /// </summary>
       public ThemeColor OnSurface { get; init; }
 
       /// <summary>
-      /// Teks/ikon sekunder yang lebih redup, mis. label dan keterangan.
+      /// Dimmer secondary text/icon, e.g. labels and captions.
       /// </summary>
       public ThemeColor OnSurfaceVariant { get; init; }
 
       /// <summary>
-      /// Bidang bertingkat paling rendah di atas <see cref="Surface"/>.
+      /// The lowest layered surface on top of <see cref="Surface"/>.
       /// </summary>
       public ThemeColor SurfaceContainerLow { get; init; }
 
@@ -109,7 +109,7 @@ namespace Em.Ui.Core.Shared
       public ThemeColor SurfaceContainer { get; init; }
 
       /// <summary>
-      /// Bidang bertingkat paling tinggi, mis. kolom isian, strip di dalam kartu, atau popup.
+      /// The highest layered surface, e.g. input fields, strips inside a card, or popups.
       /// </summary>
       public ThemeColor SurfaceContainerHigh { get; init; }
 
@@ -118,12 +118,12 @@ namespace Em.Ui.Core.Shared
       #region Outline
 
       /// <summary>
-      /// Garis pembatas kartu dan kolom isian.
+      /// Border line of cards and input fields.
       /// </summary>
       public ThemeColor Outline { get; init; }
 
       /// <summary>
-      /// Garis pemisah yang lebih tenang, mis. antar baris.
+      /// A calmer divider line, e.g. between rows.
       /// </summary>
       public ThemeColor OutlineVariant { get; init; }
 
@@ -132,32 +132,32 @@ namespace Em.Ui.Core.Shared
       #region Status
 
       /// <summary>
-      /// Kesalahan dan aksi yang merusak/berbahaya.
+      /// Errors and destructive/dangerous actions.
       /// </summary>
       public ThemeColor Error { get; init; }
 
       /// <summary>
-      /// Bidang bernuansa kesalahan, mis. latar pesan galat.
+      /// A surface tinted with the error color, e.g. the background of an error message.
       /// </summary>
       public ThemeColor ErrorContainer { get; init; }
 
       /// <summary>
-      /// Teks/ikon di atas <see cref="ErrorContainer"/>.
+      /// Text/icon on top of <see cref="ErrorContainer"/>.
       /// </summary>
       public ThemeColor OnErrorContainer { get; init; }
 
       /// <summary>
-      /// Status berhasil/aktif.
+      /// Success/active status.
       /// </summary>
       public ThemeColor Success { get; init; }
 
       /// <summary>
-      /// Status yang perlu perhatian tetapi bukan kesalahan.
+      /// A status that needs attention but is not an error.
       /// </summary>
       public ThemeColor Warning { get; init; }
 
       /// <summary>
-      /// Status informatif yang netral.
+      /// A neutral informative status.
       /// </summary>
       public ThemeColor Info { get; init; }
 
@@ -166,18 +166,18 @@ namespace Em.Ui.Core.Shared
       #region Others
 
       /// <summary>
-      /// Tirai di belakang panel atau dialog yang sedang terbuka.
+      /// The curtain behind a panel or dialog that is currently open.
       /// </summary>
       public ThemeColor Scrim { get; init; }
 
       /// <summary>
-      /// Warna panel merek, mis. panel branding di layar login dan kepala menu samping.
+      /// Color of the brand panel, e.g. the branding panel on the login screen and the header of the side menu.
       /// </summary>
       public ThemeColor Brand { get; init; }
 
       /// <summary>
-      /// Teks/ikon dan hiasan di atas <see cref="Brand"/>. Di layar login warna ini juga dipakai
-      /// untuk hiasan samar di panel branding, jadi tampilnya bisa tipis, bukan bidang solid.
+      /// Text/icon and decoration on top of <see cref="Brand"/>. On the login screen this color is also used
+      /// for faint decoration on the branding panel, so it may appear thin, not as a solid surface.
       /// </summary>
       public ThemeColor OnBrand { get; init; }
 

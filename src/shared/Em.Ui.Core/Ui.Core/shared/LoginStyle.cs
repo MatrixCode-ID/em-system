@@ -1,11 +1,11 @@
 namespace Em.Ui.Core.Shared
 {
-   /// <summary>Pilihan layar login WPF; belum dipakai MAUI.</summary>
+   /// <summary>Choice of WPF login screen; not used by MAUI yet.</summary>
    public enum LoginStyle
    {
-      /// <summary>Card di tengah di atas background.</summary>
+      /// <summary>A card in the center over the background.</summary>
       Material,
-      /// <summary>Panel brand di kiri seperti tampilan sebelumnya.</summary>
+      /// <summary>A brand panel on the left, like the previous look.</summary>
       Classic
    }
 }

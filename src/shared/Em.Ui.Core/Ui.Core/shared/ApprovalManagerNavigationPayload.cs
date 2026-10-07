@@ -1,76 +1,75 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Parameter untuk membuka layar approval: mode mana yang ditampilkan, dan disaring ke apa.
+   /// Parameter for opening the approval screen: which mode is shown, and what it is filtered to.
    /// </summary>
    /// <remarks>
-   /// Layar yang sama dipakai tiga cara - dibuka dari menu alat tanpa saringan, dibuka dari daftar
-   /// pekerjaan sudah tersaring ke satu jenis dokumen, dan ditanam di layar sebuah dokumen dengan
-   /// saringan ke dokumen itu saja - jadi yang membedakannya hanya parameter ini.
+   /// The same screen is used in three ways - opened from the tools menu without a filter, opened from the
+   /// task list already filtered to one document type, and embedded in the screen of a document with a
+   /// filter to that document only - so what tells them apart is this parameter.
    /// </remarks>
    public class ApprovalManagerNavigationPayload : NavigationPayloadBase
    {
       /// <summary>
-      /// Nama navigasi layar approval bawaan aplikasi. Dibuka dengan parameter ini; membukanya tanpa
-      /// parameter sama dengan membuka mode "perlu tindakan saya" tanpa saringan.
+      /// Navigation name of the application's built-in approval screen. Opened with this parameter; opening it
+      /// without a parameter is the same as opening the "needs my action" mode without a filter.
       /// </summary>
       public const string NavigationName = "em.approval.manager";
 
-      /// <summary>Membuat parameter layar approval.</summary>
+      /// <summary>Creates the parameter of the approval screen.</summary>
       public ApprovalManagerNavigationPayload() : base(null) { }
 
       /// <summary>
-      /// <c>true</c> untuk hanya menampilkan request yang menunggu tindakan user aktif, <c>false</c>
-      /// untuk seluruh request yang boleh ia lihat.
+      /// <c>true</c> to show only requests waiting for the active user's action, <c>false</c> for all requests
+      /// they may see.
       /// </summary>
       public bool WaitingForMeOnly { get; set; } = true;
-      /// <summary>Membuka daftar request yang dapat ditandatangani sebagai pengganti.</summary>
+      /// <summary>Opens the list of requests that can be signed as a substitute.</summary>
       public bool CanSignAsSubstituteOnly { get; set; }
-      /// <summary>Pencarian yang dipertahankan ketika dokumen dibuka dalam tab sendiri.</summary>
+      /// <summary>The search that is kept when a document is opened in its own tab.</summary>
       public string? Search { get; set; }
-      /// <summary>Tahap yang dipertahankan ketika dokumen dibuka dalam tab sendiri.</summary>
+      /// <summary>The stage that is kept when a document is opened in its own tab.</summary>
       public Em.Api.Core.Models.ApprovalStage? Stage { get; set; }
-      /// <summary>Kolom urutan daftar asal.</summary>
+      /// <summary>Sort column of the originating list.</summary>
       public string? SortBy { get; set; }
-      /// <summary>Arah urutan daftar asal.</summary>
+      /// <summary>Sort direction of the originating list.</summary>
       public bool SortDescending { get; set; }
-      /// <summary>Halaman daftar asal.</summary>
+      /// <summary>Page of the originating list.</summary>
       public int Page { get; set; } = 1;
-      /// <summary>Ukuran halaman daftar asal.</summary>
+      /// <summary>Page size of the originating list.</summary>
       public int PageSize { get; set; } = 50;
 
-      /// <summary>Jenis dokumen yang ditampilkan, atau kosong untuk semua jenis.</summary>
+      /// <summary>The document type shown, or empty for all types.</summary>
       public string? DocType { get; set; }
 
       /// <summary>
-      /// Satu dokumen tertentu yang request-nya ditampilkan, dalam bentuk kunci bakunya. Dipakai saat
-      /// layarnya ditanam di layar dokumen. Butuh <see cref="DocType"/> ikut disebut.
+      /// One specific document whose requests are shown, in its canonical key form. Used when the screen is
+      /// embedded in a document screen. Requires <see cref="DocType"/> to be stated too.
       /// </summary>
       public string? DocKey { get; set; }
 
       /// <summary>
-      /// Versi dokumen yang request-nya ditampilkan, atau kosong untuk semua versi dokumen itu.
+      /// Version of the document whose requests are shown, or empty for all versions of that document.
       /// </summary>
       public string? DocVersion { get; set; }
 
       /// <summary>
-      /// Request yang langsung dibuka begitu layarnya tampil, atau kosong untuk membuka daftarnya saja.
-      /// Dipakai saat layarnya dibuka dari pemberitahuan atau dari tautan ke satu request.
+      /// The request that is opened directly as soon as the screen appears, or empty to open just its list.
+      /// Used when the screen is opened from a notification or from a link to a single request.
       /// </summary>
       public string? ApprovalRequestId { get; set; }
 
       /// <summary>
-      /// Tampilan ringkas untuk layar approval yang ditanam di ruang sempit, mis. flyout di layar
-      /// sebuah modul: satu kolom berisi usulan perubahan dan keputusan. Daftar request hanya muncul
-      /// sebagai pemilih kalau ada lebih dari satu, tautan ke layar lain disembunyikan, dan riwayat
-      /// tertutup sampai dibuka.
+      /// Compact display for an approval screen embedded in a narrow space, e.g. a flyout on a module's
+      /// screen: a single column holding the change proposals and the decision. The request list only appears
+      /// as a picker when there is more than one, links to other screens are hidden, and the history stays
+      /// closed until opened.
       /// </summary>
       public bool Compact { get; set; }
 
       /// <summary>
-      /// Judul entri yang dibuka dengan parameter ini. Jenis dokumennya ikut disebut supaya daftar yang
-      /// tersaring ke dua jenis dokumen berbeda menjadi dua entri, bukan satu entri yang isinya
-      /// berganti-ganti.
+      /// Title of the entry opened with this parameter. The document type is included so a list filtered to
+      /// two different document types becomes two entries, not one entry whose content keeps changing.
       /// </summary>
       public override string? Title => DocType is null ? null : $"Approval - {DocType}";
    }

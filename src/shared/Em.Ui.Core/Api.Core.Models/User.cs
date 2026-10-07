@@ -5,10 +5,12 @@ using Em.Ui.Core.Shared;
 
 namespace Em.Api.Core.Models
 {
+   /// <summary>UI model of one user account together with its contact, address, and default communication entry.</summary>
    public class User : UiModel<vi_User, ICredentialServices>
    {
       #region Statics
 
+      /// <summary>Creates a blank user that has never been saved; its key is a placeholder until it is saved.</summary>
       public static User CreateNewUser(IEmApp app) {
          // Both starting values go on the raw row rather than on the model, because that row also
          // becomes what RollBack returns to: anything set on the model afterwards would be wiped by
@@ -22,15 +24,18 @@ namespace Em.Api.Core.Models
          return user;
       }
 
+      /// <summary>Gets the number of users, for paging.</summary>
       public static Task<int> GetUsers_PageCountAsync(IEmApp app) =>
          app.ServiceProvider.GetRequiredService<ICredentialServices>().GetTa_Users_Count();
 
+      /// <summary>Gets one page of users.</summary>
       public static async Task<User[]> GetUsers_InPageAsync(IEmApp app, int page, int pageSize) {
          var svc = app.ServiceProvider.GetRequiredService<ICredentialServices>();
          var rows = await svc.GetVi_Users_InPage(page, pageSize);
          return [.. rows.Select(r => Build(app, r))];
       }
 
+      /// <summary>Gets one user by its id.</summary>
       public static async Task<User> GetUser_ByIdAsync(IEmApp app, string cUserId) {
          EnsureNotSystemAccount(cUserId);
          var svc = app.ServiceProvider.GetRequiredService<ICredentialServices>();
@@ -40,24 +45,24 @@ namespace Em.Api.Core.Models
             : Build(app, data!);
       }
 
+      /// <summary>Gets one user by its account name; throws when it does not exist.</summary>
       public static async Task<User> GetUser_ByAccountAsync(IEmApp app, string cUserAccount) =>
          (await GetUser_ByAccountAsync(app, cUserAccount, required: true))!;
 
       /// <summary>
-      /// Mencari user lewat nama akunnya. Dengan <paramref name="required"/> <c>false</c>, akun yang
-      /// tidak ketemu dijawab <c>null</c> alih-alih exception — untuk alur yang memang menganggap
-      /// "tidak ada akun itu" sebagai jawaban biasa, bukan kegagalan, seperti layar login yang nama
-      /// akunnya salah ketik.
+      /// Finds a user by account name. With <paramref name="required"/> <c>false</c>, an account that is not
+      /// found is answered with <c>null</c> instead of an exception - for flows that consider "no such
+      /// account" an ordinary answer, not a failure, like a login screen whose account name was mistyped.
       /// <para>
-      /// Akun sistem tetap ditolak dengan <see cref="SystemAccountException"/> berapa pun nilai
-      /// <paramref name="required"/>: mereka sama sekali tidak punya record untuk dibaca.
+      /// System accounts are still refused with <see cref="SystemAccountException"/> whatever the value of
+      /// <paramref name="required"/>: they have no record to read at all.
       /// </para>
       /// </summary>
-      /// <param name="app">Objek aplikasi pemilik service data.</param>
-      /// <param name="cUserAccount">Nama akun yang dicari.</param>
+      /// <param name="app">The application object that owns the data service.</param>
+      /// <param name="cUserAccount">The account name being looked up.</param>
       /// <param name="required">
-      /// <c>true</c> kalau akun wajib ada — tidak ketemu berarti exception; <c>false</c> kalau tidak
-      /// ketemu boleh dijawab <c>null</c>.
+      /// <c>true</c> when the account must exist - not found means an exception; <c>false</c> when not found
+      /// may be answered with <c>null</c>.
       /// </param>
       public static async Task<User?> GetUser_ByAccountAsync(IEmApp app, string cUserAccount, bool required) {
          var svc = app.ServiceProvider.GetRequiredService<ICredentialServices>();
@@ -70,6 +75,7 @@ namespace Em.Api.Core.Models
          return Build(app, data!);
       }
 
+      /// <summary>Wraps a user view row in a model.</summary>
       public static User Build(IEmApp app, vi_User data) => new(app, data);
    
       #endregion
@@ -78,81 +84,97 @@ namespace Em.Api.Core.Models
 
       #region Properties
 
+      /// <summary>Id of the user.</summary>
       public string cUserId {
          get;
          private set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>Account of the user.</summary>
       public string cUserAccount {
          get;
          set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>Id of the contact.</summary>
       public string cContactId {
          get;
          set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>State of the user.</summary>
       public UserState cUserState {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Is admin of the user.</summary>
       public bool cUserIsAdmin {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Full name of the contact.</summary>
       public string cContactFullName {
          get;
          set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>State of the contact.</summary>
       public ContactState cContactState {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Type of the contact.</summary>
       public ContactType cContactType {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Note of the contact.</summary>
       public string? cContactNote {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Name of the address.</summary>
       public string? cAddressName {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Location of the address.</summary>
       public string? cAddressLocation {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Zip of the address.</summary>
       public string? cAddressZip {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Type of the communication.</summary>
       public CommunationType cCommType {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>State of the communication.</summary>
       public ContactCommunicationState cCommState {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Value of the communication.</summary>
       public string cCommValue {
          get;
          set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>Note of the communication.</summary>
       public string? cCommNote {
          get;
          set => SetField(ref field, value);
@@ -178,6 +200,7 @@ namespace Em.Api.Core.Models
          }
       }
 
+      /// <inheritdoc />
       protected override async Task InsertAsync(vi_User entity) {
          EnsureNotSystemAccount(cUserId);
          entity.cUserId = $"{Ulid.NewUlid()}";
@@ -261,6 +284,7 @@ namespace Em.Api.Core.Models
                entity, contact, address, comm, credential));
       }
 
+      /// <inheritdoc />
       protected override void ReadFrom(vi_User source) {
          cUserId = source.cUserId;
          cUserAccount = source.cUserAccount;
@@ -283,6 +307,7 @@ namespace Em.Api.Core.Models
          json_object = source.json_object;
       }
 
+      /// <inheritdoc />
       protected override void WriteTo(vi_User target) {
          target.cUserId = cUserId;
          target.cUserAccount = cUserAccount;
@@ -305,11 +330,13 @@ namespace Em.Api.Core.Models
          target.json_object = json_object;
       }
 
+      /// <inheritdoc />
       protected override JsonObject BuildJson(JsonObject patch) => patch;
 
       /// <inheritdoc />
       protected override UiIconType DefaultUiIcon => UiIconType.User;
 
+      /// <inheritdoc />
       protected override Task<vi_User?> FetchAsync() {
          // ResetAsync reads the server through here and nowhere else, so guarding this one method
          // is what closes reloading for a system account as well.
@@ -317,6 +344,7 @@ namespace Em.Api.Core.Models
          return Service.GetVi_User_ById(cUserId);
       }
 
+      /// <inheritdoc />
       protected override async Task UpdateAsync(vi_User entity) {
          EnsureNotSystemAccount(cUserId);
          _contact ??= await Contact.GetContact_ByIdAsync(App, entity.cContactId)
@@ -352,22 +380,20 @@ namespace Em.Api.Core.Models
       }
       
       /// <summary>
-      /// Hak yang benar-benar dimiliki user ini, dimuat sekali oleh <c>EmApp.RefreshClaimsAsync</c>
-      /// saat user ini diangkat jadi pengguna aktif. Hak adalah milik orang, bukan milik koneksi -
-      /// jadi disimpan di sini, bukan di <c>ApiClient</c> - dan ikut hilang begitu user ini berhenti
-      /// menjadi pengguna aktif.
+      /// The rights this user really holds, loaded once by <c>EmApp.RefreshClaimsAsync</c> when this user is
+      /// made the active user. Rights belong to a person, not to a connection - so they are kept here, not in
+      /// <c>ApiClient</c> - and disappear as soon as this user stops being the active user.
       /// </summary>
-      // Bukan "internal": EmApp.RefreshClaimsAsync, satu-satunya pengisi yang semestinya, tinggal
-      // di assembly Em.Ui.Wpf.Core - berbeda dari assembly class ini - dan repo ini sengaja tidak
-      // memakai InternalsVisibleTo di mana pun (lihat CLAUDE.md backend). Batasnya karena itu adalah
-      // konvensi, bukan penegakan compiler: module tidak seharusnya menimpa nilai ini sendiri.
+      // Not "internal": EmApp.RefreshClaimsAsync, the one filler that should exist, lives in the
+      // Em.Ui.Wpf.Core assembly - different from this class's assembly - and this repo deliberately does not
+      // use InternalsVisibleTo anywhere (see the backend CLAUDE.md). The limit is therefore a convention, not
+      // compiler enforcement: modules should not overwrite this value themselves.
       public ClaimAction[] AvailableClaims { get; set; } = [];
 
       /// <summary>
-      /// Membaca hak yang benar-benar diberikan ke user ini dari server. Tidak boleh dipanggil untuk
-      /// akun sistem (debugger, admin bawaan): keduanya tidak punya baris pemberian untuk dibaca sama
-      /// sekali - <c>EmApp.RefreshClaimsAsync</c> mengetahui ini dan tidak pernah memanggilnya untuk
-      /// mereka.
+      /// Reads the rights that are really granted to this user from the server. Must not be called for system
+      /// accounts (debugger, built-in administrator): neither has any grant rows to read -
+      /// <c>EmApp.RefreshClaimsAsync</c> knows this and never calls it for them.
       /// </summary>
       public Task<ClaimAction[]> GetClaims() {
          EnsureNotSystemAccount(cUserId);
@@ -375,10 +401,10 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Membaca hak yang mengalir ke user ini lewat role yang dipegangnya. Yang dijawab server
-      /// hanya hak dari role yang sedang menyala dan penugasan yang masa berlakunya sedang jalan —
-      /// keputusan itu tidak pernah diambil di sini. Sepasang dengan <see cref="GetClaims"/>, dan
-      /// tertutup untuk akun sistem dengan alasan yang sama persis.
+      /// Reads the rights that flow to this user through the roles they hold. What the server answers is only
+      /// rights from roles that are on and assignments whose validity period is running - that decision is
+      /// never taken here. A pair with <see cref="GetClaims"/>, and closed to system accounts for exactly the
+      /// same reason.
       /// </summary>
       public Task<ClaimAction[]> GetRoleClaims() {
          EnsureNotSystemAccount(cUserId);

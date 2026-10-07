@@ -1,52 +1,51 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Jalur navigasi yang ditampilkan satu host: deretan entri yang bisa ditelusuri maju-mundur,
-   /// ditambah satu home opsional yang berdiri di depan jalur itu.
+   /// The navigation path shown by one host: a row of entries that can be traversed back and forth, plus
+   /// one optional home standing in front of that path.
    /// <para>
-   /// Aturannya: home tidak termasuk <see cref="Entries"/> - posisinya di depan jalur - dan body-nya
-   /// tidak pernah dilepas. Membuka layar baru membuang semua entri di depan posisi saat ini lalu
-   /// menambahkan entri baru di ujung. Mundur dari entri pertama mendarat di home tanpa membuang
-   /// jalur, jadi maju masih bisa kembali ke sana; <see cref="NavigateHome"/>-lah yang membersihkan
-   /// seluruh jalur.
+   /// The rules: home is not part of <see cref="Entries"/> - its position is in front of the path - and
+   /// its body is never released. Opening a new screen discards all entries ahead of the current position
+   /// and then adds the new entry at the end. Going back from the first entry lands on home without
+   /// discarding the path, so going forward can still return there; <see cref="NavigateHome"/> is what
+   /// clears the whole path.
    /// </para>
    /// </summary>
    public interface INavigationStack
    {
-      /// <summary>Entri-entri di jalur ini, urut dari yang pertama dibuka. Home tidak termasuk.</summary>
+      /// <summary>The entries of this path, in order from the first opened. Home is not included.</summary>
       IReadOnlyList<INavigationEntry> Entries { get; }
 
       /// <summary>
-      /// Entri yang sedang tampil - bisa juga <see cref="Home"/> - atau <c>null</c> kalau belum ada
-      /// yang pernah ditampilkan.
+      /// The entry currently shown - which may also be <see cref="Home"/> - or <c>null</c> when nothing has
+      /// ever been shown.
       /// </summary>
       INavigationEntry? Current { get; }
 
-      /// <summary>Entri home, atau <c>null</c> untuk stack tanpa home.</summary>
+      /// <summary>The home entry, or <c>null</c> for a stack without home.</summary>
       INavigationEntry? Home { get; }
 
-      /// <summary>Maju satu langkah di jalur ini.</summary>
-      /// <returns><c>false</c> kalau tidak ada entri di depan, atau perpindahannya ditolak.</returns>
+      /// <summary>Goes forward one step in this path.</summary>
+      /// <returns><c>false</c> when there is no entry ahead, or the move is refused.</returns>
       Task<bool> Forward();
 
-      /// <summary>Mundur satu langkah di jalur ini; dari entri pertama mundurnya ke home.</summary>
-      /// <returns><c>false</c> kalau tidak ada tempat untuk mundur, atau perpindahannya ditolak.</returns>
+      /// <summary>Goes back one step in this path; from the first entry going back lands on home.</summary>
+      /// <returns><c>false</c> when there is nowhere to go back to, or the move is refused.</returns>
       Task<bool> Backward();
 
       /// <summary>
-      /// Pulang ke home, lalu membersihkan dan melepas seluruh entri di jalur ini. Tidak melakukan
-      /// apa-apa pada stack tanpa home.
+      /// Goes home, then clears and releases all entries of this path. Does nothing for a stack without home.
       /// </summary>
       Task NavigateHome();
 
       /// <summary>
-      /// Membuang dan melepas seluruh entri di depan posisi saat ini. Dijalankan sendiri setiap kali
-      /// layar baru membuka cabang.
+      /// Discards and releases all entries ahead of the current position. Run automatically every time a new
+      /// screen opens a branch.
       /// </summary>
       Task ClearForwardStacks();
 
-      /// <summary>Apakah ada entri berjudul <paramref name="title"/> di jalur ini.</summary>
-      /// <param name="title">Judul entri yang dicari.</param>
+      /// <summary>Whether there is an entry titled <paramref name="title"/> in this path.</summary>
+      /// <param name="title">Title of the entry being looked for.</param>
       bool IsInStack(string title);
    }
 }

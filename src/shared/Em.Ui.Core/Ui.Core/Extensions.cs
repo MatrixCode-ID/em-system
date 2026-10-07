@@ -3,22 +3,23 @@ using Em.Shared;
 
 namespace Em.Ui.Core
 {
+   /// <summary>Extension methods for reading API responses.</summary>
    public static class Extensions
    {
       /// <summary>
-      /// Membaca respons HTTP dari sebuah action API sebagai <see cref="ActionResult"/>, lalu mengembalikan
-      /// <see cref="ActionResult.Data"/>-nya sebagai <typeparamref name="T"/>. Dipakai supaya pemanggil cukup
-      /// mengurusi nilai hasilnya saja, tanpa mengulang pemeriksaan status/error di setiap call site.
+      /// Reads the HTTP response of an API action as an <see cref="ActionResult"/>, then returns its
+      /// <see cref="ActionResult.Data"/> as <typeparamref name="T"/>. Used so callers only need to deal with
+      /// the result value, without repeating the status/error check at every call site.
       /// </summary>
-      /// <typeparam name="T">Tipe data yang diharapkan dari action.</typeparam>
-      /// <param name="task">Task pemanggilan HTTP yang akan ditunggu.</param>
+      /// <typeparam name="T">The data type expected from the action.</typeparam>
+      /// <param name="task">The HTTP call task to be awaited.</param>
       /// <returns>
-      /// Data hasil action, atau <c>default</c> kalau action tidak mengembalikan data
-      /// (<see cref="ActionResult.HasData"/> bernilai <c>false</c>).
+      /// The action's result data, or <c>default</c> when the action returns no data
+      /// (<see cref="ActionResult.HasData"/> is <c>false</c>).
       /// </returns>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau body respons tidak bisa dibaca sebagai <see cref="ActionResult"/>, atau kalau server
-      /// menandai hasilnya tidak valid.
+      /// Thrown when the response body cannot be read as an <see cref="ActionResult"/>, or when the server
+      /// marks the result invalid.
       /// </exception>
       internal static async Task<T> ProcessHttpResult<T>(this Task<HttpResponseMessage> task) {
          using var response = await task.ConfigureAwait(false);
@@ -54,14 +55,14 @@ namespace Em.Ui.Core
       }
 
       /// <summary>
-      /// Membaca respons HTTP dari action yang mengembalikan isi file. Jawaban sukses dikembalikan sebagai
-      /// stream yang dibaca langsung dari jaringan; jawaban gagal - yang tetap berupa amplop
-      /// <see cref="ActionResult"/> - dilempar persis seperti <see cref="ProcessHttpResult{T}"/>.
+      /// Reads the HTTP response of an action that returns file content. A successful answer is returned as a
+      /// stream read directly from the network; a failed answer - which is still an <see cref="ActionResult"/>
+      /// envelope - is thrown exactly like <see cref="ProcessHttpResult{T}"/>.
       /// </summary>
-      /// <returns>Stream isi jawaban; menutupnya ikut melepas respons HTTP-nya.</returns>
+      /// <returns>The stream of the answer content; closing it also releases its HTTP response.</returns>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau server menjawab dengan amplop JSON yang sukses, yang berarti action-nya bukan
-      /// action yang mengembalikan isi file.
+      /// Thrown when the server answers with a successful JSON envelope, which means the action is not one
+      /// that returns file content.
       /// </exception>
       internal static async Task<Stream> ProcessHttpStreamResult(this Task<HttpResponseMessage> task) {
          var response = await task.ConfigureAwait(false);

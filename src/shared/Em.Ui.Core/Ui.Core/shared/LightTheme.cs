@@ -1,19 +1,19 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Palet standar Em untuk mode terang, diturunkan dari warna merek: biru <c>#0F6CBD</c> sebagai
-   /// warna utama dan teal sebagai warna pendamping. Dipakai <see cref="BrandingInfo.LightTheme"/>
-   /// kalau aplikasi tidak memasang tema terang sendiri.
+   /// The standard Em palette for light mode, derived from the brand color: blue <c>#0F6CBD</c> as the
+   /// primary color and teal as the companion color. Used by <see cref="BrandingInfo.LightTheme"/> when the
+   /// application does not install its own light theme.
    /// </summary>
    /// <remarks>
-   /// Kelas ini sengaja tidak <c>sealed</c>: aplikasi boleh menurunkannya untuk mengganti sebagian
-   /// warna, atau cukup memakai object initializer, mis.
+   /// This class is deliberately not <c>sealed</c>: an application may derive from it to replace some of
+   /// the colors, or simply use an object initializer, e.g.
    /// <c>new LightTheme { Brand = ThemeColor.Parse("#7A1F2B") }</c>.
    /// </remarks>
    public class LightTheme : ThemeBase
    {
       /// <summary>
-      /// Membuat tema terang dengan palet standar Em.
+      /// Creates a light theme with the standard Em palette.
       /// </summary>
       public LightTheme() : base(ThemeVariant.Light) {
          Primary = ThemeColor.Parse("#0F6CBD");

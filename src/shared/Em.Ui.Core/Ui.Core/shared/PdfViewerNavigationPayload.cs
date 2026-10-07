@@ -1,32 +1,33 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Parameter untuk membuka viewer PDF bawaan aplikasi. Viewer ini bukan milik module mana pun dan
-   /// tidak dijaga claim: ia hanya menampilkan isi yang diberikan <see cref="Loader"/>. Karena itu
-   /// pemeriksaan hak ada di tempat isi PDF itu diambil - biasanya action server yang dipanggil
-   /// <see cref="Loader"/> - bukan di viewer.
+   /// Parameter for opening the application's built-in PDF viewer. This viewer belongs to no module and is
+   /// not guarded by a claim: it only shows the content supplied by <see cref="Loader"/>. The rights check
+   /// therefore lives where the PDF content is fetched - usually the server action called by
+   /// <see cref="Loader"/> - not in the viewer.
    /// </summary>
    /// <remarks>
-   /// Viewer tidak menyimpan hasil <see cref="Loader"/> dalam bentuk lain: yang disimpan lewat "Save as"
-   /// adalah byte yang dikembalikannya apa adanya, jadi PDF yang bertanda tangan digital tetap sah.
+   /// The viewer does not store the result of <see cref="Loader"/> in another form: what is saved through
+   /// "Save as" is the bytes it returned as-is, so a digitally signed PDF stays valid.
    /// </remarks>
    public class PdfViewerNavigationPayload : NavigationPayloadBase
    {
       private readonly string _title;
 
       /// <summary>
-      /// Membuat parameter viewer PDF.
+      /// Creates the parameter of the PDF viewer.
       /// </summary>
       /// <param name="title">
-      /// Judul tab/layar viewer, sekaligus kunci unik entrinya - lihat <see cref="NavigationPayloadBase.Title"/>.
-      /// Sertakan penanda unik dokumennya (mis. nomor dokumen), jangan hanya jenis dokumennya.
+      /// Title of the viewer's tab/screen, which is also its entry's unique key - see
+      /// <see cref="NavigationPayloadBase.Title"/>. Include the document's unique identifier (e.g. the
+      /// document number), not just its document type.
       /// </param>
       /// <param name="loader">
-      /// Fungsi yang mengambil isi PDF. Dipanggil saat viewer dibuka dan setiap kali tombol Refresh ditekan,
-      /// jadi harus bisa dipanggil berulang. Stream yang dikembalikan ditutup oleh viewer.
+      /// The function that fetches the PDF content. Called when the viewer opens and every time the Refresh
+      /// button is pressed, so it must be callable repeatedly. The stream it returns is closed by the viewer.
       /// </param>
       /// <param name="fileName">
-      /// Nama file bawaan saat user menyimpan PDF-nya, atau <c>null</c> untuk memakai judulnya.
+      /// The default file name when the user saves the PDF, or <c>null</c> to use the title.
       /// </param>
       public PdfViewerNavigationPayload(string title, Func<CancellationToken, Task<Stream>> loader,
          string? fileName = null) : base(null) {
@@ -37,16 +38,16 @@ namespace Em.Ui.Core.Shared
          FileName = fileName;
       }
 
-      /// <summary>Judul viewer, sekaligus kunci unik entrinya di seluruh aplikasi.</summary>
+      /// <summary>Title of the viewer, which is also its entry's unique key across the application.</summary>
       public override string Title => _title;
 
       /// <summary>
-      /// Fungsi yang mengambil isi PDF. Token-nya dibatalkan kalau viewer ditutup sebelum isinya selesai
-      /// diambil.
+      /// The function that fetches the PDF content. Its token is cancelled if the viewer is closed before the
+      /// content has been fetched.
       /// </summary>
       public Func<CancellationToken, Task<Stream>> Loader { get; }
 
-      /// <summary>Nama file bawaan saat PDF disimpan, atau <c>null</c> kalau mengikuti judulnya.</summary>
+      /// <summary>The default file name when the PDF is saved, or <c>null</c> to follow the title.</summary>
       public string? FileName { get; }
    }
 }

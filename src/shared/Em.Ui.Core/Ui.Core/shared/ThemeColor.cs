@@ -3,25 +3,25 @@ using System.Globalization;
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Satu warna tema dalam bentuk ARGB, tidak terikat framework UI mana pun. Tiap client
-   /// menerjemahkannya sendiri ke tipe warnanya (WPF, MAUI, atau pustaka kontrol pihak ketiga).
+   /// One theme color in ARGB form, not tied to any UI framework. Each client translates it to its own
+   /// color type (WPF, MAUI, or a third-party control library).
    /// </summary>
-   /// <param name="A">Alpha, 0 = transparan penuh, 255 = pekat.</param>
-   /// <param name="R">Komponen merah.</param>
-   /// <param name="G">Komponen hijau.</param>
-   /// <param name="B">Komponen biru.</param>
+   /// <param name="A">Alpha, 0 = fully transparent, 255 = opaque.</param>
+   /// <param name="R">The red component.</param>
+   /// <param name="G">The green component.</param>
+   /// <param name="B">The blue component.</param>
    public readonly record struct ThemeColor(byte A, byte R, byte G, byte B)
    {
       /// <summary>
-      /// Membuat warna pekat (alpha 255) dari komponen merah, hijau, dan biru.
+      /// Creates an opaque color (alpha 255) from red, green, and blue components.
       /// </summary>
       public static ThemeColor FromRgb(byte r, byte g, byte b) => new(255, r, g, b);
 
       /// <summary>
-      /// Membaca warna dari teks heksadesimal <c>#RRGGBB</c> atau <c>#AARRGGBB</c> (tanda <c>#</c>
-      /// boleh tidak ditulis) - format yang sama dengan yang dipakai di XAML.
+      /// Reads a color from hexadecimal text <c>#RRGGBB</c> or <c>#AARRGGBB</c> (the <c>#</c> sign may be
+      /// omitted) - the same format as used in XAML.
       /// </summary>
-      /// <exception cref="FormatException">Teksnya bukan warna heksadesimal 6 atau 8 digit.</exception>
+      /// <exception cref="FormatException">The text is not a 6 or 8 digit hexadecimal color.</exception>
       public static ThemeColor Parse(string hex) {
          ArgumentNullException.ThrowIfNull(hex);
 
@@ -37,13 +37,13 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Warna yang sama dengan alpha lain, mis. untuk latar chip yang memakai warna status dengan
-      /// kepekatan rendah.
+      /// The same color with another alpha, e.g. for the background of a chip that uses the status color at
+      /// low opacity.
       /// </summary>
       public ThemeColor WithAlpha(byte alpha) => this with { A = alpha };
 
       /// <summary>
-      /// Warna dalam bentuk teks <c>#AARRGGBB</c>, bisa dibaca kembali lewat <see cref="Parse"/>.
+      /// The color as <c>#AARRGGBB</c> text, which can be read back through <see cref="Parse"/>.
       /// </summary>
       public override string ToString() => $"#{A:X2}{R:X2}{G:X2}{B:X2}";
    }

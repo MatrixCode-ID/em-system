@@ -1,31 +1,31 @@
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Dilempar saat ada permintaan membaca atau menulis record milik akun sistem — akun debugger dan
-   /// akun administrator. Keduanya cuma berdiri sebagai pengganti user yang login; tidak pernah ada
-   /// baris user yang ditulis untuk mereka, jadi permintaannya ditolak di tempat, bukan dijawab kosong
-   /// seolah record-nya pernah ada lalu dihapus.
+   /// Thrown when a request is made to read or write a record belonging to a system account - the
+   /// debugger account and the administrator account. Both only stand in for the signed-in user; no user
+   /// row is ever written for them, so the request is refused on the spot, not answered empty as if the
+   /// record once existed and was deleted.
    /// <para>
-   /// Turunan <see cref="InvalidOperationException"/> supaya pemanggil lama yang menangkap exception
-   /// secara umum tidak berubah perilakunya. Tipe tersendiri diadakan karena ada alur yang perlu
-   /// membedakan penolakan ini dari kegagalan lain — layar login, yang harus melaporkannya sebagai
-   /// "kredensial salah" alih-alih sebagai gangguan server — dan membedakannya lewat teks pesan jelas
-   /// tidak bisa diandalkan.
+   /// It derives from <see cref="InvalidOperationException"/> so older callers that catch exceptions in
+   /// general keep their behavior. A type of its own exists because some flows need to tell this refusal
+   /// apart from other failures - the login screen, which must report it as "wrong credentials" rather
+   /// than as a server disturbance - and telling it apart through the message text clearly cannot be
+   /// relied on.
    /// </para>
    /// </summary>
    public class SystemAccountException : InvalidOperationException
    {
       /// <summary>
-      /// Membuat exception penolakan akun sistem.
+      /// Creates the system account refusal exception.
       /// </summary>
-      /// <param name="message">Penjelasan kenapa permintaannya ditolak.</param>
-      /// <param name="accountId">Id akun sistem yang diminta.</param>
+      /// <param name="message">Explanation of why the request was refused.</param>
+      /// <param name="accountId">Id of the system account that was requested.</param>
       public SystemAccountException(string message, string accountId) : base(message) {
          AccountId = accountId;
       }
 
       /// <summary>
-      /// Id akun sistem yang membuat permintaan ini ditolak.
+      /// Id of the system account that caused this request to be refused.
       /// </summary>
       public string AccountId { get; }
    }

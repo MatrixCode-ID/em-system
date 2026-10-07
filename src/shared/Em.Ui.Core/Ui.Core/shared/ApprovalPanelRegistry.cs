@@ -3,13 +3,13 @@ using Em.Shared;
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Seluruh panel dan layar dokumen yang didaftarkan modul ke layar approval, dibekukan sejak
-   /// aplikasi dibangun.
+   /// All panels and document screens that modules register with the approval screen, frozen since the
+   /// application was built.
    /// </summary>
    /// <remarks>
-   /// Layar approval membacanya untuk tahu apa yang perlu dipasang bagi jenis dokumen yang sedang
-   /// dibuka. Selalu tersedia - juga saat tidak ada satu panel pun terdaftar - supaya layarnya tidak
-   /// perlu tahu bedanya.
+   /// The approval screen reads it to know what to attach for the document type being opened. Always
+   /// available - even when no panel is registered at all - so the screen does not need to know the
+   /// difference.
    /// </remarks>
    public class ApprovalPanelRegistry
    {
@@ -17,33 +17,32 @@ namespace Em.Ui.Core.Shared
       private readonly List<ApprovalInfoPanelRegistration> _infoPanels = [];
       private readonly List<ApprovalDocumentOpenerRegistration> _documentOpeners = [];
 
-      /// <summary>Panel isian per langkah.</summary>
+      /// <summary>Input panels per step.</summary>
       public IReadOnlyList<ApprovalStepPanelRegistration> StepPanels => _stepPanels;
 
-      /// <summary>Kartu informasi, sudah terurut sesuai urutan yang diminta modul.</summary>
+      /// <summary>Info cards, already sorted in the order requested by their modules.</summary>
       public IReadOnlyList<ApprovalInfoPanelRegistration> InfoPanels => _infoPanels;
 
-      /// <summary>Cara membuka layar dokumen sebuah jenis dokumen.</summary>
+      /// <summary>How to open the document screen of a document type.</summary>
       public IReadOnlyList<ApprovalDocumentOpenerRegistration> DocumentOpeners => _documentOpeners;
 
       /// <summary>
-      /// Panel isian sebuah langkah, atau kosong kalau langkah itu tidak punya panel.
+      /// The input panel of a step, or empty when that step has no panel.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
-      /// <param name="stepName">Nama langkahnya.</param>
+      /// <param name="docType">The document type.</param>
+      /// <param name="stepName">Name of the step.</param>
       public ApprovalStepPanelRegistration? FindStepPanel(string docType, string stepName) =>
          _stepPanels.FirstOrDefault(r =>
             string.Equals(r.DocType, docType, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(r.StepName, stepName, StringComparison.OrdinalIgnoreCase));
 
       /// <summary>
-      /// Kartu informasi yang berlaku untuk sebuah langkah, terurut. Kartu yang tidak menyebut langkah
-      /// apa pun berlaku untuk semua langkah jenis dokumen itu.
+      /// The info cards that apply to a step, in order. A card that names no step applies to all steps of
+      /// that document type.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
+      /// <param name="docType">The document type.</param>
       /// <param name="stepName">
-      /// Langkah yang sedang dibuka, atau kosong untuk mengambil kartu yang berlaku untuk semua langkah
-      /// saja.
+      /// The step being opened, or empty to take only the cards that apply to all steps.
       /// </param>
       public IReadOnlyList<ApprovalInfoPanelRegistration> FindInfoPanels(string docType, string? stepName) =>
          [.. _infoPanels
@@ -53,25 +52,24 @@ namespace Em.Ui.Core.Shared
             .OrderBy(r => r.Order)];
 
       /// <summary>
-      /// Cara membuka layar dokumen sebuah jenis dokumen, atau kosong kalau modulnya tidak
-      /// mendaftarkannya.
+      /// How to open the document screen of a document type, or empty when its module does not register one.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
+      /// <param name="docType">The document type.</param>
       public ApprovalDocumentOpenerRegistration? FindDocumentOpener(string docType) =>
          _documentOpeners.FirstOrDefault(r =>
             string.Equals(r.DocType, docType, StringComparison.OrdinalIgnoreCase));
 
       /// <summary>
-      /// Menambahkan panel isian satu langkah. Dipanggil saat aplikasi dibangun, lewat
-      /// <c>EmAppBuilder.AddApprovalStepPanel</c>; sesudah itu katalognya tidak berubah lagi.
+      /// Adds the input panel of one step. Called while the application is built, through
+      /// <c>EmAppBuilder.AddApprovalStepPanel</c>; after that the catalog does not change.
       /// </summary>
-      /// <param name="registration">Panel yang didaftarkan.</param>
+      /// <param name="registration">The panel being registered.</param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau langkah itu sudah punya panel isian.
+      /// Thrown when that step already has an input panel.
       /// </exception>
-      // Bukan "internal": pemanggilnya tinggal di assembly UI yang berbeda, dan repo ini sengaja
-      // tidak memakai InternalsVisibleTo di mana pun. Batasnya karena itu konvensi, bukan penegakan
-      // compiler - katalog ini hanya diisi selama aplikasi dibangun.
+      // Not "internal": its callers live in a different UI assembly, and this repo deliberately does not use
+      // InternalsVisibleTo anywhere. The limit is therefore a convention, not compiler enforcement - this
+      // catalog is only filled while the application is being built.
       public void Add(ApprovalStepPanelRegistration registration) {
          if (FindStepPanel(registration.DocType, registration.StepName) is not null) {
             throw new InvalidOperationException(
@@ -83,19 +81,19 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menambahkan satu kartu informasi. Dipanggil saat aplikasi dibangun, lewat
+      /// Adds one info card. Called while the application is built, through
       /// <c>EmAppBuilder.AddApprovalInfoPanel</c>.
       /// </summary>
-      /// <param name="registration">Kartu yang didaftarkan.</param>
+      /// <param name="registration">The card being registered.</param>
       public void Add(ApprovalInfoPanelRegistration registration) => _infoPanels.Add(registration);
 
       /// <summary>
-      /// Menambahkan cara membuka layar dokumen sebuah jenis dokumen. Dipanggil saat aplikasi
-      /// dibangun, lewat <c>EmAppBuilder.AddApprovalDocumentOpener</c>.
+      /// Adds how to open the document screen of a document type. Called while the application is built,
+      /// through <c>EmAppBuilder.AddApprovalDocumentOpener</c>.
       /// </summary>
-      /// <param name="registration">Cara membuka dokumen yang didaftarkan.</param>
+      /// <param name="registration">The way of opening the document being registered.</param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau jenis dokumen itu sudah punya cara membuka dokumennya.
+      /// Thrown when that document type already has a way of opening its document.
       /// </exception>
       public void Add(ApprovalDocumentOpenerRegistration registration) {
          if (FindDocumentOpener(registration.DocType) is not null) {
@@ -107,44 +105,43 @@ namespace Em.Ui.Core.Shared
       }
    }
 
-   /// <summary>Panel isian satu langkah, seperti yang didaftarkan modul.</summary>
-   /// <param name="DocType">Jenis dokumennya.</param>
-   /// <param name="StepName">Langkah yang panelnya dipasang.</param>
-   /// <param name="ViewType">Tipe tampilan panelnya.</param>
+   /// <summary>The input panel of one step, as registered by the module.</summary>
+   /// <param name="DocType">The document type.</param>
+   /// <param name="StepName">The step whose panel is attached.</param>
+   /// <param name="ViewType">Type of the panel's view.</param>
    /// <param name="ViewModelType">
-   /// Tipe view model panelnya, yang mengimplementasikan <see cref="IApprovalPanel"/>.
+   /// Type of the panel's view model, which implements <see cref="IApprovalPanel"/>.
    /// </param>
    public record ApprovalStepPanelRegistration(string DocType, string StepName, Type ViewType, Type ViewModelType);
 
-   /// <summary>Kartu informasi, seperti yang didaftarkan modul.</summary>
-   /// <param name="DocType">Jenis dokumen tempat kartu ini tampil.</param>
-   /// <param name="ViewType">Tipe tampilan kartunya.</param>
+   /// <summary>An info card, as registered by the module.</summary>
+   /// <param name="DocType">The document type where this card appears.</param>
+   /// <param name="ViewType">Type of the card's view.</param>
    /// <param name="Steps">
-   /// Langkah-langkah yang kartunya tampil. Kosong berarti kartunya tampil di semua langkah jenis
-   /// dokumen itu.
+   /// The steps where the card appears. Empty means the card appears on all steps of that document type.
    /// </param>
    /// <param name="Input">
-   /// Cara menyusun keterangan awal kartunya dari request yang sedang dibuka - misalnya mengambil
-   /// identitas pihak yang datanya ditampilkan kartu itu. Kosong berarti kartunya tidak butuh apa-apa.
+   /// How to compose the card's initial info from the request being opened - for example taking the
+   /// identity of the party whose data the card shows. Empty means the card needs nothing.
    /// </param>
    /// <param name="Claim">
-   /// Claim yang harus dipegang user supaya kartunya tampil, atau kosong kalau kartunya terbuka bagi
-   /// siapa pun yang boleh melihat request itu. Dipakai kartu yang menampilkan data milik modul lain.
+   /// The claim the user must hold for the card to appear, or empty when the card is open to anyone who
+   /// may view that request. Used by cards that show data belonging to another module.
    /// </param>
-   /// <param name="Order">Urutan kartunya; yang lebih kecil tampil lebih dulu.</param>
+   /// <param name="Order">Order of the card; a smaller value appears first.</param>
    public record ApprovalInfoPanelRegistration(string DocType, Type ViewType, IReadOnlyList<string> Steps,
       Func<IApprovalPanelHost, object?>? Input, ClaimAction? Claim, int Order);
 
-   /// <summary>Cara membuka layar dokumen sebuah jenis dokumen dari layar approval.</summary>
-   /// <param name="DocType">Jenis dokumennya.</param>
-   /// <param name="NavigationName">Nama navigasi layar dokumennya.</param>
+   /// <summary>How to open the document screen of a document type from the approval screen.</summary>
+   /// <param name="DocType">The document type.</param>
+   /// <param name="NavigationName">Navigation name of its document screen.</param>
    /// <param name="Parameter">
-   /// Cara menyusun parameter navigasinya dari request yang sedang dibuka. Kosong berarti layarnya
-   /// dibuka tanpa parameter.
+   /// How to compose its navigation parameter from the request being opened. Empty means the screen is
+   /// opened without a parameter.
    /// </param>
    /// <remarks>
-   /// Layar dokumennya dibuka untuk dibaca, bukan untuk diubah: dokumen yang sedang menunggu keputusan
-   /// terkunci.
+   /// The document screen is opened to be read, not to be changed: a document waiting for a decision is
+   /// locked.
    /// </remarks>
    public record ApprovalDocumentOpenerRegistration(string DocType, string NavigationName,
       Func<IApprovalPanelHost, object?>? Parameter);

@@ -1,19 +1,20 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Pengaturan tampilan brand aplikasi: logo, teks-teks di panel branding layar login, dan tema
-   /// terang/gelap yang dipakai seluruh aplikasi. Dipasang lewat <c>EmAppBuilder.ApplyBranding</c>;
-   /// semua propertinya opsional dan jatuh ke nilai bawaan generik kalau dibiarkan kosong.
+   /// Settings for the application's brand display: the logo, the texts on the login screen's branding
+   /// panel, and the light/dark themes used across the application. Installed through
+   /// <c>EmAppBuilder.ApplyBranding</c>; all properties are optional and fall back to generic defaults
+   /// when left empty.
    /// </summary>
    /// <remarks>
-   /// Kelas ini hanya data dan sama untuk semua client. Cara memuat logo dan menerjemahkan warna tema
-   /// menjadi urusan core masing-masing platform.
+   /// This class is only data and is the same for all clients. How the logo is loaded and how theme colors
+   /// are translated is the business of each platform's core.
    /// </remarks>
    public sealed class BrandingInfo
    {
-      // Nilai bawaan generik dipakai kalau properti terkait di bawah dibiarkan kosong. Sengaja tidak
-      // menyebut nama perusahaan tertentu supaya masuk akal untuk aplikasi mana pun yang belum
-      // memanggil EmAppBuilder.ApplyBranding sama sekali.
+      // Generic defaults are used when the matching property below is left empty. Deliberately they name no
+      // particular company so they make sense for any application that never called
+      // EmAppBuilder.ApplyBranding at all.
       private const string DefaultTitle = "Your Company";
       private const string DefaultTagline = "Enterprise Application";
 
@@ -24,116 +25,117 @@ namespace Em.Ui.Core.Shared
       private ThemeBase _darkTheme = new DarkTheme();
 
       /// <summary>
-      /// Lokasi logo aplikasi. Cara menafsirkannya ditentukan core platform yang menampilkannya:
+      /// Location of the application logo. How it is interpreted is decided by the platform core that shows it:
       /// <list type="bullet">
-      /// <item>WPF: pack URI ke resource milik project aplikasi, mis.
-      /// <c>"pack://application:,,,/Em.Ui.Wpf;component/Logo.png"</c>. Core WPF hanya memuat bitmap
-      /// (<c>.png</c>, <c>.jpg</c>, <c>.ico</c>, <c>.bmp</c>); format lain (mis. <c>.svg</c>) butuh
-      /// pemuat logo tambahan yang dipasang aplikasi.</item>
-      /// <item>MAUI: nama file gambar di <c>Resources/Images</c> milik project aplikasi, huruf kecil,
-      /// dengan akhiran <c>.png</c> juga untuk file <c>.svg</c> (MAUI mengubahnya jadi bitmap saat
-      /// build).</item>
+      /// <item>WPF: a pack URI to a resource of the application project, e.g.
+      /// <c>"pack://application:,,,/Em.Ui.Wpf;component/Logo.png"</c>. The WPF core only loads bitmaps
+      /// (<c>.png</c>, <c>.jpg</c>, <c>.ico</c>, <c>.bmp</c>); other formats (e.g. <c>.svg</c>) need an
+      /// additional logo loader installed by the application.</item>
+      /// <item>MAUI: the name of an image file in the application project's <c>Resources/Images</c>,
+      /// lowercase, with the <c>.png</c> extension also for <c>.svg</c> files (MAUI converts it to a bitmap at
+      /// build time).</item>
       /// </list>
-      /// Kalau dibiarkan kosong atau gagal dimuat, dipakai logo bawaan core platform.
+      /// When left empty or when it fails to load, the platform core's default logo is used.
       /// </summary>
       public string? LogoSource { get; set; }
 
-      /// <summary>Pilihan layar login WPF; bawaannya Material. Belum dipakai MAUI.</summary>
+      /// <summary>Choice of WPF login screen; the default is Material. Not used by MAUI yet.</summary>
       public LoginStyle LoginStyle { get; set; } = LoginStyle.Material;
 
       /// <summary>
-      /// Background terang, hanya untuk WPF dengan LoginStyle.Material; diabaikan Classic dan MAUI.
-      /// Tafsiran sama dengan LogoSource: pack URI atau URI absolut, bitmap kecuali ada ILogoImageLoader.
-      /// Disarankan lebar sekitar 1920 px. Jika hanya satu gambar diisi, dipakai di kedua mode;
-      /// mode gelap meredupkan gambar terang yang dipinjam. Gagal dimuat jatuh ke mode lain lalu gradien.
+      /// Light background, only for WPF with LoginStyle.Material; ignored by Classic and MAUI.
+      /// Interpreted the same as LogoSource: a pack URI or an absolute URI, a bitmap unless an ILogoImageLoader exists.
+      /// A width of about 1920 px is recommended. If only one image is filled in, it is used in both modes;
+      /// dark mode dims a borrowed light image. A failure to load falls back to the other mode, then to a gradient.
       /// </summary>
       public string? LightLoginBackground { get; set; }
 
       /// <summary>
-      /// Background gelap, hanya untuk WPF dengan LoginStyle.Material; diabaikan Classic dan MAUI.
-      /// Tafsiran sama dengan LogoSource: pack URI atau URI absolut, bitmap kecuali ada ILogoImageLoader.
-      /// Disarankan lebar sekitar 1920 px. Jika hanya satu gambar diisi, dipakai di kedua mode;
-      /// mode gelap meredupkan gambar terang yang dipinjam. Gagal dimuat jatuh ke mode lain lalu gradien.
+      /// Dark background, only for WPF with LoginStyle.Material; ignored by Classic and MAUI.
+      /// Interpreted the same as LogoSource: a pack URI or an absolute URI, a bitmap unless an ILogoImageLoader exists.
+      /// A width of about 1920 px is recommended. If only one image is filled in, it is used in both modes;
+      /// dark mode dims a borrowed light image. A failure to load falls back to the other mode, then to a gradient.
       /// </summary>
       public string? DarkLoginBackground { get; set; }
 
       /// <summary>
-      /// Lokasi ikon aplikasi untuk window (ikon di taskbar dan baris judul) dan logo kecil di baris judul
-      /// window utama. Hanya dipakai WPF: pack URI ke berkas <c>.ico</c> (atau bitmap) milik project
-      /// aplikasi, mis. <c>"pack://application:,,,/Em.Ui.Wpf;component/Logo.ico"</c>. Ikon berkas
-      /// <c>.exe</c> di Explorer tidak ikut berubah; itu diatur <c>ApplicationIcon</c> di project
-      /// aplikasi. Kalau dibiarkan kosong atau gagal dimuat, dipakai ikon bawaan core.
+      /// Location of the application icon for windows (the icon on the taskbar and in the title bar) and the
+      /// small logo in the main window's title bar. Used by WPF only: a pack URI to an <c>.ico</c> file (or
+      /// bitmap) of the application project, e.g. <c>"pack://application:,,,/Em.Ui.Wpf;component/Logo.ico"</c>.
+      /// The icon of the <c>.exe</c> file in Explorer does not change with it; that is set by
+      /// <c>ApplicationIcon</c> in the application project. When left empty or when it fails to load, the
+      /// core's default icon is used.
       /// </summary>
       public string? IconSource { get; set; }
 
       /// <summary>
-      /// Judul brand di panel login (mis. <c>"EM"</c>), ditampilkan besar di bawah logo. Kalau
-      /// dibiarkan kosong, dipakai <c>"Your Company"</c>.
+      /// Brand title on the login panel (e.g. <c>"EM"</c>), shown large below the logo. When left empty,
+      /// <c>"Your Company"</c> is used.
       /// </summary>
       public string? Title { get; set; }
 
       /// <summary>
-      /// Sub-judul brand di panel login (mis. <c>"Corporate Service Management"</c>), ditampilkan tepat
-      /// di bawah <see cref="Title"/>. Kalau dibiarkan kosong, dipakai <c>"Enterprise Application"</c>.
+      /// Brand subtitle on the login panel (e.g. <c>"Corporate Service Management"</c>), shown right below
+      /// <see cref="Title"/>. When left empty, <c>"Enterprise Application"</c> is used.
       /// </summary>
       public string? Tagline { get; set; }
 
       /// <summary>
-      /// Paragraf deskripsi singkat di panel login, di bawah garis pemisah. Kalau dibiarkan kosong,
-      /// dipakai kalimat generik yang tidak menyebut nama perusahaan tertentu.
+      /// Short description paragraph on the login panel, below the divider line. When left empty, a generic
+      /// sentence that names no particular company is used.
       /// </summary>
       public string? Description { get; set; }
 
       /// <summary>
-      /// Teks hak cipta di footer panel login (mis. <c>"© 2026 EM. All rights reserved."</c>). Kalau
-      /// dibiarkan kosong, dipakai <c>"© {tahun berjalan} Your Company. All rights reserved."</c>.
+      /// Copyright text in the footer of the login panel (e.g. <c>"© 2026 EM. All rights reserved."</c>). When
+      /// left empty, <c>"© {current year} Your Company. All rights reserved."</c> is used.
       /// </summary>
       public string? Copyright { get; set; }
 
       /// <summary>
-      /// Tema untuk mode terang. Bawaannya <see cref="Shared.LightTheme"/> (palet standar Em).
+      /// Theme for light mode. The default is <see cref="Shared.LightTheme"/> (the standard Em palette).
       /// </summary>
-      /// <exception cref="ArgumentException">Tema yang dipasang bukan tema mode terang.</exception>
+      /// <exception cref="ArgumentException">The theme that was set is not a light mode theme.</exception>
       public ThemeBase LightTheme {
          get => _lightTheme;
          set => _lightTheme = Validate(value, ThemeVariant.Light);
       }
 
       /// <summary>
-      /// Tema untuk mode gelap. Bawaannya <see cref="Shared.DarkTheme"/> (palet standar Em).
+      /// Theme for dark mode. The default is <see cref="Shared.DarkTheme"/> (the standard Em palette).
       /// </summary>
-      /// <exception cref="ArgumentException">Tema yang dipasang bukan tema mode gelap.</exception>
+      /// <exception cref="ArgumentException">The theme that was set is not a dark mode theme.</exception>
       public ThemeBase DarkTheme {
          get => _darkTheme;
          set => _darkTheme = Validate(value, ThemeVariant.Dark);
       }
 
       /// <summary>
-      /// Judul brand yang sebenarnya ditampilkan di panel login: <see cref="Title"/> kalau diisi,
-      /// atau <c>"Your Company"</c> kalau tidak.
+      /// The brand title that is actually shown on the login panel: <see cref="Title"/> when filled in, or
+      /// <c>"Your Company"</c> when not.
       /// </summary>
       public string DisplayTitle => Title ?? DefaultTitle;
 
       /// <summary>
-      /// Sub-judul brand yang sebenarnya ditampilkan: <see cref="Tagline"/> kalau diisi, atau
-      /// <c>"Enterprise Application"</c> kalau tidak.
+      /// The brand subtitle that is actually shown: <see cref="Tagline"/> when filled in, or
+      /// <c>"Enterprise Application"</c> when not.
       /// </summary>
       public string DisplayTagline => Tagline ?? DefaultTagline;
 
       /// <summary>
-      /// Paragraf deskripsi yang sebenarnya ditampilkan: <see cref="Description"/> kalau diisi, atau
-      /// kalimat generik bawaan kalau tidak.
+      /// The description paragraph that is actually shown: <see cref="Description"/> when filled in, or the
+      /// default generic sentence when not.
       /// </summary>
       public string DisplayDescription => Description ?? DefaultDescriptionText;
 
       /// <summary>
-      /// Teks hak cipta yang sebenarnya ditampilkan: <see cref="Copyright"/> kalau diisi, atau
-      /// <c>"© {tahun berjalan} Your Company. All rights reserved."</c> kalau tidak.
+      /// The copyright text that is actually shown: <see cref="Copyright"/> when filled in, or
+      /// <c>"© {current year} Your Company. All rights reserved."</c> when not.
       /// </summary>
       public string DisplayCopyright => Copyright ?? $"© {DateTime.Now.Year} {DefaultTitle}. All rights reserved.";
 
       /// <summary>
-      /// Tema untuk mode yang diminta: <see cref="LightTheme"/> atau <see cref="DarkTheme"/>.
+      /// The theme for the requested mode: <see cref="LightTheme"/> or <see cref="DarkTheme"/>.
       /// </summary>
       public ThemeBase GetTheme(ThemeVariant variant) => variant == ThemeVariant.Light ? LightTheme : DarkTheme;
 

@@ -6,14 +6,15 @@ using Em.Ui.Core.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Model UI untuk satu baris kontak beserta alamat dan kontak-komunikasi default-nya,
-   /// dibaca dari tampilan gabungan kontak. Kolom hasil gabungan bersifat baca-saja; yang bisa
-   /// diubah dan disimpan hanyalah kolom milik kontak itu sendiri.
+   /// UI model of one contact row together with its default address and communication contact, read from
+   /// the combined contact view. The combined columns are read-only; only the contact's own columns can be
+   /// changed and saved.
    /// </summary>
    public class Contact : UiModel<vi_Contact, IContactServices>
    {
       #region Statics
 
+      /// <summary>Creates a new contact on the server and returns its model.</summary>
       public static async Task<Contact> NewContactAsync(IEmApp app, string fullName,
          ContactType contactType, ContactState contactState = ContactState.Active,
          string? note = null, string? jsonObject = null) {
@@ -34,6 +35,7 @@ namespace Em.Api.Core.Models
          return result!;
       }
 
+      /// <summary>Gets one contact by its id, or <c>null</c> when it does not exist.</summary>
       public static async Task<Contact?> GetContact_ByIdAsync(IEmApp app, string cContactId) {
          EnsureNotSystemContact(cContactId);
          var svc = app.ServiceProvider.GetRequiredService<IContactServices>();
@@ -41,8 +43,10 @@ namespace Em.Api.Core.Models
          return data != null ? Build(app, data) : null;
       }
 
+      /// <summary>Wraps a contact view row in a model.</summary>
       public static Contact Build(IEmApp app, vi_Contact data) => new(app, data);
 
+      /// <summary>Gets one page of contacts.</summary>
       public static async Task<Contact[]> GetContactsInPageAsync(IEmApp app, int page, int pageSize) {
          var svc = app.ServiceProvider.GetRequiredService<IContactServices>();
          var rows = await svc.GetVi_Contacts_InPage(page, pageSize);
@@ -50,18 +54,18 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Mencari kontak dari teks bebas dan mengembalikan paling banyak <paramref name="maxResults"/> baris,
-      /// terurut dari yang paling mirip dengan teks yang dicari. Teks dipecah per spasi dan setiap potongnya
-      /// wajib ketemu, jadi "budi jakarta" hanya mencocokkan kontak yang memuat kedua kata itu. Penyaringan,
-      /// pengurutan, dan pembatasan jumlah baris semuanya dikerjakan di sisi server, jadi yang dikirim ke
-      /// aplikasi hanya baris yang benar-benar dipakai.
+      /// Searches contacts from free text and returns at most <paramref name="maxResults"/> rows, ordered from
+      /// the closest match to the searched text. The text is split by spaces and every piece must be found, so
+      /// "budi jakarta" only matches contacts that contain both words. Filtering, ordering, and limiting the
+      /// number of rows are all done on the server side, so only the rows that are really used are sent to the
+      /// application.
       /// </summary>
-      /// <param name="app">Aplikasi tempat layanan kontak diambil.</param>
-      /// <param name="searchType">Menentukan kolom mana yang ikut dicari: seluruh kolom teks kontak, hanya nama
-      /// lengkap, atau hanya lokasi alamat.</param>
-      /// <param name="searchTerm">Teks yang dicari; kosong atau hanya spasi langsung menghasilkan array kosong
-      /// tanpa memanggil server.</param>
-      /// <param name="maxResults">Batas jumlah baris yang diminta. Nilai di bawah 1 diganti 200 oleh server.</param>
+      /// <param name="app">The application the contact service is taken from.</param>
+      /// <param name="searchType">Decides which columns are searched: all text columns of the contact, only the
+      /// full name, or only the address location.</param>
+      /// <param name="searchTerm">The text to search for; empty or only spaces immediately yields an empty array
+      /// without calling the server.</param>
+      /// <param name="maxResults">Limit on the number of rows requested. A value below 1 is replaced by 200 on the server.</param>
       public static async Task<Contact[]> SearchContactsAsync(IEmApp app, ContactSearchType searchType,
          string searchTerm, int maxResults = 200) {
          if (string.IsNullOrWhiteSpace(searchTerm)) return [];
@@ -76,71 +80,85 @@ namespace Em.Api.Core.Models
 
       #region Properties
 
+      /// <summary>Id of the contact.</summary>
       public string cContactId {
          get;
          private set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>Full name of the contact.</summary>
       public string cContactFullName {
          get;
          set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>State of the contact.</summary>
       public ContactState cContactState {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Type of the contact.</summary>
       public ContactType cContactType {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Note of the contact.</summary>
       public string? cContactNote {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Default address of the contact.</summary>
       public string? cContactDefaultAddress_cAddressId {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Default comm of the contact.</summary>
       public string? cContactDefaultComm_cCommId {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Name of the address.</summary>
       public string? cAddressName {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Location of the address.</summary>
       public string? cAddressLocation {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Zip of the address.</summary>
       public string? cAddressZip {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Type of the communication.</summary>
       public int? cCommType {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>State of the communication.</summary>
       public ContactCommunicationState? cCommState {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Value of the communication.</summary>
       public string? cCommValue {
          get;
          private set => SetField(ref field, value);
       }
 
+      /// <summary>Note of the communication.</summary>
       public string? cCommNote {
          get;
          private set => SetField(ref field, value);
@@ -150,6 +168,7 @@ namespace Em.Api.Core.Models
 
       #region Methods
 
+      /// <inheritdoc />
       protected override void ReadFrom(vi_Contact source) {
          cContactId = source.cContactId;
          cContactFullName = source.cContactFullName;
@@ -170,6 +189,7 @@ namespace Em.Api.Core.Models
          json_object = source.json_object;
       }
 
+      /// <inheritdoc />
       protected override void WriteTo(vi_Contact target) {
          target.cContactId = cContactId;
          target.cContactFullName = cContactFullName;
@@ -190,6 +210,7 @@ namespace Em.Api.Core.Models
          target.json_object = json_object;
       }
 
+      /// <inheritdoc />
       protected override JsonObject BuildJson(JsonObject patch) => patch;
 
       // The debugger account and the administrator account carry a contact id of their own, but no
@@ -203,11 +224,13 @@ namespace Em.Api.Core.Models
          }
       }
 
+      /// <inheritdoc />
       protected override Task<vi_Contact?> FetchAsync() {
          EnsureNotSystemContact(cContactId);
          return Service.GetVi_Contact_ById(cContactId);
       }
 
+      /// <inheritdoc />
       protected override Task UpdateAsync(vi_Contact entity) {
          EnsureNotSystemContact(entity.cContactId);
          return Service.PostTa_Contact_Update(entity);

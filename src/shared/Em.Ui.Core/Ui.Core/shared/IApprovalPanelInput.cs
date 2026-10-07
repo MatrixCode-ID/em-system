@@ -1,11 +1,11 @@
 namespace Em.Ui.Core.Shared;
 
 /// <summary>
-/// Penerima keterangan awal kartu informasi dari deklarasi modul. Dapat diimplementasikan oleh
-/// control atau view model kartu yang juga memakai <see cref="IApprovalPanel"/>.
+/// Receiver of the initial info of an info card from the module's declaration. May be implemented by
+/// the card's control or view model that also uses <see cref="IApprovalPanel"/>.
 /// </summary>
 public interface IApprovalPanelInput
 {
-   /// <summary>Keterangan yang dihasilkan fungsi input kartu untuk request yang sedang dibuka.</summary>
+   /// <summary>The info produced by the card's input function for the request being opened.</summary>
    object? Input { get; set; }
 }

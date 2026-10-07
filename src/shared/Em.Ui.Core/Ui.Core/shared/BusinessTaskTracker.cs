@@ -3,14 +3,14 @@ using Em.Api.Core.Models;
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Pemantau task personal milik user yang sedang login, sumber data hub task di window utama. Ia
-   /// menanyakan daftar task ke server secara berkala: cepat selama ada task yang masih hidup, lambat
-   /// selama tidak ada, sehingga layar tidak perlu menjalankan polling sendiri.
+   /// Monitor of the personal tasks of the signed-in user, the data source of the task hub in the main
+   /// window. It asks the server for the task list periodically: fast while there is a live task, slow
+   /// while there is none, so screens do not need to run their own polling.
    /// </summary>
    /// <remarks>
-   /// Semua anggotanya dipanggil dari satu thread, yaitu thread UI. Polling berjalan sebagai lanjutan
-   /// async dari thread yang memanggil <see cref="SetUser"/>, jadi <see cref="Changed"/> juga
-   /// dimunculkan di thread itu dan penangannya boleh langsung menyentuh binding.
+   /// All its members are called from one thread, the UI thread. Polling runs as an async continuation of
+   /// the thread that called <see cref="SetUser"/>, so <see cref="Changed"/> is also raised on that thread
+   /// and its handler may touch bindings directly.
    /// </remarks>
    public sealed class BusinessTaskTracker(IBusinessTaskServices services)
    {
@@ -22,43 +22,43 @@ namespace Em.Ui.Core.Shared
       private CancellationTokenSource? _wakeCts;
       private int _generation;
 
-      /// <summary>Jeda polling selama masih ada task yang hidup.</summary>
+      /// <summary>Polling interval while there are live tasks.</summary>
       public TimeSpan FastInterval { get; set; } = TimeSpan.FromSeconds(2);
 
-      /// <summary>Jeda polling selama tidak ada task yang hidup.</summary>
+      /// <summary>Polling interval while there are no live tasks.</summary>
       public TimeSpan SlowInterval { get; set; } = TimeSpan.FromSeconds(30);
 
       /// <summary>
-      /// Task personal user saat ini, yang hidup lebih dulu lalu yang terbaru. Kosong selama tidak ada
-      /// user yang login.
+      /// The current user's personal tasks, live ones first and then the newest. Empty while no user is
+      /// signed in.
       /// </summary>
       public IReadOnlyList<BusinessTaskInfo> Tasks => _tasks;
 
-      /// <summary>Jumlah task yang masih antri atau berjalan.</summary>
+      /// <summary>Number of tasks that are still queued or running.</summary>
       public int AliveCount => _tasks.Count(r => r.IsAlive);
 
       /// <summary>
-      /// <c>true</c> kalau ada task yang selesai sejak <see cref="MarkAllSeen"/> terakhir dipanggil,
-      /// yaitu sejak user terakhir membuka daftar task-nya.
+      /// <c>true</c> when a task has finished since <see cref="MarkAllSeen"/> was last called, that is, since
+      /// the user last opened their task list.
       /// </summary>
       public bool HasUnseen => _unseen.Count > 0;
 
-      /// <summary><c>true</c> kalau di antara task yang belum dilihat ada yang gagal.</summary>
+      /// <summary><c>true</c> when one of the tasks not yet seen has failed.</summary>
       public bool HasUnseenFailure =>
          _tasks.Any(r => _unseen.Contains(r.Id) && r.Status == BusinessTaskStatus.Failed);
 
       /// <summary>
-      /// Dimunculkan setiap kali daftar task atau penanda "belum dilihat" berubah, di thread yang
-      /// memanggil <see cref="SetUser"/>.
+      /// Raised every time the task list or the "not yet seen" marker changes, on the thread that called
+      /// <see cref="SetUser"/>.
       /// </summary>
       public event EventHandler? Changed;
 
       /// <summary>
-      /// Menetapkan user yang task-nya dipantau. User lain dari sebelumnya mengosongkan daftar lalu
-      /// memulai polling baru; <c>null</c> (logout) menghentikan polling dan mengosongkan daftar; user
-      /// yang sama tidak mengubah apa pun. Panggil dari thread UI.
+      /// Sets the user whose tasks are monitored. A user different from before empties the list and starts a
+      /// new polling; <c>null</c> (logout) stops polling and empties the list; the same user changes nothing.
+      /// Call from the UI thread.
       /// </summary>
-      /// <param name="userId">Id user yang login, atau <c>null</c> kalau tidak ada lagi.</param>
+      /// <param name="userId">Id of the signed-in user, or <c>null</c> when there is none anymore.</param>
       public void SetUser(string? userId) {
          if (string.Equals(userId, _userId, StringComparison.Ordinal)) return;
 
@@ -79,17 +79,17 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Memuat ulang daftar task sekarang juga, tanpa menunggu giliran polling berikutnya. Dipanggil
-      /// saat daftar task dibuka. Kegagalan menghubungi server diabaikan; daftar lama tetap dipakai.
+      /// Reloads the task list right now, without waiting for the next polling turn. Called when the task
+      /// list is opened. A failure to reach the server is ignored; the old list stays in use.
       /// </summary>
       public Task RefreshAsync() => RefreshCoreAsync();
 
       /// <summary>
-      /// Memasukkan task yang baru saja dimulai layar module, supaya langsung tampil di hub dan polling
-      /// cepat dimulai tanpa menunggu giliran polling lambat. Task global diabaikan, karena tempatnya di
-      /// layar module itu sendiri.
+      /// Takes in a task that a module screen has just started, so it appears in the hub right away and fast
+      /// polling begins without waiting for the slow polling turn. A global task is ignored, because its
+      /// place is on that module's own screen.
       /// </summary>
-      /// <param name="task">Potret task yang dikembalikan action yang memulainya.</param>
+      /// <param name="task">The snapshot of the task returned by the action that started it.</param>
       public void Track(BusinessTaskInfo task) {
          if (_userId is null || task.Scope != BusinessTaskScope.Personal) return;
 
@@ -99,7 +99,7 @@ namespace Em.Ui.Core.Shared
          _wakeCts?.Cancel();
       }
 
-      /// <summary>Menandai semua task yang sudah selesai sebagai sudah dilihat.</summary>
+      /// <summary>Marks all tasks that have finished as seen.</summary>
       public void MarkAllSeen() {
          if (_unseen.Count == 0) return;
          _unseen.Clear();

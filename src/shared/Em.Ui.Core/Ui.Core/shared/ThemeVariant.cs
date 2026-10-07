@@ -1,8 +1,8 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Mode terang atau gelap. <see cref="BrandingInfo"/> selalu membawa satu tema untuk masing-masing
-   /// mode, dan mode yang dipilih pengguna inilah yang menentukan tema mana yang sedang dipakai.
+   /// Light or dark mode. <see cref="BrandingInfo"/> always carries one theme for each mode, and the mode
+   /// chosen by the user decides which theme is in use.
    /// </summary>
    public enum ThemeVariant
    {

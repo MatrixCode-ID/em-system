@@ -3,13 +3,13 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Model satu profil koneksi API tersimpan (host, timeout, dsb.), disimpan di Registry lewat
-   /// <see cref="Core.EmApp"/>.
+   /// Model of one saved API connection profile (host, timeout, etc.), stored in the Registry through
+   /// <c>EmApp</c>.
    /// </summary>
    public class ApiConnection : NotifyPropertyBase
    {
       /// <summary>
-      /// Nama profil koneksi, dipakai sebagai identifier unik antar koneksi.
+      /// Name of the connection profile, used as the unique identifier among connections.
       /// </summary>
       public string ProfileName {
          get => Get<string>();
@@ -17,7 +17,7 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Alamat/host server API tujuan.
+      /// Address/host of the target API server.
       /// </summary>
       public string Host {
          get => Get<string>();
@@ -25,7 +25,7 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Timeout koneksi dalam detik.
+      /// Connection timeout in seconds.
       /// </summary>
       public int Timeout {
          get => Get<int>();
@@ -33,7 +33,7 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Jika <c>true</c>, error validasi sertifikat SSL/TLS diabaikan saat koneksi ke server ini.
+      /// When <c>true</c>, SSL/TLS certificate validation errors are ignored when connecting to this server.
       /// </summary>
       public bool IgnoreSslErrors {
          get => Get<bool>();
@@ -41,9 +41,9 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// <c>true</c> kalau profil ini berasal dari konfigurasi debug yang ditulis di kode
-      /// (<c>DebugBuilder</c>), bukan dari Registry. Koneksi debug hanya ikut ditampilkan di daftar UI;
-      /// ia tidak boleh disimpan, diubah, maupun dihapus lewat dialog koneksi.
+      /// <c>true</c> when this profile comes from a debug configuration written in code
+      /// (<c>DebugBuilder</c>), not from the Registry. A debug connection is only shown in the UI list; it
+      /// must not be saved, changed, or deleted through the connection dialog.
       /// </summary>
       public bool IsDebugConnection {
          get => Get<bool>();
@@ -51,14 +51,13 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Token debug yang dikirim di setiap request lewat koneksi ini, atau <c>null</c> kalau koneksinya
-      /// bukan koneksi debug. Yang tersimpan di sini adalah token yang sudah jadi - hasil tanda tangan yang
-      /// dibuat sekali saat aplikasi start - bukan key-nya, sehingga jalur request tidak menyentuh
-      /// kriptografi sama sekali.
+      /// The debug token sent on every request through this connection, or <c>null</c> when the connection is
+      /// not a debug connection. What is stored here is the finished token - the signature made once when the
+      /// application starts - not its key, so the request path does not touch cryptography at all.
       /// </summary>
       /// <remarks>
-      /// Property ini tidak pernah ikut tersimpan ke Registry: penyimpanan koneksi menulis field-nya satu
-      /// per satu, dan koneksi debug memang sudah ditolak masuk Registry sejak awal.
+      /// This property is never saved to the Registry: connection storage writes its fields one by one, and
+      /// debug connections are already refused entry to the Registry from the start.
       /// </remarks>
       public string? DebugToken {
          get => Get<string?>();
@@ -66,10 +65,10 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Membuat client API untuk profil ini, lengkap dengan handler yang sudah mengikuti
-      /// <see cref="IgnoreSslErrors"/>. Handler-nya dibuat per koneksi, bukan dipakai bersama, karena
-      /// pilihan mematikan validasi sertifikat berlaku untuk satu server saja - dan karena
-      /// <see cref="ApiClient"/> melepas handler-nya sendiri saat di-dispose.
+      /// Creates an API client for this profile, complete with a handler that already follows
+      /// <see cref="IgnoreSslErrors"/>. The handler is created per connection, not shared, because the choice
+      /// to turn off certificate validation applies to one server only - and because <see cref="ApiClient"/>
+      /// releases its handler itself when disposed.
       /// </summary>
       public ApiClient CreateApiClient() =>
          ApiClient.Create(this, Defaults.CreateHttpClientHandler(IgnoreSslErrors));

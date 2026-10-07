@@ -4,23 +4,24 @@ using Em.Shared;
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Aturan tunggal "boleh dibuka atau tidak" untuk sebuah navigasi, dipakai baik oleh menu home
-   /// maupun oleh <c>NavigateTo</c> - supaya yang disembunyikan di menu dan yang ditolak saat dibuka
-   /// langsung tidak pernah berbeda. Mode debug tidak diperiksa di sini: itu milik <c>EmApp</c>
-   /// masing-masing sisi, karena <c>IsDebugMode</c> ada di sana.
+   /// The single rule "may it be opened or not" for a navigation, used both by the home menu and by
+   /// <c>NavigateTo</c> - so what is hidden in the menu and what is refused when opened directly never
+   /// differ. Debug mode is not checked here: that belongs to each side's <c>EmApp</c>, because
+   /// <c>IsDebugMode</c> lives there.
    /// </summary>
    public static class NavigationAccess
    {
       /// <summary>
-      /// Menjawab apakah module milik <paramref name="navigation"/> dideklarasikan di
-      /// <paramref name="catalog"/> (katalog claim server aktif digabung claim bawaan client). Navigasi
-      /// tanpa ikatan module selalu dianggap ada; navigasi dengan claim wajib butuh kunci claim itu;
-      /// selebihnya cukup satu claim di module yang sama. Berbeda dari <see cref="CanOpen"/>, aturan ini
-      /// berlaku untuk administrator dan mode debug juga: modul yang dimatikan server (mis. module uji
-      /// lewat <c>modules</c> di konfigurasi API) tidak punya layar yang bisa dipakai, jadi menunya disembunyikan.
+      /// Answers whether the module of <paramref name="navigation"/> is declared in
+      /// <paramref name="catalog"/> (the active server's claim catalog merged with the client's built-in
+      /// claims). A navigation with no module binding is always considered present; a navigation with a
+      /// required claim needs that claim's key; otherwise one claim in the same module is enough. Unlike
+      /// <see cref="CanOpen"/>, this rule also applies to administrators and debug mode: a module that the
+      /// server has turned off (e.g. the test module through <c>modules</c> in the API configuration) has no
+      /// usable screen, so its menu is hidden.
       /// </summary>
-      /// <param name="navigation">Navigasi yang hendak dibuka.</param>
-      /// <param name="catalog">Katalog claim yang dikenal aplikasi.</param>
+      /// <param name="navigation">The navigation about to be opened.</param>
+      /// <param name="catalog">The claim catalog known to the application.</param>
       public static bool IsDeclared(INavigation navigation, IReadOnlyList<ClaimAction> catalog) {
          if (navigation.ModuleName is null) return true;
 
@@ -32,18 +33,18 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menjawab apakah <paramref name="user"/> boleh membuka <paramref name="navigation"/>, di luar
-      /// mode debug. Urutan pemeriksaannya mengikat: navigasi tanpa ikatan module selalu boleh, tidak
-      /// ada user aktif berarti tidak boleh, user administrator selalu boleh, lalu baru diperiksa
-      /// claim yang dipersyaratkan (kalau ada) atau cukup claim apa pun di module yang sama.
+      /// Answers whether <paramref name="user"/> may open <paramref name="navigation"/>, outside debug mode.
+      /// The order of checks is binding: a navigation with no module binding is always allowed, no active
+      /// user means not allowed, an administrator user is always allowed, and only then is the required claim
+      /// checked (if any), or any claim in the same module is enough.
       /// <para>
-      /// Sengaja tidak memakai indexer <see cref="ClaimCollection"/>: indexer itu melempar exception
-      /// di DEBUG untuk claim yang belum ada di katalog server, sedangkan di sini kunci yang tidak ada
-      /// cukup berarti "tidak punya" - ketiadaan module di server bukan kesalahan pemanggil.
+      /// It deliberately does not use the <see cref="ClaimCollection"/> indexer: that indexer throws in DEBUG
+      /// for a claim that is not in the server catalog, while here a key that does not exist simply means
+      /// "does not have it" - a module missing on the server is not the caller's mistake.
       /// </para>
       /// </summary>
-      /// <param name="navigation">Navigasi yang hendak dibuka.</param>
-      /// <param name="user">Pengguna yang sedang aktif, atau <c>null</c> kalau belum ada yang masuk.</param>
+      /// <param name="navigation">The navigation about to be opened.</param>
+      /// <param name="user">The currently active user, or <c>null</c> when nobody has signed in.</param>
       public static bool CanOpen(INavigation navigation, User? user) {
          if (navigation.ModuleName is null) return true;
 

@@ -1,19 +1,19 @@
 ﻿namespace Em.Ui.Core.Shared
 {
-   /// <summary>Keterangan sebuah perpindahan navigasi, diteruskan ke body dan ke pendengar router.</summary>
+   /// <summary>Details of a navigation move, passed to the body and to the router's listeners.</summary>
    public class NavigationEventArgs : EventArgs
    {
-      /// <summary>Navigasi tujuan perpindahan ini.</summary>
+      /// <summary>The target navigation of this move.</summary>
       public required INavigation  NavigationItem { get; init; }
 
       /// <summary>
-      /// Entri milik body yang menerima callback ini - untuk <c>OnNavigatingAway</c> itu entri yang
-      /// sedang ditinggalkan, untuk callback lain entri tujuannya. Lewat entri inilah body mengganti
-      /// judulnya, menutup dirinya, atau membuka layar lain.
+      /// The entry belonging to the body that receives this callback - for <c>OnNavigatingAway</c> it is the
+      /// entry being left, for other callbacks the destination entry. Through this entry the body changes its
+      /// title, closes itself, or opens another screen.
       /// </summary>
       public required INavigationEntry Entry { get; init; }
 
-      /// <summary>Parameter untuk navigasi tujuan, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>Parameter for the target navigation, or <c>null</c> when there is none.</summary>
       public object? Data { get; set; }
    }
 

@@ -9,6 +9,7 @@ using Em.Shared;
 
 namespace Em.Ui.Core.Shared
 {
+   /// <summary>Client of the Em API: composes requests, attaches identity headers, and renews tokens.</summary>
    public class ApiClient : IApiClient
    {
       #region Fields
@@ -19,15 +20,16 @@ namespace Em.Ui.Core.Shared
       private HttpClientHandler _httpClientHandler = null!;
       private bool _disposed;
 
-      // Satu pintu untuk seluruh pembaruan token. Refresh token dirotasi setiap dipakai, jadi lima
-      // request yang kena 401 bersamaan tanpa pengaman ini akan mengirim lima refresh: yang pertama
-      // berhasil, empat sisanya memakai token yang sudah mati dan mencabut sesinya sendiri.
+      // A single door for all token refreshes. The refresh token is rotated every time it is used, so five
+      // requests that hit 401 at the same time without this safeguard would send five refreshes: the first
+      // succeeds, and the other four use an already dead token and revoke their own session.
       private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
       #endregion
 
       #region Static Initiators and Constructors
 
+      /// <summary>Creates a client for a connection profile with its default handler.</summary>
       public static ApiClient Create(ApiConnection connection) {
          var result = new ApiClient {
             Connection = connection,
@@ -36,6 +38,7 @@ namespace Em.Ui.Core.Shared
          return result;
       }
 
+      /// <summary>Creates a client for a connection profile with the given handler, which the client disposes.</summary>
       public static ApiClient Create(ApiConnection connection, HttpClientHandler httpClientHandler) {
          var result = new ApiClient {
             Connection = connection,
@@ -50,8 +53,10 @@ namespace Em.Ui.Core.Shared
 
       #region Properties
 
+      /// <summary>The connection profile this client talks to.</summary>
       public required ApiConnection Connection { get; init; }
 
+      /// <summary>The underlying <see cref="System.Net.Http.HttpClient"/>, created on first use.</summary>
       public HttpClient HttpClient {
          get {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -60,32 +65,32 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Public key RSA server yang sudah terverifikasi lewat handshake (raw byte DER PKCS#1). Kosong sebelum
-      /// <see cref="ResetServerPublicKeyAsync"/> pernah berhasil dijalankan.
+      /// The server's RSA public key, verified through the handshake (raw DER PKCS#1 bytes). Empty until
+      /// <see cref="ResetServerPublicKeyAsync"/> has succeeded at least once.
       /// </summary>
       public byte[] ServerPublicKey { get; private set; } = [];
 
       /// <summary>
-      /// Id pengguna yang sedang aktif di aplikasi. Dikirim di setiap request bersama
-      /// <see cref="ActiveUserAccount"/> sebagai satu objek pada header <see cref="Defaults.UserHeader"/>.
-      /// Keduanya selalu diisi dan dikosongkan berbarengan; mengisi separuh berarti mengirim header
-      /// yang menyebut orang yang berbeda dari yang dimaksud.
+      /// Id of the user currently active in the application. Sent with every request together with
+      /// <see cref="ActiveUserAccount"/> as a single object in the <see cref="Defaults.UserHeader"/> header.
+      /// Both are always filled and cleared together; filling only half would send a header naming a
+      /// different person from the one meant.
       /// </summary>
       /// <remarks>
-      /// Sama seperti nama akunnya, id ini sendiri bukan bukti apa-apa - lihat
+      /// Like the account name, this id is no proof of anything by itself - see
       /// <see cref="ActiveUserAccount"/>.
       /// </remarks>
       public string? ActiveUserId { get; set; }
 
       /// <summary>
-      /// Nama akun pengguna yang sedang aktif di aplikasi. Dikirim di setiap request bersama
-      /// <see cref="ActiveUserId"/> sebagai satu objek pada header <see cref="Defaults.UserHeader"/>;
-      /// kalau keduanya kosong, header-nya tidak dikirim sama sekali.
+      /// Account name of the user currently active in the application. Sent with every request together with
+      /// <see cref="ActiveUserId"/> as a single object in the <see cref="Defaults.UserHeader"/> header; when
+      /// both are empty, the header is not sent at all.
       /// </summary>
       /// <remarks>
-      /// Nama ini sendiri bukan bukti apa-apa: server hanya memperlakukannya sebagai identitas kalau
-      /// request-nya juga membawa token debug yang lolos verifikasi. Di luar itu yang menentukan siapa
-      /// pemanggilnya tetap access token.
+      /// This name is no proof of anything by itself: the server only treats it as an identity when the
+      /// request also carries a debug token that passes verification. Otherwise what decides who the caller is
+      /// remains the access token.
       /// </remarks>
       public string? ActiveUserAccount { get; set; }
 
@@ -94,50 +99,51 @@ namespace Em.Ui.Core.Shared
       #region Session
 
       /// <summary>
-      /// Access token sesi yang sedang dipegang, atau <c>null</c> kalau belum ada yang masuk lewat
-      /// koneksi ini. Terpasang sendiri sebagai header <c>Authorization</c> di setiap request.
+      /// The access token of the session currently held, or <c>null</c> when nobody has signed in through
+      /// this connection. Attached automatically as the <c>Authorization</c> header on every request.
       /// </summary>
       public string? AccessToken { get; private set; }
 
       /// <summary>
-      /// Refresh token sesi yang sedang dipegang. Inilah yang ditukar dengan sepasang token baru saat
-      /// access token-nya kedaluwarsa; ia dirotasi setiap dipakai, jadi yang tersimpan di mana pun
-      /// wajib ikut ditimpa setiap kali <see cref="SessionChanged"/> dipicu.
+      /// The refresh token of the session currently held. This is what is exchanged for a new pair of tokens
+      /// when the access token expires; it is rotated every time it is used, so wherever it is stored it must
+      /// be overwritten every time <see cref="SessionChanged"/> is raised.
       /// </summary>
       public string? RefreshToken { get; private set; }
 
       /// <summary>
-      /// Kapan access token yang sedang dipegang kedaluwarsa, dalam UTC. Belum dipakai sebagai pemicu
-      /// apa pun - pembaruan token di sini reaktif, yaitu saat server menjawab 401.
+      /// When the access token currently held expires, in UTC. Not used as a trigger for anything yet - token
+      /// renewal here is reactive, that is, when the server answers 401.
       /// </summary>
       public DateTimeOffset AccessTokenExpiresAtUtc { get; private set; }
 
       /// <summary>
-      /// Pemilik sesi yang sedang dipegang, menurut server yang menerbitkannya.
+      /// The owner of the session currently held, according to the server that issued it.
       /// </summary>
       public string? SessionUserId { get; private set; }
 
-      /// <summary><c>true</c> kalau koneksi ini sedang memegang sesi.</summary>
+      /// <summary><c>true</c> when this connection is currently holding a session.</summary>
       public bool HasSession => !string.IsNullOrEmpty(AccessToken);
 
       /// <summary>
-      /// Dipicu setiap kali isi sesi berganti - saat sesi dibuka, saat hasil rotasi masuk, dan saat
-      /// sesinya dibuang. Yang menyimpan refresh token lintas restart mendengarkan event ini: tanpa
-      /// menimpa yang tersimpan, restart berikutnya memakai token mati.
+      /// Raised every time the session content changes - when the session is opened, when the result of a
+      /// rotation comes in, and when the session is discarded. Whoever stores the refresh token across
+      /// restarts listens to this event: without overwriting what is stored, the next restart uses a dead
+      /// token.
       /// </summary>
       public event EventHandler? SessionChanged;
 
       /// <summary>
-      /// Dipicu tepat sekali saat sesi mati dan tidak bisa dipulihkan - refresh gagal, atau memang
-      /// tidak ada refresh token untuk dipakai. <see cref="ApiClient"/> tidak tahu apa-apa soal window
-      /// maupun layar login; ia hanya mengumumkan bahwa yang dipegangnya sudah tidak berlaku.
+      /// Raised exactly once when the session dies and cannot be recovered - the refresh failed, or there is
+      /// no refresh token to use. <see cref="ApiClient"/> knows nothing about windows or the login screen; it
+      /// only announces that what it held is no longer valid.
       /// </summary>
       public event EventHandler? SessionEnded;
 
       /// <summary>
-      /// Memasang sesi hasil sign in atau hasil rotasi refresh.
+      /// Installs the session resulting from a sign-in or from a refresh rotation.
       /// </summary>
-      /// <param name="token">Pasangan token yang baru diterbitkan server.</param>
+      /// <param name="token">The pair of tokens newly issued by the server.</param>
       public void SetSession(TokenResult token) {
          ArgumentNullException.ThrowIfNull(token);
 
@@ -149,8 +155,8 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Membuang sesi yang sedang dipegang. Tidak memberi tahu server apa pun - yang mengakhiri sesi
-      /// di sana adalah action sign out, dan itu urusan pemanggilnya.
+      /// Discards the session currently held. Tells the server nothing - what ends the session there is the
+      /// sign-out action, and that is the caller's business.
       /// </summary>
       public void ClearSession() {
          if (!HasSession && RefreshToken is null) return;
@@ -162,9 +168,9 @@ namespace Em.Ui.Core.Shared
          SessionChanged?.Invoke(this, EventArgs.Empty);
       }
 
-      // Sesi yang mati sendiri di tengah jalan: dibuang, lalu diumumkan sekali. Dipisahkan dari
-      // ClearSession supaya sign out yang diminta user - yang mengurus tampilannya sendiri - tidak
-      // ikut memicu pengumuman yang sama dua kali.
+      // A session that died by itself midway: discarded, then announced once. Kept apart from ClearSession
+      // so that a sign-out requested by the user - which handles its own display - does not trigger the same
+      // announcement twice.
       private void EndSession() {
          var hadSession = HasSession || RefreshToken is not null;
          ClearSession();
@@ -175,25 +181,27 @@ namespace Em.Ui.Core.Shared
 
       #region HTTP Operation Methods
 
+      /// <inheritdoc />
       public Task<T> GetAsync<T>(string controller, string action, params object[] args) {
          var url = BuildGetUrl(controller, action, args);
          return SendAsync<T>(() => BuildRequest(System.Net.Http.HttpMethod.Get, url));
       }
 
       /// <summary>
-      /// Memanggil action GET yang mengembalikan isi file, bukan data JSON. Stream yang dikembalikan dibaca
-      /// langsung dari jaringan, jadi isi yang besar tidak pernah ditampung utuh di memori.
+      /// Calls a GET action that returns file content, not JSON data. The returned stream is read directly
+      /// from the network, so large content is never held in memory in full.
       /// </summary>
-      /// <param name="controller">Nama module tujuan.</param>
-      /// <param name="action">Nama action tujuan.</param>
-      /// <param name="args">Argumen action, dikirim seperti pada <see cref="GetAsync{T}"/>.</param>
+      /// <param name="controller">Name of the target module.</param>
+      /// <param name="action">Name of the target action.</param>
+      /// <param name="args">Arguments of the action, sent as in <see cref="GetAsync{T}"/>.</param>
       /// <returns>
-      /// Stream isi jawaban server. Pemanggil wajib menutupnya; menutupnya ikut melepas koneksinya.
+      /// The stream of the server's answer content. The caller must close it; closing it also releases its
+      /// connection.
       /// </returns>
       /// <remarks>
-      /// Request ini tidak dibatasi waktu, karena lama unduhnya bergantung pada ukuran isinya. Penanganan
-      /// token yang kedaluwarsa dan penolakan server sama dengan <see cref="GetAsync{T}"/>: penolakan
-      /// dilempar sebagai <see cref="ActionException"/> sebelum stream-nya dikembalikan.
+      /// This request has no time limit, because how long the download takes depends on the content size.
+      /// Handling of an expired token and of server refusal is the same as <see cref="GetAsync{T}"/>: a
+      /// refusal is thrown as an <see cref="ActionException"/> before the stream is returned.
       /// </remarks>
       public Task<Stream> GetStreamAsync(string controller, string action, params object[] args) {
          var url = BuildGetUrl(controller, action, args);
@@ -202,6 +210,7 @@ namespace Em.Ui.Core.Shared
                .ProcessHttpStreamResult());
       }
 
+      /// <inheritdoc />
       public async Task PostAsync(string controller, string action, params object[] args) {
          var url = $"api/{controller}/{action}";
          var bodyJson = BuildPostBody(args);
@@ -209,6 +218,7 @@ namespace Em.Ui.Core.Shared
             new StringContent(bodyJson, Encoding.UTF8, "application/json")));
       }
 
+      /// <inheritdoc />
       public Task<T> PostAsync<T>(string controller, string action, params object[] args) {
          var url = $"api/{controller}/{action}";
          var bodyJson = BuildPostBody(args);
@@ -245,39 +255,39 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Memanggil action ber-stream yang tidak mengembalikan nilai: isi <paramref name="content"/>
-      /// dikirim mentah sebagai body request, dan <paramref name="payload"/> - kalau ada - ikut di
-      /// header <see cref="Defaults.StreamPayloadHeader"/>.
+      /// Calls a streaming action that returns no value: the content of <paramref name="content"/> is sent
+      /// raw as the request body, and <paramref name="payload"/> - when present - goes in the
+      /// <see cref="Defaults.StreamPayloadHeader"/> header.
       /// </summary>
-      /// <param name="controller">Nama module tujuan.</param>
-      /// <param name="action">Nama action tujuan.</param>
+      /// <param name="controller">Name of the target module.</param>
+      /// <param name="action">Name of the target action.</param>
       /// <param name="content">
-      /// Stream yang dikirim, dibaca dari posisinya sekarang sampai habis. Tidak ditutup oleh method ini -
-      /// yang membukanya yang menutupnya. Kalau stream-nya bisa di-seek, request yang kena 401 dikirim
-      /// ulang dari posisi awal sesudah token diperbarui; kalau tidak, 401 itu dilempar apa adanya.
+      /// The stream to send, read from its current position to the end. Not closed by this method - whoever
+      /// opened it closes it. When the stream can seek, a request that hits 401 is sent again from the start
+      /// after the token is refreshed; otherwise that 401 is thrown as-is.
       /// </param>
       /// <param name="payload">
-      /// Objek yang diterima parameter selain stream di action tujuan, atau <c>null</c> kalau action-nya
-      /// hanya menerima stream.
+      /// The object received by the parameter other than the stream in the target action, or <c>null</c>
+      /// when the action only accepts a stream.
       /// </param>
       /// <remarks>
-      /// Request ini tidak dibatasi waktu, karena lama kirimnya bergantung pada ukuran stream - untuk
-      /// menghentikannya, buat stream-nya melempar <see cref="OperationCanceledException"/> saat dibaca.
-      /// Request dikirim dengan <c>Expect: 100-continue</c>, jadi yang ditolak server sebelum body-nya
-      /// dibaca (401, 403, 409, dan sejenisnya) tidak membuat isi stream ikut terkirim.
+      /// This request has no time limit, because how long it takes to send depends on the stream size - to
+      /// stop it, make the stream throw <see cref="OperationCanceledException"/> when read. The request is
+      /// sent with <c>Expect: 100-continue</c>, so something the server refuses before its body is read (401,
+      /// 403, 409, and the like) does not cause the stream content to be sent.
       /// </remarks>
       /// <exception cref="InvalidOperationException">
-      /// <paramref name="payload"/> terlalu besar untuk sebuah header (lihat
-      /// <see cref="StreamPayloadProtocol.MaxHeaderLength"/>). Ditolak sebelum apa pun dikirim.
+      /// <paramref name="payload"/> is too large for a header (see
+      /// <see cref="StreamPayloadProtocol.MaxHeaderLength"/>). Refused before anything is sent.
       /// </exception>
       public async Task PostStreamAsync(string controller, string action, Stream content, object? payload = null) {
          await PostStreamAsync<object?>(controller, action, content, payload);
       }
 
       /// <summary>
-      /// Memanggil action ber-stream dan mengembalikan hasilnya. Sama dengan
-      /// <see cref="PostStreamAsync(string, string, Stream, object?)"/>, hanya saja jawaban server dibaca
-      /// menjadi <typeparamref name="T"/>.
+      /// Calls a streaming action and returns its result. Same as
+      /// <see cref="PostStreamAsync(string, string, Stream, object?)"/>, except that the server's answer is
+      /// read into <typeparamref name="T"/>.
       /// </summary>
       /// <inheritdoc cref="PostStreamAsync(string, string, Stream, object?)"/>
       public Task<T> PostStreamAsync<T>(string controller, string action, Stream content, object? payload = null) {
@@ -307,15 +317,15 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menyusun body sebuah request POST: daftar argumen dalam bentuk <see cref="PostMethodPayload"/>,
-      /// dicocokkan server berdasarkan nomor urut.
+      /// Builds the body of a POST request: the list of arguments in the form of
+      /// <see cref="PostMethodPayload"/>, matched by the server by ordinal.
       /// </summary>
       private static string BuildPostBody(object?[] args) {
          List<PostMethodPayload> payloads = [];
          for (int i = 0; i < args.Length; i++) {
-            // Argumen null sengaja tidak dikirim sama sekali, sama seperti pada GET: server memperlakukan
-            // ordinal yang tidak ada sebagai null/nilai default parameter. Karena pencocokannya ordinal,
-            // melewati satu entri tidak menggeser posisi argumen sesudahnya.
+            // A null argument is deliberately not sent at all, just like with GET: the server treats a missing
+            // ordinal as null/the parameter's default value. Because matching is ordinal, skipping one entry does
+            // not shift the position of the arguments after it.
             if (args[i] is null) {
                continue;
             }
@@ -327,42 +337,41 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Mengirim satu request dan, kalau server menjawab 401, memperbarui token lalu mengirimnya sekali
-      /// lagi. Seluruh jalur request lewat sini supaya pembaruan token tidak perlu diingat satu per satu
-      /// di setiap pemanggilan.
+      /// Sends one request and, if the server answers 401, refreshes the token and sends it once more. All
+      /// request paths go through here so token renewal does not have to be remembered at every call.
       /// </summary>
       /// <param name="requestFactory">
-      /// Penyusun request-nya. Bentuknya factory, bukan objek jadi, karena
-      /// <see cref="HttpRequestMessage"/> tidak bisa dipakai dua kali - dan karena itu pula isi body pada
-      /// jalur POST harus dibangun di dalamnya.
+      /// Builder of the request. It is a factory, not a finished object, because
+      /// <see cref="HttpRequestMessage"/> cannot be used twice - and for the same reason the body content on
+      /// the POST path must be built inside it.
       /// </param>
       private Task<T> SendAsync<T>(Func<HttpRequestMessage> requestFactory) =>
          SendAsync<T>(HttpClient, requestFactory);
 
-      /// <param name="client">Client yang dipakai mengirim - yang biasa, atau yang tanpa batas waktu untuk stream.</param>
-      /// <param name="requestFactory">Lihat overload tanpa <paramref name="client"/>.</param>
+      /// <param name="client">The client used to send - the ordinary one, or the one without time limit for streams.</param>
+      /// <param name="requestFactory">See the overload without <paramref name="client"/>.</param>
       /// <param name="canRetry">
-      /// Ditanya sebelum token diperbarui: <c>false</c> berarti request ini tidak bisa diulang (body-nya
-      /// stream yang sudah terbaca dan tidak bisa di-seek), dan 401-nya dilempar apa adanya. <c>null</c>
-      /// berarti selalu bisa.
+      /// Asked before the token is refreshed: <c>false</c> means this request cannot be repeated (its body is
+      /// a stream that was already read and cannot seek), and its 401 is thrown as-is. <c>null</c> means it
+      /// always can.
       /// </param>
       private Task<T> SendAsync<T>(HttpClient client, Func<HttpRequestMessage> requestFactory,
          Func<bool>? canRetry = null) =>
          SendAsync(requestFactory, request => client.SendAsync(request).ProcessHttpResult<T>(), canRetry);
 
-      /// <param name="requestFactory">Lihat overload tanpa <c>client</c>.</param>
-      /// <param name="send">Mengirim satu request dan membaca jawabannya - sebagai amplop JSON atau sebagai stream.</param>
-      /// <param name="canRetry">Lihat overload dengan <c>client</c>.</param>
+      /// <param name="requestFactory">See the overload without <c>client</c>.</param>
+      /// <param name="send">Sends one request and reads its answer - as a JSON envelope or as a stream.</param>
+      /// <param name="canRetry">See the overload with <c>client</c>.</param>
       private async Task<T> SendAsync<T>(Func<HttpRequestMessage> requestFactory,
          Func<HttpRequestMessage, Task<T>> send, Func<bool>? canRetry = null) {
-         // Tanpa sesi tidak ada yang bisa diperbarui, jadi request-nya dikirim sekali apa adanya.
+         // Without a session there is nothing to refresh, so the request is sent once as-is.
          if (!HasSession) {
             using var plain = requestFactory();
             return await send(plain);
          }
 
-         // Dicatat sebelum dikirim: kalau sesudah 401 nilainya sudah berbeda, berarti request lain
-         // sudah memperbarui token lebih dulu dan yang ini tinggal mengulang dengan yang baru.
+         // Recorded before sending: if after the 401 the value is already different, another request has
+         // already refreshed the token first and this one only needs to repeat with the new one.
          var attemptedToken = AccessToken;
 
          try {
@@ -375,7 +384,7 @@ namespace Em.Ui.Core.Shared
                throw;
             }
 
-            // Sekali saja, tidak ada loop: 401 kedua sesudah token baru berarti masalahnya bukan token.
+            // Only once, no loop: a second 401 after a new token means the problem is not the token.
             try {
                using var retry = requestFactory();
                return await send(retry);
@@ -388,16 +397,16 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Memastikan sesi ini sudah memegang access token yang lebih baru daripada
-      /// <paramref name="attemptedToken"/>, dengan menukar refresh token kalau perlu. Beberapa request
-      /// yang kena 401 bersamaan menunggu satu pembaruan yang sama.
+      /// Makes sure this session holds an access token newer than <paramref name="attemptedToken"/>, by
+      /// exchanging the refresh token if needed. Several requests that hit 401 at the same time wait for the
+      /// same single refresh.
       /// </summary>
-      /// <returns><c>true</c> kalau sesudah ini ada access token baru yang bisa dicoba.</returns>
+      /// <returns><c>true</c> when after this there is a new access token that can be tried.</returns>
       private async Task<bool> EnsureRefreshedAsync(string? attemptedToken) {
          await _refreshGate.WaitAsync();
          try {
-            // Ada yang sudah memperbarui sementara kita antre. Tidak boleh memakai refresh token lagi -
-            // ia sudah dirotasi, dan memakainya kedua kali justru mematikan sesinya sendiri.
+            // Someone already refreshed while we were queued. The refresh token must not be used again - it has
+            // been rotated, and using it a second time would kill the session itself.
             if (!string.Equals(AccessToken, attemptedToken, StringComparison.Ordinal)) return HasSession;
             if (string.IsNullOrEmpty(RefreshToken)) return false;
 
@@ -406,8 +415,8 @@ namespace Em.Ui.Core.Shared
                return true;
             }
             catch (Exception) {
-               // Kenapa refresh-nya gagal tidak mengubah apa pun di sini: yang dipegang sudah tidak
-               // berlaku, dan pemanggil di atas yang mengakhiri sesinya.
+               // Why the refresh failed changes nothing here: what is held is no longer valid, and the caller above
+               // ends the session.
                return false;
             }
          }
@@ -417,9 +426,9 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menukar refresh token dengan sepasang token baru. Dikirim lewat jalur mentah - tidak melewati
-      /// <see cref="SendAsync{T}"/> dan tidak memasang header <c>Authorization</c> - karena 401 di
-      /// dalamnya akan memicu pembaruan lagi, dan rekursi itu tidak punya dasar berhenti yang jelas.
+      /// Exchanges the refresh token for a new pair of tokens. Sent through the raw path - it does not go
+      /// through <see cref="SendAsync{T}(Func{HttpRequestMessage})"/> and does not attach the <c>Authorization</c> header - because a
+      /// 401 inside it would trigger another refresh, and that recursion has no clear stopping point.
       /// </summary>
       private async Task<TokenResult> SendRefreshAsync(string refreshToken) {
          var url =
@@ -431,15 +440,18 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menyusun satu request beserta header identitasnya. Header dipasang per-request, bukan sekali di
-      /// <c>HttpClient.DefaultRequestHeaders</c>, karena semuanya berubah saat aplikasi berjalan: identitas
-      /// mengikuti pengguna yang sedang aktif, token debug harus bisa dimatikan tanpa restart, dan access
-      /// token berganti setiap kali dirotasi - kalau dipasang sekali, request yang disusun sebelum rotasi
-      /// akan tetap membawa token yang lama.
+      /// Builds one request together with its identity headers. The headers are set per request, not once on
+      /// <c>HttpClient.DefaultRequestHeaders</c>, because all of them change while the application runs: the
+      /// identity follows the active user, the debug token must be switchable off without a restart, and the
+      /// access token changes every time it is rotated - if set once, a request built before a rotation would
+      /// still carry the old token.
       /// </summary>
+      /// <param name="method">The HTTP method of the request.</param>
+      /// <param name="url">The relative URL of the request.</param>
+      /// <param name="content">The request body, or <c>null</c> when there is none.</param>
       /// <param name="withAuthorization">
-      /// <c>false</c> hanya untuk jalur pembaruan token, yang justru dikirim ketika access token-nya sudah
-      /// mati dan karena itu tidak perlu membawanya.
+      /// <c>false</c> only for the token refresh path, which is sent precisely when the access token is
+      /// already dead and so need not carry it.
       /// </param>
       private HttpRequestMessage BuildRequest(System.Net.Http.HttpMethod method, string url,
          HttpContent? content = null, bool withAuthorization = true) {
@@ -463,9 +475,9 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menjalankan ulang handshake ke server lalu memperbarui <see cref="ServerPublicKey"/>. Dipanggil saat
-      /// koneksi API berganti/berubah atau saat key server dicurigai sudah di-rotate, sehingga key lokal
-      /// tidak basi.
+      /// Runs the handshake with the server again and then updates <see cref="ServerPublicKey"/>. Called when
+      /// the API connection is changed or when the server key is suspected to have been rotated, so the local
+      /// key does not go stale.
       /// </summary>
       public async Task ResetServerPublicKeyAsync() {
          SetServerPublicKey(await HandshakeAsync());
@@ -476,23 +488,23 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Memverifikasi bahwa host pada <see cref="Connection"/> benar-benar memegang private key dari public key
-      /// yang dikembalikannya: client mengirim nonce acak, server menandatanganinya, lalu tanda tangan itu
-      /// diverifikasi di sini. Public key hanya dianggap sah kalau verifikasi lolos.
+      /// Verifies that the host at <see cref="Connection"/> really holds the private key of the public key it
+      /// returns: the client sends a random nonce, the server signs it, and the signature is verified here.
+      /// The public key is only accepted when verification passes.
       /// </summary>
-      /// <returns>Public key server (raw byte DER PKCS#1) yang sudah terbukti cocok dengan private key-nya.</returns>
+      /// <returns>The server public key (raw DER PKCS#1 bytes) that is proven to match its private key.</returns>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau tanda tangan server tidak cocok dengan nonce yang dikirim — host-nya bukan server EM,
-      /// atau responsnya sudah diubah di tengah jalan.
+      /// Thrown when the server's signature does not match the nonce that was sent - the host is not an EM
+      /// server, or its response was altered in transit.
       /// </exception>
       /// <remarks>
-      /// Hasilnya sengaja hanya dikembalikan, tidak langsung disimpan ke <see cref="ServerPublicKey"/>; pakai
-      /// <see cref="ResetServerPublicKeyAsync"/> kalau key-nya memang mau dipakai seterusnya.
+      /// The result is deliberately only returned, not stored straight into <see cref="ServerPublicKey"/>; use
+      /// <see cref="ResetServerPublicKeyAsync"/> when the key is really meant to be used from then on.
       /// <para>
-      /// Handshake ini membuktikan kepemilikan key, bukan identitas host. Yang menjamin host tidak dipalsukan
-      /// adalah TLS — di produksi koneksi wajib HTTPS dengan sertifikat tervalidasi. Kalau TLS dilewati (mis.
-      /// <c>ApiConnection.IgnoreSslErrors</c> menyala), pihak di tengah bisa menyisipkan public key miliknya
-      /// sendiri, menandatangani nonce dengan private key-nya, dan tetap lolos verifikasi.
+      /// This handshake proves ownership of the key, not the identity of the host. What guarantees the host
+      /// is not forged is TLS - in production the connection must be HTTPS with a validated certificate. If
+      /// TLS is bypassed (e.g. <c>ApiConnection.IgnoreSslErrors</c> is on), a party in the middle can insert
+      /// its own public key, sign the nonce with its own private key, and still pass verification.
       /// </para>
       /// </remarks>
       public async Task<byte[]> HandshakeAsync() {
@@ -511,10 +523,10 @@ namespace Em.Ui.Core.Shared
       }
 
       private HttpClient ConstructHttpClient() {
-         // BaseAddress wajib berakhiran '/', kalau tidak segmen terakhir host akan terpotong saat digabung
-         // dengan URI relatif seperti "api/core/Handshake".
-         // disposeHandler: false — handler dilepas sendiri di Dispose, supaya tetap ikut terlepas walau
-         // HttpClient belum pernah dibuat sama sekali.
+         // BaseAddress must end with '/', otherwise the last segment of the host is cut off when combined with
+         // a relative URI such as "api/core/Handshake".
+         // disposeHandler: false - the handler is released by Dispose itself, so it is still released even if
+         // the HttpClient was never created at all.
          _httpClient = new HttpClient(_httpClientHandler, false) {
             BaseAddress = BuildBaseAddress(),
             Timeout = TimeSpan.FromSeconds(
@@ -547,29 +559,35 @@ namespace Em.Ui.Core.Shared
 
       #region General Tools
 
+      /// <inheritdoc />
       public Task<DateTimeOffset> GetServerTimeStampOffsetAsync()
          => GetAsync<DateTimeOffset>(_ctlName, "GetTimeStamp");
 
+      /// <inheritdoc />
       public async Task<DateTime> GetServerTimeStampAsync() {
          var result = await GetServerTimeStampOffsetAsync();
          return result.LocalDateTime;
       }
+      /// <inheritdoc />
       public Task<Ulid> GetUlidAsync() => GetAsync<Ulid>(_ctlName, "GetUlid");
+      /// <inheritdoc />
       public Task<Ulid[]> GetUlidManyAsync(int count) => GetAsync<Ulid[]>(_ctlName, "GetUlidMany", count);
 
       #region Base Tools
 
       /// <summary>
-      /// Melepas <see cref="HttpClient"/> milik instance ini beserta handler dan koneksi TCP yang masih terbuka.
-      /// Panggil saat profil koneksi diganti atau saat client sudah tidak dipakai; sesudah ini instance tidak boleh
-      /// dipakai lagi. Handler yang disuplai lewat <see cref="Create(ApiConnection, HttpClientHandler)"/> ikut
-      /// di-dispose, jadi jangan dipakai bersama-sama dengan instance <see cref="ApiClient"/> lain.
+      /// Releases this instance's <see cref="HttpClient"/> together with its handler and any TCP connections
+      /// still open. Call it when the connection profile is changed or when the client is no longer used;
+      /// after this the instance must not be used again. A handler supplied through
+      /// <see cref="Create(ApiConnection, HttpClientHandler)"/> is disposed too, so do not share it with
+      /// another <see cref="ApiClient"/> instance.
       /// </summary>
       public void Dispose() {
          Dispose(true);
          GC.SuppressFinalize(this);
       }
 
+      /// <summary>Releases the resources of this client.</summary>
       protected virtual void Dispose(bool disposing) {
          if (_disposed) {
             return;
@@ -588,9 +606,9 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Menyusun URL relatif untuk action GET: <c>api/{controller}/{action}</c> plus argumen sebagai query
-      /// string bernama <c>par1</c>, <c>par2</c>, dan seterusnya sesuai urutan argumen. Server mem-binding
-      /// parameter action berdasarkan nomor urut ini, bukan berdasarkan nama parameter.
+      /// Builds the relative URL of a GET action: <c>api/{controller}/{action}</c> plus the arguments as named
+      /// query string entries <c>par1</c>, <c>par2</c>, and so on in argument order. The server binds the
+      /// action's parameters by this ordinal, not by parameter name.
       /// </summary>
       public string BuildGetUrl(string controller, string action, object?[] args) {
          var url = $"api/{controller}/{action}";
@@ -600,9 +618,9 @@ namespace Em.Ui.Core.Shared
 
          var query = new StringBuilder();
          for (var index = 0; index < args.Length; index++) {
-            // Argumen null sengaja tidak dikirim sama sekali: server memperlakukan parN yang tidak ada sebagai
-            // null/nilai default parameter. Karena penamaannya ordinal, melewati satu parN tidak menggeser
-            // posisi argumen sesudahnya.
+            // A null argument is deliberately not sent at all: the server treats a missing parN as null/the
+            // parameter's default value. Because the naming is ordinal, skipping one parN does not shift the
+            // position of the arguments after it.
             if (FormatArgument(args[index]) is not { } value) {
                continue;
             }
@@ -616,15 +634,16 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// Mengubah satu argumen jadi teks query string. Selalu memakai <see cref="CultureInfo.InvariantCulture"/>
-      /// karena server membaca ulang nilainya lewat <c>ConvertFromInvariantString</c> — kalau client memakai
-      /// culture lokal (mis. koma sebagai pemisah desimal) nilainya akan salah baca di server.
+      /// Converts one argument into query string text. Always uses <see cref="CultureInfo.InvariantCulture"/>
+      /// because the server reads the value back through <c>ConvertFromInvariantString</c> - if the client
+      /// used a local culture (e.g. a comma as the decimal separator) the value would be misread on the
+      /// server.
       /// </summary>
       private static string? FormatArgument(object? value) => value switch {
          null => null,
          string text => text,
-         // Format "O" (round-trip) mempertahankan pecahan detik dan offset zona waktu, yang akan hilang kalau
-         // dibiarkan memakai format default TypeConverter.
+         // The "O" (round-trip) format keeps fractional seconds and the time zone offset, which would be lost
+         // if the TypeConverter's default format were used.
          DateTime date => date.ToString("O", CultureInfo.InvariantCulture),
          DateTimeOffset dateOffset => dateOffset.ToString("O", CultureInfo.InvariantCulture),
          IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),

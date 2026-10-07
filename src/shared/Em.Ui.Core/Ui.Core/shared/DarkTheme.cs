@@ -1,17 +1,17 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Palet standar Em untuk mode gelap, pasangan <see cref="LightTheme"/>. Dipakai
-   /// <see cref="BrandingInfo.DarkTheme"/> kalau aplikasi tidak memasang tema gelap sendiri.
+   /// The standard Em palette for dark mode, a pair of <see cref="LightTheme"/>. Used by
+   /// <see cref="BrandingInfo.DarkTheme"/> when the application does not install its own dark theme.
    /// </summary>
    /// <remarks>
-   /// Kelas ini sengaja tidak <c>sealed</c>: aplikasi boleh menurunkannya untuk mengganti sebagian
-   /// warna, atau cukup memakai object initializer.
+   /// This class is deliberately not <c>sealed</c>: an application may derive from it to replace some of
+   /// the colors, or simply use an object initializer.
    /// </remarks>
    public class DarkTheme : ThemeBase
    {
       /// <summary>
-      /// Membuat tema gelap dengan palet standar Em.
+      /// Creates a dark theme with the standard Em palette.
       /// </summary>
       public DarkTheme() : base(ThemeVariant.Dark) {
          Primary = ThemeColor.Parse("#A6C8FF");

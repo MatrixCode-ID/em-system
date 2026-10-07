@@ -6,18 +6,18 @@ using Em.Ui.Core.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Model UI untuk satu role - sekumpulan hak yang bisa dipegang banyak user sekaligus, dengan
-   /// masa berlaku per penugasan. Kolom role-nya sendiri disimpan lewat jalur biasa
-   /// <see cref="UiModel{TEntity,TService}"/>; isi role - hak dan anggotanya - tinggal di baris
-   /// tersendiri dan karena itu punya method sendiri yang langsung berbicara ke server.
+   /// UI model of one role - a set of rights that many users can hold at once, with a validity period per
+   /// assignment. The role's own columns are saved through the ordinary route of
+   /// <see cref="UiModel{TEntity,TService}"/>; the role's content - its rights and its members - lives in
+   /// separate rows and therefore has its own methods that talk to the server directly.
    /// </summary>
    public class Role : UiModel<vi_Role, ICredentialServices>
    {
       #region Statics
 
       /// <summary>
-      /// Membuat role kosong yang belum pernah tersimpan. Barisnya baru benar-benar lahir saat
-      /// <see cref="UiModel{TEntity,TService}.SaveAsync"/> dipanggil - id-nya diterbitkan di sana.
+      /// Creates an empty role that has never been saved. The row is only really born when
+      /// <see cref="UiModel{TEntity,TService}.SaveAsync"/> is called - its id is issued there.
       /// </summary>
       public static Role CreateNewRole(IEmApp app) {
          // Both starting values go on the raw row rather than on the model, because that row also
@@ -32,6 +32,7 @@ namespace Em.Api.Core.Models
          return role;
       }
 
+      /// <summary>Gets one role by its id.</summary>
       public static async Task<Role> GetRole_ByIdAsync(IEmApp app, string cRoleId) {
          var svc = app.ServiceProvider.GetRequiredService<ICredentialServices>();
          var data = await svc.GetVi_Role_ById(cRoleId);
@@ -40,15 +41,18 @@ namespace Em.Api.Core.Models
             : Build(app, data);
       }
 
+      /// <summary>Gets one page of roles.</summary>
       public static async Task<Role[]> GetRoles_InPageAsync(IEmApp app, int page, int pageSize) {
          var svc = app.ServiceProvider.GetRequiredService<ICredentialServices>();
          var rows = await svc.GetVi_Roles_InPage(page, pageSize);
          return [.. rows.Select(r => Build(app, r))];
       }
 
+      /// <summary>Gets the number of roles, for paging.</summary>
       public static Task<int> GetRoles_PageCountAsync(IEmApp app) =>
          app.ServiceProvider.GetRequiredService<ICredentialServices>().GetTa_Roles_Count();
 
+      /// <summary>Wraps a role view row in a model.</summary>
       public static Role Build(IEmApp app, vi_Role data) => new(app, data);
 
       #endregion
@@ -57,36 +61,40 @@ namespace Em.Api.Core.Models
 
       #region Properties
 
+      /// <summary>Id of the role.</summary>
       public string cRoleId {
          get;
          private set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>Name of the role.</summary>
       public string cRoleName {
          get;
          set => SetField(ref field, value);
       } = string.Empty;
 
+      /// <summary>State of the role.</summary>
       public RoleState cRoleState {
          get;
          set => SetField(ref field, value);
       }
 
+      /// <summary>Description of the role.</summary>
       public string? cRoleDescription {
          get;
          set => SetField(ref field, value);
       }
 
       /// <summary>
-      /// Banyaknya user yang memegang role ini. Diisi dari luar oleh <see cref="RoleCollection"/>
-      /// yang membaca angkanya untuk seluruh daftar sekaligus - bukan dihitung sendiri per role,
-      /// karena satu daftar berisi belasan role dan itu akan jadi belasan permintaan ke server.
+      /// Number of users who hold this role. Filled from outside by <see cref="RoleCollection"/>, which reads
+      /// the numbers for the whole list at once - not computed per role, because a list holds a dozen roles
+      /// and that would become a dozen requests to the server.
       /// </summary>
       /// <remarks>
-      /// Sengaja tidak lewat <c>SetField</c>: angka ini bukan kolom baris ini - ia dihitung dari
-      /// baris penugasan di tabel lain - jadi mengisinya tidak boleh menandai role-nya berubah.
-      /// Kalau iya, setiap role yang baru saja dibaca akan langsung terbaca sebagai role yang punya
-      /// perubahan belum tersimpan, hanya karena daftarnya mengisikan angkanya.
+      /// Deliberately not through <c>SetField</c>: this number is not a column of this row - it is computed
+      /// from the assignment rows in another table - so filling it must not mark the role as changed. If it
+      /// did, every role that was just read would immediately read as a role with unsaved changes, only
+      /// because the list filled in its number.
       /// </remarks>
       public int MemberCount {
          get;
@@ -98,7 +106,7 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Banyaknya hak yang dibawa role ini. Diisi dari luar dengan alasan yang sama seperti
+      /// Number of rights this role carries. Filled from outside for the same reason as
       /// <see cref="MemberCount"/>.
       /// </summary>
       /// <inheritdoc cref="MemberCount" />
@@ -115,6 +123,7 @@ namespace Em.Api.Core.Models
 
       #region UiModel Implementation
 
+      /// <inheritdoc />
       protected override void ReadFrom(vi_Role source) {
          cRoleId = source.cRoleId;
          cRoleName = source.cRoleName;
@@ -125,6 +134,7 @@ namespace Em.Api.Core.Models
          json_object = source.json_object;
       }
 
+      /// <inheritdoc />
       protected override void WriteTo(vi_Role target) {
          target.cRoleId = cRoleId;
          target.cRoleName = cRoleName;
@@ -135,10 +145,13 @@ namespace Em.Api.Core.Models
          target.json_object = json_object;
       }
 
+      /// <inheritdoc />
       protected override Task<vi_Role?> FetchAsync() => Service.GetVi_Role_ById(cRoleId);
 
+      /// <inheritdoc />
       protected override Task UpdateAsync(vi_Role entity) => Service.PostTa_Role_Update(entity);
 
+      /// <inheritdoc />
       protected override Task InsertAsync(vi_Role entity) {
          entity.cRoleId = $"{Ulid.NewUlid()}";
 
@@ -149,6 +162,7 @@ namespace Em.Api.Core.Models
          return Service.PostTa_Role_New(entity);
       }
 
+      /// <inheritdoc />
       protected override JsonObject BuildJson(JsonObject patch) => patch;
 
       /// <inheritdoc />
@@ -158,15 +172,15 @@ namespace Em.Api.Core.Models
 
       #region Claims
 
-      /// <summary>Hak yang dibawa role ini, dibaca langsung dari server.</summary>
+      /// <summary>The rights this role carries, read directly from the server.</summary>
       public async Task<ClaimAction[]> GetRoleClaims() {
          var rows = await Service.GetTa_RoleClaims_ByRoleId(cRoleId);
          return [.. rows.Select(r => ClaimAction.FromKey(r.cClaimName))];
       }
 
       /// <summary>
-      /// Menambahkan satu hak ke role ini. Hak yang sudah dipegang dilewati diam-diam oleh server,
-      /// jadi memanggilnya dua kali bukan kesalahan.
+      /// Adds one right to this role. A right that is already held is silently skipped by the server, so
+      /// calling it twice is not an error.
       /// </summary>
       public Task AddClaim(ClaimAction action) {
          EnsureSaved();
@@ -176,7 +190,7 @@ namespace Em.Api.Core.Models
          });
       }
 
-      /// <summary>Mencabut satu hak dari role ini.</summary>
+      /// <summary>Revokes one right from this role.</summary>
       public Task RemoveClaim(ClaimAction action) {
          EnsureSaved();
          return Service.PostTa_RoleClaim_Delete(new ta_RoleClaim {
@@ -190,8 +204,8 @@ namespace Em.Api.Core.Models
       #region Members
 
       /// <summary>
-      /// User yang memegang role ini. Masa berlaku penugasannya tidak ikut di sini - baca
-      /// <see cref="GetAssignments"/> untuk itu, dan jodohkan keduanya lewat <c>cUserId</c>.
+      /// The users who hold this role. The validity period of their assignment is not here - read
+      /// <see cref="GetAssignments"/> for that, and pair the two through <c>cUserId</c>.
       /// </summary>
       public async Task<User[]> GetMembers() {
          var rows = await Service.GetVi_Users_ByRoleId(cRoleId);
@@ -199,18 +213,17 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Penugasan role ini berikut masa berlakunya, satu baris per user. Sepasang dengan
-      /// <see cref="GetMembers"/>: yang satu menjawab siapa, yang satu menjawab sejak dan sampai
-      /// kapan.
+      /// The assignments of this role together with their validity period, one row per user. A pair with
+      /// <see cref="GetMembers"/>: one answers who, the other answers since and until when.
       /// </summary>
       public Task<ta_UserRole[]> GetAssignments() => Service.GetTa_UserRoles_ByRoleId(cRoleId);
 
       /// <summary>
-      /// Memberikan role ini kepada seorang user.
+      /// Gives this role to a user.
       /// </summary>
-      /// <param name="member">User yang diberi role ini.</param>
-      /// <param name="start">Awal masa berlakunya; <c>null</c> berarti berlaku sejak sekarang.</param>
-      /// <param name="expiry">Akhir masa berlakunya; <c>null</c> berarti tanpa akhir.</param>
+      /// <param name="member">The user who is given this role.</param>
+      /// <param name="start">Start of its validity; <c>null</c> means valid from now.</param>
+      /// <param name="expiry">End of its validity; <c>null</c> means no end.</param>
       public async Task AddMember(User member, DateTime? start = null, DateTime? expiry = null) {
          EnsureSaved();
          EnsureNotSystemAccount(member);
@@ -227,19 +240,19 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Mengubah masa berlaku penugasan yang sudah ada, tanpa mencabut dan memberikannya ulang -
-      /// yang akan menghapus kapan penugasan itu pertama kali dibuat.
+      /// Changes the validity period of an existing assignment, without revoking and granting it again -
+      /// which would erase when the assignment was first created.
       /// </summary>
-      /// <param name="member">User pemegang penugasan tersebut.</param>
-      /// <param name="start">Awal masa berlaku yang baru; <c>null</c> berarti sejak dibuat.</param>
-      /// <param name="expiry">Akhir masa berlaku yang baru; <c>null</c> berarti tanpa akhir.</param>
+      /// <param name="member">The user who holds that assignment.</param>
+      /// <param name="start">The new start of validity; <c>null</c> means since it was created.</param>
+      /// <param name="expiry">The new end of validity; <c>null</c> means no end.</param>
       public async Task SetMemberPeriod(User member, DateTime? start, DateTime? expiry) {
          EnsureSaved();
          EnsureNotSystemAccount(member);
 
-         // Baris lamanya dibaca dulu, bukan disusun ulang dari nol: datestamp-nya menyimpan kapan
-         // penugasan ini dibuat, dan menulis baris baru di atasnya akan menggantinya dengan
-         // sekarang - seolah orang ini baru saja diberi role.
+         // The old row is read first, not rebuilt from scratch: its datestamp keeps when this assignment was
+         // created, and writing a new row over it would replace that with now - as if this person had just been
+         // given the role.
          var assignments = await Service.GetTa_UserRoles_ByRoleId(cRoleId);
          var assignment = assignments.SingleOrDefault(r => r.cUserId == member.cUserId)
             ?? throw new InvalidOperationException(
@@ -251,7 +264,7 @@ namespace Em.Api.Core.Models
          await Service.PostTa_UserRole_Update(assignment);
       }
 
-      /// <summary>Mencabut role ini dari seorang user.</summary>
+      /// <summary>Revokes this role from a user.</summary>
       public Task RemoveMember(User member) {
          EnsureSaved();
          EnsureNotSystemAccount(member);
@@ -267,19 +280,18 @@ namespace Em.Api.Core.Models
       #region Content
 
       /// <summary>
-      /// Mengirim seluruh perubahan isi role ini - hak dan anggotanya - dalam satu panggilan.
-      /// Satu-satunya pintu yang dipakai layar pengelola role; <see cref="AddClaim"/> dan
-      /// kawan-kawannya tetap ada untuk pemanggil yang memang hanya mengubah satu hal.
+      /// Sends all changes to the content of this role - rights and members - in a single call. The only door
+      /// used by the role manager screen; <see cref="AddClaim"/> and its companions remain for callers that
+      /// really change only one thing.
       /// <para>
-      /// Tidak menyimpan keadaan apa pun: yang diterima adalah selisihnya, bukan keadaan yang
-      /// diinginkan, sehingga yang memegang "sebelum" dan "sesudah" tetap pemanggil. Seluruh
-      /// operasinya tahan diulang - kalau pengiriman putus di tengah jalan, mengirim selisih yang
-      /// sama sekali lagi akan menuntaskannya tanpa menggandakan apa pun.
+      /// Keeps no state: what is received is the difference, not the desired state, so the caller still holds
+      /// the "before" and "after". All of its operations tolerate being repeated - if the submission is cut
+      /// off midway, sending the same difference once more finishes it without duplicating anything.
       /// </para>
       /// </summary>
-      /// <param name="set">Selisih yang dikirim. Yang kosong tidak menghasilkan permintaan apa pun.</param>
+      /// <param name="set">The difference to send. An empty one produces no request at all.</param>
       /// <exception cref="InvalidOperationException">
-      /// Kalau role ini belum pernah tersimpan, atau kalau <paramref name="set"/> ternyata milik role lain.
+      /// When this role has never been saved, or when <paramref name="set"/> turns out to belong to another role.
       /// </exception>
       public async Task SaveContentAsync(RoleSet set) {
          ArgumentNullException.ThrowIfNull(set);
@@ -292,23 +304,22 @@ namespace Em.Api.Core.Models
 
          if (set.IsEmpty) return;
 
-         // Pencabutan dikirim lebih dulu supaya hak yang dicabut sekaligus diberikan ulang dengan
-         // masa berlaku berbeda tidak saling menimpa urutannya.
+         // Revocations are sent first so a right that is revoked and granted again with a different validity
+         // period does not overwrite each other's order.
          if (set.ClaimsRevoked.Length > 0) await Service.PostTa_RoleClaim_DeleteBatch(set.ClaimsRevoked);
          if (set.ClaimsGranted.Length > 0) await Service.PostTa_RoleClaim_NewBatch(set.ClaimsGranted);
 
          if (set.MembersRemoved.Length > 0) await Service.PostTa_UserRole_DeleteBatch(set.MembersRemoved);
          if (set.MembersAdded.Length > 0) await Service.PostTa_UserRole_NewBatch(set.MembersAdded);
 
-         // Satu per satu, karena tidak ada action batch untuk perubahan masa berlaku - dan yang
-         // diubah masa berlakunya dalam satu kali simpan memang jarang lebih dari satu dua baris.
+         // One by one, because there is no batch action for validity period changes - and a single save rarely
+         // changes the validity period of more than one or two rows.
          foreach (var assignment in set.MembersRescheduled) {
             await Service.PostTa_UserRole_Update(assignment);
          }
 
-         // Angka di baris rail ikut bergerak tanpa membaca ulang seluruh halaman. Dihitung dari
-         // selisih yang barusan terkirim, jadi ia tidak bisa menyimpang dari apa yang benar-benar
-         // berubah di server.
+         // The number on the rail row moves along without reading the whole page again. Computed from the
+         // difference that was just sent, so it cannot drift from what really changed on the server.
          ClaimCount += set.ClaimsGranted.Length - set.ClaimsRevoked.Length;
          MemberCount += set.MembersAdded.Length - set.MembersRemoved.Length;
       }
@@ -318,8 +329,8 @@ namespace Em.Api.Core.Models
       #region Methods
 
       /// <summary>
-      /// Menghapus role ini sungguhan - bukan menonaktifkannya. Hak yang dibawanya dan seluruh
-      /// penugasannya ikut hilang, dan tidak ada jalan mengembalikannya.
+      /// Deletes this role for real - not deactivates it. The rights it carries and all its assignments
+      /// disappear with it, and there is no way to bring them back.
       /// </summary>
       public Task DeleteAsync() {
          EnsureSaved();
@@ -327,9 +338,9 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Membuat role baru bernama <paramref name="newName"/> yang membawa hak yang sama persis
-      /// dengan role ini. Anggotanya <b>tidak</b> ikut disalin: yang disalin adalah bentuk sebuah
-      /// jabatan, bukan siapa yang sedang memegangnya.
+      /// Creates a new role named <paramref name="newName"/> that carries exactly the same rights as this
+      /// role. Its members are <b>not</b> copied: what is copied is the shape of a position, not who is
+      /// currently holding it.
       /// </summary>
       public async Task<Role> DuplicateAsync(string newName) {
          EnsureSaved();
@@ -342,8 +353,8 @@ namespace Em.Api.Core.Models
 
          var rows = await Service.GetTa_RoleClaims_ByRoleId(cRoleId);
          if (rows.Length > 0) {
-            // Satu permintaan untuk seluruh hak, bukan satu per hak: role yang pantas digandakan
-            // justru yang isinya banyak.
+            // One request for all rights, not one per right: a role worth duplicating is precisely one with many
+            // rights.
             await Service.PostTa_RoleClaim_NewBatch([
                .. rows.Select(r => new ta_RoleClaim { cRoleId = copy.cRoleId, cClaimName = r.cClaimName })
             ]);
@@ -353,9 +364,10 @@ namespace Em.Api.Core.Models
          return copy;
       }
 
-      // Isi role tinggal di baris lain yang menunjuk id role ini, jadi tidak satu pun bisa ditulis
-      // sebelum id itu ada. Ditolak di sini supaya jelas apa yang kurang, bukan dibiarkan jadi
-      // pelanggaran foreign key dari database atas id penanda yang masih terbaca "Save Role...".
+      // The content of a role lives in other rows that point to this role's id, so none of it can be
+      // written before that id exists. Refused here so it is clear what is missing, instead of being left to
+      // become a foreign key violation from the database over a placeholder id that still reads
+      // "Save Role...".
       private void EnsureSaved() {
          if (IsBlank) {
             throw new InvalidOperationException(
@@ -363,9 +375,9 @@ namespace Em.Api.Core.Models
          }
       }
 
-      // Alasannya sama dengan penjaga bernama sama di User: akun debugger dan akun administrator
-      // bawaan berdiri sebagai pengganti user yang login tanpa punya baris user sendiri, jadi tidak
-      // ada yang bisa ditunjuk baris penugasan - dan mereka pun sudah berhak atas segalanya.
+      // The same reason as the guard of the same name in User: the debugger account and the built-in
+      // administrator account stand in for the signed-in user without having a user row of their own, so
+      // there is nothing for an assignment row to point to - and they already have the right to everything.
       private static void EnsureNotSystemAccount(User member) {
          if (member.cUserId is Defaults.DebuggerUserId or Defaults.AdminUserId) {
             throw new SystemAccountException(

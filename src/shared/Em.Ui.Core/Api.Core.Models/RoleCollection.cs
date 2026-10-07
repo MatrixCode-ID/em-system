@@ -7,12 +7,13 @@ using Em.Shared;
 namespace Em.Api.Core.Models
 {
    /// <summary>
-   /// Wadah satu halaman role berikut angka-angka yang menyertainya. Isinya ikut bergerak sendiri
-   /// di layar saat role ditambah atau dihapus - daftarnya <see cref="ObservableCollection{T}"/>
-   /// dan perubahannya diteruskan lewat <see cref="INotifyCollectionChanged"/>.
+   /// Container of one page of roles together with the numbers that go with it. Its content moves by
+   /// itself on screen when a role is added or removed - the list is an
+   /// <see cref="ObservableCollection{T}"/> and its changes are passed on through
+   /// <see cref="INotifyCollectionChanged"/>.
    /// <para>
-   /// Penyaringan dan pencarian sengaja tidak ada di sini: keduanya urusan tampilan, dan
-   /// <c>CollectionView</c> di view model sudah punya jalurnya sendiri untuk itu.
+   /// Filtering and searching are deliberately not here: both are display matters, and the
+   /// <c>CollectionView</c> in the view model already has its own route for them.
    /// </para>
    /// </summary>
    public class RoleCollection : IEnumerable<Role>, INotifyCollectionChanged
@@ -27,11 +28,11 @@ namespace Em.Api.Core.Models
       #region Statics
 
       /// <summary>
-      /// Memuat satu halaman role berikut angka anggota dan angka hak setiap role di dalamnya.
+      /// Loads one page of roles together with the member count and right count of each role in it.
       /// </summary>
-      /// <param name="app">Objek aplikasi pemilik service data.</param>
-      /// <param name="page">Halaman yang dimuat, dimulai dari 1.</param>
-      /// <param name="pageSize">Banyaknya role per halaman.</param>
+      /// <param name="app">The application object that owns the data service.</param>
+      /// <param name="page">The page to load, starting from 1.</param>
+      /// <param name="pageSize">Number of roles per page.</param>
       public static async Task<RoleCollection> LoadAsync(IEmApp app, int page = 1, int pageSize = 50) {
          var result = new RoleCollection(app) {
             Page = page < 1 ? 1 : page,
@@ -45,6 +46,7 @@ namespace Em.Api.Core.Models
 
       #region IEnumerable<T> Implementation
 
+      /// <inheritdoc />
       public IEnumerator<Role> GetEnumerator() => _roles.GetEnumerator();
 
       IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -60,44 +62,45 @@ namespace Em.Api.Core.Models
 
       #region Properties
 
-      /// <summary>Objek aplikasi tempat wadah ini hidup, sumber DI container dan waktu server.</summary>
+      /// <summary>The application object this container lives in, the source of the DI container and the server time.</summary>
       public IEmApp App { get; }
 
-      /// <summary>Banyaknya role di halaman yang sedang dipegang wadah ini.</summary>
+      /// <summary>Number of roles on the page this container currently holds.</summary>
       public int Count => _roles.Count;
 
-      /// <summary>Banyaknya role seluruhnya di server, bukan hanya yang ada di halaman ini.</summary>
+      /// <summary>Total number of roles on the server, not just those on this page.</summary>
       public int TotalCount {
          get;
          private set;
       }
 
-      /// <summary>Banyaknya penugasan role seluruhnya di server - berapa kali role dipegang seseorang.</summary>
+      /// <summary>Total number of role assignments on the server - how many times roles are held by someone.</summary>
       public int TotalAssignments {
          get;
          private set;
       }
 
-      /// <summary>Halaman yang sedang dimuat, dimulai dari 1.</summary>
+      /// <summary>The page currently loaded, starting from 1.</summary>
       public int Page {
          get;
          private set;
       } = 1;
 
-      /// <summary>Banyaknya role per halaman.</summary>
+      /// <summary>Number of roles per page.</summary>
       public int PageSize {
          get;
          private set;
       } = 50;
 
+      /// <summary>The role at the given position in this page.</summary>
       public Role this[int index] => _roles[index];
 
       /// <summary>
-      /// Role bernama <paramref name="name"/>. Nama role unik, jadi tidak ada kemungkinan dua
-      /// jawaban. Nama yang tidak ada dianggap kesalahan pemanggil - pakai
-      /// <see cref="Contains"/> lebih dulu kalau "tidak ketemu" memang jawaban yang wajar.
+      /// The role named <paramref name="name"/>. Role names are unique, so there is no possibility of two
+      /// answers. A name that does not exist is treated as the caller's mistake - use
+      /// <see cref="Contains"/> first when "not found" is a normal answer.
       /// </summary>
-      /// <exception cref="InvalidOperationException">Kalau tidak ada role bernama itu di halaman ini.</exception>
+      /// <exception cref="InvalidOperationException">When there is no role with that name on this page.</exception>
       public Role this[string name] {
          get {
             var result = _roles.SingleOrDefault(r => r.cRoleName == name);
@@ -110,7 +113,7 @@ namespace Em.Api.Core.Models
          }
       }
 
-      /// <summary><c>true</c> kalau ada role bernama <paramref name="name"/> di halaman ini.</summary>
+      /// <summary><c>true</c> when there is a role named <paramref name="name"/> on this page.</summary>
       public bool Contains(string name) => _roles.Any(r => r.cRoleName == name);
 
       #endregion
@@ -120,7 +123,7 @@ namespace Em.Api.Core.Models
       private ICredentialServices Service => App.ServiceProvider.GetRequiredService<ICredentialServices>();
 
       /// <summary>
-      /// Memuat ulang halaman yang sedang dipegang, berikut seluruh angkanya.
+      /// Reloads the page currently held, together with all its numbers.
       /// </summary>
       public async Task ReloadAsync() {
          var svc = Service;
@@ -131,9 +134,8 @@ namespace Em.Api.Core.Models
             _roles.Add(Role.Build(App, row));
          }
 
-         // Satu permintaan untuk angka seluruh daftar, bukan satu per role: halaman berisi puluhan
-         // role, dan menghitungnya satu per satu berarti puluhan perjalanan ke server untuk dua
-         // angka per baris.
+         // One request for the numbers of the whole list, not one per role: a page holds dozens of roles, and
+         // counting them one by one would mean dozens of trips to the server for two numbers per row.
          var counters = (await svc.GetMeta_RoleCounters()).ToDictionary(r => r.cRoleId);
          foreach (var role in _roles) {
             if (!counters.TryGetValue(role.cRoleId, out var counter)) continue;
@@ -146,20 +148,20 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Pindah ke halaman lain lalu memuatnya.
+      /// Moves to another page and loads it.
       /// </summary>
-      /// <param name="page">Halaman yang dituju, dimulai dari 1.</param>
+      /// <param name="page">The target page, starting from 1.</param>
       public Task GoToPageAsync(int page) {
          Page = page < 1 ? 1 : page;
          return ReloadAsync();
       }
 
       /// <summary>
-      /// Membuat role baru di server lalu memasukkannya ke daftar ini, sehingga layar yang terikat
-      /// padanya langsung melihatnya tanpa perlu memuat ulang seluruh halaman.
+      /// Creates a new role on the server and then adds it to this list, so a screen bound to it sees it
+      /// immediately without reloading the whole page.
       /// </summary>
-      /// <param name="name">Nama role baru. Nama role unik di seluruh server.</param>
-      /// <param name="description">Keterangan singkat isinya, boleh <c>null</c>.</param>
+      /// <param name="name">Name of the new role. Role names are unique across the server.</param>
+      /// <param name="description">A short note of its content, may be <c>null</c>.</param>
       public async Task<Role> NewRoleAsync(string name, string? description) {
          var role = Role.CreateNewRole(App);
          role.cRoleName = name;
@@ -172,25 +174,23 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Memasukkan role yang objeknya sudah dibuat pemanggil - biasanya baris draft yang sudah
-      /// hidup di layar sebelum ada apa pun di server. Baris yang belum pernah tersimpan disimpan
-      /// dulu di sini, sehingga pemanggil tidak perlu mengingat urutan "simpan dulu, baru masukkan".
+      /// Adds a role whose object the caller has already created - usually a draft row that already lives on
+      /// screen before there is anything on the server. A row that has never been saved is saved first here,
+      /// so the caller does not need to remember the order "save first, then add".
       /// <para>
-      /// Sepasang dengan <see cref="NewRoleAsync(string,string?)"/>, bukan penggantinya: yang itu
-      /// untuk alur yang namanya sudah diketahui di muka, yang ini untuk alur yang objeknya sudah
-      /// ada lebih dulu.
+      /// A pair with <see cref="NewRoleAsync(string,string?)"/>, not its replacement: that one is for flows
+      /// whose name is known up front, this one for flows whose object already exists first.
       /// </para>
       /// </summary>
-      /// <param name="role">Role yang dimasukkan; boleh sudah tersimpan, boleh masih draft.</param>
-      /// <returns>Role yang sama, sudah tersimpan dan sudah ada di daftar ini.</returns>
+      /// <param name="role">The role to add; may already be saved, may still be a draft.</param>
+      /// <returns>The same role, already saved and already in this list.</returns>
       public async Task<Role> NewRoleAsync(Role role) {
          ArgumentNullException.ThrowIfNull(role);
 
          if (role.IsBlank) await role.SaveAsync();
 
-         // Diperiksa dulu, bukan ditambahkan begitu saja: memanggil ini dua kali atas objek yang
-         // sama - mis. karena simpan yang pertama gagal di langkah lain lalu diulang - tidak boleh
-         // menghasilkan dua baris yang sebenarnya satu role.
+         // Checked first, not simply added: calling this twice on the same object - e.g. because the first save
+         // failed at another step and was repeated - must not produce two rows that are really one role.
          if (!_roles.Contains(role)) {
             _roles.Add(role);
             TotalCount++;
@@ -200,15 +200,15 @@ namespace Em.Api.Core.Models
       }
 
       /// <summary>
-      /// Menghapus satu role sungguhan lalu mengeluarkannya dari daftar ini. Hak dan penugasannya
-      /// ikut hilang - lihat <see cref="Role.DeleteAsync"/>.
+      /// Deletes one role for real and then removes it from this list. Its rights and assignments disappear
+      /// with it - see <see cref="Role.DeleteAsync"/>.
       /// </summary>
       public async Task RemoveAsync(Role role) {
          await role.DeleteAsync();
 
-         // Angka penugasan ikut berkurang sebanyak anggota role yang barusan hilang, dan angka itu
-         // sudah ada di tangan - membaca ulang seluruh halaman hanya untuk dua penghitung toolbar
-         // adalah harga yang tidak perlu dibayar.
+         // The assignment count drops by the number of members of the role that just disappeared, and that
+         // number is already in hand - reading the whole page again just for two toolbar counters is a price
+         // that need not be paid.
          TotalAssignments -= role.MemberCount;
          if (_roles.Remove(role)) TotalCount--;
       }

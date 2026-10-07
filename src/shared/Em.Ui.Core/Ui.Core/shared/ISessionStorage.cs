@@ -1,36 +1,36 @@
 namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Sesi yang disimpan supaya pengguna tidak perlu mengetik password lagi setelah aplikasi ditutup.
-   /// Yang disimpan hanya refresh token berikut keterangan pemiliknya - access token tidak ikut,
-   /// karena umurnya beberapa menit dan sudah pasti mati sebelum aplikasi dibuka lagi.
+   /// A session that is stored so the user does not need to type the password again after the application
+   /// is closed. Only the refresh token is stored, together with a note of its owner - the access token is
+   /// not, because it lives for a few minutes and is certainly dead before the application is opened again.
    /// </summary>
-   /// <param name="RefreshToken">Refresh token yang ditukar saat aplikasi dibuka kembali.</param>
-   /// <param name="cUserId">Pemilik sesi, dipakai memuat identitasnya tanpa menebak dari nama akun.</param>
-   /// <param name="cUserAccount">Nama akun pemilik sesi, untuk mengisi layar login kalau pemulihannya gagal.</param>
+   /// <param name="RefreshToken">The refresh token that is exchanged when the application is opened again.</param>
+   /// <param name="cUserId">Owner of the session, used to load their identity without guessing from the account name.</param>
+   /// <param name="cUserAccount">Account name of the session owner, used to fill the login screen when restoring fails.</param>
    public sealed record SavedSession(string RefreshToken, string cUserId, string cUserAccount);
 
    /// <summary>
-   /// Tempat sesi tersimpan dititipkan, satu per profil koneksi. Kontraknya ada di sini sementara
-   /// pelaksananya ada di layer yang tahu sistem operasinya: yang menyimpan sebuah refresh token wajib
-   /// mengikatnya ke akun mesin yang sedang berjalan, dan cara melakukannya berbeda-beda per platform.
+   /// Where the stored session is deposited, one per connection profile. The contract is here while its
+   /// implementer lives in the layer that knows the operating system: whoever stores a refresh token must
+   /// bind it to the machine account that is running, and how to do that differs per platform.
    /// </summary>
    public interface ISessionStorage
    {
-      /// <summary>Menyimpan (atau menimpa) sesi untuk sebuah profil koneksi.</summary>
-      /// <param name="profileName">Nama profil koneksi pemilik sesi.</param>
-      /// <param name="session">Sesi yang disimpan.</param>
+      /// <summary>Stores (or overwrites) the session of a connection profile.</summary>
+      /// <param name="profileName">Name of the connection profile that owns the session.</param>
+      /// <param name="session">The session to store.</param>
       void Save(string profileName, SavedSession session);
 
       /// <summary>
-      /// Membaca sesi tersimpan milik sebuah profil koneksi; <c>null</c> kalau tidak ada, atau kalau
-      /// yang tersimpan sudah tidak bisa dibuka lagi.
+      /// Reads the stored session of a connection profile; <c>null</c> when there is none, or when what is
+      /// stored can no longer be opened.
       /// </summary>
-      /// <param name="profileName">Nama profil koneksi yang dicari sesinya.</param>
+      /// <param name="profileName">Name of the connection profile whose session is being looked for.</param>
       SavedSession? Load(string profileName);
 
-      /// <summary>Membuang sesi tersimpan milik sebuah profil koneksi.</summary>
-      /// <param name="profileName">Nama profil koneksi yang sesinya dibuang.</param>
+      /// <summary>Discards the stored session of a connection profile.</summary>
+      /// <param name="profileName">Name of the connection profile whose session is discarded.</param>
       void Clear(string profileName);
    }
 }

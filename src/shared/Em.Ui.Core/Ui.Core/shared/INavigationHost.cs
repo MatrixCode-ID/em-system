@@ -1,42 +1,42 @@
 ﻿namespace Em.Ui.Core.Shared
 {
    /// <summary>
-   /// Router navigasi tingkat aplikasi: mengenal seluruh navigasi yang terdaftar, memegang stack
-   /// utama, dan menegakkan aturan "satu judul hanya tampil di satu tempat".
+   /// Application-level navigation router: it knows every registered navigation, holds the main stack, and
+   /// enforces the rule "one title appears in only one place".
    /// <para>
-   /// <see cref="NavigateTo(string,object?)"/> di sini membuka layar relatif ke
-   /// <see cref="MainStack"/> - dipakai dari luar body, mis. menu home atau layar login. Dari dalam
-   /// body, pakai <see cref="INavigationEntry.NavigateTo(string,object?)"/> milik entrinya sendiri.
+   /// <see cref="NavigateTo(string,object?)"/> here opens a screen relative to
+   /// <see cref="MainStack"/> - used from outside a body, e.g. the home menu or the login screen. From
+   /// inside a body, use <see cref="INavigationEntry.NavigateTo(string,object?)"/> of its own entry.
    /// </para>
    /// </summary>
    public interface INavigationHost
    {
-      /// <summary>Dipicu setiap kali sebuah perpindahan navigasi berhasil.</summary>
+      /// <summary>Raised every time a navigation move succeeds.</summary>
       event EventHandler<NavigationEventArgs>? Navigated;
 
-      /// <summary>Seluruh navigasi yang dikenal aplikasi.</summary>
+      /// <summary>All navigations known to the application.</summary>
       IEnumerable<INavigation> Navigations { get; }
 
-      /// <summary>Stack utama aplikasi, yang ditampilkan window atau halaman utamanya.</summary>
+      /// <summary>The application's main stack, shown by its main window or page.</summary>
       INavigationStack MainStack { get; }
 
-      /// <summary>Mencari entri berjudul <paramref name="title"/> di semua stack, home termasuk.</summary>
-      /// <param name="title">Judul entri yang dicari.</param>
-      /// <returns>Entrinya, atau <c>null</c> kalau judul itu belum dipakai di mana pun.</returns>
+      /// <summary>Finds the entry titled <paramref name="title"/> in all stacks, home included.</summary>
+      /// <param name="title">Title of the entry being looked for.</param>
+      /// <returns>The entry, or <c>null</c> when that title is not used anywhere yet.</returns>
       INavigationEntry? FindEntry(string title);
 
       /// <summary>
-      /// Membuka <paramref name="navigation"/> relatif ke <see cref="MainStack"/>. Kalau judul yang
-      /// dihasilkan sudah dipakai sebuah entri, tampilan hanya dipindahkan ke entri itu - tanpa muat
-      /// ulang dan tanpa mengganti datanya.
+      /// Opens <paramref name="navigation"/> relative to <see cref="MainStack"/>. When the resulting title is
+      /// already used by an entry, the display is just moved to that entry - without reloading and without
+      /// replacing its data.
       /// </summary>
-      /// <param name="navigation">Navigasi tujuan.</param>
-      /// <param name="data">Parameter untuk layar tujuan, atau <c>null</c> kalau tidak ada.</param>
-      /// <returns><c>false</c> kalau user tidak berhak membukanya, atau perpindahannya ditolak.</returns>
+      /// <param name="navigation">The target navigation.</param>
+      /// <param name="data">Parameter for the target screen, or <c>null</c> when there is none.</param>
+      /// <returns><c>false</c> when the user is not entitled to open it, or the move is refused.</returns>
       Task<bool> NavigateTo(INavigation navigation, object? data = null);
 
       /// <inheritdoc cref="NavigateTo(INavigation,object?)" />
-      /// <param name="navigationName">Nama navigasi tujuan.</param>
+      /// <param name="navigationName">Name of the target navigation.</param>
       /// <param name="data"><inheritdoc cref="NavigateTo(INavigation,object?)" path="/param[@name='data']" /></param>
       Task<bool> NavigateTo(string navigationName, object? data = null);
    }
