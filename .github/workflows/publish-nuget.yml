@@ -160,3 +160,32 @@ jobs:
             gh release create $tag @packages @flags
           }
           if ($LASTEXITCODE -ne 0) { throw "GitHub Release for $tag failed." }
+
+  # Starts the engine update of each product that builds on these packages. A failure here does not fail
+  # the NuGet release: each product also checks nuget.org once a day and upgrades on its own.
+  # Needs the PRODUCT_DISPATCH_TOKEN secret: a fine-grained token with "Actions: Read and write" on the
+  # product repositories below.
+  notify-products:
+    needs: [validate, publish]
+    if: needs.validate.outputs.version != ''
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        repository: [MatrixCode-ID/EmPorium-House]
+    steps:
+      - name: Dispatch the product engine update
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.PRODUCT_DISPATCH_TOKEN }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          REPOSITORY: ${{ matrix.repository }}
+        run: |
+          if (-not $env:GH_TOKEN) {
+            Write-Host "::warning::PRODUCT_DISPATCH_TOKEN is not set; $env:REPOSITORY picks up $env:VERSION on its daily check."
+            exit 0
+          }
+          gh workflow run release.yml --repo $env:REPOSITORY --ref main -f "emsys_version=$env:VERSION"
+          if ($LASTEXITCODE -ne 0) { throw "Dispatching $env:REPOSITORY failed; its daily check picks up $env:VERSION." }
+          Write-Host "::notice::Started the EmSys $env:VERSION update of $env:REPOSITORY."
