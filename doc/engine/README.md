@@ -26,6 +26,8 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [Container registry user guide](engine-registry-guide.md) ([Indonesia](engine-registry-guide.id.md)) | Step by step through Container Manager, Robots and Publish, every option on annotated screenshots |
 | [Release Manager](engine-release-manager.md) | Preparing, signing and verifying desktop client releases |
 | [Login branding](engine-login-branding.md) | Material/Classic login and background images |
+| [User Manager roles](engine-user-manager.md) | The Roles tab of the user editor: giving roles, periods, saving |
+| [Debug mode](engine-debug-mode.md) | Switch User, Simulate Login and the debug switches of `EmApp` |
 
 ## Reference module
 

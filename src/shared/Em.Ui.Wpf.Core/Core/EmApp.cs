@@ -35,7 +35,7 @@ namespace Em.Ui.Wpf.Core
          // really available is when an active connection is attached - that is, when the connection card on the
          // home screen selects DefaultDebugConnection.
          ActiveConnectionChanged += (_, _) => {
-            if (IsDebugMode && ActiveConnection is not null) {
+            if (IsDebugActive && ActiveConnection is not null) {
                _claimsRefresh = RefreshClaimsAsync();
             }
          };
@@ -60,8 +60,38 @@ namespace Em.Ui.Wpf.Core
       /// </summary>
       public BrandingInfo Branding { get; private set; } = null!;
 
-      /// <summary>Indicates debug mode.</summary>
+      /// <summary>
+      /// Whether this build was started with a debug configuration (<c>EmAppBuilder</c> debug connections).
+      /// It never changes while the application runs; ask <see cref="IsDebugActive"/> for whether the debug
+      /// features are on right now, and <see cref="IsDebugBypass"/> for whether permission checks are skipped.
+      /// </summary>
       public bool IsDebugMode { get; private set; } = false;
+
+      /// <summary>
+      /// Whether a debug build is currently running as a normal application, see Simulate Login. While it is
+      /// on, every debug-only behaviour is off: no debug token is sent, the login screen and sign out work
+      /// as they do without debug, and nothing about the session is stored.
+      /// </summary>
+      public bool IsSimulatingLogin { get; private set; }
+
+      /// <summary>
+      /// Whether debug-only features (the debug connection pick, Switch User, debug cards) are shown: a debug
+      /// build that is not simulating a normal login.
+      /// </summary>
+      public bool IsDebugActive => IsDebugMode && !IsSimulatingLogin;
+
+      /// <summary>
+      /// Whether the client skips its own permission checks: only while debug is active and the active user is
+      /// the debugger account. When a developer switches to another user, the client follows that user's real
+      /// permissions, the same way the server does.
+      /// </summary>
+      public bool IsDebugBypass => IsDebugActive && ActiveUser?.cUserId == Defaults.DebuggerUserId;
+
+      /// <summary>
+      /// Raised when <see cref="IsSimulatingLogin"/> changes, so whatever shows or hides a debug feature (the
+      /// connection pick, the Tools menu, sign out, the SIMULATED chip) can redraw itself.
+      /// </summary>
+      public event EventHandler? DebugStateChanged;
 
       /// <summary>
       /// The password rules in force in this application, read by screens that accept a new password. Filled
@@ -194,14 +224,15 @@ namespace Em.Ui.Wpf.Core
       /// <summary>
       /// Whether <paramref name="navigation"/> may be opened by the active user - used by both the home menu
       /// and <see cref="NavigateTo(Navigation,object?)"/>, so what is hidden and what is refused never
-      /// differ. Debug mode skips the rights check, but not the module check: once the server catalog is
-      /// loaded, a navigation whose module is not declared by the server (e.g. a test module that is turned
-      /// off) is refused for anyone.
+      /// differ. The debugger account skips the rights check (<see cref="IsDebugBypass"/>), but not the module
+      /// check: once the server catalog is loaded, a navigation whose module is not declared by the server
+      /// (e.g. a test module that is turned off) is refused for anyone. A developer acting as another user
+      /// through Switch User gets that user's real rights.
       /// </summary>
       /// <param name="navigation">The navigation about to be opened.</param>
       public bool CanOpen(Navigation navigation) =>
          (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
-         (IsDebugMode || NavigationAccess.CanOpen(navigation, ActiveUser));
+         (IsDebugBypass || NavigationAccess.CanOpen(navigation, ActiveUser));
 
       // Until a server has been asked, module presence is unknown and must not hide anything.
       private bool _serverClaimsLoaded;
@@ -244,15 +275,38 @@ namespace Em.Ui.Wpf.Core
                Subtitle = approval.Subtitle, Description = approval.Description, Navigation = approval,
                Icon = EFontAwesomeIcon.Solid_Check.CreateImageSource(System.Windows.Media.Brushes.Gray) });
          }
-         // Kept as a placeholder: its place in the list is settled, what it does is not yet.
-         tools.Add(new StaticTool {
-            Name = "tools.simulatelogin",
-            Title = "Simulate Login",
-            Subtitle = "Simulate Login",
-            Description = "Go to Login Screen.",
-            Icon = EFontAwesomeIcon.Solid_RightToBracket.CreateImageSource(System.Windows.Media.Brushes.Gray),
-            Invoke = _ => Task.CompletedTask
-         });
+         // The two debug tools close the list. Neither is offered while a login is being simulated: the
+         // application is then meant to behave exactly as it does without debug.
+         if (IsDebugActive) {
+            tools.Add(new StaticTool {
+               Name = "tools.switchuser",
+               Title = "Switch User",
+               Subtitle = "Act as another user",
+               Description = "Debug only: act as another account without its password to test permissions.",
+               Icon = EFontAwesomeIcon.Solid_UserSecret.CreateImageSource(System.Windows.Media.Brushes.Gray),
+               Invoke = owner => {
+                  new Dialogs.SwitchUserDialog(this) { Owner = owner }.ShowDialog();
+                  return Task.CompletedTask;
+               }
+            });
+
+            tools.Add(new StaticTool {
+               Name = "tools.simulatelogin",
+               Title = "Simulate Login",
+               Subtitle = "Run as without debug",
+               Description = "Debug only: sign in with a real account and password, as the application runs without " +
+                             "debug. Exit from the login screen or the SIMULATED chip.",
+               Icon = EFontAwesomeIcon.Solid_RightToBracket.CreateImageSource(System.Windows.Media.Brushes.Gray),
+               Invoke = async owner => {
+                  try {
+                     await BeginLoginSimulationAsync();
+                  }
+                  catch (Exception x) {
+                     owner.ShowMboxError(x);
+                  }
+               }
+            });
+         }
 
          return tools;
       }
@@ -712,7 +766,9 @@ namespace Em.Ui.Wpf.Core
             connection.DebugToken = _suspendedDebugToken;
             _suspendedDebugToken = null;
             client.ClearSession();
-            SessionStorage.Clear(connection.ProfileName);
+            // A simulated login stores nothing and therefore clears nothing: what is stored belongs to the
+            // runs without debug.
+            if (!IsSimulatingLogin) SessionStorage.Clear(connection.ProfileName);
             throw;
          }
 
@@ -725,7 +781,7 @@ namespace Em.Ui.Wpf.Core
          // Storing once at login is not enough: every renewal issues a new refresh token and kills the old one,
          // so what is stored must be overwritten as well - see OnApiClientSessionChanged.
          if (remember) StoreSession();
-         else SessionStorage.Clear(connection.ProfileName);
+         else if (!IsSimulatingLogin) SessionStorage.Clear(connection.ProfileName);
       }
 
       /// <summary>
@@ -743,7 +799,12 @@ namespace Em.Ui.Wpf.Core
       /// <param name="reason">
       /// The sentence shown by the login screen, or <c>null</c> when the user signed out by themselves.
       /// </param>
-      public async Task EndSessionAsync(bool notifyServer, string? reason) {
+      public Task EndSessionAsync(bool notifyServer, string? reason) =>
+         EndSessionCoreAsync(notifyServer, reason, raiseEnded: true);
+
+      // The body of EndSessionAsync. Leaving Simulate Login ends the simulated session the same way but
+      // must not raise SessionEnded, which would put the login screen back up instead of the debugger.
+      private async Task EndSessionCoreAsync(bool notifyServer, string? reason, bool raiseEnded) {
          var client = _sessionClient;
          var connection = _sessionConnection;
 
@@ -766,7 +827,7 @@ namespace Em.Ui.Wpf.Core
          client?.ClearSession();
 
          if (connection is not null) {
-            SessionStorage.Clear(connection.ProfileName);
+            if (!IsSimulatingLogin) SessionStorage.Clear(connection.ProfileName);
             if (_suspendedDebugToken is not null) connection.DebugToken = _suspendedDebugToken;
          }
 
@@ -776,7 +837,7 @@ namespace Em.Ui.Wpf.Core
          _rememberSession = false;
 
          SetActiveUser(null);
-         SessionEnded?.Invoke(this, new SessionEndedEventArgs(reason));
+         if (raiseEnded) SessionEnded?.Invoke(this, new SessionEndedEventArgs(reason));
       }
 
       /// <summary>
@@ -794,7 +855,7 @@ namespace Em.Ui.Wpf.Core
       // token dies as soon as it is exchanged, so what is stored must always be the latest - otherwise the
       // next restart uses a dead token and the user is thrown to the login screen for no visible reason.
       private void OnApiClientSessionChanged(object? sender, EventArgs e) {
-         if (_rememberSession && _sessionClient is { HasSession: true }) StoreSession();
+         if (_rememberSession && !IsSimulatingLogin && _sessionClient is { HasSession: true }) StoreSession();
       }
 
       // The session died on its own midway - the refresh failed, or the session was revoked from elsewhere.

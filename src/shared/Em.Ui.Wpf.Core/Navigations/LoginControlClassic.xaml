@@ -782,6 +782,7 @@
                             TabIndex="3"
                             FontSize="12.5"
                             IsChecked="{Binding RememberMe, Mode=TwoWay}"
+                            Visibility="{Binding IsRememberVisible, Converter={StaticResource boolToVisibility}}"
                             Content="Keep me signed in on this computer" />
 
                   <Button x:Name="signInButton"
@@ -790,6 +791,20 @@
                           IsDefault="True"
                           Command="{Binding Commands[SignInCommand]}"
                           Content="Sign in" />
+
+                  <!-- Simulate Login only: the way back to the debugger without restarting. -->
+                  <Button Margin="0,8,0,0"
+                          HorizontalAlignment="Center"
+                          TabIndex="5"
+                          Style="{StaticResource textButtonStyle}"
+                          Command="{Binding Commands[ExitSimulationCommand]}"
+                          ToolTip="Leave Simulate Login and go back to the debugger account"
+                          Visibility="{Binding IsSimulatingLogin, Converter={StaticResource boolToVisibility}}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_ArrowLeft" FontSize="11" Margin="0,0,7,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Exit simulation (back to debugger)" VerticalAlignment="Center" />
+                     </StackPanel>
+                  </Button>
 
                   <!-- Inline progress, shown while the sign in is out with the server -->
                   <StackPanel x:Name="busyPanel"

@@ -44,6 +44,7 @@ namespace Em.Ui.Wpf.Navigations
       /// <inheritdoc />
       public async Task OnReloadRequested(INavigation sender, NavigationEventArgs args) {
          await _app.ServiceProvider.GetRequiredService<ApprovalAccessCatalog>().LoadAsync();
+         Vm.RefreshDebugState();
          RenderStaticItems();
          RenderMainItems();
          await Task.WhenAll(Vm.StaticToolMenus.Where(m => m.HasStorageRefresh).Select(LoadCardStorageAsync));
@@ -219,11 +220,11 @@ namespace Em.Ui.Wpf.Navigations
       public ObservableCollection<ApiConnection>? ApiConnections => EmApp?.UIConnections;
 
       /// <summary>
-      /// <c>true</c> when the application is running in debug mode. The API Connections card only appears in
-      /// this mode: outside debug, the connection is decided by the application, not chosen by the user from
-      /// the home screen.
+      /// <c>true</c> while the debug features are on (<see cref="Core.EmApp.IsDebugActive"/>). The API
+      /// Connections card only appears then: outside debug, and while a login is being simulated, the
+      /// connection is decided on the login screen, not chosen by the user from the home screen.
       /// </summary>
-      public bool IsDebugMode => EmApp?.IsDebugMode ?? false;
+      public bool IsDebugMode => EmApp?.IsDebugActive ?? false;
 
       /// <summary>
       /// The profile currently chosen on the API Connections card. Setting it also makes it the application's
@@ -295,6 +296,10 @@ namespace Em.Ui.Wpf.Navigations
          SyncSelectedConnection();
       }
 
+      // Simulate Login turns the debug features off and on again while this screen stays alive, so the
+      // card is told to read the switch again every time the home screen reloads.
+      internal void RefreshDebugState() => NotifyChanged(nameof(IsDebugMode));
+
       /// <summary>
       /// Aligns the choice on the card with the latest content of <see cref="ApiConnections"/>. Priority
       /// order: the profile chosen on this card earlier, then the connection active in the application
@@ -304,6 +309,13 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public void SyncSelectedConnection() {
          if (EmApp is null) return;
+
+         // Outside the debug features the card is hidden and the login screen owns the pick, so the
+         // card only mirrors the active connection and never moves it.
+         if (!EmApp.IsDebugActive) {
+            SelectedConnection = FindConnection(EmApp.ActiveConnection?.ProfileName);
+            return;
+         }
 
          SelectedConnection =
             FindConnection(_selectedProfileName)
@@ -328,7 +340,8 @@ namespace Em.Ui.Wpf.Navigations
          // untouched then, so SyncSelectedConnection can put the same profile back afterwards.
          if (connection is not null) _selectedProfileName = connection.ProfileName;
 
-         if (EmApp is not null) EmApp.ActiveConnection = connection;
+         if (EmApp is { IsDebugActive: true } && !ReferenceEquals(EmApp.ActiveConnection, connection))
+            EmApp.ActiveConnection = connection;
 
          // The result belongs to the profile that was tested, so picking another one drops it.
          StatusText = "Not tested";

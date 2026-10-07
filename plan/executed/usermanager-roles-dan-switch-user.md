@@ -1,7 +1,7 @@
 # Plan: User Manager — tab Roles, Switch User, dan Simulate Login (debug)
 
 Tanggal: 2026-10-07
-Status: belum dieksekusi
+Status: dieksekusi 2026-10-07 (lihat Laporan eksekusi)
 Area: `src/shared/Em.Ui.Wpf.Core` (WPF saja)
 
 ## Latar belakang
@@ -431,4 +431,106 @@ seluruh kode selesai. Bila token menipis, hentikan uji/analisa dulu dan catat ya
 
 ## Laporan eksekusi
 
-(diisi saat eksekusi)
+Dieksekusi 2026-10-07 oleh Claude Code. Semua seksi selesai; tidak ada tindakan yang terblokir policy
+(tidak ada folder `plan/usermanager-roles-dan-switch-user-manual/`).
+
+### Yang dikerjakan
+
+**Seksi 1–2 (tab Roles)**
+- `Navigations/UserRoleCardVm.cs` (baru): `UserRoleCardVm` (turunan `NotifyPropertyBase`, bukan
+  `MvvmModelBase`, agar bisa dites tanpa WPF) dan record `UserRoleChanges`. Selisih role dibentuk oleh
+  `UserRoleCardVm.BuildChanges` (public static, tanpa `InternalsVisibleTo`).
+- `UserEditor.xaml.cs`: `RoleCards`, `IsRolesLoading`, `RolesError`, `HasRoleChanges`, `HasRolePeriodError`,
+  `IsSystemAccount`, `RefreshRolesCommand`, `LoadRolesAsync` (jumlah permission dari satu
+  `GetMeta_RoleCounters`; gagal menghitung tidak menggagalkan daftar), `SaveRolesAsync`. Save, Discard,
+  `HasUnsavedChanges`, dan konfirmasi keluar layar ikut perubahan role.
+- `UserEditor.xaml`: tab Access diganti tab Roles (header + refresh, pesan akun sistem, error, loading,
+  kosong, card `WrapPanel` lebar 300). Merge `Styles/Inputs.xaml` untuk `inlineDatePickerStyle`; `switchStyle`
+  lokal mendapat trigger disabled (opacity 0.4).
+
+**Seksi 3 (Switch User dan Simulate Login)**
+- `EmApp`: `IsSimulatingLogin`, `IsDebugActive`, `IsDebugBypass`, event `DebugStateChanged`;
+  `EndSessionCoreAsync(…, raiseEnded)`; penyimpanan sesi dilewati saat simulasi.
+- `Core/EmApp.DebugUser.cs` (baru): `SwitchDebugUserAsync`, `BeginLoginSimulationAsync`,
+  `EndLoginSimulationAsync`, `ConfirmLeaveWorkspaceAsync`.
+- `Dialogs/SwitchUserDialog.xaml(.cs)` (baru): `SwitchUserDialogVm`, `SwitchUserRowVm`.
+- Tools: entri `tools.switchuser` dan `tools.simulatelogin` (keduanya hanya saat `IsDebugActive`).
+- `LoginControlVm` + layar login Material/Classic: `IsRememberVisible`, `IsSimulatingLogin`,
+  `ExitSimulationCommand`, tautan "Exit simulation (back to debugger)".
+- `TabbedMainWindow` dan `SpaNavigationHost`: `SignOutVisibility`, chip `SIMULATED` + Exit,
+  `AccountToolTip` ("Debug: acting as …").
+
+**Seksi 5**: `doc/engine/engine-user-manager.md`, `doc/engine/engine-debug-mode.md` (baru, terdaftar di
+`doc/engine/README.md`); ide `doc/ideas/user-hak-langsung.md`, `maui-switch-user-roles.md`,
+`debug-launch-profile.md`, `user-editor-temuan-render.md`; paragraf baru di `CLAUDE.md`.
+
+### Keputusan per titik `IsDebugMode`
+
+| Titik | Menjadi | Alasan |
+| --- | --- | --- |
+| `EmApp.CanOpen`, `ApprovalAccessCatalog.CanOpen`, `ApprovalManager.HoldsClaim`, `BusinessTaskManager` (IsAdmin), `Em.Test` `TestVmBase`/`TestHome` (isAdmin) | `IsDebugBypass` | bypass hak |
+| Handler `ActiveConnectionChanged` di konstruktor `EmApp` | `IsDebugActive` | refresh claim debug |
+| `TabbedMainWindowVm.IsDebugMode` (combobox koneksi), `SyncSelectedConnection` | `IsDebugActive` | fitur tampilan debug |
+| `DefaultHomeControlVm.IsDebugMode` (card koneksi) | `IsDebugActive` | fitur tampilan debug |
+| `OnSessionEndedAsync`, `RestoreSessionAsync`, `SignOutAsync` | `IsDebugActive` | alur login (Seksi 3d) |
+| `ShowFirstScreenAsync`, `InitDebugMode`, `TabbedMainWindow.ShowSignedInAsync` (reload home SPA) | tetap `IsDebugMode` | konfigurasi build; home SPA perlu reload juga saat simulasi/Switch User |
+| `TestHome` info debug | tampilkan `IsDebugMode`, `IsSimulatingLogin`, `IsDebugBypass` | sesuai plan |
+
+### Keputusan yang diambil saat eksekusi
+
+- Tidak ada dokumen engine yang sudah membahas User Manager atau debug mode, jadi dibuat dua dokumen baru.
+- `SignOutAsync` saat debug aktif kini no-op (sebelumnya menampilkan layar login tanpa sesi); jalur itu
+  digantikan Simulate Login.
+- `SwitchDebugUserAsync` menolak bila `!IsDebugActive` (bukan `!IsDebugMode`), konsisten dengan entri Tools
+  yang tersembunyi saat simulasi.
+- Layout SPA: Switch User dan keluar simulasi juga mengosongkan jalur stack (`MainStack.ReleaseAll`), agar
+  layar user sebelumnya tidak bisa dicapai lewat Back.
+- `BeginLoginSimulationAsync` mengakhiri sesi yang mungkin dipulihkan saat startup debug tanpa memberi tahu
+  server dan tanpa menghapus sesi tersimpan (flag simulasi dinyalakan lebih dulu).
+- `DefaultHomeControlVm` tidak lagi memindahkan `ActiveConnection` saat debug tidak aktif (kartunya hanya
+  mencerminkan koneksi aktif). Tanpa ini, rebuild daftar koneksi setelah login simulasi bisa mengembalikan
+  koneksi ke profil debug.
+- Teks tab Roles dikunci ke `themeWindowForegroundBrush` (isi tab editor mewarisi warna aksen TabItem; bug
+  lama yang juga ada di tab Profile, dicatat di ide), dan DatePicker kartu diberi foreground tema
+  (DatePicker platform berwarna teks tetap, hampir hilang di tema gelap).
+- Daftar Switch User: baris "Inactive" tetap bisa dipilih (server hanya menolak Suspended/Pending/Deleted).
+
+### Hasil uji
+
+- `dotnet build src/frontend/Em.Ui.Wpf.slnx`: 0 error (4 warning lama di `Em.Test.Wpf/TestService.cs`).
+- `dotnet test src/frontend/Em.Ui.Wpf.slnx`: 66 lulus, 0 gagal. Test baru: `UserRoleCardTests` (7) dan
+  `DebugStateTests` (5 kasus).
+- Render PNG `..\.artefacts\em-system\scripts\user-roles-render` (tema terang dan gelap): tab Roles
+  (tersimpan, berubah, error periode, user baru, akun sistem terkunci, busy, loading, error, lebar 980),
+  tab Profile pembanding, dialog Switch User (daftar dengan SYSTEM/CURRENT/redup, tanpa koneksi, loading,
+  ukuran minimum), layar login Material/Classic saat simulasi dan normal. Tidak ada kilatan putih pada
+  switch/DatePicker/ListBox disabled atau busy. Harness juga memeriksa: error periode menahan Save, toggle
+  role menandai unsaved, Discard mengembalikan card.
+- Smoke nyata `..\.artefacts\em-system\scripts\user-roles-smoke` terhadap Em.Api lokal (database sesuai
+  `emapi-config.json` lokal, server uji) dengan debug key pengembangan: 26 cek lulus — user baru + role satu
+  kali Save; start 00:00 dan expiry 23:59:59; editor dibuka ulang tanpa perubahan; reschedule menjaga
+  `datestamp`; role dimatikan menghapus assignment; impersonasi mendapat claim dari role; aksi admin ditolak
+  untuk non-admin; daftar Switch User termuat lewat identitas debugger saat non-admin aktif; akun Suspended
+  ditolak server; simulasi: sign in password asli tanpa debug token, request berjalan dengan bearer, sign out
+  mematikan sesi di server (refresh token ditolak), tidak ada baca/tulis session storage. Run terakhir
+  ditandai FAIL hanya pada langkah cleanup (lihat di bawah); harness sudah diubah agar cleanup diserahkan ke
+  `cleanup.sql`.
+- Data uji dibersihkan dengan `cleanup.sql` (wajib `sqlcmd -I`); laporan akhir 0 user/kontak/role/sesi sisa.
+
+### Temuan (dicatat di `doc/ideas/user-editor-temuan-render.md`)
+
+- `PostTa_User_Delete` hanya menghapus `ta_User` (kontak/alamat/komunikasi tertinggal) dan ditolak FK
+  `FK_ta_UserSession_ta_User` bila user pernah sign in.
+- Warna aksen pada isi tab Profile/Activity editor user, DatePicker bersama tanpa foreground tema, scrollbar
+  bawaan di tema gelap (di harness).
+
+### Verifikasi tertunda (belum bisa dilakukan agent)
+
+- Interaksi mouse di window sungguhan: toggle card, DatePicker, double-click baris Switch User, tombol Exit di
+  chip.
+- Alur Switch User end-to-end di aplikasi WPF yang berjalan (penutupan tab/window, menu dibangun ulang, SPA
+  maupun multi-tab).
+- Alur Simulate Login end-to-end di aplikasi: masuk → login → sign out → login lagi → Exit simulation →
+  kembali sebagai debugger tanpa restart; render chip `SIMULATED` di title bar/header (harness tidak
+  membangun `TabbedMainWindow`/`SpaNavigationHost`).
+- Pemeriksaan scrollbar tema gelap di aplikasi sungguhan (harness tidak memasang tema host).

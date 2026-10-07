@@ -129,6 +129,8 @@ namespace Em.Ui.Wpf.Windows
          var stack = _app.MainStack;
          if (Vm.IsSpaLayout) {
             await stack.NavigateHome();
+            // Every debug build reloads home, simulation included: home outlives Switch User and
+            // Simulate Login, and its tiles and debug card have to follow the new user and state.
             if (_app.IsDebugMode) await stack.Home!.Reload();
             return;
          }
@@ -416,6 +418,7 @@ namespace Em.Ui.Wpf.Windows
          RegisterCommand(nameof(ColorThemeCommand), ColorThemeCommand, ColorThemeCommandAllowed);
          RegisterCommand(nameof(ChangePasswordCommand), ChangePasswordCommand, ChangePasswordCommandAllowed);
          RegisterCommand(nameof(SignOutCommand), SignOutCommand);
+         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand);
          RegisterCommand(nameof(MinimizeCommand), MinimizeCommand);
          RegisterCommand(nameof(MaximizeRestoreCommand), MaximizeRestoreCommand);
          RegisterCommand(nameof(CloseWindowCommand), CloseWindowCommand);
@@ -485,8 +488,11 @@ namespace Em.Ui.Wpf.Windows
          set => Set(value, _ => RefreshChrome());
       }
 
-      /// <summary>Whether the application is running in debug mode.</summary>
-      public bool IsDebugMode => EmApp?.IsDebugMode ?? false;
+      /// <summary>
+      /// Whether the debug features are on (<see cref="Core.EmApp.IsDebugActive"/>): a debug build that is not
+      /// simulating a normal login.
+      /// </summary>
+      public bool IsDebugMode => EmApp?.IsDebugActive ?? false;
 
       /// <summary>Visibility of the row of tabs and the tab list button: only in the multi-tab layout's tab mode.</summary>
       public Visibility TabStripVisibility =>
@@ -517,6 +523,9 @@ namespace Em.Ui.Wpf.Windows
       public bool IsEmptyHintVisible => !IsSpaLayout && IsSignedIn && ActiveTab == null;
 
       private void RefreshChrome() {
+         NotifyChanged(nameof(IsDebugMode));
+         NotifyChanged(nameof(SignOutVisibility));
+         NotifyChanged(nameof(SimulatedChipVisibility));
          NotifyChanged(nameof(TabStripVisibility));
          NotifyChanged(nameof(TabListButtonVisibility));
          NotifyChanged(nameof(WorkspaceToolsVisibility));
@@ -960,6 +969,7 @@ namespace Em.Ui.Wpf.Windows
          app.ActiveUserChanged += AppActiveUserChanged;
          app.ActiveConnectionChanged += AppActiveConnectionChanged;
          app.UIConnections.CollectionChanged += AppConnectionsChanged;
+         app.DebugStateChanged += AppDebugStateChanged;
          NotifyChanged(nameof(Connections));
          RefreshChrome();
          RefreshUser();
@@ -972,10 +982,20 @@ namespace Em.Ui.Wpf.Windows
          app.ActiveUserChanged -= AppActiveUserChanged;
          app.ActiveConnectionChanged -= AppActiveConnectionChanged;
          app.UIConnections.CollectionChanged -= AppConnectionsChanged;
+         app.DebugStateChanged -= AppDebugStateChanged;
+      }
+
+      // Simulate Login switches the debug features off or back on: the connection pick, sign out,
+      // the SIMULATED chip and the Tools menu all follow.
+      private void AppDebugStateChanged(object? sender, EventArgs e) {
+         RefreshChrome();
+         RefreshUser();
+         if (IsSignedIn) RebuildMenus();
       }
 
       private void AppActiveUserChanged(object? sender, EventArgs e) {
          RefreshUser();
+         RefreshChrome();
          if (IsSignedIn) RebuildMenus();
       }
 
@@ -1007,11 +1027,11 @@ namespace Em.Ui.Wpf.Windows
          });
       }
 
-      // Only in debug mode, the one mode the combobox is shown in. Elsewhere the login screen picks the
+      // Only while debug is active, the one state the combobox is shown in. Elsewhere the login screen picks the
       // connection, and a rebuilt list must not swap the active one for a fresh object of the same
       // profile - the session belongs to the object it was opened on.
       private void SyncSelectedConnection() {
-         if (EmApp is not { IsDebugMode: true } app) return;
+         if (EmApp is not { IsDebugActive: true } app) return;
 
          // Looked up by profile name: rebuilding the list replaces every stored profile with a new
          // object, so a reference held from before the rebuild is no longer in the collection.
@@ -1236,6 +1256,32 @@ namespace Em.Ui.Wpf.Windows
          set => Set(value);
       }
 
+      /// <summary>
+      /// The tooltip of the account button: the user's name, and in debug mode a reminder when the developer
+      /// is acting as another account through Switch User.
+      /// </summary>
+      public string AccountToolTip {
+         get => Get(string.Empty);
+         set => Set(value);
+      }
+
+      /// <summary>
+      /// Visibility of Sign Out in the account menu. Hidden while debug is active - the debugger account
+      /// never signed in, and Simulate Login is the way to test signing in and out - and shown otherwise,
+      /// simulation included.
+      /// </summary>
+      public Visibility SignOutVisibility =>
+         EmApp is { } app && (!app.IsDebugMode || app.IsSimulatingLogin) ? Visibility.Visible : Visibility.Collapsed;
+
+      /// <summary>
+      /// Visibility of the SIMULATED chip and its Exit button in the title row: only while somebody is
+      /// signed in during Simulate Login, in the main window.
+      /// </summary>
+      public Visibility SimulatedChipVisibility =>
+         EmApp is { IsSimulatingLogin: true, ActiveUser: not null } && IsSignedIn && !ClosesWhenEmpty
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
       /// <summary>The user's account name, the second line in the account menu.</summary>
       public string UserAccount {
          get => Get(string.Empty);
@@ -1268,6 +1314,24 @@ namespace Em.Ui.Wpf.Windows
          UserAccount = UserAvatar.Account(user);
          UserInitials = UserAvatar.Initials(user);
          UserAvatarBrush = UserAvatar.Brush(user);
+         AccountToolTip = EmApp is { IsDebugActive: true } app && user is not null && !app.IsDebugBypass
+            ? $"{UserDisplayName}{Environment.NewLine}Debug: acting as {user.cUserAccount}"
+            : UserDisplayName;
+      }
+
+      /// <summary>
+      /// Leaves Simulate Login and goes back to the debugger account, signing the simulated session out of
+      /// the server first.
+      /// </summary>
+      public async Task ExitSimulationCommand() {
+         IsUserMenuOpen = false;
+
+         try {
+            await EmApp!.EndLoginSimulationAsync();
+         }
+         catch (Exception x) {
+            AlertError(x);
+         }
       }
 
       /// <summary>Runs the change password command.</summary>

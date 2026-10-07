@@ -412,7 +412,7 @@ public partial class ApprovalManagerVm : MvvmModelBase, IApprovalPanelHost
       catch (Exception ex) { IsInputValid = false; ShowError("Unable to load the approval panel", ex); }
       finally { if (ownsReading && generation == _generation) IsReading = false; RaiseState(); }
    }
-   private bool HoldsClaim(ClaimAction claim) => EmApp?.IsDebugMode == true || EmApp?.ActiveUser?.cUserIsAdmin == true ||
+   private bool HoldsClaim(ClaimAction claim) => EmApp?.IsDebugBypass == true || EmApp?.ActiveUser?.cUserIsAdmin == true ||
       EmApp?.ActiveUser?.AvailableClaims.Any(c => c.Key.Equals(claim.Key, StringComparison.OrdinalIgnoreCase)) == true;
    private void ShowError(string context, Exception ex) => ErrorMessage = $"{context}. {FriendlyError(ex)}";
    private static string FriendlyError(Exception ex) {

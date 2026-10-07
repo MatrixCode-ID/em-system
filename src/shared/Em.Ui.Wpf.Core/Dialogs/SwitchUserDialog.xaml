@@ -1,0 +1,292 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.SwitchUserDialog"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                    xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                    mc:Ignorable="d"
+                    Title="Switch User"
+                    Width="760"
+                    Height="520"
+                    MinWidth="640"
+                    MinHeight="420"
+                    ResizeMode="CanResize"
+                    ShowMinimizeButton="False"
+                    ShowInTaskbar="False"
+                    WindowStartupLocation="CenterOwner">
+
+   <!--
+      Debug only: pick the account the developer acts as. Laid out like Connection Config - a
+      banner, one card holding the list, and the actions under it.
+   -->
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <Style x:Key="listCaptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.55" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+         </Style>
+
+         <!-- A row that cannot be picked keeps the surface and dims its content, so neither the
+              disabled row nor a busy list ever turns system white. -->
+         <Style x:Key="userRowStyle" TargetType="ListBoxItem">
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
+            <Setter Property="ToolTip" Value="{Binding DisabledReason}" />
+            <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+            <Setter Property="ToolTipService.IsEnabled" Value="{Binding HasDisabledReason}" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                     <Border x:Name="row"
+                             Height="42"
+                             Margin="6,1"
+                             Padding="16,0"
+                             CornerRadius="8"
+                             Background="Transparent">
+                        <Border.InputBindings>
+                           <MouseBinding MouseAction="LeftDoubleClick"
+                                         Command="{Binding DataContext.Commands[SwitchCommand], RelativeSource={RelativeSource AncestorType=Window}}" />
+                        </Border.InputBindings>
+                        <ContentPresenter x:Name="content" VerticalAlignment="Center" />
+                     </Border>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="row" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="row" Property="Background" Value="{StaticResource statePressedBrush}" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                           <Setter TargetName="row" Property="Background" Value="Transparent" />
+                           <Setter TargetName="content" Property="Opacity" Value="0.5" />
+                           <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:SwitchUserDialogVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid Margin="22,4,22,22">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="*" />
+         <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- ==== banner ==== -->
+      <Border Grid.Row="0"
+              CornerRadius="14"
+              Padding="18,16"
+              Background="{StaticResource surfaceStrongBrush}"
+              BorderBrush="{StaticResource outlineBrush}"
+              BorderThickness="1">
+         <Grid>
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Grid Width="42" Height="42" VerticalAlignment="Center">
+               <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+               <fa:FontAwesome Icon="Solid_UserSecret"
+                               FontSize="17"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource themeAccentBrush}" />
+            </Grid>
+
+            <StackPanel Grid.Column="1" Margin="16,0,16,0" VerticalAlignment="Center">
+               <TextBlock Text="Switch User" FontSize="16" FontWeight="SemiBold" />
+               <TextBlock Text="Debug only. Act as another account without its password. The server applies that account's real permissions."
+                          Margin="0,4,0,0"
+                          FontSize="12.5"
+                          Opacity="0.75"
+                          TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Grid.Column="2" Style="{StaticResource chipAccentStyle}" VerticalAlignment="Center"
+                    ToolTip="The account in use now">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_User" FontSize="9" Margin="0,0,6,0" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding CurrentAccount}" VerticalAlignment="Center" />
+               </StackPanel>
+            </Border>
+         </Grid>
+      </Border>
+
+      <!-- ==== search ==== -->
+      <Border Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource searchFieldStyle}">
+         <Grid Margin="14,0">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1"
+                     Margin="10,0,0,0"
+                     Style="{StaticResource searchBoxStyle}"
+                     Tag="Search account, name or e-mail"
+                     AutomationProperties.Name="Search users"
+                     Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
+         </Grid>
+      </Border>
+
+      <!-- ==== list ==== -->
+      <Border Grid.Row="2" Margin="0,12,0,0" Style="{StaticResource cardStyle}">
+         <Grid>
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="Auto" />
+               <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Height="38"
+                    Padding="22,0,8,0"
+                    Background="{StaticResource surfaceStrongBrush}"
+                    BorderBrush="{StaticResource dividerBrush}"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="13,13,0,0">
+               <Grid>
+                  <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="230" />
+                     <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="100" />
+                     <ColumnDefinition Width="70" />
+                     <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="ACCOUNT" Style="{StaticResource listCaptionStyle}" />
+                  <TextBlock Grid.Column="1" Text="NAME" Style="{StaticResource listCaptionStyle}" />
+                  <TextBlock Grid.Column="2" Text="STATE" Style="{StaticResource listCaptionStyle}" />
+                  <TextBlock Grid.Column="3" Text="ROLE" Style="{StaticResource listCaptionStyle}" />
+                  <!-- The list is dynamic, so it carries its own refresh button. -->
+                  <Button Grid.Column="4"
+                          Width="28" Height="28"
+                          FontSize="12"
+                          Style="{StaticResource flatIconButtonStyle}"
+                          Command="{Binding Commands[RefreshCommand]}"
+                          ToolTip="Reload users"
+                          AutomationProperties.Name="Reload users">
+                     <fa:FontAwesome Icon="Solid_RotateRight" />
+                  </Button>
+               </Grid>
+            </Border>
+
+            <ListBox Grid.Row="2"
+                     Padding="0,4"
+                     BorderThickness="0"
+                     Style="{StaticResource surfaceListBoxStyle}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ItemContainerStyle="{StaticResource userRowStyle}"
+                     ItemsSource="{Binding VisibleRows}"
+                     SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                     IsEnabled="{Binding IsNotBusy}">
+               <ListBox.ItemTemplate>
+                  <DataTemplate>
+                     <Grid>
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="230" />
+                           <ColumnDefinition Width="*" />
+                           <ColumnDefinition Width="100" />
+                           <ColumnDefinition Width="70" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,12,0">
+                           <TextBlock Text="{Binding Account}" TextTrimming="CharacterEllipsis"
+                                      VerticalAlignment="Center" MaxWidth="100" ToolTip="{Binding Account}" />
+                           <Border Style="{StaticResource chipMutedStyle}" Margin="6,0,0,0" Padding="6,0"
+                                   Visibility="{Binding IsSystem, Converter={StaticResource boolToVisibility}}">
+                              <TextBlock Text="SYSTEM" FontSize="9.5" />
+                           </Border>
+                           <Border Style="{StaticResource chipAccentStyle}" Margin="6,0,0,0" Padding="6,0"
+                                   Visibility="{Binding IsCurrent, Converter={StaticResource boolToVisibility}}">
+                              <TextBlock Text="CURRENT" FontSize="9.5" />
+                           </Border>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1"
+                                   Margin="0,0,12,0"
+                                   Opacity="0.8"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding FullName}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding FullName}" />
+                        <TextBlock Grid.Column="2" Opacity="0.8" VerticalAlignment="Center" Text="{Binding StateCaption}" />
+                        <TextBlock Grid.Column="3" Opacity="0.8" VerticalAlignment="Center" Text="{Binding RoleCaption}" />
+                     </Grid>
+                  </DataTemplate>
+               </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Loading, failure and an empty search answer take the list's place. -->
+            <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Orientation="Horizontal" IsHitTestVisible="False"
+                        Visibility="{Binding IsLoading, Converter={StaticResource boolToVisibility}}">
+               <fa:FontAwesome Icon="Solid_Spinner" Spin="True" FontSize="12" Opacity="0.6" VerticalAlignment="Center" />
+               <TextBlock Text="Loading users..." Margin="8,0,0,0" Opacity="0.6" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- A row of its own above the list: the two system accounts are still listed. -->
+            <Grid Grid.Row="1" Margin="22,8,8,4"
+                  Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+               </Grid.ColumnDefinitions>
+               <TextBlock Text="{Binding Error}" Foreground="{StaticResource dangerBrush}"
+                          TextWrapping="Wrap" VerticalAlignment="Center" />
+               <Button Grid.Column="1" Margin="8,0,0,0"
+                       Style="{StaticResource textButtonStyle}"
+                       Command="{Binding Commands[RefreshCommand]}"
+                       Content="Try again" />
+            </Grid>
+
+            <TextBlock Grid.Row="2" Text="No account matches the search"
+                       Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsHitTestVisible="False"
+                       Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+         </Grid>
+      </Border>
+
+      <!-- ==== actions ==== -->
+      <StackPanel Grid.Row="3"
+                  Margin="0,18,0,0"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right">
+         <Button Style="{StaticResource filledButtonStyle}"
+                 MinWidth="104"
+                 Command="{Binding Commands[SwitchCommand]}">
+            <StackPanel Orientation="Horizontal">
+               <fa:FontAwesome Icon="Solid_UserSecret" Style="{StaticResource buttonIconStyle}" />
+               <TextBlock Text="Switch" VerticalAlignment="Center" />
+            </StackPanel>
+         </Button>
+         <Button Style="{StaticResource outlinedButtonStyle}"
+                 Margin="8,0,0,0"
+                 MinWidth="104"
+                 IsCancel="True"
+                 Content="Close" />
+      </StackPanel>
+   </Grid>
+</windows:EmWindow>

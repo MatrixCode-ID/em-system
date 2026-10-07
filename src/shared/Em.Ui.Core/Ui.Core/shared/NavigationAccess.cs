@@ -6,8 +6,9 @@ namespace Em.Ui.Core.Shared
    /// <summary>
    /// The single rule "may it be opened or not" for a navigation, used both by the home menu and by
    /// <c>NavigateTo</c> - so what is hidden in the menu and what is refused when opened directly never
-   /// differ. Debug mode is not checked here: that belongs to each side's <c>EmApp</c>, because
-   /// <c>IsDebugMode</c> lives there.
+   /// differ. The debug bypass is not checked here: that belongs to each side's <c>EmApp</c>, where it lives
+   /// (<c>IsDebugBypass</c> on WPF, which only skips the check for the debugger account, and
+   /// <c>IsDebugMode</c> on MAUI).
    /// </summary>
    public static class NavigationAccess
    {

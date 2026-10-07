@@ -49,6 +49,10 @@
             <!-- Round, chrome-less icon buttons for the small in-place actions. -->
             <ResourceDictionary
                Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/FlatIconButton.xaml" />
+            <!-- The shared inputs, for the inline date picker on the role cards. Every key this
+                 file declares itself still wins over the merged one of the same name. -->
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Inputs.xaml" />
          </ResourceDictionary.MergedDictionaries>
 
          <!-- ============================================================
@@ -679,6 +683,12 @@
                            <Setter TargetName="thumb" Property="HorizontalAlignment" Value="Right" />
                            <Setter TargetName="thumb" Property="Margin" Value="0,0,3,0" />
                            <Setter TargetName="thumb" Property="Background" Value="White" />
+                        </Trigger>
+                        <!-- Dimmed rather than recoloured, so a locked switch keeps the
+                             theme's colours on both themes. -->
+                        <Trigger Property="IsEnabled" Value="False">
+                           <Setter Property="Opacity" Value="0.4" />
+                           <Setter Property="Cursor" Value="Arrow" />
                         </Trigger>
                      </ControlTemplate.Triggers>
                   </ControlTemplate>
@@ -1795,230 +1805,235 @@
                </TabItem>
 
                <!-- =====================================================
-                    ACCESS
-                    Roles first, because a role is how access is normally
-                    given; the grid under it is the exceptions - what this
-                    one account may do beyond, or short of, its roles.
+                    ROLES
+                    One card per role on the server, each with a switch.
+                    A role is how access is given; switching a card only
+                    marks the record changed, and Save sends it together
+                    with the rest of the form.
                     ===================================================== -->
-               <TabItem Header="Access">
-                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+               <TabItem Header="Roles">
+                  <!-- The selected tab paints its header in the accent through Foreground, and the
+                       content would inherit it; the theme's text colour is pinned back here. -->
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                TextElement.Foreground="{DynamicResource themeWindowForegroundBrush}">
                      <StackPanel Margin="24,0,24,26">
 
-                        <!-- The tab is a finished design with no engine behind it yet, so the
-                             warning comes before the controls: red, centred, and impossible
-                             to miss before anyone spends time ticking boxes. -->
-                        <Border Margin="0,22,0,4"
-                                CornerRadius="10"
-                                Padding="14,10"
-                                HorizontalAlignment="Center"
-                                Background="{StaticResource dangerChipBrush}"
-                                BorderBrush="{StaticResource dangerBrush}"
-                                BorderThickness="1">
-                           <StackPanel Orientation="Horizontal">
-                              <fa:FontAwesome Icon="Solid_TriangleExclamation"
-                                              FontSize="13"
-                                              Foreground="{StaticResource dangerBrush}"
-                                              VerticalAlignment="Center" />
-                              <TextBlock Margin="10,0,0,0"
-                                         FontSize="12"
-                                         FontWeight="SemiBold"
-                                         VerticalAlignment="Center"
-                                         TextWrapping="Wrap"
-                                         Foreground="{StaticResource dangerBrush}"
-                                         Text="UNDER CONSTRUCTION - nothing on this tab is saved or enforced yet." />
-                           </StackPanel>
-                        </Border>
-                        <TextBlock Text="ROLES" Style="{StaticResource sectionCaptionStyle}" Margin="0,22,0,12" />
-                        <WrapPanel>
-                           <ToggleButton Style="{StaticResource filterChipStyle}" Content="Administrator" />
-                           <ToggleButton Style="{StaticResource filterChipStyle}" Content="Sales Manager" IsChecked="True" />
-                           <ToggleButton Style="{StaticResource filterChipStyle}" Content="Warehouse Supervisor" />
-                           <ToggleButton Style="{StaticResource filterChipStyle}" Content="Finance Officer" />
-                           <ToggleButton Style="{StaticResource filterChipStyle}" Content="Internal Auditor" />
-                           <ToggleButton Style="{StaticResource filterChipStyle}" Content="Read only" />
-                        </WrapPanel>
-
-                        <Grid Margin="0,26,0,0">
+                        <Grid Margin="0,22,0,12">
                            <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                            </Grid.ColumnDefinitions>
-
-                           <StackPanel Grid.Column="0" VerticalAlignment="Bottom">
-                              <TextBlock Text="PERMISSIONS" Style="{StaticResource sectionCaptionStyle}" Margin="0,0,0,4" />
-                              <TextBlock Text="Ticked boxes are what this account may do. A role fills them in; anything changed here overrides the role for this account only."
+                           <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                              <TextBlock Text="ROLES" Style="{StaticResource sectionCaptionStyle}" Margin="0,0,0,4" />
+                              <TextBlock Text="Switch a role on to give it to this account. Changes are saved with the Save button."
                                          Style="{StaticResource fieldHelpStyle}"
                                          Margin="0,0,16,0" />
                            </StackPanel>
-
-                           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
-                              <Button Style="{StaticResource textButtonStyle}" Content="Copy from user" />
-                              <Button Style="{StaticResource textButtonStyle}" Content="Grant all" />
-                              <Button Style="{StaticResource textDangerButtonStyle}" Content="Revoke all" />
-                           </StackPanel>
+                           <!-- The list is dynamic, so it carries its own small refresh button
+                                in its top right corner, like every other dynamic card. -->
+                           <Button Grid.Column="1"
+                                   Style="{StaticResource rowActionButtonStyle}"
+                                   VerticalAlignment="Top"
+                                   Command="{Binding Commands[RefreshRolesCommand]}"
+                                   ToolTip="Reload roles"
+                                   AutomationProperties.Name="Reload roles">
+                              <fa:FontAwesome Icon="Solid_RotateRight" />
+                           </Button>
                         </Grid>
 
-                        <!-- The grid is one card of its own: a header row of actions, then
-                             one row per module. Every row repeats the same column widths,
-                             which is what keeps a box under its own caption. -->
-                        <Border Margin="0,14,0,0"
-                                CornerRadius="12"
-                                Background="{StaticResource surfaceBrush}"
+                        <!-- System accounts already hold everything and have no row a role could
+                             point to, so their cards are shown but locked. -->
+                        <Border Margin="0,0,0,12"
+                                CornerRadius="10"
+                                Padding="14,11"
+                                Background="{StaticResource surfaceStrongBrush}"
                                 BorderBrush="{StaticResource outlineBrush}"
-                                BorderThickness="1">
-                           <StackPanel>
-                              <Border Background="{StaticResource surfaceStrongBrush}"
-                                      BorderBrush="{StaticResource dividerBrush}"
-                                      BorderThickness="0,0,0,1"
-                                      CornerRadius="11,11,0,0">
-                                 <Grid Height="38" Margin="18,0">
-                                    <Grid.ColumnDefinitions>
-                                       <ColumnDefinition Width="*" />
-                                       <ColumnDefinition Width="78" />
-                                       <ColumnDefinition Width="78" />
-                                       <ColumnDefinition Width="78" />
-                                       <ColumnDefinition Width="78" />
-                                       <ColumnDefinition Width="78" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="MODULE" FontSize="11" FontWeight="SemiBold"
-                                               Opacity="0.55" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="VIEW" FontSize="11" FontWeight="SemiBold"
-                                               Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="2" Text="CREATE" FontSize="11" FontWeight="SemiBold"
-                                               Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="3" Text="EDIT" FontSize="11" FontWeight="SemiBold"
-                                               Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="4" Text="DELETE" FontSize="11" FontWeight="SemiBold"
-                                               Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="5" Text="APPROVE" FontSize="11" FontWeight="SemiBold"
-                                               Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                 </Grid>
-                              </Border>
-
-                              <!-- permission row 1 -->
-                              <Grid Height="46" Margin="18,0">
-                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                 </Grid.ColumnDefinitions>
-                                 <TextBlock Grid.Column="0" Text="Consignment Sales" Style="{StaticResource primaryTextStyle}" />
-                                 <CheckBox Grid.Column="1" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="2" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="3" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="4" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="5" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                              </Grid>
-                              <Border Height="1" Background="{StaticResource dividerBrush}" />
-
-                              <!-- permission row 2 -->
-                              <Grid Height="46" Margin="18,0">
-                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                 </Grid.ColumnDefinitions>
-                                 <TextBlock Grid.Column="0" Text="Customers &amp; Contacts" Style="{StaticResource primaryTextStyle}" />
-                                 <CheckBox Grid.Column="1" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="2" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="3" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="4" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="5" Style="{StaticResource gridCheckBoxStyle}" />
-                              </Grid>
-                              <Border Height="1" Background="{StaticResource dividerBrush}" />
-
-                              <!-- permission row 3 -->
-                              <Grid Height="46" Margin="18,0">
-                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                 </Grid.ColumnDefinitions>
-                                 <TextBlock Grid.Column="0" Text="Inventory" Style="{StaticResource primaryTextStyle}" />
-                                 <CheckBox Grid.Column="1" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="2" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="3" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="4" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="5" Style="{StaticResource gridCheckBoxStyle}" />
-                              </Grid>
-                              <Border Height="1" Background="{StaticResource dividerBrush}" />
-
-                              <!-- permission row 4 -->
-                              <Grid Height="46" Margin="18,0">
-                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                 </Grid.ColumnDefinitions>
-                                 <TextBlock Grid.Column="0" Text="Purchasing" Style="{StaticResource primaryTextStyle}" />
-                                 <CheckBox Grid.Column="1" Style="{StaticResource gridCheckBoxStyle}" IsChecked="True" />
-                                 <CheckBox Grid.Column="2" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="3" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="4" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="5" Style="{StaticResource gridCheckBoxStyle}" />
-                              </Grid>
-                              <Border Height="1" Background="{StaticResource dividerBrush}" />
-
-                              <!-- permission row 5 -->
-                              <Grid Height="46" Margin="18,0">
-                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                 </Grid.ColumnDefinitions>
-                                 <TextBlock Grid.Column="0" Text="Finance" Style="{StaticResource primaryTextStyle}" />
-                                 <CheckBox Grid.Column="1" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="2" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="3" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="4" Style="{StaticResource gridCheckBoxStyle}" />
-                                 <CheckBox Grid.Column="5" Style="{StaticResource gridCheckBoxStyle}" />
-                              </Grid>
-                              <Border Height="1" Background="{StaticResource dividerBrush}" />
-
-                              <!-- permission row 6: the administration module is the one a
-                                   role cannot hand out by itself, so its boxes are off and
-                                   the row is dimmed until an administrator role is on. -->
-                              <Grid Height="46" Margin="18,0" Opacity="0.55">
-                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                    <ColumnDefinition Width="78" />
-                                 </Grid.ColumnDefinitions>
-                                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <TextBlock Text="Administration" Style="{StaticResource primaryTextStyle}" />
-                                    <fa:FontAwesome Icon="Solid_Lock" FontSize="10" Margin="8,0,0,0"
-                                                    Opacity="0.7" VerticalAlignment="Center" />
-                                 </StackPanel>
-                                 <CheckBox Grid.Column="1" Style="{StaticResource gridCheckBoxStyle}" IsEnabled="False" />
-                                 <CheckBox Grid.Column="2" Style="{StaticResource gridCheckBoxStyle}" IsEnabled="False" />
-                                 <CheckBox Grid.Column="3" Style="{StaticResource gridCheckBoxStyle}" IsEnabled="False" />
-                                 <CheckBox Grid.Column="4" Style="{StaticResource gridCheckBoxStyle}" IsEnabled="False" />
-                                 <CheckBox Grid.Column="5" Style="{StaticResource gridCheckBoxStyle}" IsEnabled="False" />
-                              </Grid>
-                           </StackPanel>
+                                BorderThickness="1"
+                                Visibility="{Binding IsSystemAccount, Converter={StaticResource boolToVisibility}}">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="Auto" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <fa:FontAwesome Grid.Column="0" Icon="Solid_Lock" FontSize="13"
+                                              Foreground="{StaticResource infoBrush}" VerticalAlignment="Top"
+                                              Margin="0,1,0,0" />
+                              <TextBlock Grid.Column="1" Margin="11,0,0,0" FontSize="12" Opacity="0.75"
+                                         TextWrapping="Wrap"
+                                         Text="System accounts already hold every permission and cannot be given roles." />
+                           </Grid>
                         </Border>
+
+                        <Border Margin="0,0,0,12"
+                                CornerRadius="10"
+                                Padding="14,10"
+                                Background="{StaticResource dangerChipBrush}"
+                                BorderBrush="{StaticResource dangerBrush}"
+                                BorderThickness="1"
+                                Visibility="{Binding HasRolesError, Converter={StaticResource boolToVisibility}}">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="Auto" />
+                                 <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+                              <fa:FontAwesome Grid.Column="0" Icon="Solid_TriangleExclamation" FontSize="13"
+                                              Foreground="{StaticResource dangerBrush}" VerticalAlignment="Top"
+                                              Margin="0,1,0,0" />
+                              <TextBlock Grid.Column="1" Margin="10,0,0,0" FontSize="12" TextWrapping="Wrap"
+                                         Foreground="{StaticResource dangerBrush}">
+                                 <Run Text="The roles could not be loaded:" />
+                                 <Run Text="{Binding RolesError, Mode=OneWay}" />
+                              </TextBlock>
+                           </Grid>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Margin="2,4,0,12"
+                                    Visibility="{Binding IsRolesLoading, Converter={StaticResource boolToVisibility}}">
+                           <fa:FontAwesome Icon="Solid_Spinner" Spin="True" FontSize="12" Opacity="0.6"
+                                           VerticalAlignment="Center" />
+                           <TextBlock Text="Loading roles..." Margin="8,0,0,0" FontSize="12" Opacity="0.6"
+                                      VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Text="No roles yet. Create one in Role Manager."
+                                   Margin="2,4,0,12" FontSize="12" Opacity="0.6"
+                                   Visibility="{Binding IsRolesEmpty, Converter={StaticResource boolToVisibility}}" />
+
+                        <ItemsControl ItemsSource="{Binding RoleCards}" Focusable="False">
+                           <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                 <WrapPanel />
+                              </ItemsPanelTemplate>
+                           </ItemsControl.ItemsPanel>
+                           <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                 <Border x:Name="card"
+                                         Width="300"
+                                         Margin="0,0,12,12"
+                                         Padding="16,14"
+                                         CornerRadius="12"
+                                         Background="{StaticResource surfaceBrush}"
+                                         BorderBrush="{StaticResource outlineBrush}"
+                                         BorderThickness="1">
+                                    <StackPanel>
+                                       <Grid>
+                                          <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*" />
+                                             <ColumnDefinition Width="Auto" />
+                                          </Grid.ColumnDefinitions>
+                                          <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                             <StackPanel Orientation="Horizontal">
+                                                <!-- The accent dot marks a card whose change is
+                                                     still waiting for Save. -->
+                                                <Ellipse x:Name="changedDot" Width="7" Height="7"
+                                                         Margin="0,0,7,0" VerticalAlignment="Center"
+                                                         Fill="{DynamicResource themeAccentBrush}"
+                                                         Visibility="Collapsed"
+                                                         ToolTip="Not saved yet" />
+                                                <TextBlock Text="{Binding RoleName}" FontSize="13.5" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                           ToolTip="{Binding RoleName}" />
+                                             </StackPanel>
+                                             <WrapPanel Margin="0,6,0,0">
+                                                <Border Style="{StaticResource chipMutedStyle}" Margin="0,0,6,4"
+                                                        Padding="8,1"
+                                                        Visibility="{Binding IsRoleInactive, Converter={StaticResource boolToVisibility}}"
+                                                        ToolTip="An inactive role grants nothing until it is made active again.">
+                                                   <TextBlock Text="INACTIVE" FontSize="10" />
+                                                </Border>
+                                                <Border Style="{StaticResource chipWarningStyle}" Margin="0,0,6,4"
+                                                        Padding="8,1"
+                                                        Visibility="{Binding IsScheduled, Converter={StaticResource boolToVisibility}}">
+                                                   <TextBlock Text="{Binding PeriodStateCaption}" FontSize="10" />
+                                                </Border>
+                                                <Border Style="{StaticResource chipDangerStyle}" Margin="0,0,6,4"
+                                                        Padding="8,1"
+                                                        Visibility="{Binding IsExpired, Converter={StaticResource boolToVisibility}}">
+                                                   <TextBlock Text="{Binding PeriodStateCaption}" FontSize="10" />
+                                                </Border>
+                                             </WrapPanel>
+                                          </StackPanel>
+                                          <ToggleButton Grid.Column="1"
+                                                        Style="{StaticResource switchStyle}"
+                                                        VerticalAlignment="Top"
+                                                        IsChecked="{Binding IsAssigned, Mode=TwoWay}"
+                                                        IsEnabled="{Binding IsEditable}"
+                                                        ToolTip="Give this role to the account"
+                                                        AutomationProperties.Name="{Binding RoleName, StringFormat='Give role {0}'}" />
+                                       </Grid>
+
+                                       <TextBlock Text="{Binding RoleDescription}"
+                                                  Margin="0,4,0,0"
+                                                  FontSize="12"
+                                                  Opacity="0.75"
+                                                  TextWrapping="Wrap"
+                                                  TextTrimming="CharacterEllipsis"
+                                                  MaxHeight="34"
+                                                  ToolTip="{Binding RoleDescription}"
+                                                  Visibility="{Binding HasDescription, Converter={StaticResource boolToVisibility}}" />
+                                       <TextBlock Text="{Binding ClaimCountCaption}"
+                                                  Margin="0,4,0,0"
+                                                  FontSize="11"
+                                                  Opacity="0.55"
+                                                  Visibility="{Binding HasClaimCount, Converter={StaticResource boolToVisibility}}" />
+
+                                       <!-- The period only matters for a role that is on, so the
+                                            pickers follow the switch. The pickers name the theme's
+                                            text colour themselves: the platform DatePicker style
+                                            brings a fixed dark one that vanishes on the dark theme. -->
+                                       <Grid Margin="0,12,0,0">
+                                          <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="*" />
+                                             <ColumnDefinition Width="8" />
+                                             <ColumnDefinition Width="*" />
+                                          </Grid.ColumnDefinitions>
+                                          <StackPanel Grid.Column="0">
+                                             <TextBlock Text="Start" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,5" />
+                                             <Border x:Name="startFrame" Style="{StaticResource dateFieldStyle}" Height="34"
+                                                     IsEnabled="{Binding IsPeriodEnabled}">
+                                                <DatePicker Style="{StaticResource inlineDatePickerStyle}"
+                                                            Foreground="{DynamicResource themeWindowForegroundBrush}"
+                                                            FontSize="12"
+                                                            Tag="From now"
+                                                            SelectedDate="{Binding StartDate, Mode=TwoWay}"
+                                                            AutomationProperties.Name="Role start date" />
+                                             </Border>
+                                          </StackPanel>
+                                          <StackPanel Grid.Column="2">
+                                             <TextBlock Text="Expiry" Style="{StaticResource fieldLabelStyle}" Margin="2,0,0,5" />
+                                             <Border x:Name="expiryFrame" Style="{StaticResource dateFieldStyle}" Height="34"
+                                                     IsEnabled="{Binding IsPeriodEnabled}">
+                                                <DatePicker Style="{StaticResource inlineDatePickerStyle}"
+                                                            Foreground="{DynamicResource themeWindowForegroundBrush}"
+                                                            FontSize="12"
+                                                            Tag="No end"
+                                                            SelectedDate="{Binding ExpiryDate, Mode=TwoWay}"
+                                                            AutomationProperties.Name="Role expiry date" />
+                                             </Border>
+                                          </StackPanel>
+                                       </Grid>
+                                       <TextBlock Text="Expiry is before start."
+                                                  Style="{StaticResource fieldErrorStyle}"
+                                                  Visibility="{Binding HasPeriodError, Converter={StaticResource boolToVisibility}}" />
+                                    </StackPanel>
+                                 </Border>
+                                 <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsChanged}" Value="True">
+                                       <Setter TargetName="changedDot" Property="Visibility" Value="Visible" />
+                                       <Setter TargetName="card" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasPeriodError}" Value="True">
+                                       <Setter TargetName="startFrame" Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                                       <Setter TargetName="expiryFrame" Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                                    </DataTrigger>
+                                 </DataTemplate.Triggers>
+                              </DataTemplate>
+                           </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <!-- A note, not a warning: it explains a rule of the screen rather
                              than reporting that something went wrong. -->
-                        <Border Margin="0,16,0,0"
+                        <Border Margin="0,4,0,0"
                                 CornerRadius="10"
                                 Padding="14,11"
                                 Background="{StaticResource surfaceStrongBrush}"

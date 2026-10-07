@@ -172,7 +172,7 @@ namespace Em.Ui.Wpf.Core
       // without a debug connection never has this account at hand at all: it is an administrator
       // that stands in for signing in, and the only place it is allowed to come from is debug mode.
       // Its row exists nowhere on the server - Defaults.DebuggerUserId is what tells it apart.
-      private static User CreateDebuggerUser(EmApp app) =>
+      internal static User CreateDebuggerUser(EmApp app) =>
          User.Build(app, new vi_User {
             cUserId = Defaults.DebuggerUserId,
             cUserAccount = Defaults.DebuggerUserAccount,
@@ -199,7 +199,7 @@ namespace Em.Ui.Wpf.Core
       // and it is created here for the same reason: it stands in for a user without ever being stored as one.
       // The difference is that this account really signs in through the login screen, so it exists in any
       // build, not only in debug mode.
-      private static User CreateAdminUser(EmApp app) =>
+      internal static User CreateAdminUser(EmApp app) =>
          User.Build(app, new vi_User {
             cUserId = Defaults.AdminUserId,
             cUserAccount = Defaults.AdminUserAccount,

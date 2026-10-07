@@ -59,7 +59,10 @@ namespace Em.Ui.Wpf.Navigations
       private void HostLoaded(object sender, RoutedEventArgs e) {
          if (!_activeUserHooked) {
             _app.ActiveUserChanged += AppActiveUserChanged;
+            _app.DebugStateChanged += AppActiveUserChanged;
             _activeUserHooked = true;
+            // Whatever moved while this host was out of the tree is read again now.
+            Vm.RefreshActiveUser();
          }
 
          if (_shortcutWindow != null) return;
@@ -84,6 +87,7 @@ namespace Em.Ui.Wpf.Navigations
       private void HostUnloaded(object sender, RoutedEventArgs e) {
          if (_activeUserHooked) {
             _app.ActiveUserChanged -= AppActiveUserChanged;
+            _app.DebugStateChanged -= AppActiveUserChanged;
             _activeUserHooked = false;
          }
 
@@ -152,8 +156,9 @@ namespace Em.Ui.Wpf.Navigations
          return bitmap;
       }
 
-      // EmApp is a plain object rather than a bindable source, so a new signed-in user does not
-      // reach the account button on its own - this is what tells the toolbar to read it again.
+      // EmApp is a plain object rather than a bindable source, so a new signed-in user - or Simulate
+      // Login starting or ending - does not reach the account button on its own; this is what tells
+      // the toolbar to read it again.
       private void AppActiveUserChanged(object? sender, EventArgs e) => Vm.RefreshActiveUser();
 
       private void AddShortcut(RoutedUICommand gesture, string commandName, Func<Visibility> offered) {
@@ -212,6 +217,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(ColorTheme), ColorTheme, ColorThemeAllowed);
          RegisterCommand(nameof(ChangePasswordCommand), ChangePasswordCommand, ChangePasswordCommandAllowed);
          RegisterCommand(nameof(SignOutCommand), SignOutCommand, SignOutCommandAllowed);
+         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand);
       }
       /// <summary>
       /// The stack shown by this host. The host follows that stack itself - the entry being shown and the
@@ -398,6 +404,32 @@ namespace Em.Ui.Wpf.Navigations
       public SolidColorBrush ActiveUserAvatarBrush => UserAvatar.Brush(ActiveUser);
 
       /// <summary>
+      /// The tooltip of the account button: the user's name, and in debug mode a reminder when the developer
+      /// is acting as another account through Switch User.
+      /// </summary>
+      public string AccountToolTip =>
+         EmApp is { IsDebugActive: true } app && ActiveUser is { } user && !app.IsDebugBypass
+            ? $"{ActiveUserDisplayName}\nDebug: acting as {user.cUserAccount}"
+            : ActiveUserDisplayName;
+
+      /// <summary>
+      /// Visibility of Sign Out in the account menu. Hidden while debug is active - the debugger account
+      /// never signed in, and Simulate Login is the way to test signing in and out - and shown otherwise,
+      /// simulation included.
+      /// </summary>
+      public Visibility SignOutVisibility =>
+         EmApp is { } app && (!app.IsDebugMode || app.IsSimulatingLogin) ? Visibility.Visible : Visibility.Collapsed;
+
+      /// <summary>
+      /// Visibility of the SIMULATED chip and its Exit button: only on the main host, while somebody is signed
+      /// in during Simulate Login.
+      /// </summary>
+      public Visibility SimulatedChipVisibility =>
+         IsMainHost && EmApp is { IsSimulatingLogin: true, ActiveUser: not null }
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+      /// <summary>
       /// Tells the UI to read the active user's identity again. It needs to be called by hand because its
       /// owner (<see cref="Core.EmApp.ActiveUser"/>) is not a source of bindings with notification.
       /// </summary>
@@ -407,6 +439,9 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(ActiveUserAccount));
          NotifyChanged(nameof(ActiveUserInitials));
          NotifyChanged(nameof(ActiveUserAvatarBrush));
+         NotifyChanged(nameof(AccountToolTip));
+         NotifyChanged(nameof(SignOutVisibility));
+         NotifyChanged(nameof(SimulatedChipVisibility));
          Commands[nameof(ChangePasswordCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(SignOutCommand)]?.RaiseCanExecuteChanged();
       }
@@ -444,6 +479,21 @@ namespace Em.Ui.Wpf.Navigations
 
       /// <summary>Whether the sign out command may run now.</summary>
       public bool SignOutCommandAllowed() => EmApp != null;
+
+      /// <summary>
+      /// Leaves Simulate Login and goes back to the debugger account, signing the simulated session out of
+      /// the server first.
+      /// </summary>
+      public async Task ExitSimulationCommand() {
+         IsUserMenuOpen = false;
+
+         try {
+            await EmApp!.EndLoginSimulationAsync();
+         }
+         catch (Exception x) {
+            AlertError(x);
+         }
+      }
 
       #endregion
 

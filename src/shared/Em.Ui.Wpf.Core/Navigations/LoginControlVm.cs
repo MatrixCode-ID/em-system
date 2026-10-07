@@ -45,6 +45,32 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(SignInCommand), SignInCommand, SignInCommandAllowed);
          RegisterCommand<ThemeVariant>(nameof(ChangeThemeCommand), ChangeThemeCommand);
          RegisterCommand(nameof(ConnectionConfigCommand), ConnectionConfigCommand);
+         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand);
+      }
+
+      /// <summary>
+      /// Whether this login screen was opened by Simulate Login in a debug build. The way back to the
+      /// debugger is then offered under the form.
+      /// </summary>
+      public bool IsSimulatingLogin => EmApp?.IsSimulatingLogin == true;
+
+      /// <summary>
+      /// Whether the "keep me signed in" choice is offered. Hidden during Simulate Login, which stores
+      /// nothing about its session.
+      /// </summary>
+      public bool IsRememberVisible => EmApp?.IsSimulatingLogin != true;
+
+      /// <summary>Leaves Simulate Login and goes back to the debugger account.</summary>
+      public async Task ExitSimulationCommand() {
+         // Guarded the same way as ChangeThemeCommand: XAML builds this VM before the host injects EmApp.
+         if (EmApp is null) return;
+
+         try {
+            await EmApp.EndLoginSimulationAsync();
+         }
+         catch (Exception x) {
+            AlertError(x);
+         }
       }
 
       /// <summary>
@@ -159,14 +185,18 @@ namespace Em.Ui.Wpf.Navigations
             // Everything from here on runs on a password that was already accepted. Should it fail -
             // loading the account behind the token, say - the second catch below is the right one:
             // what went wrong is not the pair that was typed.
-            await EmApp!.BeginSessionAsync(token, RememberMe);
+            // A simulated login keeps nothing: the Registry belongs to the runs without debug.
+            var simulating = EmApp!.IsSimulatingLogin;
+            await EmApp!.BeginSessionAsync(token, RememberMe && !simulating);
 
             // The switch itself is saved the moment it is flipped; the name and the profile are only
             // worth keeping once they have actually been used to sign in. The profile is kept as well
             // as the name because a stored session lives under its own connection: without knowing
             // which one, there is nothing to restore at the next start.
-            EmApp!.RememberedUserName = RememberMe ? UserName : null;
-            EmApp!.RememberedProfileName = RememberMe ? SelectedConnection!.ProfileName : null;
+            if (!simulating) {
+               EmApp!.RememberedUserName = RememberMe ? UserName : null;
+               EmApp!.RememberedProfileName = RememberMe ? SelectedConnection!.ProfileName : null;
+            }
 
             SignInSucceeded?.Invoke();
          }
@@ -329,7 +359,12 @@ namespace Em.Ui.Wpf.Navigations
       public void AttachApp(EmApp app) {
          EmApp = app;
          NotifyChanged(nameof(ApiConnections));
+         NotifyChanged(nameof(IsSimulatingLogin));
+         NotifyChanged(nameof(IsRememberVisible));
          SyncSelectedConnection();
+
+         // Simulate Login neither reads nor writes the remembered sign-in.
+         if (app.IsSimulatingLogin) return;
 
          // Reading the switch back writes the very same value to the Registry through the property
          // below. That is one redundant write at start up, and it buys the screen a single path in
@@ -339,7 +374,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       private void OnRememberMeChanged(bool remember) {
-         if (EmApp is null) return;
+         if (EmApp is null || EmApp.IsSimulatingLogin) return;
 
          EmApp.RememberSignIn = remember;
 

@@ -780,6 +780,28 @@
             <StackPanel Grid.Column="4"
                         Orientation="Horizontal"
                         WindowChrome.IsHitTestVisibleInChrome="True">
+                <!-- Simulate Login: says the debug build is running as without debug, and is the way
+                     back to the debugger whatever the signed-in account may open. -->
+                <Border Margin="2,0,8,0"
+                        Padding="10,2,4,2"
+                        Style="{StaticResource chipWarningStyle}"
+                        Visibility="{Binding SimulatedChipVisibility}"
+                        ToolTip="Debug build running as without debug (Simulate Login)">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_Flask" FontSize="10" Margin="0,0,6,0" VerticalAlignment="Center" />
+                        <TextBlock Text="SIMULATED" VerticalAlignment="Center" />
+                        <Button Margin="6,0,0,0"
+                                Width="22" Height="22"
+                                FontSize="11"
+                                Foreground="{StaticResource warningBrush}"
+                                Command="{Binding Commands[ExitSimulationCommand]}"
+                                ToolTip="Exit simulation and go back to the debugger"
+                                AutomationProperties.Name="Exit simulation and go back to the debugger"
+                                Style="{StaticResource flatIconButtonStyle}">
+                            <fa:FontAwesome Icon="Solid_RightFromBracket" />
+                        </Button>
+                    </StackPanel>
+                </Border>
                 <ComboBox Margin="2,0,6,0"
                           ToolTip="Connection"
                           Visibility="{Binding ConnectionVisibility}"
@@ -1001,7 +1023,7 @@
             <ToggleButton x:Name="accountButton"
                           Grid.Column="5"
                           Margin="2,0,8,0"
-                          ToolTip="{Binding UserDisplayName}"
+                          ToolTip="{Binding AccountToolTip}"
                           WindowChrome.IsHitTestVisibleInChrome="True"
                           Visibility="{Binding WorkspaceToolsVisibility}"
                           IsChecked="{Binding IsUserMenuOpen, Mode=TwoWay}"
@@ -1056,8 +1078,10 @@
                                 <TextBlock Text="Change Password" Margin="6,0,0,0" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
-                        <Border Height="1" Margin="0,6" Background="{StaticResource dividerBrush}" />
+                        <Border Height="1" Margin="0,6" Background="{StaticResource dividerBrush}"
+                                Visibility="{Binding SignOutVisibility}" />
                         <Button Command="{Binding Commands[SignOutCommand]}"
+                                Visibility="{Binding SignOutVisibility}"
                                 Style="{StaticResource menuRowStyle}">
                             <StackPanel Orientation="Horizontal">
                                 <fa:FontAwesome FontSize="13" Width="18" Icon="Solid_RightFromBracket" VerticalAlignment="Center" />

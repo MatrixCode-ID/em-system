@@ -93,8 +93,19 @@
                   <TextBox x:Name="usernameEdit" TabIndex="1" Style="{StaticResource materialTextFieldStyle}" shared:FieldLabel.Text="Username" Margin="0,0,0,16"
                            PreviewKeyDown="CredentialField_PreviewKeyDown" Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}" />
                   <PasswordBox x:Name="passwordEdit" TabIndex="2" Style="{StaticResource materialPasswordFieldStyle}" shared:FieldLabel.Text="Password" Margin="0,0,0,16" PasswordChanged="PasswordEdit_PasswordChanged" />
-                  <CheckBox TabIndex="3" Style="{StaticResource materialCheckBoxStyle}" Content="Keep me signed in on this computer" IsChecked="{Binding RememberMe, Mode=TwoWay}" Margin="0,0,0,24" />
+                  <CheckBox TabIndex="3" Style="{StaticResource materialCheckBoxStyle}" Content="Keep me signed in on this computer" IsChecked="{Binding RememberMe, Mode=TwoWay}" Margin="0,0,0,24"
+                            Visibility="{Binding IsRememberVisible, Converter={StaticResource boolToVisibility}}" />
                   <Button x:Name="signInButton" TabIndex="4" Style="{StaticResource materialFilledButtonStyle}" IsDefault="True" Command="{Binding Commands[SignInCommand]}" Content="Sign in" />
+                  <!-- Simulate Login only: the way back to the debugger without restarting. -->
+                  <Button TabIndex="5" Margin="0,8,0,0" HorizontalAlignment="Center" Style="{StaticResource textButtonStyle}"
+                          Command="{Binding Commands[ExitSimulationCommand]}"
+                          ToolTip="Leave Simulate Login and go back to the debugger account"
+                          Visibility="{Binding IsSimulatingLogin, Converter={StaticResource boolToVisibility}}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_ArrowLeft" FontSize="11" Margin="0,0,7,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Exit simulation (back to debugger)" VerticalAlignment="Center" />
+                     </StackPanel>
+                  </Button>
                   <StackPanel x:Name="busyPanel" Margin="0,16,0,16">
                      <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Hidden" /><Style.Triggers><DataTrigger Binding="{Binding InWaiting}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
                      <ProgressBar Height="4" IsIndeterminate="True" BorderThickness="0" Foreground="{DynamicResource themeAccentBrush}" Background="{DynamicResource themeOutlineVariantBrush}" />

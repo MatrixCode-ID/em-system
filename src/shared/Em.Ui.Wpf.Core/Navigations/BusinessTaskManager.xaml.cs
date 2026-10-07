@@ -232,7 +232,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public Task ReloadAsync() =>
          RunBusyAsync("Loading...", async () => {
-            IsAdmin = EmApp!.IsDebugMode || EmApp.ActiveUser?.cUserIsAdmin == true;
+            IsAdmin = EmApp!.IsDebugBypass || EmApp.ActiveUser?.cUserIsAdmin == true;
             NotifyChanged(nameof(LimitHint));
 
             var limit = await Service.GetMeta_BusinessTaskLimit();

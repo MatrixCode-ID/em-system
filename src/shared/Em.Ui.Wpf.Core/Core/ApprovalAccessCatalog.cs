@@ -7,7 +7,7 @@ internal class ApprovalAccessCatalog(EmApp app)
 {
    private string? _userId;
    private bool _canOpen;
-   public bool CanOpen => app.IsDebugMode || app.ActiveUser?.cUserIsAdmin == true ||
+   public bool CanOpen => app.IsDebugBypass || app.ActiveUser?.cUserIsAdmin == true ||
       (app.ActiveUser?.cUserId == _userId && _canOpen);
 
    public async Task LoadAsync() {

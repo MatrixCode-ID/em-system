@@ -55,8 +55,8 @@ namespace Em.Ui.Wpf.Core
 
       // Runs on the UI thread (Run dispatches it there). Windows other than the main one go first and
       // without asking: the session they worked for is already gone, so there is nothing left that
-      // could be saved. Debug mode never opens a session, so it never comes back to the login screen
-      // this way either.
+      // could be saved. Active debug never opens a session, so it never comes back to the login screen
+      // this way either; a simulated login does, exactly as the application does without debug.
       private async Task OnSessionEndedAsync(string? reason) {
          try {
             await MainWindow.ReleaseWorkspaceAsync();
@@ -65,7 +65,7 @@ namespace Em.Ui.Wpf.Core
             MainWindow.ShowMboxError(x);
          }
 
-         if (IsDebugMode) return;
+         if (IsDebugActive) return;
 
          try {
             await ShowLoginScreenAsync(reason);
@@ -100,7 +100,7 @@ namespace Em.Ui.Wpf.Core
                // A restored session is no different from one opened through the form, so the window
                // goes to the same place - and the login screen is released along with the stack.
                // Debug mode is already there.
-               if (!IsDebugMode) await ShowSignedInAfterLoginAsync();
+               if (!IsDebugActive) await ShowSignedInAfterLoginAsync();
                return;
             }
          }
@@ -113,16 +113,13 @@ namespace Em.Ui.Wpf.Core
          login?.SyncSelectedConnection();
       }
 
-      // The one sign-out path, used by the account button of either layout. Debug mode has no session
-      // at all - its user is made in BuildApp and never traded for a token - so there it only clears
-      // the workspace and shows the login screen; otherwise the session is ended and SessionEnded
-      // does the rest.
+      // The one sign-out path, used by the account button of either layout. Active debug has no session
+      // at all - its user is made in BuildApp and never traded for a token - and its account menu does
+      // not offer sign out; this refusal is the second layer. Simulate Login is the way to test signing
+      // in and out from a debug build: there the session is ended and SessionEnded does the rest, as
+      // without debug.
       internal async Task SignOutAsync() {
-         if (IsDebugMode) {
-            await MainWindow.ReleaseWorkspaceAsync();
-            await ShowLoginScreenAsync(null);
-            return;
-         }
+         if (IsDebugActive) return;
 
          await EndSessionAsync(notifyServer: true);
       }

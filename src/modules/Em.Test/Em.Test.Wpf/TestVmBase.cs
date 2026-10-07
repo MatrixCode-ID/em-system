@@ -77,7 +77,7 @@ namespace Em.Test.Wpf
       /// </summary>
       protected bool Holds(string claim) {
          if (EmApp is null) return false;
-         if (EmApp.IsDebugMode || EmApp.ActiveUser?.cUserIsAdmin == true) return true;
+         if (EmApp.IsDebugBypass || EmApp.ActiveUser?.cUserIsAdmin == true) return true;
          return Service.Claims()[claim];
       }
 

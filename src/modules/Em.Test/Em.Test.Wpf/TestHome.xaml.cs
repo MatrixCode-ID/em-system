@@ -126,6 +126,8 @@ namespace Em.Test.Wpf
                .AppendLine($"  account      : {user?.cUserAccount ?? "(none)"}")
                .AppendLine($"  administrator: {user?.cUserIsAdmin == true}")
                .AppendLine($"  debug mode   : {EmApp.IsDebugMode}")
+               .AppendLine($"  simulating   : {EmApp.IsSimulatingLogin}")
+               .AppendLine($"  debug bypass : {EmApp.IsDebugBypass}")
                .AppendLine($"  'test' claims: {(clientClaims.Length == 0 ? "(none)" : string.Join(", ", clientClaims))}")
                .AppendLine($"  catalog size : {EmApp.AllClaims.Count} claim(s) known to the client")
                .ToString().TrimEnd();
@@ -319,7 +321,7 @@ namespace Em.Test.Wpf
          }
 
          try {
-            var isAdmin = EmApp.IsDebugMode || EmApp.ActiveUser?.cUserIsAdmin == true;
+            var isAdmin = EmApp.IsDebugBypass || EmApp.ActiveUser?.cUserIsAdmin == true;
             var holdsProbe = Holds(ITestServices.ProbeClaim);
             var request = SampleRequest();
 

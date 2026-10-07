@@ -22,6 +22,9 @@
                  theme and lightens a dark one without naming a colour of either. -->
             <SolidColorBrush x:Key="accountMenuOutline" Color="#33808080" />
             <SolidColorBrush x:Key="accountMenuDivider" Color="#26808080" />
+            <!-- The warning tone of the shared palette, mid-tone so it reads on either theme. -->
+            <SolidColorBrush x:Key="simulatedChipForeground" Color="#C98A00" />
+            <SolidColorBrush x:Key="simulatedChipBackground" Color="#24C98A00" />
 
             <!-- The account button is the toolbar's only ToggleButton. It reuses the toolbar style
                  (which targets ButtonBase for exactly this reason) and only adds what a drop-down
@@ -119,9 +122,39 @@
             <Button Command="{Binding Commands[DetachWindow]}" Grid.Column="4" Margin="2,0" ToolTip="Detach Window" Visibility="{Binding IsDetachVisible}" Style="{StaticResource flatIconButtonStyle}">
                 <fa:FontAwesome FontSize="18" Icon="Solid_UpRightFromSquare" />
             </Button>
-            <Button Command="{Binding Commands[ColorTheme]}" Grid.Column="6" Margin="2,0" ToolTip="Color Theme" Visibility="{Binding IsColorThemeVisible}" Style="{StaticResource flatIconButtonStyle}">
-                <fa:FontAwesome FontSize="18" Icon="Solid_CircleHalfStroke" />
-            </Button>
+            <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Simulate Login: says the debug build is running as without debug, and is the way
+                     back to the debugger whatever the signed-in account may open. -->
+                <Border Margin="2,0,8,0"
+                        Padding="10,2,4,2"
+                        CornerRadius="11"
+                        BorderThickness="1"
+                        VerticalAlignment="Center"
+                        Background="{StaticResource simulatedChipBackground}"
+                        BorderBrush="{StaticResource simulatedChipForeground}"
+                        TextElement.Foreground="{StaticResource simulatedChipForeground}"
+                        TextElement.FontSize="11"
+                        TextElement.FontWeight="SemiBold"
+                        Visibility="{Binding SimulatedChipVisibility}"
+                        ToolTip="Debug build running as without debug (Simulate Login)">
+                    <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_Flask" FontSize="10" Margin="0,0,6,0" VerticalAlignment="Center" />
+                        <TextBlock Text="SIMULATED" VerticalAlignment="Center" />
+                        <Button Margin="6,0,0,0"
+                                Width="22" Height="22"
+                                Command="{Binding Commands[ExitSimulationCommand]}"
+                                ToolTip="Exit simulation and go back to the debugger"
+                                AutomationProperties.Name="Exit simulation and go back to the debugger"
+                                Foreground="{StaticResource simulatedChipForeground}"
+                                Style="{StaticResource flatIconButtonStyle}">
+                            <fa:FontAwesome FontSize="11" Icon="Solid_RightFromBracket" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+                <Button Command="{Binding Commands[ColorTheme]}" Margin="2,0" ToolTip="Color Theme" Visibility="{Binding IsColorThemeVisible}" Style="{StaticResource flatIconButtonStyle}">
+                    <fa:FontAwesome FontSize="18" Icon="Solid_CircleHalfStroke" />
+                </Button>
+            </StackPanel>
             <!-- The account button. A ToggleButton rather than a Button because the drop-down it
                  opens has to be able to say it is open: both it and the popup are bound to the same
                  IsUserMenuOpen, so neither can be left showing a state the other is not in, and a
@@ -129,7 +162,7 @@
             <ToggleButton x:Name="accountButton"
                           Grid.Column="7"
                           Margin="2,0"
-                          ToolTip="{Binding ActiveUserDisplayName}"
+                          ToolTip="{Binding AccountToolTip}"
                           Visibility="{Binding IsUserVisible}"
                           IsChecked="{Binding IsUserMenuOpen, Mode=TwoWay}"
                           Style="{StaticResource accountButtonStyle}">
@@ -209,8 +242,10 @@
                                 <TextBlock Text="Change Password" Margin="6,0,0,0" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
-                        <Border Height="1" Margin="0,6" Background="{StaticResource accountMenuDivider}" />
+                        <Border Height="1" Margin="0,6" Background="{StaticResource accountMenuDivider}"
+                                Visibility="{Binding SignOutVisibility}" />
                         <Button Command="{Binding Commands[SignOutCommand]}"
+                                Visibility="{Binding SignOutVisibility}"
                                 Style="{StaticResource accountMenuItemStyle}">
                             <StackPanel Orientation="Horizontal">
                                 <fa:FontAwesome FontSize="13" Width="18" Icon="Solid_RightFromBracket" VerticalAlignment="Center" />
