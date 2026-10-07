@@ -74,6 +74,26 @@ namespace Em.Ui.Wpf.Navigations
          { } count => $"{count} permissions"
       };
 
+      /// <summary>Whether the card matches the search text of the Roles tab, so it is shown.</summary>
+      public bool IsSearchMatch {
+         get => Get(true);
+         private set => Set(value);
+      }
+
+      /// <summary>
+      /// Shows or hides the card for <paramref name="search"/>: an empty search shows every card, otherwise
+      /// the role name or description must contain it, ignoring case. A hidden card keeps its changes.
+      /// </summary>
+      /// <param name="search">The text typed in the search box of the Roles tab.</param>
+      /// <returns>Whether the card is shown.</returns>
+      public bool ApplySearch(string? search) {
+         var text = search?.Trim();
+         IsSearchMatch = string.IsNullOrEmpty(text)
+                         || RoleName.Contains(text, StringComparison.CurrentCultureIgnoreCase)
+                         || RoleDescription.Contains(text, StringComparison.CurrentCultureIgnoreCase);
+         return IsSearchMatch;
+      }
+
       #endregion
 
       #region Baseline

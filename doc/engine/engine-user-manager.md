@@ -20,6 +20,11 @@ active roles when it reads a user's permissions.
 The refresh button in the top right corner reloads the roles and the account's assignments; it asks first
 when role changes would be lost.
 
+The search box under the header narrows the cards to the roles whose name or description contains the
+typed text, ignoring case, and shows how many roles match. Search only hides cards: a hidden card keeps
+its switch and dates, and **Save** still sends its changes. The search text stays when another account is
+opened or the roles are reloaded.
+
 ### Saving
 
 Role changes are saved with the editor's **Save Changes** button, together with the rest of the record:

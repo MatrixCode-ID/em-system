@@ -24,6 +24,17 @@ namespace Em.Ui.Wpf.Core.Tests
       };
 
       [Fact]
+      public void SearchMatchesNameIgnoringCaseAndKeepsChanges() {
+         var card = new UserRoleCardVm(NewRole("R1"), null, Now) { IsAssigned = true };
+
+         Assert.True(card.ApplySearch("  role r1 "));
+         Assert.False(card.ApplySearch("other"));
+         Assert.False(card.IsSearchMatch);
+         Assert.True(card.IsChanged);
+         Assert.True(card.ApplySearch(""));
+      }
+
+      [Fact]
       public void StartsAtBaselineWithoutChanges() {
          var card = new UserRoleCardVm(NewRole("R1"), Row("R1", null, null), Now);
 

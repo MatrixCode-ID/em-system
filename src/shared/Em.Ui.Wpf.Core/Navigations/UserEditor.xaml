@@ -1841,6 +1841,45 @@
                            </Button>
                         </Grid>
 
+                        <!-- Narrows the cards when there are many roles. It only hides cards: a hidden
+                             card keeps its changes and Save still sends them. -->
+                        <Grid Margin="0,0,0,12">
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" MaxWidth="360" />
+                              <ColumnDefinition Width="Auto" />
+                           </Grid.ColumnDefinitions>
+                           <Border Grid.Column="0"
+                                   Height="38"
+                                   CornerRadius="19"
+                                   Background="{StaticResource surfaceStrongBrush}"
+                                   BorderBrush="{StaticResource outlineBrush}"
+                                   BorderThickness="1">
+                              <Grid Margin="16,0">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                 </Grid.ColumnDefinitions>
+                                 <fa:FontAwesome Grid.Column="0"
+                                                 Icon="Solid_MagnifyingGlass"
+                                                 FontSize="13"
+                                                 Opacity="0.6"
+                                                 VerticalAlignment="Center" />
+                                 <TextBox Grid.Column="1"
+                                          Margin="12,0,0,0"
+                                          Tag="Search role name or description"
+                                          AutomationProperties.Name="Search roles"
+                                          Text="{Binding RoleSearch, UpdateSourceTrigger=PropertyChanged}"
+                                          Style="{StaticResource searchBoxStyle}" />
+                              </Grid>
+                           </Border>
+                           <TextBlock Grid.Column="1"
+                                      Margin="12,0,0,0"
+                                      VerticalAlignment="Center"
+                                      FontSize="12"
+                                      Opacity="0.6"
+                                      Text="{Binding RoleSearchCaption}" />
+                        </Grid>
+
                         <!-- System accounts already hold everything and have no row a role could
                              point to, so their cards are shown but locked. -->
                         <Border Margin="0,0,0,12"
@@ -1899,6 +1938,10 @@
                                    Margin="2,4,0,12" FontSize="12" Opacity="0.6"
                                    Visibility="{Binding IsRolesEmpty, Converter={StaticResource boolToVisibility}}" />
 
+                        <TextBlock Text="No role matches the search."
+                                   Margin="2,4,0,12" FontSize="12" Opacity="0.6"
+                                   Visibility="{Binding IsRoleSearchEmpty, Converter={StaticResource boolToVisibility}}" />
+
                         <ItemsControl ItemsSource="{Binding RoleCards}" Focusable="False">
                            <ItemsControl.ItemsPanel>
                               <ItemsPanelTemplate>
@@ -1908,6 +1951,7 @@
                            <ItemsControl.ItemTemplate>
                               <DataTemplate>
                                  <Border x:Name="card"
+                                         Visibility="{Binding IsSearchMatch, Converter={StaticResource boolToVisibility}}"
                                          Width="300"
                                          Margin="0,0,12,12"
                                          Padding="16,14"

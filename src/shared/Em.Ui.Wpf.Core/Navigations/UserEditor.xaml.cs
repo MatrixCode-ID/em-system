@@ -461,6 +461,29 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Indicates the role list loaded and there is no role on the server at all.</summary>
       public bool IsRolesEmpty => !IsRolesLoading && !HasRolesError && RoleCards.Count == 0;
 
+      /// <summary>
+      /// Text that narrows the role cards to those whose name or description contains it. Only hides cards:
+      /// a hidden card keeps its switch and period, and Save still sends it.
+      /// </summary>
+      public string? RoleSearch {
+         get => Get<string?>();
+         set => Set(value, _ => ApplyRoleSearch());
+      }
+
+      /// <summary>Indicates there are roles, but none of them matches <see cref="RoleSearch"/>.</summary>
+      public bool IsRoleSearchEmpty => !IsRolesLoading && RoleCards.Count > 0 && !RoleCards.Any(c => c.IsSearchMatch);
+
+      /// <summary>Caption of how many roles match the search, e.g. "3 of 40 roles"; empty without a search.</summary>
+      public string RoleSearchCaption => string.IsNullOrWhiteSpace(RoleSearch) || RoleCards.Count == 0
+         ? string.Empty
+         : $"{RoleCards.Count(c => c.IsSearchMatch)} of {RoleCards.Count} roles";
+
+      private void ApplyRoleSearch() {
+         foreach (var card in RoleCards) card.ApplySearch(RoleSearch);
+         NotifyChanged(nameof(IsRoleSearchEmpty));
+         NotifyChanged(nameof(RoleSearchCaption));
+      }
+
       /// <summary>Indicates at least one role card differs from what is stored.</summary>
       public bool HasRoleChanges => RoleCards.Any(c => c.IsChanged);
 
@@ -530,6 +553,7 @@ namespace Em.Ui.Wpf.Navigations
                var card = new UserRoleCardVm(role, byRole.GetValueOrDefault(role.cRoleId), now) {
                   ClaimCount = counters?.TryGetValue(role.cRoleId, out var counter) == true ? counter.ClaimCount : null
                };
+               card.ApplySearch(RoleSearch);
                card.Changed += RoleCardChanged;
                RoleCards.Add(card);
             }
@@ -558,6 +582,8 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(HasRoleChanges));
          NotifyChanged(nameof(HasRolePeriodError));
          NotifyChanged(nameof(IsRolesEmpty));
+         NotifyChanged(nameof(IsRoleSearchEmpty));
+         NotifyChanged(nameof(RoleSearchCaption));
          NotifyChanged(nameof(HasUnsavedChanges));
          RaiseCommandsChanged();
       }
