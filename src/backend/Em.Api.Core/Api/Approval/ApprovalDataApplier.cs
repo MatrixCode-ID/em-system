@@ -5,22 +5,22 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Apa yang diketahui engine tentang satu entitas sesudah membandingkan nilainya dengan isi tabel:
-   /// nilai tiap kolom saat itu, dan apakah ada kolom yang bertabrakan.
+   /// What the engine knows about one entity after comparing its values with the table content: the value
+   /// of each column at that moment, and whether any column collides.
    /// </summary>
-   /// <param name="ItemId">Entitas usulan yang dibandingkan.</param>
-   /// <param name="Conflicted">Apakah ada kolom yang bertabrakan, atau entitasnya sudah tidak ada.</param>
-   /// <param name="Fields">Nilai tiap kolom yang dibandingkan saat itu.</param>
+   /// <param name="ItemId">The proposed entity that was compared.</param>
+   /// <param name="Conflicted">Whether any column collides, or the entity no longer exists.</param>
+   /// <param name="Fields">The value of each compared column at that moment.</param>
    internal sealed record ApprovalComparedItem(string ItemId, bool Conflicted,
       IReadOnlyList<(string Name, string? Current)> Fields);
 
    /// <summary>
-   /// Usulan perubahan data tidak bisa diterapkan karena isi tabelnya sudah berubah di luar request, atau
-   /// entitasnya sudah tidak ada.
+   /// A data change proposal cannot be applied because the table content has changed outside the request,
+   /// or the entity no longer exists.
    /// </summary>
    /// <remarks>
-   /// Membawa kolom-kolom yang bertabrakan, supaya keputusan yang gagal karenanya bisa menampilkan nilai
-   /// lama, nilai sekarang, dan nilai usulan kepada approver.
+   /// Carries the colliding columns, so a decision that fails because of it can show the approver the old
+   /// value, the current value, and the proposed value.
    /// </remarks>
    internal sealed class ApprovalConflictException : ActionException
    {
@@ -33,13 +33,13 @@ namespace Em.Api.Core.Approval
          Compared = compared;
       }
 
-      /// <summary>Kolom-kolom yang bertabrakan.</summary>
+      /// <summary>The colliding columns.</summary>
       public IReadOnlyList<ApprovalConflictField> Conflicts { get; }
 
-      /// <summary>Tidak bisa ditimpa: ada entitas yang sudah tidak ada.</summary>
+      /// <summary>Cannot be overwritten: an entity no longer exists.</summary>
       public bool IsFinal { get; }
 
-      /// <summary>Hasil perbandingan seluruh entitas, untuk dicatat sesudah transaksinya dibatalkan.</summary>
+      /// <summary>Result of comparing all entities, to be recorded after its transaction was rolled back.</summary>
       public IReadOnlyList<ApprovalComparedItem> Compared { get; }
 
       private static string Describe(IReadOnlyList<ApprovalConflictField> conflicts, bool isFinal) {
@@ -58,23 +58,24 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Menerapkan usulan perubahan data: membandingkan tiap kolom dengan isi tabel, lalu menyerahkan yang
-   /// boleh diterapkan ke handler modul.
+   /// Applies a data change proposal: compares each column with the table content, then hands what may be
+   /// applied to the module's handler.
    /// </summary>
    /// <remarks>
-   /// Per kolom ada tiga nilai: <b>lama</b> (dicatat saat diajukan), <b>sekarang</b> (isi tabel saat ini),
-   /// dan <b>usulan</b>. Sekarang sama dengan lama berarti kolomnya diterapkan; sekarang sama dengan usulan
-   /// berarti kolomnya dilewati karena sudah sesuai; selain itu berarti konflik. Pembandingnya isi tabel,
-   /// bukan request lain, supaya perubahan dari luar aplikasi ikut tertangkap.
+   /// Each column has three values: <b>old</b> (recorded at submission), <b>current</b> (the table content
+   /// right now), and <b>proposed</b>. Current equal to old means the column is applied; current equal to
+   /// proposed means the column is skipped because it already matches; anything else is a conflict. What
+   /// is compared against is the table content, not other requests, so changes from outside the
+   /// application are caught too.
    /// <para>
-   /// Seluruhnya berjalan di dalam transaksi pemanggil. Pembandingan semua entitas dilakukan lebih dulu,
-   /// sebelum satu pun diterapkan, jadi request yang konflik tidak pernah setengah diterapkan.
+   /// All of it runs inside the caller's transaction. All entities are compared first, before any is
+   /// applied, so a conflicting request is never half applied.
    /// </para>
    /// </remarks>
    internal static class ApprovalDataApplier
    {
       /// <summary>
-      /// Membaca usulan sebuah request sebagai nilai bertipe, tanpa menerapkan apa pun.
+      /// Reads a request's proposals as typed values, without applying anything.
       /// </summary>
       public static async Task<IReadOnlyList<ApprovalDataItem>> ReadItemsAsync(ApiCoreContext ctx,
          IApprovalDataFlow flow, string requestId, CancellationToken cancellationToken) {
@@ -91,17 +92,17 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Membandingkan lalu menerapkan seluruh usulan sebuah request.
+      /// Compares then applies all proposals of a request.
       /// </summary>
-      /// <param name="ctx">Context database inti, yang sedang berada di dalam transaksi.</param>
-      /// <param name="flow">Alur jenis dokumennya.</param>
-      /// <param name="scope">Bahan untuk menyerahkan giliran ke handler modul. Requestnya harus terlacak.</param>
-      /// <param name="overrideConflicts">Tetap terapkan kolom yang bertabrakan.</param>
-      /// <param name="note">Alasan keputusan; wajib kalau kolom yang bertabrakan ditimpa.</param>
-      /// <param name="cancellationToken">Token pembatalan.</param>
-      /// <returns>Usulan setelah diterapkan; kunci entitas baru sudah berisi kunci yang sebenarnya.</returns>
+      /// <param name="ctx">The core database context, currently inside the transaction.</param>
+      /// <param name="flow">The flow of the document type.</param>
+      /// <param name="scope">Material for handing over to the module's handler. The request must be tracked.</param>
+      /// <param name="overrideConflicts">Still apply columns that collide.</param>
+      /// <param name="note">Reason for the decision; required when colliding columns are overwritten.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <returns>The proposals after being applied; the key of a new entity already holds the actual key.</returns>
       /// <exception cref="ApprovalConflictException">
-      /// Ada kolom yang bertabrakan dan penimpaan tidak diminta, atau ada entitas yang sudah tidak ada.
+      /// A column collides and overwriting was not requested, or an entity no longer exists.
       /// </exception>
       public static async Task<IReadOnlyList<ApprovalDataItem>> ApplyAsync(ApiCoreContext ctx, IApprovalDataFlow flow,
          ApprovalRunScope scope, bool overrideConflicts, string? note, CancellationToken cancellationToken) {
@@ -266,15 +267,15 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Mencatat hasil perbandingan yang berujung konflik. Dipanggil sesudah transaksi keputusannya
-      /// dibatalkan, supaya approver yang membuka request itu lagi melihat nilai sekarang dan entitas mana
-      /// yang bertabrakan - keputusannya sendiri tidak tersimpan.
+      /// Records the result of a comparison that ended in a conflict. Called after the decision's transaction
+      /// was rolled back, so an approver who opens that request again sees the current values and which
+      /// entities collided - the decision itself is not saved.
       /// </summary>
       /// <remarks>
-      /// Pencatatan ini berjalan sesudah transaksi keputusan berakhir, jadi keputusan lain atas request yang
-      /// sama bisa sudah masuk di antaranya. Setiap perubahan karenanya hanya mengenai entitas yang masih
-      /// menunggu pada request yang masih menunggu; yang sudah diterapkan orang lain tidak disentuh. Seluruhnya
-      /// satu transaksi, supaya hasilnya utuh atau tidak ada sama sekali.
+      /// This recording runs after the decision transaction ended, so another decision on the same request
+      /// may have come in between. Every change therefore only touches entities that are still waiting on a
+      /// request that is still waiting; anything already applied by someone else is left alone. All of it is
+      /// one transaction, so the result is whole or nothing at all.
       /// </remarks>
       public static async Task RecordConflictsAsync(ApiCoreContext ctx, IReadOnlyList<ApprovalComparedItem> compared,
          CancellationToken cancellationToken) {
@@ -370,12 +371,12 @@ namespace Em.Api.Core.Approval
          public ApprovalEntityDeclaration Entity { get; } = entity;
          public List<ta_ApprovalRequestItemField> Fields { get; } = fields;
 
-         /// <summary>Kolom yang diserahkan ke handler modul.</summary>
+         /// <summary>Columns handed to the module's handler.</summary>
          public List<ta_ApprovalRequestItemField> ToApply { get; } = [];
 
          public List<ta_ApprovalRequestItemField> ConflictedFields { get; } = [];
 
-         /// <summary>Kolom yang sudah dibandingkan beserta nilainya saat itu.</summary>
+         /// <summary>Columns that were compared together with their value at that moment.</summary>
          public List<(string Name, string? Current)> Compared { get; } = [];
 
          public bool Conflicted { get; set; }

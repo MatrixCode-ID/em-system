@@ -11,84 +11,82 @@ using Em.Shared;
 
 namespace Em.Api.Core
 {
+   /// <summary>Base class of every module service: request info, logging, database access, and business tasks.</summary>
    public abstract class ServicesBase
    {
+      /// <summary>The application host. Filled by the engine before the action is called.</summary>
       public EmApp App { get; internal set; } = null!;
 
+      /// <summary>The HTTP context of the request being handled. Filled by the engine before the action is called.</summary>
       public HttpContext HttpContext { get; internal set; } = null!;
 
       /// <summary>
-      /// Logger yang kategorinya otomatis mengikuti tipe service yang sedang berjalan
-      /// (mis. <c>IEmApiCoreServices</c>), diisi otomatis oleh Engine sebelum action dipanggil.
+      /// Logger whose category automatically follows the type of the running service
+      /// (e.g. <c>IEmApiCoreServices</c>), filled in automatically by the engine before the action is called.
       /// </summary>
       public ILogger Logger { get; internal set; } = null!;
 
       /// <summary>
-      /// Seluruh keterangan tentang request yang sedang dikerjakan - siapa pemanggilnya, lewat jalan
-      /// mana ia membuktikannya, dan ke action mana ia ditujukan - berikut pemeriksa haknya
-      /// (<c>Request.RequireAdmin()</c> dan kawan-kawan). Diisi gerbang sebelum action dipanggil,
-      /// jadi di dalam sebuah action ia tidak pernah null.
+      /// All information about the request being handled - who the caller is, by which way they proved it,
+      /// and which action it is aimed at - together with its rights checker
+      /// (<c>Request.RequireAdmin()</c> and friends). Filled by the gate before the action is called, so
+      /// inside an action it is never null.
       /// </summary>
       /// <remarks>
-      /// Kalau isinya <see cref="ActionRequest.None"/>, kodenya sedang dipanggil dari luar jalur
-      /// request - bukan berarti gerbangnya bolong.
+      /// When its value is <see cref="ActionRequest.None"/>, the code is being called from outside the
+      /// request path - that does not mean the gate has a hole.
       /// </remarks>
       public ActionRequest Request { get; internal set; } = ActionRequest.None;
 
       /// <summary>
-      /// Menyala kalau pekerjaan action ini sudah tidak ada gunanya diteruskan - entah karena
-      /// pemanggilnya pergi (aplikasinya ditutup, jaringannya putus, atau nanti: tombol batal
-      /// ditekan), entah karena batas waktu yang ditetapkan
-      /// <c>EmAppBuilder.HttpRequestTimeout</c> sudah lewat.
+      /// Signals when the work of this action is no longer worth continuing - either because the caller left
+      /// (the application was closed, the network dropped, or later: a cancel button was pressed), or because
+      /// the time limit set by <c>EmAppBuilder.HttpRequestTimeout</c> has passed.
       /// </summary>
       /// <remarks>
-      /// Mengamatinya itu <b>pilihan</b>, bukan keharusan: action yang mengabaikannya tetap berjalan
-      /// sampai selesai seperti sebelumnya. Yang paling pantas mengamatinya adalah pekerjaan baca
-      /// yang panjang - perulangan besar, laporan, ekspor - dengan meneruskannya ke pemanggilan EF
-      /// (<c>ToListAsync(AbortToken)</c> dan sejenisnya).
+      /// Observing it is a <b>choice</b>, not a requirement: an action that ignores it still runs to completion
+      /// as before. The best candidates to observe it are long read jobs - big loops, reports, exports - by
+      /// passing it on to EF calls (<c>ToListAsync(AbortToken)</c> and the like).
       /// <para>
-      /// <b>Action tulis sebaiknya tidak mengamatinya</b> kecuali penulisnya memang tahu di titik
-      /// mana berhenti itu aman. Berhenti di tengah rangkaian tulis tidak menghasilkan keadaan
-      /// "tidak jadi", melainkan keadaan yang tidak diketahui siapa pun - termasuk oleh pemanggil
-      /// yang sudah telanjur pergi. Karena itu engine sendiri tidak pernah membatasi waktu action
-      /// <c>POST</c>; di action <c>POST</c> token ini hanya menyala saat pemanggilnya pergi, dan
-      /// keputusan menanggapinya sepenuhnya ada pada penulis action.
+      /// <b>Write actions should preferably not observe it</b> unless the author really knows at which point
+      /// stopping is safe. Stopping in the middle of a series of writes does not produce a "not done" state,
+      /// but a state nobody knows - including the caller who has already left. That is why the engine itself
+      /// never limits the time of <c>POST</c> actions; in a <c>POST</c> action this token only signals when
+      /// the caller leaves, and the decision of how to react lies entirely with the action's author.
       /// </para>
       /// <para>
-      /// Yang mengisinya hanya gerbang, dan hanya pada service pemilik action yang sedang berjalan.
-      /// Kelas lain yang juga turun dari <see cref="ServicesBase"/> tapi diambil lewat DI tetap
-      /// memegang <see cref="CancellationToken.None"/> - sama seperti <see cref="Request"/> yang
-      /// tetap <see cref="ActionRequest.None"/> di luar jalur request. Kelas pembantu yang
-      /// benar-benar perlu mengamatinya bisa meminta <c>IHttpContextAccessor</c> dan membaca
-      /// <c>HttpContext.RequestAborted</c> sendiri.
+      /// Only the gate fills it, and only on the service that owns the running action. Other classes that also
+      /// derive from <see cref="ServicesBase"/> but are obtained through DI still hold
+      /// <see cref="CancellationToken.None"/> - just like <see cref="Request"/> stays
+      /// <see cref="ActionRequest.None"/> outside the request path. A helper class that really needs to observe
+      /// it can ask for <c>IHttpContextAccessor</c> and read <c>HttpContext.RequestAborted</c> itself.
       /// </para>
       /// </remarks>
       public CancellationToken AbortToken { get; internal set; } = CancellationToken.None;
 
       /// <summary>
-      /// Pengguna yang memanggil action ini, sesuai token yang dibawanya. Tetap <c>null</c> untuk
-      /// action publik yang memang dipanggil tanpa token. Penerus untuk
-      /// <see cref="ActionRequest.cUserId"/> pada <see cref="Request"/>.
+      /// The user calling this action, according to the token they carry. Stays <c>null</c> for public actions
+      /// that are called without a token. Successor of <see cref="ActionRequest.cUserId"/> on
+      /// <see cref="Request"/>.
       /// </summary>
       public string? CallerUserId => Request.cUserId;
 
       /// <summary>
-      /// Sesi yang menerbitkan token pemanggil - inilah yang diakhiri saat pengguna keluar dari
-      /// perangkat ini saja. Penerus untuk <see cref="ActionRequest.cUserSessionId"/> pada
-      /// <see cref="Request"/>.
+      /// The session that issued the caller's token - this is what gets ended when the user signs out of this
+      /// device only. Successor of <see cref="ActionRequest.cUserSessionId"/> on <see cref="Request"/>.
       /// </summary>
       public string? CallerSessionId => Request.cUserSessionId;
 
       /// <summary>
-      /// Apakah pemanggil action ini berhak penuh sebagai administrator. Selalu <c>false</c> selama
-      /// <see cref="CallerUserId"/> masih kosong - tidak ada identitas, tidak ada hak. Penerus untuk
-      /// <see cref="ActionRequest.IsAdmin"/> pada <see cref="Request"/>.
+      /// Whether the caller of this action has full rights as an administrator. Always <c>false</c> while
+      /// <see cref="CallerUserId"/> is still empty - no identity, no rights. Successor of
+      /// <see cref="ActionRequest.IsAdmin"/> on <see cref="Request"/>.
       /// </summary>
       public bool CallerIsAdmin => Request.IsAdmin;
 
       /// <summary>
-      /// Mengambil service dari DI container milik request yang sedang berjalan. Hanya jalur baca:
-      /// pendaftaran service seluruhnya terjadi saat startup lewat <c>EmAppBuilder</c>.
+      /// Gets a service from the DI container of the request being handled. Read-only route: service
+      /// registration all happens at startup through <c>EmAppBuilder</c>.
       /// </summary>
       public object? GetService(Type serviceType) {
          return App.ServiceProvider.GetService(serviceType);
@@ -100,16 +98,15 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Mengambil service dari DI container yang terdaftar dengan key <paramref name="connectionName"/> -
-      /// dipakai untuk <see cref="System.Data.IDbConnection"/> milik koneksi selain "Default", yang
-      /// terdaftar per nama lewat <c>EmAppBuilder.AddExtraDbConn</c>.
+      /// Gets a service from the DI container registered with the key <paramref name="connectionName"/> -
+      /// used for the <see cref="System.Data.IDbConnection"/> of connections other than "Default", which are
+      /// registered by name through <c>EmAppBuilder.AddExtraDbConn</c>.
       /// </summary>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau <paramref name="connectionName"/> bukan nama koneksi database yang terdaftar,
-      /// menyebut nama-nama yang memang terdaftar - beda dari <see cref="GetService(Type)"/> biasa yang
-      /// memang boleh mengembalikan <c>null</c> untuk service yang tidak terdaftar, karena nama koneksi
-      /// yang salah ketik di sini tidak boleh menyamar jadi <see cref="NullReferenceException"/> beberapa
-      /// baris kemudian.
+      /// Thrown when <paramref name="connectionName"/> is not a registered database connection name, naming
+      /// the names that are registered - unlike the ordinary <see cref="GetService(Type)"/>, which may return
+      /// <c>null</c> for an unregistered service, because a misspelled connection name here must not disguise
+      /// itself as a <see cref="NullReferenceException"/> a few lines later.
       /// </exception>
       public object? GetService(Type serviceType, string connectionName) {
          var value = App.ServiceProvider.GetKeyedService(serviceType, connectionName);
@@ -132,8 +129,8 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Membaca nilai metadata berdasarkan key, data core lintas-module yang tersedia
-      /// untuk semua service tanpa perlu inject ApiCoreContext/ApiCoreServices sendiri.
+      /// Reads a metadata value by key, a cross-module core datum available to all services without having
+      /// to inject ApiCoreContext/ApiCoreServices themselves.
       /// </summary>
       public async Task<string?> GetMetaValue(string key) {
          var ctx = GetService<ApiCoreContext>()!;
@@ -141,7 +138,7 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Sama seperti <see cref="GetMetaValue(string)"/>, tapi hasilnya dikonversi ke tipe <typeparamref name="T"/>.
+      /// Same as <see cref="GetMetaValue(string)"/>, but the result is converted to type <typeparamref name="T"/>.
       /// </summary>
       public async Task<T?> GetMetaValue<T>(string key) {
          var rawValue = await GetMetaValue(key);
@@ -173,7 +170,7 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyimpan (insert/update) nilai metadata untuk sebuah key.
+      /// Saves (inserts/updates) a metadata value for a key.
       /// </summary>
       protected async Task SetMetaValue(string key, string value, string description = "") {
          var ctx = GetService<ApiCoreContext>()!;
@@ -198,9 +195,9 @@ namespace Em.Api.Core
       }
       
       /// <summary>
-      /// Mengambil pasangan public/private key RSA server dari metadata. Jika belum ada, atau
-      /// <paramref name="keySize"/> yang diminta berbeda dari yang tersimpan, sebuah pasangan
-      /// key baru otomatis di-generate dengan ukuran tersebut dan disimpan (menggantikan yang lama).
+      /// Gets the server's RSA public/private key pair from metadata. If there is none yet, or the requested
+      /// <paramref name="keySize"/> differs from the stored one, a new key pair of that size is generated
+      /// automatically and stored (replacing the old one).
       /// </summary>
       public async Task<RsaKeyPair> GetServerRsaKeyAsync(int keySize = 2048) {
          const string ServerRsaPublicKeyMetaKey = "ServerRsaPublicKey";
@@ -260,38 +257,37 @@ namespace Em.Api.Core
       private BusinessTaskRunner BusinessTasks => App.ServiceProvider.GetRequiredService<BusinessTaskRunner>();
 
       /// <summary>
-      /// Memulai business task tanpa hasil yang perlu diambil (mis. membuat archive, mengirim email), lalu
-      /// langsung kembali tanpa menunggu pekerjaannya selesai.
+      /// Starts a business task without a result to fetch (e.g. creating an archive, sending email), then
+      /// returns right away without waiting for the work to finish.
       /// </summary>
       /// <remarks>
       /// <para>
-      /// Pekerjaannya berjalan <b>di luar request</b> ini, bahkan setelah client-nya ditutup. Karena itu,
-      /// di dalam pekerjaan itu jangan memakai apa pun milik action ini: <c>this</c>,
-      /// <see cref="Request"/>, <see cref="AbortToken"/>, <see cref="GetService{T}()"/>, maupun service yang
-      /// diambil dari request. Pakai <see cref="BusinessTaskContext.Services"/> untuk service (DbContext dan
-      /// sejenisnya) dan <see cref="BusinessTaskContext.Starter"/> untuk identitas pemulainya. Nilai yang
-      /// dibutuhkan dari request (argumen action, isi request) salin ke variabel lokal sebelum memanggil
-      /// method ini.
+      /// The work runs <b>outside this request</b>, even after its client is closed. Therefore, inside that
+      /// work do not use anything belonging to this action: <c>this</c>, <see cref="Request"/>,
+      /// <see cref="AbortToken"/>, <see cref="GetService{T}()"/>, or services taken from the request. Use
+      /// <see cref="BusinessTaskContext.Services"/> for services (DbContext and the like) and
+      /// <see cref="BusinessTaskContext.Starter"/> for the starter's identity. Copy values needed from the
+      /// request (action arguments, request content) into local variables before calling this method.
       /// </para>
       /// <para>
-      /// <see cref="BusinessTaskContext.CancellationToken"/> hanya menyala saat task dibatalkan atau server
-      /// dimatikan. Teruskan ke setiap pemanggilan yang bisa lama; berhenti karenanya dicatat sebagai
-      /// dibatalkan. Exception lain membuat task tercatat gagal, dengan pesan exception sebagai pesan
-      /// kesalahannya, dan task gagal tampil sampai di-clear.
+      /// <see cref="BusinessTaskContext.CancellationToken"/> only signals when the task is cancelled or the
+      /// server is shut down. Pass it on to every call that may take long; stopping because of it is recorded
+      /// as cancelled. Any other exception makes the task recorded as failed, with the exception message as
+      /// its error message, and a failed task stays visible until cleared.
       /// </para>
       /// <para>
-      /// <see cref="BusinessTaskOptions.Scope"/> menentukan siapa yang melihat dan mengurus task ini: task
-      /// personal milik pemulainya dan tampil di daftar task pribadinya; task global milik layar module ini,
-      /// yang menanyakan statusnya lewat <see cref="FindBusinessTask"/>. Task mungkin menunggu dengan status
-      /// antri kalau batas jumlah task yang berjalan bersamaan sudah penuh.
+      /// <see cref="BusinessTaskOptions.Scope"/> decides who sees and manages this task: a personal task
+      /// belongs to its starter and appears in their personal task list; a global task belongs to this
+      /// module's screen, which asks for its status through <see cref="FindBusinessTask"/>. A task may wait
+      /// with queued status when the limit on concurrently running tasks is full.
       /// </para>
       /// </remarks>
-      /// <param name="options">Kunci, judul, dan cakupan task.</param>
-      /// <param name="work">Pekerjaannya.</param>
-      /// <returns>Potret task yang baru dimulai.</returns>
+      /// <param name="options">Key, title, and scope of the task.</param>
+      /// <param name="work">The work.</param>
+      /// <returns>A snapshot of the task that was just started.</returns>
       /// <exception cref="ActionException">
-      /// 409 kalau task dengan kunci yang sama masih antri atau berjalan; pesannya menyebut siapa yang
-      /// memulainya. 401 kalau action ini dipanggil tanpa identitas.
+      /// 409 when a task with the same key is still queued or running; its message names who started it.
+      /// 401 when this action is called without identity.
       /// </exception>
       protected BusinessTaskInfo StartBusinessTask(BusinessTaskOptions options, Func<BusinessTaskContext, Task> work) {
          ArgumentNullException.ThrowIfNull(work);
@@ -302,19 +298,19 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Memulai business task yang hasilnya data JSON (mis. memuat data invoice setahun). Nilai yang
-      /// dikembalikan pekerjaannya disimpan server sampai di-clear, dan diambil pemiliknya lewat daftar
-      /// task pribadinya.
+      /// Starts a business task whose result is JSON data (e.g. loading a year of invoice data). The value
+      /// returned by its work is kept by the server until cleared, and fetched by its owner through their
+      /// personal task list.
       /// </summary>
       /// <remarks>
-      /// Aturan pemakaian pekerjaannya sama dengan
-      /// <see cref="StartBusinessTask(BusinessTaskOptions, Func{BusinessTaskContext, Task})"/>: berjalan di
-      /// luar request, jadi hanya boleh memakai isi <see cref="BusinessTaskContext"/>.
+      /// The rules for using the work are the same as
+      /// <see cref="StartBusinessTask(BusinessTaskOptions, Func{BusinessTaskContext, Task})"/>: it runs
+      /// outside the request, so it may only use the content of <see cref="BusinessTaskContext"/>.
       /// </remarks>
-      /// <param name="options">Kunci, judul, dan cakupan task.</param>
-      /// <param name="work">Pekerjaannya; nilai kembaliannya menjadi hasil task.</param>
-      /// <returns>Potret task yang baru dimulai.</returns>
-      /// <exception cref="ActionException">409 kalau task dengan kunci yang sama masih antri atau berjalan.</exception>
+      /// <param name="options">Key, title, and scope of the task.</param>
+      /// <param name="work">The work; its return value becomes the task result.</param>
+      /// <returns>A snapshot of the task that was just started.</returns>
+      /// <exception cref="ActionException">409 when a task with the same key is still queued or running.</exception>
       protected BusinessTaskInfo StartBusinessTask<TResult>(BusinessTaskOptions options,
          Func<BusinessTaskContext, Task<TResult>> work) {
          ArgumentNullException.ThrowIfNull(work);
@@ -330,19 +326,19 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Memulai business task yang hasilnya sebuah file (mis. Excel). Pekerjaannya menulis isi file itu ke
-      /// stream yang diberikan; stream-nya milik engine dan ditutup engine.
-      /// <see cref="BusinessTaskOptions.ResultFileName"/> wajib diisi.
+      /// Starts a business task whose result is a file (e.g. Excel). The work writes the file content to the
+      /// stream it is given; the stream belongs to the engine and is closed by the engine.
+      /// <see cref="BusinessTaskOptions.ResultFileName"/> is required.
       /// </summary>
       /// <remarks>
-      /// Aturan pemakaian pekerjaannya sama dengan
-      /// <see cref="StartBusinessTask(BusinessTaskOptions, Func{BusinessTaskContext, Task})"/>: berjalan di
-      /// luar request, jadi hanya boleh memakai isi <see cref="BusinessTaskContext"/>.
+      /// The rules for using the work are the same as
+      /// <see cref="StartBusinessTask(BusinessTaskOptions, Func{BusinessTaskContext, Task})"/>: it runs
+      /// outside the request, so it may only use the content of <see cref="BusinessTaskContext"/>.
       /// </remarks>
-      /// <param name="options">Kunci, judul, cakupan, dan nama file hasil.</param>
-      /// <param name="writeResult">Pekerjaannya, yang menulis hasil ke stream yang diberikan.</param>
-      /// <returns>Potret task yang baru dimulai.</returns>
-      /// <exception cref="ActionException">409 kalau task dengan kunci yang sama masih antri atau berjalan.</exception>
+      /// <param name="options">Key, title, scope, and result file name of the task.</param>
+      /// <param name="writeResult">The work, which writes the result to the stream it is given.</param>
+      /// <returns>A snapshot of the task that was just started.</returns>
+      /// <exception cref="ActionException">409 when a task with the same key is still queued or running.</exception>
       protected BusinessTaskInfo StartBusinessTask(BusinessTaskOptions options,
          Func<BusinessTaskContext, Stream, Task> writeResult) {
          ArgumentNullException.ThrowIfNull(writeResult);
@@ -358,51 +354,49 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Task berkunci <paramref name="key"/> yang masih hidup, atau kalau tidak ada, yang terakhir gagal
-      /// dan belum di-clear; <c>null</c> kalau tidak ada keduanya. Untuk
-      /// <see cref="BusinessTaskScope.Personal"/> yang dicari milik pemanggil action ini.
+      /// The live task with key <paramref name="key"/>, or if there is none, the last one that failed and has
+      /// not been cleared; <c>null</c> when there is neither. For <see cref="BusinessTaskScope.Personal"/>
+      /// the one looked up belongs to the caller of this action.
       /// </summary>
       /// <remarks>
-      /// Method ini tidak memeriksa hak apa pun: siapa yang boleh bertanya diserahkan pada claim action yang
-      /// memanggilnya. Karena itu flag <see cref="BusinessTaskInfo.CanCancel"/> dan
-      /// <see cref="BusinessTaskInfo.CanClear"/> di hasilnya hanya mengikuti status task;
-      /// <see cref="BusinessTaskInfo.CanReadResult"/> tetap hanya untuk pemilik dan administrator.
+      /// This method checks no rights: who may ask is left to the claim of the action that calls it. For that
+      /// reason the <see cref="BusinessTaskInfo.CanCancel"/> and <see cref="BusinessTaskInfo.CanClear"/> flags
+      /// in its result only follow the task status; <see cref="BusinessTaskInfo.CanReadResult"/> remains only
+      /// for the owner and administrators.
       /// </remarks>
       protected BusinessTaskInfo? FindBusinessTask(string key, BusinessTaskScope scope = BusinessTaskScope.Global) =>
          BusinessTasks.Find(key, scope, Request);
 
       /// <summary>
-      /// Sama dengan <see cref="FindBusinessTask"/>, untuk semua kunci yang berawalan
-      /// <paramref name="keyPrefix"/>: satu hasil per kunci.
+      /// Same as <see cref="FindBusinessTask"/>, for every key that starts with
+      /// <paramref name="keyPrefix"/>: one result per key.
       /// </summary>
       /// <remarks>
-      /// Method ini tidak memeriksa hak apa pun: siapa yang boleh bertanya diserahkan pada claim action yang
-      /// memanggilnya.
+      /// This method checks no rights: who may ask is left to the claim of the action that calls it.
       /// </remarks>
       protected BusinessTaskInfo[] FindBusinessTasks(string keyPrefix, BusinessTaskScope scope = BusinessTaskScope.Global) =>
          BusinessTasks.FindMany(keyPrefix, scope, Request);
 
       /// <summary>
-      /// Membatalkan task berkunci <paramref name="key"/> yang masih hidup. Task yang sedang berjalan baru
-      /// benar-benar berhenti saat pekerjaannya mengamati token pembatalan.
+      /// Cancels the live task with key <paramref name="key"/>. A running task only really stops when its work
+      /// observes the cancellation token.
       /// </summary>
       /// <remarks>
-      /// Method ini tidak memeriksa siapa pemulai task-nya: siapa yang boleh membatalkan diserahkan pada
-      /// claim action yang memanggilnya.
+      /// This method does not check who started the task: who may cancel is left to the claim of the action
+      /// that calls it.
       /// </remarks>
-      /// <exception cref="ActionException">404 kalau tidak ada task berkunci itu, 409 kalau sudah selesai.</exception>
+      /// <exception cref="ActionException">404 when there is no task with that key, 409 when it has already finished.</exception>
       protected void CancelBusinessTask(string key, BusinessTaskScope scope = BusinessTaskScope.Global) =>
          BusinessTasks.CancelByKey(key, scope, Request);
 
       /// <summary>
-      /// Membersihkan task berkunci <paramref name="key"/> yang sudah selesai, beserta hasilnya yang
-      /// tersimpan.
+      /// Clears the finished task with key <paramref name="key"/>, together with its stored result.
       /// </summary>
       /// <remarks>
-      /// Method ini tidak memeriksa siapa pemulai task-nya: siapa yang boleh membersihkan diserahkan pada
-      /// claim action yang memanggilnya.
+      /// This method does not check who started the task: who may clear is left to the claim of the action
+      /// that calls it.
       /// </remarks>
-      /// <exception cref="ActionException">404 kalau tidak ada task berkunci itu, 409 kalau masih hidup.</exception>
+      /// <exception cref="ActionException">404 when there is no task with that key, 409 when it is still live.</exception>
       protected void ClearBusinessTask(string key, BusinessTaskScope scope = BusinessTaskScope.Global) =>
          BusinessTasks.ClearByKey(key, scope, Request);
 

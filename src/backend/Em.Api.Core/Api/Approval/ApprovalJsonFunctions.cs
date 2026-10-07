@@ -1,18 +1,19 @@
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Fungsi database yang hanya boleh dipakai di dalam query, dipetakan ke fungsi bawaan database.
+   /// Database functions that may only be used inside a query, mapped to the database's built-in
+   /// functions.
    /// </summary>
    /// <remarks>
-   /// Dipakai daftar request untuk mengurutkan berdasarkan kolom ringkasan milik modul, yang disimpan
-   /// sebagai JSON. Hanya SQL Server yang dipetakan di sini - sama seperti transaksi lintas database
-   /// approval, yang juga hanya berjalan di sana.
+   /// Used by the request list to sort by the module's summary columns, which are stored as JSON. Only
+   /// SQL Server is mapped here - like the approval's cross-database transaction, which also only runs
+   /// there.
    /// </remarks>
    internal static class ApprovalJsonFunctions
    {
-      /// <summary>Nilai skalar di dalam teks JSON, menurut path-nya. Tidak bisa dipanggil di luar query.</summary>
-      /// <param name="json">Teks JSON-nya.</param>
-      /// <param name="path">Path ke nilainya, mis. <c>$."Customer"</c>.</param>
+      /// <summary>A scalar value inside JSON text, by its path. Cannot be called outside a query.</summary>
+      /// <param name="json">The JSON text.</param>
+      /// <param name="path">Path to the value, e.g. <c>$."Customer"</c>.</param>
       public static string? JsonValue(string? json, string path) =>
          throw new NotSupportedException("This function can only be used inside a query.");
    }

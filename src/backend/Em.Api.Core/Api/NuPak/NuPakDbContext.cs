@@ -3,16 +3,26 @@ using Em.Api.Core.Models;
 using Microsoft.EntityFrameworkCore;
 namespace Em.Api.Core.NuPak;
 
+/// <summary>Database context of the NuPak tables.</summary>
 public sealed class NuPakDbContext(DbContextOptions<NuPakDbContext> options) : EmDbContext(options)
 {
+   /// <summary>Feeds.</summary>
    public DbSet<ta_NuPakFeed> Feeds => Set<ta_NuPakFeed>();
+   /// <summary>Package id prefixes reserved per feed.</summary>
    public DbSet<ta_NuPakPrefix> Prefixes => Set<ta_NuPakPrefix>();
+   /// <summary>Packages.</summary>
    public DbSet<ta_NuPakPackage> Packages => Set<ta_NuPakPackage>();
+   /// <summary>Package versions.</summary>
    public DbSet<ta_NuPakVersion> Versions => Set<ta_NuPakVersion>();
+   /// <summary>Access grants of robots to prefixes.</summary>
    public DbSet<ta_NuPakPrefixRobot> Grants => Set<ta_NuPakPrefixRobot>();
+   /// <summary>Audit trail.</summary>
    public DbSet<ta_NuPakAudit> Audits => Set<ta_NuPakAudit>();
+   /// <summary>Server metadata.</summary>
    public DbSet<ta_Meta> Meta => Set<ta_Meta>();
+   /// <summary>Robot identities.</summary>
    public DbSet<ta_Robot> Robots => Set<ta_Robot>();
+   /// <summary>Configures the keys, relations, and indexes of the NuPak entities.</summary>
    protected override void OnModelCreating(ModelBuilder b) {
       base.OnModelCreating(b);
       // Match the SQL varchar keys so comparisons use the indexed collation, without an implicit

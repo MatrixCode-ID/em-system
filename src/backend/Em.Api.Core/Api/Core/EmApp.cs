@@ -24,12 +24,20 @@ using HttpMethod = Em.Shared.HttpMethod;
 
 namespace Em.Api.Core
 {
+   /// <summary>The application host: builds the web application, registers engine services, and dispatches actions.</summary>
    public class EmApp : IEmApp
    {
+      /// <summary>
+      /// Builds the host: creates the web application, registers the engine services, runs the module
+      /// <paramref name="appBuilder"/> callback, and freezes the registrations.
+      /// </summary>
+      /// <param name="args">Command-line arguments passed to the web application builder.</param>
+      /// <param name="appBuilder">Callback in which the host registers its modules and settings.</param>
+      /// <returns>The built application, ready for <see cref="Run"/>.</returns>
       public static EmApp BuildApp(string[] args, Action<EmAppBuilder> appBuilder) {
          var app = new EmApp(WebApplication.CreateBuilder(args));
-         // Satu baris per entri, berjam. Bawaan console ASP.NET Core memecah setiap entri jadi dua
-         // baris, dan jejak request yang datang beruntun jadi sulit dibaca berpasang-pasangan.
+         // One line per entry, with a timestamp. The default ASP.NET Core console splits every entry into
+         // two lines, which makes back-to-back request traces hard to read in pairs.
          app.Builder.Logging.AddSimpleConsole(options => {
             options.SingleLine = true;
             options.TimestampFormat = "HH:mm:ss ";
@@ -57,23 +65,23 @@ namespace Em.Api.Core
          app.ApplyApprovalRegistration(builder);
          app._publicEndpoints = builder.PublicEndpoints.ToArray();
          app._actions = builder.ActionDefinitions.ToArray();
-         // Beku sejak di sini, sama seperti _actions: public key pengembang hanya boleh datang dari
-         // Program.cs, tidak pernah dari database, dan tidak pernah berubah selama server hidup.
+         // Frozen from here on, like _actions: developer public keys may only come from Program.cs,
+         // never from the database, and never change while the server is alive.
          app._debugTokenKeys = builder.DebugTokenKeys.ToArray();
-         // Beku juga: katalog claim hanya boleh datang dari Program.cs lewat AddClaims, dan tidak
-         // pernah berubah selama server hidup.
+         // Frozen as well: the claim catalog may only come from Program.cs through AddClaims, and
+         // never changes while the server is alive.
          app._claims = builder.ClaimActions.ToArray();
          EnsureClaimModulesAreRegistered(app._claims, builder.ActionDefinitions);
          app._firstTimeAdminPassword = builder.FirstTimeAdminPassword;
          app.SessionTokenRetentionHour = builder.SessionTokenRetentionHour;
          app._httpRequestTimeout = builder.HttpRequestTimeout;
          app._rateLimiter = CreateRateLimiter(builder.ActionRateLimit);
-         // Stack trace hanya dikirim ke client saat Development. Di luar itu detail internal (path file, nama
-         // assembly, struktur query) tidak perlu diketahui pemanggil, terautentikasi maupun tidak.
+         // The stack trace is sent to the client only in Development. Otherwise internal details (file paths,
+         // assembly names, query structure) are none of the caller's business, authenticated or not.
          app._includeStackTrace = app.Builder.Environment.IsDevelopment();
-         // Membangun host di sini, bukan di Run, supaya jendela registrasi service persis sehabis
-         // callback builder selesai: sesudah baris ini service collection sudah terkunci dan
-         // ServiceProvider dijamin tersedia untuk siapa pun yang memegang app.
+         // The host is built here, not in Run, so the service registration window closes exactly after
+         // the builder callback finishes: from this line on the service collection is locked and the
+         // ServiceProvider is guaranteed available to anyone holding the app.
          app._webApplication = app.Builder.Build();
          app._rootServiceProvider = app._webApplication.Services;
          app._httpContextAccessor = app._rootServiceProvider.GetRequiredService<IHttpContextAccessor>();
@@ -81,8 +89,8 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Mendaftarkan service inti bawaan SDK yang selalu tersedia sebelum callback module dijalankan.
-      /// Semua service milik <c>Em.Api.Core</c> didaftarkan di sini supaya terkumpul di satu tempat.
+      /// Registers the built-in core services that are always available before the module callback runs.
+      /// Every service owned by <c>Em.Api.Core</c> is registered here so they are gathered in one place.
       /// </summary>
       private static void InitInternalServices(EmAppBuilder builder) {
          builder.Services.AddSingleton<IStringHasher, Argon2Hashing>();
@@ -97,22 +105,21 @@ namespace Em.Api.Core
          // token service, having no action at all, would silently fail.
          builder.Services.AddScoped<ITokenServices, TokenServices>();
 
-         // Scoped, jadi satu request = satu objek: scope-nya adalah scope milik request, dan objeknya
-         // immutable sehingga tidak ada yang bisa saling menimpa. Yang diresolve saat action berjalan
-         // selalu mendapat yang sudah terisi, karena gerbang berjalan lebih dulu; di luar request yang
-         // keluar adalah ActionRequest.None, yang menolak setiap pemeriksaan hak dengan 401. Scope milik
-         // business task tidak punya request, jadi di sana yang keluar adalah pemulai task-nya, dibawa
-         // lewat BusinessTaskStarter.
+         // Scoped, so one request = one object: its scope is the request's scope, and the object is
+         // immutable so nothing can overwrite another. Whatever is resolved while an action runs always
+         // gets the populated one, because the gate runs first; outside a request, ActionRequest.None
+         // comes out, which rejects every permission check with 401. A business task's scope has no
+         // request, so what comes out there is the task's starter, carried through BusinessTaskStarter.
          builder.Services.AddScoped<BusinessTaskStarter>();
          builder.Services.AddScoped(sp =>
             sp.GetRequiredService<BusinessTaskStarter>().Request ??
             sp.GetRequiredService<EmApp>().CurrentRequest ??
             ActionRequest.None);
 
-         // enforceClaims: false - ketiganya bukan module, dan aksi sensitifnya sudah dijaga pemeriksaan
-         // yang lebih tepat daripada "claim apa pun di module ini": hak atas diri sendiri untuk membaca
-         // data sendiri, hak administrator untuk tulis yang sensitif. Alasan lengkapnya di overload
-         // internal AddService yang menerima parameter itu.
+         // enforceClaims: false - none of the three is a module, and their sensitive actions are already
+         // guarded by checks more precise than "any claim in this module": the right to read one's own
+         // data, and the administrator's right to write sensitive data. The full reasoning is in the
+         // internal AddService overload that takes this parameter.
          builder.AddService<IEmApiCoreServices, ApiCoreServices>(enforceClaims: false);
          builder.AddService<IContactServices, ContactServices>(enforceClaims: false);
          builder.AddService<ICredentialServices, CredentialServices>(enforceClaims: false);
@@ -153,11 +160,11 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyiapkan penyimpanan isi berkas sesuai <c>EmAppBuilder.AddLocalBinaryStorage</c>: path-nya
-      /// dijadikan absolut (relatif dihitung dari folder konten aplikasi, sama seperti CDN) dan
-      /// foldernya dibuat kalau belum ada. Kalau aplikasi tidak menyalakannya, tidak ada yang
-      /// didaftarkan - dan pemakainya gagal saat meminta <see cref="IBinaryStorage"/>, bukan saat
-      /// menulis berkas pertamanya.
+      /// Prepares file content storage according to <c>EmAppBuilder.AddLocalBinaryStorage</c>: the path
+      /// is made absolute (a relative path is resolved from the application content folder, like the
+      /// CDN) and the folder is created when missing. When the application does not enable it, nothing
+      /// is registered - and consumers fail when they ask for <see cref="IBinaryStorage"/>, not when
+      /// they write their first file.
       /// </summary>
       private void ApplyBinaryStorageRegistration(EmAppBuilder builder) {
          if (builder.BinaryStorageRootPath is not { } configuredPath) return;
@@ -170,9 +177,9 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Membekukan seluruh alur persetujuan yang didaftarkan module, lalu mendaftarkannya sebagai satu
-      /// katalog. Selalu didaftarkan - juga saat tidak ada satu alur pun - supaya layar dan action
-      /// approval selalu bisa dibuat dan menjawab sendiri bahwa tidak ada apa-apa.
+      /// Freezes every approval flow registered by modules, then registers them as a single catalog.
+      /// Always registered - even when there is no flow at all - so the approval screens and actions can
+      /// always be created and answer on their own that there is nothing.
       /// </summary>
       private void ApplyApprovalRegistration(EmAppBuilder builder) {
          ApprovalStartupChecks.VerifyDatabases(builder.ApprovalFlows, builder);
@@ -180,20 +187,19 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyiapkan pembacaan header <c>X-Forwarded-*</c>, yaitu cara sebuah proxy atau load balancer
-      /// memberi tahu alamat client yang sebenarnya. Tanpa ini setiap request yang lewat proxy tercatat
-      /// beralamat proxy-nya, sehingga log maupun pemeriksaan berbasis alamat kehilangan artinya.
+      /// Prepares reading of the <c>X-Forwarded-*</c> headers, the way a proxy or load balancer tells
+      /// the real client address. Without this every request passing through a proxy is recorded with the
+      /// proxy's address, so logs and address-based checks lose their meaning.
       /// </summary>
       /// <remarks>
-      /// Yang dipercaya hanya proxy yang memang didaftarkan lewat <c>EmAppBuilder.TrustProxy</c>,
-      /// ditambah loopback yang sudah dipercaya sejak bawaan. Itu disengaja: header ini datang dari
-      /// pemanggil, jadi kalau siapa pun boleh mengirimnya, siapa pun juga bisa mengaku beralamat apa
-      /// saja hanya dengan menempelkan satu baris header.
+      /// Only proxies registered through <c>EmAppBuilder.TrustProxy</c> are trusted, plus the loopback
+      /// that is trusted by default. This is deliberate: the header comes from the caller, so if anyone
+      /// could send it, anyone could claim any address just by attaching one header line.
       /// </remarks>
       private void ApplyProxyHeaderRegistration(EmAppBuilder builder) {
          Services.Configure<ForwardedHeadersOptions>(options => {
-            // Bawaannya None - middleware-nya menyala tapi tidak membaca apa-apa - jadi header yang
-            // hendak dibaca harus disebut sendiri di sini.
+            // The default is None - the middleware is on but reads nothing - so the headers to read
+            // must be named explicitly here.
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
             options.ForwardLimit = builder.ProxyHopLimit < 0 ? null : builder.ProxyHopLimit;
 
@@ -214,11 +220,11 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyiapkan CDN sesuai <c>EmAppBuilder.EnableCdn</c>: path-nya dijadikan absolut (relatif
-      /// dihitung dari folder konten aplikasi) dan foldernya dibuat kalau belum ada. Batas ukuran body
-      /// request server tidak disentuh: unggahan datang sebagai stream, dan batas ukuran CDN ditegakkan
-      /// sendiri saat stream itu disalin. Saat CDN mati tetap didaftarkan sebuah store yang mati, supaya
-      /// service pengelolanya selalu bisa dibuat dan menjawab 404 sendiri.
+      /// Prepares the CDN according to <c>EmAppBuilder.EnableCdn</c>: the path is made absolute (a
+      /// relative path is resolved from the application content folder) and the folder is created when
+      /// missing. The server's request body size limit is left alone: uploads arrive as a stream, and
+      /// the CDN size limit is enforced while that stream is copied. When the CDN is off a disabled store
+      /// is still registered, so its management service can always be created and answer 404 itself.
       /// </summary>
       private void ApplyCdnRegistration(EmAppBuilder builder) {
          var config = _storageSettings.Active(true);
@@ -233,10 +239,10 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyiapkan container registry sesuai <c>EmAppBuilder.AddContainerRegistry</c>: folder
-      /// penyimpanan blob dijadikan absolut (relatif dihitung dari folder konten aplikasi) dan dibuat
-      /// kalau belum ada. Seperti CDN, saat registry mati tetap didaftarkan store yang mati supaya
-      /// <c>CtnServices</c> selalu bisa dibuat dan menjawab 404 sendiri.
+      /// Prepares the container registry according to <c>EmAppBuilder.AddContainerRegistry</c>: the blob
+      /// storage folder is made absolute (a relative path is resolved from the application content
+      /// folder) and created when missing. Like the CDN, when the registry is off a disabled store is
+      /// still registered so <c>CtnServices</c> can always be created and answer 404 itself.
       /// </summary>
       private void ApplyContainerRegistryRegistration(EmAppBuilder builder) {
          _ctnStore = _storageSettings.Active(false).Enabled
@@ -246,9 +252,9 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyiapkan penjalan business task: folder cache-nya dijadikan absolut (relatif dihitung dari
-      /// folder konten aplikasi, sama seperti CDN) dan didaftarkan sebagai singleton. Isinya baru dimuat di
-      /// <see cref="Run"/>, karena membaca batasnya butuh database.
+      /// Prepares the business task runner: its cache folder is made absolute (a relative path is
+      /// resolved from the application content folder, like the CDN) and registered as a singleton. Its
+      /// contents are only loaded in <see cref="Run"/>, because reading its limits needs the database.
       /// </summary>
       private void ApplyBusinessTaskRegistration(EmAppBuilder builder) {
          if (string.IsNullOrWhiteSpace(builder.BusinessTaskCachePath)) {
@@ -281,6 +287,7 @@ namespace Em.Api.Core
 
       private (string Prefix, Microsoft.AspNetCore.Http.RequestDelegate Handler)[] _publicEndpoints = [];
 
+      /// <summary>Seeds the core metadata, maps the endpoints, and runs the web application until it stops.</summary>
       public void Run() {
          var app = _webApplication;
          SeedCoreMetadata();
@@ -295,8 +302,8 @@ namespace Em.Api.Core
          // leftovers wiped before anyone can ask for them. On shutdown every live task is cancelled.
          _businessTasks.Initialize(_rootServiceProvider);
          app.Lifetime.ApplicationStopping.Register(_businessTasks.Stop);
-         // Paling depan di pipeline, karena segala yang membaca alamat pemanggil - jejak request,
-         // gerbang identitas, action mana pun di belakangnya - harus sudah melihat alamat yang benar.
+         // Frontmost in the pipeline, because everything that reads the caller's address - the request
+         // trace, the identity gate, any action behind them - must already see the correct address.
          app.UseForwardedHeaders();
          MapCdn(app);
          MapContainerRegistry(app);
@@ -313,14 +320,14 @@ namespace Em.Api.Core
       }
       
       /// <summary>
-      /// Memasang jalur publik <c>/cdn</c>: file dan daftar isi folder, tanpa identitas dan tanpa
-      /// jatah request - keduanya milik dispatcher, dan jalur ini sengaja di luarnya. Dipasang sebelum
-      /// fallback, yang kalau tidak akan menjawab 200 untuk alamat apa pun di bawah <c>/cdn</c>.
+      /// Maps the public <c>/cdn</c> path: files and folder listings, without identity and without a
+      /// request quota - both belong to the dispatcher, and this path is deliberately outside it. Mapped
+      /// before the fallback, which would otherwise answer 200 for any address under <c>/cdn</c>.
       /// </summary>
       /// <remarks>
-      /// Range, <c>If-Range</c>, <c>ETag</c>, <c>HEAD</c>, 206 dan 416 semuanya ditangani
-      /// <c>StaticFileMiddleware</c>; tidak ada kode Range buatan sendiri di sini. Tanpa rate limit
-      /// karena download manager membuka banyak koneksi Range sekaligus untuk satu file.
+      /// Range, <c>If-Range</c>, <c>ETag</c>, <c>HEAD</c>, 206 and 416 are all handled by
+      /// <c>StaticFileMiddleware</c>; there is no hand-written Range code here. There is no rate limit
+      /// because download managers open many Range connections at once for a single file.
       /// </remarks>
       private void MapCdn(WebApplication app) {
          if (_cdn.IsEnabled) {
@@ -350,19 +357,19 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Memasang jalur <c>/v2</c> container registry, di luar dispatcher action seperti <c>/cdn</c>:
-      /// tidak terkena <c>HttpRequestTimeout</c> maupun <c>ActionRateLimit</c> - layer besar dan banyak
-      /// koneksi paralel adalah pemakaian normalnya. Autentikasinya robot (Basic), diperiksa di
-      /// <see cref="CtnRegistryEndpoint"/>. Saat registry mati jawabannya 404 polos.
+      /// Maps the container registry <c>/v2</c> path, outside the action dispatcher like <c>/cdn</c>: it
+      /// is not subject to <c>HttpRequestTimeout</c> or <c>ActionRateLimit</c> - large layers and many
+      /// parallel connections are its normal use. Authentication is by robot (Basic), checked in
+      /// <see cref="CtnRegistryEndpoint"/>. When the registry is off the answer is a plain 404.
       /// </summary>
       private void MapContainerRegistry(WebApplication app) {
          app.Map(CtnBlobStore.PublicRequestPath, branch => branch.Run(CtnRegistryEndpoint.HandleAsync));
       }
 
       /// <summary>
-      /// Mengisi nilai awal metadata inti sebelum request pertama dilayani. Sejauh ini yang disemai
-      /// hanya milik akun administrator bawaan - tanpa itu database yang baru dibuat tidak punya
-      /// satu pun akun yang bisa dipakai masuk.
+      /// Seeds the initial core metadata before the first request is served. So far only the built-in
+      /// administrator account is seeded - without it a freshly created database has no account that
+      /// can sign in.
       /// </summary>
       private void SeedCoreMetadata() {
          // A scope of its own: the context is scoped, and outside a request there is no scope to
@@ -377,8 +384,8 @@ namespace Em.Api.Core
 
       internal WebApplicationBuilder Builder { get; }
 
-      // Registrasi service hanya boleh terjadi selama BuildApp. Setelah host dibangun, koleksi ini
-      // dikunci oleh ASP.NET Core, jadi ia sengaja tidak ikut dibuka lewat IEmApp.
+      // Service registration may only happen during BuildApp. Once the host is built, this collection
+      // is locked by ASP.NET Core, so it is deliberately not exposed through IEmApp.
       internal IServiceCollection Services => Builder.Services;
 
       private WebApplication _webApplication = null!;
@@ -389,36 +396,33 @@ namespace Em.Api.Core
 
       /// <inheritdoc />
       /// <remarks>
-      /// EmApp hidup sebagai singleton, jadi provider-nya sengaja dibaca ulang setiap kali properti
-      /// ini diakses, bukan disimpan sekali di field. Selama sebuah request berjalan yang dipakai
-      /// adalah provider milik request tersebut, sehingga service scoped ikut siklus hidup request
-      /// itu. Di luar request yang dipakai adalah provider akar, dan di sana service scoped memang
-      /// tidak bisa diresolve - untuk kebutuhan semacam itu buat scope sendiri lewat
-      /// <c>ServiceProvider.CreateScope()</c>.
+      /// EmApp lives as a singleton, so the provider is deliberately re-read every time this property
+      /// is accessed instead of being stored once in a field. While a request runs, the request's own
+      /// provider is used, so scoped services follow that request's lifetime. Outside a request the root
+      /// provider is used, where scoped services indeed cannot be resolved - for such needs create your
+      /// own scope through <c>ServiceProvider.CreateScope()</c>.
       /// </remarks>
       public IServiceProvider ServiceProvider =>
          _httpContextAccessor.HttpContext?.RequestServices ?? _rootServiceProvider;
 
-      // Kunci tempat gerbang menyimpan keterangan request di HttpContext.Items. Private: satu-satunya
-      // yang menulis adalah ProcessRequest, dan yang membaca cukup lewat CurrentRequest di bawah.
+      // Key under which the gate stores the request info in HttpContext.Items. Private: the only writer
+      // is ProcessRequest, and readers only need CurrentRequest below.
       private const string RequestItemKey = "Em.ActionRequest";
 
       /// <summary>
-      /// Keterangan request yang sedang dikerjakan, atau <c>null</c> kalau sedang tidak ada request -
-      /// startup, penyemaian, pekerjaan latar. Read-only: satu-satunya yang mengisinya adalah gerbang
-      /// di <see cref="ProcessRequest"/>, dan <see cref="ActionRequest"/> sendiri immutable.
+      /// Info about the request being handled, or <c>null</c> when there is no request - startup, seeding,
+      /// background work. Read-only: the only thing that fills it is the gate in <see cref="ProcessRequest"/>,
+      /// and <see cref="ActionRequest"/> itself is immutable.
       /// </summary>
       /// <remarks>
-      /// Ini bukan jalur untuk module. Service module membacanya lewat <c>ServicesBase.Request</c>,
-      /// dan kelas pembantu memintanya di konstruktor lewat DI; properti ini disediakan untuk Engine
-      /// dan untuk hal yang memang melintasi request - penulis audit, log enricher, pendaftaran DI -
-      /// dan tipenya sengaja nullable supaya pemakainya dipaksa memikirkan keadaan "sedang tidak ada
-      /// request".
+      /// This is not the route for modules. Module services read it through <c>ServicesBase.Request</c>, and
+      /// helper classes ask for it in their constructor through DI; this property exists for the engine and
+      /// for things that genuinely cross requests - audit writers, log enrichers, DI registration - and its
+      /// type is deliberately nullable so callers are forced to think about the "no request" state.
       /// <para>
-      /// Dibaca ulang dari <c>HttpContext.Items</c> setiap kali diakses, bukan disimpan di field,
-      /// dengan alasan yang sama persis seperti <see cref="ServiceProvider"/> di atas: EmApp hidup
-      /// sebagai singleton, jadi sebuah field akan membuat dua request yang berjalan bersamaan saling
-      /// menimpa identitas.
+      /// It is re-read from <c>HttpContext.Items</c> on every access instead of being stored in a field, for
+      /// exactly the same reason as <see cref="ServiceProvider"/> above: EmApp lives as a singleton, so a
+      /// field would let two concurrent requests overwrite each other's identity.
       /// </para>
       /// </remarks>
       public ActionRequest? CurrentRequest =>
@@ -430,7 +434,7 @@ namespace Em.Api.Core
 
       private ClaimAction[] _claims = [];
 
-      // Diisi di BuildApp; store yang mati kalau CDN tidak dinyalakan, tidak pernah null sesudahnya.
+      // Set in BuildApp; a disabled store when the CDN is not enabled, never null afterwards.
       private ManagedStorageSettings _storageSettings = null!;
       private void ApplyStorageSettingsRegistration(EmAppBuilder builder) {
          var hostKey = builder.StorageSettingsHostId is null ? null : MetaStorageSettingsPersistence.CreateHostKey(
@@ -459,22 +463,21 @@ namespace Em.Api.Core
       private CdnStore _cdn = CdnStore.Disabled;
       private CtnBlobStore _ctnStore = CtnBlobStore.Disabled;
 
-      // Diisi di BuildApp, dimuat di Run.
+      // Set in BuildApp, loaded in Run.
       private BusinessTaskRunner _businessTasks = null!;
 
       /// <summary>
-      /// Katalog seluruh claim yang terdaftar lewat <c>EmAppBuilder.AddClaims</c>, dibekukan sejak
-      /// <see cref="BuildApp"/>. Dibaca oleh <c>GetMeta_AllClaimActions</c> dan oleh UI pengelola claim
-      /// di fase berikutnya. Namanya sengaja sama persis dengan <c>EmApp.AllClaims</c> milik client:
-      /// dua tipe berbeda di dua assembly berbeda, satu arti, satu nama.
+      /// Catalog of every claim registered through <c>EmAppBuilder.AddClaims</c>, frozen since
+      /// <see cref="BuildApp"/>. Read by <c>GetMeta_AllClaimActions</c> and by the claim management UI in
+      /// a later phase. The name deliberately matches the client's <c>EmApp.AllClaims</c> exactly: two
+      /// different types in two different assemblies, one meaning, one name.
       /// </summary>
       public IReadOnlyList<ClaimAction> AllClaims => _claims;
 
       /// <summary>
-      /// Memastikan setiap claim yang terdaftar menunjuk module yang benar-benar terpasang - kalau
-      /// tidak, itu berarti claim didaftarkan untuk service yang <c>AddService</c>-nya tidak pernah
-      /// dipanggil (mis. barisnya sedang dikomentari), dan hak yang diberikan lewat claim itu tidak
-      /// akan pernah terpakai.
+      /// Makes sure every registered claim points to a module that is actually installed - otherwise the
+      /// claim was registered for a service whose <c>AddService</c> was never called (e.g. its line is
+      /// commented out), and rights granted through that claim would never be used.
       /// </summary>
       private static void EnsureClaimModulesAreRegistered(ClaimAction[] claims, List<ActionDefinition> actions) {
          foreach (var claim in claims) {
@@ -488,25 +491,24 @@ namespace Em.Api.Core
 
       private bool _includeStackTrace;
 
-      // Batas waktu kerja action GET, diisi dari EmAppBuilder.HttpRequestTimeout saat aplikasi
-      // dibangun. Action yang menyebutkan angkanya sendiri lewat [GetAction] memakai angka itu,
-      // bukan yang ini.
+      // Time limit for GET actions, set from EmAppBuilder.HttpRequestTimeout when the application is
+      // built. An action that states its own number through [GetAction] uses that number, not this one.
       private TimeSpan _httpRequestTimeout;
 
-      // Jatah request per alamat pemanggil, atau null kalau EmAppBuilder.ActionRateLimit
-      // mematikannya. Satu objek untuk seluruh aplikasi - jatahnya memang harus dihitung lintas
-      // request - dan aman dipakai beberapa request sekaligus.
+      // Request quota per caller address, or null when EmAppBuilder.ActionRateLimit turns it off. One
+      // object for the whole application - the quota has to be counted across requests - and it is safe
+      // to use from several requests at once.
       private PartitionedRateLimiter<HttpContext>? _rateLimiter;
 
       /// <summary>
-      /// Berapa lama - dalam jam - baris sesi yang sudah mati masih disimpan sebelum dibuang. Diisi
-      /// dari <c>EmAppBuilder.SessionTokenRetentionHour</c> saat aplikasi dibangun.
+      /// How long - in hours - a dead session row is kept before being discarded. Set from
+      /// <c>EmAppBuilder.SessionTokenRetentionHour</c> when the application is built.
       /// </summary>
       public int SessionTokenRetentionHour { get; private set; }
 
-      // Password pertama akun admin, hanya dipakai saat penyemaian di Run(): sesudah nilainya masuk
-      // ke database, yang berlaku adalah yang tersimpan di sana. Internal, bukan publik - ini teks
-      // polos sebuah password, dan tidak ada satu pun pemanggil di luar Engine yang perlu membacanya.
+      // First password of the admin account, used only while seeding in Run(): once the value is in the
+      // database, the stored one is what applies. Internal, not public - this is the plain text of a
+      // password, and no caller outside the engine needs to read it.
       private string _firstTimeAdminPassword = string.Empty;
 
       #endregion
@@ -517,30 +519,30 @@ namespace Em.Api.Core
 
       #region Request Processing
 
+      /// <summary>Handles one action request: rate limit, identity gate, routing, binding, execution, and the answer.</summary>
       public async Task<IResult> ProcessRequest(string module, string action, HttpContext http) {
          var routeLabel = $"{module}/{action}";
 
-         // Dicatat paling depan, bahkan sebelum gerbang identitas: request yang nanti ditolak pun
-         // harus kelihatan pernah datang, karena justru itu yang dicari saat ada yang mengetuk-ngetuk
-         // dari luar.
+         // Recorded first, even before the identity gate: a request that is later refused must still show
+         // that it arrived, because that is exactly what is looked for when someone is knocking from outside.
          var trace = RequestTrace.Begin(http, routeLabel);
 
-         // Jatah request diperiksa sebelum gerbang identitas, dan karena itu sebelum satu pun query
-         // dijalankan: kalau yang datang memang banjir, yang paling tidak boleh terjadi adalah
-         // setiap request di dalamnya sempat membebani database dulu sebelum ditolak.
+         // The request quota is checked before the identity gate, and therefore before any query runs: when
+         // a flood really arrives, the last thing that should happen is every request in it burdening the
+         // database before being refused.
          if (IsRateLimited(http)) {
             return Reject(BuildErrorActionResult(TooManyRequestsMessage, 429, null, routeLabel));
          }
 
-         // Gerbang identitas dijalankan paling depan, sebelum route-nya sendiri dicari. Dengan begitu
-         // request yang membawa token debug palsu selalu dijawab persis seperti action yang tidak ada -
-         // apa pun route yang dituju - sehingga mekanismenya tidak bisa diraba dari luar.
+         // The identity gate runs first, before the route itself is looked up. That way a request carrying a
+         // forged debug token is always answered exactly like a nonexistent action - whatever route it targets
+         // - so the mechanism cannot be probed from outside.
          var gate = await ResolveCallerAsync(http, routeLabel);
 
-         // Ditaruh di HttpContext.Items - bukan di sebuah field - karena EmApp hidup sebagai
-         // singleton: sebuah field akan membuat dua request yang berjalan bersamaan saling menimpa
-         // identitas, dan gejalanya baru muncul saat ada beban. Ditulis sebelum penolakan diperiksa,
-         // supaya apa pun yang menulis jejak tetap bisa membaca request yang ditolak.
+         // Placed in HttpContext.Items - not in a field - because EmApp lives as a singleton: a field would
+         // let two concurrent requests overwrite each other's identity, and the symptom would only show up
+         // under load. Written before the refusal is checked, so anything that writes a trace can still read
+         // a refused request.
          http.Items[RequestItemKey] = gate.Request;
          trace.Identified(gate.Request);
 
@@ -557,21 +559,20 @@ namespace Em.Api.Core
             return Reject(ActionNotFoundResult(routeLabel));
          }
 
-         // Diperiksa sesudah route-nya ketemu, bukan sebelum, karena "boleh dipanggil tanpa identitas"
-         // memang milik action-nya. Konsekuensinya action yang ada tapi tertutup dijawab 401 sementara
-         // action yang tidak ada dijawab 404, sehingga dari luar keduanya bisa dibedakan. Itu diterima:
-         // yang benar-benar harus tidak terdeteksi adalah mekanisme token debug, dan jalur itu tetap
-         // menjawab 404 apa pun route-nya karena gerbang di atas berjalan lebih dulu.
+         // Checked after the route is found, not before, because "may be called without identity" belongs to
+         // the action. The consequence is that an existing but closed action answers 401 while a nonexistent
+         // one answers 404, so the two can be told apart from outside. That is accepted: what truly must stay
+         // undetectable is the debug token mechanism, and that path keeps answering 404 whatever the route
+         // because the gate above runs first.
          if (!actionDef.IsPublicAction && !gate.Request.IsAuthenticated) {
             return Reject(BuildErrorActionResult(
                "This action requires a signed-in caller.", 401, actionDef.Type, routeLabel));
          }
 
-         // Ditaruh sesudah blok di atas, bukan menggantikannya, supaya urutan kegagalannya tetap benar:
-         // tidak ada identitas dijawab 401, identitas yang ada tapi haknya kurang dijawab 403. Client
-         // yang memperbarui token setiap kali kena 401 tidak boleh dikirim mengejar token baru untuk
-         // permintaan yang memang tidak akan pernah diizinkan - alasan yang sama persis dengan yang
-         // sudah dipakai ActionRequest.RequireAdmin.
+         // Placed after the block above, not replacing it, so the order of failures stays correct: no identity
+         // answers 401, an identity with insufficient rights answers 403. A client that refreshes its token
+         // on every 401 must not be sent chasing a new token for a request that will never be permitted -
+         // exactly the same reason ActionRequest.RequireAdmin already uses.
          if (!actionDef.IsPublicAction && gate.Request.IsAuthenticated && !HasRequiredClaim(gate.Request, actionDef)) {
             return Reject(BuildErrorActionResult(
                actionDef.RequiredClaim is { } required
@@ -593,10 +594,9 @@ namespace Em.Api.Core
          service.Logger = http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(actionDef.Type);
          service.Request = gate.Request;
 
-         // Satu sumber pembatalan untuk action ini. Pemanggil yang pergi selalu ikut di dalamnya;
-         // anggaran waktu baru dipasang di atasnya beberapa baris lagi, dan hanya untuk GET. Dibuat
-         // sebelum kedua cabang di bawah karena isinya sama - yang berbeda cuma apakah timernya jadi
-         // dipasang.
+         // One cancellation source for this action. A caller that leaves is always part of it; the time budget
+         // is attached on top of it a few lines further down, and only for GET. Created before the two
+         // branches below because its content is the same - what differs is only whether the timer is set.
          using var abort = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted);
          service.AbortToken = abort.Token;
 
@@ -607,10 +607,10 @@ namespace Em.Api.Core
 
             trace.Processing();
 
-            // Dihitung sejak di sini, bukan sejak request masuk, supaya yang dibatasi benar-benar
-            // lama kerja action-nya - sama dengan yang diukur jejak request di baris atas. Syarat
-            // "> Zero" sekaligus menutup dua bentuk "tanpa batas" yang berbeda: TimeSpan.Zero dari
-            // EmAppBuilder dan Timeout.InfiniteTimeSpan dari [GetAction].
+            // Counted from here, not from when the request arrived, so what is limited is really the action's
+            // working time - the same as what the request trace measures on the line above. The "> Zero"
+            // condition also covers two different forms of "no limit": TimeSpan.Zero from EmAppBuilder and
+            // Timeout.InfiniteTimeSpan from [GetAction].
             var timeout = actionDef.RequestTimeout ?? _httpRequestTimeout;
             if (timeout > TimeSpan.Zero) {
                abort.CancelAfter(timeout);
@@ -637,10 +637,9 @@ namespace Em.Api.Core
 
             trace.Processing();
 
-            // Sengaja tanpa CancelAfter. Memutus sebuah penulisan di tengah jalan tidak menghasilkan
-            // "tidak jadi" melainkan "entah", dan pemanggilnya tidak punya cara tahu sejauh mana
-            // tulisannya sudah sampai. Yang tersisa di token ini hanya pemanggil yang pergi, dan
-            // menanggapinya adalah keputusan penulis action - bukan keputusan engine.
+            // Deliberately no CancelAfter. Cutting a write off midway does not produce "not done" but "unknown",
+            // and the caller has no way to tell how far the write got. All that is left on this token is the
+            // caller leaving, and reacting to it is the action author's decision - not the engine's.
             var outcome = await InvokeAsync(service, actionDef.MethodInfo, arguments, actionDef.Type, routeLabel,
                _includeStackTrace, http.RequestAborted, abort.Token);
             return Complete(outcome);
@@ -648,9 +647,9 @@ namespace Em.Api.Core
 
          return Reject(BuildErrorActionResult("Unsupported HTTP method.", 405, actionDef.Type, routeLabel));
 
-         // Dua pembungkus ini ada supaya setiap jalan keluar di atas ikut tercatat tanpa harus
-         // menulis barisnya satu-satu: yang ditolak sebelum action-nya berjalan lewat Reject, yang
-         // sempat berjalan - berhasil maupun gagal - lewat Complete.
+         // These two wrappers exist so every exit above is recorded without writing the line each time:
+         // what is refused before the action runs goes through Reject, and what did run - successful or
+         // not - goes through Complete.
          IResult Reject(ActionResult result) {
             trace.Rejected(result);
             return ToJsonResult(result);
@@ -660,15 +659,14 @@ namespace Em.Api.Core
             if (outcome.Abort is { } reason) {
                trace.Aborted(reason);
 
-               // Yang batal karena anggaran waktu tetap membawa jawaban - pemanggilnya masih
-               // menunggu di ujung sana. Yang batal karena pemanggilnya pergi tidak: socket-nya
-               // sudah tidak ada, dan menulis ke sana hanya melahirkan kegagalan kedua.
+               // What was cancelled because of the time budget still carries an answer - the caller is still
+               // waiting at the other end. What was cancelled because the caller left does not: the socket is
+               // gone, and writing to it would only produce a second failure.
                return outcome.Result is { } answer ? ToJsonResult(answer) : Results.Empty;
             }
 
-            // Sebuah action bisa selesai utuh justru sesudah pemanggilnya pergi - dan untuk action
-            // tulis memang itu yang diinginkan. Pekerjaannya tetap berharga, jawabannya tidak lagi
-            // punya tujuan.
+            // An action may well complete entirely after its caller has left - and for write actions that is
+            // what is wanted. The work is still valuable, but the answer no longer has a destination.
             if (http.RequestAborted.IsCancellationRequested) {
                outcome.Content?.Dispose();
                trace.Aborted(AbortReason.CallerGone);
@@ -693,40 +691,39 @@ namespace Em.Api.Core
 
       #region Rate Limit
 
-      // Sengaja tidak menyebut berapa batasnya maupun kapan ia pulih: angka itu milik pengaturan
-      // server ini, dan yang perlu dilakukan pemanggilnya sama saja apa pun isinya. Waktu tunggu
-      // yang sebenarnya tetap dikirim, lewat header Retry-After, tempat setiap client sudah tahu
-      // mencarinya.
+      // Deliberately does not state the limit or when it recovers: that number belongs to this server's
+      // settings, and what the caller should do is the same whatever it is. The actual wait time is still
+      // sent, through the Retry-After header, where every client already knows to look.
       private const string TooManyRequestsMessage =
          "Too many requests from this address. Wait a moment before trying again.";
 
-      // Sebutan pengganti untuk request yang datang tanpa alamat - lewat unix socket, atau dari host
-      // in-memory. Semuanya berbagi satu jatah, dan itu memang yang diinginkan: yang tidak punya
-      // alamat tidak bisa dibedakan satu sama lain.
+      // Substitute name for requests that arrive without an address - over a unix socket, or from an
+      // in-memory host. They all share one quota, which is intended: callers without an address cannot
+      // be told apart.
       private const string UnknownCallerPartition = "unknown";
 
-      // Panjang jendela jatah dan berapa potong ia dibagi. Makin banyak potongannya makin halus
-      // geseran jendelanya, dan makin banyak pula yang harus diingat per alamat; enam sudah cukup
-      // untuk menutup lonjakan di batas jendela tanpa jadi mahal.
+      // Length of the quota window and the number of pieces it is divided into. The more pieces, the
+      // smoother the window slides, and the more has to be remembered per address; six is enough to cover
+      // a spike at the window edge without getting expensive.
       private static readonly TimeSpan RateLimitWindow = TimeSpan.FromMinutes(1);
 
       private const int RateLimitSegments = 6;
 
-      // Satu potong jendela - sepuluh detik. Ini pula waktu tersingkat sampai ada jatah yang kembali:
-      // begitu potongan tertua lepas dari jendela, jatah yang terpakai di dalamnya ikut pulih.
+      // One window piece - ten seconds. This is also the shortest time until some quota returns: as soon
+      // as the oldest piece leaves the window, the quota used in it recovers.
       private static readonly TimeSpan RateLimitSegment = RateLimitWindow / RateLimitSegments;
 
       /// <summary>
-      /// Menyusun penghitung jatah request, satu jatah per alamat pemanggil, atau <c>null</c> kalau
-      /// <c>EmAppBuilder.ActionRateLimit</c> mematikannya.
+      /// Builds the request quota counter, one quota per caller address, or <c>null</c> when
+      /// <c>EmAppBuilder.ActionRateLimit</c> turns it off.
       /// </summary>
       /// <remarks>
-      /// Alamat dibaca dari koneksi, bukan dari header, dan itu sudah alamat yang benar walau
-      /// request datang lewat proxy: <c>UseForwardedHeaders</c> berjalan paling depan di pipeline,
-      /// jadi saat baris ini dijalankan alamat proxy sudah digantikan alamat client aslinya - selama
-      /// proxy-nya memang didaftarkan lewat <c>EmAppBuilder.TrustProxy</c>. Kalau tidak, seluruh
-      /// request yang lewat proxy itu berbagi satu jatah, dan satu client yang berlebihan menghabiskan
-      /// jatah semua orang di belakangnya.
+      /// The address is read from the connection, not from a header, and it is already the correct address
+      /// even when the request arrives through a proxy: <c>UseForwardedHeaders</c> runs first in the
+      /// pipeline, so by the time this line runs the proxy address has been replaced by the real client
+      /// address - as long as the proxy is registered through <c>EmAppBuilder.TrustProxy</c>. Otherwise all
+      /// requests through that proxy share one quota, and one excessive client exhausts the quota of
+      /// everyone behind it.
       /// </remarks>
       private static PartitionedRateLimiter<HttpContext>? CreateRateLimiter(int perMinute) {
          if (perMinute < 0) {
@@ -740,35 +737,33 @@ namespace Em.Api.Core
                   PermitLimit = perMinute,
                   Window = RateLimitWindow,
                   SegmentsPerWindow = RateLimitSegments,
-                  // Tidak ada antrean: yang melebihi jatah ditolak seketika, bukan ditahan menunggu.
-                  // Menahannya berarti request yang sedang berlangsung menumpuk di server - persis
-                  // beban yang hendak dihindari batas ini.
+                  // No queue: whatever exceeds the quota is refused immediately, not held waiting. Holding it would
+                  // mean requests in flight pile up on the server - exactly the load this limit is meant to avoid.
                   QueueLimit = 0,
                   AutoReplenishment = true
                }));
       }
 
       /// <summary>
-      /// Apakah request ini melebihi jatah alamatnya. Kalau ya, waktu tunggunya ikut ditulis ke
-      /// header <c>Retry-After</c> sebelum jawaban <c>429</c> disusun.
+      /// Whether this request exceeds its address's quota. If so, the wait time is also written to the
+      /// <c>Retry-After</c> header before the <c>429</c> answer is built.
       /// </summary>
       private bool IsRateLimited(HttpContext http) {
          if (_rateLimiter is not { } limiter) {
             return false;
          }
 
-         // Lease-nya langsung dilepas, tidak dipegang selama request berjalan. Yang dihitung jendela
-         // bergeser adalah kedatangan request, bukan berapa yang sedang dikerjakan - jadi memegangnya
-         // lebih lama tidak mengubah apa pun selain memperpanjang umur objeknya.
+         // The lease is released immediately, not held while the request runs. What the sliding window counts
+         // is the arrival of requests, not how many are being handled - so holding it longer changes nothing
+         // except extending the object's lifetime.
          using var lease = limiter.AttemptAcquire(http);
          if (lease.IsAcquired) {
             return false;
          }
 
-         // Limiter-nya tidak selalu menyebutkan waktu tunggunya sendiri, dan pemanggil yang tidak
-         // diberi tahu kapan boleh kembali biasanya mencoba lagi seketika - tepat hal yang sedang
-         // ditolak. Yang dipakai sebagai gantinya satu potong jendela: bukan tebakan, itu memang
-         // saat paling awal ada jatah yang pulih.
+         // The limiter does not always state its own wait time, and a caller that is not told when it may
+         // return usually retries immediately - exactly what is being refused. One window piece is used
+         // instead: not a guess, it really is the earliest moment some quota recovers.
          var wait = lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
             ? retryAfter
             : RateLimitSegment;
@@ -781,32 +776,32 @@ namespace Em.Api.Core
 
       #region Authorization Gate
 
-      // Sedikit kelonggaran untuk selisih jam antara mesin pengembang dan server, mengikuti angka yang
-      // sama dengan pemeriksaan access token: tanpa ini token yang diterbitkan mesin yang jamnya maju
-      // beberapa detik terbaca "diterbitkan di masa depan".
+      // A little slack for the clock difference between the developer machine and the server, following
+      // the same number as the access token check: without it a token issued by a machine whose clock is
+      // a few seconds ahead reads as "issued in the future".
       private static readonly TimeSpan DebugTokenClockSkew = TimeSpan.FromSeconds(30);
 
       private const string BearerPrefix = "Bearer ";
 
       /// <summary>
-      /// Hasil gerbang: keterangan request beserta identitas pemanggilnya, atau - kalau
-      /// <see cref="Rejection"/> terisi - jawaban yang harus dikirim balik tanpa action-nya sempat
-      /// dijalankan.
+      /// Result of the gate: the request info together with the caller's identity, or - when
+      /// <see cref="Rejection"/> is set - the answer that must be sent back without the action getting
+      /// to run.
       /// </summary>
       private readonly record struct CallerGate(ActionRequest Request, ActionResult? Rejection);
 
       /// <summary>
-      /// Apakah pemanggil berhak memanggil action ini. Dipanggil gerbang sebelum action-nya dijalankan,
-      /// bukan dari dalam action - karena itu ia mengembalikan <c>bool</c> alih-alih melempar seperti
-      /// <c>ActionRequest.RequireAdmin</c>: di titik ini pola yang dipakai adalah menolak langsung, dan
-      /// menyamakan keduanya akan menyesatkan pembaca yang sedang mencari tahu sebuah aturan diperiksa
-      /// di gerbang atau di dalam action.
+      /// Whether the caller is entitled to call this action. Called by the gate before the action runs,
+      /// not from inside the action - which is why it returns <c>bool</c> instead of throwing like
+      /// <c>ActionRequest.RequireAdmin</c>: at this point the pattern is to refuse directly, and making the
+      /// two the same would mislead a reader trying to find out whether a rule is checked at the gate or
+      /// inside the action.
       /// </summary>
       /// <remarks>
-      /// Urutan pemeriksaannya meniru <c>NavigationAccess.CanOpen</c> di sisi UI: jalur token debug dulu,
-      /// administrator kedua, baru haknya sendiri. Satu aturan yang sama tidak boleh diperiksa dengan
-      /// urutan berbeda di dua sisi - kalau berbeda, layar yang boleh dibuka dan action yang boleh
-      /// dipanggil bisa tidak lagi cocok.
+      /// The order of checks mirrors <c>NavigationAccess.CanOpen</c> on the UI side: debug token path first,
+      /// administrator second, only then the caller's own rights. One and the same rule must not be checked
+      /// in a different order on the two sides - if it differs, the screens that may be opened and the
+      /// actions that may be called can stop matching.
       /// </remarks>
       private static bool HasRequiredClaim(ActionRequest request, ActionDefinition actionDef) {
          if (request.IsDebugRequest) return true;
@@ -819,8 +814,8 @@ namespace Em.Api.Core
                string.Equals(r.Name, required, StringComparison.OrdinalIgnoreCase));
          }
 
-         // Baru di sini service engine berhenti diperiksa, bukan di baris pertama: yang dilepas darinya
-         // hanya syarat default di bawah, sementara claim yang disebut eksplisit tetap berlaku.
+         // Only here does the engine-service check stop, not on the first line: what is lifted is only the
+         // default condition below, while explicitly named claims still apply.
          if (!actionDef.EnforcesClaims) return true;
 
          return request.Claims.Any(r =>
@@ -828,10 +823,10 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menentukan identitas pemanggil dari header yang dibawanya. Token debug diperiksa paling depan,
-      /// baru access token; header <c>X-Em-User</c> tidak pernah menjadi sumber identitas dengan
-      /// sendirinya, karena kalau pernah dipercaya sendirian siapa pun cukup menyebut id atau nama akun
-      /// mana saja untuk menjadi pemiliknya.
+      /// Determines the caller's identity from the headers it carries. The debug token is checked first,
+      /// then the access token; the <c>X-Em-User</c> header never becomes a source of identity by itself,
+      /// because if it were ever trusted alone, anyone could become any owner just by naming an id or
+      /// account name.
       /// </summary>
       private async Task<CallerGate> ResolveCallerAsync(HttpContext http, string routeLabel) {
          var logger = http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger<EmApp>();
@@ -839,8 +834,8 @@ namespace Em.Api.Core
          UserHeaderProtocol.TryRead(http.Request.Headers[Defaults.UserHeader].ToString(),
             out var headerUserId, out var headerAccount);
 
-         // Keterangan yang berlaku untuk request apa pun, terisi sekali di sini supaya setiap cabang
-         // di bawah tinggal menambahkan identitasnya sendiri.
+         // Info that applies to any request, filled once here so each branch below only has to add its own
+         // identity.
          var request = new ActionRequest {
             RouteLabel = routeLabel,
             CallerAddress = http.Connection.RemoteIpAddress?.ToString(),
@@ -849,8 +844,8 @@ namespace Em.Api.Core
 
          if (!string.IsNullOrWhiteSpace(debugToken)) {
             if (!TryVerifyDebugToken(debugToken, out var keyName, out var refusal)) {
-               // Diam ke client, cerewet ke log server: alasan sebenarnya hanya ditulis di sini, sementara
-               // yang dikirim balik sama persis dengan jawaban untuk action yang tidak ada.
+               // Silent to the client, chatty to the server log: the real reason is written only here, while what
+               // is sent back is exactly the same as the answer for a nonexistent action.
                logger.LogWarning(
                   "Debug token refused for '{Route}' from {Caller}: {Reason}.",
                   routeLabel, CallerAddress(http), refusal);
@@ -860,8 +855,8 @@ namespace Em.Api.Core
             return await ResolveDebugCallerAsync(http, request, keyName, headerUserId, headerAccount, logger);
          }
 
-         // Tripwire. Tidak ada satu pun jalur login yang bisa menghasilkan akun ini, jadi request yang
-         // menyebutnya - lewat nama akun maupun lewat id - tanpa token debug sudah pasti palsu.
+         // Tripwire. No sign-in path can produce this account, so a request that names it - by account name
+         // or by id - without a debug token is certainly forged.
          if (string.Equals(headerAccount, Defaults.DebuggerUserAccount, StringComparison.OrdinalIgnoreCase) ||
              string.Equals(headerUserId, Defaults.DebuggerUserId, StringComparison.Ordinal)) {
             logger.LogWarning(
@@ -874,26 +869,26 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menentukan identitas untuk request yang token debug-nya sudah lolos. Tanpa <c>X-Em-User</c>
-      /// yang dipakai adalah akun debugger; dengan akun lain, pengembang menyamar menjadi akun itu -
-      /// dan haknya dibaca apa adanya dari datanya sendiri, tidak dipaksa menjadi administrator, karena
-      /// kalau dipaksa maka pengujian hak akses kehilangan artinya.
+      /// Determines the identity for a request whose debug token has passed. Without <c>X-Em-User</c> the
+      /// debugger account is used; with another account, the developer impersonates that account - and its
+      /// rights are read as-is from its own data, not forced to administrator, because forcing it would
+      /// make access-rights testing meaningless.
       /// </summary>
       /// <remarks>
-      /// Akun yang disamar boleh disebut lewat id, lewat nama akun, atau keduanya. Kalau keduanya
-      /// disebut, yang dipakai mencari adalah id - itu yang permanen - lalu nama akunnya dicocokkan
-      /// dengan baris yang ketemu. Ketidakcocokan ditolak, bukan didiamkan: ia berarti client menyusun
-      /// header dari dua sumber yang berbeda, dan menebak mana yang benar lebih buruk daripada berhenti.
+      /// The impersonated account may be named by id, by account name, or both. When both are named, the
+      /// id is what is used for the lookup - it is the permanent one - and the account name is then matched
+      /// against the row found. A mismatch is refused, not ignored: it means the client composed the header
+      /// from two different sources, and guessing which is right is worse than stopping.
       /// </remarks>
       private async Task<CallerGate> ResolveDebugCallerAsync(HttpContext http, ActionRequest request, string keyName,
          string? headerUserId, string? headerAccount, ILogger logger) {
-         // Sesudah token lolos, tidak ada lagi yang perlu disembunyikan: kegagalan di bawah ini dijawab
-         // dengan pesan yang menyebut sebabnya, bukan 404, supaya pengembang tidak menebak-nebak.
+         // After the token has passed, nothing needs hiding anymore: the failures below are answered with a
+         // message that states the cause, not 404, so developers do not have to guess.
          request = request with { Source = CallerSource.DebugToken, DebugKeyName = keyName };
 
-         // Tanpa header sama sekali yang dipakai adalah akun debugger. Sengaja akun debugger, bukan
-         // administrator bawaan: jejaknya harus bisa membedakan pengembang yang sedang mengoprek dari
-         // administrator sungguhan.
+         // With no header at all, the debugger account is used. Deliberately the debugger account, not the
+         // built-in administrator: the trace must be able to tell a developer tinkering from a real
+         // administrator.
          if (headerUserId is null && headerAccount is null) {
             return Accepted(request with {
                cUserId = Defaults.DebuggerUserId,
@@ -902,8 +897,8 @@ namespace Em.Api.Core
             });
          }
 
-         // Akun sistem dikenali lebih dulu dan tidak pernah dicari sebagai baris pengguna: keduanya
-         // memang tidak punya baris. Keduanya cocok baik disebut lewat id maupun lewat nama akun.
+         // System accounts are recognized first and never looked up as user rows: neither has a row. Both
+         // match whether named by id or by account name.
          if (NamesSystemAccount(Defaults.DebuggerUserId, Defaults.DebuggerUserAccount, out var isConsistent)) {
             if (!isConsistent) return Mismatched(Defaults.DebuggerUserId, Defaults.DebuggerUserAccount);
 
@@ -917,7 +912,7 @@ namespace Em.Api.Core
          if (NamesSystemAccount(Defaults.AdminUserId, Defaults.AdminUserAccount, out isConsistent)) {
             if (!isConsistent) return Mismatched(Defaults.AdminUserId, Defaults.AdminUserAccount);
 
-            // Akun administrator bawaan tidak punya baris pengguna, jadi keadaannya dibaca dari saklarnya.
+            // The built-in administrator account has no user row, so its state is read from its switch.
             var adminCtx = http.RequestServices.GetRequiredService<ApiCoreContext>();
             if (!await AdminAccount.IsEnabledAsync(adminCtx)) {
                return Rejected(
@@ -966,8 +961,8 @@ namespace Em.Api.Core
             IsImpersonating = true
          });
 
-         // Apakah header menyebut akun sistem tertentu - lewat id, lewat nama akun, atau keduanya.
-         // consistent bernilai false kalau keduanya disebut tapi menunjuk akun yang berbeda.
+         // Whether the header names a particular system account - by id, by account name, or both.
+         // consistent is false when both are named but point to different accounts.
          bool NamesSystemAccount(string systemUserId, string systemAccount, out bool consistent) {
             var byId = string.Equals(headerUserId, systemUserId, StringComparison.Ordinal);
             var byAccount = string.Equals(headerAccount, systemAccount, StringComparison.OrdinalIgnoreCase);
@@ -982,9 +977,9 @@ namespace Em.Api.Core
                "Send one of the two, or send a pair that matches.");
 
          CallerGate Accepted(ActionRequest resolved) {
-            // Selama penyamaran, baris data yang tertulis membawa jejak akun yang disamar dan tidak bisa
-            // dibedakan dari pekerjaan aslinya. Sampai sistem audit ada, baris log inilah satu-satunya jejak
-            // bahwa yang mengerjakannya sebenarnya seorang pengembang.
+            // During impersonation, the data rows written carry the impersonated account's trace and cannot be
+            // told apart from real work. Until an audit system exists, this log line is the only trace that the
+            // one who did it was actually a developer.
             logger.LogWarning(
                "Debug token '{Key}' from {Caller} accepted for '{Route}', acting as '{Account}' ({UserId}, admin: {IsAdmin}).",
                keyName, CallerAddress(http), resolved.RouteLabel, resolved.cUserAccount, resolved.cUserId,
@@ -1001,10 +996,10 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Membaca identitas dari access token, kalau ada. Access token yang tidak sah tidak ditolak di
-      /// sini, hanya tidak menghasilkan identitas - action non-publiklah yang menolaknya sendiri. Yang
-      /// tetap lewat adalah action publik, dan itu memang yang diinginkan: refresh token dikirim justru
-      /// ketika access token-nya sudah mati.
+      /// Reads the identity from the access token, if present. An invalid access token is not refused here,
+      /// it just yields no identity - non-public actions are the ones that refuse it themselves. What still
+      /// passes is public actions, and that is intended: the refresh token is sent precisely when the access
+      /// token is already dead.
       /// </summary>
       private async Task<CallerGate> ResolveBearerCallerAsync(HttpContext http, ActionRequest request,
          string? headerUserId, ILogger logger) {
@@ -1022,19 +1017,19 @@ namespace Em.Api.Core
             return new CallerGate(request, null);
          }
 
-         // Yang menang sudah pasti token-nya - ada kondisi sah yang membuat keduanya berbeda, misalnya
-         // request yang masih di udara saat pengguna berganti - jadi selisihnya cukup ditulis ke log.
-         // Sekarang yang dibandingkan dua id, bukan nama akun, sehingga tidak ada query tambahan.
+         // The token is certainly the winner - there are legitimate conditions that make the two differ, for
+         // example a request still in flight while the user switches - so the difference is just written to
+         // the log. What is compared now is two ids, not account names, so no extra query is needed.
          if (headerUserId is not null && !string.Equals(headerUserId, validation.cUserId, StringComparison.Ordinal)) {
             logger.LogDebug(
                "Header '{Header}' named '{HeaderUserId}' for '{Route}'; identity comes from the access token ({UserId}).",
                Defaults.UserHeader, headerUserId, request.RouteLabel, validation.cUserId);
          }
 
-         // Hak pemanggil dimuat di sini, bukan di titik pemeriksaannya, supaya action mana pun yang
-         // hendak membacanya sendiri mendapat isi yang sama dengan yang dipakai gerbang. Administrator
-         // dilewati karena ia lolos tanpa dibaca haknya - membayar satu query untuk jawaban yang tidak
-         // akan pernah dipakai tidak ada gunanya. Jalur token debug tidak pernah sampai ke sini.
+         // The caller's rights are loaded here, not at the point of checking, so any action that wants to read
+         // them itself gets the same content the gate used. Administrators are skipped because they pass
+         // without their rights being read - paying one query for an answer that will never be used is
+         // pointless. The debug token path never reaches here.
          ClaimAction[] claims = [];
          if (!validation.IsAdmin && validation.cUserId is { } cUserId) {
             claims = await UserClaimLoader.LoadAsync(
@@ -1042,9 +1037,9 @@ namespace Em.Api.Core
                cUserId, await GetDateStampAsync(), http.RequestAborted);
          }
 
-         // cUserAccount sengaja dibiarkan kosong: token hanya membawa id, dan menerjemahkannya jadi
-         // nama akun berarti satu query tambahan di setiap request. Nama yang menempel di header pun
-         // tidak dipakai mengisinya - ia datang dari pemanggil, bukan dari data.
+         // cUserAccount is deliberately left empty: the token carries only the id, and translating it to an
+         // account name would cost one extra query on every request. The name attached in the header is not
+         // used to fill it either - it comes from the caller, not from data.
          return new CallerGate(request with {
             Source = CallerSource.AccessToken,
             cUserId = validation.cUserId,
@@ -1055,8 +1050,8 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Memeriksa token debug: bentuknya, nama key-nya, tanda tangannya, dan masa berlakunya. Alasan
-      /// penolakan dikembalikan lewat <paramref name="refusal"/> untuk ditulis ke log server saja.
+      /// Checks the debug token: its shape, key name, signature, and validity period. The reason for a
+      /// refusal is returned through <paramref name="refusal"/> to be written to the server log only.
       /// </summary>
       private bool TryVerifyDebugToken(string token, out string keyName, out string refusal) {
          keyName = string.Empty;
@@ -1102,15 +1097,15 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Jawaban tunggal untuk setiap penolakan di jalur token debug - sama persis, sampai ke kata-katanya,
-      /// dengan jawaban untuk action yang memang tidak ada. Beda sedikit saja, ia mengumumkan keberadaan
-      /// dirinya.
+      /// The single answer for every refusal on the debug token path - exactly the same, down to the wording,
+      /// as the answer for an action that really does not exist. Any difference would announce its own
+      /// existence.
       /// </summary>
       private static ActionResult ActionNotFoundResult(string routeLabel) =>
          BuildErrorActionResult($"Action '{routeLabel}' was not found.", 404, null, routeLabel);
 
-      // Satu sumber sebutan alamat untuk log gerbang dan log jejak request, supaya keduanya menyebut
-      // alamat yang sama persis - termasuk saat request datang lewat proxy.
+      // One source of the address wording for the gate log and the request trace log, so both state exactly
+      // the same address - including when the request arrives through a proxy.
       private static string CallerAddress(HttpContext http) => RequestTrace.DescribeCaller(http);
 
       #endregion
@@ -1380,14 +1375,14 @@ namespace Em.Api.Core
       #region Invocation and Results
 
       /// <summary>
-      /// Hasil satu action: jawaban yang harus dikirim, dan - kalau action-nya batal - alasannya.
-      /// Dua keadaan yang mungkin di luar jalur biasa: batal tanpa jawaban (pemanggilnya pergi), dan
-      /// batal dengan jawaban (anggaran waktu habis, pemanggilnya masih menunggu).
+      /// Result of one action: the answer to send, and - when the action was cancelled - the reason.
+      /// Two states that may fall outside the usual path: cancelled without an answer (the caller left), and
+      /// cancelled with an answer (time budget exhausted, the caller still waiting).
       /// </summary>
       /// <remarks>
-      /// <see cref="Content"/> terisi hanya untuk action yang mengembalikan <c>Task&lt;Stream&gt;</c> dan
-      /// selesai dengan sukses: yang dikirim lalu isi stream itu, dan <see cref="Result"/> hanya dipakai
-      /// untuk jejak request.
+      /// <see cref="Content"/> is set only for actions that return <c>Task&lt;Stream&gt;</c> and completed
+      /// successfully: what is sent is then the stream content, and <see cref="Result"/> is used only for the
+      /// request trace.
       /// </remarks>
       private readonly record struct ActionOutcome(ActionResult? Result, AbortReason? Abort, Stream? Content = null);
 
@@ -1514,8 +1509,10 @@ namespace Em.Api.Core
 
       #endregion
       
+      /// <inheritdoc />
       public CultureInfo EnUs => CultureInfo.GetCultureInfo("En-US");
 
+      /// <inheritdoc />
       public Task<DateTime> GetDateStampAsync() => Task.FromResult(DateTime.Now);
    }
 }

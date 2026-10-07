@@ -52,7 +52,10 @@ namespace Em.Api.Core.Registry.Deploy
       /// Pulls <paramref name="repository"/> at <paramref name="digest"/> and reads the progress stream to the end;
       /// an error reported inside the stream fails the pull.
       /// </summary>
+      /// <param name="repository">Repository to pull, including the registry host.</param>
+      /// <param name="digest">Digest of the image to pull.</param>
       /// <param name="registryAuth">Value for <c>X-Registry-Auth</c>, or <c>null</c> for an anonymous pull.</param>
+      /// <param name="ct">Cancellation token.</param>
       public async Task PullAsync(string repository, string digest, string? registryAuth, CancellationToken ct) {
          using var request = new HttpRequestMessage(HttpMethod.Post,
             "images/create?fromImage=" + Uri.EscapeDataString(repository) + "&tag=" + Uri.EscapeDataString(digest));

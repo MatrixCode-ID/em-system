@@ -5,6 +5,7 @@ using Em.Shared;
 
 namespace Em.Api.Core;
 
+/// <summary>Robot management actions: registration, tokens, ownership, and access rights.</summary>
 [Module(Defaults.AdministrativeToolsModuleName)]
 public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> managers) : ServicesBase, IRobotServices
 {
@@ -16,6 +17,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
       foreach (var manager in Managers) all.AddRange(await manager.ReadAsync(AbortToken));
       return all.ToArray();
    }
+   /// <inheritdoc />
    [GetAction(claim: IRobotServices.RobotClaim)]
    public async Task<RobotAccessManagerInfo[]> GetMeta_RobotManagers() {
       var result = new List<RobotAccessManagerInfo>();
@@ -26,6 +28,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
       u.cUserState == UserState.Active &&
       u.cUserId != Defaults.AdminUserId && u.cUserId != Defaults.DebuggerUserId);
 
+   /// <inheritdoc />
    [GetAction(claim: IRobotServices.RobotClaim)]
    public Task<RobotOwnerInfo[]> GetMeta_RobotOwners() => EligibleOwners
       .OrderBy(u => u.cUserAccount).ThenBy(u => u.cUserId)
@@ -34,6 +37,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
 
    #region Robot dan hak
 
+   /// <inheritdoc />
    [GetAction(claim: IRobotServices.RobotClaim)]
    public async Task<RobotInfo[]> GetMeta_Robots() {
       var db = Db;
@@ -46,6 +50,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
          r.cRobotOwner_cUserId is { } id ? owners.GetValueOrDefault(id) : null)).ToArray();
    }
 
+   /// <inheritdoc />
    [PostAction(claim: IRobotServices.RobotClaim)]
    public async Task<RobotToken> PostGetMeta_RobotCreate(string name, string? description, DateTime? tokenExpiry, string? ownerUserId = null) {
       var db = Db;
@@ -71,13 +76,14 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
       return new RobotToken { Robot = ToInfo(row, [], owner?.cUserAccount), Token = token };
    }
 
+   /// <inheritdoc />
    [PostAction(claim: IRobotServices.RobotClaim)]
    public async Task<RobotToken> PostGetMeta_RobotRegenerate(string robotId, DateTime? tokenExpiry) {
       var db = Db;
       var robot = await RequireRobotAsync(db, robotId);
       tokenExpiry = RequireFutureExpiry(tokenExpiry);
 
-      // Satu robot satu token: yang lama langsung tidak berlaku begitu hash-nya tertimpa.
+      // One robot, one token: the old one stops being valid as soon as its hash is overwritten.
       var token = RobotAuth.GenerateToken();
       robot.cRobotTokenHash = RobotAuth.HashToken(token);
       robot.cRobotTokenPrefix = RobotAuth.DisplayPrefix(token);
@@ -92,6 +98,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
       return new RobotToken { Robot = ToInfo(robot, (await ReadAccessesAsync()).Where(a => a.RobotId == robotId).ToArray(), ownerAccount), Token = token };
    }
 
+   /// <inheritdoc />
    [PostAction(claim: IRobotServices.RobotClaim)]
    public async Task PostMeta_RobotUpdate(string robotId, string? description, bool isActive, DateTime? tokenExpiry) {
       var db = Db;
@@ -109,6 +116,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
 
    #endregion
 
+   /// <inheritdoc />
    [PostAction(claim: IRobotServices.RobotClaim)]
    public async Task PostMeta_RobotDelete(string robotId) {
       var providers = Managers;
@@ -121,6 +129,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
       foreach (var manager in providers) await manager.AfterDeleteAsync(CancellationToken.None);
    }
 
+   /// <inheritdoc />
    [PostAction(claim: IRobotServices.RobotClaim)]
    public async Task PostMeta_RobotAccessSet(string robotId, string managerId, string resourceId, string access) {
       var manager = Managers.SingleOrDefault(m => m.Id == managerId) ?? throw NotFound("Robot manager");
@@ -131,8 +140,8 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
          throw new ActionException("Invalid access for this manager.", 400);
       await manager.SetAsync(robotId, resourceId, access, AbortToken);
    }
-   // Semua waktu di registry UTC. Waktu dari UI yang berjenis Local diubah ke UTC; yang tanpa jenis
-   // dianggap sudah UTC.
+   // All times in the registry are UTC. Times from the UI of Local kind are converted to UTC; those with
+   // no kind are taken as already UTC.
    private static DateTime? ToUtc(DateTime? value) => value is { } v
       ? v.Kind == DateTimeKind.Local ? v.ToUniversalTime() : DateTime.SpecifyKind(v, DateTimeKind.Utc)
       : null;
@@ -149,8 +158,8 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
    private static async Task<ta_Robot> RequireRobotAsync(RobotContext db, string robotId) =>
       await db.Robots.SingleOrDefaultAsync(r => r.cRobotId == robotId) ?? throw NotFound("Robot");
 
-   // Insert yang bentrok dengan indeks unik (dua permintaan membuat nama yang sama bersamaan) dijawab
-   // 409 seperti pemeriksaan di depannya, bukan 500.
+   // An insert that collides with the unique index (two requests creating the same name at once) is
+   // answered 409 like the check before it, not 500.
    private static async Task SaveOrConflictAsync(RobotContext db, string conflictMessage) {
       try {
          await db.SaveChangesAsync();

@@ -5,6 +5,7 @@ using Em.Shared;
 
 namespace Em.Api.Core
 {
+   /// <summary>Implementation of the user, role, claim, sign-in, and session actions.</summary>
    [Module(Defaults.CredentialModuleName)]
    public class CredentialServices(ApiCoreContext ctx) : ServicesBase, ICredentialServices
    {
@@ -12,6 +13,7 @@ namespace Em.Api.Core
 
       #region ta_User
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_User?> GetTa_User_ById(string cUserId) {
          var data = await ctx.ta_Users.Where(r => r.cUserId == cUserId)
@@ -19,6 +21,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_User[]> GetTa_Users() {
          var data = await ctx.ta_Users
@@ -26,9 +29,11 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<int> GetTa_Users_Count() => ctx.ta_Users.CountAsync(AbortToken);
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_User[]> GetTa_Users_ByContactId(string cContactId) {
          var data = await ctx.ta_Users
@@ -37,6 +42,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_User[]> GetTa_Users_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -52,6 +58,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_User_New(
          DtoPayload<ta_User, ta_Contact, ta_Address, ta_Comm, ta_UserCredential> data) {
@@ -109,6 +116,7 @@ namespace Em.Api.Core
          }
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_User_NewBatch(
          DtoPayload<ta_User, ta_Contact, ta_Address, ta_Comm, ta_UserCredential>[] datas) {
@@ -177,13 +185,13 @@ namespace Em.Api.Core
          }
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_User_Update(ta_User data) {
-         // Hak administrator ikut menempel di access token sejak sesinya dibuka, jadi mencabutnya
-         // di sini tidak berlaku apa-apa selama sesi lama masih hidup. Nilai sebelumnya dibaca
-         // dulu supaya sesi-sesi itu bisa dihentikan - alasan yang sama persis yang membuat ganti
-         // password mencabut sesi: apa yang diakui token tidak boleh berbeda dari apa yang
-         // tertulis di data.
+         // The administrator right is attached to the access token since its session was opened, so revoking
+         // it here has no effect while the old session is still alive. The previous value is read first so
+         // those sessions can be ended - exactly the same reason that makes a password change revoke
+         // sessions: what the token vouches for must not differ from what is written in the data.
          var wasAdmin = await ctx.ta_Users.AsNoTracking()
             .Where(r => r.cUserId == data.cUserId)
             .Select(r => (bool?)r.cUserIsAdmin)
@@ -197,11 +205,12 @@ namespace Em.Api.Core
          }
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_User_UpdateBatch(ta_User[] datas) {
-         // Sama seperti pada satu baris di atas: hak administrator yang berubah harus mengakhiri
-         // sesi pemiliknya, dan yang berubah hanya bisa diketahui dengan membaca nilai lamanya
-         // sebelum tulisan ini menimpanya.
+         // Same as on the single-row path above: a changed administrator right must end the owner's
+         // sessions, and the change can only be detected by reading the old value before this write
+         // overwrites it.
          var ids = datas.Select(r => r.cUserId).ToArray();
          var wereAdmin = await ctx.ta_Users.AsNoTracking()
             .Where(r => ids.Contains(r.cUserId))
@@ -217,12 +226,14 @@ namespace Em.Api.Core
          }
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_User_Delete(ta_User data) {
          ctx.DeleteRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_User_DeleteBatch(ta_User[] datas) {
          await ctx.BulkDeleteAsync(datas);
@@ -232,6 +243,7 @@ namespace Em.Api.Core
 
       #region ta_Role
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Role?> GetTa_Role_ById(string cRoleId) {
          Request.RequireUserId();
@@ -240,6 +252,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Role[]> GetTa_Roles() {
          Request.RequireUserId();
@@ -248,12 +261,14 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<int> GetTa_Roles_Count() {
          Request.RequireUserId();
          return ctx.ta_Roles.CountAsync(AbortToken);
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Role[]> GetTa_Roles_InPage(int page, int pageSize) {
          Request.RequireUserId();
@@ -270,6 +285,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Role_New(ta_Role data) {
          Request.RequireAdmin();
@@ -277,12 +293,14 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Role_NewBatch(ta_Role[] datas) {
          Request.RequireAdmin();
          await ctx.BulkInsertAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Role_Update(ta_Role data) {
          Request.RequireAdmin();
@@ -290,20 +308,22 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Role_UpdateBatch(ta_Role[] datas) {
          Request.RequireAdmin();
          await ctx.BulkUpdateAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Role_Delete(ta_Role data) {
          Request.RequireAdmin();
 
-         // Penugasannya dihapus lebih dulu karena foreign key-nya NO ACTION: menghapus role yang
-         // masih dipegang seseorang akan gagal sebagai pelanggaran foreign key mentah dari SQL
-         // Server - pesan yang tidak berarti apa-apa di layar. Hak milik role ikut terhapus
-         // sendiri lewat CASCADE, jadi tidak perlu disebut di sini.
+         // The assignments are deleted first because the foreign key is NO ACTION: deleting a role that is
+         // still held by someone would fail as a raw foreign key violation from SQL Server - a message that
+         // means nothing on screen. The role's rights are removed by themselves through CASCADE, so they need
+         // not be mentioned here.
          var assignments = await ctx.ta_UserRoles
             .Where(r => r.cRoleId == data.cRoleId)
             .ToArrayAsync();
@@ -313,19 +333,19 @@ namespace Em.Api.Core
 
          ctx.DeleteRow(data);
 
-         // Satu SaveChanges, jadi satu transaksi: kalau penghapusan role-nya gagal, penugasan
-         // yang sudah dihapus ikut kembali - bukan tertinggal sebagai baris yang menunjuk role
-         // yang masih ada.
+         // A single SaveChanges, so a single transaction: if deleting the role fails, the assignments that
+         // were already deleted come back too - not left as rows pointing at a role that still exists.
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Role_DeleteBatch(ta_Role[] datas) {
          Request.RequireAdmin();
 
-         // Sengaja bukan BulkDeleteAsync: operasi bulk melewati change tracker dan berjalan
-         // sebagai perintahnya sendiri, sehingga penghapusan penugasan dan penghapusan role
-         // tidak lagi berada di satu transaksi - lihat alasannya pada action di atas.
+         // Deliberately not BulkDeleteAsync: bulk operations bypass the change tracker and run as their own
+         // command, so deleting the assignments and deleting the role would no longer be in one transaction -
+         // see the reason on the action above.
          var ids = datas.Select(r => r.cRoleId).ToArray();
          var assignments = await ctx.ta_UserRoles
             .Where(r => ids.Contains(r.cRoleId))
@@ -345,6 +365,7 @@ namespace Em.Api.Core
 
       #region ta_RoleClaim
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_RoleClaim[]> GetTa_RoleClaims_ByRoleId(string cRoleId) {
          Request.RequireUserId();
@@ -354,17 +375,18 @@ namespace Em.Api.Core
          return data;
       }
 
-      // Kunci hak yang sampai ke sini tidak diperiksa lagi terhadap katalog, dan itu disengaja.
-      // Katalog server hanya memuat hak yang dideklarasikan module; client punya katalognya sendiri
-      // yang lebih luas - hak milik layar bawaan client, yang tidak dimiliki module mana pun - dan
-      // memeriksa di sini akan menolak justru hak yang sah itu. Yang memeriksa ejaan sebuah kunci
-      // adalah sisi yang mengenal kedua belahan katalognya, yaitu client.
+      // The right key that arrives here is not checked against the catalog again, and that is deliberate.
+      // The server catalog only contains rights declared by modules; the client has its own, wider catalog -
+      // rights of the client's built-in screens, which belong to no module - and checking here would reject
+      // exactly those legitimate rights. The side that checks the spelling of a key is the one that knows
+      // both halves of the catalog, which is the client.
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_RoleClaim_New(ta_RoleClaim data) {
          Request.RequireAdmin();
 
-         // Idempoten, sama seperti pemberian hak langsung: memberikan hak yang sudah dipegang
-         // bukan kesalahan, dan baris keduanya akan ditolak primary key-nya sendiri.
+         // Idempotent, just like granting a right directly: granting a right that is already held is not an
+         // error, and the second row would be refused by its own primary key.
          var exists = await ctx.ta_RoleClaims
             .AnyAsync(r => r.cRoleId == data.cRoleId && r.cClaimName == data.cClaimName);
          if (exists) return;
@@ -373,7 +395,8 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
-      // Tidak diperiksa terhadap katalog, alasannya sama dengan pemberian satuan di atas.
+      // Not checked against the catalog, for the same reason as the single grant above.
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_RoleClaim_NewBatch(ta_RoleClaim[] datas) {
          Request.RequireAdmin();
@@ -387,10 +410,9 @@ namespace Em.Api.Core
             .Select(r => RoleClaimKey(r.cRoleId, r.cClaimName))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-         // Baris yang sudah ada disaring di sini, bukan dibiarkan gagal di database: satu hak
-         // yang kebetulan sudah dipegang tidak boleh menggagalkan sebelas perubahan lain yang
-         // dikirim bersamanya oleh tombol simpan yang sama. Add juga menyaring kiriman yang
-         // memuat baris kembar di dalam dirinya sendiri.
+         // Existing rows are filtered out here, not left to fail in the database: one right that happens to be
+         // held already must not fail the eleven other changes sent with it by the same save button. Add also
+         // filters a submission that contains duplicate rows within itself.
          var rows = datas
             .Where(r => held.Add(RoleClaimKey(r.cRoleId, r.cClaimName)))
             .ToArray();
@@ -400,6 +422,7 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_RoleClaim_Delete(ta_RoleClaim data) {
          Request.RequireAdmin();
@@ -407,6 +430,7 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_RoleClaim_DeleteBatch(ta_RoleClaim[] datas) {
          Request.RequireAdmin();
@@ -417,6 +441,7 @@ namespace Em.Api.Core
 
       #region ta_UserRole
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_UserRole[]> GetTa_UserRoles_ByRoleId(string cRoleId) {
          Request.RequireUserId();
@@ -426,6 +451,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_UserRole[]> GetTa_UserRoles_ByUserId(string cUserId) {
          Request.RequireSelfOrAdmin(cUserId);
@@ -435,19 +461,20 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<int> GetTa_UserRoles_Count() {
          Request.RequireUserId();
          return ctx.ta_UserRoles.CountAsync(AbortToken);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_UserRole_New(ta_UserRole data) {
          Request.RequireAdmin();
 
-         // Idempoten, sepasang dengan ta_RoleClaim di atas: memberikan role kepada orang yang
-         // sudah memegangnya bukan kesalahan, dan baris keduanya akan ditolak kunci gabungan
-         // (cUserId, cRoleId) miliknya sendiri.
+         // Idempotent, a pair with ta_RoleClaim above: giving a role to someone who already holds it is not an
+         // error, and the second row would be refused by its own composite key (cUserId, cRoleId).
          var exists = await ctx.ta_UserRoles
             .AnyAsync(r => r.cUserId == data.cUserId && r.cRoleId == data.cRoleId);
          if (exists) return;
@@ -456,6 +483,7 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_UserRole_NewBatch(ta_UserRole[] datas) {
          Request.RequireAdmin();
@@ -469,11 +497,10 @@ namespace Em.Api.Core
             .Select(r => UserRoleKey(r.cUserId, r.cRoleId))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-         // Alasannya sama persis dengan PostTa_RoleClaim_NewBatch: satu penugasan yang kebetulan
-         // sudah ada tidak boleh menggagalkan perubahan lain yang dikirim bersamanya oleh tombol
-         // simpan yang sama - dan itulah yang membuat "tekan simpan lagi" setelah pengiriman
-         // putus di tengah jalan berakhir tuntas, bukan berakhir menabrak primary key. Add juga
-         // menyaring kiriman yang memuat baris kembar di dalam dirinya sendiri.
+         // Exactly the same reason as PostTa_RoleClaim_NewBatch: one assignment that happens to exist already
+         // must not fail the other changes sent with it by the same save button - and that is what makes
+         // "press save again" after a submission cut off midway end cleanly, instead of ending in a primary key
+         // collision. Add also filters a submission that contains duplicate rows within itself.
          var rows = datas
             .Where(r => held.Add(UserRoleKey(r.cUserId, r.cRoleId)))
             .ToArray();
@@ -482,6 +509,7 @@ namespace Em.Api.Core
          await ctx.BulkInsertAsync(rows);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_UserRole_Update(ta_UserRole data) {
          Request.RequireAdmin();
@@ -489,6 +517,7 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_UserRole_Delete(ta_UserRole data) {
          Request.RequireAdmin();
@@ -496,6 +525,7 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_UserRole_DeleteBatch(ta_UserRole[] datas) {
          Request.RequireAdmin();
@@ -587,6 +617,7 @@ namespace Em.Api.Core
 
       #region vi_User
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_User?> GetVi_User_ById(string cUserId) {
          var data = await ctx.vi_Users.Where(r => r.cUserId == cUserId)
@@ -594,6 +625,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_User?> GetVi_User_ByAccount(string cUserAccount) {
          var data = await ctx.vi_Users.Where(r => r.cUserAccount == cUserAccount)
@@ -601,6 +633,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_User[]> GetVi_Users() {
          var data = await ctx.vi_Users
@@ -608,6 +641,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_User[]> GetVi_Users_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -623,6 +657,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_User[]> GetVi_Users_ByContactId(string cContactId) {
          var data = await ctx.vi_Users
@@ -631,13 +666,14 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_User[]> GetVi_Users_ByRoleId(string cRoleId) {
          Request.RequireUserId();
 
-         // Penugasannya yang disaring, bukan user-nya, lalu barisnya diambil dari view user apa
-         // adanya: yang diminta adalah anggota sebuah role dalam bentuk yang sama persis dengan
-         // user di mana pun ia dibaca, bukan bentuk gabungan baru yang harus dikenali layar.
+         // The assignments are what is filtered, not the users, and then the rows are taken from the user view
+         // as-is: what is asked for is the members of a role in exactly the same shape as a user wherever it
+         // is read, not a new combined shape the screen has to learn to recognize.
          var data = await (
                from user in ctx.vi_Users
                join assignment in ctx.ta_UserRoles on user.cUserId equals assignment.cUserId
@@ -652,6 +688,7 @@ namespace Em.Api.Core
 
       #region vi_Role
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Role?> GetVi_Role_ById(string cRoleId) {
          Request.RequireUserId();
@@ -660,6 +697,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Role[]> GetVi_Roles() {
          Request.RequireUserId();
@@ -668,6 +706,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Role[]> GetVi_Roles_InPage(int page, int pageSize) {
          Request.RequireUserId();
@@ -696,6 +735,7 @@ namespace Em.Api.Core
       // which accounts exist.
       private const string InvalidCredentialsMessage = "Incorrect username or password.";
 
+      /// <inheritdoc />
       [PostAction(IsPublicAction = true)]
       public async Task<TokenResult> PostGetMeta_SignIn(string cUserAccount, string password) {
          // Checked before anything else, because nothing below applies to this account: it has no
@@ -722,18 +762,22 @@ namespace Em.Api.Core
          return await Tokens.IssueAsync(user.cUserId);
       }
 
+      /// <inheritdoc />
       [PostAction(IsPublicAction = true)]
       public Task<TokenResult> PostGetMeta_RefreshToken(string refreshToken) =>
          // Public because the refresh token is the proof: the access token that went with it has
          // expired by the time anyone needs this, and an expired token proves nothing.
          Tokens.RefreshAsync(refreshToken);
 
+      /// <inheritdoc />
       [PostAction]
       public Task PostMeta_SignOut() => Tokens.RevokeAsync(Request.RequireSessionId());
 
+      /// <inheritdoc />
       [PostAction]
       public Task PostMeta_SignOutAll() => Tokens.RevokeAllAsync(Request.RequireUserId());
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_ChangeMyPassword(string oldPassword, string newPassword) {
          var user = await RequireUserAsync(Request.RequireUserId());
@@ -755,6 +799,7 @@ namespace Em.Api.Core
          await Tokens.RevokeAllAsync(user.cUserId);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_ResetPassword(string cUserId, string newPassword) {
          Request.RequireSelfOrAdmin(cUserId);
@@ -765,6 +810,7 @@ namespace Em.Api.Core
          await Tokens.RevokeAllAsync(cUserId);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task<ta_UserSession[]> PostGetMeta_GetSessions(string cUserId) {
          Request.RequireSelfOrAdmin(cUserId);
@@ -787,6 +833,7 @@ namespace Em.Api.Core
          })];
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_ResetAdminPassword(string newPassword) {
          await RequireAdminAccountAccessAsync();
@@ -798,34 +845,36 @@ namespace Em.Api.Core
          await Tokens.RevokeAllAsync(Defaults.AdminUserId);
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<ClaimAction[]> GetMeta_AllClaimActions() {
          Request.RequireUserId();
          return Task.FromResult(App.AllClaims.ToArray());
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ClaimAction[]> GetMeta_UserClaims(string cUserId) {
          Request.RequireSelfOrAdmin(cUserId);
 
-         // Waktunya dari server, sama seperti GetMeta_UserRoleClaims: pemberian yang sudah lewat
-         // masa berlakunya - atau yang belum mulai - bukan hak, dan yang memutuskan itu bukan
-         // mesin yang bertanya.
+         // The time comes from the server, like GetMeta_UserRoleClaims: a grant that has expired - or not yet
+         // started - is not a right, and it is not the asking machine that decides that.
          var now = await App.GetDateStampAsync();
 
-         // Lewat UserClaimLoader, bukan query sendiri: aturan jendela waktunya sama persis dengan yang
-         // dipakai gerbang saat memutuskan sebuah action boleh dipanggil, dan layar ini kehilangan
-         // gunanya kalau yang ditampilkannya bisa berbeda dari yang benar-benar berlaku.
+         // Through UserClaimLoader, not its own query: the time window rule is exactly the same as the one the
+         // gate uses when deciding whether an action may be called, and this screen loses its purpose if what
+         // it shows can differ from what really applies.
          var names = await UserClaimLoader.QueryDirectNames(ctx, cUserId, now).ToArrayAsync(AbortToken);
 
-         // Tidak disaring terhadap katalog: pemberian yatim - claim yang sudah dihapus dari kode
-         // tapi barisnya tertinggal - harus tetap terlihat di sini, karena hanya lewat situ ia bisa
-         // dikenali dan dicabut lewat PostMeta_RemoveUserClaim.
+         // Not filtered against the catalog: an orphaned grant - a claim removed from code whose row remains -
+         // must stay visible here, because only there can it be recognized and revoked through
+         // PostMeta_RemoveUserClaim.
          return [.. names.Select(ClaimAction.FromKey)];
       }
 
-      // Tidak diperiksa terhadap katalog, alasannya sama dengan pemberian hak milik role - lihat
-      // catatan di PostTa_RoleClaim_New.
+      // Not checked against the catalog, for the same reason as granting a role right - see the note on
+      // PostTa_RoleClaim_New.
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_AddUserClaim(UserClaimPayload claim) {
          Request.RequireAdmin();
@@ -834,10 +883,9 @@ namespace Em.Api.Core
             .AnyAsync(r => r.cUserId == claim.cUserId && r.cUserClaimName == claim.cUserClaimName);
          if (exists) return;
 
-         // Ketiga kolom waktunya NOT NULL di database dan belum ada layar yang memilihkan nilainya,
-         // jadi diisi di sini: berlaku sejak sekarang, tanpa batas akhir. Dibiarkan kosong, nilainya
-         // jatuh ke 0001-01-01 yang di luar jangkauan tipe datetime SQL Server - dan setiap
-         // pemberian hak gagal insert.
+         // All three time columns are NOT NULL in the database and no screen picks their values yet, so they
+         // are filled here: valid from now, with no end. Left empty, the value would fall to 0001-01-01, which
+         // is outside the range of the SQL Server datetime type - and every grant would fail on insert.
          var stamp = await App.GetDateStampAsync();
 
          ctx.ta_UserClaims.Add(new ta_UserClaim {
@@ -851,6 +899,7 @@ namespace Em.Api.Core
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_RemoveUserClaim(UserClaimPayload claim) {
          Request.RequireAdmin();
@@ -866,6 +915,7 @@ namespace Em.Api.Core
          if (rows.Length > 0) await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_ChangeAdminPassword(string oldPassword, string newPassword) {
          await RequireAdminAccountAccessAsync();
@@ -883,31 +933,33 @@ namespace Em.Api.Core
          await Tokens.RevokeAllAsync(Defaults.AdminUserId);
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ClaimAction[]> GetMeta_UserRoleClaims(string cUserId) {
          Request.RequireSelfOrAdmin(cUserId);
 
-         // Waktunya diambil dari server, bukan dari pemanggil: masa berlaku yang bisa diputuskan
-         // mesin yang bertanya bukan masa berlaku sama sekali.
+         // The time is taken from the server, not from the caller: a validity period that the asking machine
+         // can decide is no validity period at all.
          var now = await App.GetDateStampAsync();
 
-         // Lewat UserClaimLoader, alasannya sama dengan GetMeta_UserClaims: satu aturan jendela waktu
-         // untuk layar dan untuk gerbang.
+         // Through UserClaimLoader, for the same reason as GetMeta_UserClaims: one time window rule for the
+         // screen and for the gate.
          var names = await UserClaimLoader.QueryRoleNames(ctx, cUserId, now)
             .Distinct()
             .ToArrayAsync(AbortToken);
 
-         // Tidak disaring terhadap katalog, alasannya sama persis dengan GetMeta_UserClaims:
-         // pemberian yatim harus tetap terlihat supaya bisa dikenali dan dicabut.
+         // Not filtered against the catalog, for exactly the same reason as GetMeta_UserClaims: orphaned grants
+         // must stay visible so they can be recognized and revoked.
          return [.. names.Select(ClaimAction.FromKey)];
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<RoleCounter[]> GetMeta_RoleCounters() {
          Request.RequireUserId();
 
-         // Tiga query, bukan satu per role: daftar role di layar berisi belasan baris, dan
-         // menghitungnya satu per satu berarti belasan perjalanan ke server untuk dua angka.
+         // Three queries, not one per role: the role list on screen holds a dozen rows, and counting them one
+         // by one would mean a dozen round trips to the server for two numbers.
          var members = await ctx.ta_UserRoles
             .GroupBy(r => r.cRoleId)
             .Select(g => new { cRoleId = g.Key, Count = g.Count() })
@@ -918,9 +970,8 @@ namespace Em.Api.Core
             .Select(g => new { cRoleId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(r => r.cRoleId, r => r.Count, AbortToken);
 
-         // Daftar role-nya yang menentukan baris mana yang keluar, bukan hasil pengelompokan di
-         // atas: role yang belum punya anggota maupun hak tetap harus dijawab - dengan nol, bukan
-         // dengan tidak ada barisnya sama sekali.
+         // The role list decides which rows come out, not the grouping results above: a role that has no
+         // members or rights yet must still be answered - with zero, not with no row at all.
          var ids = await ctx.ta_Roles
             .Select(r => r.cRoleId)
             .ToArrayAsync(AbortToken);
@@ -932,6 +983,7 @@ namespace Em.Api.Core
          })];
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ClaimUsage[]> GetMeta_ClaimUsage() {
          Request.RequireUserId();
@@ -954,9 +1006,9 @@ namespace Em.Api.Core
       private ITokenServices Tokens => GetService<ITokenServices>()
          ?? throw new InvalidOperationException($"No {nameof(ITokenServices)} is registered.");
 
-      // Kunci gabungan satu baris ta_RoleClaim, dipakai sebagai isi HashSet saat menyaring baris
-      // kembar. Dirangkai lewat satu method supaya kedua sisi perbandingan - yang sudah tersimpan
-      // dan yang baru datang - tidak mungkin dirangkai dengan cara yang berbeda.
+      // Composite key of one ta_RoleClaim row, used as the content of a HashSet when filtering duplicate
+      // rows. Built through a single method so both sides of the comparison - what is already stored and
+      // what just arrived - cannot be built in different ways.
       private static string RoleClaimKey(string cRoleId, string cClaimName) => $"{cRoleId}|{cClaimName}";
 
       private static string UserRoleKey(string cUserId, string cRoleId) => $"{cUserId}|{cRoleId}";

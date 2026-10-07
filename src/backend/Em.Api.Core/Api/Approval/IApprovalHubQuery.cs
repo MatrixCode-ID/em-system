@@ -3,44 +3,44 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Pertanyaan "apa yang menunggu keputusan user yang sedang memanggil", dijawab langsung dari tabel approval tanpa
-   /// memuat dokumennya. Dipakai sumber daftar pekerjaan di baris judul aplikasi.
+   /// The question "what is waiting for the decision of the user who is calling", answered directly from
+   /// the approval tables without loading the documents. Used by the task list source in the application
+   /// title bar.
    /// </summary>
    /// <remarks>
-   /// Hasilnya sudah dikelompokkan - per jenis approval, lalu per jenis dokumen - karena itulah bentuk
-   /// yang ditampilkan daftar pekerjaan: satu baris per jenis dokumen, dengan jumlah dan umur request
-   /// tertua, bukan satu baris per request.
+   /// The result is already grouped - by approval kind, then by document type - because that is the shape
+   /// the task list shows: one row per document type, with the count and age of the oldest request, not
+   /// one row per request.
    /// <para>
-   /// Yang dihitung hanya request yang benar-benar menunggu orang itu: langkah di level yang sedang
-   /// berjalan, dan - untuk langkah yang penanda tangannya ditetapkan per orang - hanya kalau ia
-   /// tercatat sebagai penanda tangannya. Pemegang claim lain tidak melihatnya di sini; mereka
-   /// menemukannya di layar approval.
+   /// Only requests that are truly waiting for that person are counted: a step in the level that is
+   /// currently running, and - for a step whose signer is fixed per person - only when they are recorded
+   /// as its signer. Holders of other claims do not see it here; they find it on the approval screen.
    /// </para>
    /// </remarks>
    public interface IApprovalHubQuery
    {
       /// <summary>
-      /// Ringkasan request yang menunggu keputusan pemanggil request yang sedang berjalan, atau daftar
-      /// kosong kalau tidak ada.
+      /// Summary of the requests waiting for the decision of the caller of the running request, or an empty
+      /// list when there are none.
       /// </summary>
       /// <remarks>
-      /// Pemanggilnya dibaca dari request, bukan diberikan sebagai parameter: yang menentukan apa yang
-      /// menunggunya adalah hak yang ia pegang saat ini, dan itu hanya diketahui lewat request-nya.
-      /// Akun sistem bawaan tidak pernah punya yang menunggu.
+      /// The caller is read from the request, not given as a parameter: what is waiting for them is decided
+      /// by the rights they hold right now, and that is only known through their request. The built-in system
+      /// accounts never have anything waiting.
       /// </remarks>
-      /// <param name="cancellationToken">Token pembatalan.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       Task<IReadOnlyList<ApprovalHubGroup>> GetWaitingForCallerAsync(CancellationToken cancellationToken = default);
    }
 
    /// <summary>
-   /// Satu baris daftar pekerjaan approval: satu jenis dokumen pada satu jenis approval, beserta jumlah
-   /// dan umur request tertuanya.
+   /// One row of the approval task list: one document type under one approval kind, together with the
+   /// count and age of its oldest request.
    /// </summary>
-   /// <param name="Kind">Jenis approval-nya, yang menentukan di bagian mana baris ini tampil.</param>
-   /// <param name="DocType">Jenis dokumennya.</param>
-   /// <param name="Count">Berapa request jenis dokumen itu yang menunggu user ini.</param>
+   /// <param name="Kind">The approval kind, which decides in which part this row appears.</param>
+   /// <param name="DocType">The document type.</param>
+   /// <param name="Count">How many requests of that document type are waiting for this user.</param>
    /// <param name="OldestRequestDate">
-   /// Kapan request tertua di antaranya diajukan. Dari situ daftar pekerjaan menghitung umurnya.
+   /// When the oldest of them was submitted. The task list computes its age from this.
    /// </param>
    public record ApprovalHubGroup(ApprovalKind Kind, string DocType, int Count, DateTime OldestRequestDate);
 }

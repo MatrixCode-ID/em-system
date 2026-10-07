@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Em.Api.Core.Registry
 {
-   // Semua entitas registry internal: baris-barisnya tidak pernah keluar dari server apa adanya, yang
-   // keluar adalah DTO di Em.Libs. Dipetakan lewat CtnContext.OnModelCreating, bukan DbSet publik.
-   // Kolom mengikuti doc/convention/dahlia-convention.md; kunci gabungan didaftarkan di CtnContext.
+   // All internal registry entities: their rows never leave the server as they are, what leaves is the
+   // DTOs in Em.Libs. They are mapped through CtnContext.OnModelCreating, not public DbSets. Columns
+   // follow doc/convention/dahlia-convention.md; composite keys are registered in CtnContext.
 
    [Table("ta_CtnRoot")]
    internal class ta_CtnRoot
@@ -55,7 +55,7 @@ namespace Em.Api.Core.Registry
       public string cCtnManifestMediaType { get; set; } = string.Empty;
       public long cCtnManifestSize { get; set; }
 
-      // Byte persis seperti yang dikirim: digest dihitung dari byte-nya, diserialisasi ulang mengubahnya.
+      // The bytes exactly as sent: the digest is computed from its bytes, and re-serializing would change it.
       public byte[] cCtnManifestContent { get; set; } = [];
       public string? cCtnManifestPushedBy_cRobotId { get; set; }
       public DateTime ustamp { get; set; }
@@ -99,7 +99,7 @@ namespace Em.Api.Core.Registry
       public int cCtnManifestBlobOrder { get; set; }
       public string cCtnBlobId { get; set; } = string.Empty;
 
-      // "config" atau "layer".
+      // "config" or "layer".
       public string cCtnManifestBlobRole { get; set; } = string.Empty;
    }
 
@@ -110,7 +110,7 @@ namespace Em.Api.Core.Registry
       public string cCtnImageId { get; set; } = string.Empty;
       public string cRobotId { get; set; } = string.Empty;
 
-      // Offset: berapa byte yang sudah diterima.
+      // Offset: how many bytes have been received.
       public long cCtnUploadSize { get; set; }
       public DateTime ustamp { get; set; }
       public DateTime datestamp { get; set; }
@@ -123,7 +123,7 @@ namespace Em.Api.Core.Registry
       public string cRobotId { get; set; } = string.Empty;
       public string cCtnRootId { get; set; } = string.Empty;
 
-      // "R" (pull) atau "W" (push, mencakup pull).
+      // "R" (pull) or "W" (push, which includes pull).
       public string cCtnRootRobotAccess { get; set; } = string.Empty;
       public DateTime ustamp { get; set; }
       public DateTime datestamp { get; set; }

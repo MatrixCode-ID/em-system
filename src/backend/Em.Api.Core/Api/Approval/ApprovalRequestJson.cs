@@ -4,29 +4,27 @@ using Em.Api.Core.Models;
 
 namespace Em.Api.Core.Approval
 {
-   /// <summary>Catatan penarikan kembali sebuah request: siapa, kapan, dan kenapa.</summary>
-   /// <param name="UserId">User yang menarik kembali.</param>
-   /// <param name="Date">Kapan ditarik.</param>
-   /// <param name="Reason">Alasan penarikan.</param>
+   /// <summary>Note of a request's withdrawal: who, when, and why.</summary>
+   /// <param name="UserId">The user who withdrew it.</param>
+   /// <param name="Date">When it was withdrawn.</param>
+   /// <param name="Reason">Reason for the withdrawal.</param>
    internal record ApprovalCancelRecord(string UserId, DateTime Date, string Reason);
 
    /// <summary>
-   /// Isi kolom data tambahan sebuah request: kolom ringkasan milik modul, ditambah catatan milik engine
-   /// sendiri.
+   /// Content of a request's extra data column: the module's summary columns, plus the engine's own notes.
    /// </summary>
    /// <remarks>
-   /// Satu objek JSON datar. Kolom ringkasan modul ditulis apa adanya sebagai pasangan nama dan nilai,
-   /// sehingga daftar request bisa menyaring dan mengurutkannya langsung di database. Catatan milik
-   /// engine memakai nama berawalan <see cref="ReservedPrefix"/> - awalan yang tidak boleh dipakai nama
-   /// kolom ringkasan - supaya keduanya tidak pernah bertabrakan dan layar tidak ikut menampilkan
-   /// catatan engine sebagai kolom.
+   /// A single flat JSON object. The module's summary columns are written as-is as name and value pairs,
+   /// so the request list can filter and sort them directly in the database. The engine's notes use names
+   /// starting with <see cref="ReservedPrefix"/> - a prefix summary column names may not use - so the two
+   /// never collide and the screen does not display the engine's notes as columns.
    /// </remarks>
    internal static class ApprovalRequestJson
    {
-      /// <summary>Awalan nama yang dicadangkan untuk catatan engine.</summary>
+      /// <summary>Name prefix reserved for the engine's notes.</summary>
       public const string ReservedPrefix = "$";
 
-      /// <summary>Nama catatan penarikan kembali.</summary>
+      /// <summary>Name of the withdrawal note.</summary>
       public const string CancelKey = "$cancel";
 
       // Names of the standard columns of a request in the list. A summary column with one of these names
@@ -35,11 +33,11 @@ namespace Em.Api.Core.Approval
          typeof(ApprovalRequestInfo).GetProperties().Select(r => r.Name), StringComparer.OrdinalIgnoreCase);
 
       /// <summary>
-      /// Kolom ringkasan modul saja, sebagai teks JSON. Catatan engine dibuang, karena yang tampil di
-      /// layar hanyalah apa yang modul nyatakan sendiri.
+      /// Only the module's summary columns, as JSON text. The engine's notes are dropped, because what shows
+      /// on screen is only what the module states itself.
       /// </summary>
-      /// <param name="json">Isi kolom data tambahan request.</param>
-      /// <returns>Objek JSON ringkasannya, atau <c>null</c> kalau modul tidak menyatakan satu pun.</returns>
+      /// <param name="json">Content of the request's extra data column.</param>
+      /// <returns>The summary JSON object, or <c>null</c> when the module states none.</returns>
       public static string? ReadSummary(string? json) {
          if (Parse(json) is not { } node) return null;
 
@@ -52,8 +50,8 @@ namespace Em.Api.Core.Approval
          return summary.Count == 0 ? null : summary.ToJsonString();
       }
 
-      /// <summary>Catatan penarikan kembali, atau <c>null</c> kalau request ini tidak pernah ditarik.</summary>
-      /// <param name="json">Isi kolom data tambahan request.</param>
+      /// <summary>The withdrawal note, or <c>null</c> when this request was never withdrawn.</summary>
+      /// <param name="json">Content of the request's extra data column.</param>
       public static ApprovalCancelRecord? ReadCancel(string? json) {
          if (Parse(json)?[CancelKey] is not JsonObject cancel) return null;
 
@@ -65,12 +63,12 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyusun isi kolom data tambahan dari ringkasan modul dan catatan engine.
+      /// Composes the content of the extra data column from the module's summary and the engine's notes.
       /// </summary>
-      /// <param name="summary">Kolom ringkasan milik modul, atau <c>null</c> kalau tidak ada.</param>
-      /// <param name="cancel">Catatan penarikan kembali, atau <c>null</c>.</param>
+      /// <param name="summary">The module's summary columns, or <c>null</c> when there are none.</param>
+      /// <param name="cancel">The withdrawal note, or <c>null</c>.</param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau nama kolom ringkasan kosong, berawalan <see cref="ReservedPrefix"/>, atau sama dengan nama kolom standar daftar request.
+      /// Thrown when a summary column name is empty, starts with <see cref="ReservedPrefix"/>, or equals the name of a standard column of the request list.
       /// </exception>
       public static string? Compose(IReadOnlyDictionary<string, string?>? summary, ApprovalCancelRecord? cancel) {
          var node = new JsonObject();
@@ -96,9 +94,9 @@ namespace Em.Api.Core.Approval
          return node.Count == 0 ? null : node.ToJsonString();
       }
 
-      /// <summary>Menambahkan atau mengganti catatan penarikan pada isi kolom yang sudah ada.</summary>
-      /// <param name="json">Isi kolom data tambahan request sebelumnya.</param>
-      /// <param name="cancel">Catatan penarikan yang ditulis.</param>
+      /// <summary>Adds or replaces the withdrawal note in existing column content.</summary>
+      /// <param name="json">The request's previous extra data column content.</param>
+      /// <param name="cancel">The withdrawal note to write.</param>
       public static string WithCancel(string? json, ApprovalCancelRecord cancel) {
          var node = Parse(json) ?? new JsonObject();
          node[CancelKey] = CancelNode(cancel);
@@ -125,21 +123,21 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Salinan posisi kotak sebuah langkah, dibekukan saat request diajukan, beserta nilai isian yang
-   /// diberikan penanda tangan. Ini isi kolom data tambahan sebuah langkah.
+   /// Copy of a step's box positions, frozen when the request was submitted, together with the input
+   /// values given by the signer. This is the content of a step's extra data column.
    /// </summary>
    internal class ApprovalStepSnapshot
    {
       private static readonly JsonSerializerOptions Options = new() { PropertyNameCaseInsensitive = true };
 
-      /// <summary>Posisi kotak tanda tangan, atau <c>null</c> kalau langkah ini tidak punya kotak.</summary>
+      /// <summary>Position of the signature box, or <c>null</c> when this step has no box.</summary>
       public ApprovalSlotSnapshot? Slot { get; set; }
 
-      /// <summary>Kotak isian langkah ini, berurutan seperti yang dideklarasikan modul.</summary>
+      /// <summary>The input boxes of this step, in order as declared by the module.</summary>
       public List<ApprovalFieldSnapshot> Fields { get; set; } = [];
 
-      /// <summary>Membaca salinan dari isi kolomnya. Kolom kosong atau rusak berarti tanpa kotak apa pun.</summary>
-      /// <param name="json">Isi kolom data tambahan langkah.</param>
+      /// <summary>Reads the copy from its column content. An empty or corrupt column means no boxes at all.</summary>
+      /// <param name="json">Content of the step's extra data column.</param>
       public static ApprovalStepSnapshot Read(string? json) {
          if (string.IsNullOrWhiteSpace(json)) return new ApprovalStepSnapshot();
 
@@ -151,35 +149,35 @@ namespace Em.Api.Core.Approval
          }
       }
 
-      /// <summary>Menulis salinan ke bentuk yang disimpan di kolomnya.</summary>
+      /// <summary>Writes the copy to the form stored in its column.</summary>
       public string Write() => JsonSerializer.Serialize(this, Options);
    }
 
-   /// <summary>Posisi sebuah kotak, dalam milimeter dari sudut kiri atas halaman.</summary>
+   /// <summary>Position of a box, in millimeters from the top-left corner of the page.</summary>
    internal record ApprovalSlotSnapshot(double X, double Y, double Width, double Height, int Page)
    {
-      /// <summary>Membekukan posisi dari deklarasi modul.</summary>
-      /// <param name="slot">Posisi menurut deklarasi.</param>
+      /// <summary>Freezes a position from the module's declaration.</summary>
+      /// <param name="slot">The position according to the declaration.</param>
       public static ApprovalSlotSnapshot From(ApprovalSlot slot) =>
          new(slot.X, slot.Y, slot.Width, slot.Height, slot.Page);
 
-      /// <summary>Kembali ke bentuk posisi yang dipahami penggambar PDF.</summary>
+      /// <summary>Returns to the position form understood by the PDF drawer.</summary>
       public ApprovalSlot ToSlot() => new(X, Y, Width, Height, Page);
    }
 
-   /// <summary>Satu kotak isian: jenis dan posisinya dibekukan saat pengajuan, nilainya terisi saat diputuskan.</summary>
+   /// <summary>One input box: its kind and position are frozen at submission, its value is filled in when decided.</summary>
    internal class ApprovalFieldSnapshot
    {
-      /// <summary>Jenis kotaknya.</summary>
+      /// <summary>Kind of the box.</summary>
       public ApprovalInputFieldKind Kind { get; set; }
 
-      /// <summary>Posisi kotaknya.</summary>
+      /// <summary>Position of the box.</summary>
       public ApprovalSlotSnapshot Slot { get; set; } = new(0, 0, 0, 0, 1);
 
-      /// <summary>Teks yang digambar, untuk kotak teks. Kosong sampai langkahnya diputuskan.</summary>
+      /// <summary>The text drawn, for a text box. Empty until its step is decided.</summary>
       public string? Text { get; set; }
 
-      /// <summary>Apakah kotaknya tercentang, untuk kotak centang.</summary>
+      /// <summary>Whether the box is checked, for a checkbox.</summary>
       public bool Checked { get; set; }
    }
 }

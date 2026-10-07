@@ -3,220 +3,217 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Posisi sebuah kotak pada PDF dokumen, dalam milimeter dari sudut kiri atas halaman.
+   /// Position of a box on the document PDF, in millimeters from the top-left corner of the page.
    /// </summary>
-   /// <param name="X">Jarak dari tepi kiri.</param>
-   /// <param name="Y">Jarak dari tepi atas.</param>
-   /// <param name="Width">Lebar kotaknya.</param>
-   /// <param name="Height">Tinggi kotaknya.</param>
-   /// <param name="Page">Halaman tempat kotak ini berada, dimulai dari satu.</param>
+   /// <param name="X">Distance from the left edge.</param>
+   /// <param name="Y">Distance from the top edge.</param>
+   /// <param name="Width">Width of the box.</param>
+   /// <param name="Height">Height of the box.</param>
+   /// <param name="Page">Page this box is on, starting from one.</param>
    /// <remarks>
-   /// Posisinya tetap dan ditulis developer modul pemilik dokumen, karena dialah yang tahu rancangan
-   /// dokumennya. Ukurannya dibekukan ke dalam request saat pengajuan, sehingga perubahan rancangan hanya
-   /// berlaku untuk request yang diajukan sesudahnya. Untuk mengukurnya, pakai action kalibrasi yang
-   /// menggambar kotak-kotak ini di atas dokumen yang sebenarnya.
+   /// The position is fixed and written by the developer of the module that owns the document, because
+   /// they know the document's design. The size is frozen into the request at submission, so a design
+   /// change only applies to requests submitted afterwards. To measure it, use the calibration action
+   /// that draws these boxes over the real document.
    /// </remarks>
    public record ApprovalSlot(double X, double Y, double Width = 60, double Height = 18, int Page = 1)
    {
       /// <summary>
-      /// Membuat posisi kotak. Sama dengan constructor-nya, ditulis sebagai method supaya deklarasi alur
-      /// yang penuh kotak tetap terbaca sebagai daftar posisi, bukan daftar <c>new</c>.
+      /// Creates a box position. Same as its constructor, written as a method so a flow declaration full of
+      /// boxes still reads as a list of positions, not a list of <c>new</c>.
       /// </summary>
-      /// <param name="x">Jarak dari tepi kiri.</param>
-      /// <param name="y">Jarak dari tepi atas.</param>
-      /// <param name="width">Lebar kotaknya.</param>
-      /// <param name="height">Tinggi kotaknya.</param>
-      /// <param name="page">Halaman tempat kotak ini berada, dimulai dari satu.</param>
+      /// <param name="x">Distance from the left edge.</param>
+      /// <param name="y">Distance from the top edge.</param>
+      /// <param name="width">Width of the box.</param>
+      /// <param name="height">Height of the box.</param>
+      /// <param name="page">Page this box is on, starting from one.</param>
       public static ApprovalSlot At(double x, double y, double width = 60, double height = 18, int page = 1) =>
          new(x, y, width, height, page);
    }
 
    /// <summary>
-   /// Menandai sebuah properti record kunci sebagai bagian kunci dokumen, beserta urutannya.
+   /// Marks a property of the key record as part of the document key, together with its order.
    /// </summary>
    /// <param name="order">
-   /// Urutan bagian ini di dalam kuncinya. Urutan itu yang menentukan bentuk kanonik kuncinya, jadi
-   /// mengubahnya setelah ada request berarti mengubah arti kunci yang sudah tersimpan.
+   /// Order of this part within its key. That order determines the canonical form of the key, so changing
+   /// it after requests exist changes the meaning of keys that are already stored.
    /// </param>
    /// <remarks>
-   /// Kunci dokumen warisan umumnya terdiri dari beberapa bagian. Modul mendeklarasikannya sebagai record
-   /// bertipe dan menerima record itu di handler-nya; engine yang menerjemahkannya ke bentuk kanonik dan
-   /// kembali, sehingga tidak ada kode modul yang memecah string kunci sendiri.
+   /// Legacy document keys generally consist of several parts. The module declares them as a typed record
+   /// and receives that record in its handlers; the engine translates it to the canonical form and back,
+   /// so no module code splits the key string itself.
    /// </remarks>
    [AttributeUsage(AttributeTargets.Property)]
    public class KeyPartAttribute(int order) : Attribute
    {
-      /// <summary>Urutan bagian ini di dalam kuncinya.</summary>
+      /// <summary>Order of this part within its key.</summary>
       public int Order { get; } = order;
    }
 
    /// <summary>
-   /// Hasil pemeriksaan modul atas sebuah langkah: boleh diputuskan, atau terblokir beserta alasannya.
+   /// Result of the module's check on a step: it may be decided, or it is blocked together with the reason.
    /// </summary>
    /// <remarks>
-   /// Blokir di sini bukan penolakan. Request tetap menunggu di langkah itu, dan pemeriksaannya dijalankan
-   /// ulang setiap layar dibuka, jadi begitu syaratnya terpenuhi langkah itu terbuka sendiri. Blokir yang
-   /// benar-benar menghalangi pekerjaan bisa ditembus pemegang claim yang modul tentukan sendiri, dan
-   /// tanda tangan hasil penembusan diberi tanda khusus karena sifatnya darurat.
+   /// A block here is not a rejection. The request keeps waiting at that step, and the check is re-run
+   /// every time the screen is opened, so as soon as the condition is met the step opens by itself. A block
+   /// that truly obstructs work can be overridden by holders of a claim the module chooses itself, and a
+   /// signature produced by an override is specially marked because it is an emergency.
    /// </remarks>
    public class ApprovalGuard
    {
       private ApprovalGuard() { }
 
-      /// <summary>Langkah ini boleh diputuskan.</summary>
+      /// <summary>This step may be decided.</summary>
       public static ApprovalGuard Allow { get; } = new() { IsAllowed = true };
 
       /// <summary>
-      /// Langkah ini belum boleh diputuskan.
+      /// This step may not be decided yet.
       /// </summary>
       /// <param name="reason">
-      /// Alasannya, ditampilkan di samping tombol yang mati. Ditulis untuk dibaca penanda tangan, jadi
-      /// sebutkan apa yang harus terjadi supaya terbuka.
+      /// The reason, shown next to the disabled button. Written to be read by the signer, so state what has
+      /// to happen for it to open.
       /// </param>
       /// <param name="overridableBy">
-      /// Claim yang boleh menembus blokir ini, ditulis tanpa nama modulnya. Kosong berarti blokirnya tidak
-      /// bisa ditembus siapa pun dan hanya bisa hilang kalau syaratnya terpenuhi.
+      /// Claim that may override this block, written without its module name. Empty means the block cannot be
+      /// overridden by anyone and can only disappear when its condition is met.
       /// </param>
       public static ApprovalGuard Block(string reason, string? overridableBy = null) =>
          new() { IsAllowed = false, Reason = reason, OverridableBy = overridableBy };
 
-      /// <summary>Langkah ini boleh diputuskan.</summary>
+      /// <summary>This step may be decided.</summary>
       public bool IsAllowed { get; private init; }
 
-      /// <summary>Alasan blokirnya.</summary>
+      /// <summary>The reason for the block.</summary>
       public string? Reason { get; private init; }
 
-      /// <summary>Claim yang boleh menembus blokir ini.</summary>
+      /// <summary>Claim that may override this block.</summary>
       public string? OverridableBy { get; private init; }
    }
 
    /// <summary>
-   /// Keterangan yang tersedia saat engine menanyakan sesuatu kepada modul tentang sebuah request.
+   /// Info available when the engine asks the module something about a request.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    public interface IApprovalContext<out TServices, out TKey>
    {
-      /// <summary>Service modul pemilik dokumen, sudah siap dipakai.</summary>
+      /// <summary>The service of the module that owns the document, ready to use.</summary>
       TServices Services { get; }
 
-      /// <summary>Kunci dokumen yang sedang diproses, sudah dalam bentuk bertipe.</summary>
+      /// <summary>The key of the document being processed, already in typed form.</summary>
       TKey DocKey { get; }
 
-      /// <summary>Versi dokumen yang sedang diproses.</summary>
+      /// <summary>Version of the document being processed.</summary>
       string DocVersion { get; }
 
-      /// <summary>Id request yang sedang diproses.</summary>
+      /// <summary>Id of the request being processed.</summary>
       string ApprovalRequestId { get; }
 
-      /// <summary>Pengaju request ini.</summary>
+      /// <summary>The submitter of this request.</summary>
       string RequesterId { get; }
 
    }
 
    /// <summary>
-   /// Keterangan tambahan saat modul diminta memutuskan sesuatu tentang satu langkah.
+   /// Extra info when the module is asked to decide something about one step.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    public interface IApprovalStepContext<out TServices, out TKey> : IApprovalContext<TServices, TKey>
    {
-      /// <summary>Nama langkah yang sedang diproses.</summary>
+      /// <summary>Name of the step being processed.</summary>
       string StepName { get; }
 
-      /// <summary>Siapa yang sedang mengambil keputusan, atau kosong kalau belum ada.</summary>
+      /// <summary>Who is taking the decision, or empty when nobody yet.</summary>
       string? SignerId { get; }
    }
 
    /// <summary>
-   /// Isian sebuah langkah, dilihat tanpa tipe isiannya. Dipakai engine untuk hal-hal yang sama bagi
-   /// semua isian - mengetahui bahwa sebuah langkah memang meminta isian, dan mengambil posisi
-   /// kotak-kotaknya.
+   /// A step's input, seen without its input type. Used by the engine for things that are the same for
+   /// every input - knowing that a step really asks for input, and getting the positions of its boxes.
    /// </summary>
    /// <remarks>
-   /// Modul tidak mengimplementasikan antarmuka ini sendiri; yang ditulis modul adalah
-   /// <see cref="StepInput{TServices,TKey,TPayload}"/>, yang sudah membawa tipe isiannya.
+   /// Modules do not implement this interface themselves; what a module writes is
+   /// <see cref="StepInput{TServices,TKey,TPayload}"/>, which already carries the input type.
    /// </remarks>
    public interface IApprovalStepInput
    {
-      /// <summary>Posisi setiap kotak isian pada PDF, berurutan seperti yang dideklarasikan modul.</summary>
+      /// <summary>Position of every input box on the PDF, in order as declared by the module.</summary>
       IReadOnlyList<ApprovalSlot> FieldSlots { get; }
 
-      /// <summary>Jenis setiap kotak isian, sejajar dengan <see cref="FieldSlots"/>.</summary>
+      /// <summary>Kind of every input box, parallel to <see cref="FieldSlots"/>.</summary>
       IReadOnlyList<ApprovalInputFieldKind> FieldKinds { get; }
    }
 
    /// <summary>
-   /// Isian sebuah langkah dilihat dari engine saat langkah itu diputuskan: memeriksa isian yang dikirim
-   /// dan menuliskan akibatnya, tanpa engine perlu tahu tipe isiannya.
+   /// A step's input as the engine sees it when the step is decided: validating the submitted input and
+   /// writing its effect, without the engine needing to know the input type.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    /// <remarks>
-   /// Dipanggil engine saja. Modul tidak mengimplementasikan atau memanggilnya; yang ditulis modul
-   /// adalah <see cref="StepInput{TServices,TKey,TPayload}"/>, yang sudah membawa implementasinya.
+   /// Called by the engine only. Modules do not implement or call it; what a module writes is
+   /// <see cref="StepInput{TServices,TKey,TPayload}"/>, which already carries the implementation.
    /// </remarks>
    public interface IApprovalStepInput<TServices, TKey> : IApprovalStepInput
    {
       /// <summary>
-      /// Membaca isian yang dikirim, memeriksanya di server, lalu mengambil nilai setiap kotak isiannya
-      /// untuk digambar di PDF.
+      /// Reads the submitted input, validates it on the server, then takes the value of each input box to be
+      /// drawn on the PDF.
       /// </summary>
-      /// <param name="context">Keterangan langkah yang sedang diputuskan.</param>
-      /// <param name="payloadJson">Isian yang dikirim penanda tangan, dalam bentuk JSON.</param>
-      /// <returns>Nilai setiap kotak isian, sejajar dengan <see cref="IApprovalStepInput.FieldSlots"/>.</returns>
+      /// <param name="context">Info about the step being decided.</param>
+      /// <param name="payloadJson">The input submitted by the signer, as JSON.</param>
+      /// <returns>The value of each input box, parallel to <see cref="IApprovalStepInput.FieldSlots"/>.</returns>
       /// <exception cref="Em.Shared.ActionException">
-      /// 400 kalau isiannya tidak ada atau tidak terbaca; selebihnya apa pun yang dilempar pemeriksaan modul.
+      /// 400 when the input is missing or unreadable; otherwise whatever the module's check throws.
       /// </exception>
       Task<IReadOnlyList<ApprovalInputValue>> ValidateAsync(IApprovalStepContext<TServices, TKey> context,
          string? payloadJson);
 
       /// <summary>
-      /// Menuliskan akibat isian itu ke dokumennya, di dalam transaksi keputusan.
+      /// Writes the effect of the input to its document, inside the decision transaction.
       /// </summary>
-      /// <param name="context">Keterangan langkah yang sedang diputuskan.</param>
-      /// <param name="payloadJson">Isian yang dikirim penanda tangan, dalam bentuk JSON.</param>
+      /// <param name="context">Info about the step being decided.</param>
+      /// <param name="payloadJson">The input submitted by the signer, as JSON.</param>
       Task SignedAsync(IApprovalStepContext<TServices, TKey> context, string? payloadJson);
    }
 
-   /// <summary>Nilai satu kotak isian yang digambar di PDF setelah langkahnya diputuskan.</summary>
-   /// <param name="Text">Teks kotaknya, untuk kotak teks.</param>
-   /// <param name="Checked">Apakah kotaknya tercentang, untuk kotak centang.</param>
+   /// <summary>Value of one input box drawn on the PDF after its step is decided.</summary>
+   /// <param name="Text">Text of the box, for a text box.</param>
+   /// <param name="Checked">Whether the box is checked, for a checkbox.</param>
    public record ApprovalInputValue(string? Text, bool Checked);
 
    /// <summary>
-   /// Isian yang diminta sebuah langkah sebelum bisa diputuskan: apa yang ditampilkan, bagaimana
-   /// memeriksanya, apa yang ditulis ke dokumen, dan di mana ia digambar pada PDF.
+   /// Input that a step asks for before it can be decided: what is shown, how it is validated, what is
+   /// written to the document, and where it is drawn on the PDF.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
-   /// <typeparam name="TPayload">Isian yang dikirim balik penanda tangan.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
+   /// <typeparam name="TPayload">The input the signer sends back.</typeparam>
    public class StepInput<TServices, TKey, TPayload> : IApprovalStepInput<TServices, TKey>
    {
       /// <summary>
-      /// Memeriksa isian yang dikirim, di server, sebelum keputusannya ditulis. Pemeriksaan di layar tidak
-      /// menggantikan ini.
+      /// Validates the submitted input, on the server, before its decision is written. Validation on the
+      /// screen does not replace this.
       /// </summary>
       public Func<IApprovalStepContext<TServices, TKey>, TPayload, Task>? Validate { get; set; }
 
       /// <summary>
-      /// Menulis akibat isian itu ke dokumennya, di dalam transaksi keputusan. Kegagalan di sini
-      /// membatalkan tanda tangannya juga, sehingga tidak pernah ada tanda tangan yang akibatnya tidak
-      /// tertulis.
+      /// Writes the effect of the input to its document, inside the decision transaction. A failure here
+      /// cancels the signature too, so there is never a signature whose effect was not written.
       /// </summary>
       public Func<IApprovalStepContext<TServices, TKey>, TPayload, Task>? OnSigned { get; set; }
 
       /// <summary>
-      /// Di mana isian itu digambar pada PDF. Satu entri per kotak isian.
+      /// Where the input is drawn on the PDF. One entry per input box.
       /// </summary>
       public List<ApprovalInputField<TPayload>> Fields { get; } = [];
 
       /// <summary>
-      /// Menambahkan satu kotak teks pada PDF, lalu mengembalikan isian ini sehingga kotak berikutnya
-      /// bisa langsung disambung.
+      /// Adds one text box to the PDF, then returns this input so the next box can be chained directly.
       /// </summary>
-      /// <param name="slot">Di mana kotaknya digambar.</param>
-      /// <param name="text">Cara mengambil teksnya dari isian yang dikirim.</param>
+      /// <param name="slot">Where the box is drawn.</param>
+      /// <param name="text">How to get its text from the submitted input.</param>
       public StepInput<TServices, TKey, TPayload> Text(ApprovalSlot slot, Func<TPayload, string?> text) {
          ArgumentNullException.ThrowIfNull(slot);
          ArgumentNullException.ThrowIfNull(text);
@@ -229,11 +226,10 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menambahkan satu kotak centang pada PDF, lalu mengembalikan isian ini sehingga kotak berikutnya
-      /// bisa langsung disambung.
+      /// Adds one checkbox to the PDF, then returns this input so the next box can be chained directly.
       /// </summary>
-      /// <param name="slot">Di mana kotaknya digambar.</param>
-      /// <param name="checked">Cara menentukan kotaknya tercentang atau tidak.</param>
+      /// <param name="slot">Where the box is drawn.</param>
+      /// <param name="checked">How to decide whether the box is checked.</param>
       public StepInput<TServices, TKey, TPayload> Check(ApprovalSlot slot, Func<TPayload, bool> @checked) {
          ArgumentNullException.ThrowIfNull(slot);
          ArgumentNullException.ThrowIfNull(@checked);
@@ -288,30 +284,30 @@ namespace Em.Api.Core.Approval
       public IReadOnlyList<ApprovalInputFieldKind> FieldKinds => Fields.Select(r => r.Kind).ToArray();
    }
 
-   /// <summary>Satu kotak isian pada PDF beserta cara mengambil nilainya dari isian yang dikirim.</summary>
-   /// <typeparam name="TPayload">Isian yang dikirim penanda tangan.</typeparam>
+   /// <summary>One input box on the PDF together with how to get its value from the submitted input.</summary>
+   /// <typeparam name="TPayload">The input submitted by the signer.</typeparam>
    public class ApprovalInputField<TPayload>
    {
-      /// <summary>Jenis kotaknya: tanda centang atau teks.</summary>
+      /// <summary>Kind of the box: checkmark or text.</summary>
       public ApprovalInputFieldKind Kind { get; set; }
 
-      /// <summary>Di mana kotaknya digambar.</summary>
+      /// <summary>Where the box is drawn.</summary>
       public ApprovalSlot Slot { get; set; } = new(0, 0);
 
-      /// <summary>Cara mengambil nilai teks kotak ini dari isian yang dikirim.</summary>
+      /// <summary>How to get this box's text value from the submitted input.</summary>
       public Func<TPayload, string?>? Text { get; set; }
 
-      /// <summary>Cara menentukan kotak centang ini tercentang atau tidak.</summary>
+      /// <summary>How to decide whether this checkbox is checked.</summary>
       public Func<TPayload, bool>? Checked { get; set; }
    }
 
-   /// <summary>Jenis kotak isian pada PDF.</summary>
+   /// <summary>Kind of input box on the PDF.</summary>
    public enum ApprovalInputFieldKind
    {
-      /// <summary>Kotak centang.</summary>
+      /// <summary>Checkbox.</summary>
       Check = 0,
 
-      /// <summary>Kotak teks.</summary>
+      /// <summary>Text box.</summary>
       Text = 1
    }
 }

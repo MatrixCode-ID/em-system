@@ -3,22 +3,22 @@ using Em.Shared;
 namespace Em.Api.Core.Storage
 {
    /// <summary>
-   /// Penyimpanan isi berkas di folder pada mesin server, dinyalakan lewat
-   /// <c>EmAppBuilder.AddLocalBinaryStorage</c>. Dipakai aplikasi yang belum perlu penyimpanan objek
-   /// tersendiri; pemakainya tidak berubah saat kelak berpindah ke penyimpanan lain, karena yang
-   /// dipegang pemakai adalah <see cref="IBinaryStorage"/>.
+   /// Storage of file content in a folder on the server machine, turned on through
+   /// <c>EmAppBuilder.AddLocalBinaryStorage</c>. Used by applications that do not yet need separate object
+   /// storage; its consumers do not change when moving to another storage later, because what a consumer
+   /// holds is <see cref="IBinaryStorage"/>.
    /// </summary>
    /// <remarks>
-   /// Folder ini bukan folder yang disajikan ke luar: tidak ada alamat publik yang menunjuk ke isinya.
+   /// This folder is not served to the outside: there is no public address that points to its content.
    /// </remarks>
    public class LocalBinaryStorage : IBinaryStorage
    {
       /// <summary>
-      /// Membuat penyimpanan berkas lokal pada sebuah folder.
+      /// Creates local file storage on a folder.
       /// </summary>
       /// <param name="rootPath">
-      /// Folder tempat isinya disimpan, sudah berupa path absolut. Foldernya dibuat sendiri kalau belum
-      /// ada.
+      /// Folder where the content is stored, already an absolute path. The folder is created automatically if
+      /// it does not exist.
       /// </param>
       public LocalBinaryStorage(string rootPath) {
          ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
@@ -26,7 +26,7 @@ namespace Em.Api.Core.Storage
          Directory.CreateDirectory(RootPath);
       }
 
-      /// <summary>Folder tempat isinya disimpan.</summary>
+      /// <summary>The folder where the content is stored.</summary>
       public string RootPath { get; }
 
       /// <inheritdoc />

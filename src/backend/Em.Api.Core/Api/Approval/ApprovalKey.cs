@@ -6,17 +6,17 @@ using System.Text.Json;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Penerjemah kunci dokumen: dari nilai bertipe milik modul ke satu string yang bisa di-index dan
-   /// dicocokkan, dan kembali lagi.
+   /// Translator of document keys: from the module's typed value to a single string that can be indexed
+   /// and matched, and back again.
    /// </summary>
    /// <remarks>
-   /// Kunci dokumen sering terdiri dari beberapa bagian. Modul mendeklarasikannya sebagai record
-   /// bertipe yang setiap bagiannya ditandai <see cref="KeyPartAttribute"/>, lalu menerima record itu
-   /// kembali di handler-nya; tidak ada kode modul yang menyusun atau memecah string kunci sendiri.
+   /// A document key often consists of several parts. The module declares it as a typed record whose
+   /// parts are each marked with <see cref="KeyPartAttribute"/>, then receives that record back in its
+   /// handler; no module code composes or splits the key string itself.
    /// <para>
-   /// Bentuk bakunya adalah daftar nilai dalam urutan yang dideklarasikan, ditulis sebagai teks JSON.
-   /// Format tiap jenis nilai dibakukan di sini - khususnya tanggal-jam - supaya nilai yang sama selalu
-   /// menghasilkan kunci yang sama, hari ini maupun di mesin lain.
+   /// The canonical form is a list of values in the declared order, written as JSON text. The format of
+   /// each value kind is fixed here - date-times in particular - so the same value always produces the
+   /// same key, today and on another machine.
    /// </para>
    /// </remarks>
    public static class ApprovalKey
@@ -25,24 +25,24 @@ namespace Em.Api.Core.Approval
       // every hub query translates keys, and the attribute scan is the expensive half of that.
       private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PartCache = new();
 
-      /// <summary>Format baku nilai tanggal-jam di dalam kunci.</summary>
+      /// <summary>Canonical format of a date-time value inside a key.</summary>
       public const string DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fff";
 
-      /// <summary>Format baku nilai tanggal di dalam kunci.</summary>
+      /// <summary>Canonical format of a date value inside a key.</summary>
       public const string DateFormat = "yyyy-MM-dd";
 
-      /// <summary>Format baku nilai jam di dalam kunci.</summary>
+      /// <summary>Canonical format of a time value inside a key.</summary>
       public const string TimeFormat = "HH:mm:ss.fff";
 
       /// <summary>
-      /// Mengubah kunci bertipe menjadi bentuk bakunya.
+      /// Converts a typed key into its canonical form.
       /// </summary>
-      /// <typeparam name="TKey">Tipe kunci dokumennya.</typeparam>
-      /// <param name="key">Kunci yang diterjemahkan.</param>
-      /// <returns>Kunci dalam bentuk bakunya.</returns>
+      /// <typeparam name="TKey">Type of the document key.</typeparam>
+      /// <param name="key">The key being translated.</param>
+      /// <returns>The key in its canonical form.</returns>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau <typeparamref name="TKey"/> tidak punya satu pun bagian kunci bertanda
-      /// <see cref="KeyPartAttribute"/>, atau kalau dua bagiannya memakai urutan yang sama.
+      /// Thrown when <typeparamref name="TKey"/> has no key part marked with
+      /// <see cref="KeyPartAttribute"/> at all, or when two of its parts use the same order.
       /// </exception>
       public static string ToCanonical<TKey>(TKey key) where TKey : notnull {
          ArgumentNullException.ThrowIfNull(key);
@@ -57,15 +57,15 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Mengembalikan kunci dari bentuk bakunya menjadi nilai bertipe.
+      /// Restores a key from its canonical form into a typed value.
       /// </summary>
-      /// <typeparam name="TKey">Tipe kunci dokumennya.</typeparam>
-      /// <param name="canonicalKey">Kunci dalam bentuk bakunya.</param>
-      /// <returns>Kunci bertipe.</returns>
+      /// <typeparam name="TKey">Type of the document key.</typeparam>
+      /// <param name="canonicalKey">The key in its canonical form.</param>
+      /// <returns>The typed key.</returns>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau bentuk bakunya tidak terbaca, jumlah bagiannya tidak sesuai
-      /// <typeparamref name="TKey"/>, salah satu nilainya tidak bisa dibaca sebagai tipe bagiannya,
-      /// atau <typeparamref name="TKey"/> tidak punya constructor yang menerima bagian-bagiannya.
+      /// Thrown when the canonical form cannot be read, the number of parts does not match
+      /// <typeparamref name="TKey"/>, one of the values cannot be read as its part's type, or
+      /// <typeparamref name="TKey"/> has no constructor that accepts its parts.
       /// </exception>
       public static TKey FromCanonical<TKey>(string canonicalKey) where TKey : notnull {
          var parts = GetParts(typeof(TKey));
@@ -108,13 +108,13 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Mengembalikan kunci dari bentuk bakunya menjadi nilai bertipe, ketika tipenya baru diketahui saat
-      /// program berjalan.
+      /// Restores a key from its canonical form into a typed value, when the type is only known while the
+      /// program runs.
       /// </summary>
-      /// <param name="keyType">Tipe kunci dokumennya.</param>
-      /// <param name="canonicalKey">Kunci dalam bentuk bakunya.</param>
+      /// <param name="keyType">Type of the document key.</param>
+      /// <param name="canonicalKey">The key in its canonical form.</param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar dengan sebab yang sama seperti <see cref="FromCanonical{TKey}(string)"/>.
+      /// Thrown for the same causes as <see cref="FromCanonical{TKey}(string)"/>.
       /// </exception>
       public static object FromCanonical(Type keyType, string canonicalKey) {
          ArgumentNullException.ThrowIfNull(keyType);
@@ -132,21 +132,21 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyusun bentuk baku sebuah kunci dari nilai bagian-bagiannya, yang urutannya harus sama dengan
-      /// urutan bagian yang dideklarasikan tipe kuncinya.
+      /// Composes the canonical form of a key from the values of its parts, whose order must be the same as
+      /// the order of the parts declared by its key type.
       /// </summary>
-      /// <param name="parts">Nilai tiap bagian kunci dalam bentuk teks bakunya.</param>
+      /// <param name="parts">Value of each key part in its canonical text form.</param>
       public static string FromParts(IReadOnlyList<string?> parts) {
          ArgumentNullException.ThrowIfNull(parts);
          return JsonSerializer.Serialize(parts.ToArray());
       }
 
       /// <summary>
-      /// Nilai tiap bagian kunci beserta namanya dan urutannya, dipakai saat bagian-bagian itu disimpan
-      /// satu baris per bagian.
+      /// The value of each key part together with its name and order, used when the parts are stored one
+      /// row per part.
       /// </summary>
-      /// <typeparam name="TKey">Tipe kunci dokumennya.</typeparam>
-      /// <param name="key">Kunci yang dibaca.</param>
+      /// <typeparam name="TKey">Type of the document key.</typeparam>
+      /// <param name="key">The key being read.</param>
       public static IReadOnlyList<ApprovalKeyPart> GetKeyParts<TKey>(TKey key) where TKey : notnull {
          ArgumentNullException.ThrowIfNull(key);
          var parts = GetParts(key.GetType());
@@ -160,11 +160,11 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Membaca bentuk baku sebuah kunci sebagai daftar nilai apa adanya, tanpa tipe. Dipakai saat
-      /// kuncinya hanya perlu ditampilkan atau dicocokkan, bukan diserahkan ke modul.
+      /// Reads the canonical form of a key as a plain list of values, without types. Used when the key only
+      /// needs to be displayed or matched, not handed to the module.
       /// </summary>
-      /// <param name="canonicalKey">Kunci dalam bentuk bakunya.</param>
-      /// <exception cref="InvalidOperationException">Dilempar kalau bentuk bakunya tidak terbaca.</exception>
+      /// <param name="canonicalKey">The key in its canonical form.</param>
+      /// <exception cref="InvalidOperationException">Thrown when the canonical form cannot be read.</exception>
       public static string?[] ReadParts(string canonicalKey) {
          if (string.IsNullOrWhiteSpace(canonicalKey)) {
             throw new InvalidOperationException("A document key must not be empty.");
@@ -180,20 +180,18 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Bentuk kunci yang enak dibaca manusia, dipakai di daftar dan di judul layar: bagian-bagiannya
-      /// disambung dengan tanda hubung.
+      /// A human-friendly form of a key, used in lists and screen titles: its parts are joined with hyphens.
       /// </summary>
-      /// <param name="canonicalKey">Kunci dalam bentuk bakunya.</param>
+      /// <param name="canonicalKey">The key in its canonical form.</param>
       public static string ToDisplay(string canonicalKey) =>
          string.Join(" - ", ReadParts(canonicalKey).Select(r => r ?? string.Empty));
 
       /// <summary>
-      /// Nama bagian kunci sebuah tipe, berurutan. Dipakai engine saat memeriksa deklarasi modul.
+      /// Names of the key parts of a type, in order. Used by the engine when checking a module's declaration.
       /// </summary>
-      /// <param name="keyType">Tipe kunci dokumennya.</param>
+      /// <param name="keyType">Type of the document key.</param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau tipenya tidak punya satu pun bagian kunci, atau dua bagiannya memakai urutan
-      /// yang sama.
+      /// Thrown when the type has no key part at all, or when two of its parts use the same order.
       /// </exception>
       public static IReadOnlyList<string> GetPartNames(Type keyType) =>
          GetParts(keyType).Select(r => r.Name).ToArray();
@@ -286,9 +284,9 @@ namespace Em.Api.Core.Approval
       }
    }
 
-   /// <summary>Satu bagian kunci beserta namanya dan urutannya.</summary>
-   /// <param name="Name">Nama bagiannya, seperti yang dideklarasikan modul.</param>
-   /// <param name="Value">Nilainya dalam bentuk teks baku.</param>
-   /// <param name="Order">Urutannya di dalam kuncinya, dimulai dari satu.</param>
+   /// <summary>One key part together with its name and order.</summary>
+   /// <param name="Name">Name of the part, as declared by the module.</param>
+   /// <param name="Value">Its value in canonical text form.</param>
+   /// <param name="Order">Its order within the key, starting from one.</param>
    public record ApprovalKeyPart(string Name, string? Value, int Order);
 }

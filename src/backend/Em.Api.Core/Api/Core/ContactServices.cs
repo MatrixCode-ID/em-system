@@ -6,6 +6,7 @@ using Em.Shared;
 
 namespace Em.Api.Core
 {
+   /// <summary>Implementation of the contact, communication, and address actions.</summary>
    [Module("core.contact")]
    public class ContactServices(ApiCoreContext ctx) : ServicesBase, IContactServices
    {
@@ -13,6 +14,7 @@ namespace Em.Api.Core
 
       #region ta_Contact
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Contact?> GetTa_Contact_ById(string cContactId) {
          var data = await ctx.ta_Contacts.Where(r => r.cContactId == cContactId)
@@ -20,6 +22,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Contact[]> GetTa_Contacts() {
          var data = await ctx.ta_Contacts
@@ -27,9 +30,11 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<int> GetTa_Contacts_Count() => ctx.ta_Contacts.CountAsync(AbortToken);
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Contact[]> GetTa_Contacts_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -45,34 +50,40 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Contact_New(ta_Contact data) {
          ctx.ta_Contacts.Add(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Contact_NewBatch(ta_Contact[] datas) {
          await ctx.BulkInsertAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Contact_Update(ta_Contact data) {
          ctx.UpdateRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Contact_UpdateBatch(ta_Contact[] datas) {
          await ctx.BulkUpdateAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Contact_Delete(ta_Contact data) {
          ctx.DeleteRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Contact_DeleteBatch(ta_Contact[] datas) {
          await ctx.BulkDeleteAsync(datas);
@@ -82,6 +93,7 @@ namespace Em.Api.Core
 
       #region ta_Comm
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Comm?> GetTa_Comm_ById(string cCommId) {
          var data = await ctx.ta_Comms.Where(r => r.cCommId == cCommId)
@@ -89,6 +101,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Comm[]> GetTa_Comms() {
          var data = await ctx.ta_Comms
@@ -96,9 +109,11 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<int> GetTa_Comms_Count() => ctx.ta_Comms.CountAsync(AbortToken);
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Comm[]> GetTa_Comms_ByContactId(string cContactId) {
          var data = await ctx.ta_Comms
@@ -107,6 +122,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Comm[]> GetTa_Comms_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -122,34 +138,40 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Comm_New(ta_Comm data) {
          ctx.ta_Comms.Add(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Comm_NewBatch(ta_Comm[] datas) {
          await ctx.BulkInsertAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Comm_Update(ta_Comm data) {
          ctx.UpdateRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Comm_UpdateBatch(ta_Comm[] datas) {
          await ctx.BulkUpdateAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Comm_Delete(ta_Comm data) {
          ctx.DeleteRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Comm_DeleteBatch(ta_Comm[] datas) {
          await ctx.BulkDeleteAsync(datas);
@@ -159,6 +181,7 @@ namespace Em.Api.Core
 
       #region ta_Address
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Address?> GetTa_Address_ById(string cAddressId) {
          var data = await ctx.ta_Addresses.Where(r => r.cAddressId == cAddressId)
@@ -166,6 +189,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Address[]> GetTa_Addresses() {
          var data = await ctx.ta_Addresses
@@ -173,6 +197,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Address[]> GetTa_Addresses_ByContactId(string cContactId) {
          var data = await ctx.ta_Addresses
@@ -181,9 +206,11 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<int> GetTa_Addresses_Count() => ctx.ta_Addresses.CountAsync(AbortToken);
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<ta_Address[]> GetTa_Addresses_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -199,34 +226,40 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Address_New(ta_Address data) {
          ctx.ta_Addresses.Add(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Address_NewBatch(ta_Address[] datas) {
          await ctx.BulkInsertAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Address_Update(ta_Address data) {
          ctx.UpdateRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Address_UpdateBatch(ta_Address[] datas) {
          await ctx.BulkUpdateAsync(datas);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Address_Delete(ta_Address data) {
          ctx.DeleteRow(data);
          await ctx.SaveChangesAsync();
       }
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostTa_Address_DeleteBatch(ta_Address[] datas) {
          await ctx.BulkDeleteAsync(datas);
@@ -240,6 +273,7 @@ namespace Em.Api.Core
 
       #region vi_Contact
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Contact?> GetVi_Contact_ById(string cContactId) {
          var data = await ctx.vi_Contacts.Where(r => r.cContactId == cContactId)
@@ -247,6 +281,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Contact[]> GetVi_Contacts() {
          var data = await ctx.vi_Contacts
@@ -254,6 +289,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Contact[]> GetVi_Contacts_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -269,6 +305,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Contact[]> GetVi_Contacts_Search(ContactSearchType searchType, string searchTerm,
          int maxResults) {
@@ -325,6 +362,7 @@ namespace Em.Api.Core
 
       #region vi_Address
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Address?> GetVi_Address_ById(string cAddressId) {
          var data = await ctx.vi_Addresses.Where(r => r.cAddressId == cAddressId)
@@ -332,6 +370,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Address[]> GetVi_Addresses() {
          var data = await ctx.vi_Addresses
@@ -339,6 +378,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Address[]> GetVi_Addresses_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -354,6 +394,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Address[]> GetVi_Addresses_ByContactId(string cContactId) {
          var data = await ctx.vi_Addresses
@@ -366,6 +407,7 @@ namespace Em.Api.Core
 
       #region vi_Comm
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Comm?> GetVi_Comm_ById(string cCommId) {
          var data = await ctx.vi_Comms.Where(r => r.cCommId == cCommId)
@@ -373,6 +415,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Comm[]> GetVi_Comms() {
          var data = await ctx.vi_Comms
@@ -380,6 +423,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Comm[]> GetVi_Comms_InPage(int page, int pageSize) {
          if (page < 1) page = 1;
@@ -395,6 +439,7 @@ namespace Em.Api.Core
          return data;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<vi_Comm[]> GetVi_Comms_ByContactId(string cContactId) {
          var data = await ctx.vi_Comms

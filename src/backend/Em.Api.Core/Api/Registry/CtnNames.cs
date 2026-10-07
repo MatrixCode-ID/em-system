@@ -4,8 +4,8 @@ using Em.Shared;
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Aturan nama dan batas panjang registry. Angka mengikuti praktik <c>distribution/registry</c> dan
-   /// Docker Hub; semuanya konstanta di sini, bukan bagian skema tabel.
+   /// Registry name rules and length limits. The numbers follow the practice of <c>distribution/registry</c>
+   /// and Docker Hub; all of them are constants here, not part of the table schema.
    /// </summary>
    internal static partial class CtnNames
    {
@@ -29,7 +29,7 @@ namespace Em.Api.Core.Registry
       public const string AccessRead = "R";
       public const string AccessWrite = "W";
 
-      // Komponen nama OCI: huruf kecil dan angka, dipisah ".", "_", "__", atau "-" (boleh berulang).
+      // An OCI name component: lowercase letters and digits, separated by ".", "_", "__", or "-" (may repeat).
       [GeneratedRegex(@"^[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*$")]
       private static partial Regex NamePattern();
 

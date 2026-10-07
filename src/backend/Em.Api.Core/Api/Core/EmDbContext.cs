@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 namespace Em.Api.Core
 {
+   /// <summary>Base class of the engine's database contexts: provider selection and shared conventions.</summary>
    public abstract class EmDbContext(DbContextOptions options) : DbContext(options)
    {
+      /// <summary>Selects the database provider and connection of the running context.</summary>
       protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
          base.OnConfiguring(optionsBuilder);
 
@@ -20,6 +22,7 @@ namespace Em.Api.Core
          optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
       }
 
+      /// <summary>Applies the engine's shared model conventions.</summary>
       protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) {
          base.ConfigureConventions(configurationBuilder);
          // A vi_ entity derives from its ta_ entity only to reuse the columns, it is not a
@@ -29,18 +32,17 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menandai satu baris untuk ditimpakan ke database, siap disimpan lewat
+      /// Marks one row to be written over the database row, ready to be saved through
       /// <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.
       /// <para>
-      /// Dipakai menggantikan <c>Attach</c> + <c>State = Modified</c> yang ditulis sendiri: satu
-      /// permintaan sering membaca sebuah baris - atau baru saja membuatnya - sebelum menulisnya,
-      /// dan baris yang sudah dipegang context tidak boleh dipegang dua kali. Kalau barisnya memang
-      /// sudah dipegang, yang dipegang itulah yang diisi ulang dari <paramref name="row"/>; kalau
-      /// belum, barisnya dilampirkan seperti biasa.
+      /// Used instead of a hand-written <c>Attach</c> + <c>State = Modified</c>: one request often reads a
+      /// row - or has just created it - before writing it, and a row the context already holds must not be
+      /// held twice. If the row is already held, the held one is refilled from <paramref name="row"/>; if
+      /// not, the row is attached as usual.
       /// </para>
       /// </summary>
-      /// <typeparam name="T">Jenis baris yang ditulis.</typeparam>
-      /// <param name="row">Baris berisi nilai terbaru, lengkap dengan nilai kunci utamanya.</param>
+      /// <typeparam name="T">Kind of the row being written.</typeparam>
+      /// <param name="row">Row holding the latest values, complete with its primary key values.</param>
       public void UpdateRow<T>(T row) where T : class {
          var tracked = FindTrackedRow(row);
          if (tracked is not null) {
@@ -53,13 +55,12 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menandai satu baris untuk dihapus dari database, siap disimpan lewat
-      /// <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>. Sama seperti
-      /// <see cref="UpdateRow"/>, baris yang sudah dipegang context dihapus lewat yang dipegang itu,
-      /// bukan lewat salinan yang diberikan di sini.
+      /// Marks one row to be deleted from the database, ready to be saved through
+      /// <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>. Like <see cref="UpdateRow"/>, a row
+      /// already held by the context is deleted through the held one, not through the copy given here.
       /// </summary>
-      /// <typeparam name="T">Jenis baris yang dihapus.</typeparam>
-      /// <param name="row">Baris yang ingin dihapus; cukup nilai kunci utamanya yang benar.</param>
+      /// <typeparam name="T">Kind of the row being deleted.</typeparam>
+      /// <param name="row">The row to delete; only its primary key values need to be correct.</param>
       public void DeleteRow<T>(T row) where T : class {
          var tracked = FindTrackedRow(row);
          if (tracked is not null) {

@@ -8,9 +8,13 @@ namespace Em.Api.Core;
 /// </summary>
 public interface IRobotAccessManager
 {
+   /// <summary>Identifier of the manager that owns the resources, e.g. its module.</summary>
    string Id { get; }
+   /// <summary>Describes the manager and the resources a robot can be given access to.</summary>
    Task<RobotAccessManagerInfo> DescribeAsync(CancellationToken ct);
+   /// <summary>Reads every access grant of this manager.</summary>
    Task<RobotAccessInfo[]> ReadAsync(CancellationToken ct);
+   /// <summary>Sets the access of a robot to one resource; empty access removes the grant.</summary>
    Task SetAsync(string robotId, string resourceId, string access, CancellationToken ct);
    /// <summary>
    /// Remove grants/references using the supplied identity context's transaction.

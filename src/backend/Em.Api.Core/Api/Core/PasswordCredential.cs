@@ -5,25 +5,25 @@ using Em.Shared;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Kredensial berupa password: buktinya teks yang diketik pengguna, dan yang disimpan hanya
-   /// hasil hash-nya, tidak pernah passwordnya sendiri.
+   /// A password credential: the proof is text typed by the user, and only its hash is stored, never the
+   /// password itself.
    /// </summary>
    public class PasswordCredential : CredentialProviderBase<string>, ICredentialEnrollment<string>
    {
-      /// <summary>Nama jenis kredensial ini.</summary>
+      /// <summary>Name of this credential type.</summary>
       public const string CredentialType = Defaults.PasswordCredentialType;
 
       #region Initializer
 
       /// <summary>
-      /// Membuat kredensial password milik <paramref name="user"/> beserta data tersimpannya.
-      /// Pengguna yang belum pernah mengisi password tetap mendapat kredensial ini, hanya saja
-      /// statusnya masih <see cref="CredentialState.Pending"/> sampai passwordnya diisi lewat
+      /// Creates the password credential of <paramref name="user"/> together with its stored data. A user who
+      /// has never set a password still gets this credential, only its status remains
+      /// <see cref="CredentialState.Pending"/> until the password is set through
       /// <see cref="UpdateCredential"/>.
       /// </summary>
-      /// <param name="user">Pengguna yang kredensialnya ingin dipakai.</param>
-      /// <param name="services">Service data kredensial milik request yang sedang berjalan.</param>
-      /// <returns>Kredensial password yang siap diperiksa atau diisi.</returns>
+      /// <param name="user">The user whose credential is to be used.</param>
+      /// <param name="services">The credential data service of the running request.</param>
+      /// <returns>A password credential ready to be checked or filled in.</returns>
       public static async Task<PasswordCredential> CreateAsync(ta_User user, CredentialServices services) {
          var result = new PasswordCredential {
             User = user,
@@ -42,14 +42,14 @@ namespace Em.Api.Core
       /// <inheritdoc/>
       public override string Name => CredentialType;
 
-      /// <summary>Komponen hashing yang dipakai menyimpan dan memeriksa password.</summary>
+      /// <summary>The hashing component used to store and check passwords.</summary>
       public required IStringHasher Hasher { get; init; }
 
       /// <summary>
-      /// Mengganti password pengguna dan menandai kredensialnya siap dipakai untuk masuk.
+      /// Changes the user's password and marks the credential ready to use for signing in.
       /// </summary>
-      /// <param name="password">Password baru dalam bentuk teks biasa; yang disimpan hanya hash-nya.</param>
-      /// <exception cref="ArgumentException">Password yang diberikan kosong.</exception>
+      /// <param name="password">The new password as plain text; only its hash is stored.</param>
+      /// <exception cref="ArgumentException">The given password is empty.</exception>
       public Task UpdateCredential(string password) {
          if (string.IsNullOrEmpty(password)) {
             throw new ArgumentException("Password must not be empty.", nameof(password));
@@ -65,6 +65,7 @@ namespace Em.Api.Core
       // operation as changing it. Implemented explicitly to keep one public way of doing it.
       Task ICredentialEnrollment<string>.ConfirmEnrollAsync(string proof) => UpdateCredential(proof);
 
+      /// <summary>Loads the stored password credential, or creates a pending one when the user has none.</summary>
       protected override async Task InitCredential() {
          // Creating a user writes its password credential along with it, so normally there is one
          // to read here. What is left is the account that predates that, which would otherwise have
@@ -74,13 +75,13 @@ namespace Em.Api.Core
          if (await LoadCredentialAsync() is null) await CreateCredentialAsync();
       }
 
+      /// <summary>Checks the typed password against the stored hash.</summary>
       protected override Task<bool> ValidateAsync(string payload) =>
          Task.FromResult(Hasher.CompareHashValue(payload, UserCredential?.cCredentialSecret ?? ""));
    }
 
    /// <summary>
-   /// Mendaftarkan <see cref="PasswordCredential"/> sebagai salah satu jenis kredensial yang
-   /// dikenal aplikasi.
+   /// Registers <see cref="PasswordCredential"/> as one of the credential types known to the application.
    /// </summary>
    public class PasswordCredentialFactory : ICredentialProviderFactory
    {

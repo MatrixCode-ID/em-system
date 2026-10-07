@@ -16,6 +16,7 @@ namespace Em.Api.Core.Registry
 
       #region Deploy
 
+      /// <inheritdoc />
       [GetAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployTargetInfo?> GetMeta_CtnDeployTarget(string imageId) {
          var store = DeployStore;
@@ -23,6 +24,7 @@ namespace Em.Api.Core.Registry
          return await store.GetAsync(imageId, AbortToken);
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployTargetInfo> PostGetMeta_CtnDeployTargetSave(CtnDeployTargetSave request) {
          var store = DeployStore;
@@ -30,11 +32,13 @@ namespace Em.Api.Core.Registry
          return (await store.GetAsync(row.cCtnImageId))!;
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task PostMeta_CtnDeployTargetDelete(string imageId) {
          if (!await DeployStore.DeleteAsync(imageId)) throw new ActionException("This container has no deploy target.", 404);
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployTestResult> PostGetMeta_CtnDeployTest(CtnDeployTargetSave request) {
          var store = DeployStore;
@@ -44,6 +48,7 @@ namespace Em.Api.Core.Registry
          return await DeployRunner.Executor.TestAsync(target, timeout.Token);
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployTestResult> PostGetMeta_CtnDeployRegisterPortainerRegistry(string imageId) {
          var store = DeployStore;
@@ -62,6 +67,7 @@ namespace Em.Api.Core.Registry
          return await DeployRunner.Executor.TestAsync(target, timeout.Token);
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployRunInfo> PostGetMeta_CtnDeployCreateStack(string imageId, string composeContent) {
          var store = DeployStore;
@@ -94,6 +100,7 @@ namespace Em.Api.Core.Registry
          };
       }
 
+      /// <inheritdoc />
       [GetAction(claim: ICtnServices.CtnClaim)]
       public async Task<string> GetMeta_CtnDeployStackTemplate(string imageId) {
          var store = DeployStore;
@@ -111,6 +118,7 @@ namespace Em.Api.Core.Registry
                   """;
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployRunInfo> PostGetMeta_CtnDeployAfterPush(CtnDeployPushRequest request) {
          var store = DeployStore;
@@ -122,6 +130,7 @@ namespace Em.Api.Core.Registry
             resolution.Tag, CallerUserId, await CallerNameAsync());
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployRunInfo> PostGetMeta_CtnDeployRun(string imageId, string digest, string? tag) {
          var store = DeployStore;
@@ -134,6 +143,7 @@ namespace Em.Api.Core.Registry
             string.IsNullOrWhiteSpace(tag) ? null : tag.Trim(), CallerUserId, await CallerNameAsync());
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployRunInfo> PostGetMeta_CtnDeployRollback(string imageId, string runId) {
          var store = DeployStore;
@@ -149,6 +159,7 @@ namespace Em.Api.Core.Registry
             previous.cCtnDeployRunDigest, previous.cCtnDeployRunTag, CallerUserId, await CallerNameAsync());
       }
 
+      /// <inheritdoc />
       [GetAction(claim: ICtnServices.CtnClaim)]
       public async Task<CtnDeployRunInfo[]> GetMeta_CtnDeployRuns(string imageId, int take) {
          if (take is < 1 or > ICtnServices.DeployMaxRuns) throw new ActionException($"Take must be 1-{ICtnServices.DeployMaxRuns}.", 400);

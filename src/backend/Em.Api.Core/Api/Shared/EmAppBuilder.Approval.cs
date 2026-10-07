@@ -8,6 +8,7 @@ using Em.Shared;
 
 namespace Em.Api.Shared
 {
+   /// <summary>Approval registration for the application builder.</summary>
    public partial class EmAppBuilder
    {
       internal List<ApprovalFlowDeclaration> ApprovalFlows { get; } = [];
@@ -17,38 +18,38 @@ namespace Em.Api.Shared
       internal string? BinaryStorageRootPath { get; private set; }
 
       /// <summary>
-      /// Nama claim yang diberikan setiap jenis dokumen kepada pembacanya - hak melihat request tanpa
-      /// ikut memutuskannya. Nama jenis dokumennya ikut disebut, supaya satu modul yang memiliki
-      /// beberapa jenis dokumen tetap punya satu claim pembaca per jenis.
+      /// Name of the claim every document type gives to its readers - the right to view requests without
+      /// taking part in deciding them. The document type name is included, so a module that owns several
+      /// document types still has one reader claim per type.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
+      /// <param name="docType">The document type.</param>
       public static string ApprovalViewClaimName(string docType) => $"View {docType}";
 
       /// <summary>
-      /// Mendaftarkan alur persetujuan sebuah jenis dokumen: dokumennya sudah ada, dan request menjadi
-      /// gerbang bagi statusnya. Dipakai dokumen transaksi yang perlu ditandatangani beberapa pihak.
+      /// Registers the approval flow of a document type: the document already exists, and requests become
+      /// the gate for its status. Used by transaction documents that need to be signed by several parties.
       /// </summary>
       /// <typeparam name="TServices">
-      /// Service modul pemilik dokumennya - class implementasinya, yang bertanda <c>[Module]</c>, karena
-      /// dari situlah nama modul claim-claim alurnya diambil.
+      /// Service of the module that owns the document - its implementation class, marked <c>[Module]</c>,
+      /// because the module name of the flow's claims is taken from there.
       /// </typeparam>
       /// <typeparam name="TKey">
-      /// Record kunci dokumennya, setiap bagiannya bertanda <c>KeyPart</c>. Handler modul menerima
-      /// record ini apa adanya; engine yang menerjemahkannya ke bentuk tersimpan dan kembali.
+      /// Key record of the document, each part marked with <c>KeyPart</c>. The module's handlers receive this
+      /// record as-is; the engine translates it to the stored form and back.
       /// </typeparam>
       /// <param name="docType">
-      /// Jenis dokumennya, sesuai daftar jenis dokumen aplikasi. Jenis yang tidak terdaftar di sana
-      /// ditolak database saat request pertama dibuat.
+      /// The document type, according to the application's list of document types. A type not registered
+      /// there is refused by the database when the first request is created.
       /// </param>
-      /// <param name="flow">Callback yang menuliskan alurnya.</param>
+      /// <param name="flow">Callback that writes the flow.</param>
       /// <remarks>
-      /// Claim setiap langkah dan claim pembacanya didaftarkan otomatis di sini, pada modul
-      /// <typeparamref name="TServices"/>, supaya namanya seragam dan tidak perlu didaftarkan dua kali.
-      /// Tipe <typeparamref name="TServices"/> sendiri ikut didaftarkan ke DI, karena engine perlu
-      /// menyerahkannya ke handler modul saat alur ini berjalan.
+      /// The claim of each step and the reader claim are registered automatically here, on the module
+      /// <typeparamref name="TServices"/>, so their names are uniform and need not be registered twice.
+      /// The <typeparamref name="TServices"/> type itself is also registered in DI, because the engine must
+      /// hand it to the module's handlers when this flow runs.
       /// </remarks>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau <paramref name="docType"/> kosong atau sudah punya alur.
+      /// Thrown when <paramref name="docType"/> is empty or already has a flow.
       /// </exception>
       public void AddDocumentApproval<TServices, TKey>(string docType,
          Action<ApprovalFlowBuilder<TServices, TKey>> flow)
@@ -101,22 +102,22 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Mendaftarkan alur usulan perubahan data: data usulannya tinggal di request dan baru diterapkan
-      /// setelah disetujui. Dipakai perubahan data induk, tempat tabel aslinya belum boleh berubah
-      /// selama usulan masih menunggu.
+      /// Registers a data change proposal flow: the proposed data stays in the request and is only applied
+      /// after approval. Used for master data changes, where the real table must not change while a proposal
+      /// is still waiting.
       /// </summary>
       /// <typeparam name="TServices">
-      /// Service modul pemilik datanya - class implementasinya, yang bertanda <c>[Module]</c>.
+      /// Service of the module that owns the data - its implementation class, marked <c>[Module]</c>.
       /// </typeparam>
-      /// <param name="docType">Jenis dokumennya, sesuai daftar jenis dokumen aplikasi.</param>
+      /// <param name="docType">The document type, according to the application's list of document types.</param>
       /// <param name="approveClaim">
-      /// Nama claim yang memberi hak menyetujui usulan jenis ini, ditulis tanpa nama modulnya.
-      /// Pemegangnya juga menyimpan perubahannya sendiri tanpa menunggu persetujuan siapa pun.
+      /// Name of the claim that grants the right to approve proposals of this type, written without its
+      /// module name. Its holder also saves their own changes without waiting for anyone's approval.
       /// </param>
-      /// <param name="flow">Callback yang menuliskan entitas-entitasnya dan hook-nya.</param>
+      /// <param name="flow">Callback that writes the entities and the hooks.</param>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau <paramref name="docType"/> kosong atau sudah punya alur, atau kalau alurnya
-      /// tidak mendaftarkan satu entitas pun.
+      /// Thrown when <paramref name="docType"/> is empty or already has a flow, or when the flow does not
+      /// register any entity.
       /// </exception>
       public void AddDataApproval<TServices>(string docType, string approveClaim,
          Action<ApprovalDataFlowBuilder<TServices>> flow)
@@ -143,17 +144,17 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Menyalakan penyimpanan isi berkas di folder pada mesin server. Tidak ada alamat publik ke
-      /// isinya: yang mengambilnya adalah action pemakainya, yang lebih dulu memeriksa hak pemanggil.
+      /// Turns on storage of file content in a folder on the server machine. There is no public address to
+      /// the content: whatever fetches it is the consumer's action, which first checks the caller's rights.
       /// </summary>
       /// <param name="rootPath">
-      /// Folder tempat isinya disimpan. Path absolut dipakai apa adanya; path relatif (termasuk
-      /// <c>./...</c>) dihitung dari folder konten aplikasi. Foldernya dibuat sendiri saat startup kalau
-      /// belum ada.
+      /// Folder where the content is stored. An absolute path is used as-is; a relative path (including
+      /// <c>./...</c>) is resolved from the application content folder. The folder is created automatically
+      /// at startup if it does not exist.
       /// </param>
-      /// <exception cref="ArgumentException">Dilempar kalau <paramref name="rootPath"/> kosong.</exception>
+      /// <exception cref="ArgumentException">Thrown when <paramref name="rootPath"/> is empty.</exception>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau penyimpanan berkas sudah dinyalakan sebelumnya - satu aplikasi hanya punya satu.
+      /// Thrown when file storage was already turned on - one application has only one.
       /// </exception>
       public void AddLocalBinaryStorage(string rootPath) {
          if (string.IsNullOrWhiteSpace(rootPath)) {
@@ -170,13 +171,12 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Mendaftarkan satu sumber daftar pekerjaan user aktif. Daftar pekerjaan di baris judul aplikasi
-      /// adalah gabungan semua sumber yang terdaftar, jadi jenis pekerjaan baru ditambahkan di sini -
-      /// bukan dengan mengubah daftarnya.
+      /// Registers one source of the active user's task list. The task list in the application title bar is
+      /// the union of all registered sources, so a new kind of task is added here - not by changing the list.
       /// </summary>
-      /// <typeparam name="T">Sumbernya.</typeparam>
+      /// <typeparam name="T">The source.</typeparam>
       /// <remarks>
-      /// Aman dipanggil berulang kali untuk tipe yang sama: yang terdaftar tetap satu.
+      /// Safe to call repeatedly for the same type: what is registered stays one.
       /// </remarks>
       public void AddHubTaskSource<T>() where T : class, IHubTaskSource {
          Services.TryAddEnumerable(ServiceDescriptor.Scoped<IHubTaskSource, T>());

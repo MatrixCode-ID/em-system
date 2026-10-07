@@ -3,27 +3,26 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Hub
 {
    /// <summary>
-   /// Satu sumber daftar pekerjaan user aktif. Daftar pekerjaan di baris judul aplikasi adalah gabungan
-   /// semua sumber yang terdaftar, jadi jenis pekerjaan baru ditambahkan dengan mendaftarkan sumber
-   /// baru - bukan dengan mengubah daftar itu.
+   /// One source of the active user's task list. The task list in the application title bar is the union
+   /// of all registered sources, so a new kind of task is added by registering a new source - not by
+   /// changing that list.
    /// </summary>
    /// <remarks>
-   /// Daftarnya selalu <b>dihitung</b> dari data sumbernya, tidak disimpan sebagai pekerjaan tersendiri.
-   /// Itu yang membuat sebuah pekerjaan hilang sendiri dari daftar orang lain begitu satu orang
-   /// mengerjakannya.
+   /// The list is always <b>computed</b> from the source's data, never stored as a separate task. That is
+   /// what makes a task disappear by itself from other people's lists as soon as one person completes it.
    /// <para>
-   /// Sumber dipanggil di dalam permintaan user yang bersangkutan, jadi identitas pemanggil dibaca dari
-   /// permintaan itu seperti di action biasa. Sumber yang gagal tidak menggagalkan sumber lain:
-   /// kegagalannya dicatat dan bagiannya kosong.
+   /// A source is called inside the relevant user's request, so the caller's identity is read from that
+   /// request as in an ordinary action. A source that fails does not fail the other sources: its failure
+   /// is logged and its part is empty.
    /// </para>
    /// </remarks>
    public interface IHubTaskSource
    {
       /// <summary>
-      /// Pekerjaan yang perlu diketahui user aktif menurut sumber ini, atau daftar kosong kalau tidak
-      /// ada.
+      /// The tasks the active user needs to know about according to this source, or an empty list when there
+      /// are none.
       /// </summary>
-      /// <param name="cancellationToken">Token pembatalan.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       Task<IReadOnlyList<HubTaskInfo>> GetTasksAsync(CancellationToken cancellationToken = default);
    }
 }

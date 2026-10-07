@@ -7,7 +7,9 @@ public partial class EmAppBuilder {
  internal bool NuPakManaged { get; private set; }
  internal string? NuPakPath { get; private set; }
  internal int NuPakMaxPackageMb { get; private set; } = 250;
+ /// <summary>Turns on NuPak with its package folder managed through the storage settings screen.</summary>
  public void AddNuPak() => RegisterNuPak(null,250,true);
+ /// <summary>Turns on NuPak with a fixed local package folder.</summary>
  public void AddNuPak(string localStorePath,int maxPackageMb=250) {
   ArgumentException.ThrowIfNullOrWhiteSpace(localStorePath);
   RegisterNuPak(localStorePath,maxPackageMb,false);

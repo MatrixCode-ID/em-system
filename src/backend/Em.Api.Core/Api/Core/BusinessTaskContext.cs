@@ -3,10 +3,10 @@ using Microsoft.Extensions.Logging;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Semua yang boleh dipakai pekerjaan sebuah business task selama berjalan. Pekerjaan itu berjalan di
-   /// luar request yang memulainya, jadi apa pun yang milik request - <c>Request</c>, <c>AbortToken</c>,
-   /// <c>GetService</c>, dan service yang memulainya sendiri - tidak boleh dipakai di dalamnya. Gantinya
-   /// ada di sini.
+   /// Everything the work of a business task may use while it runs. That work runs outside the request
+   /// that started it, so anything belonging to the request - <c>Request</c>, <c>AbortToken</c>,
+   /// <c>GetService</c>, and the starting service itself - must not be used inside it. The replacements
+   /// are here.
    /// </summary>
    public sealed class BusinessTaskContext
    {
@@ -22,34 +22,34 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Menyala saat task ini dibatalkan user atau saat server dimatikan - tidak pernah karena request
-      /// pemulainya selesai. Teruskan ke setiap pemanggilan yang bisa lama; berhenti karena token ini
-      /// dicatat sebagai dibatalkan, bukan gagal.
+      /// Signals when this task is cancelled by the user or when the server is shut down - never because the
+      /// starter's request finished. Pass it on to every call that may take long; stopping because of this
+      /// token is recorded as cancelled, not failed.
       /// </summary>
       public CancellationToken CancellationToken { get; }
 
       /// <summary>
-      /// Service provider milik task ini sendiri, hidup selama task berjalan. Service scoped (DbContext dan
-      /// sejenisnya) diambil dari sini. <see cref="ActionRequest"/> yang diminta lewat provider ini adalah
+      /// The task's own service provider, alive while the task runs. Scoped services (DbContext and the
+      /// like) are taken from here. The <see cref="ActionRequest"/> asked for through this provider is
       /// <see cref="Starter"/>.
       /// </summary>
       public IServiceProvider Services { get; }
 
       /// <summary>
-      /// Identitas user yang memulai task ini, seperti saat ia memulainya. Pakai ini untuk pemeriksaan hak
-      /// dan untuk jejak tulis, bukan identitas request lain.
+      /// Identity of the user who started this task, as it was when they started it. Use this for rights
+      /// checks and for write traces, not the identity of another request.
       /// </summary>
       public ActionRequest Starter { get; }
 
-      /// <summary>Logger untuk task ini.</summary>
+      /// <summary>Logger for this task.</summary>
       public ILogger Logger { get; }
 
       /// <summary>
-      /// Melaporkan kemajuan kepada yang memantau task ini. Murah untuk dipanggil sesering apa pun; yang
-      /// dibaca client hanya nilai terakhir.
+      /// Reports progress to whoever is watching this task. Cheap to call as often as needed; the client only
+      /// reads the latest value.
       /// </summary>
-      /// <param name="percent">Kemajuan 0–100, atau <c>null</c> kalau tidak bisa diukur.</param>
-      /// <param name="caption">Keterangan singkat langkah yang sedang dikerjakan.</param>
+      /// <param name="percent">Progress 0-100, or <c>null</c> when it cannot be measured.</param>
+      /// <param name="caption">Short note on the step being worked on.</param>
       public void Report(double? percent, string caption) => _report(percent, caption);
    }
 }

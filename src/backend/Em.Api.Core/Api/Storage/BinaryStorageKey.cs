@@ -3,37 +3,36 @@ using System.Text;
 namespace Em.Api.Core.Storage
 {
    /// <summary>
-   /// Aturan bentuk kunci <see cref="IBinaryStorage"/>, beserta cara menyusun dan membakukannya.
-   /// Dipakai setiap implementasi penyimpanan, supaya kunci yang sah di satu implementasi juga sah di
-   /// implementasi lain - termasuk yang menyimpan isinya di luar mesin ini.
+   /// Shape rules for <see cref="IBinaryStorage"/> keys, together with how to compose and normalize them.
+   /// Used by every storage implementation, so a key that is valid in one implementation is also valid in
+   /// another - including one that stores its content off this machine.
    /// </summary>
    /// <remarks>
-   /// Kunci terdiri dari beberapa bagian yang dipisahkan garis miring, seperti path. Yang dilarang
-   /// adalah segalanya yang membuat sebuah kunci bisa menunjuk tempat lain dari yang terbaca: bagian
-   /// kosong, bagian berisi titik saja, garis miring balik, dan karakter yang tidak terbaca. Pembatasan
-   /// ini lebih ketat daripada yang dituntut sistem berkas, karena kunci yang sama harus tetap sah saat
-   /// penyimpanannya kelak berpindah ke jaringan.
+   /// A key consists of several parts separated by slashes, like a path. What is forbidden is everything
+   /// that would let a key point to a place other than what it reads: empty parts, parts that are only a
+   /// dot, backslashes, and unreadable characters. This restriction is stricter than what a file system
+   /// requires, because the same key must remain valid when the storage later moves to a network.
    /// </remarks>
    public static class BinaryStorageKey
    {
-      /// <summary>Panjang maksimum sebuah kunci, dihitung dalam karakter.</summary>
+      /// <summary>Maximum length of a key, counted in characters.</summary>
       public const int MaxLength = 1024;
 
-      /// <summary>Panjang maksimum satu bagian kunci.</summary>
+      /// <summary>Maximum length of one key part.</summary>
       public const int MaxSegmentLength = 255;
 
-      /// <summary>Pemisah antar bagian kunci.</summary>
+      /// <summary>Separator between key parts.</summary>
       public const char Separator = '/';
 
       /// <summary>
-      /// Membakukan sebuah kunci: garis miring ganda dirapatkan, garis miring di awal dan akhir
-      /// dibuang, lalu hasilnya diperiksa terhadap aturan bentuk kunci.
+      /// Normalizes a key: double slashes are collapsed, leading and trailing slashes are removed, then the
+      /// result is checked against the key shape rules.
       /// </summary>
-      /// <param name="key">Kunci yang dibakukan.</param>
-      /// <returns>Kunci dalam bentuk bakunya.</returns>
+      /// <param name="key">The key being normalized.</param>
+      /// <returns>The key in its canonical form.</returns>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau kuncinya kosong, terlalu panjang, memuat bagian yang tidak sah, atau memuat
-      /// karakter yang tidak diizinkan. Pesannya menyebut bagian mana yang menolaknya.
+      /// Thrown when the key is empty, too long, contains an invalid part, or contains a disallowed
+      /// character. Its message names which part refused it.
       /// </exception>
       public static string Normalize(string key) {
          if (string.IsNullOrWhiteSpace(key)) {
@@ -65,12 +64,12 @@ namespace Em.Api.Core.Storage
       }
 
       /// <summary>
-      /// Menyusun kunci dari beberapa bagian, lalu membakukannya. Bagian yang kosong dilewati, jadi
-      /// pemanggil tidak perlu mengurus garis miring di sambungannya.
+      /// Composes a key from several parts, then normalizes it. Empty parts are skipped, so callers do not
+      /// need to deal with the slashes at the joints.
       /// </summary>
-      /// <param name="parts">Bagian-bagian kuncinya, berurutan.</param>
-      /// <returns>Kunci dalam bentuk bakunya.</returns>
-      /// <exception cref="ArgumentException">Dilempar dengan alasan yang sama seperti <see cref="Normalize"/>.</exception>
+      /// <param name="parts">The parts of the key, in order.</param>
+      /// <returns>The key in its canonical form.</returns>
+      /// <exception cref="ArgumentException">Thrown for the same reasons as <see cref="Normalize"/>.</exception>
       public static string Combine(params string?[] parts) {
          ArgumentNullException.ThrowIfNull(parts);
          var builder = new StringBuilder();
@@ -84,8 +83,8 @@ namespace Em.Api.Core.Storage
          return Normalize(builder.ToString());
       }
 
-      /// <summary>Apakah sebuah kunci sah menurut aturan bentuk kunci.</summary>
-      /// <param name="key">Kunci yang diperiksa.</param>
+      /// <summary>Whether a key is valid according to the key shape rules.</summary>
+      /// <param name="key">The key being checked.</param>
       public static bool IsValid(string? key) {
          if (key is null) return false;
 

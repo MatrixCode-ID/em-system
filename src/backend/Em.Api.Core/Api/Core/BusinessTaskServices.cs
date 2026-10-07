@@ -23,10 +23,12 @@ namespace Em.Api.Core
 
       #region Meta's
 
+      /// <inheritdoc />
       [GetAction(claim: IBusinessTaskServices.ManagerClaim)]
       public Task<BusinessTaskInfo[]> GetMeta_BusinessTasks() =>
          Task.FromResult(Runner.List(Request));
 
+      /// <inheritdoc />
       [GetAction]
       public Task<BusinessTaskInfo[]> GetMeta_UserBusinessTasks() {
          var userId = Request.RequireUserId();
@@ -34,6 +36,7 @@ namespace Em.Api.Core
             r => r.Scope == BusinessTaskScope.Personal && r.OwnerUserId == userId));
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<BusinessTaskInfo?> GetMeta_BusinessTask(string id) {
          Request.RequireUserId();
@@ -47,6 +50,7 @@ namespace Em.Api.Core
          return Task.FromResult<BusinessTaskInfo?>(info);
       }
 
+      /// <inheritdoc />
       [PostAction]
       public Task PostMeta_BusinessTaskCancel(string id) {
          Request.RequireSelfOrAdmin(Runner.RequireOwner(id));
@@ -54,6 +58,7 @@ namespace Em.Api.Core
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       [PostAction]
       public Task PostMeta_BusinessTaskClear(string id) {
          Request.RequireSelfOrAdmin(Runner.RequireOwner(id));
@@ -61,6 +66,7 @@ namespace Em.Api.Core
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       [GetAction]
       public async Task<string> GetMeta_BusinessTaskJsonResult(string id) {
          Request.RequireSelfOrAdmin(Runner.RequireOwner(id));
@@ -68,6 +74,7 @@ namespace Em.Api.Core
          return await File.ReadAllTextAsync(path, AbortToken);
       }
 
+      /// <inheritdoc />
       [GetAction]
       public Task<Stream> GetMeta_BusinessTaskFileResult(string id) {
          Request.RequireSelfOrAdmin(Runner.RequireOwner(id));
@@ -80,10 +87,12 @@ namespace Em.Api.Core
          return Task.FromResult(stream);
       }
 
+      /// <inheritdoc />
       [GetAction(claim: IBusinessTaskServices.ManagerClaim)]
       public Task<BusinessTaskLimit> GetMeta_BusinessTaskLimit() =>
          Task.FromResult(Runner.Limit);
 
+      /// <inheritdoc />
       [PostAction]
       public async Task PostMeta_BusinessTaskLimit(BusinessTaskLimit limit) {
          Request.RequireAdmin();

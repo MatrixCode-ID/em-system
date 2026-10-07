@@ -4,19 +4,19 @@ using Em.Api.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Pemeriksaan sekali jalan atas alur-alur approval yang baru saja didaftarkan, supaya kesalahan
-   /// konfigurasi yang baru akan terasa saat sebuah keputusan diambil justru menggagalkan aplikasi sejak
-   /// dinyalakan.
+   /// One-time checks of the approval flows that have just been registered, so a configuration mistake
+   /// that would only be felt when a decision is taken instead fails the application from the moment it
+   /// is started.
    /// </summary>
    internal static class ApprovalStartupChecks
    {
       /// <summary>
-      /// Memastikan setiap database modul pemakai approval bisa ikut dalam satu transaksi dengan database
-      /// inti: SQL Server, satu server, satu login.
+      /// Makes sure every module database that uses approval can take part in one transaction with the core
+      /// database: SQL Server, one server, one login.
       /// </summary>
-      /// <param name="flows">Seluruh alur yang didaftarkan.</param>
-      /// <param name="builder">Builder aplikasi, sumber registrasi koneksi dan context.</param>
-      /// <exception cref="InvalidOperationException">Dilempar kalau ada context modul yang tidak bisa ikut serta.</exception>
+      /// <param name="flows">All the flows that were registered.</param>
+      /// <param name="builder">The application builder, the source of connection and context registrations.</param>
+      /// <exception cref="InvalidOperationException">Thrown when a module context cannot take part.</exception>
       public static void VerifyDatabases(IEnumerable<ApprovalFlowDeclaration> flows, EmAppBuilder builder) {
          foreach (var flow in flows) {
             foreach (var type in flow.ModuleDbContextTypes) {

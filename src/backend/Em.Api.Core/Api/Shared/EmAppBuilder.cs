@@ -14,8 +14,8 @@ namespace Em.Api.Shared
 {
    public partial class EmAppBuilder
    {
-      // DI container belum dibangun saat AddService dipanggil, jadi dipakai logger bootstrap
-      // yang berdiri sendiri (bukan dari ServiceProvider) khusus untuk log proses registrasi.
+      // The DI container is not built yet when AddService is called, so a standalone bootstrap logger
+      // (not from the ServiceProvider) is used just for the registration process logs.
       private static readonly ILoggerFactory BootstrapLoggerFactory = LoggerFactory.Create(b => b.AddConsole());
       private static readonly ILogger Logger = BootstrapLoggerFactory.CreateLogger<EmAppBuilder>();
 
@@ -52,24 +52,24 @@ namespace Em.Api.Shared
       internal List<DebugTokenKey> DebugTokenKeys { get; } = [];
       internal List<ClaimAction> ClaimActions { get; } = [];
 
+      /// <summary>Registers a module service and its actions. The service must carry <c>[Module]</c> and expose at least one action.</summary>
       public void AddService<T1, T2>() where T1 : class, IServices where T2 : ServicesBase, T1 =>
          AddService<T1, T2>(enforceClaims: true);
 
       /// <summary>
-      /// Overload internal untuk service milik engine sendiri, satu-satunya yang boleh berdiri di luar
-      /// pemeriksaan claim per action. Sengaja tidak <c>public</c>: kalau module author bisa memanggilnya,
-      /// "lupa memberi claim" dan "sengaja tanpa claim" jadi tidak bisa dibedakan lagi dari luar.
+      /// Internal overload for the engine's own services, the only ones allowed to stand outside the
+      /// per-action claim check. Deliberately not <c>public</c>: if module authors could call it, "forgot to
+      /// give a claim" and "deliberately without a claim" could no longer be told apart from outside.
       /// </summary>
       /// <param name="enforceClaims">
-      /// <c>false</c> hanya untuk service yang didaftarkan <c>UseEm</c> sendiri sebelum callback module
-      /// manapun berjalan. Ada empat. Tiga di antaranya - inti, kontak, kredensial - bukan module: aksi
-      /// sensitifnya sudah dijaga pemeriksaan yang lebih tepat dari "claim apa pun di module ini" - hak
-      /// atas diri sendiri atau hak administrator - dan memaksakan default itu ke sini berarti setiap
-      /// pengguna butuh diberi claim hanya supaya bisa masuk dan memuat identitasnya sendiri, yang bukan
-      /// otorisasi melainkan syarat login kedua tanpa arti. Yang keempat, pengelola CDN, menyebut claim-nya
-      /// sendiri di setiap action, jadi default "claim apa pun" tidak menambah apa-apa di atasnya.
-      /// Parameter <c>claim</c> pada <c>[GetAction]</c>/<c>[PostAction]</c> tetap berlaku di sini - yang
-      /// dilepas hanya defaultnya.
+      /// <c>false</c> only for services that <c>UseEm</c> itself registers before any module callback runs.
+      /// There are four. Three of them - core, contact, credential - are not modules: their sensitive actions
+      /// are already guarded by checks more precise than "any claim in this module" - the right over oneself
+      /// or the administrator's right - and forcing that default here would mean every user must be given a
+      /// claim just to sign in and load their own identity, which is not authorization but a meaningless
+      /// second login requirement. The fourth, the CDN manager, names its claim in every action, so the
+      /// "any claim" default adds nothing on top of it. The <c>claim</c> parameter of
+      /// <c>[GetAction]</c>/<c>[PostAction]</c> still applies here - only the default is lifted.
       /// </param>
       internal void AddService<T1, T2>(bool enforceClaims) where T1 : class, IServices where T2 : ServicesBase, T1 {
          var moduleName = ModuleAttribute.ResolveName(typeof(T2));
@@ -89,6 +89,7 @@ namespace Em.Api.Shared
             typeof(T1).Name, typeof(T2).Name, moduleName);
       }
 
+      /// <summary>Sets the main database connection.</summary>
       public void SetDbProvider(string connectionString, DatabaseProvider? provider = null) {
          DbConnections[DefaultConnectionName] =
             new DbConnectionInfo(DefaultConnectionName, connectionString, provider ?? DatabaseProvider.MicrosoftSqlServer);
@@ -133,33 +134,32 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Password pertama untuk akun <c>admin</c>, dipakai hanya saat database masih kosong: nilainya
-      /// disemai sebagai password bawaan pada startup pertama dan sesudah itu yang berlaku selalu apa
-      /// yang tersimpan di database, bukan lagi nilai ini.
+      /// First password for the <c>admin</c> account, used only while the database is still empty: the value
+      /// is seeded as the default password on first startup, and after that whatever is stored in the
+      /// database applies, not this value anymore.
       /// </summary>
       public string FirstTimeAdminPassword { get; set; } = "Admin1234";
 
       /// <summary>
-      /// Berapa lama - dalam jam - baris sesi yang sudah mati masih disimpan sebelum dibuang. Sesi
-      /// disimpan di database justru supaya ada jejaknya, jadi barisnya sengaja tidak dihapus tepat
-      /// saat kedaluwarsa; angka ini yang menentukan seberapa panjang jejak itu.
+      /// How long - in hours - a dead session row is kept before being discarded. Sessions are kept in the
+      /// database precisely so there is a trace, so the row is deliberately not deleted right at expiry; this
+      /// number decides how long that trace is.
       /// </summary>
       public int SessionTokenRetentionHour { get; set; } = 24 * 30;
 
       /// <summary>
-      /// Berapa lama sebuah action <c>GET</c> boleh bekerja sebelum engine menghentikannya sendiri.
-      /// Ini jaring pengaman untuk action yang kebablasan - bukan janji lama tanggap kepada
-      /// pemanggil: request yang selesai lebih cepat tidak pernah menunggu sampai angka ini.
+      /// How long a <c>GET</c> action may work before the engine stops it by itself. This is a safety net
+      /// for actions that run away - not a promise of response time to the caller: a request that finishes
+      /// sooner never waits for this number.
       /// </summary>
       /// <remarks>
-      /// Hanya berlaku untuk <c>GET</c>. Action <c>POST</c> tidak pernah diputus engine, karena
-      /// memutus sebuah penulisan di tengah jalan tidak menghasilkan "tidak jadi" melainkan "entah" -
-      /// pemanggilnya tidak punya cara tahu sejauh mana tulisannya sudah sampai. Satu action
-      /// <c>GET</c> boleh menyebutkan angkanya sendiri lewat
-      /// <c>[GetAction(requestTimeoutSecond: ...)]</c>, dan angka itu menggantikan yang di sini.
+      /// Applies to <c>GET</c> only. <c>POST</c> actions are never cut off by the engine, because cutting a
+      /// write off midway does not produce "not done" but "unknown" - the caller has no way to tell how far
+      /// the write got. A single <c>GET</c> action may state its own number through
+      /// <c>[GetAction(requestTimeoutSecond: ...)]</c>, and that number replaces the one here.
       /// <para>
-      /// <c>TimeSpan.Zero</c> atau nilai negatif mematikannya sama sekali: tidak ada action yang
-      /// dibatasi waktu, dan yang tersisa hanya pemutusan saat pemanggilnya benar-benar pergi.
+      /// <c>TimeSpan.Zero</c> or a negative value turns it off entirely: no action is time-limited, and the
+      /// only thing left is cutting off when the caller actually leaves.
       /// </para>
       /// </remarks>
       public TimeSpan HttpRequestTimeout { get; set; } = TimeSpan.FromSeconds(30);
@@ -167,27 +167,27 @@ namespace Em.Api.Shared
       #region Business Task
 
       /// <summary>
-      /// Folder tempat server menyimpan hasil business task yang berupa data atau file, satu subfolder per
-      /// task. Path absolut dipakai apa adanya; path relatif dihitung dari folder konten aplikasi, sama
-      /// seperti folder CDN. Foldernya dibuat sendiri saat startup.
+      /// Folder where the server stores business task results that are data or files, one subfolder per
+      /// task. An absolute path is used as-is; a relative path is resolved from the application content
+      /// folder, like the CDN folder. The folder is created automatically at startup.
       /// </summary>
       /// <remarks>
-      /// Hanya hasil yang sukses yang bertahan melewati restart server; sisa task yang gagal atau terputus
-      /// dibersihkan saat startup. Jangan arahkan ke folder yang juga dipakai untuk hal lain.
+      /// Only successful results survive a server restart; leftovers of failed or interrupted tasks are
+      /// cleaned up at startup. Do not point it at a folder that is also used for anything else.
       /// </remarks>
       public string BusinessTaskCachePath { get; set; } = "./data/tasks";
 
       /// <summary>
-      /// Berapa lama business task yang sukses tanpa hasil, atau yang dibatalkan, masih tampil sebelum
-      /// hilang sendiri. Task yang gagal, dan task yang hasilnya masih bisa diambil, tidak terpengaruh:
-      /// keduanya tampil sampai dibersihkan.
+      /// How long a business task that succeeded without a result, or was cancelled, stays visible before it
+      /// disappears on its own. Tasks that failed, and tasks whose result can still be fetched, are not
+      /// affected: both stay visible until cleaned up.
       /// </summary>
       public TimeSpan BusinessTaskGracePeriod { get; set; } = TimeSpan.FromMinutes(5);
 
       /// <summary>
-      /// Batas jumlah business task yang boleh berjalan bersamaan, dipakai selama batas itu belum pernah
-      /// diatur lewat layar Business Task Manager. Sesudah diatur di sana, yang berlaku adalah yang
-      /// tersimpan di metadata server, bukan nilai ini.
+      /// Limit on the number of business tasks that may run at the same time, used as long as the limit has
+      /// never been set through the Business Task Manager screen. Once it is set there, what applies is what
+      /// is stored in the server metadata, not this value.
       /// </summary>
       public BusinessTaskLimit BusinessTaskDefaultLimit { get; set; } = new() {
          Mode = BusinessTaskLimitMode.Global,
@@ -197,37 +197,35 @@ namespace Em.Api.Shared
       #endregion
 
       /// <summary>
-      /// Bawaan untuk <see cref="ActionRateLimit"/>: 300 request per menit, atau rata-rata lima per
-      /// detik. Angkanya dipilih supaya pemakaian wajar tidak pernah menyentuhnya - satu layar yang
-      /// membuka daftar berikut semua lookup-nya menghabiskan puluhan request dalam sekejap, bukan
-      /// ratusan - sementara yang mengetuk-ngetuk dari luar tetap tertahan.
+      /// Default for <see cref="ActionRateLimit"/>: 300 requests per minute, or an average of five per
+      /// second. The number is chosen so normal use never touches it - a screen that opens a list together
+      /// with all its lookups spends tens of requests in an instant, not hundreds - while anyone knocking
+      /// from outside is still held back.
       /// </summary>
       public const int DefaultActionRateLimit = 300;
 
       private int _actionRateLimit = DefaultActionRateLimit;
 
       /// <summary>
-      /// Berapa banyak request yang boleh datang dari satu alamat pemanggil dalam satu menit;
-      /// <c>-1</c> berarti tanpa batas. Yang melebihi dijawab <c>429</c> tanpa action-nya sempat
-      /// berjalan - bahkan sebelum identitasnya diperiksa, supaya banjir request tidak ikut
-      /// membebani database.
+      /// How many requests may come from one caller address in one minute; <c>-1</c> means no limit.
+      /// Anything above that is answered <c>429</c> without its action getting to run - even before the
+      /// identity is checked, so a flood of requests does not burden the database.
       /// </summary>
       /// <remarks>
-      /// Yang dibatasi adalah alamat, bukan pengguna: di titik ini engine memang belum tahu siapa
-      /// pemanggilnya, dan justru request tanpa identitas - percobaan password beruntun, pemindai
-      /// yang menyapu route - yang paling perlu ditahan. Konsekuensinya sekantor di belakang satu
-      /// NAT berbagi satu jatah, jadi angkanya perlu dinaikkan kalau banyak client berbagi alamat.
+      /// What is limited is the address, not the user: at this point the engine does not yet know who the
+      /// caller is, and it is precisely requests without identity - successive password attempts, scanners
+      /// sweeping routes - that most need to be held back. The consequence is that a whole office behind a
+      /// single NAT shares one quota, so the number needs to be raised when many clients share an address.
       /// <para>
-      /// Jatahnya dihitung dengan jendela bergeser, bukan jendela yang di-reset serentak tiap menit:
-      /// tanpa itu sebuah pemanggil bisa menghabiskan jatah penuh di detik terakhir sebuah jendela
-      /// dan jatah penuh berikutnya di detik pertama jendela selanjutnya - dua kali lipat batas ini
-      /// dalam sekejap, persis di tempat yang seharusnya dijaga.
+      /// The quota is counted with a sliding window, not a window reset all at once every minute: without
+      /// that, a caller could use the full quota in the last second of a window and the next full quota in
+      /// the first second of the following window - twice this limit in an instant, exactly where it should
+      /// be guarded.
       /// </para>
       /// </remarks>
       /// <exception cref="ArgumentOutOfRangeException">
-      /// Dilempar kalau nilainya <c>0</c> - yang berarti tidak satu pun request boleh masuk, dan itu
-      /// tidak pernah yang dimaksud; tulis <c>-1</c> kalau memang hendak dimatikan - atau di bawah
-      /// <c>-1</c>.
+      /// Thrown when the value is <c>0</c> - which would mean no request may enter, and that is never what
+      /// is meant; write <c>-1</c> if the intent is to turn it off - or below <c>-1</c>.
       /// </exception>
       public int ActionRateLimit {
          get => _actionRateLimit;
@@ -242,13 +240,13 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Mendaftarkan satu claim ke katalog. Katalog tinggal di kode - tidak ada tabel module dan
-      /// tidak ada tabel daftar claim - jadi module dipasang, claim-nya ada; module dilepas,
-      /// claim-nya hilang sendiri.
+      /// Registers one claim in the catalog. The catalog lives in code - there is no module table and no
+      /// claim list table - so when a module is installed, its claims exist; when the module is removed, its
+      /// claims disappear by themselves.
       /// </summary>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau <see cref="ClaimAction.Key"/>-nya sudah terdaftar sebelumnya (dibandingkan
-      /// case-insensitive, mengikuti collation kolom <c>cUserClaimName</c>).
+      /// Thrown when the <see cref="ClaimAction.Key"/> is already registered (compared case-insensitively,
+      /// following the collation of the <c>cUserClaimName</c> column).
       /// </exception>
       public void AddClaims(ClaimAction claim) {
          if (ClaimActions.Any(r => string.Equals(r.Key, claim.Key, StringComparison.OrdinalIgnoreCase))) {
@@ -278,19 +276,19 @@ namespace Em.Api.Shared
       private int _proxyHopLimit = 1;
 
       /// <summary>
-      /// Berapa banyak proxy berurutan yang boleh dipercaya saat membaca alamat asal request;
-      /// <c>-1</c> berarti tanpa batas. Bawaannya <c>1</c>, yang cocok untuk susunan lazim "satu
-      /// reverse proxy di depan server".
+      /// How many consecutive proxies may be trusted when reading the origin address of a request;
+      /// <c>-1</c> means no limit. The default is <c>1</c>, which suits the usual "one reverse proxy in front
+      /// of the server" setup.
       /// <para>
-      /// Angkanya baru perlu dinaikkan kalau request memang melewati beberapa lapis - misalnya CDN
-      /// di depan load balancer di depan nginx - dan harus sama dengan jumlah lapisan itu. Dinaikkan
-      /// melebihi jumlah sebenarnya, satu lapis yang tidak ada jadi ikut dipercaya, dan alamat yang
-      /// tercatat bisa dikarang pemanggilnya.
+      /// The number only needs raising when requests really pass through several layers - for example a CDN
+      /// in front of a load balancer in front of nginx - and it must equal the number of those layers. Raised
+      /// beyond the real count, a layer that does not exist is trusted too, and the recorded address can be
+      /// made up by the caller.
       /// </para>
       /// </summary>
       /// <exception cref="ArgumentOutOfRangeException">
-      /// Dilempar kalau nilainya <c>0</c> - yang berarti tidak ada header yang dibaca sama sekali,
-      /// dan itu lebih jelas ditulis dengan tidak mendaftarkan proxy apa pun - atau di bawah <c>-1</c>.
+      /// Thrown when the value is <c>0</c> - which would mean no header is read at all, and that is clearer
+      /// written by not registering any proxy - or below <c>-1</c>.
       /// </exception>
       public int ProxyHopLimit {
          get => _proxyHopLimit;
@@ -305,24 +303,23 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Mendaftarkan proxy atau load balancer yang boleh dipercaya saat menyebutkan alamat client
-      /// yang sebenarnya. Tanpa pendaftaran ini, request yang datang lewat proxy tercatat beralamat
-      /// proxy-nya - bukan alamat pemakainya - karena secara jaringan memang proxy itulah yang
-      /// menghubungi server.
+      /// Registers a proxy or load balancer that may be trusted when it states the real client address.
+      /// Without this registration, a request arriving through a proxy is recorded with the proxy's address -
+      /// not the user's - because on the network it really is the proxy that contacts the server.
       /// <para>
-      /// Proxy yang berjalan di mesin yang sama (<c>127.0.0.0/8</c> dan <c>::1</c>) sudah dipercaya
-      /// sejak bawaan, jadi susunan "nginx satu mesin dengan API" tidak perlu mendaftarkan apa-apa.
+      /// Proxies running on the same machine (<c>127.0.0.0/8</c> and <c>::1</c>) are trusted by default, so
+      /// a "nginx on the same machine as the API" setup does not need to register anything.
       /// </para>
       /// </summary>
       /// <param name="addresses">
-      /// Alamat IP satu per satu (<c>"10.0.0.100"</c>) atau seluruh jaringan dalam notasi CIDR
-      /// (<c>"10.0.0.0/8"</c>). Pakai CIDR kalau alamat proxy-nya bisa berubah-ubah, seperti pada
-      /// load balancer di lingkungan awan.
+      /// IP addresses one by one (<c>"10.0.0.100"</c>) or whole networks in CIDR notation
+      /// (<c>"10.0.0.0/8"</c>). Use CIDR when the proxy address may change, as with load balancers in a
+      /// cloud environment.
       /// </param>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau ada nilai yang kosong atau bukan alamat IP maupun CIDR yang bisa dibaca.
-      /// Diperiksa di sini, saat pendaftaran, supaya salah ketik ketahuan waktu server start - bukan
-      /// waktu request pertama datang dan alamatnya diam-diam salah.
+      /// Thrown when a value is empty or is neither a readable IP address nor CIDR. Checked here, at
+      /// registration, so a typo is found when the server starts - not when the first request arrives and
+      /// the address is silently wrong.
       /// </exception>
       public void TrustProxy(params string[] addresses) {
          foreach (var address in addresses) {
@@ -355,15 +352,14 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Mempercayai alamat client yang disebutkan header <c>X-Forwarded-For</c> dari mana pun
-      /// request itu datang, tanpa memeriksa siapa yang meneruskannya.
+      /// Trusts the client address stated by the <c>X-Forwarded-For</c> header from wherever the request
+      /// came, without checking who forwarded it.
       /// <para>
-      /// Ini membuka penyamaran alamat: header tersebut datang dari pemanggil, jadi begitu tidak ada
-      /// yang memeriksanya, siapa pun bisa mengaku beralamat apa saja hanya dengan menempelkan satu
-      /// baris header - dan alamat itulah yang masuk ke log. Pantas dipakai hanya kalau API-nya
-      /// benar-benar tidak bisa dihubungi selain lewat proxy, misalnya di dalam jaringan container
-      /// tertutup yang alamat proxy-nya berganti-ganti sehingga tidak bisa didaftarkan. Selama
-      /// alamat proxy-nya diketahui, <see cref="TrustProxy"/> selalu pilihan yang lebih benar.
+      /// This opens address spoofing: the header comes from the caller, so once nobody checks it, anyone can
+      /// claim any address just by attaching one header line - and that address is what ends up in the log.
+      /// It is appropriate only when the API truly cannot be reached except through a proxy, for example
+      /// inside a closed container network whose proxy address keeps changing so it cannot be registered.
+      /// As long as the proxy address is known, <see cref="TrustProxy"/> is always the better choice.
       /// </para>
       /// </summary>
       public void TrustAnyProxy() {
@@ -378,16 +374,16 @@ namespace Em.Api.Shared
       #region CDN
 
       /// <summary>
-      /// Batas ukuran bawaan - dalam megabyte - untuk satu file yang diunggah ke CDN, dipakai
-      /// <see cref="EnableCdn(string)"/> yang tidak menyebutkan angkanya sendiri.
+      /// Default size limit - in megabytes - for a single file uploaded to the CDN, used by
+      /// <see cref="EnableCdn(string)"/> when it does not state its own number.
       /// </summary>
       public const int DefaultCdnMaxFileSizeMb = 20;
 
-      // null = CDN mati. Disimpan mentah seperti yang ditulis di Program.cs; resolusinya ke path
-      // absolut menunggu BuildApp, karena ContentRootPath baru diketahui di sana.
+      // null = CDN off. Stored raw as written in Program.cs; resolving it to an absolute path waits for
+      // BuildApp, because ContentRootPath is only known there.
       internal string? CdnRootPath { get; private set; }
 
-      // Dalam byte, hasil maxFileSizeMb * 1024 * 1024.
+      // In bytes, the result of maxFileSizeMb * 1024 * 1024.
       internal long CdnMaxFileSize { get; private set; }
 
       /// <inheritdoc cref="EnableCdn(string,int)" />
@@ -395,30 +391,32 @@ namespace Em.Api.Shared
          EnableCdn(rootPath, DefaultCdnMaxFileSizeMb);
 
       /// <summary>
-      /// Menyalakan CDN: isi folder <paramref name="rootPath"/> disajikan apa adanya di alamat
-      /// <c>/cdn/...</c> kepada siapa pun, tanpa login - lengkap dengan daftar isi folder saat dibuka
-      /// dari browser dan dukungan unduhan bersegmen/lanjutan (HTTP Range) untuk download manager.
-      /// Tanpa panggilan ini, setiap alamat di bawah <c>/cdn</c> dijawab 404.
+      /// Turns on the CDN: the content of the <paramref name="rootPath"/> folder is served as-is at the
+      /// <c>/cdn/...</c> address to anyone, without login - complete with folder listings when opened from a
+      /// browser and segmented/resumable download support (HTTP Range) for download managers. Without this
+      /// call, every address under <c>/cdn</c> is answered 404.
       /// <para>
-      /// Menambah dan menghapus isinya tidak lewat alamat publik itu, melainkan lewat layar CDN
-      /// Manager di aplikasi, yang hanya terbuka bagi pengguna yang diberi hak mengelola CDN.
+      /// Adding and removing its content does not go through that public address, but through the CDN
+      /// Manager screen in the application, which is open only to users who are granted the right to manage
+      /// the CDN.
       /// </para>
       /// </summary>
       /// <param name="rootPath">
-      /// Folder yang disajikan. Path absolut dipakai apa adanya; path relatif (termasuk <c>./...</c>)
-      /// dihitung dari folder konten aplikasi. Foldernya dibuat sendiri saat startup kalau belum ada.
+      /// The folder to serve. An absolute path is used as-is; a relative path (including <c>./...</c>) is
+      /// resolved from the application content folder. The folder is created automatically at startup if it
+      /// does not exist.
       /// </param>
       /// <param name="maxFileSizeMb">
-      /// Batas ukuran satu file yang boleh diunggah lewat CDN Manager, dalam megabyte
-      /// (1 MB = 1024 × 1024 byte). File yang sudah ada di folder tetap disajikan berapa pun ukurannya;
-      /// yang dibatasi hanya unggahan.
+      /// Size limit of a single file that may be uploaded through the CDN Manager, in megabytes
+      /// (1 MB = 1024 × 1024 bytes). Files already in the folder are still served whatever their size; only
+      /// uploads are limited.
       /// </param>
-      /// <exception cref="ArgumentException">Dilempar kalau <paramref name="rootPath"/> kosong.</exception>
+      /// <exception cref="ArgumentException">Thrown when <paramref name="rootPath"/> is empty.</exception>
       /// <exception cref="ArgumentOutOfRangeException">
-      /// Dilempar kalau <paramref name="maxFileSizeMb"/> <c>0</c> atau negatif.
+      /// Thrown when <paramref name="maxFileSizeMb"/> is <c>0</c> or negative.
       /// </exception>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau CDN sudah dinyalakan sebelumnya - satu aplikasi hanya punya satu folder CDN.
+      /// Thrown when the CDN was already enabled - one application has only one CDN folder.
       /// </exception>
       public void EnableCdn(string rootPath, int maxFileSizeMb) {
          if (StorageSettingsHostId is not null) throw new InvalidOperationException("Static CDN cannot be combined with managed storage settings.");
@@ -444,12 +442,12 @@ namespace Em.Api.Shared
       #endregion
 
       /// <summary>
-      /// Masa berlaku bawaan - dalam hari - untuk token debug yang didaftarkan tanpa menyebut angkanya.
+      /// Default validity period - in days - for a debug token registered without stating its own number.
       /// </summary>
       public const int DefaultDebugTokenDays = 60;
 
-      // Di bawah ini RSA sudah terlalu lemah untuk dipercaya sebagai bukti identitas, dan menolaknya di
-      // sini jauh lebih baik daripada menemukannya saat request pertama.
+      // Below this, RSA is too weak to be trusted as proof of identity, and refusing it here is far better
+      // than discovering it on the first request.
       private const int MinimumDebugKeySizeBits = 2048;
 
       /// <inheritdoc cref="AddDebugToken(string,string,int)" />
@@ -457,29 +455,29 @@ namespace Em.Api.Shared
          AddDebugToken(name, publicKey, DefaultDebugTokenDays);
 
       /// <summary>
-      /// Mendaftarkan satu public key milik pengembang, sehingga request yang membawa token debug bertanda
-      /// tangan key tersebut diterima tanpa password maupun access token. Satu pengembang satu key, supaya
-      /// aksesnya bisa dicabut satu-satu: hapus barisnya lalu deploy ulang.
+      /// Registers one developer public key, so requests carrying a debug token signed by that key are
+      /// accepted without a password or access token. One key per developer, so access can be revoked one by
+      /// one: delete its line and redeploy.
       /// <para>
-      /// Yang ditulis di sini hanya public key, jadi aman ikut tersimpan di source. Private key-nya tidak
-      /// pernah sampai ke server - ia tinggal di mesin pengembang dan hanya dipakai menandatangani token.
+      /// Only the public key is written here, so it is safe to keep in source. The private key never reaches
+      /// the server - it stays on the developer's machine and is only used to sign tokens.
       /// </para>
       /// </summary>
       /// <param name="name">
-      /// Nama key, bebas tapi harus unik dan sama persis dengan nama yang dipakai sisi pengembang saat
-      /// menandatangani. Nama ini pula yang muncul di log setiap kali token-nya dipakai.
+      /// Name of the key, free but must be unique and exactly the same as the name the developer side uses
+      /// when signing. This name is also what appears in the log every time its token is used.
       /// </param>
-      /// <param name="publicKey">Public key RSA minimal 2048 bit, berupa Base64 dari DER PKCS#1 (<c>RSA.ExportRSAPublicKey</c>).</param>
+      /// <param name="publicKey">RSA public key of at least 2048 bits, as Base64 of the DER PKCS#1 (<c>RSA.ExportRSAPublicKey</c>).</param>
       /// <param name="days">
-      /// Berapa lama sebuah token masih diterima terhitung sejak diterbitkan; <c>-1</c> berarti tanpa batas.
-      /// Angka ini tidak membatasi pengembangnya - ia selalu bisa menerbitkan token baru - yang dibatasi
-      /// adalah token yang bocor: string yang tertinggal di history Postman, di log, atau di catatan yang
-      /// terkirim ke orang lain, mati sendiri setelah lewat batas ini.
+      /// How long a token is still accepted counted from when it was issued; <c>-1</c> means no limit. This
+      /// number does not restrict the developer - they can always issue a new token - what it restricts is a
+      /// leaked token: a string left behind in Postman history, in a log, or in notes sent to someone else,
+      /// dies by itself after this limit.
       /// </param>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau nama atau public key-nya kosong, namanya sudah dipakai, key-nya bukan public key RSA
-      /// yang bisa dibaca, ukurannya di bawah 2048 bit, nilainya sama dengan key yang sudah terdaftar, atau
-      /// <paramref name="days"/> di luar nilai yang diizinkan.
+      /// Thrown when the name or public key is empty, the name is already used, the key is not a readable
+      /// RSA public key, its size is below 2048 bits, its value equals an already registered key, or
+      /// <paramref name="days"/> is outside the allowed values.
       /// </exception>
       public void AddDebugToken(string name, string publicKey, int days) {
          if (string.IsNullOrWhiteSpace(name)) {
@@ -494,8 +492,8 @@ namespace Em.Api.Shared
             throw new ArgumentException($"Debug token key '{name}' is already registered.", nameof(name));
          }
 
-         // Dua nama dengan key yang sama membuat log tidak bisa dipercaya: tanda tangannya cocok untuk
-         // keduanya, jadi nama yang tercatat belum tentu nama pemakainya.
+         // Two names with the same key make the log untrustworthy: the signature matches both, so the recorded
+         // name is not necessarily the name of the user.
          if (DebugTokenKeys.FirstOrDefault(r => string.Equals(r.Key.PublicKey, publicKey, StringComparison.Ordinal))
              is { } duplicate) {
             throw new ArgumentException(
@@ -503,8 +501,8 @@ namespace Em.Api.Shared
                nameof(publicKey));
          }
 
-         // 0 mematikan key-nya diam-diam: setiap token yang diterbitkan langsung kedaluwarsa. Kalau memang
-         // ingin mati, barisnya yang dihapus - jauh lebih jelas dibaca daripada angka yang tidak kelihatan.
+         // 0 would silently turn the key off: every issued token expires immediately. If the intent is to turn
+         // it off, delete its line - much clearer to read than a number nobody sees.
          if (days == 0) {
             throw new ArgumentException(
                $"Debug token key '{name}' cannot use 'days' = 0; remove the registration instead, or pass -1 for no expiry.",
@@ -523,8 +521,8 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Membaca public key sekali di sini, saat pendaftaran, supaya key yang salah ketik atau rusak
-      /// ketahuan waktu server start - bukan waktu request pertama datang.
+      /// Reads the public key once here, at registration, so a mistyped or corrupt key is found when the
+      /// server starts - not when the first request arrives.
       /// </summary>
       private static RsaKeyPair ImportDebugPublicKey(string name, string publicKey) {
          byte[] raw;
@@ -680,9 +678,9 @@ namespace Em.Api.Shared
       }
 
       /// <summary>
-      /// Membaca penanda action dari sebuah method: HTTP method-nya beserta apakah action itu publik.
-      /// Atribut dicari langsung di method, lalu - kalau tidak ada - di method interface yang diimplementasikannya.
-      /// Mengembalikan <c>null</c> kalau method tersebut bukan action.
+      /// Reads the action markers from a method: its HTTP method and whether the action is public. The
+      /// attribute is looked up directly on the method, then - if absent - on the interface method it
+      /// implements. Returns <c>null</c> when the method is not an action.
       /// </summary>
       private static ActionMarker? GetActionMarker(Type serviceType, MethodInfo method) {
          if (ReadActionMarker(method) is { } marker) {
@@ -717,8 +715,8 @@ namespace Em.Api.Shared
          }
 
          if (method.GetCustomAttribute<PostActionAttribute>(inherit: true) is { } postAction) {
-            // Tidak ada batas waktu untuk POST: engine tidak pernah memutus action tulis, dan
-            // [PostAction] memang tidak menyediakan cara menyebutkannya.
+            // There is no time limit for POST: the engine never cuts off a write action, and [PostAction]
+            // provides no way to state one.
             return new ActionMarker(HttpMethod.Post, postAction.IsPublicAction, null, postAction.Claim);
          }
 

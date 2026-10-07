@@ -5,17 +5,16 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Menarik kembali sebuah request dokumen: yang masih menunggu keputusan dibatalkan, yang sudah
-   /// selesai seluruhnya dicabut persetujuannya.
+   /// Withdraws a document request: one still waiting for a decision is cancelled, one already completed in
+   /// full has its approval revoked.
    /// </summary>
    /// <remarks>
-   /// Dipakai dua pintu yang sama aturannya: action penarikan di layar approval, dan
-   /// <see cref="IApprovalEngine.ReinstateAsync"/> untuk action modul. Satu instance dipakai untuk satu
-   /// permintaan; ia memegang service engine yang sedang berjalan, yang jadi sumber keterangan pemanggil
-   /// untuk handler modul.
+   /// Used by two doors with the same rules: the withdrawal action on the approval screen, and
+   /// <see cref="IApprovalEngine.ReinstateAsync"/> for module actions. One instance is used per call; it
+   /// holds the running engine service, which is the source of the caller info for the module's handlers.
    /// <para>
-   /// Request yang ditarik tidak pernah dibuang. Ia ditandai, ditambah catatan siapa, kapan, dan kenapa,
-   /// dan pengajuan ulang untuk dokumen dan versi yang sama menautkan dirinya ke request ini.
+   /// A withdrawn request is never discarded. It is marked, with a note of who, when, and why, and a
+   /// resubmission for the same document and version links itself to this request.
    /// </para>
    /// </remarks>
    internal sealed class ApprovalCanceller(ApiCoreContext ctx, ApprovalRegistry registry, ServicesBase host)
@@ -25,10 +24,10 @@ namespace Em.Api.Core.Approval
       private CancellationToken Token => host.AbortToken;
 
       /// <summary>
-      /// Menarik kembali satu request.
+      /// Withdraws one request.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang ditarik kembali.</param>
-      /// <param name="reason">Alasan penarikan. Wajib.</param>
+      /// <param name="approvalRequestId">The request being withdrawn.</param>
+      /// <param name="reason">Reason for the withdrawal. Required.</param>
       public async Task CancelAsync(string approvalRequestId, string? reason) {
          // 1. A real, active user: the withdrawal is written down under a name.
          var me = await new ApprovalAccess(ctx).RequireRealUserAsync(host.Request, Token);

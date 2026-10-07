@@ -9,11 +9,13 @@ public partial class EmAppBuilder
 {
    internal List<(string Prefix, RequestDelegate Handler)> PublicEndpoints { get; } = [];
 
+   /// <summary>Registers a robot access manager so robots can be given rights in that module.</summary>
    public void AddRobotAccessManager<T>() where T : class, IRobotAccessManager =>
       Services.AddScoped<IRobotAccessManager, T>();
 
    /// <summary>Register module infrastructure while keeping the service collection builder-only.</summary>
    public void AddSingleton<T>(Func<IServiceProvider, T> factory) where T : class => Services.AddSingleton(factory);
+   /// <summary>Registers a hosted background service.</summary>
    public void AddHostedService<T>() where T : class, IHostedService => Services.AddHostedService<T>();
 
    /// <summary>Public protocol branch, outside action claims, timeouts and rate limits.</summary>

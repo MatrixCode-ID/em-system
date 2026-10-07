@@ -4,41 +4,41 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Alur persetujuan satu jenis dokumen, seperti yang dideklarasikan modul pemiliknya: langkah apa
-   /// saja, siapa yang boleh memutuskan, dan apa yang terjadi di sepanjang alurnya.
+   /// Approval flow of one document type, as declared by its owning module: which steps there are, who may
+   /// decide, and what happens along the way.
    /// </summary>
    /// <remarks>
-   /// Deklarasi dibuat sekali saat aplikasi dibangun, lalu tidak berubah selama aplikasi hidup. Engine
-   /// membacanya untuk hal-hal yang sama bagi semua jenis dokumen; bagian yang hanya dipahami modul -
-   /// memuat dokumennya, menentukan penanda tangan, menerapkan perubahan - tinggal sebagai delegate di
-   /// turunan bertipe deklarasi ini.
+   /// The declaration is created once when the application is built and never changes while it runs. The
+   /// engine reads it for the things that are the same for every document type; the parts only the module
+   /// understands - loading the document, determining signers, applying changes - stay as delegates in the
+   /// typed derivatives of this declaration.
    /// </remarks>
    public abstract class ApprovalFlowDeclaration
    {
-      /// <summary>Jenis dokumen yang alurnya dideklarasikan di sini.</summary>
+      /// <summary>The document type whose flow is declared here.</summary>
       public required string DocType { get; init; }
 
-      /// <summary>Nama modul pemilik dokumennya, sekaligus modul pemilik claim-claim alurnya.</summary>
+      /// <summary>Name of the module that owns the document, which also owns the flow's claims.</summary>
       public required string ModuleName { get; init; }
 
       /// <summary>
-      /// Claim yang memberi hak melihat request jenis dokumen ini tanpa ikut memutuskannya - untuk
-      /// pembaca yang perlu memantau tanpa menandatangani.
+      /// Claim that grants the right to view requests of this document type without taking part in deciding
+      /// them - for readers who need to monitor without signing.
       /// </summary>
       public required ClaimAction ViewClaim { get; init; }
 
-      /// <summary>Apakah data usulannya menumpang di request, atau sudah ada di dokumennya.</summary>
+      /// <summary>Whether the proposed data rides on the request or already exists in the document.</summary>
       public abstract ApprovalKind Kind { get; }
 
-      /// <summary>Tipe service modul pemilik dokumennya.</summary>
+      /// <summary>Type of the service of the module that owns the document.</summary>
       public abstract Type ServicesType { get; }
 
       private IReadOnlyList<Type>? _moduleDbContextTypes;
 
       /// <summary>
-      /// Context database yang diminta service modul pemilik dokumennya lewat constructor - tempat handler
-      /// modul menulis. Context-context inilah yang diikutsertakan engine ke transaksi keputusan, jadi modul
-      /// tidak perlu menyebutkannya lagi. Context inti tidak dihitung: ia sudah pasti ikut.
+      /// Database contexts that the owning module's service asks for through its constructor - where the
+      /// module's handlers write. These are the contexts the engine includes in the decision transaction, so
+      /// the module does not need to name them again. The core context is not counted: it always takes part.
       /// </summary>
       internal IReadOnlyList<Type> ModuleDbContextTypes => _moduleDbContextTypes ??=
          [.. ServicesType.GetConstructors()
@@ -48,30 +48,30 @@ namespace Em.Api.Core.Approval
             .Where(r => typeof(Microsoft.EntityFrameworkCore.DbContext).IsAssignableFrom(r) && r != typeof(ApiCoreContext))
             .Distinct() ?? []];
 
-      /// <summary>Tipe record kunci dokumennya, atau kosong kalau jenis ini tidak memakai kunci bertipe.</summary>
+      /// <summary>Type of the document key record, or empty when this type does not use a typed key.</summary>
       public virtual Type? KeyType => null;
 
       /// <summary>
-      /// Seluruh claim yang dipakai alur ini, termasuk <see cref="ViewClaim"/>. Dipakai engine saat
-      /// memeriksa siapa yang boleh melihat sebuah request.
+      /// Every claim this flow uses, including <see cref="ViewClaim"/>. Used by the engine when checking who
+      /// may view a request.
       /// </summary>
       public abstract IReadOnlyList<ClaimAction> Claims { get; }
 
       /// <summary>
-      /// <c>true</c> kalau keputusan jenis dokumen ini hanya boleh diambil setelah dokumennya dibuka,
-      /// sehingga tidak bisa disetujui berbondong-bondong dari daftar. Hanya bermakna untuk alur
-      /// dokumen; alur usulan perubahan data selalu <c>false</c>.
+      /// <c>true</c> when decisions on this document type may only be taken after the document is opened, so
+      /// they cannot be approved en masse from the list. Meaningful only for document flows; data change
+      /// proposal flows are always <c>false</c>.
       /// </summary>
       public bool RequireOpen { get; set; }
 
       /// <summary>
-      /// <c>true</c> kalau PDF-nya diberi halaman tambahan berisi tabel seluruh langkah beserta tanda
-      /// tangannya.
+      /// <c>true</c> when the PDF gets an extra page containing a table of all steps with their
+      /// signatures.
       /// </summary>
       public bool ApprovalSheet { get; set; }
 
-      /// <summary>Apakah sebuah langkah meminta isian sebelum bisa diputuskan.</summary>
-      /// <param name="stepName">Nama langkahnya.</param>
+      /// <summary>Whether a step asks for input before it can be decided.</summary>
+      /// <param name="stepName">Name of the step.</param>
       public virtual bool StepRequiresInput(string stepName) => false;
 
       // The member below is how the engine reaches the delegates of a flow without knowing the
@@ -80,9 +80,9 @@ namespace Em.Api.Core.Approval
       // hand in.
 
       /// <summary>
-      /// Menjalankan pemeriksaan blokir sebuah langkah di modul pemiliknya.
+      /// Runs a step's blocking check in the owning module.
       /// </summary>
-      /// <returns>Hasil pemeriksaannya, atau <c>null</c> kalau langkah itu tidak punya pemeriksaan.</returns>
+      /// <returns>The result of the check, or <c>null</c> when the step has no check.</returns>
       internal virtual Task<ApprovalGuard?> EvaluateGuardAsync(ApprovalRunScope scope, string stepName,
          string? signerId) => Task.FromResult<ApprovalGuard?>(null);
 
@@ -90,84 +90,84 @@ namespace Em.Api.Core.Approval
       // refuses them; the document flow overrides every one. Data flows get their own bridge when
       // their submission is written.
 
-      /// <summary>Apakah jenis dokumen ini punya PDF yang dibekukan saat pengajuan.</summary>
+      /// <summary>Whether this document type has a PDF that is frozen at submission.</summary>
       internal virtual bool HasPdf => false;
 
       /// <summary>
-      /// Menyusun rencana langkah untuk sebuah pengajuan: setiap langkah beserta apakah ia berlaku untuk
-      /// dokumen ini. Penanda tangannya belum ditentukan di sini.
+      /// Builds the step plan for a submission: every step and whether it applies to this document. The
+      /// signers are not determined here yet.
       /// </summary>
       internal virtual Task<IReadOnlyList<ApprovalPlannedStep>> PlanStepsAsync(ApprovalRunScope scope) =>
          throw NotADocumentFlow();
 
       /// <summary>
-      /// Menentukan penanda tangan sebuah langkah dari isi dokumennya.
+      /// Determines the signers of a step from the content of its document.
       /// </summary>
-      /// <returns>Daftar id user, atau <c>null</c> kalau langkah itu tidak menetapkan penanda tangan.</returns>
+      /// <returns>A list of user ids, or <c>null</c> when the step does not fix its signers.</returns>
       internal virtual Task<IReadOnlyList<string>?> ResolveSignersAsync(ApprovalRunScope scope, string stepName) =>
          throw NotADocumentFlow();
 
-      /// <summary>Menghitung kolom ringkasan modul untuk sebuah pengajuan.</summary>
+      /// <summary>Computes the module's summary columns for a submission.</summary>
       internal virtual Task<IReadOnlyDictionary<string, string?>?> SummaryAsync(ApprovalRunScope scope) =>
          throw NotADocumentFlow();
 
-      /// <summary>Mengambil PDF dokumennya, atau <c>null</c> kalau jenis ini tidak punya PDF.</summary>
+      /// <summary>Fetches the document's PDF, or <c>null</c> when this type has no PDF.</summary>
       internal virtual Task<Stream?> OpenPdfAsync(ApprovalRunScope scope) => throw NotADocumentFlow();
 
       /// <summary>
-      /// Menggeser posisi kotak-kotak rencana ke tempat mereka sebenarnya di PDF dasar dokumen ini, kalau
-      /// modul menyatakan tata letaknya berubah menurut isi dokumen. Tanpa pernyataan itu posisinya
-      /// dibiarkan seperti yang dideklarasikan.
+      /// Shifts the positions of the plan boxes to where they actually are in this document's base PDF, when
+      /// the module states that its layout changes with the document content. Without that statement the
+      /// positions are left as declared.
       /// </summary>
       internal virtual Task LocateSlotsAsync(ApprovalRunScope scope, IReadOnlyList<ApprovalPlannedStep> plan, Stream pdf) =>
          throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook setelah pengajuan tersimpan.</summary>
+      /// <summary>Runs the hook after the submission is saved.</summary>
       internal virtual Task RunSubmittedAsync(ApprovalRunScope scope) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook penyelesaian sebuah level, di dalam transaksi.</summary>
+      /// <summary>Runs the level completion hook, inside the transaction.</summary>
       internal virtual Task RunLevelCompletedAsync(ApprovalRunScope scope, int level) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook penyelesaian request, di dalam transaksi.</summary>
+      /// <summary>Runs the request completion hook, inside the transaction.</summary>
       internal virtual Task RunFinishingAsync(ApprovalRunScope scope) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook penyelesaian request, sesudah transaksi tersimpan.</summary>
+      /// <summary>Runs the request completion hook, after the transaction is saved.</summary>
       internal virtual Task RunFinishedAsync(ApprovalRunScope scope) => throw NotADocumentFlow();
 
       /// <summary>
-      /// Aturan setiap langkah yang dipakai saat langkah itu ditandatangani: claim-nya, apakah hanya
-      /// penanda tangannya sendiri yang boleh, dan langkah mana yang penanda tangannya harus berbeda.
+      /// The rule of every step, used when that step is signed: its claim, whether only its own signer may
+      /// sign, and which step must have a different signer.
       /// </summary>
       internal virtual IReadOnlyList<ApprovalStepRule> StepRules => throw NotADocumentFlow();
 
       /// <summary>
-      /// Memeriksa isian sebuah langkah di modul pemiliknya, lalu mengambil nilai kotak-kotaknya.
+      /// Validates a step's input in the owning module, then reads the values of its boxes.
       /// </summary>
-      /// <returns>Nilai setiap kotak isian, atau <c>null</c> kalau langkah itu tidak meminta isian.</returns>
+      /// <returns>The value of each input box, or <c>null</c> when the step asks for no input.</returns>
       internal virtual Task<IReadOnlyList<ApprovalInputValue>?> ValidateInputAsync(ApprovalRunScope scope,
          string stepName, string? signerId, string? payloadJson) => throw NotADocumentFlow();
 
-      /// <summary>Menuliskan akibat isian sebuah langkah ke dokumennya, di dalam transaksi.</summary>
+      /// <summary>Writes the effect of a step's input to its document, inside the transaction.</summary>
       internal virtual Task RunInputSignedAsync(ApprovalRunScope scope, string stepName, string? signerId,
          string? payloadJson) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook pemeriksaan keputusan, sebelum keputusannya ditulis.</summary>
+      /// <summary>Runs the decision check hook, before the decision is written.</summary>
       internal virtual Task RunSigningAsync(ApprovalRunScope scope, string stepName, string? signerId,
          ApprovalDecision decision) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook akibat keputusan, di dalam transaksi yang sama dengan keputusannya.</summary>
+      /// <summary>Runs the decision effect hook, inside the same transaction as the decision.</summary>
       internal virtual Task RunSignedAsync(ApprovalRunScope scope, string stepName, string? signerId,
          ApprovalDecision decision) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook penolakan request, di dalam transaksi.</summary>
+      /// <summary>Runs the request rejection hook, inside the transaction.</summary>
       internal virtual Task RunRejectingAsync(ApprovalRunScope scope) => throw NotADocumentFlow();
 
-      /// <summary>Menjalankan hook penolakan request, sesudah transaksi tersimpan.</summary>
+      /// <summary>Runs the request rejection hook, after the transaction is saved.</summary>
       internal virtual Task RunRejectedAsync(ApprovalRunScope scope) => throw NotADocumentFlow();
 
       /// <summary>
-      /// Menjalankan hook penarikan kembali request, di dalam transaksi. <paramref name="stage"/> adalah
-      /// tahap request sebelum ditarik: masih menunggu, atau sudah selesai seluruhnya.
+      /// Runs the request withdrawal hook, inside the transaction. <paramref name="stage"/> is the stage of
+      /// the request before it was withdrawn: still waiting, or already completed in full.
       /// </summary>
       internal virtual Task RunReinstatingAsync(ApprovalRunScope scope, ApprovalStage stage) =>
          throw NotADocumentFlow();
@@ -177,35 +177,35 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Yang dibutuhkan engine untuk menyerahkan sebuah request ke handler modulnya: siapa yang sedang
-   /// menjalankan engine (sumber keterangan request-nya), penyedia service permintaan ini, dan request
-   /// yang dikerjakan.
+   /// What the engine needs to hand a request to its module's handler: who is running the engine (the
+   /// source of the request info), the service provider of this call, and the request being handled.
    /// </summary>
-   /// <param name="Engine">Service engine yang sedang berjalan.</param>
-   /// <param name="Provider">Penyedia service permintaan ini.</param>
-   /// <param name="Request">Baris request yang dikerjakan.</param>
+   /// <param name="Engine">The running engine service.</param>
+   /// <param name="Provider">The service provider of this call.</param>
+   /// <param name="Request">The request row being handled.</param>
    /// <param name="Items">
-   /// Usulan perubahan request yang dikerjakan, untuk alur usulan perubahan data; kosong untuk alur dokumen.
-   /// Diisi engine sebelum menyerahkan giliran ke modul, supaya hook modul bisa melihat apa yang diusulkan.
+   /// The proposed changes of the request being handled, for data change proposal flows; empty for
+   /// document flows. Filled by the engine before it hands over to the module, so the module's hook can
+   /// see what was proposed.
    /// </param>
    internal sealed record ApprovalRunScope(ServicesBase Engine, IServiceProvider Provider,
       ta_ApprovalRequest Request, IReadOnlyList<ApprovalDataItem>? Items = null);
 
    /// <summary>
-   /// Aturan sebuah langkah yang diperiksa engine saat langkah itu ditandatangani.
+   /// Rule of a step that the engine checks when the step is signed.
    /// </summary>
-   /// <param name="Name">Nama langkahnya.</param>
-   /// <param name="Claim">Claim yang harus dipegang untuk memutuskannya.</param>
-   /// <param name="Strict">Apakah pengganti ditolak.</param>
-   /// <param name="DistinctFrom">Langkah yang penanda tangannya harus berbeda, atau <c>null</c>.</param>
+   /// <param name="Name">Name of the step.</param>
+   /// <param name="Claim">Claim that must be held to decide it.</param>
+   /// <param name="Strict">Whether a substitute is refused.</param>
+   /// <param name="DistinctFrom">Step whose signer must be different, or <c>null</c>.</param>
    internal sealed record ApprovalStepRule(string Name, ClaimAction Claim, bool Strict, string? DistinctFrom);
 
    /// <summary>
-   /// Alur dokumen: beberapa level yang dijalani berurutan, masing-masing berisi satu langkah atau
-   /// beberapa langkah yang berjalan bersamaan.
+   /// Document flow: several levels that are walked in order, each containing one step or several steps
+   /// that run concurrently.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    public partial class ApprovalDocumentFlowDeclaration<TServices, TKey> : ApprovalFlowDeclaration
       where TServices : ServicesBase, IServices
       where TKey : notnull
@@ -219,68 +219,69 @@ namespace Em.Api.Core.Approval
       /// <inheritdoc />
       public override Type KeyType => typeof(TKey);
 
-      /// <summary>Level-level alurnya, berurutan.</summary>
+      /// <summary>The levels of the flow, in order.</summary>
       public List<ApprovalLevelDeclaration<TServices, TKey>> Levels { get; } = [];
 
-      /// <summary>Seluruh langkah alurnya, berurutan per level lalu per urutan di dalam level.</summary>
+      /// <summary>All steps of the flow, ordered by level and then by order within the level.</summary>
       public IEnumerable<ApprovalStepDeclaration<TServices, TKey>> Steps =>
          Levels.OrderBy(r => r.Level).SelectMany(r => r.Steps.OrderBy(q => q.Order));
 
       /// <summary>
-      /// Cara mengambil PDF dokumennya, atau kosong kalau jenis dokumen ini tidak punya PDF. Dipanggil
-      /// saat pengajuan, dan hasilnya dibekukan sebagai PDF dasar request itu.
+      /// How to fetch the document's PDF, or empty when this document type has no PDF. Called at submission,
+      /// and the result is frozen as that request's base PDF.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task<Stream>>? Pdf { get; set; }
 
       /// <summary>
-      /// Cara menemukan posisi kotak-kotak di PDF dokumen yang tata letaknya berubah menurut isinya.
-      /// Dipanggil saat pengajuan dengan PDF dasar yang baru dibuat, sebelum posisi kotak dibekukan.
+      /// How to find the positions of the boxes in the PDF of a document whose layout changes with its
+      /// content. Called at submission with the freshly created base PDF, before the box positions are
+      /// frozen.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Stream, Task<Func<ApprovalSlot, ApprovalSlot?>>>? PdfLayout { get; set; }
 
       /// <summary>
-      /// Cara menghitung kolom ringkasan milik modul, dipotret saat pengajuan. Dipakai daftar request
-      /// untuk menyaring, mengurutkan, dan menampilkan keterangan yang hanya modul pahami.
+      /// How to compute the module's own summary columns, snapshotted at submission. Used by the request list
+      /// to filter, sort, and show information only the module understands.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task<IReadOnlyDictionary<string, string?>>>? Summary { get; set; }
 
-      /// <summary>Dijalankan setelah pengajuan tersimpan. Kegagalannya tidak membatalkan pengajuan.</summary>
+      /// <summary>Runs after the submission is saved. Its failure does not cancel the submission.</summary>
       public Func<IApprovalContext<TServices, TKey>, Task>? OnSubmitted { get; set; }
 
       /// <summary>
-      /// Memeriksa sebuah keputusan sebelum ditulis, di dalam transaksinya. Di sinilah isian per langkah
-      /// divalidasi ulang di server. Kegagalannya menggagalkan keputusan itu.
+      /// Checks a decision before it is written, inside its transaction. This is where the per-step input is
+      /// validated again on the server. Its failure fails that decision.
       /// </summary>
       public Func<IApprovalStepContext<TServices, TKey>, ApprovalDecision, Task>? OnSigning { get; set; }
 
       /// <summary>
-      /// Menulis akibat sebuah tanda tangan ke dokumennya, di dalam transaksi yang sama dengan tanda
-      /// tangan itu. Kegagalannya membatalkan tanda tangannya juga.
+      /// Writes the effect of a signature to its document, inside the same transaction as the signature. Its
+      /// failure cancels the signature too.
       /// </summary>
       public Func<IApprovalStepContext<TServices, TKey>, ApprovalDecision, Task>? OnSigned { get; set; }
 
       /// <summary>
-      /// Dijalankan di dalam transaksi, saat langkah terakhir disetujui dan request akan selesai.
-      /// Kegagalannya mengembalikan segalanya seperti sebelum keputusan itu diambil.
+      /// Runs inside the transaction, when the last step is approved and the request is about to complete. Its
+      /// failure restores everything to how it was before that decision was taken.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task>? OnFinishing { get; set; }
 
-      /// <summary>Dijalankan setelah request selesai tersimpan. Kegagalannya tidak merusak data.</summary>
+      /// <summary>Runs after the request is saved as completed. Its failure does not corrupt data.</summary>
       public Func<IApprovalContext<TServices, TKey>, Task>? OnFinished { get; set; }
 
       /// <summary>
-      /// Dijalankan di dalam transaksi, saat sebuah langkah ditolak dan request akan berhenti.
-      /// Kegagalannya mengembalikan segalanya seperti sebelum penolakan itu.
+      /// Runs inside the transaction, when a step is rejected and the request is about to stop. Its failure
+      /// restores everything to how it was before the rejection.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task>? OnRejecting { get; set; }
 
-      /// <summary>Dijalankan setelah penolakan tersimpan. Kegagalannya tidak merusak data.</summary>
+      /// <summary>Runs after the rejection is saved. Its failure does not corrupt data.</summary>
       public Func<IApprovalContext<TServices, TKey>, Task>? OnRejected { get; set; }
 
       /// <summary>
-      /// Dijalankan di dalam transaksi saat sebuah request ditarik kembali. Di sinilah modul mencabut
-      /// status yang sudah ditulis karena request itu, dan di sinilah ia boleh menolak penarikan -
-      /// dengan melempar - kalau dokumennya sudah diproses lebih lanjut.
+      /// Runs inside the transaction when a request is withdrawn. This is where the module revokes the status
+      /// that was written because of the request, and where it may refuse the withdrawal - by throwing - when
+      /// the document has been processed further.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, ApprovalStage, Task>? OnReinstating { get; set; }
 
@@ -312,93 +313,92 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Satu level alur dokumen: langkah-langkah yang berjalan bersamaan, dan apa yang terjadi begitu
-   /// semuanya disetujui.
+   /// One level of a document flow: the steps that run concurrently, and what happens as soon as all of
+   /// them are approved.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    public class ApprovalLevelDeclaration<TServices, TKey> where TKey : notnull
    {
-      /// <summary>Nomor levelnya. Level dijalani dari yang terkecil.</summary>
+      /// <summary>Number of the level. Levels are walked from the smallest.</summary>
       public required int Level { get; init; }
 
-      /// <summary>Langkah-langkah di level ini. Semuanya harus disetujui sebelum level berikutnya mulai.</summary>
+      /// <summary>The steps in this level. All must be approved before the next level starts.</summary>
       public List<ApprovalStepDeclaration<TServices, TKey>> Steps { get; } = [];
 
       /// <summary>
-      /// Dijalankan di dalam transaksi begitu seluruh langkah level ini disetujui. Dipakai untuk tonggak
-      /// di tengah alur - status dokumen yang berubah sebelum langkah terakhir. Kegagalannya
-      /// mengembalikan keputusan yang memicunya.
+      /// Runs inside the transaction as soon as all steps of this level are approved. Used for milestones
+      /// in the middle of the flow - a document status that changes before the last step. Its failure
+      /// restores the decision that triggered it.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task>? OnCompleted { get; set; }
    }
 
-   /// <summary>Satu langkah alur dokumen, seperti yang dideklarasikan modul.</summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <summary>One step of a document flow, as declared by the module.</summary>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    public class ApprovalStepDeclaration<TServices, TKey> where TKey : notnull
    {
-      /// <summary>Nama langkahnya. Dipakai di layar, di PDF, dan sebagai nama claim-nya.</summary>
+      /// <summary>Name of the step. Used on screen, in the PDF, and as the name of its claim.</summary>
       public required string Name { get; init; }
 
-      /// <summary>Claim yang harus dipegang untuk memutuskan langkah ini.</summary>
+      /// <summary>Claim that must be held to decide this step.</summary>
       public required ClaimAction Claim { get; init; }
 
-      /// <summary>Level tempat langkah ini berada.</summary>
+      /// <summary>Level this step belongs to.</summary>
       public required int Level { get; init; }
 
-      /// <summary>Urutan langkah ini di dalam levelnya, untuk tampilan yang stabil.</summary>
+      /// <summary>Order of this step within its level, for a stable display.</summary>
       public required int Order { get; init; }
 
       /// <summary>
-      /// Di mana tanda tangannya digambar pada PDF, atau kosong untuk jenis dokumen yang tidak punya
-      /// PDF.
+      /// Where the signature is drawn on the PDF, or empty for document types that have no PDF.
       /// </summary>
       public ApprovalSlot? Slot { get; init; }
 
       /// <summary>
-      /// <c>true</c> kalau langkah ini hanya boleh ditandatangani penanda tangannya sendiri, sehingga
-      /// pengganti ditolak.
+      /// <c>true</c> when this step may only be signed by its own signer, so a substitute is
+      /// refused.
       /// </summary>
       public bool Strict { get; init; }
 
       /// <summary>
-      /// Nama langkah yang penanda tangannya tidak boleh sama dengan penanda tangan langkah ini, atau
-      /// kosong kalau tidak ada syarat seperti itu.
+      /// Name of the step whose signer must not be the same as this step's signer, or empty when there is no
+      /// such condition.
       /// </summary>
       public string? DistinctFrom { get; init; }
 
       /// <summary>
-      /// Cara menentukan siapa saja penanda tangan langkah ini, dibaca dari isi dokumennya saat
-      /// pengajuan. Kosong berarti langkah ini terbuka bagi semua pemegang claim-nya.
+      /// How to determine who the signers of this step are, read from the document content at submission.
+      /// Empty means this step is open to everyone holding its claim.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task<IReadOnlyList<string>>>? Signers { get; init; }
 
       /// <summary>
-      /// Cara menentukan langkah ini berlaku atau dilewati, dievaluasi saat pengajuan. Kosong berarti
-      /// langkah ini selalu berlaku.
+      /// How to decide whether this step applies or is skipped, evaluated at submission. Empty means this
+      /// step always applies.
       /// </summary>
       public Func<IApprovalContext<TServices, TKey>, Task<bool>>? When { get; init; }
 
       /// <summary>
-      /// Cara menentukan langkah ini sudah boleh diputuskan sekarang. Dievaluasi ulang setiap kali layar
-      /// dibuka dan sekali lagi di server sebelum keputusannya ditulis, jadi ia membaca keadaan saat itu
-      /// - bukan keadaan saat pengajuan.
+      /// How to decide whether this step may be decided now. Re-evaluated every time the screen is opened
+      /// and once more on the server before the decision is written, so it reads the state at that moment -
+      /// not the state at submission.
       /// </summary>
       public Func<IApprovalStepContext<TServices, TKey>, Task<ApprovalGuard>>? Guard { get; init; }
 
-      /// <summary>Isian yang diminta langkah ini sebelum bisa diputuskan, atau kosong kalau tidak ada.</summary>
+      /// <summary>Input this step asks for before it can be decided, or empty when there is none.</summary>
       public IApprovalStepInput<TServices, TKey>? Input { get; init; }
    }
 
    /// <summary>
-   /// Alur usulan perubahan data: satu claim persetujuan, dan daftar entitas yang boleh diusulkan
-   /// berubah beserta cara memuat dan menerapkannya.
+   /// Data change proposal flow: one approval claim, and the list of entities that may be proposed for
+   /// change together with how to load and apply them.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik datanya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the data.</typeparam>
    /// <remarks>
-   /// Jenis ini tidak punya level dan tidak punya PDF: request disetujui atau ditolak utuh oleh pemegang
-   /// satu claim, dan yang dilihat approver adalah daftar perubahan lama ke baru.
+   /// This kind has no levels and no PDF: a request is approved or rejected as a whole by a holder of
+   /// one claim, and what the approver sees is a list of changes from old to new.
    /// </remarks>
    public partial class ApprovalDataFlowDeclaration<TServices> : ApprovalFlowDeclaration, IApprovalDataFlow
       where TServices : ServicesBase, IServices
@@ -410,53 +410,54 @@ namespace Em.Api.Core.Approval
       public override Type ServicesType => typeof(TServices);
 
       /// <summary>
-      /// Claim yang memberi hak menyetujui usulan perubahan jenis dokumen ini. Pemegangnya juga
-      /// menyimpan perubahannya sendiri tanpa menunggu persetujuan siapa pun.
+      /// Claim that grants the right to approve change proposals of this document type. Its holder also
+      /// saves changes directly without waiting for anyone's approval.
       /// </summary>
       public required ClaimAction ApproveClaim { get; init; }
 
-      /// <summary>Entitas yang boleh diusulkan berubah lewat alur ini.</summary>
+      /// <summary>Entities that may be proposed for change through this flow.</summary>
       public List<ApprovalEntityDeclaration> Entities { get; } = [];
 
       /// <summary>
-      /// Cara menghitung kolom ringkasan milik modul, dipotret saat pengajuan.
+      /// How to compute the module's own summary columns, snapshotted at submission.
       /// </summary>
       public Func<IApprovalDataContext<TServices>, Task<IReadOnlyDictionary<string, string?>>>? Summary { get; set; }
 
-      /// <summary>Dijalankan setelah pengajuan tersimpan. Kegagalannya tidak membatalkan pengajuan.</summary>
+      /// <summary>Runs after the submission is saved. Its failure does not cancel the submission.</summary>
       public Func<IApprovalDataContext<TServices>, Task>? OnSubmitted { get; set; }
 
       /// <summary>
-      /// Dijalankan di dalam transaksi, setelah seluruh usulan diterapkan dan sebelum keputusannya
-      /// tersimpan. Kegagalannya mengembalikan segalanya seperti sebelum keputusan itu.
+      /// Runs inside the transaction, after all proposals have been applied and before the decision is
+      /// saved. Its failure restores everything to how it was before that decision.
       /// </summary>
       public Func<IApprovalDataContext<TServices>, Task>? OnFinishing { get; set; }
 
-      /// <summary>Dijalankan setelah keputusan tersimpan. Kegagalannya tidak merusak data.</summary>
+      /// <summary>Runs after the decision is saved. Its failure does not corrupt data.</summary>
       public Func<IApprovalDataContext<TServices>, Task>? OnFinished { get; set; }
 
-      /// <summary>Dijalankan di dalam transaksi saat usulan ditolak.</summary>
+      /// <summary>Runs inside the transaction when the proposal is rejected.</summary>
       public Func<IApprovalDataContext<TServices>, Task>? OnRejecting { get; set; }
 
-      /// <summary>Dijalankan setelah penolakan tersimpan.</summary>
+      /// <summary>Runs after the rejection is saved.</summary>
       public Func<IApprovalDataContext<TServices>, Task>? OnRejected { get; set; }
 
       /// <inheritdoc />
       public override IReadOnlyList<ClaimAction> Claims => [ViewClaim, ApproveClaim];
    }
 
-   /// <summary>Satu entitas yang boleh diusulkan berubah, dilihat tanpa tipe kuncinya.</summary>
+   /// <summary>One entity that may be proposed for change, seen without its key type.</summary>
    public abstract class ApprovalEntityDeclaration
    {
       /// <summary>
-      /// Nama entitasnya, ditulis dengan awalan nama modulnya supaya tidak bertabrakan antar modul.
+      /// Name of the entity, written with its module name as a prefix so it does not collide across
+      /// modules.
       /// </summary>
       public required string Name { get; init; }
 
-      /// <summary>Urutan penerapan, untuk entitas yang harus diterapkan setelah entitas lain.</summary>
+      /// <summary>Order of application, for entities that must be applied after other entities.</summary>
       public int Order { get; init; }
 
-      /// <summary>Tipe record kunci entitas ini.</summary>
+      /// <summary>Type of this entity's key record.</summary>
       public abstract Type KeyType { get; }
 
       // The two members below are how the engine reaches the handlers of an entity without knowing the
@@ -464,22 +465,22 @@ namespace Em.Api.Core.Approval
       // typed context, and the engine only sees plain values. Internal because only the engine has a
       // scope to hand in.
 
-      /// <summary>Memuat nilai kolom entitas ini saat ini, atau <c>null</c> kalau entitasnya sudah tidak ada.</summary>
+      /// <summary>Loads the current column values of this entity, or <c>null</c> when the entity no longer exists.</summary>
       internal abstract Task<IReadOnlyDictionary<string, string?>?> LoadAsync(ApprovalRunScope scope, string canonicalKey);
 
-      /// <summary>Menerapkan usulan atas entitas ini, lalu mengembalikan kunci kanoniknya setelah diterapkan.</summary>
+      /// <summary>Applies the proposal to this entity, then returns its canonical key after it was applied.</summary>
       internal abstract Task<string> ApplyAsync(ApprovalRunScope scope, string canonicalKey,
          ApprovalItemOperation operation, IReadOnlyList<ApprovalDataField> fields);
    }
 
-   /// <summary>Satu entitas yang boleh diusulkan berubah, beserta cara memuat dan menerapkannya.</summary>
-   /// <typeparam name="TServices">Service modul pemilik datanya.</typeparam>
-   /// <typeparam name="TKey">Record kunci entitas ini.</typeparam>
+   /// <summary>One entity that may be proposed for change, together with how to load and apply it.</summary>
+   /// <typeparam name="TServices">Service of the module that owns the data.</typeparam>
+   /// <typeparam name="TKey">Key record of this entity.</typeparam>
    /// <remarks>
-   /// Nilai kolom diserahkan sebagai teks, bukan sebagai baris bertipe, dengan sengaja: engine hanya
-   /// membandingkan nilai lama, nilai sekarang, dan nilai usulan, dan itu bisa ia lakukan tanpa tahu
-   /// bentuk tabelnya sama sekali - termasuk tabel warisan yang kuncinya gabungan beberapa kolom.
-   /// Penerjemahan ke tipe aslinya tinggal di handler modul.
+   /// Column values are handed over as text, not as typed rows, on purpose: the engine only compares the
+   /// old value, the current value, and the proposed value, and it can do that without knowing the shape
+   /// of the table at all - including legacy tables whose key is a composite of several columns.
+   /// Translating to the real types stays in the module's handler.
    /// </remarks>
    public class ApprovalEntityDeclaration<TServices, TKey> : ApprovalEntityDeclaration
       where TServices : ServicesBase, IServices
@@ -489,16 +490,15 @@ namespace Em.Api.Core.Approval
       public override Type KeyType => typeof(TKey);
 
       /// <summary>
-      /// Memuat nilai kolom entitas ini apa adanya saat ini, atau kosong kalau entitasnya sudah tidak
-      /// ada. Dipanggil saat keputusan diambil, untuk dibandingkan dengan nilai yang dicatat waktu
-      /// pengajuan.
+      /// Loads the column values of this entity as they are right now, or empty when the entity no longer
+      /// exists. Called when the decision is taken, to compare with the values recorded at submission.
       /// </summary>
       public Func<IApprovalDataContext<TServices>, TKey, Task<IReadOnlyDictionary<string, string?>?>>? Load { get; init; }
 
       /// <summary>
-      /// Menerapkan usulan ke entitas ini, di dalam transaksi keputusan. Nilai balikannya adalah kunci
-      /// entitas setelah diterapkan - sama dengan yang diminta untuk perubahan, dan kunci yang baru
-      /// terbentuk untuk entitas baru.
+      /// Applies the proposal to this entity, inside the decision transaction. The return value is the
+      /// entity's key after it was applied - the same as the one requested for a change, and the newly
+      /// formed key for a new entity.
       /// </summary>
       public Func<IApprovalDataContext<TServices>, ApprovalApplyRequest<TKey>, Task<TKey>>? Apply { get; init; }
 
@@ -523,52 +523,51 @@ namespace Em.Api.Core.Approval
       }
    }
 
-   /// <summary>Permintaan menerapkan usulan atas satu entitas.</summary>
-   /// <typeparam name="TKey">Record kunci entitasnya.</typeparam>
-   /// <param name="Key">Kunci entitas yang diterapkan.</param>
-   /// <param name="Operation">Apa yang diusulkan atas entitas itu.</param>
+   /// <summary>Request to apply a proposal to one entity.</summary>
+   /// <typeparam name="TKey">Key record of the entity.</typeparam>
+   /// <param name="Key">Key of the entity being applied.</param>
+   /// <param name="Operation">What is proposed for that entity.</param>
    /// <param name="Fields">
-   /// Kolom yang diusulkan berubah beserta nilainya. Kosong untuk penghapusan dan pengaktifan ulang.
+   /// The columns proposed to change with their values. Empty for deletion and reactivation.
    /// </param>
    public record ApprovalApplyRequest<TKey>(TKey Key, ApprovalItemOperation Operation,
       IReadOnlyList<ApprovalDataField> Fields) where TKey : notnull;
 
    /// <summary>
-   /// Keterangan yang tersedia saat engine menyerahkan giliran ke modul dalam alur usulan perubahan
-   /// data.
+   /// Info available when the engine hands over to the module in a data change proposal flow.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik datanya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the data.</typeparam>
    public interface IApprovalDataContext<out TServices>
    {
-      /// <summary>Service modul pemilik datanya, sudah siap dipakai.</summary>
+      /// <summary>The service of the module that owns the data, ready to use.</summary>
       TServices Services { get; }
 
-      /// <summary>Jenis dokumen yang sedang diproses.</summary>
+      /// <summary>The document type being processed.</summary>
       string DocType { get; }
 
-      /// <summary>Kunci dokumen yang sedang diproses, dalam bentuk bakunya.</summary>
+      /// <summary>The key of the document being processed, in its canonical form.</summary>
       string DocKey { get; }
 
-      /// <summary>Id request yang sedang diproses.</summary>
+      /// <summary>Id of the request being processed.</summary>
       string ApprovalRequestId { get; }
 
-      /// <summary>Pengaju request ini.</summary>
+      /// <summary>The submitter of this request.</summary>
       string RequesterId { get; }
 
 
       /// <summary>
-      /// Usulan perubahan yang dibawa request ini, per entitas. Setelah usulannya diterapkan, kunci entitas
-      /// baru sudah berisi kunci yang sebenarnya.
+      /// The change proposals carried by this request, per entity. After the proposals are applied, the key
+      /// of a new entity already holds the actual key.
       /// </summary>
       IReadOnlyList<ApprovalDataItem> Items { get; }
    }
 
    /// <summary>
-   /// Seluruh alur persetujuan yang terdaftar di aplikasi, dibekukan sejak aplikasi dibangun.
+   /// Every approval flow registered in the application, frozen since the application was built.
    /// </summary>
    /// <remarks>
-   /// Satu-satunya tempat engine mencari tahu apa yang dideklarasikan sebuah jenis dokumen. Jenis
-   /// dokumen yang tidak ada di sini tidak punya alur, dan request untuknya ditolak.
+   /// The only place the engine looks to find out what a document type declares. A document type that is
+   /// not here has no flow, and requests for it are refused.
    /// </remarks>
    public class ApprovalRegistry
    {
@@ -578,22 +577,22 @@ namespace Em.Api.Core.Approval
          _byDocType = flows.ToDictionary(r => r.DocType, StringComparer.OrdinalIgnoreCase);
       }
 
-      /// <summary>Seluruh alur yang terdaftar.</summary>
+      /// <summary>Every registered flow.</summary>
       public IReadOnlyCollection<ApprovalFlowDeclaration> Flows => _byDocType.Values;
 
-      /// <summary>Jenis dokumen yang punya alur persetujuan.</summary>
+      /// <summary>Document types that have an approval flow.</summary>
       public IReadOnlyCollection<string> DocTypes => _byDocType.Keys;
 
-      /// <summary>Alur sebuah jenis dokumen, atau kosong kalau jenis itu tidak punya alur.</summary>
-      /// <param name="docType">Jenis dokumen yang dicari.</param>
+      /// <summary>The flow of a document type, or empty when that type has no flow.</summary>
+      /// <param name="docType">The document type to look up.</param>
       public ApprovalFlowDeclaration? Find(string docType) =>
          _byDocType.GetValueOrDefault(docType);
 
-      /// <summary>Alur sebuah jenis dokumen.</summary>
-      /// <param name="docType">Jenis dokumen yang dicari.</param>
+      /// <summary>The flow of a document type.</summary>
+      /// <param name="docType">The document type to look up.</param>
       /// <exception cref="ActionException">
-      /// Dilempar kalau jenis dokumen itu tidak punya alur persetujuan - biasanya karena modulnya tidak
-      /// terpasang, atau jenis dokumennya salah tulis.
+      /// Thrown when that document type has no approval flow - usually because its module is not installed,
+      /// or the document type is misspelled.
       /// </exception>
       public ApprovalFlowDeclaration Get(string docType) =>
          Find(docType) ?? throw new ActionException(

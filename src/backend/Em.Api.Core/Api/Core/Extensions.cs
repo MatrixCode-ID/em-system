@@ -6,11 +6,13 @@ using Em.Api.Core.Models;
 using Em.Api.Shared;
 
 // ReSharper disable once CheckNamespace
+/// <summary>Extension methods for configuring the host and its database contexts.</summary>
 public static class Extensions
 {
    // UseEmProvider runs for every DbContext instance; AutoDetect opens a connection, so detect once per database.
    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ServerVersion> mySqlVersions = new();
 
+   /// <summary>Legacy entry point kept for source compatibility; it does nothing.</summary>
    public static void UseEm(this WebApplicationBuilder app, Action<EmApp> svc) {
       // var emApp = new EmApp() {
       //    Builder = app,
@@ -20,6 +22,7 @@ public static class Extensions
       // svc(emApp);
    }
 
+   /// <summary>Configures a context's options for the given database provider and connection string.</summary>
    public static void UseEmProvider(this DbContextOptionsBuilder opt, DatabaseProvider provider,
       string connectionString) {
       switch (provider) {

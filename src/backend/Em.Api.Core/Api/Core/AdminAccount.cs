@@ -6,10 +6,10 @@ using Em.Shared;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Segala hal tentang akun administrator bawaan yang tidak punya baris pengguna: saklarnya,
-   /// passwordnya, dan penyemaian nilai awal keduanya. Dikumpulkan di satu tempat karena ketiga
-   /// pemakainya - penerbit token, action kredensial, dan startup aplikasi - masuk lewat pintu yang
-   /// berbeda-beda, dan hanya ini yang mereka semua butuhkan.
+   /// Everything about the built-in administrator account that has no user row: its switch, its password,
+   /// and seeding the initial values of both. Gathered in one place because its three users - the token
+   /// issuer, the credential actions, and application startup - come in through different doors, and this
+   /// is all they have in common.
    /// </summary>
    internal static class AdminAccount
    {
@@ -26,29 +26,29 @@ namespace Em.Api.Core
          "Whether the built-in administrator account may sign in. Changed directly in the database.";
 
       /// <summary>
-      /// Benar kalau nama akun yang diketik adalah nama akun administrator bawaan. Perbandingannya
-      /// tidak membedakan huruf besar-kecil, sama seperti nama akun pengguna biasa.
+      /// True when the typed account name is the built-in administrator account name. The comparison is
+      /// case-insensitive, like ordinary user account names.
       /// </summary>
       public static bool IsAdminAccount(string? cUserAccount) =>
          string.Equals(cUserAccount, Defaults.AdminUserAccount, StringComparison.OrdinalIgnoreCase);
 
       /// <summary>
-      /// Benar kalau akun administrator bawaan sedang dibolehkan masuk. Saklarnya hanya bisa diubah
-      /// langsung di database - tidak ada satu pun action yang menyentuhnya.
+      /// True when the built-in administrator account is currently allowed to sign in. Its switch can only
+      /// be changed directly in the database - no action touches it.
       /// </summary>
       public static async Task<bool> IsEnabledAsync(ApiCoreContext ctx) =>
          bool.TryParse(await ReadAsync(ctx, EnabledKey), out var enabled) && enabled;
 
       /// <summary>
-      /// Mencocokkan password yang diketik dengan password akun administrator yang tersimpan.
+      /// Matches the typed password against the stored administrator account password.
       /// </summary>
       public static async Task<bool> IsPasswordValidAsync(ApiCoreContext ctx, IStringHasher hasher, string password) =>
          hasher.CompareHashValue(password, await GetPasswordHashAsync(ctx, hasher));
 
       /// <summary>
-      /// Mengganti password akun administrator bawaan. Yang disimpan hanya hash-nya.
+      /// Changes the built-in administrator account password. Only its hash is stored.
       /// </summary>
-      /// <exception cref="ArgumentException">Password yang diberikan kosong.</exception>
+      /// <exception cref="ArgumentException">The given password is empty.</exception>
       public static Task SetPasswordAsync(ApiCoreContext ctx, IStringHasher hasher, string newPassword) {
          if (string.IsNullOrEmpty(newPassword)) {
             throw new ArgumentException("Password must not be empty.", nameof(newPassword));
@@ -58,13 +58,13 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Mengisi nilai awal ketiga metadata akun administrator, masing-masing hanya kalau key-nya
-      /// belum ada. Dijalankan sekali saat aplikasi start, sebelum request pertama dilayani, supaya
-      /// database yang baru dibuat tetap bisa dimasuki.
+      /// Fills the initial values of the three administrator account metadata entries, each only when its
+      /// key does not exist yet. Run once when the application starts, before the first request is served, so
+      /// a freshly created database can still be signed into.
       /// </summary>
-      /// <param name="ctx">Context yang dipakai membaca dan menulis metadata.</param>
-      /// <param name="hasher">Komponen hashing untuk menyimpan password bawaan.</param>
-      /// <param name="firstTimePassword">Password bawaan yang disemai saat database masih kosong.</param>
+      /// <param name="ctx">The context used to read and write the metadata.</param>
+      /// <param name="hasher">The hashing component used to store the default password.</param>
+      /// <param name="firstTimePassword">The default password seeded when the database is still empty.</param>
       public static async Task SeedAsync(ApiCoreContext ctx, IStringHasher hasher, string firstTimePassword) {
          var defaultPassword = await ReadAsync(ctx, DefaultPasswordKey);
          if (string.IsNullOrWhiteSpace(defaultPassword)) {

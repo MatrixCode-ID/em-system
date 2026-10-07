@@ -1,60 +1,59 @@
 namespace Em.Api.Core.Storage
 {
    /// <summary>
-   /// Penyimpanan isi berkas milik aplikasi: berkas disimpan di bawah sebuah kunci dan dibaca kembali
-   /// lewat kunci itu. Tidak ada alamat publik ke isinya - yang mengambilnya adalah action pemakainya,
-   /// yang lebih dulu memeriksa hak pemanggil.
+   /// Storage of file content owned by the application: a file is stored under a key and read back through
+   /// that key. There is no public address to the content - whatever fetches it is the consumer's action,
+   /// which first checks the caller's rights.
    /// </summary>
    /// <remarks>
-   /// Isi yang sudah tersimpan <b>tidak pernah ditimpa</b>: kunci yang sudah terpakai ditolak. Itu
-   /// disengaja, karena pemakai pertamanya adalah berkas yang dibekukan - sesuatu yang ditandatangani
-   /// orang harus tetap persis seperti saat ia melihatnya. Versi baru memakai kunci baru.
+   /// Content that has been stored is <b>never overwritten</b>: a key that is already used is refused.
+   /// That is deliberate, because its first consumer is frozen files - something a person signed must stay
+   /// exactly as they saw it. A new version uses a new key.
    /// <para>
-   /// Kunci berbentuk seperti path (<c>bagian/bagian/nama.pdf</c>) supaya implementasi lain -
-   /// penyimpanan objek di jaringan, misalnya - bisa memakai kunci yang sama tanpa mengubah
-   /// pemakainya. Lihat <see cref="BinaryStorageKey"/> untuk aturan bentuknya.
+   /// A key is shaped like a path (<c>part/part/name.pdf</c>) so another implementation - network object
+   /// storage, for example - can use the same key without changing its consumers. See
+   /// <see cref="BinaryStorageKey"/> for the shape rules.
    /// </para>
    /// </remarks>
    public interface IBinaryStorage
    {
       /// <summary>
-      /// Menyimpan isi <paramref name="content"/> di bawah <paramref name="key"/>.
+      /// Stores <paramref name="content"/> under <paramref name="key"/>.
       /// </summary>
-      /// <param name="key">Kunci tempat isinya disimpan. Lihat <see cref="BinaryStorageKey"/>.</param>
-      /// <param name="content">Isi yang disimpan, dibaca dari posisinya saat ini sampai habis.</param>
-      /// <param name="cancellationToken">Token pembatalan.</param>
-      /// <returns>Kunci yang benar-benar dipakai, sudah dalam bentuk bakunya.</returns>
+      /// <param name="key">The key where the content is stored. See <see cref="BinaryStorageKey"/>.</param>
+      /// <param name="content">The content to store, read from its current position to the end.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
+      /// <returns>The key that was actually used, already in its canonical form.</returns>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau <paramref name="key"/> tidak memenuhi aturan bentuk kunci.
+      /// Thrown when <paramref name="key"/> does not satisfy the key shape rules.
       /// </exception>
       /// <exception cref="Em.Shared.ActionException">
-      /// Dilempar kalau kunci itu sudah terpakai - penyimpanan ini tidak menimpa isi yang sudah ada.
+      /// Thrown when that key is already used - this storage does not overwrite existing content.
       /// </exception>
       Task<string> PutAsync(string key, Stream content, CancellationToken cancellationToken = default);
 
       /// <summary>
-      /// Membuka isi yang tersimpan di bawah sebuah kunci untuk dibaca. Pemanggil yang menutup
-      /// stream-nya.
+      /// Opens the content stored under a key for reading. The caller closes the stream.
       /// </summary>
-      /// <param name="key">Kunci isinya.</param>
-      /// <param name="cancellationToken">Token pembatalan.</param>
+      /// <param name="key">Key of the content.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       /// <exception cref="Em.Shared.ActionException">
-      /// Dilempar kalau tidak ada isi di bawah kunci itu.
+      /// Thrown when there is no content under that key.
       /// </exception>
       Task<Stream> OpenReadAsync(string key, CancellationToken cancellationToken = default);
 
       /// <summary>
-      /// Membuang isi yang tersimpan di bawah sebuah kunci. Kunci yang memang tidak ada bukan
-      /// kesalahan - dipanggil juga saat membereskan sisa pengajuan yang gagal, dan di situ yang
-      /// penting hanya bahwa sesudahnya isinya tidak ada.
+      /// Discards the content stored under a key. A key that does not exist is not an error - it is also
+      /// called when cleaning up the leftovers of a failed submission, where all that matters is that the
+      /// content is gone afterwards.
       /// </summary>
-      /// <param name="key">Kunci isinya.</param>
-      /// <param name="cancellationToken">Token pembatalan.</param>
+      /// <param name="key">Key of the content.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       Task DeleteAsync(string key, CancellationToken cancellationToken = default);
 
-      /// <summary>Apakah ada isi tersimpan di bawah sebuah kunci.</summary>
-      /// <param name="key">Kunci yang diperiksa.</param>
-      /// <param name="cancellationToken">Token pembatalan.</param>
+      /// <summary>Whether there is content stored under a key.</summary>
+      /// <param name="key">The key being checked.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
    }
 }

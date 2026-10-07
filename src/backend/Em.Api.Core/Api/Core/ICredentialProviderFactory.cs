@@ -4,43 +4,43 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Pendaftaran satu jenis kredensial ke aplikasi. Setiap jenis kredensial menyediakan satu
-   /// implementasi dan mendaftarkannya ke DI container, sehingga alur login maupun halaman
-   /// pengaturan akun bisa menawarkan semua jenis kredensial yang ada tanpa perlu menyebut satu
-   /// per satu nama class-nya - menambah jenis baru cukup dengan menambah satu pendaftaran.
+   /// Registration of one credential type in the application. Each credential type provides one
+   /// implementation and registers it in the DI container, so the login flow and the account settings
+   /// page can offer every existing credential type without naming their classes one by one - adding a
+   /// new type only takes adding one registration.
    /// </summary>
    public interface ICredentialProviderFactory
    {
       /// <summary>
-      /// Nama jenis kredensial yang dibuat, sama dengan <see cref="CredentialProviderBase.Name"/>
-      /// milik hasil <see cref="CreateAsync"/>.
+      /// Name of the credential type that is created, the same as <see cref="CredentialProviderBase.Name"/>
+      /// of the result of <see cref="CreateAsync"/>.
       /// </summary>
       string Name { get; }
 
       /// <summary>
-      /// Membuat kredensial jenis ini untuk <paramref name="user"/>, lengkap dengan data yang sudah
-      /// tersimpan untuknya.
+      /// Creates a credential of this type for <paramref name="user"/>, complete with the data already
+      /// stored for them.
       /// </summary>
-      /// <param name="user">Pengguna yang kredensialnya ingin dipakai.</param>
-      /// <param name="services">Service data kredensial milik request yang sedang berjalan.</param>
-      /// <returns>Kredensial yang siap diperiksa atau didaftarkan.</returns>
+      /// <param name="user">The user whose credential is to be used.</param>
+      /// <param name="services">The credential data service of the running request.</param>
+      /// <returns>A credential ready to be checked or enrolled.</returns>
       Task<CredentialProviderBase> CreateAsync(ta_User user, CredentialServices services);
    }
 
    /// <summary>
-   /// Cara ringkas mengambil kredensial milik seorang pengguna lewat jenis-jenis kredensial yang
-   /// terdaftar di aplikasi.
+   /// A compact way to get a user's credentials through the credential types registered in the
+   /// application.
    /// </summary>
    public static class CredentialProviderExtensions
    {
       /// <summary>
-      /// Mengambil satu jenis kredensial milik <paramref name="user"/> berdasarkan namanya.
+      /// Gets one credential type of <paramref name="user"/> by its name.
       /// </summary>
-      /// <param name="services">Service data kredensial milik request yang sedang berjalan.</param>
-      /// <param name="user">Pengguna yang kredensialnya ingin dipakai.</param>
-      /// <param name="name">Nama jenis kredensial, mis. <c>"PASSWORD"</c>.</param>
-      /// <returns>Kredensial yang diminta.</returns>
-      /// <exception cref="InvalidOperationException">Tidak ada jenis kredensial bernama itu yang terdaftar.</exception>
+      /// <param name="services">The credential data service of the running request.</param>
+      /// <param name="user">The user whose credential is to be used.</param>
+      /// <param name="name">Name of the credential type, e.g. <c>"PASSWORD"</c>.</param>
+      /// <returns>The requested credential.</returns>
+      /// <exception cref="InvalidOperationException">No credential type with that name is registered.</exception>
       public static Task<CredentialProviderBase> GetCredentialAsync(this CredentialServices services, ta_User user,
          string name) {
          var factory = services.App.ServiceProvider.GetServices<ICredentialProviderFactory>()
@@ -50,14 +50,14 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Mengambil semua jenis kredensial milik <paramref name="user"/>. Yang dikembalikan adalah
-      /// seluruh jenis yang terdaftar di aplikasi, termasuk yang belum didaftarkan penggunanya -
-      /// pakai <see cref="CredentialProviderBase.IsEnrolled"/> untuk memilah mana yang sudah siap
-      /// dipakai masuk dan mana yang baru bisa ditawarkan untuk didaftarkan.
+      /// Gets every credential type of <paramref name="user"/>. What is returned is every type registered in
+      /// the application, including those the user has not enrolled - use
+      /// <see cref="CredentialProviderBase.IsEnrolled"/> to tell which are ready for signing in and which
+      /// can only be offered for enrollment.
       /// </summary>
-      /// <param name="services">Service data kredensial milik request yang sedang berjalan.</param>
-      /// <param name="user">Pengguna yang kredensialnya ingin dipakai.</param>
-      /// <returns>Semua kredensial milik pengguna tersebut.</returns>
+      /// <param name="services">The credential data service of the running request.</param>
+      /// <param name="user">The user whose credential is to be used.</param>
+      /// <returns>All credentials of that user.</returns>
       public static async Task<CredentialProviderBase[]> GetCredentialsAsync(this CredentialServices services,
          ta_User user) {
          var factories = services.App.ServiceProvider.GetServices<ICredentialProviderFactory>();

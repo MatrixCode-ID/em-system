@@ -3,9 +3,9 @@
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Satu baris sesi dalam bentuk yang tidak lagi menyebut tabel asalnya. Hash refresh token-nya
-   /// sengaja tidak ikut: yang membutuhkannya hanya pencarian baris, dan itu urusan store, bukan
-   /// urusan siapa pun yang menerima catatan ini.
+   /// One session row in a form that no longer names its source table. Its refresh token hash is
+   /// deliberately left out: only the row lookup needs it, and that is the store's business, not anyone
+   /// who receives this record.
    /// </summary>
    internal sealed record SessionRecord(
       string SessionId,
@@ -16,52 +16,52 @@ namespace Em.Api.Core
       DateTime UpdatedAt);
 
    /// <summary>
-   /// Tempat menyimpan sesi masuk. Ada dua: satu untuk pengguna biasa yang punya baris di tabel
-   /// pengguna, satu lagi untuk akun sistem yang tidak punya. Keduanya dipisah oleh tabel, bukan
-   /// oleh percabangan di dalam penerbit token - dengan begini <see cref="TokenServices"/> memilih
-   /// store sekali di depan, lalu memperlakukan sesi siapa pun dengan cara yang sama.
+   /// Place where sign-in sessions are stored. There are two: one for ordinary users who have a row in the
+   /// user table, another for system accounts that do not. They are separated by table, not by branching
+   /// inside the token issuer - this way <see cref="TokenServices"/> picks the store once up front, then
+   /// treats anyone's session the same way.
    /// </summary>
    internal interface ISessionStore
    {
-      /// <summary>Membuka sesi baru dalam keadaan aktif.</summary>
+      /// <summary>Opens a new session in the active state.</summary>
       Task AddAsync(string sessionId, string accountId, string hash, DateTime expiry);
 
-      /// <summary>Mencari sesi lewat hash refresh token-nya; <c>null</c> kalau tidak ada.</summary>
+      /// <summary>Finds a session by its refresh token hash; <c>null</c> when there is none.</summary>
       Task<SessionRecord?> FindByHashAsync(string hash);
 
       /// <summary>
-      /// Mencari sesi lewat id-nya; <c>null</c> kalau sesinya tidak ada di store ini - dan itulah yang
-      /// membedakan sesi yang memang tidak ada dari sesi milik store sebelah, karena id sesi saja tidak
-      /// menyebutkan tabel asalnya.
+      /// Finds a session by its id; <c>null</c> when the session is not in this store - and that is what
+      /// tells a session that truly does not exist apart from one belonging to the neighboring store, because
+      /// the session id alone does not say which table it came from.
       /// </summary>
       Task<SessionRecord?> FindByIdAsync(string sessionId);
 
       /// <summary>
-      /// Mengubah status satu sesi. Mengembalikan <c>false</c> kalau sesinya tidak ada di store ini -
-      /// itulah yang membedakan sesi milik orang lain dari sesi milik store sebelah, karena id sesi
-      /// saja tidak menyebutkan tabel asalnya.
+      /// Changes the status of one session. Returns <c>false</c> when the session is not in this store -
+      /// that is what tells someone else's session apart from one belonging to the neighboring store, because
+      /// the session id alone does not say which table it came from.
       /// </summary>
       Task<bool> SetStateAsync(string sessionId, SessionState state);
 
       /// <summary>
-      /// Mencabut satu sesi sekaligus membuka penggantinya dalam satu kali simpan. Dipisahkan dari
-      /// <see cref="SetStateAsync"/> + <see cref="AddAsync"/> justru karena keduanya harus berhasil
-      /// atau gagal bersama: kalau pencabutan berhasil tapi penggantinya tidak, pemegang token
-      /// kehilangan sesinya tanpa sebab; kalau urutannya dibalik, refresh token lama sempat hidup
-      /// berdampingan dengan yang baru.
+      /// Revokes one session and opens its replacement in a single save. Kept apart from
+      /// <see cref="SetStateAsync"/> + <see cref="AddAsync"/> precisely because both must succeed or fail
+      /// together: if the revocation succeeds but the replacement does not, the token holder loses their
+      /// session for no reason; if the order is reversed, the old refresh token briefly lives alongside the
+      /// new one.
       /// </summary>
       Task RotateAsync(string oldSessionId, string newSessionId, string accountId, string hash, DateTime expiry);
 
-      /// <summary>Mencabut seluruh sesi yang masih aktif milik satu akun.</summary>
+      /// <summary>Revokes every session that is still active for one account.</summary>
       Task RevokeAllAsync(string accountId);
 
-      /// <summary>Seluruh sesi milik satu akun, terbaru lebih dulu.</summary>
+      /// <summary>All sessions of one account, newest first.</summary>
       Task<SessionRecord[]> ListByAccountAsync(string accountId);
 
       /// <summary>
-      /// Membereskan sesi mati dalam dua tahap: yang masa berlakunya sudah lewat tapi masih
-      /// tertulis aktif ditandai kedaluwarsa, lalu yang sudah lewat lebih lama dari
-      /// <paramref name="retention"/> dibuang.
+      /// Cleans up dead sessions in two stages: those whose validity period has passed but are still recorded
+      /// as active are marked expired, then those that passed longer ago than
+      /// <paramref name="retention"/> are discarded.
       /// </summary>
       Task PurgeAsync(TimeSpan retention);
    }

@@ -7,10 +7,10 @@ using PdfSharp.Pdf.IO;
 
 namespace Em.Api.Core.Approval.Pdf;
 
-/// <summary>Menempelkan keputusan dan isian approval pada PDF dasar serta menyediakan PDF pengukuran slot.</summary>
+/// <summary>Places approval decisions and input onto the base PDF and provides the slot measurement PDF.</summary>
 /// <remarks>
-/// Stream dasar tetap milik pemanggil. Slot pada halaman yang tidak tersedia dilewati.
-/// Kode tepi mendapat pita tambahan di kanan halaman agar tidak menutupi dokumen.
+/// The base stream remains the caller's. Slots on pages that are not available are skipped.
+/// The edge code gets an extra strip on the right of the page so it does not cover the document.
 /// </remarks>
 public sealed class ApprovalPdfRenderer : IApprovalPdfRenderer
 {
@@ -19,11 +19,11 @@ public sealed class ApprovalPdfRenderer : IApprovalPdfRenderer
    private static readonly XBrush RejectedBrush = new XSolidBrush(XColor.FromArgb(190, 25, 35));
    private const double Padding = 2;
 
-   /// <summary>Menggambar keputusan yang sudah diambil, isian, kode tepi, dan lembar pengesahan opsional.</summary>
-   /// <param name="basePdf">PDF dasar yang dibaca mulai dari posisi stream saat ini tanpa menutupnya.</param>
-   /// <param name="snapshot">Nilai siap cetak untuk keputusan dan isian.</param>
-   /// <param name="cancellationToken">Token pembatalan pembacaan dan penggambaran.</param>
-   /// <returns>Stream PDF hasil dengan posisi di awal; pemanggil menutup stream hasil.</returns>
+   /// <summary>Draws decisions already taken, input, the edge code, and the optional approval sheet.</summary>
+   /// <param name="basePdf">The base PDF, read from the current stream position without closing it.</param>
+   /// <param name="snapshot">Print-ready values for decisions and input.</param>
+   /// <param name="cancellationToken">Cancellation token for reading and drawing.</param>
+   /// <returns>The resulting PDF stream positioned at the start; the caller closes the resulting stream.</returns>
    public async Task<Stream> RenderStampedAsync(Stream basePdf, ApprovalStampSnapshot snapshot,
       CancellationToken cancellationToken = default)
    {
@@ -72,11 +72,11 @@ public sealed class ApprovalPdfRenderer : IApprovalPdfRenderer
       return Save(document, cancellationToken);
    }
 
-   /// <summary>Menggambar kotak tanda tangan dan isian dengan label serta koordinat milimeter.</summary>
-   /// <param name="basePdf">PDF dasar yang dibaca dari posisi stream saat ini tanpa menutupnya.</param>
-   /// <param name="slots">Slot yang diukur; halaman yang tidak tersedia dilewati.</param>
-   /// <param name="cancellationToken">Token pembatalan.</param>
-   /// <returns>Stream PDF pengukuran dengan posisi di awal.</returns>
+   /// <summary>Draws signature and input boxes with labels and millimeter coordinates.</summary>
+   /// <param name="basePdf">The base PDF, read from the current stream position without closing it.</param>
+   /// <param name="slots">The slots being measured; pages that are not available are skipped.</param>
+   /// <param name="cancellationToken">Cancellation token.</param>
+   /// <returns>The measurement PDF stream positioned at the start.</returns>
    public async Task<Stream> RenderCalibrationAsync(Stream basePdf, IReadOnlyList<ApprovalSlotLabel> slots,
       CancellationToken cancellationToken = default)
    {
@@ -328,12 +328,12 @@ public sealed class ApprovalPdfRenderer : IApprovalPdfRenderer
 
 internal sealed class ApprovalFontResolver : IFontResolver
 {
-   /// <summary>Memilih berkas Arial biasa atau tebal untuk penggambaran approval.</summary>
+   /// <summary>Chooses the regular or bold Arial file for approval drawing.</summary>
    public FontResolverInfo? ResolveTypeface(string familyName, bool bold, bool italic) =>
       familyName.Equals("Arial", StringComparison.OrdinalIgnoreCase)
          ? new FontResolverInfo(bold ? "approval-arial-bold" : "approval-arial", false, italic) : null;
 
-   /// <summary>Membaca font dari folder font Windows tanpa menyertakan font berlisensi di paket.</summary>
+   /// <summary>Reads the font from the Windows font folder without bundling a licensed font in the package.</summary>
    public byte[] GetFont(string faceName)
    {
       if (!OperatingSystem.IsWindows())

@@ -5,33 +5,33 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Pembuat kode verifikasi tanda tangan: kode pendek yang tercetak pada tanda tangan dan di tepi setiap
-   /// halaman dokumennya, sehingga dokumen tercetak bisa dirunut kembali ke request-nya.
+   /// Generator of signature verification codes: a short code printed on the signature and at the edge of
+   /// every page of the document, so a printed document can be traced back to its request.
    /// </summary>
    /// <remarks>
-   /// Hurufnya dipilih supaya kode yang dibacakan atau diketik ulang orang tidak berubah arti: tidak ada
-   /// <c>I</c>, <c>L</c>, <c>O</c>, dan <c>U</c>, jadi tidak ada pasangan yang mudah tertukar dengan angka
-   /// satu, nol, atau dengan huruf lain. Kodenya acak, bukan berurutan - dari kode satu tanda tangan tidak
-   /// bisa diterka kode tanda tangan lain.
+   /// The letters are chosen so a code that is read aloud or retyped does not change meaning: there is no
+   /// <c>I</c>, <c>L</c>, <c>O</c>, or <c>U</c>, so nothing is easily mixed up with the digit one, zero, or
+   /// with another letter. The code is random, not sequential - from the code of one signature the code
+   /// of another cannot be guessed.
    /// </remarks>
    public static class ApprovalVerificationCode
    {
       // Crockford Base32: the digits and the letters, minus I, L, O and U.
       private const string Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-      /// <summary>Panjang kode verifikasi, dalam karakter.</summary>
+      /// <summary>Length of the verification code, in characters.</summary>
       public const int Length = 10;
 
       private const int Attempts = 5;
 
       /// <summary>
-      /// Membuat kode verifikasi yang belum dipakai langkah mana pun.
+      /// Creates a verification code that no step has used yet.
       /// </summary>
-      /// <param name="ctx">Context database inti, tempat kode yang sudah terpakai dicari.</param>
-      /// <param name="cancellationToken">Token pembatalan.</param>
+      /// <param name="ctx">The core database context, where codes already used are looked up.</param>
+      /// <param name="cancellationToken">Cancellation token.</param>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau semua percobaan bertabrakan dengan kode yang sudah ada - hampir mustahil dengan
-      /// panjang <see cref="Length"/>, jadi lebih mungkin tanda ada yang salah daripada nasib buruk.
+      /// Thrown when every attempt collides with an existing code - almost impossible with the length of
+      /// <see cref="Length"/>, so more likely a sign that something is wrong than bad luck.
       /// </exception>
       internal static async Task<string> CreateUnusedAsync(ApiCoreContext ctx,
          CancellationToken cancellationToken = default) {
@@ -47,12 +47,12 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Membuat satu kode verifikasi baru.
+      /// Creates one new verification code.
       /// </summary>
       /// <remarks>
-      /// Kode yang sudah terpakai tidak diperiksa di sini - yang memeriksanya adalah pemanggil, saat
-      /// menulisnya, karena hanya di sana ada transaksi yang bisa mengulang kalau kodenya kebetulan sama.
-      /// Dengan panjang <see cref="Length"/>, kemungkinan itu sangat kecil.
+      /// Whether the code is already used is not checked here - the caller checks it, when writing it,
+      /// because only there is there a transaction that can retry if the code happens to be the same. With
+      /// the length of <see cref="Length"/>, that chance is very small.
       /// </remarks>
       public static string Create() {
          var buffer = new char[Length];

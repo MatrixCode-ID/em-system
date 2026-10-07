@@ -1,9 +1,9 @@
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Kegagalan jalur <c>/v2</c> beserta kode kesalahan OCI-nya (<c>NAME_UNKNOWN</c>, <c>DENIED</c>, ...).
-   /// Beda dari <c>ActionException</c>: jawabannya berbentuk <c>{"errors":[...]}</c> yang dimengerti
-   /// klien Docker, bukan envelope action.
+   /// A failure on the <c>/v2</c> path together with its OCI error code (<c>NAME_UNKNOWN</c>,
+   /// <c>DENIED</c>, ...). Unlike <c>ActionException</c>: its answer has the shape <c>{"errors":[...]}</c>
+   /// understood by the Docker client, not the action envelope.
    /// </summary>
    internal sealed class CtnRegistryException(int statusCode, string code, string message, object? detail = null)
       : Exception(message)

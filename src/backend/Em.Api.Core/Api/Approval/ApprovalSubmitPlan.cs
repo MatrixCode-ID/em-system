@@ -3,12 +3,12 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Satu langkah dalam rencana sebuah pengajuan: apa yang dideklarasikan modul, apakah ia berlaku untuk
-   /// dokumen ini, dan penanda tangan yang ditentukan untuknya.
+   /// One step in the plan of a submission: what the module declared, whether it applies to this
+   /// document, and the signers determined for it.
    /// </summary>
    /// <remarks>
-   /// Rencana disusun penuh sebelum apa pun ditulis, supaya setiap kesalahan yang bisa diperbaiki
-   /// pengaju muncul sebelum transaksi dibuka dan sebelum PDF-nya dibuat.
+   /// The plan is composed in full before anything is written, so every error the submitter can fix
+   /// surfaces before the transaction is opened and before the PDF is created.
    /// </remarks>
    internal sealed class ApprovalPlannedStep
    {

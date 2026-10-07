@@ -3,11 +3,12 @@ namespace Em.Api.Shared;
 public partial class EmAppBuilder
 {
    /// <summary>
-   /// Menerapkan <see cref="EmApiConfig"/>: koneksi database, password awal admin, key token debug,
-   /// pengaturan HTTP/proxy/session, dan folder cache business task. Fitur yang memakai
-   /// <see cref="EmApiConfig.Storage"/> (binary, CDN, registry) tetap dinyalakan host dengan path dari config.
+   /// Applies <see cref="EmApiConfig"/>: database connection, initial admin password, debug token keys,
+   /// HTTP/proxy/session settings, and the business task cache folder. Features that use
+   /// <see cref="EmApiConfig.Storage"/> (binary, CDN, registry) are still turned on by the host with the
+   /// paths from the config.
    /// </summary>
-   /// <exception cref="InvalidOperationException">Dilempar kalau config tidak lolos <see cref="EmApiConfig.Validate"/>.</exception>
+   /// <exception cref="InvalidOperationException">Thrown when the config does not pass <see cref="EmApiConfig.Validate"/>.</exception>
    public void ApplyConfig(EmApiConfig config) {
       config.Validate();
 

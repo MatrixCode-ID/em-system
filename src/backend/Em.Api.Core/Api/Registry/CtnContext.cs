@@ -33,7 +33,7 @@ namespace Em.Api.Core.Registry
       protected override void OnModelCreating(ModelBuilder modelBuilder) {
          base.OnModelCreating(modelBuilder);
 
-         // Entitas internal tidak ditemukan dari DbSet-nya, jadi disebut satu per satu.
+         // Internal entities are not found from its DbSets, so they are named one by one.
          foreach (var type in EntityTypes) {
             modelBuilder.Entity(type);
          }

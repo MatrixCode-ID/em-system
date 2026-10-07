@@ -12,10 +12,10 @@ namespace Em.Api.Core.Registry
    }
 
    /// <summary>
-   /// Hasil membaca path di bawah <c>/v2</c>. Nama container selalu dua segmen (<c>root/nama</c>), tetapi
-   /// parser sengaja membaca segmen sebanyak apa pun di depan kata kunci (<c>manifests</c>, <c>blobs</c>,
-   /// <c>tags</c>) supaya nama tiga segmen atau lebih sampai ke pemeriksa nama dan dijawab
-   /// <c>NAME_INVALID</c>, bukan jatuh jadi 404 yang membingungkan.
+   /// Result of reading a path under <c>/v2</c>. A container name is always two segments (<c>root/name</c>),
+   /// but the parser deliberately reads as many segments as appear before the keyword (<c>manifests</c>,
+   /// <c>blobs</c>, <c>tags</c>) so that a name of three or more segments reaches the name checker and is
+   /// answered <c>NAME_INVALID</c>, instead of falling into a confusing 404.
    /// </summary>
    internal sealed record CtnRoute(CtnRouteKind Kind, string[] NameSegments, string? Reference = null, string? UploadId = null)
    {

@@ -8,6 +8,7 @@ namespace Em.Api.Core.NuPak;
 
 public sealed partial class NuPakServices
 {
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakPackageInfo[]> GetMeta_NuPakPackages(string feedId, string prefixId, string? search, int skip, int take) {
       await RequirePrefix(feedId,prefixId);
@@ -25,11 +26,13 @@ public sealed partial class NuPakServices
       from r in robots.DefaultIfEmpty()
       select new NuPakVersionInfo(v.cNuPakVersionId, p.cNuPakPackageId, p.cNuPakPackageName, v.cNuPakVersionNumber, v.cNuPakVersionOriginal,
          v.cNuPakVersionPrerelease, v.cNuPakVersionState, v.cNuPakVersionSize, v.cNuPakVersionHash, r == null ? null : r.cRobotName, v.datestamp, v.cNuPakVersionRecycledAt);
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakVersionInfo[]> GetMeta_NuPakVersions(string feedId, string packageId) {
       await RequirePackage(feedId,packageId);
       return (await VersionQuery(db.Versions.Where(v => v.cNuPakVersionState == 1 && v.cNuPakPackageId == packageId)).ToArrayAsync(AbortToken)).OrderByDescending(v => NuGetVersion.Parse(v.Version)).ToArray();
    }
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakVersionInfo[]> GetMeta_NuPakRecycleBin(string feedId, string? prefixId, int skip, int take) {
       await RequireFeed(feedId); if(prefixId is not null) await RequirePrefix(feedId,prefixId);
@@ -37,12 +40,16 @@ public sealed partial class NuPakServices
       if (prefixId is not null) query = query.Where(v => db.Packages.Any(p => p.cNuPakPackageId == v.cNuPakPackageId && p.cNuPakPrefixId == prefixId));
       return await VersionQuery(query.OrderByDescending(v => v.cNuPakVersionRecycledAt).ThenBy(v => v.cNuPakVersionId).Skip(Math.Max(0, skip)).Take(Math.Clamp(take, 1, 100))).ToArrayAsync(AbortToken);
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.ManagerClaim)]
    public Task PostMeta_NuPakVersionRecycle(string feedId, string versionId) => NuPakOperations.ChangeStateAsync(db, store, feedId, versionId, false, Actor);
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.ManagerClaim)]
    public Task PostMeta_NuPakVersionRestore(string feedId, string versionId) => NuPakOperations.ChangeStateAsync(db, store, feedId, versionId, true, Actor);
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
    public async Task PostMeta_NuPakVersionPurge(string feedId, string versionId) { await NuPakOperations.PurgeAsync(db, store, feedId, versionId, Actor); }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
    public async Task<NuPakEmptyResult> PostMeta_NuPakRecycleBinEmpty(string feedId, string? prefixId) {
       await store.Gate.WaitAsync(AbortToken);

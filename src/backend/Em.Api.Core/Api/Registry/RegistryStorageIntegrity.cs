@@ -8,10 +8,10 @@ namespace Em.Api.Core.Registry;
 internal static class RegistryStorageIntegrity
 {
    /// <summary>
-   /// Pemeriksaan saat start: blob yang hilang atau ukurannya berbeda hanya dicatat sebagai peringatan, server
-   /// tetap menyala. Penyebab umumnya database dipakai bersama folder storage lain. Container Manager menandai
-   /// manifest yang terdampak; verifikasi ketat (dengan hash) hanya berlaku saat mengganti direktori.
-   /// Mengembalikan jumlah blob bermasalah.
+   /// Startup check: a blob that is missing or has a different size is only recorded as a warning, and the
+   /// server stays up. The usual cause is a database shared with another storage folder. Container Manager
+   /// marks the affected manifests; strict verification (with hash) only applies when switching the
+   /// directory. Returns the number of problem blobs.
    /// </summary>
    internal static int CheckStartup(CtnContext db, CtnBlobStore store, ILogger logger) {
       var missing = 0;

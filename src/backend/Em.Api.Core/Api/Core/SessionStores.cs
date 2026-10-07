@@ -5,7 +5,7 @@ using Em.Shared;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Sesi milik pengguna yang punya baris di tabel pengguna.
+   /// Sessions of users who have a row in the user table.
    /// </summary>
    internal sealed class UserSessionStore(ApiCoreContext ctx) : ISessionStore
    {
@@ -109,8 +109,8 @@ namespace Em.Api.Core
    }
 
    /// <summary>
-   /// Sesi milik akun sistem - akun yang tidak punya baris pengguna sama sekali, jadi sesinya tidak
-   /// bisa ditaruh di tabel yang mensyaratkan pemilik yang terdaftar.
+   /// Sessions of system accounts - accounts that have no user row at all, so their sessions cannot be
+   /// placed in the table that requires a registered owner.
    /// </summary>
    internal sealed class SystemSessionStore(ApiCoreContext ctx) : ISessionStore
    {

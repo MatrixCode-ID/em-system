@@ -7,14 +7,14 @@ using Em.Shared;
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Garbage collection registry. Blob yatim = tidak disebut manifest mana pun, dicatat sebelum batas waktu,
-   /// dan tidak punya tautan yang lebih baru dari batas waktu (tanda push sedang berjalan). Baris dihapus lebih
-   /// dulu daripada berkas, sehingga metadata tidak pernah menunjuk berkas yang hilang; berkas yang gagal
-   /// dihapus tersapu sebagai berkas tanpa metadata pada run berikutnya.
+   /// Registry garbage collection. An orphan blob = not referenced by any manifest, recorded before the
+   /// cutoff time, and with no link newer than the cutoff (the mark of a push in progress). Rows are
+   /// deleted before files, so metadata never points to a missing file; a file that fails to be deleted is
+   /// swept as a file without metadata on the next run.
    /// </summary>
    internal sealed class CtnGarbageCollector(CtnContext db, CtnBlobStore store)
    {
-      // Hanya satu run sekaligus; review tidak memakainya.
+      // Only one run at a time; review does not use it.
       private static readonly SemaphoreSlim RunLock = new(1, 1);
 
       public Task<CtnGcReport> RunAsync(int graceHours, bool dryRun, CancellationToken ct) =>
@@ -80,7 +80,7 @@ namespace Em.Api.Core.Registry
                   await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
                   if (!await Candidates(cutoff).AnyAsync(b => b.cCtnBlobId == blob.Id, ct)) {
                      await tx.RollbackAsync(ct);
-                     continue;   // sudah dipakai lagi oleh push; bukan warning
+                     continue;   // used again by a push; not a warning
                   }
 
                   await db.BlobLinks.Where(l => l.cCtnBlobId == blob.Id).ExecuteDeleteAsync(ct);
@@ -91,7 +91,7 @@ namespace Em.Api.Core.Registry
                   }
                }
 
-               deleted.Add(blob);   // dihitung meski berkasnya gagal dihapus: metadatanya sudah hilang
+               deleted.Add(blob);   // counted even if its file failed to delete: its metadata is already gone
             } catch (Exception ex) when (ex is not OperationCanceledException) {
                warnings.Add($"Blob {blob.Digest} skipped: {ex.Message}");
             }
@@ -130,7 +130,7 @@ namespace Em.Api.Core.Registry
 
             try {
                var rows = await db.Uploads.Where(u => u.cCtnUploadId == upload.cCtnUploadId && u.ustamp < cutoff).ExecuteDeleteAsync(ct);
-               if (rows != 1) continue;   // upload hidup lagi sejak review
+               if (rows != 1) continue;   // the upload became live again since the review
 
                if (path is not null && !TryDeleteFile(path, out var error)) {
                   warnings.Add($"Upload {upload.cCtnUploadId}: row removed, file kept ({error}).");
@@ -144,7 +144,7 @@ namespace Em.Api.Core.Registry
          }
       }
 
-      // Id yang tidak berbentuk ULID tidak punya path sah; barisnya tetap bisa dihapus.
+      // An id that is not shaped like a ULID has no valid path; its row can still be deleted.
       private string? SafeUploadPath(string uploadId) {
          try {
             return store.UploadPath(uploadId);
@@ -155,7 +155,7 @@ namespace Em.Api.Core.Registry
 
       #endregion
 
-      #region Berkas tanpa metadata
+      #region Files without metadata
 
       private async Task CollectOrphanBlobFilesAsync(CtnGcReport report, DateTime cutoff, bool dryRun, List<string> warnings, CancellationToken ct) {
          var dir = Path.Combine(store.RootPath, "blobs", "sha256");
@@ -196,7 +196,7 @@ namespace Em.Api.Core.Registry
             try {
                var length = info.Length;
                using (await CtnBlobGate.EnterAsync(ct)) {
-                  if (await db.Blobs.AnyAsync(b => b.cCtnBlobDigest == digest, ct)) continue;   // dicatat push sejak review
+                  if (await db.Blobs.AnyAsync(b => b.cCtnBlobDigest == digest, ct)) continue;   // recorded by a push since the review
                   if (!TryDeleteFile(file, out var error)) {
                      warnings.Add($"File {relative} could not be deleted ({error}).");
                      continue;
@@ -248,7 +248,7 @@ namespace Em.Api.Core.Registry
 
             try {
                var length = info.Length;
-               if (await db.Uploads.AnyAsync(u => u.cCtnUploadId == name, ct)) continue;   // dicatat sejak review
+               if (await db.Uploads.AnyAsync(u => u.cCtnUploadId == name, ct)) continue;   // recorded since the review
                if (!TryDeleteFile(file, out var error)) {
                   warnings.Add($"File {relative} could not be deleted ({error}).");
                   continue;
@@ -269,7 +269,7 @@ namespace Em.Api.Core.Registry
 
       private static bool TryDeleteFile(string path, out string? error) {
          try {
-            File.Delete(path);   // tidak melempar bila berkas tidak ada
+            File.Delete(path);   // does not throw when the file does not exist
             error = null;
             return true;
          } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {

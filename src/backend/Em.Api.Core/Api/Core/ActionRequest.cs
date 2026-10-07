@@ -3,178 +3,174 @@ using Em.Shared;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Dari mana identitas pemanggil dibuktikan.
+   /// Where the caller's identity is proven from.
    /// </summary>
    public enum CallerSource
    {
-      /// <summary>Tidak ada yang membuktikan apa-apa - request datang tanpa identitas.</summary>
+      /// <summary>Nothing proves anything - the request arrives without identity.</summary>
       None,
 
-      /// <summary>Identitas datang dari access token yang dibawa header <c>Authorization</c>.</summary>
+      /// <summary>The identity comes from the access token carried by the <c>Authorization</c> header.</summary>
       AccessToken,
 
-      /// <summary>Identitas datang dari token debug milik pengembang.</summary>
+      /// <summary>The identity comes from a developer's debug token.</summary>
       DebugToken
    }
 
    /// <summary>
-   /// Seluruh keterangan tentang satu request yang sedang dikerjakan: siapa pemanggilnya sejauh yang
-   /// bisa dibuktikan, lewat jalan mana ia membuktikannya, dan ke action mana ia ditujukan. Disusun
-   /// gerbang di <c>EmApp.ProcessRequest</c> sekali, lalu dibaca apa adanya - pasangan
-   /// <see cref="ActionResult"/>: satu masuk, satu keluar.
+   /// All information about one request being handled: who the caller is as far as can be proven, by
+   /// which way they proved it, and which action it is aimed at. Composed once by the gate in
+   /// <c>EmApp.ProcessRequest</c>, then read as-is - the pair of <see cref="ActionResult"/>: one goes in,
+   /// one comes out.
    /// </summary>
    /// <remarks>
-   /// Objek ini immutable, jadi aman dibaca dari mana saja selama request berjalan. Yang tidak boleh:
-   /// menyimpannya ke field milik objek yang hidup lebih lama dari request-nya, atau membawanya ke
-   /// pekerjaan latar. Ia potret satu request - dipakai di tempat lain, ia menjawab pertanyaan yang
-   /// tidak pernah ditanyakan di sana.
+   /// This object is immutable, so it is safe to read from anywhere while the request runs. What is not
+   /// allowed: storing it in a field of an object that outlives its request, or carrying it into
+   /// background work. It is a snapshot of one request - used elsewhere, it answers a question that was
+   /// never asked there.
    /// <para>
-   /// Cara mendapatkannya: di dalam service module lewat <c>ServicesBase.Request</c>; di kelas
-   /// pembantu yang dibuat DI dengan memintanya di konstruktor; di kode yang tidak punya keduanya
-   /// dengan menerimanya sebagai parameter biasa.
+   /// How to get it: inside a module service through <c>ServicesBase.Request</c>; in a helper class
+   /// created by DI by asking for it in the constructor; in code that has neither by receiving it as an
+   /// ordinary parameter.
    /// </para>
    /// </remarks>
    public sealed record ActionRequest
    {
       /// <summary>
-      /// Satu instance untuk keadaan "tidak ada request" - dipakai sebagai nilai awal
-      /// <c>ServicesBase.Request</c> dan sebagai jawaban di luar jalur request (startup, penyemaian,
-      /// pekerjaan latar). Seluruh identitasnya kosong, jadi setiap pemeriksa hak di bawah menjawab
-      /// 401: tidak ada request berarti tidak ada yang terbukti.
+      /// The single instance for the "no request" state - used as the initial value of
+      /// <c>ServicesBase.Request</c> and as the answer outside the request path (startup, seeding,
+      /// background work). All its identity is empty, so every rights checker below answers 401: no request
+      /// means nothing is proven.
       /// </summary>
       public static ActionRequest None { get; } = new();
 
       /// <summary>
-      /// Pengguna yang memanggil action ini, sesuai apa yang dibuktikan request-nya. <c>null</c>
-      /// berarti tidak ada identitas sama sekali - yang wajar untuk action publik.
+      /// The user calling this action, according to what the request proved. <c>null</c> means no identity at
+      /// all - which is normal for public actions.
       /// </summary>
       public string? cUserId { get; init; }
 
       /// <summary>
-      /// Nama akun pemanggil, dan hanya kalau namanya memang terbukti dari data. Jalur access token
-      /// membiarkannya <c>null</c>: token hanya membawa id, dan menerjemahkannya jadi nama akun
-      /// berarti satu query tambahan di setiap request. Nama yang menempel di header tidak pernah
-      /// dipakai mengisinya - ia datang dari pemanggil, bukan dari data.
+      /// The caller's account name, and only when the name is really proven from data. The access token path
+      /// leaves it <c>null</c>: the token only carries the id, and translating it to an account name would
+      /// cost one extra query on every request. The name attached in the header is never used to fill it -
+      /// it comes from the caller, not from data.
       /// </summary>
       public string? cUserAccount { get; init; }
 
       /// <summary>
-      /// Sesi yang menerbitkan token pemanggil - inilah yang diakhiri saat pengguna keluar dari
-      /// perangkat ini saja. Selalu <c>null</c> di jalur token debug, karena jalur itu memang tidak
-      /// membuka sesi.
+      /// The session that issued the caller's token - this is what gets ended when the user signs out of this
+      /// device only. Always <c>null</c> on the debug token path, because that path does not open a session.
       /// </summary>
       public string? cUserSessionId { get; init; }
 
       /// <summary>
-      /// Apakah pemanggil berhak penuh sebagai administrator. Selalu <c>false</c> selama
-      /// <see cref="cUserId"/> kosong - tidak ada identitas, tidak ada hak.
+      /// Whether the caller has full rights as an administrator. Always <c>false</c> while
+      /// <see cref="cUserId"/> is empty - no identity, no rights.
       /// </summary>
       public bool IsAdmin { get; init; }
 
       /// <summary>
-      /// Seluruh hak yang berlaku untuk pemanggil saat ini - yang diberikan langsung maupun yang datang
-      /// lewat role, sudah disaring masa berlakunya. Dimuat ulang setiap request, bukan dibawa token:
-      /// hak berubah jauh lebih sering daripada status administrator, dan kalau ia tersimpan di token
-      /// maka setiap pencabutan hak harus mengakhiri seluruh sesi pemiliknya.
+      /// All rights that currently apply to the caller - granted directly or coming through roles, already
+      /// filtered by validity period. Reloaded on every request, not carried by the token: rights change far
+      /// more often than administrator status, and if they were stored in the token, every revocation would
+      /// have to end all of its owner's sessions.
       /// </summary>
       /// <remarks>
-      /// Kosong untuk pemanggil tanpa identitas, dan juga untuk administrator maupun jalur token debug -
-      /// keduanya melewati pemeriksaan hak seluruhnya, jadi memuatnya berarti membayar satu query untuk
-      /// jawaban yang tidak akan pernah dibaca. Kosong di sini karena itu bukan berarti "tidak punya
-      /// hak apa pun"; periksa <see cref="IsAdmin"/> dan <see cref="IsDebugRequest"/> lebih dulu.
+      /// Empty for a caller without identity, and also for administrators and the debug token path - both
+      /// skip the rights check entirely, so loading them would mean paying one query for an answer that is
+      /// never read. Empty here therefore does not mean "has no rights at all"; check
+      /// <see cref="IsAdmin"/> and <see cref="IsDebugRequest"/> first.
       /// <para>
-      /// Namanya sengaja sama dengan <c>User.AvailableClaims</c> milik client: satu arti, dua sisi.
+      /// The name deliberately matches the client's <c>User.AvailableClaims</c>: one meaning, two sides.
       /// </para>
       /// </remarks>
       public ClaimAction[] Claims { get; init; } = [];
 
       /// <summary>
-      /// Lewat jalan mana identitas di atas dibuktikan.
+      /// By which way the identity above was proven.
       /// </summary>
       public CallerSource Source { get; init; }
 
-      /// <summary><c>true</c> kalau request ini datang lewat token debug.</summary>
+      /// <summary><c>true</c> when this request arrived through a debug token.</summary>
       public bool IsDebugRequest => Source == CallerSource.DebugToken;
 
-      /// <summary><c>true</c> kalau ada pemanggil yang identitasnya terbukti.</summary>
+      /// <summary><c>true</c> when there is a caller whose identity is proven.</summary>
       public bool IsAuthenticated => cUserId is not null;
 
       /// <summary>
-      /// Nama key debug yang dipakai request ini. Terisi hanya di jalur token debug.
+      /// Name of the debug key used by this request. Set only on the debug token path.
       /// </summary>
       public string? DebugKeyName { get; init; }
 
       /// <summary>
-      /// <c>true</c> kalau pengembangnya sedang menyamar jadi akun lain alih-alih memakai akun
-      /// debugger. Terisi hanya di jalur token debug.
+      /// <c>true</c> when the developer is impersonating another account instead of using the debugger
+      /// account. Set only on the debug token path.
       /// </summary>
       public bool IsImpersonating { get; init; }
 
       /// <summary>
-      /// Action yang dituju, dalam bentuk <c>{module}/{action}</c>.
+      /// The targeted action, in the form <c>{module}/{action}</c>.
       /// </summary>
       public string RouteLabel { get; init; } = string.Empty;
 
       /// <summary>
-      /// Alamat asal request sejauh yang diketahui host, atau <c>null</c> kalau tidak diketahui.
+      /// Origin address of the request as far as the host knows, or <c>null</c> when unknown.
       /// </summary>
       public string? CallerAddress { get; init; }
 
       /// <summary>
-      /// Kapan gerbang menerima request ini, dalam UTC.
+      /// When the gate accepted this request, in UTC.
       /// </summary>
       public DateTime ReceivedAtUtc { get; init; }
 
       #region Pemeriksa hak
 
       /// <summary>
-      /// <c>true</c> kalau <paramref name="cUserId"/> adalah pemanggil itu sendiri.
+      /// <c>true</c> when <paramref name="cUserId"/> is the caller themselves.
       /// </summary>
       public bool IsSelf(string cUserId) => this.cUserId is { } caller && caller == cUserId;
 
       /// <summary>
-      /// Menuntut adanya pemanggil yang terbukti, lalu mengembalikan id-nya.
+      /// Requires a proven caller, then returns their id.
       /// </summary>
-      /// <exception cref="ActionException">401 kalau request tidak membawa identitas apa pun.</exception>
+      /// <exception cref="ActionException">401 when the request carries no identity at all.</exception>
       public string RequireUserId() =>
          cUserId ?? throw new ActionException(NotSignedInMessage, 401);
 
       /// <summary>
-      /// Menuntut adanya sesi yang terbukti, lalu mengembalikan id-nya. Jalur token debug tidak punya
-      /// sesi, jadi ia selalu ditolak di sini - dan memang benar begitu: tidak ada sesi yang bisa
-      /// diakhiri.
+      /// Requires a proven session, then returns its id. The debug token path has no session, so it is always
+      /// refused here - and rightly so: there is no session that could be ended.
       /// </summary>
-      /// <exception cref="ActionException">401 kalau request tidak membawa sesi.</exception>
+      /// <exception cref="ActionException">401 when the request carries no session.</exception>
       public string RequireSessionId() =>
          cUserSessionId ?? throw new ActionException(NotSignedInMessage, 401);
 
       /// <summary>
-      /// Menuntut pemanggil yang berhak penuh sebagai administrator.
+      /// Requires a caller with full rights as an administrator.
       /// </summary>
       /// <exception cref="ActionException">
-      /// 401 kalau belum ada identitas; 403 kalau identitasnya ada tapi bukan administrator.
+      /// 401 when there is no identity yet; 403 when there is an identity but it is not an administrator.
       /// </exception>
       public void RequireAdmin() {
          RequireUserId();
 
-         // 403, bukan 401: siapa pemanggilnya sudah terbukti, dan membuktikannya lagi tidak akan
-         // mengubah jawaban. Client yang memperbarui token setiap kali kena 401 akan mengejar token
-         // baru terus-menerus untuk permintaan yang memang tidak akan pernah diizinkan, kalau yang
-         // kedua ikut dijawab 401.
+         // 403, not 401: who the caller is has already been proven, and proving it again would not change the
+         // answer. A client that refreshes its token on every 401 would keep chasing a new token for a request
+         // that will never be permitted, if the second case were also answered 401.
          if (!IsAdmin) {
             throw new ActionException("Only an administrator may do this.", 403);
          }
       }
 
       /// <summary>
-      /// Menuntut pemanggil yang bertindak atas dirinya sendiri, atau seorang administrator kalau
-      /// yang disebut orang lain. Tanpa pemeriksaan ini siapa pun bisa membaca sesi atau menimpa
-      /// password orang lain.
+      /// Requires a caller acting on themselves, or an administrator when someone else is named. Without
+      /// this check anyone could read another person's sessions or overwrite their password.
       /// </summary>
-      /// <param name="cUserId">Pengguna yang hendak dikenai tindakan.</param>
+      /// <param name="cUserId">The user the action is aimed at.</param>
       /// <exception cref="ActionException">
-      /// 401 kalau belum ada identitas; 403 kalau identitasnya ada tapi bukan dirinya dan bukan
-      /// administrator - lihat alasannya di <see cref="RequireAdmin"/>.
+      /// 401 when there is no identity yet; 403 when there is an identity but it is neither themselves nor
+      /// an administrator - see the reason at <see cref="RequireAdmin"/>.
       /// </exception>
       public void RequireSelfOrAdmin(string cUserId) {
          RequireUserId();
@@ -185,8 +181,8 @@ namespace Em.Api.Core
          }
       }
 
-      // Satu kalimat untuk setiap cara sebuah request bisa datang tanpa identitas, supaya jawabannya
-      // tidak menceritakan bagian mana dari token yang tidak ada.
+      // One sentence for every way a request can arrive without identity, so the answer does not reveal
+      // which part of the token is missing.
       private const string NotSignedInMessage = "This action requires a signed-in caller.";
 
       #endregion

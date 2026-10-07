@@ -4,22 +4,22 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Hub
 {
    /// <summary>
-   /// Sumber daftar pekerjaan untuk approval: satu baris per jenis dokumen yang punya request menunggu
-   /// keputusan user aktif, terpisah untuk approval dokumen dan approval data.
+   /// Task list source for approval: one row per document type that has requests waiting for the active
+   /// user's decision, separately for document approval and data approval.
    /// </summary>
    /// <remarks>
-   /// Setiap baris menawarkan satu aksi, membuka layar approval yang sudah tersaring ke jenis dokumen
-   /// itu. Keputusannya sendiri tidak diambil di sini.
+   /// Each row offers one action, opening the approval screen already filtered to that document type. The
+   /// decision itself is not taken here.
    /// </remarks>
    internal sealed class ApprovalHubTaskSource(IApprovalHubQuery query) : IHubTaskSource
    {
-      /// <summary>Sumber untuk baris approval dokumen.</summary>
+      /// <summary>Source for the document approval rows.</summary>
       public const string DocumentSource = "approval.document";
 
-      /// <summary>Sumber untuk baris approval data.</summary>
+      /// <summary>Source for the data approval rows.</summary>
       public const string DataSource = "approval.data";
 
-      /// <summary>Nama aksi yang ditawarkan setiap baris.</summary>
+      /// <summary>Name of the action offered by each row.</summary>
       public const string OpenAction = "Open";
 
       // Has to equal ApprovalManagerNavigationPayload.NavigationName in Em.Ui.Core, which the server

@@ -8,16 +8,16 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Sisi server approval: melihat request, memutuskannya, menarik kembali, berkomentar, mengambil
-   /// PDF-nya, dan mengumpulkan daftar pekerjaan user aktif.
+   /// The server side of approval: viewing requests, deciding them, withdrawing, commenting, fetching the
+   /// PDF, and collecting the active user's task list.
    /// </summary>
    /// <remarks>
-   /// Satu service untuk semua jenis dokumen - itulah sebabnya keputusan bukan action modul. Yang
-   /// khusus per jenis dokumen datang dari deklarasi alur milik modul, bukan dari action tersendiri.
+   /// One service for all document types - that is why decisions are not module actions. What is specific
+   /// to a document type comes from the flow declaration owned by the module, not from a separate action.
    /// <para>
-   /// Haknya diperiksa di dalam setiap action, bukan lewat claim pada atributnya: claim yang berlaku
-   /// bergantung pada jenis dokumen yang sedang dilihat, dan jenis itu baru diketahui setelah
-   /// request-nya dibaca. Karena itu service ini berdiri di luar default "claim apa pun di modul ini".
+   /// Rights are checked inside every action, not through the claim on its attribute: the claim that
+   /// applies depends on the document type being viewed, and that type is only known after the request is
+   /// read. For that reason this service stands outside the "any claim in this module" default.
    /// </para>
    /// </remarks>
    [Module(Defaults.ApprovalModuleName)]

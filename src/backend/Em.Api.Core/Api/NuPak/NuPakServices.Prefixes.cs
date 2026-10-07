@@ -8,6 +8,7 @@ namespace Em.Api.Core.NuPak;
 
 public sealed partial class NuPakServices
 {
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakPrefixInfo[]> GetMeta_NuPakPrefixes(string feedId) {
       await RequireFeed(feedId);
@@ -28,6 +29,7 @@ public sealed partial class NuPakServices
       if (text?.Length > 500) throw new ActionException("Description is at most 500 characters.", 400);
       return text;
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakPrefixInfo> PostGetMeta_NuPakPrefixCreate(string feedId, string name, string? description) {
       await store.Gate.WaitAsync(AbortToken);
@@ -42,6 +44,7 @@ public sealed partial class NuPakServices
       return PrefixInfo(row);
       } finally {store.Gate.Release();}
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakPrefixInfo> PostGetMeta_NuPakPrefixUpdate(string feedId, string prefixId, string name, string? description, bool active) {
       await store.Gate.WaitAsync(AbortToken);
@@ -58,6 +61,7 @@ public sealed partial class NuPakServices
       return PrefixInfo(row);
       } finally {store.Gate.Release();}
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.ManagerClaim)]
    public async Task PostMeta_NuPakPrefixDelete(string feedId, string prefixId) {
       await store.Gate.WaitAsync(AbortToken);
@@ -72,6 +76,7 @@ public sealed partial class NuPakServices
       await db.SaveChangesAsync(); await tx.CommitAsync();
       } finally {store.Gate.Release();}
    }
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakAccessInfo[]> GetMeta_NuPakPrefixAccess(string feedId,string prefixId) {
       await RequirePrefix(feedId,prefixId);

@@ -10,45 +10,44 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Pemilih database untuk context-context yang berbagi satu koneksi di dalam transaksi approval:
-   /// sebelum setiap perintah dijalankan, koneksinya dipindahkan ke database milik context yang
-   /// menjalankannya.
+   /// Database switcher for contexts that share one connection inside an approval transaction: before
+   /// each command runs, the connection is moved to the database that belongs to the context running it.
    /// </summary>
    /// <remarks>
-   /// Satu koneksi hanya berada di satu database pada satu saat, sedangkan model sebuah modul memakai
-   /// nama tabel tanpa nama database. Karena itu perpindahannya tidak dilakukan sekali saat giliran
-   /// diserahkan ke modul, tetapi di setiap perintah: handler modul yang menyentuh dua context di
-   /// database berbeda tetap benar, dan perintah context inti sesudah giliran modul tidak salah alamat.
-   /// Context yang tidak terdaftar di sini tidak disentuh sama sekali, sehingga di luar transaksi approval
-   /// interceptor ini tidak berbuat apa-apa.
+   /// One connection is in only one database at a time, while a module's model uses table names without a
+   /// database name. That is why the switch is not done once when the turn is handed to the module, but on
+   /// every command: a module handler touching two contexts in different databases is still correct, and
+   /// a core context command after the module's turn does not go to the wrong place. A context not
+   /// registered here is not touched at all, so outside an approval transaction this interceptor does
+   /// nothing.
    /// </remarks>
    internal sealed class ApprovalDatabaseSwitch : DbCommandInterceptor
    {
-      /// <summary>Satu-satunya instance; ditempelkan ke setiap context SQL Server yang dibuat engine.</summary>
+      /// <summary>The single instance; attached to every SQL Server context created by the engine.</summary>
       public static ApprovalDatabaseSwitch Instance { get; } = new();
 
       // Weak: a context lives as long as its request scope, and nothing here may keep it alive longer.
       private static readonly ConditionalWeakTable<DbContext, Attachment> Attachments = new();
 
-      /// <summary>Database milik context itu dan koneksi bersama yang sedang dipakainya.</summary>
+      /// <summary>The database that belongs to that context, and the shared connection it is currently using.</summary>
       internal sealed class Attachment(string database, DbConnection connection)
       {
-         /// <summary>Database tempat model context ini hidup.</summary>
+         /// <summary>Database where this context's model lives.</summary>
          public string Database { get; } = database;
 
-         /// <summary>Koneksi bersama yang sudah dipasang ke context ini.</summary>
+         /// <summary>The shared connection already attached to this context.</summary>
          public DbConnection Connection { get; set; } = connection;
       }
 
       /// <summary>
-      /// Database milik sebuah context yang pernah dipasang, atau <c>null</c> kalau belum pernah. Dicatat
-      /// sejak pemasangan pertama karena sesudahnya context itu memakai koneksi bersama, yang connection
-      /// string-nya milik context inti.
+      /// The database of a context that was attached before, or <c>null</c> when it never was. Recorded from
+      /// the first attachment because afterwards that context uses the shared connection, whose connection
+      /// string belongs to the core context.
       /// </summary>
       public static Attachment? Find(DbContext context) =>
          Attachments.TryGetValue(context, out var attachment) ? attachment : null;
 
-      /// <summary>Mencatat bahwa <paramref name="context"/> memakai <paramref name="connection"/>.</summary>
+      /// <summary>Records that <paramref name="context"/> uses <paramref name="connection"/>.</summary>
       public static void Attach(DbContext context, string database, DbConnection connection) {
          if (Attachments.TryGetValue(context, out var attachment)) {
             attachment.Connection = connection;
@@ -120,21 +119,21 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Transaksi satu keputusan approval yang mencakup database inti dan database milik modul: satu
-   /// koneksi, satu transaksi SQL Server, tanpa MSDTC.
+   /// Transaction of one approval decision spanning the core database and the module's database: one
+   /// connection, one SQL Server transaction, no MSDTC.
    /// </summary>
    /// <remarks>
-   /// Tanpa ini, hook modul yang menulis ke tabel modulnya berjalan di koneksi sendiri: gagal di tengah
-   /// meninggalkan dokumen sudah berubah padahal request masih menunggu, atau request sudah selesai
-   /// padahal perubahannya tidak pernah masuk. Context yang ikut serta adalah yang diminta service
-   /// modulnya lewat constructor (lihat <see cref="ApprovalFlowDeclaration.ModuleDbContextTypes"/>);
-   /// author modul tidak mengurus koneksi sama sekali. Batasannya hanya SQL Server, dan semua database
-   /// yang ikut serta harus satu server dengan satu login; <see cref="ApprovalStartupChecks"/> menolak
-   /// aplikasi yang melanggarnya sebelum menerima request pertama.
+   /// Without this, a module hook that writes to its module tables runs on its own connection: a failure
+   /// midway leaves the document changed while the request is still waiting, or the request completed
+   /// while its change never went in. The contexts that take part are those the module's service asks for
+   /// through its constructor (see <see cref="ApprovalFlowDeclaration.ModuleDbContextTypes"/>); module
+   /// authors do not deal with connections at all. The limit is SQL Server only, and all databases taking
+   /// part must be on one server with one login; <see cref="ApprovalStartupChecks"/> refuses an
+   /// application that violates this before it accepts the first request.
    /// <para>
-   /// Context modul tetap memakai koneksi bersama itu sampai akhir permintaan, termasuk untuk hook
-   /// sesudah commit; pemilih database di <see cref="ApprovalDatabaseSwitch"/> yang menjaga setiap
-   /// perintahnya jatuh di database yang benar. Yang dilepas di akhir transaksi hanyalah transaksinya.
+   /// Module contexts keep using that shared connection until the end of the call, including for hooks
+   /// after the commit; the database switcher in <see cref="ApprovalDatabaseSwitch"/> keeps every command
+   /// landing in the right database. All that is released at the end of the transaction is the transaction.
    /// </para>
    /// </remarks>
    internal sealed class ApprovalTransaction : IAsyncDisposable
@@ -148,13 +147,13 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Membuka transaksi di database inti, lalu mengikutsertakan context-context milik modul
+      /// Opens a transaction on the core database, then brings in the module contexts of
       /// <paramref name="flow"/>.
       /// </summary>
-      /// <param name="core">Context database inti.</param>
-      /// <param name="flow">Alur yang sedang dikerjakan; dari situ diketahui context modulnya.</param>
-      /// <param name="provider">Penyedia service permintaan ini.</param>
-      /// <param name="ct">Pembatalan pekerjaan.</param>
+      /// <param name="core">The core database context.</param>
+      /// <param name="flow">The flow being worked on; its module contexts are known from it.</param>
+      /// <param name="provider">The service provider of this call.</param>
+      /// <param name="ct">Cancellation of the work.</param>
       public static async Task<ApprovalTransaction> BeginAsync(ApiCoreContext core, ApprovalFlowDeclaration flow,
          IServiceProvider provider, CancellationToken ct = default) {
          var transaction = await core.Database.BeginTransactionAsync(ct);
@@ -201,13 +200,13 @@ namespace Em.Api.Core.Approval
          return new ApprovalTransaction(transaction, enlisted);
       }
 
-      /// <summary>Menyimpan seluruh perubahan di semua database yang ikut serta.</summary>
+      /// <summary>Saves all changes in every database that takes part.</summary>
       public Task CommitAsync(CancellationToken ct = default) => _transaction.CommitAsync(ct);
 
       /// <summary>
-      /// Membatalkan seluruh perubahan di semua database yang ikut serta, dan membuang apa yang dilacak
-      /// context-context modul: entitas yang sudah ditambah atau diubah di sana tidak ada lagi di
-      /// database, dan tidak boleh ikut tersimpan oleh keputusan berikutnya dalam permintaan yang sama.
+      /// Rolls back all changes in every database that takes part, and discards what the module contexts
+      /// track: entities added or changed there no longer exist in the database, and must not be saved by the
+      /// next decision in the same call.
       /// </summary>
       public async Task RollbackAsync(CancellationToken ct = default) {
          try {

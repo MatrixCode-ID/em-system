@@ -4,83 +4,91 @@ using Em.Shared;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Base class untuk setiap cara pengguna membuktikan dirinya - password, aplikasi authenticator,
-   /// dan cara lain yang menyusul. Turunannya cukup menentukan nama jenis kredensialnya, cara
-   /// memuat datanya saat dibuat, dan cara memeriksa bukti yang dikirim pengguna; urusan yang sama
-   /// untuk semua jenis - membaca, membuat, menyimpan, dan mencabut data kredensial - sudah
-   /// disediakan di sini.
+   /// Base class for every way a user proves themselves - password, authenticator app, and other ways to
+   /// come. A derived class only needs to define the credential type name, how its data is loaded when
+   /// created, and how to check the proof the user sends; what is the same for every type - reading,
+   /// creating, storing, and revoking credential data - is already provided here.
    /// <para>
-   /// Jangan diturunkan langsung: pakai <see cref="CredentialProviderBase{TPayload}"/> supaya jenis
-   /// bukti yang diterima ikut diperiksa compiler.
+   /// Do not derive from it directly: use <see cref="CredentialProviderBase{TPayload}"/> so the kind of
+   /// proof accepted is also checked by the compiler.
    /// </para>
    /// </summary>
    public abstract class CredentialProviderBase
    {
-      /// <summary>Pengguna yang memiliki kredensial ini.</summary>
+      /// <summary>The user who owns this credential.</summary>
       public required ta_User User { get; init; }
 
       /// <summary>
-      /// Service data kredensial milik server, tempat baris kredensial dibaca dan ditulis. Diisi
-      /// oleh action yang sedang berjalan, karena hanya dia yang memegang DbContext milik request
-      /// tersebut.
+      /// The server's credential data service, where credential rows are read and written. Filled by the
+      /// running action, because only it holds the DbContext of that request.
       /// </summary>
       public required CredentialServices Services { get; init; }
 
       /// <summary>
-      /// Nama jenis kredensial ini, mis. <c>"PASSWORD"</c>. Dipakai sebagai penanda saat mencari
-      /// data kredensial milik pengguna, jadi nilainya harus tetap dan unik antar jenis.
+      /// Name of this credential type, e.g. <c>"PASSWORD"</c>. Used as the marker when looking up a user's
+      /// credential data, so its value must be fixed and unique among types.
       /// </summary>
       public abstract string Name { get; }
 
       // The stored credential this provider works on. Null until InitCredential has run, and for
       // credentials that only come into existence once the user has enrolled in them.
+      /// <summary>The stored credential this provider works on. <c>null</c> until it has been loaded or created.</summary>
       protected ta_UserCredential? UserCredential { get; private set; }
 
       /// <summary>
-      /// Status kredensial ini. Bernilai <see cref="CredentialState.Pending"/> selama penggunanya
-      /// belum punya kredensial jenis ini sama sekali.
+      /// Status of this credential. Is <see cref="CredentialState.Pending"/> as long as the user has no
+      /// credential of this type at all.
       /// </summary>
       public CredentialState State => UserCredential?.cCredentialState ?? CredentialState.Pending;
 
       /// <summary>
-      /// Menandakan kredensial ini sudah selesai didaftarkan dan boleh dipakai untuk masuk.
-      /// Selama masih <c>false</c>, <see cref="IsValidAsync"/> selalu menolak apa pun buktinya.
+      /// Indicates that this credential has finished being enrolled and may be used to sign in. While still
+      /// <c>false</c>, <see cref="IsValidAsync"/> always refuses whatever the proof.
       /// </summary>
       public bool IsEnrolled => UserCredential is not null && State >= CredentialState.Inactive;
 
       /// <summary>
-      /// Memeriksa apakah bukti yang dikirim pengguna cocok dengan kredensial yang tersimpan.
-      /// Dipakai oleh kode yang tidak tahu jenis kredensial apa yang sedang dipegangnya - alur
-      /// login, misalnya, yang menawarkan satu per satu kredensial milik pengguna.
+      /// Checks whether the proof sent by the user matches the stored credential. Used by code that does
+      /// not know which credential type it is holding - the login flow, for example, which offers the user's
+      /// credentials one by one.
       /// </summary>
       /// <param name="payload">
-      /// Bukti dari pengguna. Bentuknya ditentukan masing-masing jenis kredensial: password berupa
-      /// teks, aplikasi authenticator berupa kode angka, dan seterusnya.
+      /// The proof from the user. Its shape is decided by each credential type: text for a password, a
+      /// numeric code for an authenticator app, and so on.
       /// </param>
-      /// <returns><c>true</c> jika buktinya sah.</returns>
+      /// <returns><c>true</c> if the proof is valid.</returns>
       /// <exception cref="ArgumentException">
-      /// Jenis <paramref name="payload"/> bukan yang diminta kredensial ini.
+      /// The type of <paramref name="payload"/> is not the one this credential asks for.
       /// </exception>
       public abstract Task<bool> IsValidAsync(object payload);
 
       /// <summary>
-      /// Mencabut kredensial ini sehingga tidak bisa lagi dipakai masuk, tanpa menghapus datanya.
-      /// Dipakai misalnya saat perangkat authenticator pengguna hilang.
+      /// Revokes this credential so it can no longer be used to sign in, without deleting its data. Used for
+      /// example when the user's authenticator device is lost.
       /// </summary>
       public async Task RevokeAsync() =>
          await SaveCredentialAsync(data => data.cCredentialState = CredentialState.Revoked);
 
-      // Runs once while the provider is being created: this is where a subclass decides whether it
-      // merely reads what is already stored, or also creates a credential for a user who has none.
+      /// <summary>
+      /// Runs once while the provider is being created: this is where a subclass decides whether it
+      /// merely reads what is already stored, or also creates a credential for a user who has none.
+      /// </summary>
       protected abstract Task InitCredential();
 
-      // Reads the stored credential of this type for the user and makes it the one this provider
-      // works on. Returns null when the user has no credential of this type.
+      /// <summary>
+      /// Reads the stored credential of this type for the user and makes it the one this provider
+      /// works on. Returns <c>null</c> when the user has no credential of this type.
+      /// </summary>
       protected async Task<ta_UserCredential?> LoadCredentialAsync() =>
          UserCredential = await Services.GetTa_UserCredential_ByType(User.cUserId, Name);
 
-      // Creates the credential for this user. Left Pending by default: a credential that was only
-      // just created still holds nothing to check a login against.
+      /// <summary>
+      /// Creates the credential for this user. Left <see cref="CredentialState.Pending"/> by default: a
+      /// credential that was only just created still holds nothing to check a login against.
+      /// </summary>
+      /// <param name="state">The initial state of the credential.</param>
+      /// <param name="key">The public part of the credential, if its type has one.</param>
+      /// <param name="secret">The secret part of the credential, if its type has one.</param>
       protected async Task<ta_UserCredential> CreateCredentialAsync(
          CredentialState state = CredentialState.Pending, string? key = null, string? secret = null) {
          var stamp = await Services.App.GetDateStampAsync();
@@ -100,9 +108,12 @@ namespace Em.Api.Core
          return data;
       }
 
-      // Applies an edit to the stored credential and writes it back. The edit runs on a copy rather
-      // than on the data being held, so that a write the server rejects leaves the provider showing
-      // what is actually stored instead of a change that never landed.
+      /// <summary>
+      /// Applies an edit to the stored credential and writes it back. The edit runs on a copy rather
+      /// than on the data being held, so that a write the server rejects leaves the provider showing
+      /// what is actually stored instead of a change that never landed.
+      /// </summary>
+      /// <param name="edit">The change to apply to the copy.</param>
       protected async Task<ta_UserCredential> SaveCredentialAsync(Action<ta_UserCredential> edit) {
          var current = UserCredential
             ?? throw new InvalidOperationException(
@@ -129,13 +140,13 @@ namespace Em.Api.Core
    }
 
    /// <summary>
-   /// Base class untuk jenis kredensial yang buktinya berbentuk <typeparamref name="TPayload"/>.
-   /// Selain menjaga jenis bukti tetap cocok, di sini juga dipastikan kredensial yang belum
-   /// terdaftar atau sudah dicabut selalu ditolak, sehingga turunannya tinggal mengurus
-   /// pemeriksaan isi buktinya saja.
+   /// Base class for credential types whose proof has the shape <typeparamref name="TPayload"/>. Besides
+   /// keeping the proof type matching, it also makes sure a credential that is not enrolled or has been
+   /// revoked is always refused, so derived classes only need to take care of checking the proof's
+   /// content.
    /// </summary>
    /// <typeparam name="TPayload">
-   /// Jenis bukti yang diminta dari pengguna, mis. <see cref="string"/> untuk password.
+   /// The kind of proof asked from the user, e.g. <see cref="string"/> for a password.
    /// </typeparam>
    public abstract class CredentialProviderBase<TPayload> : CredentialProviderBase
    {
@@ -147,18 +158,20 @@ namespace Em.Api.Core
                $"Credential '{Name}' expects a payload of type {typeof(TPayload).Name}.", nameof(payload));
 
       /// <summary>
-      /// Memeriksa apakah bukti yang dikirim pengguna cocok dengan kredensial yang tersimpan.
-      /// Kredensial yang belum selesai didaftarkan atau sudah dicabut selalu ditolak di sini,
-      /// tanpa perlu memeriksa isi buktinya.
+      /// Checks whether the proof sent by the user matches the stored credential. A credential that has not
+      /// finished enrolling or has been revoked is always refused here, without checking the proof's content.
       /// </summary>
-      /// <param name="payload">Bukti dari pengguna.</param>
-      /// <returns><c>true</c> jika buktinya sah.</returns>
+      /// <param name="payload">The proof from the user.</param>
+      /// <returns><c>true</c> if the proof is valid.</returns>
       public Task<bool> IsValidAsync(TPayload payload) =>
          IsEnrolled ? ValidateAsync(payload) : Task.FromResult(false);
 
-      // The actual check, reached only for a credential that is enrolled and not revoked. Async on
-      // purpose: a one-time code has to record that it was used so the same code cannot be replayed,
-      // and that recording is a write.
+      /// <summary>
+      /// The actual check, reached only for a credential that is enrolled and not revoked. Async on
+      /// purpose: a one-time code has to record that it was used so the same code cannot be replayed,
+      /// and that recording is a write.
+      /// </summary>
+      /// <param name="payload">The proof from the user.</param>
       protected abstract Task<bool> ValidateAsync(TPayload payload);
    }
 }

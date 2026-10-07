@@ -9,22 +9,22 @@ using Microsoft.Extensions.Primitives;
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Jalur publik <c>/v2</c> (OCI Distribution) yang cukup untuk <c>docker login</c>, <c>push</c>, dan
-   /// <c>pull</c>: ping, blob (unggah bersegmen, mount lintas container, Range), manifest, dan daftar
-   /// tag. Dipasang <c>EmApp.Run</c> di luar jalur action, jadi tidak terkena batas waktu dan jatah
-   /// request action; autentikasinya robot (Basic), bukan sesi Em.
+   /// The public <c>/v2</c> path (OCI Distribution) that is enough for <c>docker login</c>, <c>push</c>, and
+   /// <c>pull</c>: ping, blobs (chunked upload, cross-container mount, Range), manifests, and tag lists.
+   /// Mapped by <c>EmApp.Run</c> outside the action path, so it is not subject to the action time limit and
+   /// request quota; its authentication is by robot (Basic), not an Em session.
    /// </summary>
    /// <remarks>
-   /// Push tidak pernah membuat root, folder, atau nama container: yang belum dibuat lewat
-   /// <c>ICtnServices</c> dijawab <c>NAME_UNKNOWN</c>. Hak mengikuti root: robot tanpa baris hak di
-   /// sebuah root tidak bisa melihat root itu (juga <c>NAME_UNKNOWN</c>); robot <c>R</c> yang mencoba
-   /// menulis dijawab <c>DENIED</c>.
+   /// A push never creates a root, folder, or container name: anything not yet created through
+   /// <c>ICtnServices</c> is answered <c>NAME_UNKNOWN</c>. Rights follow the root: a robot without a right
+   /// row in a root cannot see that root (also <c>NAME_UNKNOWN</c>); a robot <c>R</c> that tries to write
+   /// is answered <c>DENIED</c>.
    /// </remarks>
    internal static class CtnRegistryEndpoint
    {
       private const int MaxManifestSize = 4 * 1024 * 1024;
 
-      // Request yang sedang dilayani, dibawa ke setiap handler supaya parameternya tidak berderet.
+      // The request being served, carried to each handler so its parameters do not pile up.
       private sealed class Call
       {
          public required HttpContext Http { get; init; }
@@ -52,7 +52,7 @@ namespace Em.Api.Core.Registry
          } catch (CtnRegistryException ex) {
             await WriteErrorAsync(http, ex);
          } catch (OperationCanceledException) when (http.RequestAborted.IsCancellationRequested) {
-            // Klien pergi di tengah jalan; tidak ada yang menunggu jawaban.
+            // The client left midway; nobody is waiting for the answer.
          } catch (Exception ex) {
             http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Em.Registry")
                .LogError(ex, "Registry request {Method} {Path} failed", http.Request.Method, http.Request.Path);
@@ -143,9 +143,9 @@ namespace Em.Api.Core.Registry
          }
       }
 
-      // Root dan nama harus sudah dibuat lewat layanan manajemen, dan robotnya harus punya hak di root
-      // itu. Robot tanpa baris hak tidak boleh tahu root-nya ada, jadi jawabannya sama dengan root yang
-      // tidak ada.
+      // The root and name must already have been created through the management service, and the robot must
+      // have a right in that root. A robot without a right row must not know the root exists, so the answer
+      // is the same as for a root that does not exist.
       private static async Task<(ta_CtnRoot, ta_CtnImage)> ResolveNameAsync(CtnContext db, ta_Robot robot,
          string[] name, bool needsWrite, CancellationToken ct) {
          var rootName = name[0];
@@ -256,8 +256,8 @@ namespace Em.Api.Core.Registry
          var (mediaType, blobRefs, childRefs) = ParseManifest(content, c.Http.Request.ContentType);
          var imageId = c.Image.cCtnImageId;
 
-         // Setiap blob yang disebut manifest harus sudah terhubung ke container ini; tautan itulah pagar
-         // yang membuat digest layer milik container lain tidak bisa dipakai begitu saja.
+         // Every blob named by the manifest must already be linked to this container; that link is the fence
+         // that keeps a layer digest of another container from being used just like that.
          var blobIds = new Dictionary<string, string>();
          var wantedBlobs = blobRefs.Select(r => r.Digest).Distinct().ToList();
          if (wantedBlobs.Count > 0) {
@@ -359,8 +359,8 @@ namespace Em.Api.Core.Registry
 
       private record BlobRef(string Digest, string Role);
 
-      // Membaca manifest image (config + layer) atau index/list (manifest anak). Yang lain - termasuk
-      // schema 1 - ditolak: klien Docker modern tidak mengirimnya.
+      // Reads an image manifest (config + layers) or an index/list (child manifests). Anything else -
+      // including schema 1 - is refused: modern Docker clients do not send it.
       private static (string MediaType, List<BlobRef> Blobs, List<string> Children) ParseManifest(byte[] content, string? contentType) {
          JsonDocument doc;
          try {
@@ -393,7 +393,7 @@ namespace Em.Api.Core.Registry
                   blobs.Add(new BlobRef(RequireDigest(config), "config"));
                   if (root.TryGetProperty("layers", out var layers) && layers.ValueKind == JsonValueKind.Array) {
                      foreach (var layer in layers.EnumerateArray()) {
-                        // Layer asing (Windows) hidup di alamat luar; tidak ada blob yang perlu terhubung.
+                        // Foreign layers (Windows) live at an external address; there is no blob that needs to be linked.
                         if (layer.TryGetProperty("urls", out var urls) && urls.ValueKind == JsonValueKind.Array && urls.GetArrayLength() > 0) {
                            continue;
                         }
@@ -460,7 +460,7 @@ namespace Em.Api.Core.Registry
          }
 
          c.Http.Response.Headers["Docker-Content-Digest"] = digest;
-         // Range, If-Range, HEAD, 206 dan 416 ditangani oleh hasil file-nya.
+         // Range, If-Range, HEAD, 206 and 416 are handled by its file result.
          await Results.File(path, "application/octet-stream", enableRangeProcessing: true).ExecuteAsync(c.Http);
       }
 
@@ -510,7 +510,7 @@ namespace Em.Api.Core.Registry
          });
          await c.Db.SaveChangesAsync(c.Ct);
 
-         // Unggahan monolitik: POST ...?digest=... membawa seluruh isi sekaligus.
+         // Monolithic upload: POST ...?digest=... carries the entire content at once.
          if (query.ContainsKey("digest")) {
             await CompleteUploadAsync(c, uploadId, query["digest"].ToString());
             return;
@@ -519,10 +519,10 @@ namespace Em.Api.Core.Registry
          WriteUploadAccepted(c, uploadId, 0);
       }
 
-      // Mount lintas container: layer yang sudah ada di container sumber cukup ditautkan, tanpa unggah
-      // ulang. Butuh hak pull di root sumber; kalau syaratnya tidak terpenuhi (sumber tidak ada, tidak
-      // ada hak, blob tidak terhubung) jatuh ke unggahan biasa, sesuai spesifikasi, dan tidak membocorkan
-      // apa pun tentang root yang tidak boleh dilihat.
+      // Cross-container mount: a layer that already exists in the source container only needs to be linked,
+      // without uploading again. Needs pull right in the source root; when the conditions are not met (the
+      // source does not exist, no right, blob not linked) it falls back to an ordinary upload, per the
+      // specification, and leaks nothing about a root that may not be seen.
       private static async Task<bool> TryMountAsync(Call c, string digest, string from) {
          if (!CtnNames.IsValidDigest(digest) || string.IsNullOrEmpty(from)) return false;
 
@@ -543,7 +543,7 @@ namespace Em.Api.Core.Registry
             select image.cCtnImageId).SingleOrDefaultAsync(c.Ct);
          if (sourceImageId is null) return false;
 
-         // Kunci menahan garbage collection selama blob sumber dicek dan ditautkan ke container ini.
+         // The lock holds garbage collection off while the source blob is checked and linked to this container.
          using (await CtnBlobGate.EnterAsync(c.Ct)) {
             var blobId = await c.Db.BlobLinks.Where(l => l.cCtnImageId == sourceImageId)
                .Join(c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest), l => l.cCtnBlobId, b => b.cCtnBlobId, (_, b) => b.cCtnBlobId)
@@ -568,7 +568,7 @@ namespace Em.Api.Core.Registry
          try {
             await c.Db.SaveChangesAsync(c.Ct);
          } catch (DbUpdateException) {
-            // Request lain menautkan blob yang sama lebih dulu; hasil akhirnya sama. Selain itu, gagal.
+            // Another request linked the same blob first; the end result is the same. Otherwise, it failed.
             c.Db.ChangeTracker.Clear();
             if (!await c.Db.BlobLinks.AnyAsync(l => l.cCtnImageId == imageId && l.cCtnBlobId == blobId, c.Ct)) throw;
          }
@@ -579,8 +579,8 @@ namespace Em.Api.Core.Registry
          var upload = await FindUploadAsync(c);
          var current = c.Store.UploadSize(upload.cCtnUploadId);
 
-         // Content-Range ("start-end", kadang diawali "bytes ") bersifat opsional, tetapi kalau ada harus
-         // menyambung persis di ujung yang sudah diterima.
+         // Content-Range ("start-end", sometimes prefixed with "bytes ") is optional, but when present it must
+         // continue exactly at the end already received.
          var range = c.Http.Request.Headers.ContentRange.ToString();
          if (range.Length > 0) {
             var text = range.StartsWith("bytes ", StringComparison.OrdinalIgnoreCase) ? range[6..] : range;
@@ -602,8 +602,8 @@ namespace Em.Api.Core.Registry
          await CompleteUploadAsync(c, upload.cCtnUploadId, c.Http.Request.Query["digest"].ToString());
       }
 
-      // Menutup unggahan: isi sisa body (kalau ada), memastikan hash-nya sama dengan digest yang
-      // dijanjikan klien, lalu memindahkan berkas jadi blob dan menautkannya ke container ini.
+      // Closes the upload: writes the rest of the body (if any), makes sure its hash equals the digest the
+      // client promised, then moves the file to become the blob and links it to this container.
       private static async Task CompleteUploadAsync(Call c, string uploadId, string digest) {
          if (!CtnNames.IsValidDigest(digest)) {
             throw new CtnRegistryException(400, "DIGEST_INVALID", "A valid sha256 'digest' query parameter is required.");
@@ -622,7 +622,8 @@ namespace Em.Api.Core.Registry
          }
 
          var size = new FileInfo(path).Length;
-         // Kunci dipegang dari pemindahan berkas sampai tautan tersimpan, supaya garbage collection tidak menyapu blob ini di tengah jalan.
+         // The lock is held from moving the file until the link is saved, so garbage collection does not sweep
+         // this blob midway.
          using (await CtnBlobGate.EnterAsync(c.Ct)) {
             c.Store.CommitUpload(uploadId, digest);
 
@@ -634,7 +635,7 @@ namespace Em.Api.Core.Registry
                try {
                   await c.Db.SaveChangesAsync(c.Ct);
                } catch (DbUpdateException) {
-                  // Kemungkinan besar blob yang sama dicatat request lain di saat yang sama; ambil miliknya.
+                  // Most likely another request recorded the same blob at the same time; take its row.
                   c.Db.ChangeTracker.Clear();
                   blobId = await c.Db.Blobs.Where(b => b.cCtnBlobDigest == digest).Select(b => b.cCtnBlobId).SingleOrDefaultAsync(c.Ct) ?? throw new CtnRegistryException(500, "UNKNOWN", "The blob could not be recorded.");
                }

@@ -4,18 +4,18 @@ using System.Text.Json.Serialization;
 namespace Em.Api.Shared;
 
 /// <summary>
-/// Konfigurasi host API yang berbeda per lingkungan, dalam satu berkas JSON standar
-/// (<see cref="FileName"/>). Berkasnya disimpan di luar repo (folder artefak lokal) karena memuat secret;
-/// fitur dan modul yang dinyalakan tetap ditulis di kode host.
-/// Terapkan ke builder dengan <see cref="EmAppBuilder.ApplyConfig"/>.
+/// Host API configuration that differs per environment, in one standard JSON file
+/// (<see cref="FileName"/>). The file is kept outside the repo (the local artifacts folder) because it
+/// holds secrets; the features and modules that are turned on are still written in the host code.
+/// Apply it to the builder with <see cref="EmAppBuilder.ApplyConfig"/>.
 /// </summary>
 /// <remarks>
-/// Nilai angka yang dibiarkan <c>null</c> memakai bawaan <see cref="EmAppBuilder"/>, jadi berkas cukup memuat
-/// yang memang ingin diubah.
+/// A numeric value left <c>null</c> uses the default of <see cref="EmAppBuilder"/>, so the file only
+/// needs to contain what is really meant to change.
 /// </remarks>
 public sealed class EmApiConfig
 {
-   /// <summary>Nama berkas standar konfigurasi host API.</summary>
+   /// <summary>Standard file name of the host API configuration.</summary>
    public const string FileName = "emapi-config.json";
 
    private static readonly JsonSerializerOptions JsonOptions = new() {
@@ -25,22 +25,29 @@ public sealed class EmApiConfig
       Converters = { new JsonStringEnumConverter() },
    };
 
+   /// <summary>Database connection settings.</summary>
    public DatabaseSection Database { get; set; } = new();
+   /// <summary>Built-in administrator settings.</summary>
    public AdminSection Admin { get; set; } = new();
+   /// <summary>Debug token keys to register.</summary>
    public List<DebugTokenSection> DebugTokens { get; set; } = [];
+   /// <summary>HTTP, rate limit, and proxy settings.</summary>
    public HttpSection Http { get; set; } = new();
+   /// <summary>Session settings.</summary>
    public SessionSection Session { get; set; } = new();
+   /// <summary>Storage paths.</summary>
    public StorageSection Storage { get; set; } = new();
 
    /// <summary>
-   /// Saklar modul opsional per nama (mis. <c>"modules": { "test": true }</c>). Engine tidak membacanya
-   /// sendiri; host yang memutuskan memasang modul lewat <see cref="IsModuleEnabled"/>. Nama tidak peka huruf.
+   /// Switches of optional modules by name (e.g. <c>"modules": { "test": true }</c>). The engine does not
+   /// read them itself; the host decides to install a module through <see cref="IsModuleEnabled"/>. Names
+   /// are case-insensitive.
    /// </summary>
    public Dictionary<string, bool> Modules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
    /// <summary>
-   /// Apakah modul <paramref name="name"/> dinyalakan. Modul yang tidak disebut memakai
-   /// <paramref name="defaultValue"/>, jadi modul opsional sebaiknya mati kecuali dinyalakan eksplisit.
+   /// Whether module <paramref name="name"/> is turned on. A module that is not mentioned uses
+   /// <paramref name="defaultValue"/>, so an optional module should stay off unless turned on explicitly.
    /// </summary>
    public bool IsModuleEnabled(string name, bool defaultValue = false) {
       // System.Text.Json replaces the dictionary (and its comparer) on load, so match the name by hand.
@@ -51,8 +58,8 @@ public sealed class EmApiConfig
       return defaultValue;
    }
 
-   /// <summary>Membaca berkas konfigurasi; komentar dan koma di akhir diperbolehkan.</summary>
-   /// <exception cref="InvalidOperationException">Dilempar kalau isi berkas bukan JSON yang bisa dibaca.</exception>
+   /// <summary>Reads the configuration file; comments and trailing commas are allowed.</summary>
+   /// <exception cref="InvalidOperationException">Thrown when the file content is not readable JSON.</exception>
    public static EmApiConfig Load(string path) {
       try {
          using var stream = File.OpenRead(path);
@@ -63,10 +70,11 @@ public sealed class EmApiConfig
    }
 
    /// <summary>
-   /// Memeriksa nilai wajib dan nilai yang jelas salah, supaya kekeliruan ketahuan saat startup dengan
-   /// pesan yang menyebut kuncinya. Format public key debug dan alamat proxy diperiksa oleh builder.
+   /// Checks required values and values that are clearly wrong, so mistakes are found at startup with a
+   /// message that names the key. The format of the debug public key and the proxy addresses are checked by
+   /// the builder.
    /// </summary>
-   /// <exception cref="InvalidOperationException">Dilempar pada nilai pertama yang tidak valid.</exception>
+   /// <exception cref="InvalidOperationException">Thrown at the first invalid value.</exception>
    public void Validate() {
       if (string.IsNullOrWhiteSpace(Database.ConnectionString)) {
          throw new InvalidOperationException("database.connectionString is required.");
@@ -100,76 +108,99 @@ public sealed class EmApiConfig
       }
    }
 
+   /// <summary>Settings of the main database connection.</summary>
    public sealed class DatabaseSection
    {
+      /// <summary>Database provider; SQL Server by default.</summary>
       public DatabaseProvider Provider { get; set; } = DatabaseProvider.MicrosoftSqlServer;
+      /// <summary>Connection string; may be overridden by <c>EM_DB_CONNECTION_STRING</c>.</summary>
       public string? ConnectionString { get; set; }
 
-      /// <summary>Koneksi tambahan per nama, didaftarkan lewat <see cref="EmAppBuilder.AddExtraDbConn"/>.</summary>
+      /// <summary>Extra connections by name, registered through <see cref="EmAppBuilder.AddExtraDbConn"/>.</summary>
       public Dictionary<string, ExtraDatabaseSection> Extra { get; set; } = new(StringComparer.OrdinalIgnoreCase);
    }
 
+   /// <summary>Settings of an extra named database connection.</summary>
    public sealed class ExtraDatabaseSection
    {
+      /// <summary>Database provider of this connection.</summary>
       public DatabaseProvider Provider { get; set; } = DatabaseProvider.MicrosoftSqlServer;
+      /// <summary>Connection string of this connection.</summary>
       public string? ConnectionString { get; set; }
    }
 
+   /// <summary>Settings of the built-in administrator account.</summary>
    public sealed class AdminSection
    {
-      /// <summary>Lihat <see cref="EmAppBuilder.FirstTimeAdminPassword"/>.</summary>
+      /// <summary>See <see cref="EmAppBuilder.FirstTimeAdminPassword"/>.</summary>
       public string? InitialPassword { get; set; }
    }
 
+   /// <summary>One debug token key to register.</summary>
    public sealed class DebugTokenSection
    {
+      /// <summary>Name of the key, which tokens signed by it must name.</summary>
       public string Name { get; set; } = "Development Token";
 
-      /// <summary>Public key RSA Base64 DER PKCS#1, bukan private key atau token HTTP.</summary>
+      /// <summary>RSA public key as Base64 DER PKCS#1, not a private key or an HTTP token.</summary>
       public string? PublicKey { get; set; }
 
+      /// <summary>Validity of its tokens in days; <c>-1</c> means no limit.</summary>
       public int Days { get; set; } = EmAppBuilder.DefaultDebugTokenDays;
    }
 
+   /// <summary>HTTP-related settings.</summary>
    public sealed class HttpSection
    {
+      /// <summary>Time limit of GET actions in seconds; <c>null</c> keeps the builder default.</summary>
       public int? RequestTimeoutSeconds { get; set; }
 
-      /// <summary>Lihat <see cref="EmAppBuilder.ActionRateLimit"/>; <c>-1</c> berarti tanpa batas.</summary>
+      /// <summary>See <see cref="EmAppBuilder.ActionRateLimit"/>; <c>-1</c> means no limit.</summary>
       public int? ActionRateLimit { get; set; }
 
+      /// <summary>Reverse proxy settings.</summary>
       public ProxySection Proxy { get; set; } = new();
    }
 
+   /// <summary>Settings for trusting reverse proxies when reading client addresses.</summary>
    public sealed class ProxySection
    {
-      /// <summary>Alamat IP atau CIDR yang dipercaya; lihat <see cref="EmAppBuilder.TrustProxy"/>.</summary>
+      /// <summary>Trusted IP addresses or CIDR; see <see cref="EmAppBuilder.TrustProxy"/>.</summary>
       public List<string> Trusted { get; set; } = [];
 
-      /// <summary>Lihat <see cref="EmAppBuilder.TrustAnyProxy"/>; hanya untuk API yang tidak bisa dihubungi selain lewat proxy.</summary>
+      /// <summary>See <see cref="EmAppBuilder.TrustAnyProxy"/>; only for an API that cannot be reached except through a proxy.</summary>
       public bool TrustAny { get; set; }
 
-      /// <summary>Lihat <see cref="EmAppBuilder.ProxyHopLimit"/>.</summary>
+      /// <summary>See <see cref="EmAppBuilder.ProxyHopLimit"/>.</summary>
       public int? HopLimit { get; set; }
    }
 
+   /// <summary>Session-related settings.</summary>
    public sealed class SessionSection
    {
+      /// <summary>Hours a dead session row is kept; <c>null</c> keeps the builder default.</summary>
       public int? TokenRetentionHours { get; set; }
    }
 
    /// <summary>
-   /// Path penyimpanan. Path relatif dihitung dari folder konten aplikasi. Selain
-   /// <see cref="TaskCachePath"/>, path ini hanya dipakai bila host menyalakan fiturnya.
+   /// Storage paths. A relative path is resolved from the application content folder. Except for
+   /// <see cref="TaskCachePath"/>, these paths are only used when the host turns the feature on.
    /// </summary>
    public sealed class StorageSection
    {
+      /// <summary>Folder of business task results.</summary>
       public string TaskCachePath { get; set; } = "./data/tasks";
+      /// <summary>Folder of local binary storage.</summary>
       public string BinaryPath { get; set; } = "./data/binary";
+      /// <summary>Folder served by the CDN.</summary>
       public string CdnPath { get; set; } = "./data/cdn";
+      /// <summary>Size limit of one CDN upload, in megabytes.</summary>
       public int CdnMaxFileSizeMb { get; set; } = EmAppBuilder.DefaultCdnMaxFileSizeMb;
+      /// <summary>Folder of NuPak package files.</summary>
       public string NuPakPath { get; set; } = "./data/nuget";
+      /// <summary>Size limit of one NuPak package, in megabytes.</summary>
       public int NuPakMaxPackageMb { get; set; } = 250;
+      /// <summary>Folder of container registry blobs.</summary>
       public string RegistryPath { get; set; } = "./data/container-registry";
    }
 }

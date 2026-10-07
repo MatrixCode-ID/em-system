@@ -13,7 +13,7 @@ namespace Em.Api.Core
    /// behind any proxy and needs nothing else to be served.
    /// </summary>
    /// <remarks>
-   /// Every name goes through <see cref="HtmlEncoder"/> for text and <see cref="Uri.EscapeDataString"/>
+   /// Every name goes through <see cref="HtmlEncoder"/> for text and <see cref="Uri.EscapeDataString(string)"/>
    /// per segment for links: file names are whatever an administrator uploaded, and one of them must
    /// never be able to become markup on this page.
    /// </remarks>

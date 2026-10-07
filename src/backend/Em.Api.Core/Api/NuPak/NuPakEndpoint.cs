@@ -13,9 +13,11 @@ using Microsoft.Net.Http.Headers;
 using NuGet.Versioning;
 namespace Em.Api.Core.NuPak;
 
+/// <summary>The public NuGet protocol endpoint of NuPak: service index, search, download, and push.</summary>
 public static class NuPakEndpoint
 {
    private static Dictionary<string, object?> Json(params (string Key, object? Value)[] fields) => fields.ToDictionary(f => f.Key, f => f.Value);
+   /// <summary>Handles one request under the NuPak path.</summary>
    public static async Task HandleAsync(HttpContext ctx) {
       var db = ctx.RequestServices.GetRequiredService<NuPakDbContext>();
       var store = ctx.RequestServices.GetRequiredService<NuPakStore>();

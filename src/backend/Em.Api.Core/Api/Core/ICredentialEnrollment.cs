@@ -1,38 +1,36 @@
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Kontrak pendaftaran kredensial satu langkah: penggunanya cukup mengirim satu bukti dan
-   /// kredensialnya langsung siap dipakai - seperti password, yang cukup diketik sekali.
-   /// Dipisah dari <see cref="CredentialProviderBase"/> karena tidak semua jenis kredensial
-   /// didaftarkan dari dalam aplikasi ini.
+   /// Contract for one-step credential enrollment: the user only needs to send one proof and the
+   /// credential is immediately ready to use - like a password, which only needs to be typed once.
+   /// Kept apart from <see cref="CredentialProviderBase"/> because not every credential type is enrolled
+   /// from inside this application.
    /// </summary>
-   /// <typeparam name="TProof">Jenis bukti yang diminta saat pendaftaran.</typeparam>
+   /// <typeparam name="TProof">The kind of proof asked for at enrollment.</typeparam>
    public interface ICredentialEnrollment<in TProof>
    {
       /// <summary>
-      /// Menyelesaikan pendaftaran dengan bukti dari pengguna, lalu menandai kredensialnya siap
-      /// dipakai untuk masuk.
+      /// Completes the enrollment with the user's proof, then marks the credential ready to use for signing in.
       /// </summary>
-      /// <param name="proof">Bukti dari pengguna, mis. password baru atau kode pertama dari aplikasi authenticator.</param>
+      /// <param name="proof">The user's proof, e.g. a new password or the first code from an authenticator app.</param>
       Task ConfirmEnrollAsync(TProof proof);
    }
 
    /// <summary>
-   /// Kontrak pendaftaran kredensial dua langkah: aplikasi menyiapkan dulu apa yang harus dibawa
-   /// pengguna ke tempat lain - misalnya rahasia yang perlu dipindai aplikasi authenticator lewat
-   /// QR code - baru kemudian pendaftarannya dikonfirmasi dengan bukti bahwa langkah pertama
-   /// berhasil.
+   /// Contract for two-step credential enrollment: the application first prepares what the user must take
+   /// elsewhere - for example a secret that an authenticator app must scan through a QR code - and only
+   /// then is the enrollment confirmed with proof that the first step succeeded.
    /// </summary>
-   /// <typeparam name="TSetup">Jenis data yang dihasilkan langkah penyiapan.</typeparam>
-   /// <typeparam name="TProof">Jenis bukti yang diminta untuk mengonfirmasi penyiapan tadi.</typeparam>
+   /// <typeparam name="TSetup">The kind of data produced by the setup step.</typeparam>
+   /// <typeparam name="TProof">The kind of proof asked for to confirm that setup.</typeparam>
    public interface ICredentialEnrollment<TSetup, in TProof> : ICredentialEnrollment<TProof>
    {
       /// <summary>
-      /// Memulai pendaftaran dan mengembalikan data yang perlu ditampilkan ke pengguna. Selama
-      /// <see cref="ICredentialEnrollment{TProof}.ConfirmEnrollAsync"/> belum dipanggil,
-      /// kredensialnya belum bisa dipakai untuk masuk.
+      /// Starts the enrollment and returns the data that needs to be shown to the user. As long as
+      /// <see cref="ICredentialEnrollment{TProof}.ConfirmEnrollAsync"/> has not been called, the credential
+      /// cannot be used for signing in yet.
       /// </summary>
-      /// <returns>Data penyiapan yang harus diteruskan ke pengguna.</returns>
+      /// <returns>The setup data that must be passed on to the user.</returns>
       Task<TSetup> BeginEnrollAsync();
    }
 }

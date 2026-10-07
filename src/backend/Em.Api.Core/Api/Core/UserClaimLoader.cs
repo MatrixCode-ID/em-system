@@ -5,21 +5,21 @@ using Em.Shared;
 namespace Em.Api.Core
 {
    /// <summary>
-   /// Satu tempat untuk pertanyaan "hak apa saja yang berlaku untuk pengguna ini sekarang". Dipakai
-   /// gerbang di <c>EmApp.ProcessRequest</c> maupun kedua action yang menampilkannya di layar, supaya
-   /// aturan jendela waktunya - sejak kapan berlaku, sampai kapan, dan role yang sudah tidak aktif -
-   /// hanya tertulis sekali. Ditulis dua kali, keduanya akan berbeda begitu salah satunya diperbaiki.
+   /// One place for the question "which rights apply to this user right now". Used by the gate in
+   /// <c>EmApp.ProcessRequest</c> and by the two actions that show it on screen, so the time window rule -
+   /// since when it applies, until when, and roles that are no longer active - is written only once.
+   /// Written twice, the two would differ as soon as one of them is fixed.
    /// </summary>
    internal static class UserClaimLoader
    {
       /// <summary>
-      /// Hak yang diberikan langsung ke pengguna, yang masa berlakunya sedang jalan pada
+      /// Rights granted directly to the user, whose validity period is running at
       /// <paramref name="now"/>.
       /// </summary>
       /// <remarks>
-      /// Tidak disaring terhadap katalog claim: pemberian yatim - hak yang sudah dihapus dari kode tapi
-      /// barisnya tertinggal - harus tetap terlihat, karena hanya lewat situ ia bisa dikenali dan
-      /// dicabut. Untuk gerbang hal itu tidak merugikan: hak yatim tidak cocok dengan action mana pun.
+      /// Not filtered against the claim catalog: an orphaned grant - a right removed from code whose row
+      /// remains - must stay visible, because only there can it be recognized and revoked. For the gate this
+      /// does no harm: an orphaned right matches no action.
       /// </remarks>
       public static IQueryable<string> QueryDirectNames(ApiCoreContext ctx, string cUserId, DateTime now) =>
          ctx.ta_UserClaims
@@ -29,9 +29,8 @@ namespace Em.Api.Core
             .Select(r => r.cUserClaimName);
 
       /// <summary>
-      /// Hak yang datang lewat role: hanya dari role yang aktif, dan hanya selama keanggotaannya sedang
-      /// berjalan pada <paramref name="now"/>. Batas waktu keanggotaan yang kosong berarti tidak dibatasi
-      /// dari sisi itu.
+      /// Rights that come through roles: only from active roles, and only while the membership is running at
+      /// <paramref name="now"/>. An empty membership time limit means no limit from that side.
       /// </summary>
       public static IQueryable<string> QueryRoleNames(ApiCoreContext ctx, string cUserId, DateTime now) =>
          from assignment in ctx.ta_UserRoles
@@ -44,8 +43,8 @@ namespace Em.Api.Core
          select claim.cClaimName;
 
       /// <summary>
-      /// Gabungan keduanya dalam satu perjalanan ke database - bentuk inilah yang dibutuhkan gerbang,
-      /// karena gerbang tidak peduli sebuah hak datang langsung atau lewat role.
+      /// The union of both in a single trip to the database - this is the shape the gate needs, because the
+      /// gate does not care whether a right came directly or through a role.
       /// </summary>
       public static async Task<ClaimAction[]> LoadAsync(ApiCoreContext ctx, string cUserId, DateTime now,
          CancellationToken ct) {

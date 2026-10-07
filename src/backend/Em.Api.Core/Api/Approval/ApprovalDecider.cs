@@ -6,13 +6,13 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Memutuskan langkah-langkah request dokumen: menyetujui atau menolak, dengan seluruh pemeriksaan
-   /// haknya, lalu memajukan atau menghentikan requestnya.
+   /// Decides the steps of document requests: approve or reject, with all of its rights checks, then
+   /// advances or stops the request.
    /// </summary>
    /// <remarks>
-   /// Setiap keputusan berjalan di transaksinya sendiri, jadi satu yang gagal tidak menyeret yang lain.
-   /// Satu instance dipakai untuk satu permintaan: ia memegang service engine yang sedang berjalan, yang
-   /// jadi sumber keterangan pemanggil untuk handler modul.
+   /// Each decision runs in its own transaction, so one that fails does not drag the others down. One
+   /// instance is used per call: it holds the running engine service, which is the source of the caller
+   /// info for the module's handlers.
    /// </remarks>
    internal sealed class ApprovalDecider(ApiCoreContext ctx, ApprovalRegistry registry, ServicesBase host)
    {
@@ -21,10 +21,10 @@ namespace Em.Api.Core.Approval
       private CancellationToken Token => host.AbortToken;
 
       /// <summary>
-      /// Memutuskan seluruh keputusan yang dikirim, satu per satu.
+      /// Decides all the decisions that were sent, one by one.
       /// </summary>
-      /// <param name="decisions">Keputusan yang diambil.</param>
-      /// <returns>Satu hasil untuk setiap keputusan, dalam urutan yang sama.</returns>
+      /// <param name="decisions">The decisions taken.</param>
+      /// <returns>One result for each decision, in the same order.</returns>
       public async Task<ApprovalDecisionResult[]> DecideAsync(ApprovalDecision[] decisions) {
          ArgumentNullException.ThrowIfNull(decisions);
          host.Request.RequireUserId();

@@ -4,14 +4,13 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Tempat modul menulis alur persetujuan sebuah jenis dokumen: level-levelnya, PDF-nya, kolom
-   /// ringkasannya, dan hal-hal yang terjadi di sepanjang alurnya.
+   /// Where a module writes the approval flow of a document type: its levels, its PDF, its summary
+   /// columns, and the things that happen along the way.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya, setiap bagiannya bertanda <c>KeyPart</c>.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document, each part marked with <c>KeyPart</c>.</typeparam>
    /// <remarks>
-   /// Setiap method mengembalikan builder-nya sendiri, jadi deklarasinya boleh ditulis bersambung
-   /// maupun baris per baris.
+   /// Every method returns its own builder, so the declaration may be written chained or line by line.
    /// </remarks>
    /// <example>
    /// <code>
@@ -38,17 +37,17 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menambahkan satu level ke alurnya. Level dijalani dari nomor terkecil, dan level berikutnya
-      /// baru mulai setelah seluruh langkah level ini disetujui.
+      /// Adds one level to the flow. Levels are walked from the smallest number, and the next level only
+      /// starts after all steps of this level are approved.
       /// </summary>
-      /// <param name="level">Nomor levelnya. Harus belum dipakai level lain.</param>
-      /// <param name="steps">Callback yang menuliskan langkah-langkah level ini.</param>
+      /// <param name="level">Number of the level. Must not already be used by another level.</param>
+      /// <param name="steps">Callback that writes the steps of this level.</param>
       /// <param name="onCompleted">
-      /// Dijalankan di dalam transaksi begitu seluruh langkah level ini disetujui, untuk tonggak di
-      /// tengah alur - status dokumen yang berubah sebelum langkah terakhir. Kegagalannya mengembalikan
-      /// keputusan yang memicunya.
+      /// Runs inside the transaction as soon as all steps of this level are approved, for milestones in the
+      /// middle of the flow - a document status that changes before the last step. Its failure restores the
+      /// decision that triggered it.
       /// </param>
-      /// <exception cref="ArgumentException">Dilempar kalau nomor levelnya sudah dipakai.</exception>
+      /// <exception cref="ArgumentException">Thrown when the level number is already used.</exception>
       public ApprovalFlowBuilder<TServices, TKey> Level(int level,
          Action<ApprovalLevelBuilder<TServices, TKey>> steps,
          Func<IApprovalContext<TServices, TKey>, Task>? onCompleted = null) {
@@ -71,11 +70,11 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyatakan bahwa jenis dokumen ini punya PDF, beserta cara mengambilnya. PDF-nya diambil sekali
-      /// saat pengajuan lalu dibekukan, sehingga penanda tangan selalu melihat isi yang sama.
+      /// States that this document type has a PDF, together with how to fetch it. The PDF is fetched once at
+      /// submission and then frozen, so signers always see the same content.
       /// </summary>
       /// <param name="render">
-      /// Cara mengambil isi PDF dokumennya. Biasanya action laporan milik modul itu sendiri.
+      /// How to fetch the PDF content of the document. Usually the module's own report action.
       /// </param>
       public ApprovalFlowBuilder<TServices, TKey> Pdf(Func<IApprovalContext<TServices, TKey>, Task<Stream>> render) {
          ArgumentNullException.ThrowIfNull(render);
@@ -84,14 +83,14 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyatakan bahwa tata letak PDF dokumen ini berubah menurut isinya - jumlah baris, bagian yang
-      /// tampil, halaman yang terpecah - sehingga posisi kotak yang dideklarasikan hanya berlaku untuk
-      /// satu bentuk dokumen dan harus dicari ulang pada PDF dasar tiap request.
+      /// States that the PDF layout of this document changes with its content - number of rows, sections that
+      /// appear, pages that split - so the declared box positions only apply to one shape of document and
+      /// must be located again on each request's base PDF.
       /// </summary>
       /// <param name="locate">
-      /// Menerima salinan PDF dasar yang baru dibuat, mengembalikan pemetaan dari posisi yang
-      /// dideklarasikan ke posisi sebenarnya pada PDF itu. Pemetaan yang mengembalikan <c>null</c> berarti
-      /// kotak itu tidak ada pada dokumen ini dan tidak digambar. Salinannya boleh dibaca sampai habis.
+      /// Receives a copy of the freshly created base PDF, and returns a mapping from the declared position
+      /// to the actual position on that PDF. A mapping that returns <c>null</c> means the box does not exist
+      /// on this document and is not drawn. The copy may be read to the end.
       /// </param>
       public ApprovalFlowBuilder<TServices, TKey> PdfLayout(
          Func<IApprovalContext<TServices, TKey>, Stream, Task<Func<ApprovalSlot, ApprovalSlot?>>> locate) {
@@ -101,12 +100,12 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyatakan kolom ringkasan milik modul yang tampil di daftar request, dan cara menghitungnya.
-      /// Dihitung saat pengajuan lalu ikut tersimpan, jadi daftar request bisa menyaring dan
-      /// mengurutkannya tanpa memuat dokumennya.
+      /// States the module's own summary columns shown in the request list, and how to compute them.
+      /// Computed at submission and stored with it, so the request list can filter and sort them without
+      /// loading the document.
       /// </summary>
       /// <param name="summary">
-      /// Cara menghitung ringkasannya, berupa pasangan nama kolom dan nilainya.
+      /// How to compute the summary, as pairs of column name and value.
       /// </param>
       public ApprovalFlowBuilder<TServices, TKey> Summary(
          Func<IApprovalContext<TServices, TKey>, Task<IReadOnlyDictionary<string, string?>>> summary) {
@@ -116,9 +115,9 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyatakan bahwa keputusan jenis dokumen ini hanya boleh diambil setelah dokumennya dibuka,
-      /// sehingga ia tidak bisa disetujui berbondong-bondong dari daftar. Dipakai dokumen yang memang
-      /// harus dibaca dulu sebelum ditandatangani.
+      /// States that decisions on this document type may only be taken after the document is opened, so it
+      /// cannot be approved en masse from the list. Used for documents that must be read before they are
+      /// signed.
       /// </summary>
       public ApprovalFlowBuilder<TServices, TKey> RequireOpen() {
          _declaration.RequireOpen = true;
@@ -126,26 +125,26 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyalakan halaman tambahan pada PDF-nya, berisi tabel seluruh langkah beserta tanda
-      /// tangannya. Dipakai dokumen yang kotak tanda tangannya tidak cukup untuk seluruh alurnya.
+      /// Turns on an extra page in the PDF, containing a table of all steps with their signatures. Used for
+      /// documents whose signature boxes are not enough for the whole flow.
       /// </summary>
       public ApprovalFlowBuilder<TServices, TKey> ApprovalSheet() {
          _declaration.ApprovalSheet = true;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan setelah pengajuan tersimpan.</summary>
-      /// <param name="hook">Yang dijalankan. Kegagalannya tidak membatalkan pengajuan.</param>
+      /// <summary>Sets what runs after the submission is saved.</summary>
+      /// <param name="hook">What runs. Its failure does not cancel the submission.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnSubmitted(Func<IApprovalContext<TServices, TKey>, Task> hook) {
          _declaration.OnSubmitted = hook;
          return this;
       }
 
       /// <summary>
-      /// Menyetel pemeriksaan sebuah keputusan sebelum ditulis, di dalam transaksinya. Di sinilah isian
-      /// per langkah divalidasi ulang di server.
+      /// Sets the check of a decision before it is written, inside its transaction. This is where the
+      /// per-step input is validated again on the server.
       /// </summary>
-      /// <param name="hook">Yang dijalankan. Melempar berarti keputusan itu gagal.</param>
+      /// <param name="hook">What runs. Throwing means that decision fails.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnSigning(
          Func<IApprovalStepContext<TServices, TKey>, ApprovalDecision, Task> hook) {
          _declaration.OnSigning = hook;
@@ -153,52 +152,51 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyetel penulisan akibat sebuah tanda tangan ke dokumennya, di dalam transaksi yang sama.
+      /// Sets the writing of the effect of a signature to its document, inside the same transaction.
       /// </summary>
-      /// <param name="hook">Yang dijalankan. Melempar berarti tanda tangannya ikut batal.</param>
+      /// <param name="hook">What runs. Throwing means the signature is cancelled too.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnSigned(
          Func<IApprovalStepContext<TServices, TKey>, ApprovalDecision, Task> hook) {
          _declaration.OnSigned = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan di dalam transaksi saat request akan selesai.</summary>
-      /// <param name="hook">Yang dijalankan. Melempar berarti keputusan terakhirnya dibatalkan.</param>
+      /// <summary>Sets what runs inside the transaction when the request is about to complete.</summary>
+      /// <param name="hook">What runs. Throwing means the final decision is cancelled.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnFinishing(Func<IApprovalContext<TServices, TKey>, Task> hook) {
          _declaration.OnFinishing = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan setelah request selesai tersimpan.</summary>
-      /// <param name="hook">Yang dijalankan. Kegagalannya tidak merusak data.</param>
+      /// <summary>Sets what runs after the completed request is saved.</summary>
+      /// <param name="hook">What runs. Its failure does not corrupt data.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnFinished(Func<IApprovalContext<TServices, TKey>, Task> hook) {
          _declaration.OnFinished = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan di dalam transaksi saat sebuah langkah ditolak.</summary>
-      /// <param name="hook">Yang dijalankan. Melempar berarti penolakannya dibatalkan.</param>
+      /// <summary>Sets what runs inside the transaction when a step is rejected.</summary>
+      /// <param name="hook">What runs. Throwing means the rejection is cancelled.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnRejecting(Func<IApprovalContext<TServices, TKey>, Task> hook) {
          _declaration.OnRejecting = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan setelah penolakan tersimpan.</summary>
-      /// <param name="hook">Yang dijalankan. Kegagalannya tidak merusak data.</param>
+      /// <summary>Sets what runs after the rejection is saved.</summary>
+      /// <param name="hook">What runs. Its failure does not corrupt data.</param>
       public ApprovalFlowBuilder<TServices, TKey> OnRejected(Func<IApprovalContext<TServices, TKey>, Task> hook) {
          _declaration.OnRejected = hook;
          return this;
       }
 
       /// <summary>
-      /// Menyetel apa yang dijalankan di dalam transaksi saat sebuah request ditarik kembali - termasuk
-      /// request yang sudah selesai seluruhnya. Di sinilah modul mencabut status yang sudah ditulis, dan
-      /// di sinilah ia boleh menolak penarikan dengan melempar kalau dokumennya sudah diproses lebih
-      /// lanjut.
+      /// Sets what runs inside the transaction when a request is withdrawn - including a request that has
+      /// already completed in full. This is where the module revokes the status that was written, and where
+      /// it may refuse the withdrawal by throwing if the document has been processed further.
       /// </summary>
       /// <param name="hook">
-      /// Yang dijalankan, menerima tahap request itu sebelum ditarik - dari situ modul tahu apakah
-      /// status dokumennya memang pernah berubah.
+      /// What runs, receiving the stage of the request before it was withdrawn - from that the module knows
+      /// whether the document's status was ever changed.
       /// </param>
       public ApprovalFlowBuilder<TServices, TKey> OnReinstating(
          Func<IApprovalContext<TServices, TKey>, ApprovalStage, Task> hook) {
@@ -208,11 +206,11 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Tempat modul menulis langkah-langkah satu level. Beberapa langkah di level yang sama berjalan
-   /// bersamaan, dan semuanya harus disetujui sebelum level berikutnya mulai.
+   /// Where a module writes the steps of one level. Several steps in the same level run concurrently, and
+   /// all must be approved before the next level starts.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik dokumen.</typeparam>
-   /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the document.</typeparam>
+   /// <typeparam name="TKey">Key record of the document.</typeparam>
    public class ApprovalLevelBuilder<TServices, TKey> where TKey : notnull
    {
       private readonly ApprovalLevelDeclaration<TServices, TKey> _declaration;
@@ -227,39 +225,38 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menambahkan satu langkah ke level ini.
+      /// Adds one step to this level.
       /// </summary>
       /// <param name="name">
-      /// Nama langkahnya, sekaligus nama claim yang dipersyaratkan untuk memutuskannya dan nama yang
-      /// tercetak di PDF. Pakai konstanta, bukan teks langsung: namanya ikut tersimpan di setiap
-      /// request.
+      /// Name of the step, which is also the name of the claim required to decide it and the name printed on
+      /// the PDF. Use a constant, not literal text: the name is stored with every request.
       /// </param>
       /// <param name="slot">
-      /// Di mana tanda tangannya digambar pada PDF. Wajib untuk jenis dokumen yang punya PDF.
+      /// Where the signature is drawn on the PDF. Required for document types that have a PDF.
       /// </param>
       /// <param name="signers">
-      /// Cara menentukan siapa saja penanda tangannya, dibaca dari isi dokumen saat pengajuan. Kosong
-      /// berarti langkah ini terbuka bagi semua pemegang claim-nya.
+      /// How to determine who the signers are, read from the document content at submission. Empty means
+      /// this step is open to everyone holding its claim.
       /// </param>
       /// <param name="strict">
-      /// <c>true</c> kalau hanya penanda tangannya sendiri yang boleh menandatangani, sehingga pemegang
-      /// claim lain tidak bisa menggantikannya.
+      /// <c>true</c> when only its own signer may sign, so holders of other claims cannot substitute for
+      /// them.
       /// </param>
       /// <param name="distinctFrom">
-      /// Nama langkah yang penanda tangannya tidak boleh sama dengan penanda tangan langkah ini -
-      /// pemisahan peran yang diperiksa saat pengajuan dan sekali lagi saat menandatangani.
+      /// Name of the step whose signer must not be the same as this step's signer - a separation of duties
+      /// checked at submission and once more at signing.
       /// </param>
       /// <param name="when">
-      /// Cara menentukan langkah ini berlaku atau dilewati, dievaluasi saat pengajuan. Kosong berarti
-      /// selalu berlaku.
+      /// How to decide whether this step applies or is skipped, evaluated at submission. Empty means it
+      /// always applies.
       /// </param>
       /// <param name="guard">
-      /// Cara menentukan langkah ini sudah boleh diputuskan sekarang. Dievaluasi ulang setiap kali layar
-      /// dibuka, jadi blokir yang syaratnya sudah terpenuhi terbuka sendiri.
+      /// How to decide whether this step may be decided now. Re-evaluated every time the screen is opened,
+      /// so a block whose condition is met opens by itself.
       /// </param>
-      /// <param name="input">Isian yang diminta sebelum langkah ini bisa diputuskan.</param>
+      /// <param name="input">Input asked for before this step can be decided.</param>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau nama langkahnya kosong atau sudah dipakai langkah lain di level yang sama.
+      /// Thrown when the step name is empty or already used by another step in the same level.
       /// </exception>
       public ApprovalLevelBuilder<TServices, TKey> Step(string name, ApprovalSlot? slot = null,
          Func<IApprovalContext<TServices, TKey>, Task<IReadOnlyList<string>>>? signers = null,
@@ -298,10 +295,10 @@ namespace Em.Api.Core.Approval
    }
 
    /// <summary>
-   /// Tempat modul menulis alur usulan perubahan data: claim persetujuannya, entitas yang boleh
-   /// diusulkan berubah, dan hal-hal yang terjadi saat usulan diputuskan.
+   /// Where a module writes the data change proposal flow: its approval claim, the entities that may be
+   /// proposed for change, and the things that happen when a proposal is decided.
    /// </summary>
-   /// <typeparam name="TServices">Service modul pemilik datanya.</typeparam>
+   /// <typeparam name="TServices">Service of the module that owns the data.</typeparam>
    public class ApprovalDataFlowBuilder<TServices>
       where TServices : ServicesBase, IServices
    {
@@ -312,28 +309,28 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Mendaftarkan satu entitas yang boleh diusulkan berubah, beserta cara memuat nilainya saat ini
-      /// dan cara menerapkan usulannya.
+      /// Registers one entity that may be proposed for change, together with how to load its current values
+      /// and how to apply its proposal.
       /// </summary>
-      /// <typeparam name="TKey">Record kunci entitas ini, setiap bagiannya bertanda <c>KeyPart</c>.</typeparam>
+      /// <typeparam name="TKey">Key record of this entity, each part marked with <c>KeyPart</c>.</typeparam>
       /// <param name="name">
-      /// Nama entitasnya, ditulis dengan awalan nama modulnya supaya tidak bertabrakan antar modul.
-      /// Namanya ikut tersimpan di setiap usulan, jadi pakai konstanta.
+      /// Name of the entity, written with its module name as a prefix so it does not collide across
+      /// modules. The name is stored with every proposal, so use a constant.
       /// </param>
       /// <param name="load">
-      /// Memuat nilai kolom entitas ini apa adanya saat ini, atau mengembalikan kosong kalau entitasnya
-      /// sudah tidak ada. Inilah yang dibandingkan engine dengan nilai yang dicatat waktu pengajuan.
+      /// Loads the column values of this entity as they are right now, or returns empty when the entity no
+      /// longer exists. This is what the engine compares with the values recorded at submission.
       /// </param>
       /// <param name="apply">
-      /// Menerapkan usulannya, di dalam transaksi keputusan. Nilai balikannya kunci entitas setelah
-      /// diterapkan - kunci yang baru terbentuk, untuk entitas baru.
+      /// Applies the proposal, inside the decision transaction. The return value is the entity's key after
+      /// it was applied - the newly formed key, for a new entity.
       /// </param>
       /// <param name="order">
-      /// Urutan penerapan, untuk entitas yang harus diterapkan setelah entitas lain. Yang lebih kecil
-      /// diterapkan lebih dulu.
+      /// Order of application, for entities that must be applied after other entities. A smaller value is
+      /// applied first.
       /// </param>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau nama entitasnya kosong atau sudah dipakai entitas lain di alur ini.
+      /// Thrown when the entity name is empty or already used by another entity in this flow.
       /// </exception>
       public ApprovalDataFlowBuilder<TServices> Entity<TKey>(string name,
          Func<IApprovalDataContext<TServices>, TKey, Task<IReadOnlyDictionary<string, string?>?>> load,
@@ -364,9 +361,9 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Menyatakan kolom ringkasan milik modul yang tampil di daftar request, dan cara menghitungnya.
+      /// States the module's own summary columns shown in the request list, and how to compute them.
       /// </summary>
-      /// <param name="summary">Cara menghitungnya, berupa pasangan nama kolom dan nilainya.</param>
+      /// <param name="summary">How to compute them, as pairs of column name and value.</param>
       public ApprovalDataFlowBuilder<TServices> Summary(
          Func<IApprovalDataContext<TServices>, Task<IReadOnlyDictionary<string, string?>>> summary) {
          ArgumentNullException.ThrowIfNull(summary);
@@ -374,39 +371,39 @@ namespace Em.Api.Core.Approval
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan setelah pengajuan tersimpan.</summary>
-      /// <param name="hook">Yang dijalankan. Kegagalannya tidak membatalkan pengajuan.</param>
+      /// <summary>Sets what runs after the submission is saved.</summary>
+      /// <param name="hook">What runs. Its failure does not cancel the submission.</param>
       public ApprovalDataFlowBuilder<TServices> OnSubmitted(Func<IApprovalDataContext<TServices>, Task> hook) {
          _declaration.OnSubmitted = hook;
          return this;
       }
 
       /// <summary>
-      /// Menyetel apa yang dijalankan di dalam transaksi, setelah seluruh usulan diterapkan dan sebelum
-      /// keputusannya tersimpan.
+      /// Sets what runs inside the transaction, after all proposals have been applied and before the
+      /// decision is saved.
       /// </summary>
-      /// <param name="hook">Yang dijalankan. Melempar berarti seluruh penerapannya dibatalkan.</param>
+      /// <param name="hook">What runs. Throwing means the whole application is cancelled.</param>
       public ApprovalDataFlowBuilder<TServices> OnFinishing(Func<IApprovalDataContext<TServices>, Task> hook) {
          _declaration.OnFinishing = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan setelah keputusan tersimpan.</summary>
-      /// <param name="hook">Yang dijalankan. Kegagalannya tidak merusak data.</param>
+      /// <summary>Sets what runs after the decision is saved.</summary>
+      /// <param name="hook">What runs. Its failure does not corrupt data.</param>
       public ApprovalDataFlowBuilder<TServices> OnFinished(Func<IApprovalDataContext<TServices>, Task> hook) {
          _declaration.OnFinished = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan di dalam transaksi saat usulan ditolak.</summary>
-      /// <param name="hook">Yang dijalankan. Melempar berarti penolakannya dibatalkan.</param>
+      /// <summary>Sets what runs inside the transaction when a proposal is rejected.</summary>
+      /// <param name="hook">What runs. Throwing means the rejection is cancelled.</param>
       public ApprovalDataFlowBuilder<TServices> OnRejecting(Func<IApprovalDataContext<TServices>, Task> hook) {
          _declaration.OnRejecting = hook;
          return this;
       }
 
-      /// <summary>Menyetel apa yang dijalankan setelah penolakan tersimpan.</summary>
-      /// <param name="hook">Yang dijalankan. Kegagalannya tidak merusak data.</param>
+      /// <summary>Sets what runs after the rejection is saved.</summary>
+      /// <param name="hook">What runs. Its failure does not corrupt data.</param>
       public ApprovalDataFlowBuilder<TServices> OnRejected(Func<IApprovalDataContext<TServices>, Task> hook) {
          _declaration.OnRejected = hook;
          return this;

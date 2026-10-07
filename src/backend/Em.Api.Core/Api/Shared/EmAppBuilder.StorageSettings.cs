@@ -7,6 +7,7 @@ namespace Em.Api.Shared;
 
 public partial class EmAppBuilder
 {
+   /// <summary>Turns on managed storage settings with the engine defaults: CDN 200 MB and container registry on.</summary>
    public void AddManagedStorageSettings() => AddManagedStorageSettings("default",
       new StorageFeatureSettings { Enabled = true, Directory = "./data/cdn", MaxUploadMb = 200 },
       new StorageFeatureSettings { Enabled = true, Directory = "./data/container-registry" });
@@ -21,6 +22,7 @@ public partial class EmAppBuilder
    public void AddManagedStorageSettings(string hostId, StorageFeatureSettings cdn, StorageFeatureSettings registry) {
       AddManagedStorageSettings(hostId, cdn, registry, new() { Enabled = true, Directory = "./data/nuget", MaxUploadMb = 250 });
    }
+   /// <summary>Turns on managed storage settings with explicit defaults for the CDN, container registry, and NuGet feed.</summary>
    public void AddManagedStorageSettings(string hostId, StorageFeatureSettings cdn, StorageFeatureSettings registry, StorageFeatureSettings nuget) {
       ArgumentNullException.ThrowIfNull(nuget); NuGetDefaults = nuget;
       if (string.IsNullOrWhiteSpace(hostId)) throw new ArgumentException("Storage settings host ID is required.");

@@ -4,14 +4,14 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Yang dibutuhkan engine dari sebuah alur usulan perubahan data, dilihat tanpa tipe service modulnya.
+   /// What the engine needs from a data change proposal flow, seen without its module service type.
    /// </summary>
    internal interface IApprovalDataFlow
    {
-      /// <summary>Claim yang memberi hak menyetujui usulan jenis ini.</summary>
+      /// <summary>Claim that grants the right to approve proposals of this type.</summary>
       ClaimAction ApproveClaim { get; }
 
-      /// <summary>Entitas yang dideklarasikan dengan nama itu, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>The entity declared with that name, or <c>null</c> when there is none.</summary>
       ApprovalEntityDeclaration? FindEntity(string name);
    }
 

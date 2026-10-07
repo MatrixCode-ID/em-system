@@ -3,137 +3,135 @@ using Em.Api.Core.Models;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Pintu masuk modul ke engine approval: mengajukan, memastikan dokumen tidak sedang menunggu
-   /// keputusan, dan menyimpan langsung bagi pemegang claim persetujuan.
+   /// A module's entry point to the approval engine: submit, make sure a document is not awaiting a
+   /// decision, and save directly for holders of the approval claim.
    /// </summary>
    /// <remarks>
-   /// Memutuskan sebuah langkah <b>tidak</b> ada di sini: itu action engine yang sama untuk semua jenis
-   /// dokumen, supaya satu layar bisa memutuskan banyak request tanpa tahu modul pemiliknya.
+   /// Deciding a step is <b>not</b> here: that is the same engine action for every document type, so one
+   /// screen can decide many requests without knowing the owning module.
    /// </remarks>
    public interface IApprovalEngine
    {
       /// <summary>
-      /// Mengajukan sebuah dokumen untuk disetujui.
+      /// Submits a document for approval.
       /// </summary>
-      /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
-      /// <param name="docType">Jenis dokumennya, seperti yang dideklarasikan modul.</param>
-      /// <param name="docKey">Kunci dokumen yang diajukan.</param>
-      /// <param name="docVersion">Versi dokumen yang diajukan.</param>
-      /// <param name="note">Catatan pengaju, opsional.</param>
-      /// <returns>Id request yang terbentuk.</returns>
+      /// <typeparam name="TKey">Key record of the document.</typeparam>
+      /// <param name="docType">The document type, as declared by the module.</param>
+      /// <param name="docKey">Key of the document being submitted.</param>
+      /// <param name="docVersion">Version of the document being submitted.</param>
+      /// <param name="note">The submitter's note, optional.</param>
+      /// <returns>Id of the request that was created.</returns>
       /// <remarks>
-      /// Yang dikerjakan engine, berurutan: memastikan pengajunya user nyata dan aktif, memeriksa claim
-      /// langkah pertama, menolak kalau dokumen dan versi itu sudah punya request yang menunggu,
-      /// menentukan <b>seluruh</b> penanda tangan sekaligus, membuat PDF dasarnya dan menyimpannya di luar
-      /// transaksi, lalu dalam satu transaksi menulis header, semua langkah beserta salinan posisi
-      /// kotaknya, daftar penanda tangan, tanda tangan otomatis langkah pertama oleh pengaju, dan maju ke
-      /// level berikutnya.
+      /// What the engine does, in order: makes sure the submitter is a real, active user, checks the claim of
+      /// the first step, refuses when that document and version already has a waiting request, determines
+      /// <b>all</b> signers at once, creates the base PDF and stores it outside the transaction, then in one
+      /// transaction writes the header, all steps with a copy of their box positions, the signer list, the
+      /// automatic signature of the first step by the submitter, and advances to the next level.
       /// <para>
-      /// Semua penanda tangan ditentukan di depan dengan sengaja: kesalahan muncul kepada pengaju yang
-      /// bisa memperbaikinya, bukan menggagalkan keputusan orang lain di tengah alur. Itu aman karena
-      /// dokumennya terkunci selama request berjalan.
+      /// All signers are determined up front on purpose: errors surface to the submitter, who can fix them,
+      /// rather than failing someone else's decision midway through the flow. This is safe because the
+      /// document is locked while the request runs.
       /// </para>
       /// </remarks>
       Task<string> SubmitAsync<TKey>(string docType, TKey docKey, string docVersion, string? note = null)
          where TKey : notnull;
 
       /// <summary>
-      /// Mengajukan usulan perubahan data, atau menyimpannya langsung kalau pemanggilnya memegang claim
-      /// persetujuan jenis dokumen itu.
+      /// Submits a data change proposal, or saves it directly when the caller holds the approval claim of
+      /// that document type.
       /// </summary>
-      /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
-      /// <param name="docType">Jenis dokumennya.</param>
-      /// <param name="docKey">Kunci dokumen yang diubah.</param>
-      /// <param name="items">Usulan perubahan per entitas, beserta nilai lama dan nilai barunya.</param>
-      /// <param name="note">Catatan pengaju, opsional.</param>
-      /// <returns>Hasilnya: id request, dan apakah ia langsung diterapkan.</returns>
+      /// <typeparam name="TKey">Key record of the document.</typeparam>
+      /// <param name="docType">The document type.</param>
+      /// <param name="docKey">Key of the document being changed.</param>
+      /// <param name="items">The change proposals per entity, with old and new values.</param>
+      /// <param name="note">The submitter's note, optional.</param>
+      /// <returns>The result: the request id, and whether it was applied immediately.</returns>
       /// <remarks>
-      /// Pemegang claim persetujuan tidak perlu melewati layar approval untuk perubahannya sendiri -
-      /// perubahannya diterapkan langsung, tapi tetap tercatat sebagai request yang otomatis disetujui,
-      /// sehingga jejak auditnya sama lengkapnya. Pemeriksaan nilai lama tetap berjalan untuknya, jadi ia
-      /// juga terlindung dari menimpa perubahan orang lain tanpa sadar: kalau isi tabelnya sudah berubah
-      /// sejak layarnya dibuka, tidak ada yang tersimpan dan ia mendapat 409 yang menyebut kolom mana.
+      /// Holders of the approval claim do not need to go through the approval screen for their own changes -
+      /// their changes are applied directly, but still recorded as an automatically approved request, so the
+      /// audit trail is just as complete. The old-value check still runs for them, so they are also
+      /// protected from unknowingly overwriting someone else's change: if the table content has changed since
+      /// their screen was opened, nothing is saved and they get a 409 naming the column.
       /// <para>
-      /// Kolom yang nilai barunya sama dengan nilai lamanya dibuang, dan entitas yang tidak punya kolom
-      /// tersisa ikut dibuang; kalau tidak ada yang tersisa sama sekali, 400. Beberapa request yang
-      /// menunggu untuk dokumen yang sama boleh ada bersamaan: tiap request punya penanda versinya
-      /// sendiri, yaitu id-nya.
+      /// Columns whose new value equals the old value are dropped, and entities left with no columns are
+      /// dropped too; if nothing at all remains, 400. Several waiting requests for the same document may
+      /// exist at once: each request has its own version marker, which is its id.
       /// </para>
       /// <para>
-      /// Entitas baru memakai kunci sementara. Kunci yang dikembalikan modul saat menerapkannya menggantikan
-      /// kunci sementara itu - di entitasnya, di entitas lain dalam request yang sama yang memuat bagian
-      /// kunci sementara yang sama, dan di nama dokumen request kalau dokumennya adalah entitas itu
-      /// sendiri. Dengan begitu induk baru dan anak-anaknya bisa diajukan dalam satu request.
+      /// A new entity uses a temporary key. The key the module returns when applying it replaces that
+      /// temporary key - in the entity itself, in other entities of the same request that contain the same
+      /// temporary key part, and in the request's document name when the document is that entity itself. That
+      /// way a new parent and its children can be submitted in one request.
       /// </para>
       /// </remarks>
       /// <exception cref="Em.Shared.ActionException">
-      /// 403 kalau pemanggilnya akun sistem; 400 kalau tidak ada yang berubah; 409 kalau pemanggilnya
-      /// pemegang claim persetujuan dan isi tabelnya sudah berubah sejak layarnya dibuka.
+      /// 403 when the caller is a system account; 400 when nothing changed; 409 when the caller holds the
+      /// approval claim and the table content has changed since their screen was opened.
       /// </exception>
       Task<ApprovalSubmitResult> SubmitDataAsync<TKey>(string docType, TKey docKey,
          IReadOnlyList<ApprovalDataItem> items, string? note = null)
          where TKey : notnull;
 
       /// <summary>
-      /// Memastikan sebuah dokumen tidak sedang menunggu keputusan. Dipanggil action simpan modul sebelum
-      /// menulis apa pun.
+      /// Makes sure a document is not awaiting a decision. Called by a module's save action before writing
+      /// anything.
       /// </summary>
-      /// <typeparam name="TKey">Record kunci dokumennya.</typeparam>
-      /// <param name="docType">Jenis dokumennya.</param>
-      /// <param name="docKey">Kunci dokumen yang akan ditulis.</param>
-      /// <param name="docVersion">Versi dokumen yang akan ditulis, kalau versinya ikut menentukan.</param>
+      /// <typeparam name="TKey">Key record of the document.</typeparam>
+      /// <param name="docType">The document type.</param>
+      /// <param name="docKey">Key of the document about to be written.</param>
+      /// <param name="docVersion">Version of the document about to be written, when the version also decides.</param>
       /// <exception cref="Em.Shared.ActionException">
-      /// Dilempar kalau dokumen itu sedang menunggu keputusan. Inilah yang mengunci dokumen selama
-      /// approval berjalan - engine tidak menulis penanda apa pun ke tabel modul untuk itu.
+      /// Thrown when the document is awaiting a decision. This is what locks the document while approval
+      /// runs - the engine writes no marker to the module's tables for it.
       /// </exception>
       Task EnsureNotInApprovalAsync<TKey>(string docType, TKey docKey, string? docVersion = null)
          where TKey : notnull;
 
       /// <summary>
-      /// Menarik kembali sebuah request lalu menyiapkan pengajuan ulang untuk dokumen dan versi yang sama.
+      /// Withdraws a request, then prepares a resubmission for the same document and version.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang ditarik kembali.</param>
-      /// <param name="reason">Alasan penarikan. Wajib.</param>
+      /// <param name="approvalRequestId">The request being withdrawn.</param>
+      /// <param name="reason">Reason for the withdrawal. Required.</param>
       /// <remarks>
-      /// Menarik kembali dan mengajukan ulang adalah dua langkah terpisah: dokumen dibuka dulu, diedit,
-      /// lalu diajukan lagi. Request baru menyimpan tautan ke request yang ditarik, sehingga riwayatnya
-      /// tersambung. Request yang sudah selesai seluruhnya juga boleh ditarik; dalam hal itu modul
-      /// pemiliknya diberi kesempatan mencabut status yang sudah ditulis, dan boleh menolak penarikan
-      /// kalau dokumennya sudah diproses lebih lanjut.
+      /// Withdrawing and resubmitting are two separate steps: the document is opened first, edited, then
+      /// submitted again. The new request stores a link to the withdrawn one, so the history stays
+      /// connected. A request that has already completed in full may also be withdrawn; in that case the
+      /// owning module is given a chance to revoke the status that was written, and may refuse the
+      /// withdrawal if the document has been processed further.
       /// <para>
-      /// Pengajuan ulangnya memakai <see cref="SubmitAsync{TKey}"/> yang sama: kalau request terbaru
-      /// untuk dokumen dan versi itu adalah yang baru ditarik, engine menautkan request baru ke sana
-      /// tanpa diminta. Yang boleh menarik adalah pemegang claim langkah pertama dan user yang saklar
-      /// administratornya menyala.
+      /// The resubmission uses the same <see cref="SubmitAsync{TKey}"/>: when the latest request for that
+      /// document and version is the one just withdrawn, the engine links the new request to it without being
+      /// asked. Those who may withdraw are holders of the first step's claim and users whose administrator
+      /// switch is on.
       /// </para>
       /// </remarks>
       Task ReinstateAsync(string approvalRequestId, string reason);
    }
 
-   /// <summary>Hasil pengajuan usulan perubahan data.</summary>
-   /// <param name="ApprovalRequestId">Id request yang terbentuk.</param>
+   /// <summary>Result of submitting a data change proposal.</summary>
+   /// <param name="ApprovalRequestId">Id of the request that was created.</param>
    /// <param name="AppliedImmediately">
-   /// <c>true</c> kalau perubahannya langsung diterapkan karena pengajunya memegang claim persetujuan.
-   /// Layar memakainya untuk memilih pesan yang tepat: "diajukan untuk persetujuan" atau "disimpan".
+   /// <c>true</c> when the change was applied directly because the submitter holds the approval claim.
+   /// The screen uses it to choose the right message: "submitted for approval" or "saved".
    /// </param>
    public record ApprovalSubmitResult(string ApprovalRequestId, bool AppliedImmediately);
 
-   /// <summary>Satu entitas yang diusulkan berubah, beserta kolom-kolomnya.</summary>
+   /// <summary>One entity proposed for change, with its columns.</summary>
    /// <param name="Entity">
-   /// Entitas yang disentuh, ditulis dengan awalan nama modulnya supaya tidak bertabrakan antar modul.
+   /// The entity touched, written with its module name as a prefix so it does not collide across modules.
    /// </param>
-   /// <param name="Key">Kunci entitasnya, dalam bentuk record ber-bagian kunci.</param>
-   /// <param name="Operation">Apa yang diusulkan atas entitas ini.</param>
-   /// <param name="Fields">Kolom yang diusulkan berubah. Kosong untuk penghapusan dan pengaktifan ulang.</param>
+   /// <param name="Key">Key of the entity, as a record with key parts.</param>
+   /// <param name="Operation">What is proposed for this entity.</param>
+   /// <param name="Fields">The columns proposed to change. Empty for deletion and reactivation.</param>
    public record ApprovalDataItem(string Entity, object Key, ApprovalItemOperation Operation,
       IReadOnlyList<ApprovalDataField> Fields);
 
-   /// <summary>Satu kolom yang diusulkan berubah, beserta nilainya sebelum dan sesudah.</summary>
-   /// <param name="Name">Nama kolomnya, seperti yang dipahami handler modul.</param>
+   /// <summary>One column proposed for change, with its value before and after.</summary>
+   /// <param name="Name">Name of the column, as understood by the module's handler.</param>
    /// <param name="OldValue">
-   /// Nilainya saat layar edit dimuat. Inilah yang membuat pemeriksaan konflik berfungsi sebagai pengaman
-   /// terhadap perubahan orang lain, jadi jangan mengisinya dengan nilai yang baru saja dibaca.
+   /// Its value when the edit screen was loaded. This is what makes the conflict check work as a safeguard
+   /// against someone else's change, so do not fill it with a value that was just read.
    /// </param>
-   /// <param name="NewValue">Nilai yang diusulkan.</param>
+   /// <param name="NewValue">The proposed value.</param>
    public record ApprovalDataField(string Name, string? OldValue, string? NewValue);
 }

@@ -23,17 +23,20 @@ public sealed partial class NuPakServices {
          await db.Packages.CountAsync(p=>p.cNuPakFeedId==f.cNuPakFeedId,AbortToken),
          await versions.CountAsync(v=>v.cNuPakVersionState==1,AbortToken),await versions.CountAsync(v=>v.cNuPakVersionState==-2,AbortToken));
    }
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakFeedInfo[]> GetMeta_NuPakFeeds() {
       var rows=await db.Feeds.OrderBy(f=>f.cNuPakFeedSlug).ToArrayAsync(AbortToken);
       var result=new List<NuPakFeedInfo>(); foreach(var f in rows) result.Add(await FeedInfo(f)); return result.ToArray();
    }
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakFeedInfo> GetMeta_NuPakFeed(string feedId) => await FeedInfo(await RequireFeed(feedId));
    private static string FeedName(string name) {
       if(string.IsNullOrWhiteSpace(name)) throw new ActionException("Feed name is required.",400);
       name=name.Trim(); if(name.Length >100) throw new ActionException("Feed name must contain 1–100 characters.",400); return name;
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
    public async Task<NuPakFeedInfo> PostGetMeta_NuPakFeedCreate(string slug,string name,string? description) {
       slug=NuPakStore.Slug(slug); name=FeedName(name); description=Description(description);
@@ -47,6 +50,7 @@ public sealed partial class NuPakServices {
       } finally {store.Gate.Release();}
       return await FeedInfo(row);
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
    public async Task<NuPakFeedInfo> PostGetMeta_NuPakFeedUpdate(string feedId,string name,string? description,bool enabled,bool anonymousRead) {
       name=FeedName(name);description=Description(description); await store.Gate.WaitAsync(AbortToken);
@@ -60,6 +64,7 @@ public sealed partial class NuPakServices {
       } finally {store.Gate.Release();}
       return await FeedInfo(row);
    }
+   /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
    public async Task PostMeta_NuPakFeedDelete(string feedId) {
       await store.Gate.WaitAsync(AbortToken);
@@ -78,6 +83,7 @@ public sealed partial class NuPakServices {
          catch(UnauthorizedAccessException) {throw new ActionException("Feed deleted; folder cleanup access denied. Inspect the server store.",500);}
       } finally {store.Gate.Release();}
    }
+   /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakStorageInfo> GetMeta_NuPakFeedStorageSize(string feedId) {
       await RequireFeed(feedId); var q=db.Versions.Where(v=>db.Packages.Any(p=>p.cNuPakFeedId==feedId&&p.cNuPakPackageId==v.cNuPakPackageId));

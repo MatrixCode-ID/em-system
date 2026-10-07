@@ -7,12 +7,12 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Membaca request approval untuk dilihat pemanggil: daftar, per dokumen, rincian beserta riwayatnya,
-   /// dan potret yang digambar ke PDF.
+   /// Reads approval requests for the caller to view: lists, per document, details together with their
+   /// history, and the snapshot drawn onto the PDF.
    /// </summary>
    /// <remarks>
-   /// Semua pemeriksaan hak lihat ada di sini, jadi action yang memanggilnya tidak bisa lupa. Satu
-   /// instance dipakai untuk satu permintaan: ia memegang siapa pemanggilnya.
+   /// All view-right checks are here, so the actions that call it cannot forget them. One instance is used
+   /// for one call: it holds who the caller is.
    /// </remarks>
    internal sealed class ApprovalRequestReader(ApiCoreContext ctx, ApprovalRegistry registry,
       ActionRequest caller, CancellationToken cancellationToken)
@@ -37,8 +37,8 @@ namespace Em.Api.Core.Approval
 
       #region Requests
 
-      /// <summary>Daftar request yang boleh dilihat pemanggil, disaring dan dihalamankan di server.</summary>
-      /// <param name="query">Penyaring, pengurut, dan halaman yang diminta.</param>
+      /// <summary>List of requests the caller may view, filtered and paged on the server.</summary>
+      /// <param name="query">The requested filter, sort, and page.</param>
       public async Task<PagedResult<ApprovalRequestInfo>> ListAsync(ApprovalQuery query) {
          ArgumentNullException.ThrowIfNull(query);
 
@@ -107,11 +107,11 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Seluruh request untuk satu dokumen, dari yang paling lama, termasuk yang sudah selesai, ditolak,
-      /// dan ditarik kembali.
+      /// All requests for one document, oldest first, including those that completed, were rejected, or were
+      /// withdrawn.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
-      /// <param name="docKey">Kunci dokumennya dalam bentuk kanonik.</param>
+      /// <param name="docType">The document type.</param>
+      /// <param name="docKey">The document key in canonical form.</param>
       public async Task<ApprovalRequestInfo[]> ByDocAsync(string docType, string docKey) {
          var flow = registry.Get(docType);
          ApprovalAccess.RequireView(caller, flow);
@@ -127,8 +127,8 @@ namespace Em.Api.Core.Approval
          return await ToInfosAsync(rows);
       }
 
-      /// <summary>Rincian satu request, atau <c>null</c> kalau tidak ada.</summary>
-      /// <param name="approvalRequestId">Request yang diminta.</param>
+      /// <summary>Details of one request, or <c>null</c> when it does not exist.</summary>
+      /// <param name="approvalRequestId">The requested request.</param>
       public async Task<ApprovalRequestDetail?> DetailAsync(string approvalRequestId) {
          var request = await FindRequestAsync(approvalRequestId);
          if (request is null) return null;
@@ -160,13 +160,13 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Keadaan terbaru sebuah request sebagai baris daftar, atau <c>null</c> kalau tidak ada atau kalau
-      /// pemanggil tidak boleh melihatnya.
+      /// The latest state of a request as a list row, or <c>null</c> when it does not exist or the caller may
+      /// not view it.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang diminta.</param>
+      /// <param name="approvalRequestId">The requested request.</param>
       /// <param name="viewProven">
-      /// Hak melihatnya tidak perlu diperiksa lagi karena pemanggil sudah membuktikannya dengan
-      /// keputusan yang berhasil disimpan; keputusan yang gagal tidak membuktikan apa pun.
+      /// The view right need not be checked again because the caller has already proven it with a decision
+      /// that was saved successfully; a failed decision proves nothing.
       /// </param>
       public async Task<ApprovalRequestInfo?> InfoAsync(string approvalRequestId, bool viewProven = false) {
          var request = await FindRequestAsync(approvalRequestId);
@@ -180,11 +180,10 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Memuat sebuah request untuk dikerjakan action lain, setelah memastikan pemanggil boleh
-      /// melihatnya.
+      /// Loads a request for another action to work on, after making sure the caller may view it.
       /// </summary>
-      /// <param name="approvalRequestId">Request yang diminta.</param>
-      /// <exception cref="ActionException">404 kalau request-nya tidak ada; 403 kalau tidak boleh dilihat.</exception>
+      /// <param name="approvalRequestId">The requested request.</param>
+      /// <exception cref="ActionException">404 when the request does not exist; 403 when it may not be viewed.</exception>
       public async Task<(ta_ApprovalRequest Request, ApprovalFlowDeclaration Flow)> RequireViewableAsync(
          string approvalRequestId) {
          var request = await FindRequestAsync(approvalRequestId) ??
@@ -195,11 +194,11 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Potret keadaan sebuah request untuk digambar ke PDF-nya: langkah beserta kotaknya, isian yang
-      /// sudah diberikan, dan kode di tepi halaman.
+      /// Snapshot of a request's state to be drawn onto its PDF: the steps with their boxes, the input
+      /// already given, and the code at the page edge.
       /// </summary>
-      /// <param name="request">Request yang digambar.</param>
-      /// <param name="flow">Alur jenis dokumennya.</param>
+      /// <param name="request">The request being drawn.</param>
+      /// <param name="flow">The flow of its document type.</param>
       public async Task<ApprovalStampSnapshot> StampSnapshotAsync(ta_ApprovalRequest request,
          ApprovalFlowDeclaration flow) {
          var steps = await ctx.ta_ApprovalRequestSteps
@@ -264,8 +263,8 @@ namespace Em.Api.Core.Approval
       }
 
       /// <summary>
-      /// Request yang menunggu pemanggil, dikelompokkan per jenis approval dan jenis dokumen, dengan
-      /// jumlah dan tanggal pengajuan tertuanya. Dihitung dari datanya setiap kali ditanya.
+      /// Requests waiting for the caller, grouped by approval kind and document type, with the count and the
+      /// date of the oldest submission. Computed from the data every time it is asked.
       /// </summary>
       public async Task<IReadOnlyList<ApprovalHubGroup>> HubGroupsAsync() {
          // A request whose document type no longer has a flow cannot be opened from the list either,

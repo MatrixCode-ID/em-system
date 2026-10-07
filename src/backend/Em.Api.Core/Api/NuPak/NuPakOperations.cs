@@ -3,10 +3,14 @@ using Em.Api.Core.Models;
 using Microsoft.EntityFrameworkCore;
 namespace Em.Api.Core.NuPak;
 
+/// <summary>The party that performed an operation, as recorded in the audit trail.</summary>
 public sealed record NuPakActor(string Kind, string? Id, string Name, string? Address);
+/// <summary>Operations shared by the NuPak endpoint and management actions.</summary>
 public static class NuPakOperations
 {
+   /// <summary>Whether a failed save was caused by a unique index violation.</summary>
    public static bool IsUniqueConflict(DbUpdateException ex) => ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
+   /// <summary>Adds an audit trail row to the context; the caller saves it.</summary>
    public static void Audit(NuPakDbContext db, NuPakActor actor, string action, string? package = null,
       string? version = null, string result = "Success", string? detail = null, ta_NuPakFeed? feed = null) {
       var now = DateTime.UtcNow;
@@ -16,6 +20,7 @@ public static class NuPakOperations
          cNuPakAuditAddress = actor.Address, cNuPakAuditResult = result,
          cNuPakAuditDetail = detail is null ? null : detail[..Math.Min(500, detail.Length)], ustamp = now, datestamp = now });
    }
+   /// <summary>Stores an uploaded package as a new version of a feed, enforcing prefix ownership and version rules.</summary>
    public static async Task PushAsync(NuPakDbContext db, NuPakStore store, ta_NuPakFeed feed, NuPakStore.Upload upload, string robotId, NuPakActor actor) {
       await store.Gate.WaitAsync();
       string? placed = null;
@@ -59,6 +64,7 @@ public static class NuPakOperations
          finally { store.Gate.Release(); }
       }
    }
+   /// <summary>Marks a package version as removed or restores it.</summary>
    public static async Task ChangeStateAsync(NuPakDbContext db, NuPakStore store, string feedId, string versionId, bool restore, NuPakActor actor) {
       await store.Gate.WaitAsync();
       try {
@@ -73,6 +79,7 @@ public static class NuPakOperations
          await db.SaveChangesAsync(); await tx.CommitAsync();
       } finally { store.Gate.Release(); }
    }
+   /// <summary>Permanently deletes a package version and its file, returning the number of bytes freed.</summary>
    public static async Task<long> PurgeAsync(NuPakDbContext db, NuPakStore store, string feedId, string versionId, NuPakActor actor) {
       await store.Gate.WaitAsync();
       try {return await PurgeUnderGateAsync(db,store,feedId,versionId,actor);}

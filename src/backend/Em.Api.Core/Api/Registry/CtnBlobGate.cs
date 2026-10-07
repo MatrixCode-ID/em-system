@@ -1,9 +1,9 @@
 namespace Em.Api.Core.Registry
 {
    /// <summary>
-   /// Kunci satu proses antara garbage collection dan request yang menautkan blob (selesai upload, mount).
-   /// Dipegang sesingkat mungkin: GC per blob, upload dari pemindahan berkas sampai tautan tersimpan.
-   /// Mengandaikan satu instance API per folder storage registry.
+   /// In-process lock between garbage collection and requests that link a blob (upload completion, mount).
+   /// Held as briefly as possible: GC per blob, upload from moving the file until the link is saved.
+   /// Assumes one API instance per registry storage folder.
    /// </summary>
    internal static class CtnBlobGate
    {

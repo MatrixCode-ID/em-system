@@ -15,12 +15,16 @@ namespace Em.Api.Core
    public class CdnServices : ServicesBase, ICdnServices
    {
       private Em.Api.Core.Storage.ManagedStorageSettings Settings => GetService<Em.Api.Core.Storage.ManagedStorageSettings>()!;
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<StorageFeatureStatus> GetMeta_CdnStatus() => Task.FromResult(Settings.Status(true));
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.SettingsClaim)]
       public Task<StorageSettingsDetail> GetMeta_CdnSettings() => Task.FromResult(Settings.Detail(true));
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.SettingsClaim)]
       public Task<StorageDirectoryValidation> PostGetMeta_CdnValidateDirectory(StorageFeatureSettings settings) => Task.FromResult(Settings.Validate(true, settings));
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.SettingsClaim)]
       public Task<StorageSettingsDetail> PostGetMeta_CdnSettingsSave(StorageSettingsSave request) => Task.FromResult(Settings.Save(true, request));
 
@@ -34,34 +38,42 @@ namespace Em.Api.Core
 
       #region Meta's
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnStorageInfo> GetMeta_CdnStorageSize() =>
          Task.FromResult(Store.StorageSize(AbortToken));
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnFolderContent> GetMeta_CdnFolder(string? path) =>
          Task.FromResult(Store.List(path));
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnItemCount> GetMeta_CdnItemCount(string path) =>
          Task.FromResult(Store.CountInside(path));
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnEntry[]> GetMeta_CdnTree(string path) =>
          Task.FromResult(Store.Tree(path));
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnEntry> PostGetMeta_CdnMove(string path, string? targetFolder, bool overwrite) =>
          Task.FromResult(Store.Move(path, targetFolder, overwrite));
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnEntry> PostGetMeta_CdnUpload(CdnUploadRequest request, Stream content) =>
          Store.UploadAsync(request.Path, request.FileName, content, request.Overwrite, AbortToken);
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnEntry> PostGetMeta_CdnCreateFolder(string? path, string folderName) =>
          Task.FromResult(Store.CreateFolder(path, folderName));
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task PostMeta_CdnDelete(string path) {
          Store.Delete(path);
@@ -75,6 +87,7 @@ namespace Em.Api.Core
 
       private string ExtractTaskKey(string path) => ExtractTaskKeyPrefix + Store.NormalizePath(path);
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task<BusinessTaskInfo> PostGetMeta_CdnArchive(CdnArchiveRequest request) {
          ArgumentNullException.ThrowIfNull(request);
@@ -94,12 +107,14 @@ namespace Em.Api.Core
             .ArchiveAsync(folder, names, archiveName, overwrite, ctx.Report, ctx.CancellationToken)));
       }
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<BusinessTaskInfo?> GetMeta_CdnArchiveTask() {
          Store.EnsureEnabled();
          return Task.FromResult(FindBusinessTask(ArchiveTaskKey));
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task PostMeta_CdnArchiveCancel() {
          Store.EnsureEnabled();
@@ -107,6 +122,7 @@ namespace Em.Api.Core
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task PostMeta_CdnArchiveClear() {
          Store.EnsureEnabled();
@@ -114,10 +130,12 @@ namespace Em.Api.Core
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<string[]> GetMeta_CdnExtractConflicts(string path) =>
          Task.FromResult(Store.ReadExtractPlan(path).Conflicts);
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task<BusinessTaskInfo> PostGetMeta_CdnExtract(string path, bool overwrite) {
          var plan = Store.ReadExtractPlan(path);
@@ -134,6 +152,7 @@ namespace Em.Api.Core
             .ExtractAsync(zipPath, overwrite, ctx.Report, ctx.CancellationToken)));
       }
 
+      /// <inheritdoc />
       [GetAction(claim: ICdnServices.CdnClaim)]
       public Task<BusinessTaskInfo[]> GetMeta_CdnExtractTasks(string? folder) {
          var normalized = Store.NormalizePath(folder);
@@ -145,12 +164,14 @@ namespace Em.Api.Core
             .ToArray());
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task PostMeta_CdnExtractCancel(string path) {
          CancelBusinessTask(ExtractTaskKey(path));
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task PostMeta_CdnExtractClear(string path) {
          ClearBusinessTask(ExtractTaskKey(path));

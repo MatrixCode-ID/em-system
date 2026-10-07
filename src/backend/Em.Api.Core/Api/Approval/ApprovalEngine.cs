@@ -9,12 +9,13 @@ using Em.Shared;
 namespace Em.Api.Core.Approval
 {
    /// <summary>
-   /// Implementasi <see cref="IApprovalEngine"/>: pintu masuk modul ke engine approval.
+   /// Implementation of <see cref="IApprovalEngine"/>: a module's entry point to the approval engine.
    /// </summary>
    /// <remarks>
-   /// Turunan <see cref="ServicesBase"/> bukan karena ia action, tetapi karena ia yang menyerahkan giliran
-   /// ke handler modul, dan handler itu perlu tahu siapa pemanggilnya. Keterangan itu diisi di konstruktor
-   /// dari request yang sedang berjalan, sama seperti yang diisi gerbang pada service action.
+   /// It derives from <see cref="ServicesBase"/> not because it is an action, but because it is the one
+   /// that hands the turn to the module's handlers, and those handlers need to know who the caller is.
+   /// That info is filled in the constructor from the request being run, the same as what the gate fills
+   /// on an action service.
    /// </remarks>
    internal sealed partial class ApprovalEngine : ServicesBase, IApprovalEngine
    {
