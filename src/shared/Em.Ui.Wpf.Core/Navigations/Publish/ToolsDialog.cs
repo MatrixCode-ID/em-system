@@ -19,6 +19,7 @@ public sealed class ToolsDialog : EmWindow {
  private readonly Button _refresh;
  private bool _busy;
 
+ /// <summary>Creates a new instance of <see cref="ToolsDialog"/>.</summary>
  public ToolsDialog(PublishProfile profile) {
   _profile=profile;
   Title="Tools";Width=620;SizeToContent=SizeToContent.Height;MinHeight=240;ResizeMode=ResizeMode.NoResize;ShowMinimizeButton=false;WindowStartupLocation=WindowStartupLocation.CenterOwner;

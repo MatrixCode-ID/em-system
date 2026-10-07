@@ -6,24 +6,25 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Wpf.Core
 {
    /// <summary>
-   /// Menyimpan sesi tersimpan di Registry, menumpang subkey milik profil koneksinya
-   /// (<c>HKCU\{ApplicationName}\Api Connections\{ProfileName}</c>), sebagai satu nilai biner yang
-   /// sudah dienkripsi DPAPI untuk akun Windows yang sedang berjalan.
+   /// Stores the saved session in the Registry, riding on the subkey of its connection profile
+   /// (<c>HKCU\{ApplicationName}\Api Connections\{ProfileName}</c>), as a single binary value already
+   /// encrypted with DPAPI for the Windows account that is running.
    /// </summary>
    /// <remarks>
-   /// Konsekuensi yang disengaja dari menumpang subkey koneksi: mengganti nama atau menghapus profil
-   /// ikut membuang sesi tersimpannya - penghapusan profil membuang seluruh subtree-nya - sementara
-   /// sekadar mengedit profil tidak, karena penyimpanan koneksi menulis field-nya satu per satu.
-   /// Keduanya perilaku yang benar: sesi memang milik satu server tertentu.
+   /// A deliberate consequence of riding on the connection's subkey: renaming or deleting a profile also
+   /// discards its saved session - deleting a profile discards its whole subtree - while merely editing a
+   /// profile does not, because connection storage writes its fields one by one. Both are correct
+   /// behavior: a session belongs to one particular server.
    /// </remarks>
    public sealed class RegistrySessionStorage(EmApp app) : ISessionStorage
    {
       private const string SessionValueName = "Session";
 
-      // Bukan rahasia dan tidak berpura-pura jadi rahasia. Gunanya memastikan blob milik aplikasi ini
-      // tidak ikut terbuka oleh aplikasi lain yang kebetulan memanggil Unprotect dengan entropy kosong.
+      // Not a secret and does not pretend to be one. Its purpose is to make sure this application's blob is
+      // not also opened by another application that happens to call Unprotect with empty entropy.
       private static readonly byte[] Entropy = "em.session.v1"u8.ToArray();
 
+      /// <summary>Stores (or overwrites) the session of a connection profile.</summary>
       public void Save(string profileName, SavedSession session) {
          ArgumentNullException.ThrowIfNull(session);
 
@@ -35,6 +36,7 @@ namespace Em.Ui.Wpf.Core
          key.SetValue(SessionValueName, protectedPayload, RegistryValueKind.Binary);
       }
 
+      /// <summary>Reads the stored session of a connection profile, or <c>null</c> when there is none.</summary>
       public SavedSession? Load(string profileName) {
          using var key = OpenProfileKey(profileName, writable: true);
          if (key?.GetValue(SessionValueName) is not byte[] protectedPayload) return null;
@@ -45,21 +47,21 @@ namespace Em.Ui.Wpf.Core
             return string.IsNullOrEmpty(session?.RefreshToken) ? null : session;
          }
          catch (Exception x) when (x is CryptographicException or JsonException) {
-            // Blob yang tidak bisa dibuka tidak akan pernah bisa dibuka lagi - ia dienkripsi untuk akun
-            // Windows lain, atau isinya rusak. Dibuang sekarang supaya tidak dicoba lagi setiap start.
+            // A blob that cannot be opened can never be opened again - it was encrypted for another Windows
+            // account, or its content is corrupt. It is discarded now so it is not tried again on every start.
             key!.DeleteValue(SessionValueName, throwOnMissingValue: false);
             return null;
          }
       }
 
+      /// <summary>Discards the stored session of a connection profile.</summary>
       public void Clear(string profileName) {
          using var key = OpenProfileKey(profileName, writable: true);
          key?.DeleteValue(SessionValueName, throwOnMissingValue: false);
       }
 
-      // Subkey koneksinya sendiri tidak pernah dibuat dari sini: sesi hanya boleh menumpang profil yang
-      // memang sudah tersimpan. Profil debug tidak punya subkey sama sekali, dan itu benar - sesi
-      // untuknya tidak ikut tersimpan.
+      // The connection's own subkey is never created from here: a session may only ride on a profile that is
+      // already stored. A debug profile has no subkey at all, and that is right - no session is stored for it.
       private RegistryKey? OpenProfileKey(string profileName, bool writable) {
          if (string.IsNullOrWhiteSpace(profileName)) return null;
 

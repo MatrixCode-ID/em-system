@@ -1,77 +1,77 @@
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Status satu file dibandingkan dengan rilis di tujuan.</summary>
+   /// <summary>Status of one file compared with the release at the target.</summary>
    public enum ReleaseDiffStatus
    {
-      /// <summary>Belum tercantum di <c>release.json</c> tujuan: akan diunggah.</summary>
+      /// <summary>Not listed in the target's <c>release.json</c>: it will be uploaded.</summary>
       New = 0,
 
-      /// <summary>Tercantum, tetapi isinya berbeda atau filenya tidak ada di tujuan: akan diunggah ulang.</summary>
+      /// <summary>Listed, but its content is different or the file is missing at the target: it will be uploaded again.</summary>
       Changed = 1,
 
-      /// <summary>Ada di <c>binaries/</c> tujuan, tetapi tidak ada di local publish folder: akan dihapus.</summary>
+      /// <summary>Exists in the target's <c>binaries/</c> but not in the local publish folder: it will be deleted.</summary>
       Removed = 2,
 
-      /// <summary>Ukuran dan SHA-256-nya sama: tidak disentuh.</summary>
+      /// <summary>Its size and SHA-256 are the same: it is not touched.</summary>
       Same = 3
    }
 
-   /// <summary>Satu baris hasil perbandingan.</summary>
+   /// <summary>One row of the comparison result.</summary>
    public sealed class ReleaseDiffItem
    {
-      /// <summary>Path relatif terhadap <c>binaries/</c>, dipisah <c>/</c>.</summary>
+      /// <summary>Path relative to <c>binaries/</c>, separated by <c>/</c>.</summary>
       public required string Path { get; init; }
 
-      /// <summary>Kelompok tampilan file ini.</summary>
+      /// <summary>The display group of this file.</summary>
       public required ReleaseGroup Group { get; init; }
 
-      /// <summary>Apa yang akan terjadi pada file ini saat Sync.</summary>
+      /// <summary>What will happen to this file at Sync.</summary>
       public required ReleaseDiffStatus Status { get; init; }
 
-      /// <summary>Ukuran di local publish folder; <c>null</c> untuk file berstatus <see cref="ReleaseDiffStatus.Removed"/>.</summary>
+      /// <summary>Size in the local publish folder; <c>null</c> for a file with status <see cref="ReleaseDiffStatus.Removed"/>.</summary>
       public long? LocalSize { get; init; }
 
-      /// <summary>Ukuran di tujuan; <c>null</c> kalau file itu belum ada di sana.</summary>
+      /// <summary>Size at the target; <c>null</c> when the file is not there yet.</summary>
       public long? RemoteSize { get; init; }
    }
 
    /// <summary>
-   /// Hasil perbandingan local publish folder dengan rilis di tujuan: status setiap file, serta keadaan
-   /// tujuan saat dibandingkan. Sync hanya berjalan di atas hasil ini, dan menolak berjalan kalau
-   /// <c>release.json</c> tujuan sudah berubah sejak itu.
+   /// The result of comparing the local publish folder with the release at the target: the status of every
+   /// file, and the state of the target at the moment of comparison. Sync only runs on top of this result,
+   /// and refuses to run if the target's <c>release.json</c> has changed since.
    /// </summary>
    public sealed class ReleaseComparison
    {
-      /// <summary>Potret local publish folder yang dibandingkan.</summary>
+      /// <summary>The snapshot of the local publish folder that was compared.</summary>
       public required LocalSnapshot Local { get; init; }
 
-      /// <summary>Byte <c>release.json</c> tujuan saat dibandingkan, atau <c>null</c> kalau belum ada.</summary>
+      /// <summary>The bytes of the target's <c>release.json</c> at the time of comparison, or <c>null</c> when it does not exist yet.</summary>
       public required byte[]? RemoteManifestBytes { get; init; }
 
-      /// <summary>Isi <c>release.json</c> tujuan, atau <c>null</c> kalau tidak ada atau tidak sah.</summary>
+      /// <summary>The content of the target's <c>release.json</c>, or <c>null</c> when it does not exist or is not valid.</summary>
       public required ReleaseManifest? RemoteManifest { get; init; }
 
-      /// <summary>Kenapa <c>release.json</c> tujuan tidak bisa dibaca, atau <c>null</c>.</summary>
+      /// <summary>Why the target's <c>release.json</c> could not be read, or <c>null</c>.</summary>
       public string? RemoteManifestError { get; init; }
 
-      /// <summary>Setiap file lokal dan setiap file tujuan yang akan dihapus, urut path.</summary>
+      /// <summary>Every local file and every target file that will be deleted, ordered by path.</summary>
       public required IReadOnlyList<ReleaseDiffItem> Items { get; init; }
 
       /// <summary>
-      /// Folder di <c>binaries/</c> tujuan yang tidak lagi dipakai rilis baru, hanya yang paling atas
-      /// (folder di dalamnya ikut terhapus bersamanya).
+      /// Folders in the target's <c>binaries/</c> that the new release no longer uses, only the topmost ones
+      /// (folders inside them are deleted with them).
       /// </summary>
       public required IReadOnlyList<string> FoldersToDelete { get; init; }
 
-      /// <summary>Jumlah file dengan status <paramref name="status"/>.</summary>
+      /// <summary>Number of files with status <paramref name="status"/>.</summary>
       public int CountOf(ReleaseDiffStatus status) => Items.Count(r => r.Status == status);
 
-      /// <summary>Total byte yang akan diunggah Sync.</summary>
+      /// <summary>Total bytes that Sync will upload.</summary>
       public long UploadBytes => Items.Where(IsUpload).Sum(r => r.LocalSize ?? 0);
 
       /// <summary>
-      /// <c>true</c> kalau Sync akan mengubah sesuatu di tujuan selain menandatangani ulang: ada file yang
-      /// diunggah atau dihapus, atau <c>release.json</c> tujuan belum mencantumkan persis file lokal.
+      /// <c>true</c> when Sync will change something at the target besides re-signing: a file is uploaded or
+      /// deleted, or the target's <c>release.json</c> does not yet list exactly the local files.
       /// </summary>
       public bool HasChanges =>
          Items.Any(r => r.Status != ReleaseDiffStatus.Same) || FoldersToDelete.Count > 0 ||
@@ -82,13 +82,13 @@ namespace Em.Ui.Wpf.Core.Release
    }
 
    /// <summary>
-   /// Membandingkan local publish folder dengan rilis di tujuan. Status "sama/ganti" diambil dari ukuran
-   /// dan SHA-256 di <c>release.json</c> tujuan; yang "hapus" diambil dari isi <c>binaries/</c> yang
-   /// benar-benar ada di tujuan, supaya sisa Sync yang terputus ikut bersih.
+   /// Compares the local publish folder with the release at the target. The "same/replace" status is taken
+   /// from the size and SHA-256 in the target's <c>release.json</c>; "delete" is taken from the content of
+   /// <c>binaries/</c> that really exists at the target, so leftovers of an interrupted Sync are cleaned too.
    /// </summary>
    public static class ReleaseComparer
    {
-      /// <summary>Membaca <c>release.json</c> dan isi <c>binaries/</c> di tujuan, lalu membandingkannya.</summary>
+      /// <summary>Reads <c>release.json</c> and the content of <c>binaries/</c> at the target, then compares them.</summary>
       public static async Task<ReleaseComparison> CompareAsync(ReleaseTarget target, LocalSnapshot local,
          CancellationToken token) {
          var manifest = await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token).ConfigureAwait(false);
@@ -97,8 +97,8 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Membandingkan <paramref name="local"/> dengan keadaan tujuan yang sudah dibaca. Manifest tujuan
-      /// yang tidak sah diperlakukan seperti tidak ada: semua file lokal berstatus baru.
+      /// Compares <paramref name="local"/> with the target state that has already been read. A target manifest
+      /// that is not valid is treated as absent: all local files have the new status.
       /// </summary>
       public static ReleaseComparison Compare(LocalSnapshot local, byte[]? remoteManifestBytes,
          IReadOnlyList<ReleaseTargetEntry> remoteBinaries) {

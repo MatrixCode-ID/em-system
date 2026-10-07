@@ -20,15 +20,15 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Layar pengelola CDN: menelusuri folder CDN di server, mengunggah file, membuat dan menghapus
-   /// folder, menyalin tautan publik sebuah file atau folder, serta membuat dan membongkar file zip.
-   /// Membuat dan membongkar zip berjalan di server sebagai business task, jadi statusnya - termasuk
-   /// yang dimulai user lain - ikut tampil dan bisa dibatalkan dari layar ini.
+   /// The CDN manager screen: browsing the CDN folders on the server, uploading files, creating and
+   /// deleting folders, copying the public link of a file or folder, and creating and extracting zip files.
+   /// Creating and extracting zips runs on the server as a business task, so their status - including
+   /// those started by another user - is shown too and can be cancelled from this screen.
    /// </summary>
    public partial class CdnManager : UserControl, INavigationBody
    {
       /// <summary>
-      /// Membuat layar pengelola CDN untuk aplikasi <paramref name="app"/>.
+      /// Creates the CDN manager screen for application <paramref name="app"/>.
       /// </summary>
       public CdnManager(EmApp app) {
          InitializeComponent();
@@ -43,7 +43,7 @@ namespace Em.Ui.Wpf.Navigations
          entryList.SelectionChanged += (_, e) => Vm.ApplySelection(e.AddedItems, e.RemovedItems);
       }
 
-      /// <summary>ViewModel layar ini.</summary>
+      /// <summary>The view model of this screen.</summary>
       public CdnManagerVm Vm => (CdnManagerVm)DataContext;
 
       /// <inheritdoc />
@@ -66,10 +66,10 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// Satu baris daftar isi folder di <see cref="CdnManager"/>: isi CDN apa adanya dari server,
-   /// ditambah keterangan yang sudah siap tampil. Baris ini juga muatan drag: di dalam aplikasi ia
-   /// dipindahkan ke folder lain, di luar aplikasi ia menjadi file yang diunduh langsung ke tempat
-   /// ia dijatuhkan.
+   /// One row of the folder listing in <see cref="CdnManager"/>: the CDN entry as-is from the server,
+   /// together with captions that are ready to show. This row is also the drag payload: inside the
+   /// application it is moved to another folder, outside the application it becomes a file downloaded
+   /// straight to where it is dropped.
    /// </summary>
    public class CdnManagerItem : NotifyPropertyBase, IVirtualFileSource
    {
@@ -83,30 +83,30 @@ namespace Em.Ui.Wpf.Navigations
       /// <inheritdoc />
       public IReadOnlyList<VirtualFile> ResolveVirtualFiles() => _owner.ResolveVirtualFiles(this);
 
-      /// <summary>Isi CDN yang diwakili baris ini.</summary>
+      /// <summary>The CDN entry this row represents.</summary>
       public CdnEntry Entry { get; }
 
-      /// <summary>Nama file atau folder.</summary>
+      /// <summary>Name of the file or folder.</summary>
       public string Name => Entry.Name;
 
-      /// <summary><c>true</c> untuk folder.</summary>
+      /// <summary><c>true</c> for a folder.</summary>
       public bool IsFolder => Entry.IsFolder;
 
       /// <summary>
-      /// <c>true</c> kalau baris ini ikut terpilih. Daftar bisa memilih banyak baris sekaligus; hanya
-      /// Create Archive yang memakai seluruh pilihan, perintah lain bekerja pada baris yang difokus.
+      /// <c>true</c> when this row is also selected. The list can select many rows at once; only Create
+      /// Archive uses the whole selection, other commands work on the focused row.
       /// </summary>
       public bool IsSelected {
          get => Get<bool>();
          set => Set(value, _ => _owner.OnItemSelectionChanged());
       }
 
-      /// <summary><c>true</c> untuk file <c>.zip</c>, satu-satunya jenis yang bisa dibongkar di tempat.</summary>
+      /// <summary><c>true</c> for a <c>.zip</c> file, the only kind that can be extracted in place.</summary>
       public bool IsZip => !IsFolder && Path.GetExtension(Name).Equals(".zip", StringComparison.OrdinalIgnoreCase);
 
       /// <summary>
-      /// Task bongkar zip untuk file ini yang masih hidup, atau yang gagal dan belum dibersihkan;
-      /// <c>null</c> kalau tidak ada.
+      /// The extract task for this file that is still live, or that failed and has not been cleared;
+      /// <c>null</c> when there is none.
       /// </summary>
       public BusinessTaskInfo? ExtractTask {
          get => Get<BusinessTaskInfo?>();
@@ -116,26 +116,26 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Keadaan tombol extract baris ini.</summary>
+      /// <summary>State of this row's extract button.</summary>
       public CdnTaskMode ExtractMode => CdnManagerVm.ModeOf(ExtractTask);
 
-      /// <summary>Tooltip tombol extract, sesuai keadaannya.</summary>
+      /// <summary>Tooltip of the extract button, according to its state.</summary>
       public string ExtractTooltip => ExtractMode switch {
          CdnTaskMode.Running => $"{CdnManagerVm.ProgressText(ExtractTask!)} - click to cancel",
          CdnTaskMode.Failed => "Extract failed - click for details",
          _ => "Extract here"
       };
 
-      /// <summary>Ikon baris: folder, atau jenis file menurut ekstensinya.</summary>
+      /// <summary>Icon of the row: a folder, or a file kind according to its extension.</summary>
       public EFontAwesomeIcon Icon => IsFolder ? EFontAwesomeIcon.Solid_Folder : IconForFile(Entry.Name);
 
-      /// <summary>Ukuran yang mudah dibaca, mis. <c>"12.4 MB"</c>; tanda pisah untuk folder.</summary>
+      /// <summary>Size in a human-friendly form, e.g. <c>"12.4 MB"</c>; a dash for folders.</summary>
       public string SizeCaption => IsFolder ? "-" : CdnManagerVm.FormatSize(Entry.Size);
 
-      /// <summary>Ukuran persis dalam byte, untuk tooltip.</summary>
+      /// <summary>Exact size in bytes, for the tooltip.</summary>
       public string SizeTooltip => IsFolder ? "Folder" : $"{Entry.Size:N0} bytes";
 
-      /// <summary>Waktu terakhir diubah, dalam waktu lokal.</summary>
+      /// <summary>Time of the last change, in local time.</summary>
       public string ModifiedCaption =>
          Entry.LastModified.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.CurrentCulture);
 
@@ -155,43 +155,43 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// Keadaan tombol yang sekaligus menjadi penampil status business task CDN (Create Archive di
-   /// toolbar, Extract di baris file zip).
+   /// State of a button that also serves as the status display of a CDN business task (Create Archive in
+   /// the toolbar, Extract on a zip file row).
    /// </summary>
    public enum CdnTaskMode
    {
-      /// <summary>Tidak ada task: tombol memulai pekerjaannya.</summary>
+      /// <summary>No task: the button starts its work.</summary>
       None = 0,
 
-      /// <summary>Task antri atau berjalan: tombol beranimasi dan hanya bisa membatalkan.</summary>
+      /// <summary>Task queued or running: the button animates and can only cancel.</summary>
       Running = 1,
 
-      /// <summary>Task gagal dan belum dibersihkan: tombol menampilkan kesalahannya lalu membersihkannya.</summary>
+      /// <summary>Task failed and not yet cleared: the button shows its error and then clears it.</summary>
       Failed = 2
    }
 
    /// <summary>
-   /// Satu potong jalur folder di breadcrumb <see cref="CdnManager"/>.
+   /// One piece of the folder path in the <see cref="CdnManager"/> breadcrumb.
    /// </summary>
    public class CdnBreadcrumb
    {
-      /// <summary>Nama yang tampil.</summary>
+      /// <summary>The name shown.</summary>
       public string Name { get; init; } = "";
 
-      /// <summary>Path folder yang dibuka saat potongan ini diklik; string kosong untuk akar.</summary>
+      /// <summary>Path of the folder that is opened when this piece is clicked; an empty string for the root.</summary>
       public string Path { get; init; } = "";
 
-      /// <summary><c>true</c> untuk potongan pertama, yang tidak didahului pemisah.</summary>
+      /// <summary><c>true</c> for the first piece, which is not preceded by a separator.</summary>
       public bool IsFirst { get; init; }
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="CdnManager"/>.
+   /// View model for <see cref="CdnManager"/>.
    /// </summary>
    public class CdnManagerVm : MvvmModelBase
    {
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan seluruh command layar.
+      /// Creates a new view model and registers all commands of the screen.
       /// </summary>
       public CdnManagerVm() {
          RegisterCommand<CdnManagerItem?>(nameof(OpenFolderCommand), OpenFolderCommand, OpenFolderCommandAllowed);
@@ -233,6 +233,7 @@ namespace Em.Ui.Wpf.Navigations
 
       private ICdnServices Service => EmApp!.ServiceProvider.GetRequiredService<ICdnServices>();
 
+      /// <summary>The storage caption.</summary>
       public string StorageCaption {
          get => Get<string>() ?? "Storage: not checked";
          private set => Set(value);
@@ -243,40 +244,40 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Data
 
-      /// <summary>Isi folder yang sedang dibuka: subfolder lebih dulu, lalu file.</summary>
+      /// <summary>Content of the folder that is open: subfolders first, then files.</summary>
       public ObservableCollection<CdnManagerItem> Items { get; } = [];
 
-      /// <summary>Potongan jalur folder yang sedang dibuka, dari akar sampai folder itu sendiri.</summary>
+      /// <summary>The pieces of the open folder's path, from the root to the folder itself.</summary>
       public ObservableCollection<CdnBreadcrumb> Breadcrumbs { get; } = [];
 
-      /// <summary>Path folder yang sedang dibuka, relatif terhadap akar CDN; string kosong untuk akar.</summary>
+      /// <summary>Path of the open folder, relative to the CDN root; an empty string for the root.</summary>
       public string CurrentPath {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Alamat publik folder yang sedang dibuka, relatif terhadap alamat server.</summary>
+      /// <summary>Public address of the open folder, relative to the server address.</summary>
       public string PublicPath {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Baris yang sedang dipilih.</summary>
+      /// <summary>The row that is selected.</summary>
       public CdnManagerItem? SelectedItem {
          get => Get<CdnManagerItem?>();
          set => Set(value, _ => RaiseCommandsChanged());
       }
 
-      /// <summary>Batas ukuran satu file unggahan dalam byte, sesuai laporan server.</summary>
+      /// <summary>Size limit of one uploaded file in bytes, as reported by the server.</summary>
       public long MaxFileSize {
          get => Get<long>();
          private set => Set(value, _ => NotifyChanged(nameof(LimitCaption)));
       }
 
-      /// <summary>Keterangan batas unggahan untuk chip di toolbar.</summary>
+      /// <summary>Caption of the upload limit for the chip in the toolbar.</summary>
       public string LimitCaption => MaxFileSize > 0 ? $"Max {FormatSize(MaxFileSize)} per file" : "";
 
-      /// <summary>Jumlah isi folder untuk chip di toolbar, mis. <c>"2 folders · 5 files"</c>.</summary>
+      /// <summary>Content count of the folder for the chip in the toolbar, e.g. <c>"2 folders · 5 files"</c>.</summary>
       public string ItemsCaption {
          get {
             var folders = Items.Count(r => r.IsFolder);
@@ -286,20 +287,20 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// <c>true</c> kalau server menjawab bahwa CDN-nya tidak dinyalakan. Selama itu semua perintah
-      /// kecuali Refresh mati dan layar hanya menampilkan pesannya.
+      /// <c>true</c> when the server answers that its CDN is not turned on. While that holds, all commands
+      /// except Refresh are off and the screen only shows its message.
       /// </summary>
       public bool IsCdnDisabled {
          get => Get<bool>();
          private set => Set(value, _ => NotifyChanged(nameof(IsEmpty)));
       }
 
-      /// <summary><c>true</c> kalau folder yang terbuka berhasil dibaca dan isinya kosong.</summary>
+      /// <summary><c>true</c> when the open folder was read successfully and is empty.</summary>
       public bool IsEmpty => IsLoaded && !IsCdnDisabled && Items.Count == 0;
 
       /// <summary>
-      /// <c>true</c> sejak jawaban pertama dari server diterima - isi folder maupun kabar bahwa CDN
-      /// nonaktif. Sebelum itu semua perintah kecuali Refresh mati.
+      /// <c>true</c> since the first answer from the server was received - the folder content or the news
+      /// that the CDN is off. Before that all commands except Refresh are off.
       /// </summary>
       public bool IsLoaded {
          get => Get<bool>();
@@ -307,8 +308,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Keterangan kemajuan unggahan atau unduhan, mis.
-      /// <c>"setup.bin — 45% (45.2 MB of 100 MB) · 2 of 5"</c>; kosong saat tidak ada yang berjalan.
+      /// Caption of upload or download progress, e.g.
+      /// <c>"setup.bin — 45% (45.2 MB of 100 MB) · 2 of 5"</c>; empty when nothing is running.
       /// </summary>
       public string TransferProgressCaption {
          get => Get<string>() ?? "";
@@ -325,19 +326,19 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Persentase file yang sedang diunggah atau diunduh yang sudah berpindah, 0 sampai 100.
+      /// Percentage of the file being uploaded or downloaded that has been transferred, 0 to 100.
       /// </summary>
       public double TransferPercent {
          get => Get<double>();
          private set => Set(value);
       }
 
-      /// <summary><c>true</c> selama unggahan atau unduhan sedang berjalan.</summary>
+      /// <summary><c>true</c> while an upload or download is running.</summary>
       public bool IsTransferring => TransferProgressCaption.Length > 0;
 
       /// <summary>
-      /// Task archive CDN yang masih hidup - milik siapa pun - atau yang gagal dan belum dibersihkan;
-      /// <c>null</c> kalau tidak ada. Hanya satu archive yang bisa berjalan di seluruh server.
+      /// The CDN archive task that is still live - whoever's it is - or that failed and has not been cleared;
+      /// <c>null</c> when there is none. Only one archive can run on the whole server.
       /// </summary>
       public BusinessTaskInfo? ArchiveTask {
          get => Get<BusinessTaskInfo?>();
@@ -349,10 +350,10 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Keadaan tombol Create Archive.</summary>
+      /// <summary>State of the Create Archive button.</summary>
       public CdnTaskMode ArchiveMode => ModeOf(ArchiveTask);
 
-      /// <summary>Tulisan tombol Create Archive, sesuai keadaannya.</summary>
+      /// <summary>Text of the Create Archive button, according to its state.</summary>
       public string ArchiveCaption => ArchiveTask switch {
          null => "Create Archive",
          { Status: BusinessTaskStatus.Queued } => "Archive Queued",
@@ -361,7 +362,7 @@ namespace Em.Ui.Wpf.Navigations
          _ => "Archive Failed"
       };
 
-      /// <summary>Tooltip tombol Create Archive, sesuai keadaannya.</summary>
+      /// <summary>Tooltip of the Create Archive button, according to its state.</summary>
       public string ArchiveTooltip => ArchiveMode switch {
          CdnTaskMode.Running => $"{ProgressText(ArchiveTask!)} - click to cancel",
          CdnTaskMode.Failed => "The archive failed - click for details",
@@ -372,29 +373,29 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Commands
 
-      /// <summary>Membuka folder pada baris <paramref name="item"/>.</summary>
+      /// <summary>Opens the folder in row <paramref name="item"/>.</summary>
       public Task OpenFolderCommand(CdnManagerItem? item) => LoadAsync(item!.Entry.Path);
 
-      /// <summary>Hanya untuk baris folder, dan saat layar sedang tidak sibuk.</summary>
+      /// <summary>Only for a folder row, and while the screen is not busy.</summary>
       public bool OpenFolderCommandAllowed(CdnManagerItem? item) => item is { IsFolder: true } && CanAct;
 
-      /// <summary>Naik satu folder.</summary>
+      /// <summary>Goes up one folder.</summary>
       public Task GoUpCommand() {
          var index = CurrentPath.LastIndexOf('/');
          return LoadAsync(index < 0 ? "" : CurrentPath[..index]);
       }
 
-      /// <summary>Hanya kalau folder yang terbuka bukan akar.</summary>
+      /// <summary>Only when the open folder is not the root.</summary>
       public bool GoUpCommandAllowed() => CurrentPath.Length > 0 && CanAct;
 
-      /// <summary>Membuka folder yang diwakili potongan breadcrumb <paramref name="crumb"/>.</summary>
+      /// <summary>Opens the folder represented by breadcrumb piece <paramref name="crumb"/>.</summary>
       public Task NavigateToSegmentCommand(CdnBreadcrumb? crumb) => LoadAsync(crumb!.Path);
 
-      /// <summary>Hanya untuk potongan yang bukan folder yang sedang terbuka.</summary>
+      /// <summary>Only for a piece that is not the folder currently open.</summary>
       public bool NavigateToSegmentCommandAllowed(CdnBreadcrumb? crumb) =>
          crumb is not null && crumb.Path != CurrentPath && CanAct;
 
-      /// <summary>Memilih satu atau beberapa file lalu mengunggahnya satu per satu ke folder ini.</summary>
+      /// <summary>Chooses one or several files, then uploads them one by one to this folder.</summary>
       public async Task UploadCommand() {
          var dialog = new OpenFileDialog {
             Title = "Upload to CDN",
@@ -408,23 +409,23 @@ namespace Em.Ui.Wpf.Navigations
             dialog.FileNames.Select(r => new UploadItem(r, folder, Path.GetFileName(r))).ToList(), []);
       }
 
-      /// <summary>Hanya saat CDN aktif dan layar tidak sibuk.</summary>
+      /// <summary>Only when the CDN is on and the screen is not busy.</summary>
       public bool UploadCommandAllowed() => CanAct;
 
       /// <summary>
-      /// Menghentikan unggahan atau unduhan yang sedang berjalan. File yang sedang berpindah diputus di
-      /// tengah jalan tanpa meninggalkan sisa - server tidak menyimpan unggahan yang terputus, dan unduhan
-      /// yang terputus dibuang dari disk - lalu sisa antreannya tidak dikerjakan.
+      /// Stops the upload or download that is running. The file being transferred is cut off midway without
+      /// leaving a remnant - the server does not keep an interrupted upload, and an interrupted download is
+      /// removed from disk - and the rest of the queue is not carried out.
       /// </summary>
       public void CancelTransferCommand() {
          _transferCancel?.Cancel();
          RaiseCommandsChanged();
       }
 
-      /// <summary>Hanya selama unggahan atau unduhan berjalan dan belum diminta berhenti.</summary>
+      /// <summary>Only while an upload or download is running and has not yet been asked to stop.</summary>
       public bool CancelTransferCommandAllowed() => IsTransferring && _transferCancel is { IsCancellationRequested: false };
 
-      /// <summary>Meminta nama lalu membuat subfolder baru di folder ini.</summary>
+      /// <summary>Asks for a name, then creates a new subfolder in this folder.</summary>
       public async Task NewFolderCommand() {
          var dialog = new TextInputDialog("New Folder", "Name of the folder to create in this folder.",
             "Folder name", "Create", EFontAwesomeIcon.Solid_FolderPlus) { Owner = DialogOwner };
@@ -437,12 +438,12 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Hanya saat CDN aktif dan layar tidak sibuk.</summary>
+      /// <summary>Only when the CDN is on and the screen is not busy.</summary>
       public bool NewFolderCommandAllowed() => CanAct;
 
       /// <summary>
-      /// Menghapus baris <paramref name="item"/> setelah dikonfirmasi. Untuk folder, isinya dihitung
-      /// dulu supaya konfirmasinya menyebut seberapa banyak yang ikut terhapus.
+      /// Deletes row <paramref name="item"/> after confirmation. For a folder, its content is counted first
+      /// so the confirmation states how much will be deleted with it.
       /// </summary>
       public async Task DeleteCommand(CdnManagerItem? item) {
          if (item is null || DialogOwner is not { } owner) return;
@@ -469,18 +470,18 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Hanya untuk sebuah baris, dan saat layar sedang tidak sibuk.</summary>
+      /// <summary>Only for a row, and while the screen is not busy.</summary>
       public bool DeleteCommandAllowed(CdnManagerItem? item) => item is not null && CanAct;
 
-      /// <summary>Membaca ulang folder yang sedang dibuka.</summary>
+      /// <summary>Reads the open folder again.</summary>
       public Task RefreshCommand() => ReloadAsync();
 
-      /// <summary>Selalu boleh selama layar tidak sibuk, termasuk saat CDN nonaktif.</summary>
+      /// <summary>Always allowed while the screen is not busy, including when the CDN is off.</summary>
       public bool RefreshCommandAllowed() => IsNotBusy;
 
       /// <summary>
-      /// Menyalin tautan publik baris <paramref name="item"/> ke clipboard. Tautan folder diakhiri
-      /// <c>/</c>.
+      /// Copies the public link of row <paramref name="item"/> to the clipboard. The link of a folder ends
+      /// with <c>/</c>.
       /// </summary>
       public void CopyLinkCommand(CdnManagerItem? item) {
          if (item is null) return;
@@ -495,27 +496,26 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Hanya untuk sebuah baris, saat CDN aktif dan folder sudah terbaca.</summary>
+      /// <summary>Only for a row, when the CDN is on and the folder has been read.</summary>
       public bool CopyLinkCommandAllowed(CdnManagerItem? item) => item is not null && CanAct && PublicPath.Length > 0;
 
       /// <summary>
-      /// Mengunduh baris <paramref name="item"/> ke komputer ini, dengan kemajuan di toolbar dan bisa
-      /// dihentikan. File disimpan ke tempat yang dipilih lewat dialog simpan; folder diunduh beserta
-      /// seluruh isinya ke dalam folder yang dipilih. Unduhan berjalan di dalam aplikasi, jadi terputus
-      /// kalau aplikasi ditutup.
+      /// Downloads row <paramref name="item"/> to this computer, with progress in the toolbar and able to be
+      /// stopped. A file is saved to the place chosen through the save dialog; a folder is downloaded with all
+      /// its content into the chosen folder. The download runs inside the application, so it is cut off when
+      /// the application is closed.
       /// </summary>
       public Task DownloadCommand(CdnManagerItem? item) =>
          item is null ? Task.CompletedTask
          : item.IsFolder ? DownloadFolderAsync(item)
          : DownloadFileAsync(item);
 
-      /// <summary>Hanya untuk sebuah baris, dan saat layar sedang tidak sibuk.</summary>
+      /// <summary>Only for a row, and while the screen is not busy.</summary>
       public bool DownloadCommandAllowed(CdnManagerItem? item) => item is not null && CanAct;
 
       /// <summary>
-      /// Membuka folder yang sedang dibuka di browser bawaan, lewat alamat publiknya. Browser yang
-      /// kemudian menampilkan daftar isinya dan mengunduh file dengan pengelola unduhannya sendiri,
-      /// lepas dari aplikasi ini.
+      /// Opens the open folder in the default browser through its public address. The browser then shows its
+      /// listing and downloads files with its own download manager, independent of this application.
       /// </summary>
       public void OpenInBrowserCommand() {
          var host = EmApp?.ActiveConnection?.Host.TrimEnd('/') ?? "";
@@ -527,14 +527,14 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Hanya saat CDN aktif dan folder sudah terbaca.</summary>
+      /// <summary>Only when the CDN is on and the folder has been read.</summary>
       public bool OpenInBrowserCommandAllowed() => CanAct && PublicPath.Length > 0;
 
       /// <summary>
-      /// Menerima jatuhan di layar ini. Baris CDN yang dijatuhkan dipindahkan; file dan folder dari
-      /// Explorer diunggah, folder beserta seluruh isinya, dan digabung dengan folder bernama sama yang
-      /// sudah ada. Sasarannya baris folder atau potongan breadcrumb tempat ia dijatuhkan
-      /// (<see cref="DropRequest"/>), atau folder yang sedang terbuka kalau dijatuhkan di daftar.
+      /// Accepts a drop on this screen. A dropped CDN row is moved; files and folders from Explorer are
+      /// uploaded, folders with all their content, and merged with an existing folder of the same name. The
+      /// target is the folder row or breadcrumb piece it was dropped on (<see cref="DropRequest"/>), or the
+      /// open folder when dropped on the list.
       /// </summary>
       public Task DropCommand(object? payload) {
          var (dropped, target) = ResolveDrop(payload);
@@ -546,8 +546,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Baris CDN boleh dijatuhkan ke folder mana pun kecuali folder asalnya, dirinya sendiri, atau
-      /// folder di dalam dirinya; file dari Explorer boleh dijatuhkan ke folder mana pun.
+      /// A CDN row may be dropped on any folder except its origin folder, itself, or a folder inside itself;
+      /// files from Explorer may be dropped on any folder.
       /// </summary>
       public bool DropCommandAllowed(object? payload) {
          if (!CanAct) return false;
@@ -564,9 +564,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Satu tombol untuk seluruh siklus archive. Tanpa archive: membuat zip dari baris yang terpilih.
-      /// Selama archive berjalan - dimulai siapa pun - membatalkannya. Setelah archive gagal: menampilkan
-      /// kesalahannya lalu membersihkannya.
+      /// One button for the whole archive cycle. Without an archive: creates a zip from the selected rows.
+      /// While an archive runs - started by anyone - cancels it. After an archive failed: shows its error and
+      /// then clears it.
       /// </summary>
       public Task ArchiveCommand() => ArchiveMode switch {
          CdnTaskMode.Running => CancelArchiveAsync(),
@@ -575,8 +575,8 @@ namespace Em.Ui.Wpf.Navigations
       };
 
       /// <summary>
-      /// Membuat archive butuh minimal satu baris terpilih; membatalkan dan membersihkan mengikuti hak
-      /// yang dilaporkan server.
+      /// Creating an archive needs at least one selected row; cancelling and clearing follow the rights
+      /// reported by the server.
       /// </summary>
       public bool ArchiveCommandAllowed() => ArchiveMode switch {
          CdnTaskMode.Running => IsNotBusy && ArchiveTask!.CanCancel,
@@ -585,9 +585,9 @@ namespace Em.Ui.Wpf.Navigations
       };
 
       /// <summary>
-      /// Satu tombol untuk seluruh siklus bongkar zip di baris <paramref name="item"/>. Tanpa task:
-      /// membongkar zip itu di folder ini, dengan pertanyaan timpa kalau ada file yang bentrok. Selama
-      /// berjalan: membatalkannya. Setelah gagal: menampilkan kesalahannya lalu membersihkannya.
+      /// One button for the whole extract cycle on row <paramref name="item"/>. Without a task: extracts that
+      /// zip in this folder, asking about overwriting when a file collides. While running: cancels it. After
+      /// failing: shows its error and then clears it.
       /// </summary>
       public Task ExtractCommand(CdnManagerItem? item) =>
          item is null ? Task.CompletedTask
@@ -597,7 +597,7 @@ namespace Em.Ui.Wpf.Navigations
             _ => StartExtractAsync(item)
          };
 
-      /// <summary>Hanya untuk baris file zip; membatalkan dan membersihkan mengikuti hak dari server.</summary>
+      /// <summary>Only for a zip file row; cancelling and clearing follow the rights from the server.</summary>
       public bool ExtractCommandAllowed(CdnManagerItem? item) =>
          item is { IsZip: true } && item.ExtractMode switch {
             CdnTaskMode.Running => IsNotBusy && item.ExtractTask!.CanCancel,
@@ -609,13 +609,13 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Business tasks
 
-      /// <summary>Mulai memantau archive dan extract; dipanggil saat layar tampil.</summary>
+      /// <summary>Starts monitoring archive and extract; called when the screen is shown.</summary>
       public void StartTaskPolling() {
          _visible = true;
          _taskTimer.Start();
       }
 
-      /// <summary>Berhenti memantau archive dan extract; dipanggil saat layar tidak tampil lagi.</summary>
+      /// <summary>Stops monitoring archive and extract; called when the screen is no longer shown.</summary>
       public void StopTaskPolling() {
          _visible = false;
          _taskTimer.Stop();
@@ -811,8 +811,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Methods
 
       /// <summary>
-      /// Membaca ulang folder yang sedang dibuka. Dipanggil host setiap kali layar dibuka lewat
-      /// navigasi dan dari tombol Refresh.
+      /// Reads the open folder again. Called by the host every time the screen is opened through navigation
+      /// and from the Refresh button.
       /// </summary>
       public Task ReloadAsync() => LoadAsync(CurrentPath);
 
@@ -855,8 +855,11 @@ namespace Em.Ui.Wpf.Navigations
          await ReadStorageCardAsync();
       }
 
+      /// <summary>Indicates storage refreshing.</summary>
       public bool IsStorageRefreshing { get => Get<bool>(); private set { Set(value); RaiseCommandsChanged(); } }
+      /// <summary>Whether the refresh storage command may run now.</summary>
       public bool RefreshStorageCommandAllowed() => !IsStorageRefreshing;
+      /// <summary>Runs the refresh storage command.</summary>
       public async Task RefreshStorageCommand() {
          try { await ReadStorageCardAsync(); } catch (Exception ex) { AlertError(ex); }
       }
@@ -1169,9 +1172,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menyusun file dan folder yang diserahkan ke Explorer saat <paramref name="item"/> diseret
-      /// keluar aplikasi. Untuk folder, seluruh isinya dibaca dari server dalam satu permintaan.
-      /// Isinya sendiri baru diunduh saat Explorer memintanya, langsung ke folder tujuan.
+      /// Composes the files and folders handed to Explorer when <paramref name="item"/> is dragged out of the
+      /// application. For a folder, all its content is read from the server in a single request. The content
+      /// itself is only downloaded when Explorer asks for it, straight to the destination folder.
       /// </summary>
       internal IReadOnlyList<VirtualFile> ResolveVirtualFiles(CdnManagerItem item) {
          var connection = EmApp?.ActiveConnection

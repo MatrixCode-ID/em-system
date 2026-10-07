@@ -21,20 +21,21 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Layar Release Manager: menyiapkan hasil publish client desktop di mesin ini (Prepare),
-   /// membandingkannya dengan rilis di tujuan - CDN server atau folder pilihan - lalu menerbitkannya
-   /// satu arah (Sync) dan memeriksa hasilnya (Verify). Format rilis yang ditulis diatur
-   /// <c>doc/release-format.md</c>; logikanya ada di namespace <see cref="Em.Ui.Wpf.Core.Release"/>.
+   /// The Release Manager screen: prepares the publish result of the desktop client on this machine
+   /// (Prepare), compares it with the release at the target - the server CDN or a chosen folder - then
+   /// publishes it one way (Sync) and checks the result (Verify). The release format that is written is
+   /// governed by <c>doc/release-format.md</c>; its logic lives in the <see cref="Em.Ui.Wpf.Core.Release"/>
+   /// namespace.
    /// </summary>
    public partial class ReleaseManager : UserControl, INavigationBody
    {
-      /// <summary>Membuat layar Release Manager untuk aplikasi <paramref name="app"/>.</summary>
+      /// <summary>Creates the Release Manager screen for application <paramref name="app"/>.</summary>
       public ReleaseManager(EmApp app) : this() {
          Vm.EmApp = app;
          Vm.Initialize();
       }
 
-      /// <summary>Jalur view tanpa akses Registry produksi, untuk harness.</summary>
+      /// <summary>A view path without production Registry access, for the harness.</summary>
       public ReleaseManager() {
          InitializeComponent();
          // Keeping the newest line in view is a view concern with no bindable equivalent.
@@ -48,7 +49,7 @@ namespace Em.Ui.Wpf.Navigations
          button.ContextMenu.IsOpen = true;
       }
 
-      /// <summary>ViewModel layar ini.</summary>
+      /// <summary>The view model of this screen.</summary>
       public ReleaseManagerVm Vm => (ReleaseManagerVm)DataContext;
 
       /// <inheritdoc />
@@ -73,30 +74,37 @@ namespace Em.Ui.Wpf.Navigations
       }
    }
 
-   /// <summary>Item pilihan profile; entry invalid tidak dapat dipilih.</summary>
+   /// <summary>A profile choice item; an invalid entry cannot be chosen.</summary>
    public sealed class ReleaseProfileItem(ReleaseProfileEntry entry)
    {
+      /// <summary>The entry.</summary>
       public ReleaseProfileEntry Entry { get; } = entry;
+      /// <summary>The id.</summary>
       public string Id => Entry.Profile?.Id ?? Path.GetFileName(Entry.Directory);
+      /// <summary>The name.</summary>
       public string Name => Entry.Profile?.Name ?? Path.GetFileName(Entry.Directory);
+      /// <summary>The error.</summary>
       public string? Error => Entry.Error;
+      /// <summary>Indicates valid.</summary>
       public bool IsValid => Entry.Profile is not null;
+      /// <summary>The caption.</summary>
       public string Caption => IsValid ? Name : $"{Name} (invalid: {Error})";
+      /// <inheritdoc />
       public override string ToString() => Caption;
    }
 
-   /// <summary>Satu baris daftar perbandingan di <see cref="ReleaseManager"/>.</summary>
+   /// <summary>One row of the comparison list in <see cref="ReleaseManager"/>.</summary>
    public class ReleaseManagerRow
    {
       internal ReleaseManagerRow(ReleaseDiffItem item) => Item = item;
 
-      /// <summary>Hasil perbandingan yang diwakili baris ini.</summary>
+      /// <summary>The comparison result that this row represents.</summary>
       public ReleaseDiffItem Item { get; }
 
-      /// <summary>Path file relatif terhadap <c>binaries/</c>.</summary>
+      /// <summary>File path relative to <c>binaries/</c>.</summary>
       public string Path => Item.Path;
 
-      /// <summary>Status file ini.</summary>
+      /// <summary>The status of this file.</summary>
       public ReleaseDiffStatus Status => Item.Status;
 
       /// <summary>Tulisan chip status.</summary>
@@ -107,19 +115,19 @@ namespace Em.Ui.Wpf.Navigations
          _ => "Same"
       };
 
-      /// <summary>Ukuran lokal → ukuran di tujuan, mis. <c>"12 KB → 11 KB"</c>.</summary>
+      /// <summary>Local size → size at the target, e.g. <c>"12 KB → 11 KB"</c>.</summary>
       public string SizeCaption => Item.Status switch {
          ReleaseDiffStatus.Removed => $"– → {ReleaseManagerVm.FormatSize(Item.RemoteSize ?? 0)}",
          ReleaseDiffStatus.New when Item.RemoteSize is null => $"{ReleaseManagerVm.FormatSize(Item.LocalSize ?? 0)} → –",
          _ => $"{ReleaseManagerVm.FormatSize(Item.LocalSize ?? 0)} → {(Item.RemoteSize is { } remote ? ReleaseManagerVm.FormatSize(remote) : "–")}"
       };
 
-      /// <summary>Ukuran persis dalam byte, untuk tooltip.</summary>
+      /// <summary>Exact size in bytes, for the tooltip.</summary>
       public string SizeTooltip =>
          $"Local: {(Item.LocalSize is { } local ? $"{local:N0} bytes" : "none")} · Target: {(Item.RemoteSize is { } remote ? $"{remote:N0} bytes" : "none")}";
    }
 
-   /// <summary>Satu kelompok daftar perbandingan (modul utama, library extra, runtime .NET).</summary>
+   /// <summary>One group of the comparison list (main modules, extra libraries, .NET runtime).</summary>
    public class ReleaseManagerGroup : NotifyPropertyBase
    {
       internal ReleaseManagerGroup(ReleaseGroup group, string title, bool isExpanded) {
@@ -128,28 +136,28 @@ namespace Em.Ui.Wpf.Navigations
          IsExpanded = isExpanded;
       }
 
-      /// <summary>Kelompok yang diwakili.</summary>
+      /// <summary>The group that is represented.</summary>
       public ReleaseGroup Group { get; }
 
       /// <summary>Judul kelompok.</summary>
       public string Title { get; }
 
-      /// <summary>Baris yang tampil, sesuai filter "Hide unchanged".</summary>
+      /// <summary>The rows that are shown, according to the "Hide unchanged" filter.</summary>
       public ObservableCollection<ReleaseManagerRow> Rows { get; } = [];
 
-      /// <summary><c>true</c> kalau isi kelompok sedang dibuka.</summary>
+      /// <summary><c>true</c> when the content of the group is open.</summary>
       public bool IsExpanded {
          get => Get<bool>();
          set => Set(value);
       }
 
-      /// <summary>Jumlah per status di header kelompok, mis. <c>"3 new · 1 changed · 40 same"</c>.</summary>
+      /// <summary>Count per status in the group header, e.g. <c>"3 new · 1 changed · 40 same"</c>.</summary>
       public string CountsCaption {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary><c>true</c> kalau tidak ada baris yang tampil.</summary>
+      /// <summary><c>true</c> when no row is shown.</summary>
       public bool IsEmpty {
          get => Get<bool>();
          private set => Set(value);
@@ -166,8 +174,8 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="ReleaseManager"/>. Hanya satu operasi (Prepare, Compare, Sync, Verify)
-   /// yang boleh berjalan pada satu waktu, dan setiap operasi bisa dibatalkan. Setting berasal dari profile aktif.
+   /// View model for <see cref="ReleaseManager"/>. Only one operation (Prepare, Compare, Sync, Verify) may
+   /// run at a time, and every operation can be cancelled. The settings come from the active profile.
    /// </summary>
    public class ReleaseManagerVm : MvvmModelBase
    {
@@ -184,7 +192,7 @@ namespace Em.Ui.Wpf.Navigations
       private ReleaseTarget? _comparedTarget;
       private readonly List<string> _log = [];
 
-      /// <summary>Membuat ViewModel baru dan mendaftarkan seluruh command layar.</summary>
+      /// <summary>Creates a new view model and registers all commands of the screen.</summary>
       public ReleaseManagerVm() {
          RegisterCommand(nameof(NewProfileCommand), NewProfileCommand, () => !IsRunning);
          RegisterCommand(nameof(DuplicateProfileCommand), DuplicateProfileCommand, SettingsCommandAllowed);
@@ -208,8 +216,9 @@ namespace Em.Ui.Wpf.Navigations
          Groups.Add(new ReleaseManagerGroup(ReleaseGroup.DotNetRuntime, ".NET runtime", false));
       }
 
-      /// <summary>Daftar profile valid dan berkas rusak yang tetap ditampilkan.</summary>
+      /// <summary>The list of valid profiles and corrupt files, which are still shown.</summary>
       public ObservableCollection<ReleaseProfileItem> Profiles { get; } = [];
+      /// <summary>The selected profile.</summary>
       public ReleaseProfileItem? SelectedProfile {
          get => Get<ReleaseProfileItem?>();
          set {
@@ -217,14 +226,20 @@ namespace Em.Ui.Wpf.Navigations
             Set(value, selected => { if (!_reloadingProfiles && value is not null) _ = SelectProfileAsync(value); });
          }
       }
+      /// <summary>The profile.</summary>
       public ReleaseProfile? Profile {
          get => Get<ReleaseProfile?>();
          private set => Set(value);
       }
+      /// <summary>Indicates there is profile.</summary>
       public bool HasProfile => Profile is not null;
+      /// <summary>Indicates empty state.</summary>
       public bool IsEmptyState => !HasProfile && !Profiles.Any(item => item.IsValid);
+      /// <summary>Indicates it can change profile.</summary>
       public bool CanChangeProfile => !IsRunning;
+      /// <summary>The profiles folder.</summary>
       public string ProfilesFolder => _store?.Root ?? "";
+      /// <summary>The signing note.</summary>
       public string SigningNote => !HasProfile ? "" : Profile!.Signing.Source == ReleaseSigningSource.Store
          ? SigningKey?.ExportableCaption ?? ""
          : "Key file in profile · " + (Profile.Signing.PasswordStorage == ReleasePasswordStorage.Plaintext ? "password in profile.json"
@@ -234,76 +249,76 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Settings
 
-      /// <summary>Path file <c>.slnx</c>, dari setting.</summary>
+      /// <summary>Path of the <c>.slnx</c> file, from the settings.</summary>
       public string SolutionPath {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Project host yang dipublish Prepare, dari setting.</summary>
+      /// <summary>The host project that Prepare publishes, from the settings.</summary>
       public string HostProject {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Local publish folder, dari setting.</summary>
+      /// <summary>The local publish folder, from the settings.</summary>
       public string PublishFolder {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Jenis tujuan, dari setting.</summary>
+      /// <summary>The kind of target, from the settings.</summary>
       public ReleaseTargetKind TargetKind {
          get => Get<ReleaseTargetKind>();
          private set => Set(value);
       }
 
-      /// <summary>Folder tujuan untuk tujuan folder, dari setting.</summary>
+      /// <summary>The target folder for a folder target, from the settings.</summary>
       public string TargetFolder {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Nama folder rilis di dalam tujuan, dari setting.</summary>
+      /// <summary>The name of the release folder inside the target, from the settings.</summary>
       public string ReleaseFolder {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Signing key yang dipakai Sync, atau <c>null</c> kalau belum ada yang dipilih.</summary>
+      /// <summary>The signing key used by Sync, or <c>null</c> when none is chosen yet.</summary>
       public ReleaseSigningKey? SigningKey {
          get => Get<ReleaseSigningKey?>();
          private set => Set(value);
       }
 
-      /// <summary>Versi .NET SDK 10.x yang ditemukan, atau <c>null</c>.</summary>
+      /// <summary>The .NET SDK 10.x version that was found, or <c>null</c>.</summary>
       public string? SdkVersion {
          get => Get<string?>();
          private set => Set(value, _ => RefreshState());
       }
 
-      /// <summary><c>true</c> setelah pemeriksaan SDK selesai.</summary>
+      /// <summary><c>true</c> after the SDK check has finished.</summary>
       public bool IsSdkChecked {
          get => Get<bool>();
          private set => Set(value, _ => RefreshState());
       }
 
       /// <summary>
-      /// <c>true</c> kalau user boleh memakai CDN server sebagai tujuan: action CDN mensyaratkan hak
-      /// pengelola CDN, yang terpisah dari hak Release Manager.
+      /// <c>true</c> when the user may use the server CDN as a target: the CDN actions require the CDN
+      /// manager right, which is separate from the Release Manager right.
       /// </summary>
       public bool CanUseCdn {
          get => Get<bool>();
          private set => Set(value, _ => RefreshState());
       }
 
-      /// <summary><c>true</c> kalau local publish folder berisi hasil publish.</summary>
+      /// <summary><c>true</c> when the local publish folder holds a publish result.</summary>
       public bool HasPublishContent {
          get => Get<bool>();
          private set => Set(value, _ => RaiseCommandsChanged());
       }
 
-      /// <summary>Kenapa Prepare tidak bisa dijalankan, atau <c>null</c> kalau bisa.</summary>
+      /// <summary>Why Prepare cannot run, or <c>null</c> when it can.</summary>
       public string? PrepareBlockedReason =>
          !IsSdkChecked ? "Checking the .NET SDK..."
          : SdkVersion is null ? ".NET SDK 10.x was not found on this PC, so Prepare is not available. Compare, Sync and Verify still work on an existing publish folder."
@@ -312,32 +327,32 @@ namespace Em.Ui.Wpf.Navigations
          : PublishFolder.Length == 0 ? "Set the local publish folder in Settings."
          : null;
 
-      /// <summary>Isi ringkasan Source: local publish folder, atau keterangan kalau belum diisi.</summary>
+      /// <summary>The content of the Source summary: the local publish folder, or a note when it is not filled in.</summary>
       public string SourceCaption => !HasProfile ? "No profile" : PublishFolder.Length > 0 ? PublishFolder : "No local publish folder";
 
-      /// <summary>Baris kedua ringkasan Source: kesiapan Prepare.</summary>
+      /// <summary>The second line of the Source summary: readiness of Prepare.</summary>
       public string SdkCaption => !HasProfile ? "" : PrepareBlockedReason ?? $".NET SDK {SdkVersion} found · ready to prepare";
 
-      /// <summary><c>true</c> kalau <see cref="SdkCaption"/> berupa peringatan.</summary>
+      /// <summary><c>true</c> when <see cref="SdkCaption"/> is a warning.</summary>
       public bool IsPrepareBlocked => HasProfile && PrepareBlockedReason is not null;
 
-      /// <summary>Isi ringkasan Target: alamat folder rilis, atau kenapa tujuan belum bisa dipakai.</summary>
+      /// <summary>The content of the Target summary: the address of the release folder, or why the target cannot be used yet.</summary>
       public string TargetCaption => !HasProfile ? "No profile" : TargetBlockedReason ?? CreateTarget()?.Description ?? "";
 
-      /// <summary>Jenis tujuan untuk ringkasan Target.</summary>
+      /// <summary>The kind of target for the Target summary.</summary>
       public string TargetKindCaption => !HasProfile ? "" : TargetKind == ReleaseTargetKind.Cdn ? "Server CDN" : "Folder";
 
-      /// <summary><c>true</c> kalau <see cref="TargetCaption"/> berupa peringatan.</summary>
+      /// <summary><c>true</c> when <see cref="TargetCaption"/> is a warning.</summary>
       public bool IsTargetBlocked => HasProfile && TargetBlockedReason is not null;
 
-      /// <summary>Isi ringkasan Signing key.</summary>
+      /// <summary>The content of the Signing key summary.</summary>
       public string SigningCaption => !HasProfile ? "No profile"
          : Profile!.Signing.Source == ReleaseSigningSource.ProfileFile && !_store!.HasKeyFile(Profile.Id) ? "Key file missing - create or import one in Settings."
          : SigningKey is { } key
          ? $"{key.KeyId} · expires {key.ExpiresCaption}"
          : Profile?.Signing.Source == ReleaseSigningSource.ProfileFile ? "Key file missing - create or import one in Settings." : "No signing key - choose or import one in Settings to publish.";
 
-      /// <summary><c>true</c> kalau ada signing key yang dipilih.</summary>
+      /// <summary><c>true</c> when a signing key is chosen.</summary>
       public bool HasSigningKey => SigningKey is not null;
 
       private string HostProjectPath =>
@@ -356,7 +371,7 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Operation
 
-      /// <summary>Operasi yang sedang berjalan (<c>"Prepare"</c>, <c>"Compare"</c>, ...), atau string kosong.</summary>
+      /// <summary>The operation that is running (<c>"Prepare"</c>, <c>"Compare"</c>, ...), or an empty string.</summary>
       public string RunningOperation {
          get => Get<string>() ?? "";
          private set => Set(value, _ => {
@@ -367,43 +382,43 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary><c>true</c> selama sebuah operasi berjalan.</summary>
+      /// <summary><c>true</c> while an operation is running.</summary>
       public bool IsRunning => RunningOperation.Length > 0;
 
-      /// <summary><c>true</c> selama Sync berjalan.</summary>
+      /// <summary><c>true</c> while Sync is running.</summary>
       public bool IsSyncRunning => RunningOperation == "Sync";
 
-      /// <summary>Keterangan kemajuan operasi yang berjalan.</summary>
+      /// <summary>Caption of the progress of the running operation.</summary>
       public string ProgressCaption {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Kemajuan operasi, 0 sampai 100.</summary>
+      /// <summary>Progress of the operation, 0 to 100.</summary>
       public double ProgressPercent {
          get => Get<double>();
          private set => Set(value);
       }
 
-      /// <summary><c>true</c> kalau kemajuan tidak bisa dihitung.</summary>
+      /// <summary><c>true</c> when the progress cannot be computed.</summary>
       public bool IsProgressIndeterminate {
          get => Get<bool>();
          private set => Set(value);
       }
 
-      /// <summary>Isi panel log.</summary>
+      /// <summary>The content of the log panel.</summary>
       public string LogText {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Ringkasan Verify terakhir; string kosong kalau belum pernah.</summary>
+      /// <summary>Summary of the last Verify; an empty string when there has never been one.</summary>
       public string VerifyCaption {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Hasil Verify terakhir; <c>null</c> kalau belum pernah.</summary>
+      /// <summary>The result of the last Verify; <c>null</c> when there has never been one.</summary>
       public bool? VerifySucceeded {
          get => Get<bool?>();
          private set => Set(value);
@@ -413,7 +428,7 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Comparison
 
-      /// <summary>Hasil Compare terakhir, atau <c>null</c>.</summary>
+      /// <summary>The result of the last Compare, or <c>null</c>.</summary>
       public ReleaseComparison? Comparison {
          get => Get<ReleaseComparison?>();
          private set => Set(value, _ => {
@@ -426,27 +441,27 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary><c>true</c> kalau sudah ada hasil Compare.</summary>
+      /// <summary><c>true</c> when there is a Compare result.</summary>
       public bool HasComparison => Comparison is not null;
 
-      /// <summary>Tiga kelompok daftar perbandingan.</summary>
+      /// <summary>The three groups of the comparison list.</summary>
       public ObservableCollection<ReleaseManagerGroup> Groups { get; } = [];
 
-      /// <summary>Sembunyikan file yang sama; aktif secara default.</summary>
+      /// <summary>Hides files that are the same; on by default.</summary>
       public bool HideUnchanged {
          get => Get<bool>();
          set => Set(value, _ => FillGroups());
       }
 
-      /// <summary>Jumlah per status seluruh file.</summary>
+      /// <summary>Count per status over all files.</summary>
       public string SummaryCaption => Comparison is null ? "" : CountsText(Comparison.Items);
 
-      /// <summary>Total yang akan diunggah dan dihapus.</summary>
+      /// <summary>The total that will be uploaded and deleted.</summary>
       public string UploadCaption => Comparison is null
          ? ""
          : $"Upload {FormatSize(Comparison.UploadBytes)} · delete {Comparison.CountOf(ReleaseDiffStatus.Removed):N0}";
 
-      /// <summary>Keterangan rilis yang ada di tujuan.</summary>
+      /// <summary>Caption of the release that exists at the target.</summary>
       public string TargetReleaseCaption => Comparison switch {
          null => "",
          { RemoteManifest: { } manifest } =>
@@ -460,8 +475,9 @@ namespace Em.Ui.Wpf.Navigations
       #region Commands - settings
 
       /// <summary>
-      /// Membuka dialog setting (sumber, tujuan, signing key). Setelah disimpan, setting dibaca ulang; kalau
-      /// sumber atau tujuannya berubah, hasil Compare lama dibuang lalu dibandingkan ulang.
+      /// Opens the settings dialog (source, target, signing key). After it is saved, the settings are read
+      /// again; if the source or the target changed, the old Compare result is discarded and then compared
+      /// again.
       /// </summary>
       public async Task SettingsCommand() {
          if (EmApp is not { } app || Profile is null || _store is null) return;
@@ -487,7 +503,7 @@ namespace Em.Ui.Wpf.Navigations
          if (!HasComparison && CompareCommandAllowed()) await CompareCommand();
       }
 
-      /// <summary>Hanya saat tidak ada operasi berjalan.</summary>
+      /// <summary>Only when no operation is running.</summary>
       public bool SettingsCommandAllowed() => !IsRunning && HasProfile;
 
       #endregion
@@ -495,8 +511,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Commands - operations
 
       /// <summary>
-      /// Mengosongkan local publish folder (dengan konfirmasi), menjalankan <c>dotnet publish</c> ke sana,
-      /// lalu langsung membandingkannya dengan tujuan.
+      /// Empties the local publish folder (with confirmation), runs <c>dotnet publish</c> into it, then
+      /// immediately compares it with the target.
       /// </summary>
       public async Task PrepareCommand() {
          if (DialogOwner is not { } owner) return;
@@ -537,17 +553,17 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Hanya kalau SDK, <c>.slnx</c>, project host, dan folder sudah siap.</summary>
+      /// <summary>Only when the SDK, the <c>.slnx</c>, the host project, and the folder are ready.</summary>
       public bool PrepareCommandAllowed() => !IsRunning && HasProfile && PrepareBlockedReason is null;
 
-      /// <summary>Menghitung ulang local publish folder dan membandingkannya dengan tujuan.</summary>
+      /// <summary>Recomputes the local publish folder and compares it with the target.</summary>
       public Task CompareCommand() => RunAsync("Compare", CompareCoreAsync);
 
-      /// <summary>Hanya kalau local publish folder berisi hasil publish dan tujuannya siap.</summary>
+      /// <summary>Only when the local publish folder holds a publish result and the target is ready.</summary>
       public bool CompareCommandAllowed() => !IsRunning && HasProfile && HasPublishContent && TargetBlockedReason is null;
 
       /// <summary>
-      /// Menerbitkan hasil Compare terakhir ke tujuan setelah dikonfirmasi, lalu membandingkan ulang.
+      /// Publishes the last Compare result to the target after confirmation, then compares again.
       /// </summary>
       public async Task SyncCommand() {
          if (Comparison is not { } comparison || _comparedTarget is not { } target || SigningKey is not { } key ||
@@ -594,16 +610,16 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Hanya dengan hasil Compare, tujuan yang siap, dan signing key yang dipilih - tanpa key tidak ada
-      /// yang bisa diterbitkan.
+      /// Only with a Compare result, a ready target, and a chosen signing key - without a key nothing can be
+      /// published.
       /// </summary>
       public bool SyncCommandAllowed() =>
          !IsRunning && HasProfile && Comparison is not null && _comparedTarget is not null && SigningKey is not null &&
          TargetBlockedReason is null && (Profile!.Signing.Source == ReleaseSigningSource.Store || _store!.HasKeyFile(Profile.Id));
 
       /// <summary>
-      /// Memeriksa rilis di tujuan: tanda tangan (dengan public key signing key yang dipilih), lalu ukuran
-      /// dan SHA-256 setiap file.
+      /// Checks the release at the target: the signature (with the public key of the chosen signing key),
+      /// then the size and SHA-256 of every file.
       /// </summary>
       public Task VerifyCommand() => RunAsync("Verify", async token => {
          var target = CreateTarget()!;
@@ -625,17 +641,17 @@ namespace Em.Ui.Wpf.Navigations
          VerifySucceeded = result.IsSuccess;
       });
 
-      /// <summary>Hanya kalau tujuannya siap.</summary>
+      /// <summary>Only when the target is ready.</summary>
       public bool VerifyCommandAllowed() => !IsRunning && HasProfile && TargetBlockedReason is null;
 
-      /// <summary>Membatalkan operasi yang sedang berjalan.</summary>
+      /// <summary>Cancels the operation that is running.</summary>
       public void CancelCommand() {
          _cancel?.Cancel();
          Log($"Canceling {RunningOperation}...");
          RaiseCommandsChanged();
       }
 
-      /// <summary>Hanya selama operasi berjalan dan belum diminta berhenti.</summary>
+      /// <summary>Only while an operation is running and has not yet been asked to stop.</summary>
       public bool CancelCommandAllowed() => IsRunning && _cancel is { IsCancellationRequested: false };
 
       /// <summary>Mengosongkan panel log.</summary>
@@ -648,7 +664,7 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Methods
 
-      /// <summary>Memuat setting tersimpan; dipanggil sekali setelah <see cref="MvvmModelBase.EmApp"/> diisi.</summary>
+      /// <summary>Loads the stored settings; called once after <see cref="MvvmModelBase.EmApp"/> is set.</summary>
       public void Initialize() {
          if (EmApp is null) return;
 
@@ -658,8 +674,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Dipanggil host setiap kali layar dibuka dan dari tombol Reload: membaca ulang setting, hak CDN,
-      /// signing key, dan isi local publish folder, lalu membandingkan otomatis kalau semuanya siap.
+      /// Called by the host every time the screen is opened and from the Reload button: reads the settings,
+      /// the CDN right, the signing keys, and the content of the local publish folder again, then compares
+      /// automatically when everything is ready.
       /// </summary>
       public async Task ReloadAsync() {
          if (IsRunning) return;
@@ -673,11 +690,11 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Apakah layar boleh ditinggalkan. Selama Sync berjalan, menutup layar - atau berpindah layar di
-      /// layout satu halaman, yang bisa melepas layar ini - ditolak, dengan tawaran untuk menghentikan
-      /// Sync-nya. Di layout multi-tab, berpindah tab tidak menghentikan apa pun, jadi dibiarkan.
+      /// Whether the screen may be left. While Sync is running, closing the screen - or moving to another
+      /// screen in the single-page layout, which may release this screen - is refused, with an offer to stop
+      /// the Sync. In the multi-tab layout, switching tabs stops nothing, so it is allowed.
       /// </summary>
-      /// <param name="closing"><c>true</c> kalau entri layar ini sendiri yang hendak ditutup.</param>
+      /// <param name="closing"><c>true</c> when the entry of this screen itself is about to be closed.</param>
       public bool ConfirmLeave(bool closing) {
          if (!IsSyncRunning) return true;
          if (!closing && EmApp?.ApplicationLayout == ApplicationLayout.MultiTab) return true;
@@ -689,7 +706,7 @@ namespace Em.Ui.Wpf.Navigations
          return false;
       }
 
-      /// <summary>Membatalkan operasi yang berjalan, tanpa bertanya.</summary>
+      /// <summary>Cancels the running operation, without asking.</summary>
       public void CancelRunning() => _cancel?.Cancel();
 
       internal static string CountsText(IReadOnlyCollection<ReleaseDiffItem> items) {
@@ -820,7 +837,7 @@ namespace Em.Ui.Wpf.Navigations
          RefreshState();
       }
 
-      /// <summary>Inisialisasi terisolasi untuk harness tanpa membaca Registry produksi.</summary>
+      /// <summary>Isolated initialization for the harness without reading the production Registry.</summary>
       public void Initialize(ReleaseManagerPreferences preferences, ReleaseProfileStore store, ReleaseSigningSecrets secrets) {
          _preferences = preferences;
          _store = store;
@@ -829,6 +846,7 @@ namespace Em.Ui.Wpf.Navigations
          LoadProfiles();
       }
 
+      /// <summary>Loads the list of profiles, optionally selecting one.</summary>
       public void LoadProfiles(string? selectId = null) {
          if (_store is null || _preferences is null) return;
          try {
@@ -905,6 +923,7 @@ namespace Em.Ui.Wpf.Navigations
          return password is null ? null : SigningCertificates.LoadPfxForSigning(_store.KeyFilePath(Profile.Id), password);
       }
 
+      /// <summary>Runs the new profile command.</summary>
       public async Task NewProfileCommand() {
          if (_store is null) return;
          while (true) {
@@ -921,6 +940,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
+      /// <summary>Runs the duplicate profile command.</summary>
       public void DuplicateProfileCommand() {
          if (_store is null || Profile is null) return;
          try {
@@ -931,6 +951,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the rename profile command.</summary>
       public void RenameProfileCommand() {
          if (_store is null || Profile is null) return;
          var dialog = new TextInputDialog("Rename Release Profile", "Name of this profile.", okCaption: "Rename", initialText: Profile.Name) { Owner = DialogOwner };
@@ -939,6 +960,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the delete profile command.</summary>
       public void DeleteProfileCommand() {
          if (_store is null || Profile is null) return;
          if (DialogOwner?.ShowMboxDecideWarning($"Delete profile '{Profile.Name}'?\n\nOnly the profile folder is deleted (settings, and its key file if any). The local publish folder, the release at the target and keys in the Windows certificate store are not touched.") != MessageBoxResult.Yes) return;
@@ -952,6 +974,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the import profile command.</summary>
       public void ImportProfileCommand() {
          if (_store is null) return;
          var picker = new OpenFileDialog { Filter = "Release profile (*.zip;*.json)|*.zip;*.json" };
@@ -971,6 +994,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the export profile command.</summary>
       public void ExportProfileCommand() {
          if (_store is null || Profile is null || DialogOwner is not { } owner) return;
          var sensitive = owner.ShowMboxDecideWarning("Include sensitive data?\n\nNo (default): only settings and the public certificate. Yes: also the key file and a plain-text password, if this profile has them.", "Export Profile") == MessageBoxResult.Yes;
@@ -981,6 +1005,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { owner.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the open profiles folder command.</summary>
       public void OpenProfilesFolderCommand() {
          if (_store is null) return;
          try {
@@ -990,6 +1015,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the profiles folder command.</summary>
       public async Task ProfilesFolderCommand() {
          if (_preferences is null || _store is null) return;
          var dialog = new ReleaseProfilesFolderDialog(_store.Root) { Owner = DialogOwner };
@@ -1003,6 +1029,7 @@ namespace Em.Ui.Wpf.Navigations
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the refresh summary command.</summary>
       public void RefreshSummaryCommand() {
          if (!IsRunning) LoadProfiles(SelectedProfile?.Id);
       }

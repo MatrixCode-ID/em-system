@@ -8,16 +8,14 @@ using TextBox = System.Windows.Controls.TextBox;
 namespace Em.Ui.Wpf.Controls
 {
    /// <summary>
-   /// Kolom isian bilangan bulat: <see cref="TextBox"/> biasa yang hanya menerima angka, menyimpan
-   /// nilainya di <see cref="Value"/>, dan menjaganya tetap di antara <see cref="Minimum"/> dan
-   /// <see cref="Maximum"/>. Tombol panah atas/bawah di keyboard menaikkan atau menurunkan nilainya
-   /// sebesar <see cref="Increment"/>.
+   /// An integer input field: an ordinary <see cref="TextBox"/> that only accepts digits, keeps its value
+   /// in <see cref="Value"/>, and keeps it between <see cref="Minimum"/> and <see cref="Maximum"/>. The up
+   /// and down arrow keys on the keyboard raise or lower its value by <see cref="Increment"/>.
    /// </summary>
    /// <remarks>
-   /// Kontrol ini tidak punya tampilan sendiri: tanpa style ia tetap sebuah <see cref="TextBox"/> yang
-   /// berfungsi. Style <c>fieldNumericBoxStyle</c> di <c>Styles/Inputs.xaml</c> memberinya bingkai
-   /// field dan dua tombol naik/turun, yang menjalankan <see cref="IncreaseCommand"/> dan
-   /// <see cref="DecreaseCommand"/>.
+   /// This control has no look of its own: without a style it is still a working <see cref="TextBox"/>.
+   /// The <c>fieldNumericBoxStyle</c> style in <c>Styles/Inputs.xaml</c> gives it the field border and two
+   /// up/down buttons, which run <see cref="IncreaseCommand"/> and <see cref="DecreaseCommand"/>.
    /// <code>
    /// &lt;controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}"
    ///                      Minimum="1" Maximum="600" Value="{Binding Timeout}" /&gt;
@@ -26,8 +24,8 @@ namespace Em.Ui.Wpf.Controls
    public class NumericBox : TextBox
    {
       /// <summary>
-      /// Menaikkan <see cref="Value"/> sebesar <see cref="Increment"/>. Dipakai tombol naik di
-      /// template; target command-nya adalah <see cref="NumericBox"/> tempat tombol itu berada.
+      /// Raises <see cref="Value"/> by <see cref="Increment"/>. Used by the up button in the template; the
+      /// target of its command is the <see cref="NumericBox"/> the button sits in.
       /// </summary>
       public static readonly RoutedCommand IncreaseCommand = new(nameof(IncreaseCommand), typeof(NumericBox));
 
@@ -74,7 +72,7 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Membuat kolom isian bilangan dengan nilai awal 0.
+      /// Creates a number input field with an initial value of 0.
       /// </summary>
       public NumericBox() {
          DataObject.AddPastingHandler(this, OnPasting);
@@ -82,9 +80,8 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Nilai yang sedang diisi. Selalu berada di antara <see cref="Minimum"/> dan
-      /// <see cref="Maximum"/>; nilai di luar itu dipangkas ke batas terdekat. Binding-nya dua arah
-      /// secara bawaan.
+      /// The value being entered. It is always between <see cref="Minimum"/> and <see cref="Maximum"/>; a
+      /// value outside that is clipped to the nearest limit. Its binding is two-way by default.
       /// </summary>
       public int Value {
          get => (int)GetValue(ValueProperty);
@@ -92,8 +89,8 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Batas bawah <see cref="Value"/>. Tanda minus hanya bisa diketik kalau batas ini di bawah nol.
-      /// Bawaannya <see cref="int.MinValue"/>.
+      /// The lower limit of <see cref="Value"/>. A minus sign can only be typed when this limit is below
+      /// zero. The default is <see cref="int.MinValue"/>.
       /// </summary>
       public int Minimum {
          get => (int)GetValue(MinimumProperty);
@@ -101,7 +98,7 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Batas atas <see cref="Value"/>. Bawaannya <see cref="int.MaxValue"/>.
+      /// The upper limit of <see cref="Value"/>. The default is <see cref="int.MaxValue"/>.
       /// </summary>
       public int Maximum {
          get => (int)GetValue(MaximumProperty);
@@ -109,7 +106,7 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Besar langkah tombol naik/turun dan panah atas/bawah di keyboard. Bawaannya 1.
+      /// The step size of the up/down buttons and the up/down arrow keys on the keyboard. The default is 1.
       /// </summary>
       public int Increment {
          get => (int)GetValue(IncrementProperty);

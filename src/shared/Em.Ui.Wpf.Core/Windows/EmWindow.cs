@@ -5,17 +5,16 @@ using System.Windows.Input;
 namespace Em.Ui.Wpf.Windows
 {
    /// <summary>
-   /// Window dasar aplikasi Em: window WPF biasa dengan baris judul buatan sendiri (ikon, judul,
-   /// dan tombol minimize/maximize/close) yang memakai warna tema aktif, sehingga dialog dan window
-   /// tambahan tampil satu bahasa dengan window utama di tema terang maupun gelap.
+   /// The base window of Em applications: an ordinary WPF window with a hand-made title row (icon, title,
+   /// and minimize/maximize/close buttons) that uses the active theme colors, so dialogs and extra windows
+   /// look like the same language as the main window in both light and dark themes.
    /// </summary>
    /// <remarks>
-   /// Tampilannya berasal dari default style di <c>Themes/Generic.xaml</c>, jadi turunannya cukup
-   /// mengganti root XAML-nya menjadi <c>windows:EmWindow</c> dan mengisi kontennya seperti window
-   /// biasa. Tombol caption mengikuti <see cref="Window.ResizeMode"/> dengan sendirinya:
-   /// <c>NoResize</c> menyembunyikan minimize dan maximize, <c>CanMinimize</c> menyembunyikan
-   /// maximize. Untuk dialog yang tetap boleh diubah ukurannya, matikan lewat
-   /// <see cref="ShowMinimizeButton"/> dan <see cref="ShowMaximizeButton"/>.
+   /// Its look comes from the default style in <c>Themes/Generic.xaml</c>, so a derived class only needs to
+   /// change its XAML root to <c>windows:EmWindow</c> and fill its content like an ordinary window. The
+   /// caption buttons follow <see cref="Window.ResizeMode"/> by themselves: <c>NoResize</c> hides minimize
+   /// and maximize, <c>CanMinimize</c> hides maximize. For a dialog that may still be resized, turn them
+   /// off through <see cref="ShowMinimizeButton"/> and <see cref="ShowMaximizeButton"/>.
    /// </remarks>
    public class EmWindow : Window
    {
@@ -25,7 +24,7 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Membuat window dan menyambungkan tombol-tombol caption ke perintah sistem window.
+      /// Creates the window and connects the caption buttons to the window system commands.
       /// </summary>
       public EmWindow() {
          // The caption buttons are part of this control's own template, not of any screen, so they
@@ -59,9 +58,8 @@ namespace Em.Ui.Wpf.Windows
             new FrameworkPropertyMetadata(null));
 
       /// <summary>
-      /// Menampilkan tombol minimize di baris judul. Bawaannya <c>true</c>; dialog biasanya
-      /// mematikannya. Tetap tersembunyi kalau <see cref="Window.ResizeMode"/> bernilai
-      /// <c>NoResize</c>.
+      /// Shows the minimize button in the title row. The default is <c>true</c>; dialogs usually turn it off.
+      /// It stays hidden when <see cref="Window.ResizeMode"/> is <c>NoResize</c>.
       /// </summary>
       public bool ShowMinimizeButton {
          get => (bool)GetValue(ShowMinimizeButtonProperty);
@@ -69,9 +67,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Menampilkan tombol maximize/restore di baris judul. Bawaannya <c>true</c>; dialog biasanya
-      /// mematikannya. Tetap tersembunyi kalau <see cref="Window.ResizeMode"/> bernilai
-      /// <c>NoResize</c> atau <c>CanMinimize</c>.
+      /// Shows the maximize/restore button in the title row. The default is <c>true</c>; dialogs usually turn
+      /// it off. It stays hidden when <see cref="Window.ResizeMode"/> is <c>NoResize</c> or <c>CanMinimize</c>.
       /// </summary>
       public bool ShowMaximizeButton {
          get => (bool)GetValue(ShowMaximizeButtonProperty);
@@ -79,9 +76,9 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Konten tambahan di baris judul, di antara judul dan tombol caption - mis. kolom pencarian
-      /// atau tombol milik window itu sendiri. Kosong secara bawaan. Elemen di sini tetap bisa diklik
-      /// walaupun berada di area baris judul yang dipakai untuk menggeser window.
+      /// Extra content in the title row, between the title and the caption buttons - e.g. a search box or a
+      /// button belonging to that window itself. Empty by default. An element here can still be clicked even
+      /// though it sits in the part of the title row used to drag the window.
       /// </summary>
       public object? TitleBarContent {
          get => GetValue(TitleBarContentProperty);
@@ -90,9 +87,9 @@ namespace Em.Ui.Wpf.Windows
 
       /// <inheritdoc />
       /// <remarks>
-      /// Window yang mengukur dirinya dari isinya (<see cref="Window.SizeToContent"/>) diukur ulang
-      /// sekali di sini, supaya tidak tersisa bidang hitam di kanan dan bawahnya. Dilakukan sebelum
-      /// window pertama kali tampil, jadi user langsung melihat ukuran akhirnya.
+      /// A window that measures itself from its content (<see cref="Window.SizeToContent"/>) is measured again
+      /// once here, so no black area is left on its right and bottom. It is done before the window is first
+      /// shown, so the user immediately sees the final size.
       /// </remarks>
       protected override void OnSourceInitialized(EventArgs e) {
          base.OnSourceInitialized(e);
@@ -126,9 +123,9 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Tebal bingkai yang dipasang saat window maximized, supaya isinya tidak terpotong di tepi layar.
-      /// Window tanpa title bar bawaan tetap diperbesar Windows melewati layar sejauh bingkai resize
-      /// ditambah padded border; nilai ini menutup keduanya. Dipakai juga oleh window utama.
+      /// The border thickness applied when the window is maximized, so its content is not cut off at the edge
+      /// of the screen. A window without the default title bar is still enlarged by Windows past the screen by
+      /// the resize frame plus the padded border; this value covers both. Also used by the main window.
       /// </summary>
       public static Thickness MaximizedBorderThickness { get; } = ComputeMaximizedBorderThickness();
 

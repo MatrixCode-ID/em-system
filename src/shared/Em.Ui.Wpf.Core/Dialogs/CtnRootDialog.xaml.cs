@@ -6,13 +6,13 @@ using FontAwesome6;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog untuk membuat root container registry (nama, deskripsi) atau mengedit root yang ada
-   /// (deskripsi dan status aktif; nama tidak bisa diganti). Hasilnya dibaca dari <see cref="Vm"/>
-   /// setelah <c>ShowDialog()</c> mengembalikan <c>true</c>.
+   /// A dialog to create a container registry root (name, description) or to edit an existing root
+   /// (description and active status; the name cannot be changed). The result is read from
+   /// <see cref="Vm"/> after <c>ShowDialog()</c> returns <c>true</c>.
    /// </summary>
    public partial class CtnRootDialog : EmWindow
    {
-      /// <summary>Membuat dialog; <paramref name="existing"/> <c>null</c> berarti root baru.</summary>
+      /// <summary>Creates the dialog; <paramref name="existing"/> <c>null</c> means a new root.</summary>
       public CtnRootDialog(CtnRootInfo? existing = null) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -21,11 +21,11 @@ namespace Em.Ui.Wpf.Dialogs
          Vm.RequestClose += result => DialogResult = result;
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public CtnRootDialogVm Vm => (CtnRootDialogVm)DataContext;
    }
 
-   /// <summary>ViewModel untuk <see cref="CtnRootDialog"/>.</summary>
+   /// <summary>The view model for <see cref="CtnRootDialog"/>.</summary>
    public class CtnRootDialogVm : CtnFormVmBase
    {
       internal void Initialize(CtnRootInfo? existing) {

@@ -17,10 +17,13 @@ public partial class StorageSettingsCard : UserControl
    private bool _nuget;
    private bool _cdn, _busy, _loading, _dirty;
    private StorageSettingsDetail? _detail;
+   /// <summary>Creates a new instance of <see cref="StorageSettingsCard"/>.</summary>
    public StorageSettingsCard() { InitializeComponent(); }
+   /// <summary>Attaches the card to the NuGet feed settings.</summary>
    public void AttachNuGet(EmApp app) { _nuget=true; Attach(app,true); }
    private INuPakServices NuGet => _app!.ServiceProvider.GetRequiredService<INuPakServices>();
    private string SettingsClaim => _nuget ? INuPakServices.SettingsClaim : _cdn ? ICdnServices.SettingsClaim : ICtnServices.SettingsClaim;
+   /// <summary>Attaches the card to the CDN or container registry settings.</summary>
    public void Attach(EmApp app, bool cdn) {
       _app = app; _cdn = cdn;
       limitPanel.Visibility = cdn ? Visibility.Visible : Visibility.Collapsed;
@@ -42,6 +45,7 @@ public partial class StorageSettingsCard : UserControl
    private ICtnServices Registry => _app!.ServiceProvider.GetRequiredService<ICtnServices>();
    private bool Confirm(string text) => MessageBox.Show(Window.GetWindow(this), text, "Storage settings",
       MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+   /// <summary>Asks whether the screen may be left; <c>false</c> when there are unsaved changes that the user chose to keep.</summary>
    public bool ConfirmLeave() {
       if (_busy) { message.Text = "Wait for the settings request to finish before leaving."; return false; }
       if (!_dirty) return true;
@@ -70,6 +74,7 @@ public partial class StorageSettingsCard : UserControl
          validate.IsEnabled = save.IsEnabled = directory.IsEnabled = limit.IsEnabled = enabled.IsEnabled = _detail?.Managed == true && CanManage;
       }
    }
+   /// <summary>Reads the settings again from the server, optionally discarding unsaved edits.</summary>
    public Task RefreshAsync(bool discard) => RunAsync(async () => {
       if (_dirty && !discard) return;
       var general = _nuget ? await NuGet.GetMeta_NuPakStorageStatus() : _cdn ? await Cdn.GetMeta_CdnStatus() : await Registry.GetMeta_CtnStatus();

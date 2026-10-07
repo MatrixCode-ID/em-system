@@ -3,16 +3,16 @@ using System.Windows;
 namespace Em.Ui.Wpf.Controls
 {
    /// <summary>
-   /// Membuat sebuah tombol menunjukkan sendiri bahwa pekerjaannya sedang ditunggu: selama
-   /// <see cref="IsWaitingProperty"/> bernilai <c>true</c>, tulisan atau ikon di dalam tombol
-   /// diganti titik tunggu kecil (<see cref="WaitDots"/>) dan klik pada tombol itu tertahan.
-   /// Lebar tombol tidak berubah, jadi tombol lain di sebelahnya tidak bergeser.
+   /// Makes a button show by itself that its work is being waited on: while
+   /// <see cref="IsWaitingProperty"/> is <c>true</c>, the text or icon inside the button is replaced by
+   /// small wait dots (<see cref="WaitDots"/>) and clicks on that button are held back. The button width
+   /// does not change, so other buttons beside it do not shift.
    /// </summary>
    /// <remarks>
-   /// Berlaku untuk semua tombol berbingkai dari <c>Styles/Buttons.xaml</c> (filled, tonal,
-   /// outlined, danger, compact). Titiknya berwarna aksen tema, sama dengan penanda tunggu utama;
-   /// hanya di tombol filled (latarnya sudah aksen) titiknya putih. Tombol tetap bisa ditekan lewat keyboard selama
-   /// menunggu; kalau pekerjaannya tidak boleh dijalankan dua kali, jaga juga di command-nya.
+   /// Applies to all bordered buttons from <c>Styles/Buttons.xaml</c> (filled, tonal, outlined, danger,
+   /// compact). The dots use the theme accent color, the same as the main wait marker; only on a filled
+   /// button (whose background is already the accent) are the dots white. The button can still be pressed
+   /// by keyboard while waiting; if the work must not run twice, guard its command too.
    /// <code>
    /// &lt;Button Content="Refresh" Style="{StaticResource tonalButtonStyle}"
    ///         local:ButtonWait.IsWaiting="{Binding IsRefreshing}"
@@ -34,21 +34,21 @@ namespace Em.Ui.Wpf.Controls
             new FrameworkPropertyMetadata(false));
 
       /// <summary>
-      /// Membaca apakah tombol berlatar warna aksen, sehingga titiknya harus putih. Diisi oleh
-      /// style tombol filled; tombol lain memakai warna aksen yang sama dengan penanda tunggu utama.
+      /// Reads whether the button has an accent-colored background, so its dots must be white. Filled by the
+      /// filled button style; other buttons use the same accent color as the main wait marker.
       /// </summary>
       public static bool GetOnAccent(DependencyObject element) =>
          (bool)element.GetValue(OnAccentProperty);
 
-      /// <summary>Menandai tombol sebagai berlatar warna aksen.</summary>
+      /// <summary>Marks the button as having an accent-colored background.</summary>
       public static void SetOnAccent(DependencyObject element, bool value) =>
          element.SetValue(OnAccentProperty, value);
 
-      /// <summary>Membaca apakah tombol sedang menampilkan titik tunggu.</summary>
+      /// <summary>Reads whether the button is showing the wait dots.</summary>
       public static bool GetIsWaiting(DependencyObject element) =>
          (bool)element.GetValue(IsWaitingProperty);
 
-      /// <summary>Menyalakan atau mematikan titik tunggu di dalam tombol.</summary>
+      /// <summary>Turns the wait dots inside the button on or off.</summary>
       public static void SetIsWaiting(DependencyObject element, bool value) =>
          element.SetValue(IsWaitingProperty, value);
    }

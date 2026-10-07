@@ -14,13 +14,21 @@ using NuGet.Protocol.Core.Types;
 
 namespace Em.Ui.Wpf.Publish;
 
+/// <summary>Reads what a publish target offers: NuGet feeds, registry roots, images, and credentials.</summary>
 public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string? frozenConnection=null) {
+ /// <summary>Lists the NuGet feeds.</summary>
  public Task<NuPakFeedInfo[]> Feeds()=>app!.ServiceProvider.GetRequiredService<INuPakServices>().GetMeta_NuPakFeeds();
+ /// <summary>Lists the registry roots.</summary>
  public Task<CtnRootInfo[]> Roots()=>app!.ServiceProvider.GetRequiredService<ICtnServices>().GetMeta_CtnRoots();
+ /// <summary>Lists the container images of a root.</summary>
  public async Task<CtnImageInfo[]> Images(string rootId)=>(await app!.ServiceProvider.GetRequiredService<ICtnServices>().GetMeta_CtnTree(rootId)).Images;
+ /// <summary>The connection.</summary>
  public string Connection=>frozenConnection??app?.ActiveConnection?.Host.TrimEnd('/')??"";
+ /// <summary>Freezes the connection so a run keeps using the same server.</summary>
  public PublishTargets Freeze()=>new(app,secrets,Connection);
+ /// <summary>The scope.</summary>
  public string Scope=>Connection;
+ /// <summary>Resolves the NuGet target of a profile.</summary>
  public async Task<string> ResolveNuGet(PublishProfile p,CancellationToken ct) {
   var target=p.NuGet!.Target;
   if(target.Type==TargetType.Custom) {ValidateHttp(target.ServiceIndex);return target.ServiceIndex;}
@@ -37,6 +45,7 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
   }
   return Connection+feed.ServiceIndex;
  }
+ /// <summary>Resolves the container target of a profile.</summary>
  public async Task<string> ResolveContainer(PublishProfile p,CancellationToken ct) {
   var t=p.Container!.Target;string host,repo;
   if(t.Type==TargetType.Custom) {host=PublishSecretStore.Host(t.Host);repo=t.Repository;}
@@ -52,6 +61,7 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
   if(host.Contains('/')||host.Length==0||!Regex.IsMatch(repo,@"^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)*$"))throw new InvalidDataException("Registry host/repository is invalid.");
   ValidateTag(t.VersionTag);return host+"/"+repo+":"+t.VersionTag;
  }
+ /// <summary>Validates the compose target of a profile.</summary>
  public async Task ValidateComposeTarget(PublishProfile p,ComposeService mapping) {
   ValidateTag(mapping.VersionTag);
   if(!Regex.IsMatch(mapping.Repository,@"^[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)*$"))throw new InvalidDataException("Compose repository is invalid.");
@@ -71,8 +81,11 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
   var root=(await Roots()).SingleOrDefault(r=>r.Name==parts[0])??throw new InvalidDataException("Root missing. Open Containers, then refresh.");
   return (await Images(root.Id)).SingleOrDefault(i=>i.Name==parts[1])?.Id??throw new InvalidDataException("Container missing. Open Containers, then refresh.");
  }
+ /// <summary>Validates a container tag.</summary>
  public static void ValidateTag(string tag) {if(!Regex.IsMatch(tag,@"^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$",RegexOptions.CultureInvariant))throw new InvalidDataException("Version tag is required and must be a valid Docker tag.");}
+ /// <summary>Validates an HTTP address.</summary>
  public static void ValidateHttp(string uri) {if(!Uri.TryCreate(uri,UriKind.Absolute,out var u)||u.Scheme is not ("http" or "https")||u.UserInfo.Length>0)throw new InvalidDataException("Use an HTTP(S) address without embedded credentials.");}
+ /// <summary>Finds the credential and its secret for a target.</summary>
  public (PublishCredential Credential,string Secret) Credential(PublishProfile p,string target,string purpose="push") {
   var c=p.Credentials.FirstOrDefault(c=>c.Purpose==purpose&&PublishSecretStore.Host(c.ScopeHost)==PublishSecretStore.Host(target));
   var value=c==null?null:secrets.Get(c,target);if(c==null||string.IsNullOrEmpty(value))throw new InvalidDataException(MissingCredential(p,target,purpose,c!=null));return (c,value);
@@ -86,6 +99,7 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
    :$"No credential for host '{host}'. Add one in the profile with Scope Host '{host}'.";
   return others.Length>0&&!others.Contains(host)?message+$" This profile only has credentials for: {string.Join(", ",others)}. A built-in destination follows the active connection; switch to that server, or add a credential for '{host}'.":message;
  }
+ /// <summary>Creates a NuGet repository client for an index address.</summary>
  public async Task<SourceRepository> NuGetRepository(string index,(PublishCredential Credential,string Secret) credential,CancellationToken ct) {
   ValidateHttp(index);
   // Validate resource origins before handing the API key to NuGet.Protocol.
@@ -104,9 +118,11 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
   providers.Insert(0,new Lazy<INuGetResourceProvider>(()=>new ScopedNuGetHandlerProvider(index,credential,ct)));
   return new SourceRepository(source,providers);
  }
+ /// <summary>Gets the registry address of a target.</summary>
  public string RegistryUrl(string target) {
   var host=target.Split('/')[0];return Connection.Length>0&&new Uri(Connection).Authority==host?Connection:"https://"+host;
  }
+ /// <summary>Finds the OCI credential for a registry host.</summary>
  public async Task<(PublishCredential Credential,string Secret)?> OciCredential(PublishProfile p,string host,CancellationToken ct) {
   if(!p.Container!.UseMyDockerLogin)return Credential(p,host);
   var configured=p.Credentials.FirstOrDefault(c=>c.Purpose=="push"&&PublishSecretStore.Host(c.ScopeHost)==host);
@@ -114,6 +130,7 @@ public sealed class PublishTargets(EmApp? app,PublishSecretStore secrets,string?
   return await DockerCredential(host,ct);
  }
  // Explicit Use my Docker login permits read-only access to the user's scoped Docker credential.
+ /// <summary>Reads the credential Docker stores for a registry host.</summary>
  public static async Task<(PublishCredential Credential,string Secret)?> DockerCredential(string host,CancellationToken ct,string? directory=null) {
   directory??=Environment.GetEnvironmentVariable("DOCKER_CONFIG")??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),".docker");
   var file=Path.Combine(directory,"config.json");if(!File.Exists(file))return null;
@@ -159,7 +176,9 @@ internal sealed class ScopedNuGetHandlerProvider(string index,(PublishCredential
   }
  }
 }
+/// <summary>A small client for the OCI registry API.</summary>
 public sealed class OciClient(PublishTargets targets) {
+ /// <summary>Sends a request to the registry and returns its answer.</summary>
  public async Task<string> Request(string reference,string relative,HttpMethod method,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
   var slash=reference.IndexOf('/');var host=reference[..slash];var path=reference[(slash+1)..];var repo=path[..path.LastIndexOf(':')];
   var baseUrl=credential is {Credential.AllowHttp:true}?"http://"+host:targets.RegistryUrl(reference);
@@ -183,11 +202,13 @@ public sealed class OciClient(PublishTargets targets) {
    return method==HttpMethod.Head?response.Headers.TryGetValues("Docker-Content-Digest",out var digest)?digest.Single():throw new IOException("Registry did not return a manifest digest."):await response.Content.ReadAsStringAsync(ct);
   }finally {second?.Dispose();}
  }
+ /// <summary>Lists the tags of a repository.</summary>
  public async Task<string[]> Tags(string reference,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
   using var tags=JsonDocument.Parse(await Request(reference,"tags/list",HttpMethod.Get,credential,ct));
   var list=tags.RootElement.GetProperty("tags");
   return list.ValueKind==JsonValueKind.Array?list.EnumerateArray().Select(x=>x.GetString()!).ToArray():[];
  }
+ /// <summary>Finds the latest tag of a repository.</summary>
  public async Task<string> LatestTag(string reference,(PublishCredential Credential,string Secret)? credential,CancellationToken ct) {
   var values=(await Tags(reference,credential,ct)).Where(x=>x!="latest").ToArray();
   return values.OrderByDescending(v=>NuGet.Versioning.NuGetVersion.TryParse(v,out var version)?version:null).ThenByDescending(v=>v,StringComparer.Ordinal).FirstOrDefault()??"not available";

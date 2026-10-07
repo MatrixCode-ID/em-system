@@ -10,12 +10,12 @@ using Size = System.Windows.Size;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Gambar bayangan yang ikut terseret bersama kursor: replika sebuah elemen, digambar di atas
-   /// adorner layer dan dipindahkan lewat <see cref="Offset"/> selama drag berjalan.
+   /// The shadow image that is dragged along with the cursor: a replica of an element, drawn on the
+   /// adorner layer and moved through <see cref="Offset"/> while the drag runs.
    /// <para>
-   /// Adorner ini tidak tahu apa pun tentang isi yang sedang diseret - ia hanya menyalin rupa
-   /// elemen sumbernya. Itu yang membuatnya bisa dipakai layar mana pun: yang berbeda antar layar
-   /// adalah <i>apa</i> yang diseret, bukan bagaimana bayangannya digambar.
+   /// This adorner knows nothing about what is being dragged - it only copies the look of its source
+   /// element. That is what lets any screen use it: what differs between screens is <i>what</i> is dragged,
+   /// not how the shadow is drawn.
    /// </para>
    /// </summary>
    public sealed class DragGhostAdorner : Adorner
@@ -26,28 +26,28 @@ namespace Em.Ui.Wpf.Shared
       private readonly Point _grip;
 
       /// <summary>
-      /// Membuat bayangan baru untuk sebuah elemen.
+      /// Creates a new shadow for an element.
       /// </summary>
       /// <param name="adornedElement">
-      /// Elemen yang di-adorn - biasanya akar layar. Seluruh posisi yang diberikan ke
-      /// <see cref="Offset"/> dihitung relatif terhadap elemen ini.
+      /// The element being adorned - usually the root of the screen. All positions given to
+      /// <see cref="Offset"/> are computed relative to this element.
       /// </param>
-      /// <param name="source">Elemen yang direplika; rupanya disalin apa adanya berikut ukurannya.</param>
+      /// <param name="source">The element being replicated; its look is copied as-is together with its size.</param>
       /// <param name="grip">
-      /// Titik pegangan: di sebelah mana dalam <paramref name="source"/> tombol mouse ditekan.
-      /// Tanpa ini bayangannya akan melompat ke pojok kursor begitu drag dimulai.
+      /// The grip point: where in <paramref name="source"/> the mouse button was pressed. Without it the
+      /// shadow would jump to the cursor corner as soon as the drag starts.
       /// </param>
       public DragGhostAdorner(UIElement adornedElement, FrameworkElement source, Point grip) : base(adornedElement) {
          ArgumentNullException.ThrowIfNull(source);
 
-         // Wadah anaknya diisi lebih dulu daripada apa pun. IsHitTestVisible di bawah adalah
-         // property yang dipaksa turun ke seluruh anak, jadi menyetelnya membuat WPF menelusuri
-         // anak-anak objek ini saat itu juga - lewat VisualChildrenCount, yang membaca field ini.
+         // The container of its children is filled before anything else. IsHitTestVisible below is a property
+         // that is forced down to all children, so setting it makes WPF walk this object's children right then
+         // - through VisualChildrenCount, which reads this field.
          _visuals = new VisualCollection(this);
          _grip = grip;
 
-         // Kalau bayangannya ikut kena hit-test, dialah yang selalu tertabrak lebih dulu dan drop
-         // tidak akan pernah menemukan targetnya - kursornya selalu "di atas" bayangan sendiri.
+         // If the shadow also took part in hit-testing, it would always be hit first and the drop would never
+         // find its target - the cursor would always be "over" its own shadow.
          IsHitTestVisible = false;
 
          _ghost = new Rectangle {
@@ -71,10 +71,10 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Memindahkan bayangan ke posisi kursor sekarang, dalam koordinat elemen yang di-adorn.
-      /// Titik pegangan dikurangkan sendiri, jadi pemanggil cukup menyerahkan posisi kursornya.
+      /// Moves the shadow to the current cursor position, in the coordinates of the adorned element. The grip
+      /// point is subtracted by itself, so the caller only needs to hand over the cursor position.
       /// </summary>
-      /// <param name="position">Posisi kursor relatif terhadap elemen yang di-adorn.</param>
+      /// <param name="position">The cursor position relative to the adorned element.</param>
       public void Offset(Point position) {
          _position.X = position.X - _grip.X;
          _position.Y = position.Y - _grip.Y;

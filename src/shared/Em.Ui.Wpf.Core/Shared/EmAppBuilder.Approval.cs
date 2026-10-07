@@ -8,28 +8,27 @@ namespace Em.Ui.Wpf.Shared
       internal ApprovalPanelRegistry ApprovalPanels { get; } = new();
 
       /// <summary>
-      /// Mendaftarkan panel isian sebuah langkah: control milik modul yang tampil di layar approval saat
-      /// langkah itu diputuskan, dan isinya dikirim bersama keputusannya.
+      /// Registers the input panel of a step: a module's control that appears on the approval screen when
+      /// that step is decided, and whose content is sent together with its decision.
       /// </summary>
-      /// <typeparam name="TView">Tampilan panelnya.</typeparam>
+      /// <typeparam name="TView">The view of the panel.</typeparam>
       /// <typeparam name="TViewModel">
-      /// View model panelnya. Layar approval mengisi <see cref="IApprovalPanel.Host"/> lalu memanggil
-      /// <see cref="IApprovalPanel.LoadAsync"/>, dan memanggilnya lagi setiap kali layarnya dimuat
-      /// ulang.
+      /// The view model of the panel. The approval screen fills <see cref="IApprovalPanel.Host"/> and then
+      /// calls <see cref="IApprovalPanel.LoadAsync"/>, and calls it again every time its screen is reloaded.
       /// </typeparam>
-      /// <param name="docType">Jenis dokumennya.</param>
+      /// <param name="docType">The document type.</param>
       /// <param name="stepName">
-      /// Langkah yang panelnya dipasang, nama yang sama dengan yang dideklarasikan alurnya di server.
+      /// The step whose panel is attached, the same name as declared by its flow on the server.
       /// </param>
       /// <remarks>
-      /// Langkah yang punya panel isian diputuskan satu per satu lewat panelnya, jadi ia tidak ikut
-      /// kalau beberapa request disetujui sekaligus dari daftar.
+      /// A step that has an input panel is decided one by one through its panel, so it does not take part when
+      /// several requests are approved at once from the list.
       /// </remarks>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau jenis dokumen atau nama langkahnya kosong.
+      /// Thrown when the document type or the step name is empty.
       /// </exception>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau langkah itu sudah punya panel isian.
+      /// Thrown when that step already has an input panel.
       /// </exception>
       public void AddApprovalStepPanel<TView, TViewModel>(string docType, string stepName)
          where TViewModel : IApprovalPanel {
@@ -39,29 +38,28 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Mendaftarkan kartu informasi: control milik modul yang tampil di samping dokumen di layar
-      /// approval, untuk keterangan yang perlu dilihat penanda tangan sebelum memutuskan.
+      /// Registers an info card: a module's control that appears beside the document on the approval screen,
+      /// for information the signer needs to see before deciding.
       /// </summary>
-      /// <typeparam name="TView">Tampilan kartunya.</typeparam>
-      /// <param name="docType">Jenis dokumen tempat kartunya tampil.</param>
+      /// <typeparam name="TView">The view of the card.</typeparam>
+      /// <param name="docType">The document type where the card appears.</param>
       /// <param name="steps">
-      /// Langkah-langkah yang kartunya tampil. Kosong berarti kartunya tampil di semua langkah jenis
-      /// dokumen itu.
+      /// The steps where the card appears. Empty means the card appears on all steps of that document type.
       /// </param>
       /// <param name="input">
-      /// Cara menyusun keterangan awal kartunya dari request yang sedang dibuka. Kosong berarti kartunya
-      /// tidak butuh apa-apa.
+      /// How to compose the card's initial info from the request being opened. Empty means the card needs
+      /// nothing.
       /// </param>
       /// <param name="claim">
-      /// Claim yang harus dipegang user supaya kartunya tampil, atau kosong kalau kartunya terbuka bagi
-      /// siapa pun yang boleh melihat request itu.
+      /// The claim the user must hold for the card to appear, or empty when the card is open to anyone who
+      /// may view that request.
       /// </param>
-      /// <param name="order">Urutan kartunya; yang lebih kecil tampil lebih dulu.</param>
+      /// <param name="order">The order of the card; a smaller value appears first.</param>
       /// <remarks>
-      /// Kartu dibuat modul pemilik datanya dan boleh dipasang oleh jenis dokumen modul lain, jadi satu
-      /// kartu bisa tampil di beberapa jenis dokumen tanpa ditulis dua kali.
+      /// A card is made by the module that owns its data and may be attached by the document type of another
+      /// module, so one card can appear on several document types without being written twice.
       /// </remarks>
-      /// <exception cref="ArgumentException">Dilempar kalau jenis dokumennya kosong.</exception>
+      /// <exception cref="ArgumentException">Thrown when the document type is empty.</exception>
       public void AddApprovalInfoPanel<TView>(string docType, string[]? steps = null,
          Func<IApprovalPanelHost, object?>? input = null, ClaimAction? claim = null, int order = 0) {
          ArgumentException.ThrowIfNullOrWhiteSpace(docType);
@@ -70,24 +68,24 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Mendaftarkan cara membuka layar dokumen sebuah jenis dokumen dari layar approval, supaya
-      /// penanda tangan bisa melihat dokumennya di layar aslinya - bukan hanya PDF-nya.
+      /// Registers how to open the document screen of a document type from the approval screen, so signers
+      /// can see the document on its real screen - not only its PDF.
       /// </summary>
-      /// <param name="docType">Jenis dokumennya.</param>
-      /// <param name="navigationName">Nama navigasi layar dokumennya.</param>
+      /// <param name="docType">The document type.</param>
+      /// <param name="navigationName">The navigation name of its document screen.</param>
       /// <param name="parameter">
-      /// Cara menyusun parameter navigasinya dari request yang sedang dibuka. Kosong berarti layarnya
-      /// dibuka tanpa parameter.
+      /// How to compose its navigation parameter from the request being opened. Empty means the screen is
+      /// opened without a parameter.
       /// </param>
       /// <remarks>
-      /// Layarnya dibuka untuk dibaca: dokumen yang sedang menunggu keputusan terkunci, jadi
-      /// perubahannya tetap ditolak server walaupun layarnya terbuka.
+      /// The screen is opened to be read: a document waiting for a decision is locked, so changes are still
+      /// refused by the server even though the screen is open.
       /// </remarks>
       /// <exception cref="ArgumentException">
-      /// Dilempar kalau jenis dokumen atau nama navigasinya kosong.
+      /// Thrown when the document type or the navigation name is empty.
       /// </exception>
       /// <exception cref="InvalidOperationException">
-      /// Dilempar kalau jenis dokumen itu sudah punya cara membuka dokumennya.
+      /// Thrown when that document type already has a way of opening its document.
       /// </exception>
       public void AddApprovalDocumentOpener(string docType, string navigationName,
          Func<IApprovalPanelHost, object?>? parameter = null) {

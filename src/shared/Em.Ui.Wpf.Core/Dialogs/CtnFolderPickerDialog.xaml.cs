@@ -6,37 +6,37 @@ using Em.Ui.Wpf.Windows;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Satu pilihan tujuan di <see cref="CtnFolderPickerDialog"/>: sebuah folder, atau root itu sendiri.
+   /// One destination choice in <see cref="CtnFolderPickerDialog"/>: a folder, or the root itself.
    /// </summary>
    public sealed class CtnFolderChoice
    {
-      /// <summary>Id folder tujuan; <c>null</c> berarti langsung di root.</summary>
+      /// <summary>The id of the destination folder; <c>null</c> means directly under the root.</summary>
       public string? FolderId { get; init; }
 
-      /// <summary>Nama yang tampil.</summary>
+      /// <summary>The name that is shown.</summary>
       public string Label { get; init; } = "";
 
-      /// <summary>Kedalaman folder (root = 0), untuk menjorokkan baris.</summary>
+      /// <summary>The folder depth (root = 0), for indenting the row.</summary>
       public int Depth { get; init; }
 
-      /// <summary>Jarak kiri baris menurut <see cref="Depth"/>.</summary>
+      /// <summary>The left margin of the row according to <see cref="Depth"/>.</summary>
       public Thickness Indent => new(Depth * 18, 0, 0, 0);
 
-      /// <summary>Ikon baris: root atau folder.</summary>
+      /// <summary>The icon of the row: a root or a folder.</summary>
       public EFontAwesomeIcon Icon => FolderId is null ? EFontAwesomeIcon.Solid_Cubes : EFontAwesomeIcon.Solid_Folder;
    }
 
    /// <summary>
-   /// Dialog memilih folder tujuan untuk memindahkan folder atau container: daftar folder satu root
-   /// ditambah root-nya sendiri. Pilihannya dibaca dari <see cref="CtnFolderPickerDialogVm.Selected"/>
-   /// setelah <c>ShowDialog()</c> mengembalikan <c>true</c>.
+   /// The dialog to choose a destination folder for moving a folder or container: the list of the folders
+   /// of one root plus the root itself. The choice is read from
+   /// <see cref="CtnFolderPickerDialogVm.Selected"/> after <c>ShowDialog()</c> returns <c>true</c>.
    /// </summary>
    public partial class CtnFolderPickerDialog : EmWindow
    {
-      /// <summary>Membuat dialog.</summary>
-      /// <param name="title">Judul dialog.</param>
-      /// <param name="caption">Kalimat penjelas di bawah judul.</param>
-      /// <param name="choices">Tujuan yang boleh dipilih, sudah berurutan seperti tree.</param>
+      /// <summary>Creates the dialog.</summary>
+      /// <param name="title">Title of the dialog.</param>
+      /// <param name="caption">The explanatory sentence below the title.</param>
+      /// <param name="choices">The destinations that may be chosen, already ordered like the tree.</param>
       public CtnFolderPickerDialog(string title, string caption, IReadOnlyList<CtnFolderChoice> choices) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -47,19 +47,19 @@ namespace Em.Ui.Wpf.Dialogs
          Vm.RequestClose += result => DialogResult = result;
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public CtnFolderPickerDialogVm Vm => (CtnFolderPickerDialogVm)DataContext;
    }
 
-   /// <summary>ViewModel untuk <see cref="CtnFolderPickerDialog"/>.</summary>
+   /// <summary>View model for <see cref="CtnFolderPickerDialog"/>.</summary>
    public class CtnFolderPickerDialogVm : MvvmModelBase
    {
-      /// <summary>Membuat ViewModel dan mendaftarkan command konfirmasi.</summary>
+      /// <summary>Creates the view model and registers the confirm command.</summary>
       public CtnFolderPickerDialogVm() {
          RegisterCommand(nameof(OkCommand), OkCommand, OkCommandAllowed);
       }
 
-      /// <summary>Dipicu saat dialog hendak ditutup; <c>true</c> kalau pengguna mengonfirmasi.</summary>
+      /// <summary>Raised when the dialog is about to close; <c>true</c> when the user confirmed.</summary>
       public event Action<bool>? RequestClose;
 
       /// <summary>Judul dialog.</summary>
@@ -68,25 +68,25 @@ namespace Em.Ui.Wpf.Dialogs
          set => Set(value);
       }
 
-      /// <summary>Kalimat penjelas di bawah judul.</summary>
+      /// <summary>The explanatory sentence below the title.</summary>
       public string Caption {
          get => Get<string>() ?? "";
          set => Set(value);
       }
 
-      /// <summary>Tujuan yang boleh dipilih.</summary>
+      /// <summary>The destinations that may be chosen.</summary>
       public System.Collections.ObjectModel.ObservableCollection<CtnFolderChoice> Choices { get; } = [];
 
-      /// <summary>Tujuan yang dipilih.</summary>
+      /// <summary>The destination that is chosen.</summary>
       public CtnFolderChoice? Selected {
          get => Get<CtnFolderChoice?>();
          set => Set(value, _ => Commands[nameof(OkCommand)]?.RaiseCanExecuteChanged());
       }
 
-      /// <summary>Menutup dialog dengan hasil <c>true</c>.</summary>
+      /// <summary>Closes the dialog with the result <c>true</c>.</summary>
       public void OkCommand() => RequestClose?.Invoke(true);
 
-      /// <summary>Hanya kalau sebuah tujuan dipilih.</summary>
+      /// <summary>Only when a destination is chosen.</summary>
       public bool OkCommandAllowed() => Selected is not null;
    }
 }

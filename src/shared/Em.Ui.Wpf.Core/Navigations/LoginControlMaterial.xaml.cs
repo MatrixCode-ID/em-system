@@ -7,13 +7,13 @@ using UserControl = System.Windows.Controls.UserControl;
 
 namespace Em.Ui.Wpf.Navigations
 {
-   /// <summary>Layar login Material dengan card di atas background bertema.</summary>
+   /// <summary>The Material login screen with a card over a themed background.</summary>
    public partial class LoginControlMaterial : UserControl, ILoginScreen
    {
       private readonly EmApp _app;
       private readonly LoginScreenBinding _binding;
 
-      /// <summary>Membuat layar login untuk aplikasi.</summary>
+      /// <summary>Creates the login screen for the application.</summary>
       public LoginControlMaterial(EmApp app) {
          _app = app;
          InitializeComponent();
@@ -25,10 +25,10 @@ namespace Em.Ui.Wpf.Navigations
          app.ThemeChanged += ThemeChanged;
       }
 
-      /// <summary>ViewModel login bersama.</summary>
+      /// <summary>The shared login view model.</summary>
       public LoginControlVm Vm => (LoginControlVm)DataContext;
 
-      /// <summary>Menggambar logo, judul, tagline, dan hak cipta aplikasi.</summary>
+      /// <summary>Draws the application's logo, title, tagline, and copyright.</summary>
       public void RenderBranding() {
          var branding = _app.Branding;
          brandLogo.Source = BrandingImages.LoadLogo(branding, _app.ServiceProvider);
@@ -50,13 +50,13 @@ namespace Em.Ui.Wpf.Navigations
       private void PasswordEdit_PasswordChanged(object sender, RoutedEventArgs e) => _binding?.PasswordChanged();
       private void CredentialField_PreviewKeyDown(object sender, KeyEventArgs e) => _binding.CredentialKeyDown(sender, e);
 
-      /// <summary>Menangani masuk navigasi.</summary>
+      /// <summary>Handles navigation coming in.</summary>
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
-      /// <summary>Menangani keluar navigasi.</summary>
+      /// <summary>Handles navigation going away.</summary>
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
-      /// <summary>Menangani permintaan reload.</summary>
+      /// <summary>Handles a reload request.</summary>
       public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Task.CompletedTask;
-      /// <summary>Melepas langganan aplikasi dan ViewModel.</summary>
+      /// <summary>Releases the subscriptions to the application and the view model.</summary>
       public Task OnRelease(INavigation sender) {
          _app.ThemeChanged -= ThemeChanged;
          _binding.Release();

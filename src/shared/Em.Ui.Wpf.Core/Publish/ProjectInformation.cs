@@ -4,8 +4,11 @@ using System.Xml.Linq;
 
 namespace Em.Ui.Wpf.Publish;
 
+/// <summary>What the publisher knows about one project: its package id, version, frameworks, and whether it can be packed.</summary>
 public sealed record ProjectInformation(string Path,string PackageId,string Version,string Frameworks,bool IsPackable,bool IsHost,string Reason,string? Dockerfile);
+/// <summary>Reads project information through the .NET tools.</summary>
 public sealed class ProjectReader(PublishProcessRunner runner) {
+ /// <summary>Lists the projects of a solution or folder.</summary>
  public async Task<string[]> Projects(string source,CancellationToken ct=default) {
   source=Path.GetFullPath(source);var dir=Path.GetDirectoryName(source)!;
   if(source.EndsWith(".csproj",StringComparison.OrdinalIgnoreCase))return [source];
@@ -14,6 +17,7 @@ public sealed class ProjectReader(PublishProcessRunner runner) {
   var result=await runner.RunAsync("dotnet",["sln",source,"list"],dir,ct:ct);if(result.ExitCode!=0)throw new IOException("Cannot read solution projects.");
   return result.Output.Split('\n',StringSplitOptions.RemoveEmptyEntries).Select(s=>s.Trim()).Where(s=>s.EndsWith(".csproj",StringComparison.OrdinalIgnoreCase)).Select(s=>Path.GetFullPath(s,dir)).ToArray();
  }
+ /// <summary>Reads the information of one project.</summary>
  public async Task<ProjectInformation> Read(string project,string configuration="Release",string framework="",CancellationToken ct=default) {
   var args=new List<string> {"msbuild",project,"-nologo","-p:Configuration="+configuration,"-getProperty:IsPackable,PackageId,PackageVersion,Version,TargetFramework,TargetFrameworks,OutputType,UsingMicrosoftNETSdkWeb,UseWPF,UseWindowsForms"};
   if(framework.Length>0)args.Add("-p:TargetFramework="+framework);

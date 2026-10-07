@@ -16,6 +16,7 @@ namespace Em.Ui.Wpf.Navigations
    public partial class UserEditor : UserControl, INavigationBody
    {
       private EmApp _app;
+      /// <summary>Creates a new instance of <see cref="UserEditor"/>.</summary>
       public UserEditor(EmApp app) {
          InitializeComponent();
          _app = app;
@@ -23,12 +24,14 @@ namespace Em.Ui.Wpf.Navigations
          Vm.PasswordBoxSyncRequested += SyncPasswordBoxes;
       }
 
+      /// <summary>The vm.</summary>
       public UserEditorVm Vm => (UserEditorVm)DataContext;
 
       // Only the payload is taken here, never the record: the host raises OnNavigatingIn on every
       // way into this screen, back and forward included, and those two re-enter a form the user may
       // have half filled in. Opening the record belongs to OnReloadRequested, which only a real
       // navigation raises.
+      /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) {
          if (args.Data is not UserEditorNavigationPayload payload) {
             args.Cancel = true;
@@ -42,6 +45,7 @@ namespace Em.Ui.Wpf.Navigations
 
       // Leaving the screen is what throws unsaved edits away, so the body being left is the one
       // that has to ask - which is exactly the chance the host gives it here.
+      /// <inheritdoc />
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) {
          if (!Vm.HasUnsavedChanges) return Task.CompletedTask;
 
@@ -56,6 +60,7 @@ namespace Em.Ui.Wpf.Navigations
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) {
          if (args.Data is UserEditorNavigationPayload payload)
             Vm.LoadFrom(payload);
@@ -63,6 +68,7 @@ namespace Em.Ui.Wpf.Navigations
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       public Task OnRelease(INavigation sender) {
          Vm.PasswordBoxSyncRequested -= SyncPasswordBoxes;
          Vm.Release();
@@ -96,6 +102,7 @@ namespace Em.Ui.Wpf.Navigations
       #endregion
    }
 
+   /// <summary>View model of the user editor screen.</summary>
    public class UserEditorVm : MvvmModelBase
    {
       // How many bars the strength meter draws. Fixed, unlike the number of rules: a password that
@@ -106,6 +113,7 @@ namespace Em.Ui.Wpf.Navigations
       // system that is not storing anything so far.
       private const string NoValue = "-";
 
+      /// <summary>Creates a new instance of <see cref="UserEditorVm"/>.</summary>
       public UserEditorVm() {
          RegisterCommand(nameof(SaveCommand), SaveCommand, SaveCommandAllowed);
          RegisterCommand(nameof(DiscardCommand), DiscardCommand, DiscardCommandAllowed);
@@ -117,26 +125,26 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Diminta view model saat isi kotak sandi di layar perlu disamakan lagi dengan nilai yang
-      /// dipegangnya. PasswordBox sengaja tidak membuka nilainya lewat binding, jadi hanya
-      /// code-behind yang bisa menuliskannya balik.
+      /// Requested by the view model when the content of the password box on screen needs to be synchronized
+      /// again with the value it holds. PasswordBox deliberately does not expose its value through binding, so
+      /// only the code-behind can write it back.
       /// </summary>
       public event Action? PasswordBoxSyncRequested;
 
       /// <summary>
-      /// Menyambungkan ViewModel ini ke aplikasi, lalu memberi tahu UI supaya binding aturan kata
-      /// sandi dievaluasi ulang. Notifikasinya wajib: XAML sudah membuat ViewModel ini berikut seluruh
-      /// binding-nya sebelum <see cref="MvvmModelBase.EmApp"/> sempat di-set, jadi tanpa ini daftar
-      /// aturannya keburu terbaca dari nilai bawaan dan tidak pernah mengikuti aturan aplikasi.
+      /// Connects this view model to the application, then tells the UI to re-evaluate the password rule
+      /// bindings. The notification is required: XAML creates this view model together with all its bindings
+      /// before <see cref="MvvmModelBase.EmApp"/> could be set, so without it the rule list would be read from
+      /// the default value too early and never follow the application's rules.
       /// </summary>
-      /// <param name="app">Objek aplikasi pemilik ViewModel ini.</param>
+      /// <param name="app">The application object that owns this view model.</param>
       public void AttachApp(EmApp app) {
          EmApp = app;
          RefreshPasswordPolicy();
       }
 
-      // Aturannya sendiri tidak berubah selama layar terbuka, jadi ini hanya dipanggil sekali - tapi
-      // seluruh tampilan yang dibentuknya dibacakan sebagai satu set, sama seperti RefreshPasswordRules.
+      // The rules themselves do not change while the screen is open, so this is only called once - but all
+      // the displays it builds are announced as one set, just like RefreshPasswordRules.
       private void RefreshPasswordPolicy() {
          NotifyChanged(nameof(IsPasswordPolicyShown));
          NotifyChanged(nameof(IsMinLengthRuleShown));
@@ -149,19 +157,19 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Data navigasi yang sedang dibuka layar ini: satu user yang mau diubah, atau permintaan
-      /// membuat user baru. Diisi control saat navigasi masuk, dan menjadi satu-satunya penghubung
-      /// ke daftar user yang membukanya.
+      /// The navigation data that this screen has open: one user to edit, or a request to create a new user.
+      /// Filled by the control when the navigation comes in, and the only link back to the user list that
+      /// opened it.
       /// </summary>
       public UserEditorNavigationPayload? Payload { get; internal set; }
 
       #region Record
 
       /// <summary>
-      /// Baris user yang sedang dibuka, dan satu-satunya tempat isian layar ini disimpan - termasuk
-      /// untuk user baru, yang sudah punya objeknya sendiri sejak form dibuka walau barisnya belum
-      /// ada di database. Karena itu seluruh field di layar bisa mengikat langsung ke sini, tanpa
-      /// salinan yang harus disalin balik saat menyimpan.
+      /// The user row that is open, and the one and only place the input of this screen is stored - including
+      /// for a new user, who already has an object of their own since the form opened even though its row is
+      /// not yet in the database. For that reason every field on the screen can bind directly to it, with no
+      /// copy that has to be copied back when saving.
       /// </summary>
       public User? Data {
          get => Get<User?>();
@@ -169,14 +177,13 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menandakan ada perubahan yang belum tersimpan. Diambil apa adanya dari baris yang sedang
-      /// dibuka, yang memang sudah melacaknya sendiri.
+      /// Indicates there are unsaved changes. Taken as-is from the open row, which already tracks it itself.
       /// </summary>
       public bool HasUnsavedChanges => Data?.IsDirty == true;
 
       /// <summary>
-      /// Menandakan barisnya sudah benar-benar ada di database. Baris yang sudah pernah ditulis
-      /// membawa waktu server saat ia dibuat, sedangkan baris baru tanggalnya masih kosong.
+      /// Indicates that the row really exists in the database. A row that has been written carries the server
+      /// time of its creation, while a new row's date is still empty.
       /// </summary>
       public bool IsStored => Data != null && Data.datestamp != default;
 
@@ -184,15 +191,15 @@ namespace Em.Ui.Wpf.Navigations
       // time separator from the current culture, and an Indonesian one writes 23.15 where the
       // screen is meant to read 23:15. Escaping pins the clock to the same shape everywhere.
 
-      /// <summary>Keterangan kapan baris ini terakhir disimpan, untuk chip di tool strip.</summary>
+      /// <summary>Caption of when this row was last saved, for the chip in the tool strip.</summary>
       public string SavedCaption =>
          IsStored ? $"Saved {Data!.ustamp:dd MMM yyyy, HH\\:mm}" : "Not saved yet";
 
-      /// <summary>Keterangan kapan baris ini dibuat.</summary>
+      /// <summary>Caption of when this row was created.</summary>
       public string CreatedCaption => IsStored ? $"{Data!.datestamp:dd MMM yyyy}" : NoValue;
 
       /// <summary>
-      /// Keterangan kapan baris ini terakhir diubah, lengkap dengan jamnya dalam format 24 jam.
+      /// Caption of when this row was last changed, complete with the time in 24-hour format.
       /// </summary>
       public string LastUpdatedCaption =>
          IsStored ? $"{Data!.ustamp:dd MMM yyyy, HH\\:mm}" : NoValue;
@@ -206,32 +213,31 @@ namespace Em.Ui.Wpf.Navigations
       // well formed is decided here. Only a value that is actually there has to hold its shape.
 
       /// <summary>
-      /// Bentuk alamat e-mail yang diterima: ada satu tanda @, ada isi di kiri dan kanannya, dan
-      /// bagian domainnya punya minimal satu titik dengan huruf di kedua sisinya. Sengaja tidak
-      /// memakai aturan penuh RFC - yang dicegat di sini adalah salah ketik yang kelihatan, bukan
-      /// alamat aneh yang secara teori sah.
+      /// The shape of an e-mail address that is accepted: one @ sign, something on its left and right, and a
+      /// domain part with at least one dot that has letters on both sides. Deliberately not the full RFC rule
+      /// - what is caught here is a visible typo, not a strange address that is theoretically valid.
       /// </summary>
       private static readonly Regex EmailPattern =
          new(@"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$", RegexOptions.Compiled);
 
       /// <summary>
-      /// Bentuk kode pos yang diterima: 3 sampai 10 karakter, huruf dan angka, boleh diselingi
-      /// spasi atau tanda hubung di tengah. Dibuat longgar dengan sengaja karena kode pos di tiap
-      /// negara bentuknya berbeda - yang dijaga hanya panjangnya, sesuai lebar kolomnya.
+      /// The shape of a postal code that is accepted: 3 to 10 characters, letters and digits, optionally
+      /// separated by a space or a hyphen in the middle. Deliberately loose because postal codes differ from
+      /// country to country - only the length is guarded, matching the width of its column.
       /// </summary>
       private static readonly Regex ZipPattern =
          new(@"^[A-Za-z0-9][A-Za-z0-9 -]{1,8}[A-Za-z0-9]$", RegexOptions.Compiled);
 
       /// <summary>
-      /// Menandakan alamat e-mail yang diketik belum berbentuk alamat yang sah. Dipakai layar untuk
-      /// memerahkan kotak isiannya sekaligus menahan tombol simpan.
+      /// Indicates the typed e-mail address does not yet have the shape of a valid address. Used by the screen
+      /// to turn its input box red and hold back the save button.
       /// </summary>
       public bool HasEmailError =>
          !string.IsNullOrWhiteSpace(Data?.cCommValue) && !EmailPattern.IsMatch(Data!.cCommValue.Trim());
 
       /// <summary>
-      /// Menandakan kode pos yang diketik belum berbentuk kode pos yang masuk akal. Dipakai layar
-      /// untuk memerahkan kotak isiannya sekaligus menahan tombol simpan.
+      /// Indicates the typed postal code does not yet have the shape of a plausible postal code. Used by the
+      /// screen to turn its input box red and hold back the save button.
       /// </summary>
       public bool HasZipError =>
          !string.IsNullOrWhiteSpace(Data?.cAddressZip) && !ZipPattern.IsMatch(Data!.cAddressZip!.Trim());
@@ -244,25 +250,25 @@ namespace Em.Ui.Wpf.Navigations
       // buttons, so each button gets its own view of that one value. Only the button being switched
       // on says anything: the one being switched off is just the group making room for it.
 
-      /// <summary>Penanda tombol "Active" pada pemilih keadaan akun.</summary>
+      /// <summary>Marker of the "Active" button on the account state picker.</summary>
       public bool IsStateActive {
          get => Data?.cUserState == UserState.Active;
          set => SetStateWhenChecked(value, UserState.Active);
       }
 
-      /// <summary>Penanda tombol "Pending" pada pemilih keadaan akun.</summary>
+      /// <summary>Marker of the "Pending" button on the account state picker.</summary>
       public bool IsStatePending {
          get => Data?.cUserState == UserState.Pending;
          set => SetStateWhenChecked(value, UserState.Pending);
       }
 
-      /// <summary>Penanda tombol "Suspended" pada pemilih keadaan akun.</summary>
+      /// <summary>Marker of the "Suspended" button on the account state picker.</summary>
       public bool IsStateSuspended {
          get => Data?.cUserState == UserState.Suspended;
          set => SetStateWhenChecked(value, UserState.Suspended);
       }
 
-      /// <summary>Penanda tombol "Inactive" pada pemilih keadaan akun.</summary>
+      /// <summary>Marker of the "Inactive" button on the account state picker.</summary>
       public bool IsStateInactive {
          get => Data?.cUserState == UserState.Inactive;
          set => SetStateWhenChecked(value, UserState.Inactive);
@@ -278,14 +284,14 @@ namespace Em.Ui.Wpf.Navigations
       // the free-form data column - and until that is decided none of them is written anywhere.
 
       /// <summary>
-      /// Pilihan layar yang bisa dijadikan tujuan pertama setelah masuk aplikasi. Sementara ini
-      /// baru satu, tapi daftarnya sudah di sini supaya tinggal ditambah.
+      /// Screens that can be made the first destination after signing in to the application. For now there is
+      /// only one, but the list is already here so it only needs to be added to.
       /// </summary>
       public IReadOnlyList<string> LandingNavigations { get; } = ["Home"];
 
       /// <summary>
-      /// Navigasi yang dibuka tepat setelah akun ini masuk aplikasi. Untuk sekarang hanya ada satu
-      /// pilihan dan pilihannya belum tersimpan ke mana pun.
+      /// The navigation opened right after this account signs in to the application. For now there is only one
+      /// choice and that choice is not yet stored anywhere.
       /// </summary>
       public string LandingNavigation {
          get => Get("Home");
@@ -293,27 +299,27 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Keterangan kapan akun ini terakhir masuk aplikasi. Belum ada yang mencatatnya, jadi isinya
-      /// masih tetap - tempatnya disediakan supaya tinggal diisi begitu pencatatannya ada.
+      /// Caption of when this account last signed in to the application. Nobody records it yet, so its
+      /// content is still fixed - the place is provided so it only needs to be filled once the recording
+      /// exists.
       /// </summary>
       public string LastSignInCaption => "Not recorded yet";
 
-      /// <summary>Kata sandi baru yang diketik, diteruskan dari kotak sandi di layar.</summary>
+      /// <summary>The new password that was typed, passed on from the password box on screen.</summary>
       public string NewPassword {
          get => Get(string.Empty);
          set => Set(value, _ => RefreshPasswordRules());
       }
 
-      /// <summary>Ulangan kata sandi baru, dipakai memastikan tidak ada salah ketik.</summary>
+      /// <summary>The repeat of the new password, used to make sure there is no typo.</summary>
       public string RepeatPassword {
          get => Get(string.Empty);
          set => Set(value, _ => RefreshPasswordRules());
       }
 
       /// <summary>
-      /// Menandakan kata sandi baru sedang ditampilkan apa adanya, bukan berupa titik-titik. Saat
-      /// kembali disembunyikan, isian yang tadi diketik dikirim balik ke kotak sandi supaya kedua
-      /// tampilan tidak berbeda isi.
+      /// Indicates the new password is being shown as-is, not as dots. When it is hidden again, the input that
+      /// was typed is sent back to the password box so the two displays do not differ in content.
       /// </summary>
       public bool IsPasswordRevealed {
          get => Get<bool>();
@@ -324,70 +330,70 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Kebalikan <see cref="IsPasswordRevealed"/>, dipakai kotak sandi yang tertutup.</summary>
+      /// <summary>The opposite of <see cref="IsPasswordRevealed"/>, used by the password box that is hidden.</summary>
       public bool IsPasswordMasked => !IsPasswordRevealed;
 
-      /// <summary>Keterangan tombol mata: menyebut apa yang akan terjadi kalau tombolnya ditekan.</summary>
+      /// <summary>Caption of the eye button: it says what will happen if the button is pressed.</summary>
       public string PasswordRevealCaption => IsPasswordRevealed ? "Hide the password" : "Show the password";
 
       /// <summary>
-      /// Aturan kata sandi yang berlaku. Dibaca dari aplikasi, dengan nilai bawaan sebagai jaring
-      /// pengaman: XAML membuat ViewModel ini berikut seluruh binding-nya sebelum
-      /// <see cref="MvvmModelBase.EmApp"/> sempat di-set - lihat <see cref="AttachApp"/>.
+      /// The password rules that apply. Read from the application, with the default value as a safety net:
+      /// XAML creates this view model together with all its bindings before
+      /// <see cref="MvvmModelBase.EmApp"/> could be set - see <see cref="AttachApp"/>.
       /// </summary>
       private PasswordPolicy Policy => EmApp?.PasswordPolicy ?? FallbackPolicy;
 
       private static readonly PasswordPolicy FallbackPolicy = new();
 
-      /// <summary>Menandakan panjang kata sandi sudah memenuhi batas minimal.</summary>
+      /// <summary>Indicates the password length meets the minimum.</summary>
       public bool PasswordHasMinLength => Policy.HasMinLength(NewPassword);
 
-      /// <summary>Menandakan kata sandi memuat huruf besar dan huruf kecil sekaligus.</summary>
+      /// <summary>Indicates the password contains both uppercase and lowercase letters.</summary>
       public bool PasswordHasMixedCase => PasswordPolicy.HasMixedCase(NewPassword);
 
-      /// <summary>Menandakan kata sandi memuat setidaknya satu angka.</summary>
+      /// <summary>Indicates the password contains at least one digit.</summary>
       public bool PasswordHasDigit => PasswordPolicy.HasDigit(NewPassword);
 
-      /// <summary>Menandakan kata sandi memuat setidaknya satu tanda baca atau simbol.</summary>
+      /// <summary>Indicates the password contains at least one punctuation mark or symbol.</summary>
       public bool PasswordHasSymbol => PasswordPolicy.HasSymbol(NewPassword);
 
-      /// <summary>Menandakan aturan panjang minimal sedang berlaku, jadi barisnya perlu ditampilkan.</summary>
+      /// <summary>Indicates the minimum length rule is in effect, so its row needs to be shown.</summary>
       public bool IsMinLengthRuleShown => Policy.IsMinLengthShown;
 
-      /// <summary>Menandakan aturan huruf besar-kecil sedang berlaku.</summary>
+      /// <summary>Indicates the upper/lowercase rule is in effect.</summary>
       public bool IsMixedCaseRuleShown => Policy.IsMixedCaseShown;
 
-      /// <summary>Menandakan aturan angka sedang berlaku.</summary>
+      /// <summary>Indicates the digit rule is in effect.</summary>
       public bool IsDigitRuleShown => Policy.IsDigitShown;
 
-      /// <summary>Menandakan aturan simbol sedang berlaku.</summary>
+      /// <summary>Indicates the symbol rule is in effect.</summary>
       public bool IsSymbolRuleShown => Policy.IsSymbolShown;
 
       /// <summary>
-      /// Menandakan masih ada aturan yang berlaku. Kalau tidak ada satu pun, pengukur kekuatan sandi
-      /// dan daftar aturannya sama-sama disembunyikan - keduanya tidak punya apa pun untuk dikatakan.
+      /// Indicates there is still a rule in effect. When there is none at all, the password strength meter and
+      /// the rule list are both hidden - neither has anything to say.
       /// </summary>
       public bool IsPasswordPolicyShown => Policy.ShownRuleCount > 0;
 
       /// <summary>
-      /// Bunyi baris aturan panjang minimal, mis. "At least 12 characters". Dirakit di sini karena
-      /// angkanya berasal dari aturan yang berlaku, bukan angka tetap di layar.
+      /// Text of the minimum length rule row, e.g. "At least 12 characters". Assembled here because the number
+      /// comes from the rule in effect, not from a fixed number on the screen.
       /// </summary>
       public string MinLengthRuleCaption => $"At least {Policy.MinLength} characters";
 
       /// <summary>
-      /// Menandakan kata sandi sudah memenuhi seluruh aturan yang wajib. Aturan yang cuma saran tidak
-      /// ikut menahan, jadi ini bukan hal yang sama dengan pengukur kekuatan sandi terisi penuh.
+      /// Indicates the password satisfies all the required rules. A rule that is only a suggestion does not
+      /// hold it back, so this is not the same thing as the strength meter being completely full.
       /// </summary>
       public bool PasswordMeetsPolicy => Policy.IsSatisfiedBy(NewPassword);
 
-      /// <summary>Menandakan kedua kotak sandi berisi teks yang sama dan tidak kosong.</summary>
+      /// <summary>Indicates both password boxes hold the same text and it is not empty.</summary>
       public bool PasswordsMatch => NewPassword.Length > 0 && NewPassword == RepeatPassword;
 
       /// <summary>
-      /// Jumlah balok yang menyala pada pengukur kekuatan sandi, 0 sampai 4. Bukan jumlah aturan yang
-      /// terpenuhi melainkan porsinya: aturannya bisa tinggal dua, dan memenuhi keduanya tetap berarti
-      /// pengukurnya penuh. Dengan keempat aturan bawaan aktif, keduanya kebetulan sama persis.
+      /// Number of bars lit on the password strength meter, 0 to 4. Not the number of rules met but their
+      /// share: only two rules may be left, and meeting both still means the meter is full. With all four
+      /// default rules on, the two happen to be exactly the same.
       /// </summary>
       public int PasswordStrength {
          get {
@@ -399,7 +405,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Nama kekuatan sandi yang sedang tercapai, mis. "Fair" atau "Strong".</summary>
+      /// <summary>Name of the password strength currently reached, e.g. "Fair" or "Strong".</summary>
       public string PasswordStrengthCaption => PasswordStrength switch {
          1 => "Weak",
          2 => "Fair",
@@ -408,16 +414,16 @@ namespace Em.Ui.Wpf.Navigations
          _ => string.Empty
       };
 
-      /// <summary>Menandakan balok pertama pengukur kekuatan sandi menyala.</summary>
+      /// <summary>Indicates the first bar of the password strength meter is lit.</summary>
       public bool PasswordBar1 => PasswordStrength >= 1;
 
-      /// <summary>Menandakan balok kedua pengukur kekuatan sandi menyala.</summary>
+      /// <summary>Indicates the second bar of the password strength meter is lit.</summary>
       public bool PasswordBar2 => PasswordStrength >= 2;
 
-      /// <summary>Menandakan balok ketiga pengukur kekuatan sandi menyala.</summary>
+      /// <summary>Indicates the third bar of the password strength meter is lit.</summary>
       public bool PasswordBar3 => PasswordStrength >= 3;
 
-      /// <summary>Menandakan balok keempat pengukur kekuatan sandi menyala.</summary>
+      /// <summary>Indicates the fourth bar of the password strength meter is lit.</summary>
       public bool PasswordBar4 => PasswordStrength >= PasswordRuleCount;
 
       #endregion
@@ -425,8 +431,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Commands
 
       /// <summary>
-      /// Menyimpan baris yang sedang dibuka. Baris baru dan baris lama lewat pintu yang sama:
-      /// modelnya sendiri yang tahu mana di antara keduanya yang berlaku.
+      /// Saves the open row. A new row and an existing row go through the same door: the model itself knows
+      /// which of the two applies.
       /// </summary>
       public async Task SaveCommand() {
          if (Data == null) return;
@@ -457,7 +463,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Hanya boleh dijalankan kalau ada perubahan dan field wajibnya sudah terisi.</summary>
+      /// <summary>May only run when there are changes and its required fields are filled in.</summary>
       public bool SaveCommandAllowed() =>
          IsNotBusy
          && Data != null
@@ -468,45 +474,44 @@ namespace Em.Ui.Wpf.Navigations
          && !HasZipError;
 
       /// <summary>
-      /// Mengembalikan seluruh isian ke nilai yang tersimpan. Untuk user baru yang belum pernah
-      /// disimpan, itu berarti form dikosongkan kembali seperti saat pertama dibuka.
+      /// Returns all input to the stored values. For a new user that has never been saved, that means the form
+      /// is emptied again as it was when first opened.
       /// </summary>
       public void DiscardCommand() => Data?.RollBack();
 
-      /// <summary>Hanya boleh dijalankan kalau memang ada perubahan yang bisa dibuang.</summary>
+      /// <summary>May only run when there really are changes that can be discarded.</summary>
       public bool DiscardCommandAllowed() => IsNotBusy && HasUnsavedChanges;
 
-      /// <summary>Menangguhkan akun sehingga tidak bisa dipakai masuk, lalu menyimpannya.</summary>
+      /// <summary>Suspends the account so it cannot be used to sign in, then saves it.</summary>
       public Task SuspendCommand() {
          Data!.cUserState = UserState.Suspended;
          return SaveCommand();
       }
 
-      /// <summary>Hanya boleh dijalankan untuk baris yang sudah tersimpan dan belum ditangguhkan.</summary>
+      /// <summary>May only run for a row that has been saved and is not yet suspended.</summary>
       public bool SuspendCommandAllowed() =>
          IsNotBusy && IsStored && Data!.cUserState != UserState.Suspended;
 
-      /// <summary>Menyalin nomor identitas baris ini ke papan klip.</summary>
+      /// <summary>Copies this row's identity number to the clipboard.</summary>
       public void CopyRecordIdCommand() => Clipboard.SetText(Data!.cUserId);
 
-      /// <summary>Hanya boleh dijalankan kalau barisnya memang sudah punya nomor identitas.</summary>
+      /// <summary>May only run when the row really has an identity number.</summary>
       public bool CopyRecordIdCommandAllowed() => IsStored;
 
-      /// <summary>Memilih kontak yang diwakili akun ini dari daftar kontak.</summary>
+      /// <summary>Chooses the contact this account represents from the contact list.</summary>
       public void PickContactCommand() {
       }
 
       /// <summary>
-      /// Selalu tertutup untuk sekarang: dialog pemilih kontaknya belum ada, dan kontak tidak boleh
-      /// diketik bebas - satu akun harus menunjuk ke kontak yang benar-benar sudah tercatat.
+      /// Always closed for now: the contact picker dialog does not exist yet, and a contact must not be typed
+      /// freely - one account must point to a contact that is really on record.
       /// </summary>
       public bool PickContactCommandAllowed() => false;
 
       /// <summary>
-      /// Menetapkan kata sandi baru untuk akun ini. Sandinya diserahkan apa adanya ke server —
-      /// server yang menghash dan menyimpannya, karena hash sandi memang tidak pernah boleh keluar
-      /// dari sana. Kedua kotak sandi dikosongkan setelah berhasil supaya sandinya tidak tertinggal
-      /// di layar.
+      /// Sets a new password for this account. The password is handed to the server as-is - the server hashes
+      /// and stores it, because a password hash must never leave there. Both password boxes are emptied after
+      /// success so the password is not left on screen.
       /// </summary>
       public async Task SetPasswordCommand() {
          if (Data == null) return;
@@ -530,17 +535,17 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Hanya boleh dijalankan untuk akun yang barisnya sudah ada di database - kata sandi
-      /// menempel pada akun, jadi akunnya harus sudah tersimpan lebih dulu - dan kalau kedua kotak
-      /// sandinya sama serta panjangnya sudah mencukupi. Tiga aturan sisanya hanya ditampilkan
-      /// lewat pengukur kekuatan sandi, tidak menghalangi.
+      /// May only run for an account whose row already exists in the database - a password is attached to an
+      /// account, so the account must have been saved first - and when both password boxes are the same and
+      /// the length is enough. The remaining three rules are only shown through the password strength meter,
+      /// they do not hold anything back.
       /// </summary>
       public bool SetPasswordCommandAllowed() =>
          IsNotBusy && IsStored && PasswordsMatch && PasswordMeetsPolicy;
 
       /// <summary>
-      /// Membuka dan menutup tampilan kata sandi baru. Selalu boleh dipakai: yang diubah hanya cara
-      /// isian itu ditampilkan, bukan isinya.
+      /// Opens and closes the display of the new password. Always allowed: what changes is only how the input
+      /// is shown, not its content.
       /// </summary>
       public void TogglePasswordRevealCommand() => IsPasswordRevealed = !IsPasswordRevealed;
 
@@ -549,11 +554,11 @@ namespace Em.Ui.Wpf.Navigations
       #region Methods
 
       /// <summary>
-      /// Membuka baris yang dibawa data navigasi. Permintaan user baru datang tanpa baris, dan
-      /// barisnya dibuat di sini - kosong dan belum ada di database, tapi sudah berupa objek utuh
-      /// sehingga layar tidak perlu memperlakukan user baru berbeda dari user lama.
+      /// Opens the row carried by the navigation data. A new user request comes without a row, and the row is
+      /// created here - empty and not yet in the database, but already a complete object so the screen does
+      /// not need to treat a new user differently from an existing one.
       /// </summary>
-      /// <param name="payload">Data navigasi berisi user yang mau diubah, atau permintaan user baru.</param>
+      /// <param name="payload">Navigation data holding the user to edit, or a request for a new user.</param>
       public void LoadFrom(UserEditorNavigationPayload payload) {
          Payload = payload;
          Attach(payload.Data ?? User.CreateNewUser(EmApp!));
@@ -562,8 +567,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Melepas layar ini dari baris yang sedang dibuka. Dipanggil saat control-nya dilepas host,
-      /// supaya baris yang masih hidup di daftar user tidak lagi memegang layar yang sudah tidak ada.
+      /// Releases this screen from the row that is open. Called when its control is released by the host, so a
+      /// row still alive in the user list no longer holds a screen that no longer exists.
       /// </summary>
       public void Release() => Attach(null);
 

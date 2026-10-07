@@ -3,28 +3,28 @@ using Em.Shared;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Satu posisi pada deretan tombol halaman: entah sebuah nomor halaman yang bisa diklik,
-   /// atau sebuah sela ("...") yang mewakili halaman-halaman yang tidak muat ditampilkan.
-   /// Sela itu sendiri bisa diklik untuk membuka isian lompat-ke-halaman.
+   /// One position in the row of page buttons: either a page number that can be clicked, or a gap ("...")
+   /// representing pages that do not fit to be shown. The gap itself can be clicked to open the
+   /// jump-to-page field.
    /// </summary>
    public sealed class PagerSlot : NotifyPropertyBase
    {
       /// <summary>
-      /// Membuat sela ("...") di antara dua deret nomor halaman.
+      /// Creates a gap ("...") between two runs of page numbers.
       /// </summary>
       public static PagerSlot Gap() => new() { IsGap = true };
 
       /// <summary>
-      /// Membuat satu tombol nomor halaman.
+      /// Creates one page number button.
       /// </summary>
-      /// <param name="page">Nomor halaman yang diwakili, dimulai dari 1.</param>
-      /// <param name="isCurrent">Apakah halaman ini yang sedang ditampilkan.</param>
+      /// <param name="page">The page number that is represented, starting from 1.</param>
+      /// <param name="isCurrent">Whether this is the page being shown.</param>
       public static PagerSlot Of(int page, bool isCurrent) =>
          new() { Page = page, IsCurrent = isCurrent };
 
       /// <summary>
-      /// Nomor halaman yang diwakili posisi ini. Tidak berarti apa-apa kalau <see cref="IsGap"/>
-      /// bernilai <c>true</c>.
+      /// The page number represented by this position. It means nothing when <see cref="IsGap"/> is
+      /// <c>true</c>.
       /// </summary>
       public int Page {
          get => Get<int>();
@@ -32,7 +32,7 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Menandakan posisi ini adalah sela ("..."), bukan nomor halaman.
+      /// Indicates this position is a gap ("..."), not a page number.
       /// </summary>
       public bool IsGap {
          get => Get<bool>();
@@ -40,8 +40,8 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Menandakan halaman ini yang sedang aktif. Di-bind dua arah ke tombol halaman, jadi
-      /// nilainya juga berubah ketika pemakai mengklik tombolnya.
+      /// Indicates this page is the active one. Bound two-way to the page button, so its value also changes
+      /// when the user clicks the button.
       /// </summary>
       public bool IsCurrent {
          get => Get<bool>();

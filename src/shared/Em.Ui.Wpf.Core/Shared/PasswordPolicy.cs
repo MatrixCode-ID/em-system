@@ -1,66 +1,65 @@
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Seberapa jauh sebuah aturan kata sandi berlaku. Mengikuti konvensi enum di repo ini: nilai
-   /// negatif berarti tidak dipakai, nol ke atas berarti aktif.
+   /// How far a password rule applies. Follows the enum convention of this repo: a negative value means
+   /// not used, zero and above means active.
    /// </summary>
    public enum PasswordRuleLevel
    {
       /// <summary>
-      /// Aturan tidak dipakai sama sekali: tidak tampil di daftar aturan dan tidak ikut dihitung
-      /// pengukur kekuatan sandi.
+      /// The rule is not used at all: it does not appear in the rule list and is not counted by the password
+      /// strength meter.
       /// </summary>
       Off = -1,
 
       /// <summary>
-      /// Aturan ditampilkan dan ikut dihitung pengukur kekuatan sandi, tapi tidak menahan tombol
-      /// simpan - sandi yang tidak memenuhinya tetap boleh dipakai. Ini yang membuat daftar aturan
-      /// berfungsi sebagai saran, bukan penghalang.
+      /// The rule is shown and counted by the password strength meter, but does not hold back the save
+      /// button - a password that does not meet it may still be used. This is what makes the rule list work as
+      /// a suggestion, not an obstacle.
       /// </summary>
       Advisory = 0,
 
       /// <summary>
-      /// Aturan wajib dipenuhi: selama belum terpenuhi, sandi tidak bisa disimpan.
+      /// The rule is required: as long as it is not met, the password cannot be saved.
       /// </summary>
       Required = 1
    }
 
    /// <summary>
-   /// Aturan kata sandi yang berlaku di aplikasi - panjang minimal dan aturan jenis karakter,
-   /// masing-masing dengan tingkat berlakunya sendiri. Disetel lewat
-   /// <see cref="EmAppBuilder.UsePasswordPolicy"/>; aplikasi yang tidak memanggilnya memakai nilai
-   /// bawaan setiap property di bawah, yaitu aturan yang sama dengan sebelum objek ini ada.
+   /// The password rules in force in the application - the minimum length and the character kind rules,
+   /// each with its own level of application. Set through <see cref="EmAppBuilder.UsePasswordPolicy"/>; an
+   /// application that does not call it uses the default value of every property below, which are the same
+   /// rules as before this object existed.
    /// <para>
-   /// Satu hal tidak bisa dimatikan lewat objek ini: kedua kotak sandi harus sama dan tidak boleh
-   /// kosong. Itu bukan aturan kekuatan sandi melainkan syarat agar yang tersimpan memang yang
-   /// diketik, jadi tetap berlaku walau <see cref="Disable"/> dipanggil.
+   /// One thing cannot be turned off through this object: both password boxes must be the same and must
+   /// not be empty. That is not a password strength rule but a condition so that what is stored is really
+   /// what was typed, so it still applies even if <see cref="Disable"/> is called.
    /// </para>
    /// </summary>
    public sealed class PasswordPolicy
    {
       /// <summary>
-      /// Panjang minimal kata sandi. Hanya berarti kalau <see cref="MinLengthRule"/> tidak
+      /// The minimum password length. Only means anything when <see cref="MinLengthRule"/> is not
       /// <see cref="PasswordRuleLevel.Off"/>.
       /// </summary>
       public int MinLength { get; set; } = 12;
 
-      /// <summary>Tingkat berlakunya aturan panjang minimal.</summary>
+      /// <summary>The level of the minimum length rule.</summary>
       public PasswordRuleLevel MinLengthRule { get; set; } = PasswordRuleLevel.Required;
 
-      /// <summary>Tingkat berlakunya aturan "memuat huruf besar dan huruf kecil sekaligus".</summary>
+      /// <summary>The level of the rule "contains both uppercase and lowercase letters".</summary>
       public PasswordRuleLevel MixedCaseRule { get; set; } = PasswordRuleLevel.Advisory;
 
-      /// <summary>Tingkat berlakunya aturan "memuat setidaknya satu angka".</summary>
+      /// <summary>The level of the rule "contains at least one digit".</summary>
       public PasswordRuleLevel DigitRule { get; set; } = PasswordRuleLevel.Advisory;
 
-      /// <summary>Tingkat berlakunya aturan "memuat setidaknya satu simbol".</summary>
+      /// <summary>The level of the rule "contains at least one symbol".</summary>
       public PasswordRuleLevel SymbolRule { get; set; } = PasswordRuleLevel.Advisory;
 
       /// <summary>
-      /// Mematikan seluruh aturan kekuatan sandi sekaligus: tidak ada daftar aturan, tidak ada
-      /// pengukur, dan tidak ada yang menahan tombol simpan selain keharusan kedua kotak sandi sama
-      /// dan terisi. Disediakan supaya mematikan semuanya tidak perlu menyebut satu per satu, dan
-      /// tetap ikut kalau nanti ada aturan baru.
+      /// Turns off all the password strength rules at once: no rule list, no meter, and nothing holds back the
+      /// save button except that both password boxes must be the same and filled. Provided so turning
+      /// everything off need not name each rule, and still includes any new rule added later.
       /// </summary>
       /// <example>
       /// <code>
@@ -76,47 +75,46 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Apakah aturan panjang minimal ditampilkan. Panjang minimal nol tidak menyaring apa pun, jadi
-      /// dianggap mati walau tingkatnya tidak <see cref="PasswordRuleLevel.Off"/>.
+      /// Whether the minimum length rule is shown. A minimum length of zero filters nothing, so it counts as
+      /// off even if its level is not <see cref="PasswordRuleLevel.Off"/>.
       /// </summary>
       public bool IsMinLengthShown => MinLengthRule != PasswordRuleLevel.Off && MinLength > 0;
 
-      /// <summary>Apakah aturan huruf besar-kecil ditampilkan.</summary>
+      /// <summary>Whether the upper/lowercase rule is shown.</summary>
       public bool IsMixedCaseShown => MixedCaseRule != PasswordRuleLevel.Off;
 
-      /// <summary>Apakah aturan angka ditampilkan.</summary>
+      /// <summary>Whether the digit rule is shown.</summary>
       public bool IsDigitShown => DigitRule != PasswordRuleLevel.Off;
 
-      /// <summary>Apakah aturan simbol ditampilkan.</summary>
+      /// <summary>Whether the symbol rule is shown.</summary>
       public bool IsSymbolShown => SymbolRule != PasswordRuleLevel.Off;
 
       /// <summary>
-      /// Jumlah aturan yang ditampilkan, 0 sampai 4. Nol berarti daftar aturan dan pengukur kekuatan
-      /// sandi tidak punya apa pun untuk digambar, jadi keduanya disembunyikan.
+      /// The number of rules shown, 0 to 4. Zero means the rule list and the password strength meter have
+      /// nothing to draw, so both are hidden.
       /// </summary>
       public int ShownRuleCount =>
          (IsMinLengthShown ? 1 : 0) + (IsMixedCaseShown ? 1 : 0)
          + (IsDigitShown ? 1 : 0) + (IsSymbolShown ? 1 : 0);
 
-      /// <summary>Apakah <paramref name="password"/> sudah memenuhi panjang minimal.</summary>
+      /// <summary>Whether <paramref name="password"/> meets the minimum length.</summary>
       public bool HasMinLength(string password) => password.Length >= MinLength;
 
-      /// <summary>Apakah <paramref name="password"/> memuat huruf besar dan huruf kecil sekaligus.</summary>
+      /// <summary>Whether <paramref name="password"/> contains both uppercase and lowercase letters.</summary>
       public static bool HasMixedCase(string password) =>
          password.Any(char.IsUpper) && password.Any(char.IsLower);
 
-      /// <summary>Apakah <paramref name="password"/> memuat setidaknya satu angka.</summary>
+      /// <summary>Whether <paramref name="password"/> contains at least one digit.</summary>
       public static bool HasDigit(string password) => password.Any(char.IsDigit);
 
-      /// <summary>Apakah <paramref name="password"/> memuat setidaknya satu tanda baca atau simbol.</summary>
+      /// <summary>Whether <paramref name="password"/> contains at least one punctuation mark or symbol.</summary>
       public static bool HasSymbol(string password) => password.Any(c => !char.IsLetterOrDigit(c));
 
       /// <summary>
-      /// Jumlah aturan yang ditampilkan dan sudah dipenuhi <paramref name="password"/>. Dipakai
-      /// sebagai pembilang pengukur kekuatan sandi, dengan <see cref="ShownRuleCount"/> sebagai
-      /// penyebutnya.
+      /// The number of rules that are shown and already met by <paramref name="password"/>. Used as the
+      /// numerator of the password strength meter, with <see cref="ShownRuleCount"/> as its denominator.
       /// </summary>
-      /// <param name="password">Kata sandi yang sedang diketik.</param>
+      /// <param name="password">The password being typed.</param>
       public int CountMetShownRules(string password) {
          var met = 0;
          if (IsMinLengthShown && HasMinLength(password)) met++;
@@ -127,11 +125,11 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Apakah <paramref name="password"/> memenuhi setiap aturan yang berstatus
-      /// <see cref="PasswordRuleLevel.Required"/>. Aturan yang cuma saran tidak diperiksa di sini -
-      /// itulah bedanya dengan daftar aturan yang tampil di layar.
+      /// Whether <paramref name="password"/> meets every rule whose level is
+      /// <see cref="PasswordRuleLevel.Required"/>. A rule that is only a suggestion is not checked here -
+      /// that is the difference from the rule list shown on screen.
       /// </summary>
-      /// <param name="password">Kata sandi yang sedang diketik.</param>
+      /// <param name="password">The password being typed.</param>
       public bool IsSatisfiedBy(string password) {
          if (IsMinLengthShown && MinLengthRule == PasswordRuleLevel.Required && !HasMinLength(password)) return false;
          if (MixedCaseRule == PasswordRuleLevel.Required && !HasMixedCase(password)) return false;

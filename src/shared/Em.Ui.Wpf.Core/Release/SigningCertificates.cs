@@ -5,24 +5,25 @@ using System.Security.Cryptography.X509Certificates;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Signing key rilis: sertifikat self-signed ECDSA P-256 di certificate store Windows
-   /// (<c>CurrentUser\My</c>). Siapa pun yang memegang key-nya boleh menerbitkan rilis, jadi key dibagikan
-   /// sebagai file <c>.pfx</c> berpassword lalu dipasang di mesin lain lewat <see cref="Import"/>.
-   /// Password tidak disimpan oleh class ini; penyimpanan opsional diatur profile dan ReleaseSigningSecrets.
+   /// The release signing key: a self-signed ECDSA P-256 certificate in the Windows certificate store
+   /// (<c>CurrentUser\My</c>). Whoever holds the key may publish releases, so the key is shared as a
+   /// password-protected <c>.pfx</c> file and installed on another machine through <see cref="Import"/>.
+   /// The password is not stored by this class; optional storage is handled by the profile and
+   /// ReleaseSigningSecrets.
    /// </summary>
    public static class SigningCertificates
    {
-      /// <summary>Subject sertifikat yang dibuat <see cref="Create"/>.</summary>
+      /// <summary>The subject of the certificate created by <see cref="Create"/>.</summary>
       public const string SubjectName = "CN=Em Release Signing";
 
       private const string FriendlyName = "Em Release Signing";
 
       /// <summary>
-      /// Membuat signing key baru (berlaku 10 tahun), menyimpannya sebagai <c>.pfx</c> berpassword di
-      /// <paramref name="pfxPath"/>, lalu langsung memasangnya di mesin ini <b>tanpa</b> bisa diekspor
-      /// ulang. File <c>.pfx</c> itulah salinan induknya.
+      /// Creates a new signing key (valid for 10 years), stores it as a password-protected <c>.pfx</c> at
+      /// <paramref name="pfxPath"/>, then immediately installs it on this machine <b>without</b> the ability
+      /// to export it again. That <c>.pfx</c> file is its master copy.
       /// </summary>
-      /// <returns>Sertifikat yang sudah terpasang di store.</returns>
+      /// <returns>The certificate that is now installed in the store.</returns>
       public static X509Certificate2 Create(string pfxPath, string password) {
          using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
          var request = new CertificateRequest(SubjectName, key, HashAlgorithmName.SHA256);
@@ -35,17 +36,18 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Memasang signing key dari file <c>.pfx</c> ke <c>CurrentUser\My</c>. Kalau sertifikat yang sama
-      /// sudah terpasang, yang lama diganti, supaya pilihan <paramref name="exportable"/> yang baru berlaku.
+      /// Installs a signing key from a <c>.pfx</c> file into <c>CurrentUser\My</c>. If the same certificate is
+      /// already installed, the old one is replaced, so the new <paramref name="exportable"/> choice applies.
       /// </summary>
-      /// <param name="pfxPath">File <c>.pfx</c>.</param>
-      /// <param name="password">Password file itu.</param>
+      /// <param name="pfxPath">The <c>.pfx</c> file.</param>
+      /// <param name="password">The password of that file.</param>
       /// <param name="exportable">
-      /// <c>true</c> kalau key ini boleh diekspor lagi dari mesin ini (<see cref="Export"/>). Hanya berlaku
-      /// untuk mesin ini: pemegang file dan password-nya tetap bisa mengimpornya lagi dengan pilihan lain.
+      /// <c>true</c> when this key may be exported again from this machine (<see cref="Export"/>). It only
+      /// applies to this machine: whoever holds the file and its password can still import it again with a
+      /// different choice.
       /// </param>
-      /// <returns>Sertifikat yang sudah terpasang di store.</returns>
-      /// <exception cref="CryptographicException">Password salah, file rusak, tanpa private key, atau bukan ECDSA P-256.</exception>
+      /// <returns>The certificate that is now installed in the store.</returns>
+      /// <exception cref="CryptographicException">The password is wrong, the file is corrupt, it has no private key, or it is not ECDSA P-256.</exception>
       public static X509Certificate2 Import(string pfxPath, string password, bool exportable) {
          // Checked on a throw-away copy first, so a file that is refused leaves no key behind on disk.
          using (var probe = Load(pfxPath, password, X509KeyStorageFlags.EphemeralKeySet)) {
@@ -79,10 +81,10 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Menulis ulang signing key <paramref name="certificate"/> ke file <c>.pfx</c> dengan password baru.
-      /// Hanya bisa untuk key yang diimpor dengan pilihan exportable (<see cref="IsExportable"/>).
+      /// Rewrites signing key <paramref name="certificate"/> to a <c>.pfx</c> file with a new password. Only
+      /// possible for a key that was imported with the exportable choice (<see cref="IsExportable"/>).
       /// </summary>
-      /// <exception cref="CryptographicException">Key ini tidak boleh diekspor.</exception>
+      /// <exception cref="CryptographicException">This key may not be exported.</exception>
       public static void Export(X509Certificate2 certificate, string pfxPath, string password) {
          byte[] pfx;
          try {
@@ -96,7 +98,8 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Sertifikat di <c>CurrentUser\My</c> yang bisa menjadi signing key: ber-private key dan ECDSA P-256.
+      /// The certificates in <c>CurrentUser\My</c> that can be a signing key: those with a private key and
+      /// ECDSA P-256.
       /// </summary>
       public static IReadOnlyList<X509Certificate2> List() {
          using var store = OpenStore(OpenFlags.ReadOnly);
@@ -109,7 +112,7 @@ namespace Em.Ui.Wpf.Core.Release
          return result.OrderBy(r => r.Subject, StringComparer.OrdinalIgnoreCase).ThenByDescending(r => r.NotAfter).ToArray();
       }
 
-      /// <summary>Sertifikat signing key dengan thumbprint <paramref name="thumbprint"/>, atau <c>null</c>.</summary>
+      /// <summary>The signing key certificate with thumbprint <paramref name="thumbprint"/>, or <c>null</c>.</summary>
       public static X509Certificate2? Find(string? thumbprint) {
          if (string.IsNullOrWhiteSpace(thumbprint)) return null;
 
@@ -123,7 +126,7 @@ namespace Em.Ui.Wpf.Core.Release
          return found;
       }
 
-      /// <summary><c>true</c> kalau private key <paramref name="certificate"/> boleh diekspor dari mesin ini.</summary>
+      /// <summary><c>true</c> when the private key of <paramref name="certificate"/> may be exported from this machine.</summary>
       public static bool IsExportable(X509Certificate2 certificate) {
          try {
             using var key = certificate.GetECDsaPrivateKey();
@@ -138,19 +141,19 @@ namespace Em.Ui.Wpf.Core.Release
       /// <summary>DER SubjectPublicKeyInfo public key <paramref name="certificate"/>.</summary>
       public static byte[] PublicKeyOf(X509Certificate2 certificate) => certificate.PublicKey.ExportSubjectPublicKeyInfo();
 
-      /// <summary><c>keyId</c> public key <paramref name="certificate"/>, seperti yang tertulis di <c>release.json.sig</c>.</summary>
+      /// <summary>The <c>keyId</c> of the public key of <paramref name="certificate"/>, as written in <c>release.json.sig</c>.</summary>
       public static string KeyIdOf(X509Certificate2 certificate) => ReleaseSignature.KeyIdOf(PublicKeyOf(certificate));
 
       /// <summary>
-      /// Public key <paramref name="certificate"/> dalam bentuk PEM untuk ditanam di launcher, didahului satu
-      /// baris <c>keyId: ...</c> (teks di luar blok PEM diabaikan pembaca PEM).
+      /// The public key of <paramref name="certificate"/> in PEM form to be embedded in the launcher,
+      /// preceded by one <c>keyId: ...</c> line (text outside the PEM block is ignored by PEM readers).
       /// </summary>
       public static string PublicKeyPem(X509Certificate2 certificate) =>
          $"keyId: {KeyIdOf(certificate)}\n{ReleaseSignature.ToPem(PublicKeyOf(certificate))}";
 
       /// <summary>
-      /// Mencabut signing key dengan thumbprint <paramref name="thumbprint"/> dari mesin ini: sertifikatnya
-      /// dari store, private key-nya dari disk.
+      /// Removes the signing key with thumbprint <paramref name="thumbprint"/> from this machine: the
+      /// certificate from the store, the private key from disk.
       /// </summary>
       public static void Remove(string thumbprint) {
          using var store = OpenStore(OpenFlags.ReadWrite);
@@ -161,7 +164,7 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
-      /// <summary>Membuat key berkas P-256 dan sertifikat publik tanpa memasang ke store.</summary>
+      /// <summary>Creates a P-256 file key and a public certificate without installing into the store.</summary>
       public static X509Certificate2 CreatePfx(string pfxPath, string certificatePath, string password) {
          using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
          var request = new CertificateRequest(SubjectName, key, HashAlgorithmName.SHA256);
@@ -173,13 +176,13 @@ namespace Em.Ui.Wpf.Core.Release
          return X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
       }
 
-      /// <summary>Memvalidasi password dan private key; hasilnya hanya sertifikat publik.</summary>
+      /// <summary>Validates the password and the private key; the result is only the public certificate.</summary>
       public static X509Certificate2 ValidatePfx(string pfxPath, string password) {
          using var certificate = LoadPfxForSigning(pfxPath, password);
          return X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
       }
 
-      /// <summary>Membuka private key sementara; pemanggil wajib Dispose.</summary>
+      /// <summary>Opens a temporary private key; the caller must dispose it.</summary>
       public static X509Certificate2 LoadPfxForSigning(string pfxPath, string password) {
          var certificate = Load(pfxPath, password, X509KeyStorageFlags.EphemeralKeySet);
          if (IsSigningCandidate(certificate)) return certificate;
@@ -187,7 +190,7 @@ namespace Em.Ui.Wpf.Core.Release
          throw new CryptographicException("The .pfx file must contain an ECDSA P-256 private key.");
       }
 
-      /// <summary>Membaca sertifikat publik; tidak ada atau rusak menghasilkan null.</summary>
+      /// <summary>Reads a public certificate; absent or corrupt yields null.</summary>
       public static X509Certificate2? LoadCertificateFile(string certificatePath) {
          X509Certificate2? certificate = null;
          try {
@@ -204,11 +207,11 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
-      /// <summary>Menulis sertifikat DER tanpa private key.</summary>
+      /// <summary>Writes a DER certificate without the private key.</summary>
       public static void WriteCertificateFile(X509Certificate2 certificate, string certificatePath) =>
          File.WriteAllBytes(certificatePath, certificate.Export(X509ContentType.Cert));
 
-      /// <summary>Mengekspor ulang berkas key dengan password baru tanpa memasang ke store.</summary>
+      /// <summary>Exports the key file again with a new password without installing into the store.</summary>
       public static void ExportPfxFile(string sourcePfx, string sourcePassword, string targetPfx, string newPassword) {
          using var certificate = Load(sourcePfx, sourcePassword, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
          if (!IsSigningCandidate(certificate)) throw new CryptographicException("The .pfx file must contain an ECDSA P-256 private key.");

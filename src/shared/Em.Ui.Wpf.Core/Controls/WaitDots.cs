@@ -4,17 +4,16 @@ using Control = System.Windows.Controls.Control;
 namespace Em.Ui.Wpf.Controls
 {
    /// <summary>
-   /// Penanda tunggu kecil: tiga titik yang bergantian membesar dan mengecil sambil bergeser
-   /// ke kiri dan ke kanan. Dipakai di mana pun ada pekerjaan yang ditunggu tapi layarnya tidak
-   /// perlu ditutup - di sebelah tombol, di toolbar, di dalam tab, atau di sudut sebuah kartu.
+   /// A small wait marker: three dots that take turns growing and shrinking while moving left and right.
+   /// Used wherever there is work being waited on but the screen need not be covered - beside a button, in
+   /// a toolbar, inside a tab, or in the corner of a card.
    /// </summary>
    /// <remarks>
-   /// Kontrol ini lookless: tampilannya seluruhnya berasal dari default style di
-   /// <c>Themes/Generic.xaml</c>. Ukurannya mengikuti <c>Width</c> dan <c>Height</c> yang
-   /// diberikan pemakainya (bawaan 40 x 12), warna titiknya mengikuti <c>Foreground</c> (bawaan
-   /// warna aksen tema). Penanda ini hanya terlihat, tidak menahan klik; untuk menutupi layar
-   /// selama pekerjaan berjalan pakai <see cref="WaitOverlay"/>, yang sendirinya memakai penanda
-   /// ini.
+   /// This control is lookless: its look comes entirely from the default style in
+   /// <c>Themes/Generic.xaml</c>. Its size follows the <c>Width</c> and <c>Height</c> given by its user
+   /// (default 40 x 12), and the color of its dots follows <c>Foreground</c> (default the theme accent
+   /// color). This marker is only visible and does not hold back clicks; to cover the screen while work
+   /// runs, use <see cref="WaitOverlay"/>, which itself uses this marker.
    /// <code>
    /// &lt;local:WaitDots IsActive="{Binding InWaiting}" /&gt;
    /// </code>
@@ -33,14 +32,13 @@ namespace Em.Ui.Wpf.Controls
             new FrameworkPropertyMetadata(true));
 
       /// <summary>
-      /// Menyalakan dan mematikan penanda ini. Biasanya diikat ke
-      /// <c>NotifyPropertyBase.InWaiting</c> milik view model layarnya.
+      /// Turns this marker on and off. Usually bound to <c>NotifyPropertyBase.InWaiting</c> of its screen's
+      /// view model.
       /// </summary>
       /// <remarks>
-      /// Saat <c>false</c>, titiknya tidak digambar dan animasinya berhenti, tetapi tempatnya di
-      /// layout tetap ada, jadi isi di sekitarnya tidak bergeser setiap kali pekerjaan mulai atau
-      /// selesai. Bawaannya <c>true</c>, supaya penanda yang ditaruh tanpa pengikatan langsung
-      /// terlihat bergerak.
+      /// When <c>false</c>, the dots are not drawn and the animation stops, but its place in the layout
+      /// remains, so the content around it does not shift every time work starts or finishes. The default is
+      /// <c>true</c>, so a marker placed without binding is immediately seen moving.
       /// </remarks>
       public bool IsActive {
          get => (bool)GetValue(IsActiveProperty);

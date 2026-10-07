@@ -46,9 +46,13 @@ namespace Em.Ui.Wpf.Navigations
          private set => Set(value, _ => NotifyDeployChanged());
       }
 
+      /// <summary>Indicates there is deploy error.</summary>
       public bool HasDeployError => DeployError.Length > 0;
+      /// <summary>Indicates there is deploy target.</summary>
       public bool HasDeployTarget => DeployTarget is not null;
+      /// <summary>Indicates the deploy empty is shown.</summary>
       public bool ShowDeployEmpty => IsDeployLoaded && DeployTarget is null && !HasDeployError;
+      /// <summary>Indicates the deploy loading is shown.</summary>
       public bool ShowDeployLoading => IsDeployBusy && !IsDeployLoaded;
 
       /// <summary>E.g. <c>SSH · Stack</c>.</summary>
@@ -68,14 +72,19 @@ namespace Em.Ui.Wpf.Navigations
             ? Or(t.Container, "container not set") + (t.Kind == CtnDeployKind.Portainer ? $" · environment {t.EndpointId?.ToString() ?? "not set"}" : "")
             : $"{Or(t.Stack, "stack not set")} · service {Or(t.Service, "not set")}";
 
+      /// <summary>The deploy filter caption.</summary>
       public string DeployFilterCaption => DeployTarget is { } t ? Or(t.TagFilter, "all tags") : "";
 
       /// <summary>Whether a push deploys on its own.</summary>
       public string DeployAutoCaption => DeployTarget is { IsActive: true } ? "On after push" : "Off (manual only)";
 
+      /// <summary>Indicates there is deploy run.</summary>
       public bool HasDeployRun => DeployTarget?.LastRun is not null;
+      /// <summary>Indicates last deploy succeeded.</summary>
       public bool LastDeploySucceeded => DeployTarget?.LastRun?.Result == CtnDeployResult.Success;
+      /// <summary>Indicates last deploy failed.</summary>
       public bool LastDeployFailed => DeployTarget?.LastRun?.Result == CtnDeployResult.Failed;
+      /// <summary>Indicates last deploy running.</summary>
       public bool LastDeployRunning => DeployTarget?.LastRun?.Result == CtnDeployResult.Running;
 
       /// <summary>Last run in one line: result, tag or digest, time and user.</summary>

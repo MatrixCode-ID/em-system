@@ -3,9 +3,9 @@ using System.IO;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Tujuan rilis di folder biasa, lokal atau jaringan, yang ditulis langsung. Setiap file ditulis ke
-   /// file sementara berawalan titik di folder yang sama, lalu dipindah ke namanya, jadi pembaca tidak
-   /// pernah melihat file setengah jadi.
+   /// A release target in an ordinary folder, local or on a network, that is written to directly. Every
+   /// file is written to a temporary file starting with a dot in the same folder, then moved to its name,
+   /// so a reader never sees a half-finished file.
    /// </summary>
    public sealed class FolderReleaseTarget : ReleaseTarget
    {
@@ -13,7 +13,7 @@ namespace Em.Ui.Wpf.Core.Release
       private readonly string _base;
 
       /// <summary>
-      /// Membuat tujuan folder: folder rilis <paramref name="releaseFolder"/> di dalam
+      /// Creates a folder target: release folder <paramref name="releaseFolder"/> inside
       /// <paramref name="targetFolder"/>.
       /// </summary>
       public FolderReleaseTarget(string targetFolder, string releaseFolder) {

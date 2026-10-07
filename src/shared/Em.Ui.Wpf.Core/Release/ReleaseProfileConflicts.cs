@@ -2,9 +2,10 @@ using System.IO;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Peringatan tabrakan tujuan dan folder publish; tidak memblokir operasi.</summary>
+   /// <summary>Warnings of collisions between target and publish folder; they do not block operations.</summary>
    public static class ReleaseProfileConflicts
    {
+      /// <summary>Finds profiles that share the same target or publish folder with this one.</summary>
       public static IReadOnlyList<string> Find(ReleaseProfile profile, IEnumerable<ReleaseProfile> others, bool checkTarget, bool checkPublishFolder) {
          var result = new List<string>();
          foreach (var other in others.Where(other => other.Id != profile.Id)) {

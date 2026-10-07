@@ -5,7 +5,9 @@ using Microsoft.Extensions.FileSystemGlobbing;
 
 namespace Em.Ui.Wpf.Publish;
 
+/// <summary>The template builder.</summary>
 public static class TemplateBuilder {
+ /// <summary>Selects the files of a source folder that belong to a file set.</summary>
  public static string[] SelectFiles(string source,FileSet set,IReadOnlyList<NamedFileList> lists,Action<string>? warning=null) {
   PublishPaths.ValidateTree(source);
   var matcher=new Matcher(StringComparison.OrdinalIgnoreCase);matcher.AddIncludePatterns(set.Include.Count>0?set.Include:["**/*"]);matcher.AddExcludePatterns(set.Exclude);
@@ -26,11 +28,13 @@ public static class TemplateBuilder {
   foreach(var required in set.RequiredFiles) {var path=PublishPaths.Inside(source,required);var rel=Path.GetRelativePath(source,path).Replace('\\','/');if(!files.Contains(rel,StringComparer.OrdinalIgnoreCase))throw new FileNotFoundException("Required staged file missing: "+required);}
   return files;
  }
+ /// <summary>Copies the selected files to a staging folder.</summary>
  public static string[] Stage(string source,string destination,FileSet set,IReadOnlyList<NamedFileList> lists,Action<string>? warning=null) {
   var files=SelectFiles(source,set,lists,warning);Directory.CreateDirectory(destination);
   foreach(var relative in files) {var target=PublishPaths.Inside(destination,relative);Directory.CreateDirectory(Path.GetDirectoryName(target)!);File.Copy(PublishPaths.Inside(source,relative),target);}
   return files;
  }
+ /// <summary>Composes the Dockerfile of a template profile.</summary>
  public static string Dockerfile(TemplateProfile p) {
   static string Line(string value) {if(value.Contains('\r')||value.Contains('\n')||value.Contains('\0'))throw new InvalidDataException("Dockerfile fields must use one line.");return value;}
   static string Shell(string value)=>"'"+value.Replace("'","'\"'\"'")+"'";

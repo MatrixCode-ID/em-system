@@ -8,14 +8,14 @@ using Em.Ui.Wpf.Windows;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog untuk mengelola daftar koneksi API tersimpan (tambah/ubah/hapus profil koneksi).
+   /// A dialog to manage the list of saved API connections (add/change/delete connection profiles).
    /// </summary>
    public partial class ConnectionConfig : EmWindow
    {
       /// <summary>
-      /// Membuat dialog dan memuat daftar koneksi API yang tersimpan lewat <paramref name="app"/>.
+      /// Creates the dialog and loads the list of saved API connections through <paramref name="app"/>.
       /// </summary>
-      /// <param name="app">Objek aplikasi, dipakai untuk membaca/menyimpan koneksi API di Registry.</param>
+      /// <param name="app">The application object, used to read/save API connections in the Registry.</param>
       public ConnectionConfig(EmApp app) {
          InitializeComponent();
          Vm.EmApp = app;
@@ -24,19 +24,19 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// ViewModel dialog ini.
+      /// The view model of this dialog.
       /// </summary>
       public ConnectionConfigVm Vm => (ConnectionConfigVm)DataContext;
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="ConnectionConfig"/>: memuat, menambah, mengubah, dan menghapus
-   /// profil koneksi API yang tersimpan di Registry lewat <see cref="Core.EmApp"/>.
+   /// View model for <see cref="ConnectionConfig"/>: loads, adds, changes, and deletes the API connection
+   /// profiles stored in the Registry through <see cref="Core.EmApp"/>.
    /// </summary>
    public class ConnectionConfigVm : MvvmModelBase
    {
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan command tambah/ubah/hapus koneksi.
+      /// Creates a new view model and registers the add/change/delete connection commands.
       /// </summary>
       public ConnectionConfigVm() {
          RegisterCommand(nameof(AddConnectionCommand), AddConnectionCommand);
@@ -45,7 +45,7 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Koneksi API yang sedang dipilih user pada grid, atau <c>null</c> jika tidak ada yang dipilih.
+      /// The API connection currently chosen by the user in the grid, or <c>null</c> when none is chosen.
       /// </summary>
       public ApiConnection? SelectedApiConnection {
          get => Get<ApiConnection?>();
@@ -57,17 +57,17 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Daftar koneksi API yang ditampilkan grid, meneruskan koleksi milik
-      /// <see cref="Core.EmApp.UIConnections"/>. Bernilai <c>null</c> selama
-      /// <see cref="MvvmModelBase.EmApp"/> belum di-set (mis. saat XAML membuat instance
-      /// design-time), jadi getter-nya sengaja dibuat null-safe.
+      /// The list of API connections shown by the grid, passing on the collection of
+      /// <see cref="Core.EmApp.UIConnections"/>. It is <c>null</c> while <see cref="MvvmModelBase.EmApp"/> has
+      /// not been set (e.g. when XAML creates a design-time instance), so its getter is deliberately
+      /// null-safe.
       /// </summary>
       public ObservableCollection<ApiConnection>? ApiConnections => EmApp?.UIConnections;
 
       /// <summary>
-      /// Memuat ulang <see cref="ApiConnections"/> dari data tersimpan di Registry, lalu memberi tahu UI
-      /// supaya binding grid dievaluasi ulang — perlu karena <see cref="MvvmModelBase.EmApp"/> baru
-      /// terisi sesudah XAML membuat ViewModel ini.
+      /// Reloads <see cref="ApiConnections"/> from the data stored in the Registry, then tells the UI to
+      /// re-evaluate the grid binding - needed because <see cref="MvvmModelBase.EmApp"/> is only filled after
+      /// XAML has created this view model.
       /// </summary>
       public void LoadConnections() {
          EmApp!.RetrieveApiConnections();
@@ -75,8 +75,8 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Menampilkan editor untuk membuat koneksi API baru, lalu menyimpannya jika user submit
-      /// dan nama profil belum dipakai koneksi lain.
+      /// Shows an editor to create a new API connection, then saves it if the user submits and the profile
+      /// name is not yet used by another connection.
       /// </summary>
       public void AddConnectionCommand() {
          var connection = new ApiConnection { Timeout = 30 };
@@ -90,8 +90,8 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Menampilkan editor untuk mengubah koneksi API yang sedang dipilih (<see cref="SelectedApiConnection"/>),
-      /// lalu menyimpan perubahan jika user submit dan nama profil valid.
+      /// Shows an editor to change the API connection currently chosen (<see cref="SelectedApiConnection"/>),
+      /// then saves the change if the user submits and the profile name is valid.
       /// </summary>
       public void EditConnectionCommand() {
          if (SelectedApiConnection is not { } selected) return;
@@ -107,13 +107,13 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Kondisi command <see cref="EditConnectionCommand"/> boleh dieksekusi: ada koneksi yang dipilih.
+      /// The condition for command <see cref="EditConnectionCommand"/> to be executable: a connection is chosen.
       /// </summary>
       public bool EditConnectionCommandAllowed() => SelectedApiConnection is not null;
 
       /// <summary>
-      /// Menghapus koneksi API yang sedang dipilih (<see cref="SelectedApiConnection"/>), baik dari
-      /// Registry maupun dari <see cref="ApiConnections"/>.
+      /// Deletes the API connection currently chosen (<see cref="SelectedApiConnection"/>), both from the
+      /// Registry and from <see cref="ApiConnections"/>.
       /// </summary>
       public void DeleteConnectionCommand() {
          if (SelectedApiConnection is not { } selected) return;
@@ -122,16 +122,17 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Kondisi command <see cref="DeleteConnectionCommand"/> boleh dieksekusi: ada koneksi yang dipilih
-      /// dan koneksi itu bukan koneksi debug (koneksi debug tidak tersimpan di Registry).
+      /// The condition for command <see cref="DeleteConnectionCommand"/> to be executable: a connection is
+      /// chosen and that connection is not a debug connection (debug connections are not stored in the
+      /// Registry).
       /// </summary>
       public bool DeleteConnectionCommandAllowed() => SelectedApiConnection is { IsDebugConnection: false };
 
       /// <summary>
-      /// Menampilkan dialog editor koneksi (<see cref="ConnectionConfigEditor"/>) untuk sebuah koneksi.
+      /// Shows the connection editor dialog (<see cref="ConnectionConfigEditor"/>) for a connection.
       /// </summary>
-      /// <param name="connection">Koneksi yang akan diedit (objek diubah langsung/in-place oleh editor).</param>
-      /// <returns><c>true</c> jika user menekan simpan (submit); <c>false</c> jika dibatalkan.</returns>
+      /// <param name="connection">The connection to edit (the object is changed directly/in-place by the editor).</param>
+      /// <returns><c>true</c> if the user pressed save (submit); <c>false</c> if cancelled.</returns>
       private bool ShowEditor(ApiConnection connection) {
          var editor = new ConnectionConfigEditor(EmApp!, connection) {
             Owner = MainWindow ?? EmApp!.MainWindow
@@ -140,10 +141,11 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Memeriksa apakah nama profil koneksi sudah dipakai koneksi lain, dan menampilkan peringatan jika ya.
+      /// Checks whether the connection's profile name is already used by another connection, and shows a
+      /// warning if so.
       /// </summary>
-      /// <param name="connection">Koneksi yang nama profilnya divalidasi.</param>
-      /// <returns><c>true</c> jika nama profil sudah dipakai koneksi lain.</returns>
+      /// <param name="connection">The connection whose profile name is validated.</param>
+      /// <returns><c>true</c> if the profile name is already used by another connection.</returns>
       private bool IsProfileNameDuplicate(ApiConnection connection) {
          var duplicate = EmApp!.UIConnections.Any(c =>
             !ReferenceEquals(c, connection) &&

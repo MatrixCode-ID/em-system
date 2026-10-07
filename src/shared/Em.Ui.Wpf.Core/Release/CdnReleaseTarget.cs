@@ -9,9 +9,9 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Tujuan rilis di CDN bawaan server yang sedang tersambung. Membaca lewat alamat publik
-   /// <c>/cdn/...</c> tanpa login (sama seperti launcher nanti membacanya), dan menulis lewat
-   /// <see cref="ICdnServices"/>, yang mensyaratkan claim pengelola CDN.
+   /// A release target on the built-in CDN of the server that is currently connected. It reads through the
+   /// public <c>/cdn/...</c> address without login (just as the launcher will later read it), and writes
+   /// through <see cref="ICdnServices"/>, which requires the CDN manager claim.
    /// </summary>
    public sealed class CdnReleaseTarget : ReleaseTarget
    {
@@ -24,12 +24,12 @@ namespace Em.Ui.Wpf.Core.Release
       private readonly HashSet<string> _knownFolders = new(StringComparer.OrdinalIgnoreCase);
 
       /// <summary>
-      /// Membuat tujuan CDN untuk folder rilis <paramref name="releaseFolder"/> di server
+      /// Creates a CDN target for release folder <paramref name="releaseFolder"/> on server
       /// <paramref name="connection"/>.
       /// </summary>
-      /// <param name="service">Service CDN milik koneksi yang sedang aktif.</param>
-      /// <param name="connection">Koneksi aktif; alamat dan pilihan sertifikatnya dipakai untuk <c>/cdn</c>.</param>
-      /// <param name="releaseFolder">Path folder rilis di dalam CDN, mis. <c>wpf-release</c>.</param>
+      /// <param name="service">The CDN service of the connection that is currently active.</param>
+      /// <param name="connection">The active connection; its address and certificate choice are used for <c>/cdn</c>.</param>
+      /// <param name="releaseFolder">The path of the release folder inside the CDN, e.g. <c>wpf-release</c>.</param>
       public CdnReleaseTarget(ICdnServices service, ApiConnection connection, string releaseFolder) {
          _service = service;
          _host = connection.Host.TrimEnd('/');

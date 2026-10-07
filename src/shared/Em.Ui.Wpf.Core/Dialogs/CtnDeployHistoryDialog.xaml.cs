@@ -13,6 +13,7 @@ namespace Em.Ui.Wpf.Dialogs
    /// </summary>
    public partial class CtnDeployHistoryDialog : EmWindow
    {
+      /// <summary>Creates a new instance of <see cref="CtnDeployHistoryDialog"/>.</summary>
       public CtnDeployHistoryDialog(ICtnServices service, CtnImageInfo image) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -31,6 +32,7 @@ namespace Em.Ui.Wpf.Dialogs
       private ICtnServices? _service;
       private CtnImageInfo? _image;
 
+      /// <summary>Creates a new instance of <see cref="CtnDeployHistoryDialogVm"/>.</summary>
       public CtnDeployHistoryDialogVm() {
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, () => IsNotBusy);
          RegisterCommand(nameof(RollbackCommand), RollbackCommand, () => IsNotBusy && SelectedRun is { Info.CanRollback: true });
@@ -44,15 +46,19 @@ namespace Em.Ui.Wpf.Dialogs
 
       private ICtnServices Api => _service ?? throw new InvalidOperationException("The dialog is not initialized.");
 
+      /// <summary>The title.</summary>
       public string Title => _image is null ? "Deploy history" : $"Deploy history of {_image.FullName}";
 
+      /// <summary>The runs.</summary>
       public CtnDeployRunItem[] Runs {
          get => Get<CtnDeployRunItem[]>() ?? [];
          private set => Set(value, _ => NotifyChanged(nameof(IsEmpty)));
       }
 
+      /// <summary>Indicates empty.</summary>
       public bool IsEmpty => Runs.Length == 0 && ErrorText.Length == 0;
 
+      /// <summary>The selected run.</summary>
       public CtnDeployRunItem? SelectedRun {
          get => Get<CtnDeployRunItem?>();
          set => Set(value, _ => {
@@ -64,7 +70,9 @@ namespace Em.Ui.Wpf.Dialogs
       /// <summary>Step log of the selected run, plus the previous digest and any rewritten file note.</summary>
       public string DetailText => SelectedRun?.Detail ?? "";
 
+      /// <summary>The error text.</summary>
       public string ErrorText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasError))); }
+      /// <summary>Indicates there is error.</summary>
       public bool HasError => ErrorText.Length > 0;
 
       /// <summary><c>true</c> after a rollback ran.</summary>
@@ -136,22 +144,33 @@ namespace Em.Ui.Wpf.Dialogs
    /// <summary>One run in the history list.</summary>
    public class CtnDeployRunItem(CtnDeployRunInfo info)
    {
+      /// <summary>The info.</summary>
       public CtnDeployRunInfo Info { get; } = info;
+      /// <summary>The caption.</summary>
       public string Caption => Info.Tag ?? ShortDigest;
+      /// <summary>The short digest.</summary>
       public string ShortDigest => CtnInput.ShortDigest(Info.Digest);
+      /// <summary>The started caption.</summary>
       public string StartedCaption => ContainerManagerVm.LocalTime(Info.Started);
+      /// <summary>The trigger caption.</summary>
       public string TriggerCaption => Info.Trigger switch {
          CtnDeployTrigger.AfterPush => "after push",
          CtnDeployTrigger.Rollback => "rollback",
          _ => "manual"
       };
 
+      /// <summary>The meta caption.</summary>
       public string MetaCaption => $"{StartedCaption} · {TriggerCaption}{(Info.By is { } by ? " · " + by : "")}";
+      /// <summary>The result caption.</summary>
       public string ResultCaption => Info.Result.ToString();
+      /// <summary>Indicates success.</summary>
       public bool IsSuccess => Info.Result == CtnDeployResult.Success;
+      /// <summary>Indicates failed.</summary>
       public bool IsFailed => Info.Result == CtnDeployResult.Failed;
+      /// <summary>Indicates running.</summary>
       public bool IsRunning => Info.Result == CtnDeployResult.Running;
 
+      /// <summary>The detail.</summary>
       public string Detail =>
          $"Digest: {Info.Digest}\n" +
          (Info.PrevDigest is { } previous ? $"Previous: {previous}\n" : "") +

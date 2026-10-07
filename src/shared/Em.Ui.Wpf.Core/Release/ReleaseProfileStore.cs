@@ -5,17 +5,23 @@ using Em.Ui.Wpf.Publish;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Penyimpanan profile atomik dengan pembatasan path dan arsip.</summary>
+   /// <summary>Atomic profile storage with path and archive restrictions.</summary>
    public sealed class ReleaseProfileStore
    {
+      /// <summary>The profile file name.</summary>
       public const string ProfileFileName = "profile.json";
+      /// <summary>The key file name.</summary>
       public const string KeyFileName = "signing.pfx";
+      /// <summary>The certificate file name.</summary>
       public const string CertificateFileName = "signing.cer";
       private static readonly string[] ArchiveNames = [ProfileFileName, KeyFileName, CertificateFileName];
+      /// <summary>The root.</summary>
       public string Root { get; }
 
+      /// <summary>Creates a new instance of <see cref="ReleaseProfileStore"/>.</summary>
       public ReleaseProfileStore(string root) => Root = Path.GetFullPath(root);
 
+      /// <summary>Gets the folder of a profile.</summary>
       public string DirectoryOf(string id) {
          ReleaseProfile.ValidateId(id);
          return PublishPaths.Inside(Root, id.ToLowerInvariant());
@@ -35,6 +41,7 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
+      /// <summary>Lists the profiles, including files that could not be read.</summary>
       public IReadOnlyList<ReleaseProfileEntry> List() {
          PublishPaths.RejectLinks(Root);
          Directory.CreateDirectory(Root);
@@ -43,11 +50,13 @@ namespace Em.Ui.Wpf.Core.Release
             .OrderBy(entry => entry.Profile is null).ThenBy(entry => entry.Profile?.Name ?? entry.Directory, StringComparer.OrdinalIgnoreCase).ToArray();
       }
 
+      /// <summary>Loads a profile by id.</summary>
       public ReleaseProfile Load(string id) {
          var entry = Read(DirectoryOf(id));
          return entry.Profile ?? throw new InvalidDataException(entry.Error);
       }
 
+      /// <summary>Saves a profile, refusing to overwrite a change made elsewhere.</summary>
       public ReleaseProfileEntry Save(ReleaseProfile profile, DateTime? expectedLastWriteUtc = null) {
          profile.Validate();
          CheckName(profile);
@@ -65,6 +74,7 @@ namespace Em.Ui.Wpf.Core.Release
             throw new InvalidOperationException($"A profile named '{profile.Name}' already exists.");
       }
 
+      /// <summary>Creates a new profile with a name.</summary>
       public ReleaseProfile Create(string name) {
          var profile = new ReleaseProfile { Name = name };
          Save(profile);
@@ -80,6 +90,7 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
+      /// <summary>Duplicates a profile.</summary>
       public ReleaseProfile Duplicate(string id) {
          var profile = Load(id).Clone();
          var source = DirectoryOf(id);
@@ -105,12 +116,14 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
+      /// <summary>Renames a profile.</summary>
       public void Rename(string id, string newName) {
          var profile = Load(id);
          profile.Name = newName;
          Save(profile);
       }
 
+      /// <summary>Deletes a profile and its files.</summary>
       public void Delete(string id) {
          var path = DirectoryOf(id);
          if (!Directory.Exists(path)) return;
@@ -118,10 +131,14 @@ namespace Em.Ui.Wpf.Core.Release
          Directory.Delete(path, recursive: true);
       }
 
+      /// <summary>Gets the path of the key file of a profile.</summary>
       public string KeyFilePath(string id) => PublishPaths.Inside(DirectoryOf(id), KeyFileName);
+      /// <summary>Gets the path of the certificate file of a profile.</summary>
       public string CertificateFilePath(string id) => PublishPaths.Inside(DirectoryOf(id), CertificateFileName);
+      /// <summary>Whether a profile has a key file.</summary>
       public bool HasKeyFile(string id) => File.Exists(KeyFilePath(id));
 
+      /// <summary>Exports a profile to a zip file, optionally with its sensitive files.</summary>
       public void Export(string id, string zipPath, bool includeSensitive) {
          var profile = Load(id).Clone();
          if (!includeSensitive) profile.Signing.Password = null;
@@ -146,6 +163,7 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
+      /// <summary>Imports a profile from a zip file.</summary>
       public ReleaseProfile Import(string path, bool newId) {
          PublishPaths.RejectLinks(Root);
          Directory.CreateDirectory(Root);
@@ -194,6 +212,8 @@ namespace Em.Ui.Wpf.Core.Release
       }
    }
 
+   /// <summary>Thrown when profile.json was changed outside Release Manager.</summary>
    public sealed class ReleaseProfileChangedException() : IOException("profile.json was changed outside Release Manager.");
+   /// <summary>Thrown when a profile with the same id already exists.</summary>
    public sealed class ReleaseProfileConflictException() : IOException("A profile with the same id already exists.");
 }

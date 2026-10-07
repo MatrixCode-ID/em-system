@@ -6,7 +6,7 @@ using Clipboard = System.Windows.Clipboard;
 
 namespace Em.Ui.Wpf.Navigations
 {
-   // Bagian tab Containers: root, tree folder dan container, detail, dan perubahan atasnya.
+   // The Containers tab part: roots, the folder and container tree, the details, and the changes to them.
    public partial class ContainerManagerVm
    {
       private void RegisterContainerCommands() {
@@ -19,59 +19,60 @@ namespace Em.Ui.Wpf.Navigations
          RegisterDeployCommands();
       }
 
-      // Dipasang selagi tree disusun ulang atau root diganti, supaya perubahan IsSelected yang datang
-      // dari penyusunan itu sendiri tidak dianggap pilihan pengguna.
+      // Installed while the tree is rebuilt or the root is replaced, so IsSelected changes that come from the
+      // rebuilding itself are not taken as the user's choice.
       private bool _rebuilding;
       private int _manifestVersion;
 
       #region Data
 
-      /// <summary>Seluruh root, urut sesuai jawaban server.</summary>
+      /// <summary>All roots, in the order of the server's answer.</summary>
       public ObservableCollection<CtnRootItem> Roots { get; } = [];
 
-      /// <summary>Isi root yang dipilih: folder dan container di tingkat teratasnya.</summary>
+      /// <summary>Content of the selected root: the folders and containers at its top level.</summary>
       public ObservableCollection<CtnTreeNode> TreeNodes { get; } = [];
 
-      /// <summary>Manifest container yang dipilih, yang terbaru lebih dulu.</summary>
+      /// <summary>Manifests of the selected container, newest first.</summary>
       public ObservableCollection<CtnManifestItem> Manifests { get; } = [];
 
-      /// <summary>Root yang dipilih di daftar kiri.</summary>
+      /// <summary>The root selected in the left list.</summary>
       public CtnRootItem? SelectedRoot {
          get => Get<CtnRootItem?>();
          set => Set(value, _ => OnSelectedRootChanged());
       }
 
-      /// <summary>Folder atau container yang dipilih di tree; <c>null</c> kalau yang dipilih rootnya.</summary>
+      /// <summary>The folder or container selected in the tree; <c>null</c> when the root is what is selected.</summary>
       public CtnTreeNode? SelectedNode {
          get => Get<CtnTreeNode?>();
          private set => Set(value, _ => OnSelectedNodeChanged());
       }
 
-      /// <summary><c>true</c> sejak tree root yang dipilih terbaca.</summary>
+      /// <summary><c>true</c> since the tree of the selected root has been read.</summary>
       public bool IsTreeLoaded {
          get => Get<bool>();
          private set => Set(value, _ => NotifyDetailChanged());
       }
 
-      /// <summary><c>true</c> selama manifest container yang dipilih sedang dibaca.</summary>
+      /// <summary><c>true</c> while the manifests of the selected container are being read.</summary>
       public bool IsManifestsLoading {
          get => Get<bool>();
          private set => Set(value, _ => NotifyHealthChanged());
       }
 
-      /// <summary>Jumlah manifest container terpilih yang punya blob hilang dari storage server.</summary>
+      /// <summary>Number of manifests of the selected container that have a blob missing from the server storage.</summary>
       public int MissingBlobManifestCount => Manifests.Count(m => m.HasMissingBlobs);
 
       /// <summary>
-      /// <c>true</c> kalau container terpilih tidak lengkap di storage. Ini keadaan nyata image, terpisah dari
-      /// status Active/Disabled yang diatur admin, jadi ditampilkan sebagai chip dan banner tersendiri.
+      /// <c>true</c> when the selected container is incomplete in storage. This is the real state of the
+      /// image, separate from the Active/Disabled status set by an admin, so it is shown as its own chip and
+      /// banner.
       /// </summary>
       public bool HasMissingBlobs => MissingBlobManifestCount > 0;
 
-      /// <summary>Chip "Active" hanya tampil bila container aktif dan terbukti lengkap.</summary>
+      /// <summary>The "Active" chip only appears when the container is active and proven complete.</summary>
       public bool ShowActiveChip => SelectedNode is { IsActive: true } && !IsManifestsLoading && !HasMissingBlobs;
 
-      /// <summary>Teks banner untuk container yang blob-nya hilang; kosong kalau lengkap.</summary>
+      /// <summary>Banner text for a container whose blobs are missing; empty when complete.</summary>
       public string MissingBlobBanner => MissingBlobManifestCount switch {
          0 => "",
          var missing => $"{missing} of {Manifests.Count} manifest(s) reference blobs that are not in this server's storage. " +
@@ -86,13 +87,13 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(MissingBlobBanner));
       }
 
-      /// <summary>Server belum punya satu root pun.</summary>
+      /// <summary>The server has no root at all.</summary>
       public bool HasNoRoots => IsLoaded && IsRegistryAvailable && Roots.Count == 0;
 
-      /// <summary>Root yang dipilih tidak punya folder maupun container.</summary>
+      /// <summary>The selected root has no folder or container.</summary>
       public bool IsRootEmpty => SelectedRoot is not null && IsTreeLoaded && TreeNodes.Count == 0;
 
-      /// <summary>Detail root: ada root terpilih dan tidak ada simpul tree yang dipilih.</summary>
+      /// <summary>Root details: a root is selected and no tree node is selected.</summary>
       public bool ShowRootDetail => SelectedRoot is not null && SelectedNode is null;
 
       /// <summary>Detail folder.</summary>
@@ -102,15 +103,15 @@ namespace Em.Ui.Wpf.Navigations
       public bool ShowImageDetail => SelectedNode is { IsFolder: false };
 
       /// <summary>
-      /// Nama pull yang disalin dari detail: <c>host/root/nama</c> untuk container, <c>host/root</c> untuk
-      /// root. Kosong untuk folder, yang tidak muncul di nama pull.
+      /// The pull name copied from the details: <c>host/root/name</c> for a container, <c>host/root</c> for a
+      /// root. Empty for a folder, which does not appear in the pull name.
       /// </summary>
       public string DetailPullName =>
          SelectedNode is { Image: { } image } ? CtnInput.PullName(RegistryHost, image.FullName)
          : SelectedNode is null && SelectedRoot is { } root ? CtnInput.PullName(RegistryHost, root.Name)
          : "";
 
-      /// <summary>Isi folder yang dipilih, dihitung sampai ke dalam, mis. <c>"2 folders · 5 containers"</c>.</summary>
+      /// <summary>Content of the selected folder, counted all the way down, e.g. <c>"2 folders · 5 containers"</c>.</summary>
       public string FolderSummary {
          get {
             if (SelectedNode is not { IsFolder: true } node) return "";
@@ -123,8 +124,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Waktu push terakhir container yang dipilih, diambil dari manifest terbarunya - server tidak
-      /// mengirimkannya di data container. Tanda pisah kalau belum pernah di-push.
+      /// The last push time of the selected container, taken from its newest manifest - the server does not
+      /// send it in the container data. A dash when it has never been pushed.
       /// </summary>
       public string LastPushedCaption => Manifests.Count > 0 ? Manifests[0].PushedCaption : "—";
 
@@ -132,22 +133,22 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Commands
 
-      /// <summary>Menyalin nama pull (<c>host/root/nama</c>) container atau root yang dipilih.</summary>
+      /// <summary>Copies the pull name (<c>host/root/name</c>) of the selected container or root.</summary>
       public void CopyPullNameCommand() => CopyToClipboard(DetailPullName);
 
-      /// <summary>Hanya kalau ada nama pull untuk disalin.</summary>
+      /// <summary>Only when there is a pull name to copy.</summary>
       public bool CopyPullNameCommandAllowed() => DetailPullName.Length > 0;
 
-      /// <summary>Menyalin <c>docker pull</c> untuk tag <paramref name="tag"/> container yang dipilih.</summary>
+      /// <summary>Copies the <c>docker pull</c> for tag <paramref name="tag"/> of the selected container.</summary>
       public void CopyTagPullCommand(string? tag) {
          if (SelectedNode?.Image is { } image && !string.IsNullOrEmpty(tag))
             CopyToClipboard(CtnInput.DockerPullTag(RegistryHost, image.FullName, tag));
       }
 
-      /// <summary>Hanya untuk container yang dipilih dan sebuah tag.</summary>
+      /// <summary>Only for a selected container and a tag.</summary>
       public bool CopyTagPullCommandAllowed(string? tag) => SelectedNode?.Image is not null && !string.IsNullOrEmpty(tag);
 
-      /// <summary>Menyalin <c>docker tag</c> dan <c>docker push</c> untuk tag <paramref name="tag"/> container yang dipilih.</summary>
+      /// <summary>Copies <c>docker tag</c> and <c>docker push</c> for tag <paramref name="tag"/> of the selected container.</summary>
       public void CopyTagPushCommand(string? tag) {
          if (SelectedNode?.Image is { } image && !string.IsNullOrEmpty(tag))
             CopyToClipboard(CtnInput.DockerTagPush(RegistryHost, image.FullName, tag));
@@ -158,10 +159,10 @@ namespace Em.Ui.Wpf.Navigations
          if (manifest is not null) CopyToClipboard(manifest.Digest);
       }
 
-      /// <summary>Hanya untuk sebuah manifest.</summary>
+      /// <summary>Only for a manifest.</summary>
       public bool CopyDigestCommandAllowed(CtnManifestItem? manifest) => manifest is not null && SelectedNode?.Image is not null;
 
-      /// <summary>Menyalin <c>docker pull</c> dengan digest manifest <paramref name="manifest"/>.</summary>
+      /// <summary>Copies <c>docker pull</c> with the digest of manifest <paramref name="manifest"/>.</summary>
       public void CopyDigestPullCommand(CtnManifestItem? manifest) {
          if (manifest is not null && SelectedNode?.Image is { } image)
             CopyToClipboard(CtnInput.DockerPullDigest(RegistryHost, image.FullName, manifest.Digest));
@@ -171,9 +172,9 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Reading
 
-      // false = registry tidak dinyalakan di server (404): layar sudah dialihkan ke keadaan nonaktif.
-      // selectRootId memilih root tertentu (mis. yang baru dibuat); selectNodeId memilih simpul tertentu
-      // di tree-nya. Tanpa keduanya, pilihan yang sedang ada dipertahankan.
+      // false = the registry is not turned on on the server (404): the screen has already been redirected to
+      // the disabled state. selectRootId selects a specific root (e.g. one just created); selectNodeId selects
+      // a specific node in its tree. Without either, the current selection is kept.
       private async Task<bool> ReadRootsAsync(string? selectRootId = null, string? selectNodeId = null) {
          var status = await Service.GetMeta_CtnStatus();
          if (!status.ActiveEnabled) { ShowDisabled(); return false; }
@@ -197,9 +198,9 @@ namespace Em.Ui.Wpf.Navigations
          return true;
       }
 
-      // Membaca tree root yang dipilih dan menyusunnya. Folder yang terbuka dan simpul yang dipilih
-      // diingat berdasarkan id, jadi membaca ulang sesudah sebuah perubahan tidak melempar pengguna
-      // ke atas tree. selectId memilih simpul tertentu, mis. yang baru dibuat atau dipindah.
+      // Reads the tree of the selected root and arranges it. Open folders and the selected node are
+      // remembered by id, so reading again after a change does not throw the user to the top of the tree.
+      // selectId selects a specific node, e.g. one just created or moved.
       private async Task ReadTreeAsync(string? selectId = null, bool retryRoots = true) {
          var root = SelectedRoot;
          if (root is null) {
@@ -212,12 +213,12 @@ namespace Em.Ui.Wpf.Navigations
             tree = await Service.GetMeta_CtnTree(root.Id);
          }
          catch (ActionException x) when (x.StatusCode == 404 && retryRoots) {
-            // Root dihapus orang lain: daftar root dibaca ulang dan memilih yang lain.
+            // The root was deleted by someone else: the root list is read again and another one is chosen.
             await ReadRootsAsync();
             return;
          }
 
-         // Pilihan berganti selagi jawabannya di jalan; yang datang menggambarkan root yang ditinggalkan.
+         // The selection changed while the answer was on its way; what arrives describes the root that was left.
          if (root != SelectedRoot) return;
 
          var expanded = ExpandedIds();
@@ -255,16 +256,16 @@ namespace Em.Ui.Wpf.Navigations
          [.. TreeNodes.SelectMany(r => r.Descendants().Prepend(r)).Where(r => r.IsFolder && r.IsExpanded).Select(r => r.Id)];
 
       /// <summary>
-      /// Menyusun tree datar dari server menjadi simpul bersarang: folder lebih dulu, lalu container,
-      /// masing-masing urut nama. Folder yang induknya tidak ada di daftar - tidak terjadi kalau server
-      /// konsisten - ditaruh di tingkat teratas daripada hilang dari layar.
+      /// Arranges the flat tree from the server into nested nodes: folders first, then containers, each sorted
+      /// by name. A folder whose parent is not in the list - which does not happen when the server is
+      /// consistent - is placed at the top level instead of disappearing from the screen.
       /// </summary>
       internal List<CtnTreeNode> BuildTree(CtnTree tree) {
          var folders = tree.Folders.ToDictionary(r => r.Id);
          var nodes = new Dictionary<string, CtnTreeNode>();
 
-         // Induk dibuat lebih dulu daripada anaknya; rantai induk dibatasi supaya data yang berputar
-         // tidak membuat perulangan tak berujung.
+         // A parent is created before its child; the chain of parents is limited so circular data does not cause
+         // an endless loop.
          CtnTreeNode NodeOf(CtnFolderInfo folder, int guard) {
             if (nodes.TryGetValue(folder.Id, out var existing)) return existing;
 
@@ -294,8 +295,8 @@ namespace Em.Ui.Wpf.Navigations
             else parent.Children.Add(node);
          }
 
-         // Folder di atas container di tingkat teratas; urutan nama di dalam masing-masing kelompok
-         // sudah terjaga oleh urutan penambahan di atas.
+         // Folders above containers at the top level; the name order within each group is already kept by the
+         // order of addition above.
          return [.. top.Where(r => r.IsFolder), .. top.Where(r => !r.IsFolder)];
       }
 
@@ -367,8 +368,8 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      // Dibaca di luar RunBusyAsync supaya berpindah dari container ke container tetap lancar: tiap
-      // pembacaan membawa nomor, dan jawaban yang datang sesudah pilihan berganti dibuang.
+      // Read outside RunBusyAsync so moving from container to container stays smooth: every read carries a
+      // number, and an answer that arrives after the selection changed is discarded.
       private async Task LoadManifestsAsync(CtnTreeNode node) {
          var version = ++_manifestVersion;
          IsManifestsLoading = true;
@@ -383,7 +384,7 @@ namespace Em.Ui.Wpf.Navigations
             NotifyHealthChanged();
          }
          catch (ActionException x) when (x.StatusCode == 404) {
-            // Container dihapus orang lain: tree dibaca ulang supaya hilang dari layar.
+            // The container was deleted by someone else: the tree is read again so it disappears from the screen.
             if (version != _manifestVersion) return;
 
             _ = RunBusyAsync("Loading...", () => ReadRootsAsync());

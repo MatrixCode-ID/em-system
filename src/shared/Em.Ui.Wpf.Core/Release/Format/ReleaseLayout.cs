@@ -1,21 +1,21 @@
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Nama-nama tetap di dalam sebuah folder rilis client desktop. Sumber kebenarannya adalah
-   /// <c>doc/release-format.md</c> bagian 1; kalau kode ini dan dokumen itu berbeda, dokumennya yang benar.
+   /// The fixed names inside a desktop client release folder. The source of truth is
+   /// <c>doc/release-format.md</c> section 1; if this code and that document differ, the document is right.
    /// </summary>
    public static class ReleaseLayout
    {
-      /// <summary>Subfolder berisi file client, persis seperti di folder instalasi.</summary>
+      /// <summary>The subfolder holding the client files, exactly as in the installation folder.</summary>
       public const string BinariesFolder = "binaries";
 
-      /// <summary>Nama file manifest: daftar file di <see cref="BinariesFolder"/> beserta ukuran dan hash-nya.</summary>
+      /// <summary>The name of the manifest file: the list of files in <see cref="BinariesFolder"/> with their sizes and hashes.</summary>
       public const string ManifestFileName = "release.json";
 
-      /// <summary>Nama file tanda tangan atas byte manifest.</summary>
+      /// <summary>The name of the signature file over the manifest bytes.</summary>
       public const string SignatureFileName = "release.json.sig";
 
-      /// <summary>Nama folder rilis bawaan, dipakai selama user tidak menggantinya.</summary>
+      /// <summary>The default release folder name, used as long as the user does not change it.</summary>
       public const string DefaultReleaseFolder = "wpf-release";
    }
 }

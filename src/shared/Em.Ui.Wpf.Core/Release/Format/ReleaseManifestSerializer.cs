@@ -6,10 +6,10 @@ using System.Text.Json;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Menulis dan membaca <c>release.json</c> serta <c>release.json.sig</c> sesuai
-   /// <c>doc/release-format.md</c>. Penulisan selalu menghasilkan bentuk yang sama untuk isi yang sama
-   /// (file diurutkan, UTF-8 tanpa BOM, akhir baris <c>\n</c>); pembacaan memeriksa setiap aturan format
-   /// dan menolak manifest yang melanggar satu saja.
+   /// Writes and reads <c>release.json</c> and <c>release.json.sig</c> according to
+   /// <c>doc/release-format.md</c>. Writing always produces the same form for the same content (files
+   /// sorted, UTF-8 without BOM, line ending <c>\n</c>); reading checks every rule of the format and
+   /// refuses a manifest that breaks even one.
    /// </summary>
    public static class ReleaseManifestSerializer
    {
@@ -23,11 +23,11 @@ namespace Em.Ui.Wpf.Core.Release
       };
 
       /// <summary>
-      /// Menulis manifest menjadi byte <c>release.json</c>. File diurutkan menurut path secara ordinal,
-      /// dan waktu terbit ditulis dengan presisi detik. Path dan hash diperiksa dulu, jadi manifest yang
-      /// tidak sah tidak pernah tertulis.
+      /// Writes the manifest as the <c>release.json</c> bytes. Files are sorted by path ordinally, and the
+      /// issue time is written with second precision. Paths and hashes are checked first, so an invalid
+      /// manifest is never written.
       /// </summary>
-      /// <exception cref="ReleaseFormatException">Ada path atau hash yang melanggar aturan format.</exception>
+      /// <exception cref="ReleaseFormatException">A path or hash breaks the format rules.</exception>
       public static byte[] Serialize(ReleaseManifest manifest) {
          var files = manifest.Files.OrderBy(r => r.Path, StringComparer.Ordinal).ToArray();
          ValidateFiles(files);
@@ -55,14 +55,14 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Membaca byte <c>release.json</c>. Field yang tidak dikenal diabaikan; setiap aturan path,
-      /// ukuran, dan hash diperiksa.
+      /// Reads the <c>release.json</c> bytes. Unknown fields are ignored; every rule for paths, sizes, and
+      /// hashes is checked.
       /// </summary>
       /// <remarks>
-      /// Pembaca yang menerima manifest dari luar harus memverifikasi tanda tangannya lebih dulu
-      /// (<see cref="ReleaseSignature.Verify"/>), baru memanggil method ini.
+      /// A reader that receives a manifest from outside must verify its signature first
+      /// (<see cref="ReleaseSignature.Verify"/>), and only then call this method.
       /// </remarks>
-      /// <exception cref="ReleaseFormatException">Manifest tidak sah.</exception>
+      /// <exception cref="ReleaseFormatException">The manifest is not valid.</exception>
       public static ReleaseManifest Deserialize(ReadOnlySpan<byte> bytes) {
          try {
             using var document = JsonDocument.Parse(bytes.ToArray());
@@ -98,7 +98,7 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
-      /// <summary>Menulis isi <c>release.json.sig</c> (UTF-8 tanpa BOM, akhir baris <c>\n</c>).</summary>
+      /// <summary>Writes the content of <c>release.json.sig</c> (UTF-8 without BOM, line ending <c>\n</c>).</summary>
       public static byte[] SerializeSignature(ReleaseSignatureFile signature) {
          using var buffer = new MemoryStream();
          using (var writer = new Utf8JsonWriter(buffer, WriterOptions)) {
@@ -112,8 +112,8 @@ namespace Em.Ui.Wpf.Core.Release
          return buffer.ToArray();
       }
 
-      /// <summary>Membaca isi <c>release.json.sig</c>. Field yang tidak dikenal diabaikan.</summary>
-      /// <exception cref="ReleaseFormatException">JSON-nya rusak atau field wajibnya tidak ada.</exception>
+      /// <summary>Reads the content of <c>release.json.sig</c>. Unknown fields are ignored.</summary>
+      /// <exception cref="ReleaseFormatException">The JSON is corrupt or a required field is missing.</exception>
       public static ReleaseSignatureFile DeserializeSignature(ReadOnlySpan<byte> bytes) {
          try {
             using var document = JsonDocument.Parse(bytes.ToArray());
@@ -129,8 +129,8 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Alasan <paramref name="path"/> tidak sah sebagai path file rilis (<c>doc/release-format.md</c>
-      /// bagian 2.3), atau <c>null</c> kalau sah. Keunikan tidak ikut diperiksa di sini.
+      /// The reason <paramref name="path"/> is not valid as a release file path (<c>doc/release-format.md</c>
+      /// section 2.3), or <c>null</c> when it is valid. Uniqueness is not checked here.
       /// </summary>
       public static string? CheckPath(string path) {
          if (path.Length == 0) return "the path is empty";
@@ -146,7 +146,7 @@ namespace Em.Ui.Wpf.Core.Release
          return null;
       }
 
-      /// <summary><c>true</c> kalau <paramref name="hash"/> berupa 64 karakter hex huruf kecil.</summary>
+      /// <summary><c>true</c> when <paramref name="hash"/> is 64 lowercase hex characters.</summary>
       public static bool IsValidSha256(string hash) =>
          hash.Length == 64 && hash.All(r => r is >= '0' and <= '9' or >= 'a' and <= 'f');
 

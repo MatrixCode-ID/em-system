@@ -4,24 +4,24 @@ using System.Text.Json;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Kelompok tampilan sebuah file rilis di Release Manager.</summary>
+   /// <summary>The display group of a release file in the Release Manager.</summary>
    public enum ReleaseGroup
    {
-      /// <summary>Assembly project sendiri beserta file pendampingnya (<c>.pdb</c>, <c>.exe</c>, <c>.deps.json</c>, ...).</summary>
+      /// <summary>The project's own assemblies together with their companion files (<c>.pdb</c>, <c>.exe</c>, <c>.deps.json</c>, ...).</summary>
       MainModules = 0,
 
-      /// <summary>Package NuGet dan file lain yang tidak dikenal.</summary>
+      /// <summary>NuGet packages and other files that are not recognized.</summary>
       ExtraLibraries = 1,
 
-      /// <summary>Runtime .NET yang ikut dibawa aplikasi self-contained.</summary>
+      /// <summary>The .NET runtime carried along by a self-contained application.</summary>
       DotNetRuntime = 2
    }
 
    /// <summary>
-   /// Menentukan kelompok setiap file hasil publish dari <c>&lt;host&gt;.deps.json</c>: aset milik library
-   /// bertipe <c>project</c> masuk <see cref="ReleaseGroup.MainModules"/>, milik runtime pack masuk
-   /// <see cref="ReleaseGroup.DotNetRuntime"/>, dan sisanya <see cref="ReleaseGroup.ExtraLibraries"/>.
-   /// Tanpa <c>deps.json</c>, semuanya masuk <see cref="ReleaseGroup.ExtraLibraries"/>.
+   /// Decides the group of every published file from <c>&lt;host&gt;.deps.json</c>: assets of libraries of
+   /// type <c>project</c> go into <see cref="ReleaseGroup.MainModules"/>, those of a runtime pack go into
+   /// <see cref="ReleaseGroup.DotNetRuntime"/>, and the rest into <see cref="ReleaseGroup.ExtraLibraries"/>.
+   /// Without a <c>deps.json</c>, everything goes into <see cref="ReleaseGroup.ExtraLibraries"/>.
    /// </summary>
    public sealed class ReleaseGrouping
    {
@@ -35,16 +35,16 @@ namespace Em.Ui.Wpf.Core.Release
 
       private ReleaseGrouping() { }
 
-      /// <summary>Kelompok kosong: semua file masuk <see cref="ReleaseGroup.ExtraLibraries"/>.</summary>
+      /// <summary>An empty grouping: all files go into <see cref="ReleaseGroup.ExtraLibraries"/>.</summary>
       public static ReleaseGrouping Empty { get; } = new();
 
-      /// <summary>Nama file <c>deps.json</c> yang dipakai, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>The name of the <c>deps.json</c> file that is used, or <c>null</c> when there is none.</summary>
       public string? DepsFile { get; private init; }
 
       /// <summary>
-      /// Membaca <c>deps.json</c> milik aplikasi di <paramref name="publishFolder"/>: yang punya
-      /// <c>.runtimeconfig.json</c> bernama sama, atau satu-satunya <c>deps.json</c> di sana.
-      /// <see cref="Empty"/> kalau tidak ada atau tidak bisa dibaca.
+      /// Reads the application's <c>deps.json</c> in <paramref name="publishFolder"/>: the one that has a
+      /// <c>.runtimeconfig.json</c> of the same name, or the only <c>deps.json</c> there.
+      /// <see cref="Empty"/> when there is none or it cannot be read.
       /// </summary>
       public static ReleaseGrouping Load(string publishFolder) {
          var candidates = Directory.Exists(publishFolder)
@@ -63,7 +63,7 @@ namespace Em.Ui.Wpf.Core.Release
          }
       }
 
-      /// <summary>Kelompok file <paramref name="path"/> (relatif terhadap folder publish, dipisah <c>/</c>).</summary>
+      /// <summary>The group of file <paramref name="path"/> (relative to the publish folder, separated by <c>/</c>).</summary>
       public ReleaseGroup GroupOf(string path) {
          if (_claimed.TryGetValue(path, out var group)) return group;
 
@@ -141,8 +141,8 @@ namespace Em.Ui.Wpf.Core.Release
    }
 
    /// <summary>
-   /// Potret local publish folder pada satu saat: setiap file dengan ukuran dan SHA-256-nya, siap
-   /// dibandingkan dengan tujuan dan dijadikan <c>release.json</c>.
+   /// A snapshot of the local publish folder at one moment: every file with its size and SHA-256, ready to
+   /// be compared with the target and made into <c>release.json</c>.
    /// </summary>
    public sealed class LocalSnapshot
    {
@@ -160,22 +160,22 @@ namespace Em.Ui.Wpf.Core.Release
       /// <summary>Path lengkap local publish folder.</summary>
       public string Folder { get; }
 
-      /// <summary>Setiap file, path-nya relatif terhadap <see cref="Folder"/> dan dipisah <c>/</c>.</summary>
+      /// <summary>Every file, its path relative to <see cref="Folder"/> and separated by <c>/</c>.</summary>
       public IReadOnlyList<ReleaseFile> Files { get; }
 
-      /// <summary>Pengelompokan file menurut <c>deps.json</c> di folder ini.</summary>
+      /// <summary>The grouping of files according to the <c>deps.json</c> in this folder.</summary>
       public ReleaseGrouping Grouping { get; }
 
-      /// <summary>Total ukuran seluruh file dalam byte.</summary>
+      /// <summary>The total size of all files in bytes.</summary>
       public long TotalSize { get; }
 
-      /// <summary>Path lengkap di disk untuk file <paramref name="path"/>.</summary>
+      /// <summary>The full path on disk of file <paramref name="path"/>.</summary>
       public string FullPathOf(string path) => Path.Combine(Folder, path.Replace('/', Path.DirectorySeparatorChar));
 
       /// <summary>
-      /// Path pertama yang berubah sejak potret ini dibuat - ukuran atau waktu tulisnya lain, hilang, atau
-      /// file baru muncul - atau <c>null</c> kalau folder masih sama. Dipakai tepat sebelum Sync, supaya
-      /// yang diterbitkan tetap sama dengan yang dibandingkan.
+      /// The first path that has changed since this snapshot was made - its size or write time differs, it is
+      /// missing, or a new file appeared - or <c>null</c> when the folder is still the same. Used right before
+      /// Sync, so what is published stays the same as what was compared.
       /// </summary>
       public string? FindChange() {
          var current = LocalPublish.EnumerateFiles(Folder);
@@ -189,12 +189,12 @@ namespace Em.Ui.Wpf.Core.Release
    }
 
    /// <summary>
-   /// Membaca local publish folder: memeriksa apakah ada isinya, lalu menghitung ukuran dan SHA-256 setiap
-   /// file di latar belakang dengan kemajuan yang bisa dibatalkan.
+   /// Reads the local publish folder: checks whether it has content, then computes the size and SHA-256 of
+   /// every file in the background with cancellable progress.
    /// </summary>
    public static class LocalPublish
    {
-      /// <summary><c>true</c> kalau <paramref name="folder"/> ada dan berisi setidaknya satu file.</summary>
+      /// <summary><c>true</c> when <paramref name="folder"/> exists and contains at least one file.</summary>
       public static bool HasContent(string? folder) {
          try {
             return !string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder) &&
@@ -206,10 +206,11 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Membuat potret <paramref name="folder"/>: seluruh isinya apa adanya, tanpa filter. Path yang tidak
-      /// sah menurut format rilis (mis. berawalan titik) membuat seluruh potret ditolak.
+      /// Makes a snapshot of <paramref name="folder"/>: its whole content as-is, without filtering. A path
+      /// that is not valid according to the release format (e.g. one starting with a dot) makes the whole
+      /// snapshot be refused.
       /// </summary>
-      /// <exception cref="ReleaseFormatException">Ada file yang path-nya tidak bisa diterbitkan.</exception>
+      /// <exception cref="ReleaseFormatException">A file has a path that cannot be published.</exception>
       public static Task<LocalSnapshot> ScanAsync(string folder, IProgress<ReleaseProgress>? progress,
          CancellationToken token) =>
          Task.Run(async () => {

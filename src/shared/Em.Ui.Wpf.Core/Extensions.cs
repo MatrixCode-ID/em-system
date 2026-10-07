@@ -10,11 +10,12 @@ using Em.Ui.Wpf.Shared;
 using System.Windows;
 
 /// <summary>
-/// Kumpulan extension method untuk kebutuhan UI WPF: serialisasi pesan exception dan
-/// helper message box bergaya material (<see cref="EmMessageBox"/>).
+/// A collection of extension methods for WPF UI needs: serializing exception messages and Material-style
+/// message box helpers (<see cref="EmMessageBox"/>).
 /// </summary>
 public static class Extensions
 {
+   /// <summary>Adds the debug configuration (debug connections and the debug key) to the application builder.</summary>
    public static EmAppBuilder AddDebug(this EmAppBuilder appBuilder, Action<DebugBuilder> builder) {
       var obj = new DebugBuilder();
       builder(obj);
@@ -23,14 +24,14 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Jalan masuk module ke claim milik service-nya sendiri: <c>Services.Claims()["CreateNewItem"]</c>.
-   /// Tinggal di sini, bukan di <c>Em.Ui.Core</c>, karena inilah satu-satunya potongan yang perlu
-   /// tahu <see cref="EmApp"/> - <c>ClaimCollection</c> sendiri tidak menyentuh WPF sama sekali.
-   /// Objeknya dibentuk ulang setiap pemanggilan; jangan disimpan di field.
+   /// A module's way into the claims of its own service: <c>Services.Claims()["CreateNewItem"]</c>. It
+   /// lives here, not in <c>Em.Ui.Core</c>, because this is the only piece that needs to know
+   /// <see cref="EmApp"/> - <c>ClaimCollection</c> itself does not touch WPF at all. The object is formed
+   /// again on every call; do not keep it in a field.
    /// </summary>
    /// <exception cref="InvalidOperationException">
-   /// Dilempar kalau <paramref name="services"/> bukan turunan <see cref="ServiceWpfBase"/> - pemasangan
-   /// yang salah, bukan "tidak punya hak", jadi tidak dijawab sebagai collection kosong.
+   /// Thrown when <paramref name="services"/> does not derive from <see cref="ServiceWpfBase"/> - a wrong
+   /// setup, not "has no right", so it is not answered with an empty collection.
    /// </exception>
    public static ClaimCollection Claims(this IServices services) =>
       services is ServiceWpfBase svc
@@ -38,12 +39,12 @@ public static class Extensions
          : throw new InvalidOperationException(
             $"Service '{services.GetType().FullName}' is not a WPF client service, so its claims cannot be resolved.");
    /// <summary>
-   /// Menyusun ringkasan pesan dari sebuah exception beserta seluruh inner exception-nya
-   /// (termasuk <see cref="AggregateException"/> yang di-flatten), berupa teks bertingkat
-   /// (indentasi per level) untuk ditampilkan ke user/log secara ringkas.
+   /// Composes a summary of the messages of an exception together with all its inner exceptions
+   /// (including a flattened <see cref="AggregateException"/>), as tiered text (indented per level) to be
+   /// shown to the user/log concisely.
    /// </summary>
-   /// <param name="x">Exception yang akan diserialisasi.</param>
-   /// <returns>Teks ringkasan pesan exception secara bertingkat.</returns>
+   /// <param name="x">The exception to serialize.</param>
+   /// <returns>The tiered summary text of the exception messages.</returns>
    public static string SerializedMessagesDefault(this Exception x) {
       var sb = new System.Text.StringBuilder();
       var exceptions = new Stack<(Exception Exception, int Level)>();
@@ -89,11 +90,11 @@ public static class Extensions
    #region MessageBox Helper
 
    /// <summary>
-   /// Menampilkan dialog detail exception (<see cref="Em.Ui.Wpf.Dialogs.DisplayExceptionData"/>),
-   /// dengan owner window otomatis diambil dari window aktif atau <c>MainWindow</c> aplikasi.
+   /// Shows the exception detail dialog (<see cref="Em.Ui.Wpf.Dialogs.DisplayExceptionData"/>), with the
+   /// owner window taken automatically from the active window or the application's <c>MainWindow</c>.
    /// </summary>
-   /// <param name="e">Exception yang detailnya akan ditampilkan.</param>
-   /// <returns>Hasil <c>ShowDialog</c> dari dialog yang ditampilkan.</returns>
+   /// <param name="e">The exception whose details are shown.</param>
+   /// <returns>The <c>ShowDialog</c> result of the dialog that was shown.</returns>
    public static bool? ViewExceptionDetail(this Exception e) {
       var dialog = new DisplayExceptionData(e);
       var owner = System.Windows.Application.Current?.Windows.OfType<Window>().FirstOrDefault(x => x.IsActive)
@@ -107,11 +108,11 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box konfirmasi Yes/No bergaya "warning" dengan judul default <c>"Decide"</c>.
+   /// Shows a Yes/No confirmation message box in a "warning" style with the default title <c>"Decide"</c>.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxDecideWarning(this Window owner, string caption) {
       var title = "Decide";
       var result = ShowMboxDecideWarning(owner, caption, title);
@@ -119,24 +120,24 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box konfirmasi Yes/No bergaya "warning" dengan judul kustom.
-   /// Tombol default (jika user tekan Esc/close) adalah <see cref="MessageBoxResult.No"/>.
+   /// Shows a Yes/No confirmation message box in a "warning" style with a custom title. The default button
+   /// (if the user presses Esc/close) is <see cref="MessageBoxResult.No"/>.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <param name="title">Judul dialog.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <param name="title">The title of the dialog.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxDecideWarning(this Window owner, string caption, string title) {
       return EmMessageBox.Show(owner, title, caption, MessageBoxButton.YesNo, MessageBoxImage.Warning,
          MessageBoxResult.No);
    }
 
    /// <summary>
-   /// Menampilkan message box konfirmasi Yes/No bergaya "question" dengan judul default <c>"Decide"</c>.
+   /// Shows a Yes/No confirmation message box in a "question" style with the default title <c>"Decide"</c>.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxDecide(this Window owner, string caption) {
       var title = "Decide";
       var result = ShowMboxDecide(owner, caption, title);
@@ -144,28 +145,28 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box konfirmasi Yes/No bergaya "question" dengan judul kustom.
+   /// Shows a Yes/No confirmation message box in a "question" style with a custom title.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <param name="title">Judul dialog.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <param name="title">The title of the dialog.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxDecide(this Window owner, string caption, string title) {
       return EmMessageBox.Show(owner, title, caption, MessageBoxButton.YesNo, MessageBoxImage.Question,
          MessageBoxResult.Yes);
    }
 
    /// <summary>
-   /// Menampilkan message box tiga pilihan Yes/No/Cancel bergaya "question", untuk pertanyaan yang
-   /// jawaban ketiganya adalah "jangan jadi" - mis. meninggalkan layar yang masih menyimpan
-   /// perubahan: simpan dulu, buang saja, atau batal pergi.
+   /// Shows a three-choice Yes/No/Cancel message box in a "question" style, for questions whose third
+   /// answer is "never mind" - e.g. leaving a screen that still holds changes: save first, just discard,
+   /// or cancel leaving.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <param name="title">Judul dialog.</param>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <param name="title">The title of the dialog.</param>
    /// <returns>
-   /// <see cref="MessageBoxResult.Yes"/>, <see cref="MessageBoxResult.No"/>, atau
-   /// <see cref="MessageBoxResult.Cancel"/> - yang terakhir juga jawaban saat dialog ditutup begitu saja.
+   /// <see cref="MessageBoxResult.Yes"/>, <see cref="MessageBoxResult.No"/>, or
+   /// <see cref="MessageBoxResult.Cancel"/> - the last is also the answer when the dialog is simply closed.
    /// </returns>
    public static MessageBoxResult ShowMboxDecideCancel(this Window owner, string caption, string title) {
       // Cancel is the default, so the key that dismisses a dialog by reflex is the one that changes
@@ -175,11 +176,11 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box informasi (tombol OK) dengan judul default <c>"Info"</c>.
+   /// Shows an information message box (OK button) with the default title <c>"Info"</c>.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxInfo(this Window owner, string caption) {
       var title = "Info";
       var result = ShowMboxInfo(owner, caption, title);
@@ -187,23 +188,23 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box informasi (tombol OK) dengan judul kustom.
+   /// Shows an information message box (OK button) with a custom title.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <param name="title">Judul dialog.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <param name="title">The title of the dialog.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxInfo(this Window owner, string caption, string title) {
       return EmMessageBox.Show(owner, title, caption, MessageBoxButton.OK, MessageBoxImage.Information,
          MessageBoxResult.OK);
    }
 
    /// <summary>
-   /// Menampilkan message box peringatan (tombol OK) dengan judul default <c>"Warning"</c>.
+   /// Shows a warning message box (OK button) with the default title <c>"Warning"</c>.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxWarning(this Window owner, string caption) {
       var title = "Warning";
       var result = ShowMboxWarning(owner, caption, title);
@@ -211,24 +212,24 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box peringatan (tombol OK) dengan judul kustom.
+   /// Shows a warning message box (OK button) with a custom title.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <param name="title">Judul dialog.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <param name="title">The title of the dialog.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxWarning(this Window owner, string caption, string title) {
       return EmMessageBox.Show(owner, title, caption, MessageBoxButton.OK, MessageBoxImage.Warning,
          MessageBoxResult.OK);
    }
 
    /// <summary>
-   /// Menampilkan message box error (tombol OK), dengan isi pesan diambil dari ringkasan
-   /// <see cref="SerializedMessagesDefault"/> milik exception yang diberikan.
+   /// Shows an error message box (OK button), with its message taken from the
+   /// <see cref="SerializedMessagesDefault"/> summary of the given exception.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="x">Exception yang pesannya akan ditampilkan.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="x">The exception whose message is shown.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxError(this Window owner, Exception x) {
       var title = "Error";
       var result = ShowMboxError(owner, x.SerializedMessagesDefault(), title);
@@ -236,11 +237,11 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box error (tombol OK) dengan judul default <c>"Error"</c>.
+   /// Shows an error message box (OK button) with the default title <c>"Error"</c>.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxError(this Window owner, string caption) {
       var title = "Error";
       var result = ShowMboxError(owner, caption, title);
@@ -248,12 +249,12 @@ public static class Extensions
    }
 
    /// <summary>
-   /// Menampilkan message box error (tombol OK) dengan judul kustom.
+   /// Shows an error message box (OK button) with a custom title.
    /// </summary>
-   /// <param name="owner">Window pemilik dialog.</param>
-   /// <param name="caption">Isi pesan yang ditampilkan.</param>
-   /// <param name="title">Judul dialog.</param>
-   /// <returns>Tombol yang dipilih user.</returns>
+   /// <param name="owner">The window that owns the dialog.</param>
+   /// <param name="caption">The message content shown.</param>
+   /// <param name="title">The title of the dialog.</param>
+   /// <returns>The button chosen by the user.</returns>
    public static MessageBoxResult ShowMboxError(this Window owner, string caption, string title) {
       return EmMessageBox.Show(owner, title, caption, MessageBoxButton.OK, MessageBoxImage.Error,
          MessageBoxResult.OK);

@@ -17,22 +17,26 @@ namespace Em.Ui.Wpf.Navigations
    {
       private readonly EmApp _app;
 
+      /// <summary>Creates a new instance of <see cref="RoleManager"/>.</summary>
       public RoleManager(EmApp app) {
          _app = app;
          InitializeComponent();
          Vm.EmApp = _app;
       }
 
+      /// <summary>The vm.</summary>
       public RoleManagerVm Vm => (RoleManagerVm)DataContext;
 
       // Nothing is read here: the host raises this on every way into the screen, back and forward
       // included, and those two return to a rail that is already filled. Filling it belongs to
       // OnReloadRequested, which only a real navigation raises.
+      /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
       // The third of the three ways out of an unsaved role - the other two, picking another role
       // and turning the page, are held inside the view model. All three ask the same question and
       // read the same answer; only the way of refusing differs, and here it is this flag.
+      /// <inheritdoc />
       public async Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) {
          if (await Vm.ConfirmLeavePendingAsync()) return;
 
@@ -40,19 +44,21 @@ namespace Em.Ui.Wpf.Navigations
          args.Message = "This role still has changes that have not been saved.";
       }
 
+      /// <inheritdoc />
       public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Vm.ReloadAsync();
 
+      /// <inheritdoc />
       public Task OnRelease(INavigation sender) => Task.CompletedTask;
    }
 
    /// <summary>
-   /// Layar pengelola role: rail berisi daftar role di kiri, dan di kanan satu role yang terbuka
-   /// berikut hak, anggota, dan catatan tentangnya.
+   /// The role manager screen: a rail with the list of roles on the left, and on the right one open role
+   /// together with its rights, members, and notes about it.
    /// <para>
-   /// Isi role tidak langsung ditulis. Yang diedit di layar ini adalah hak akses, jadi mencabut satu
-   /// hak karena salah klik tidak boleh langsung terkirim: yang dipegang view model ini adalah
-   /// <i>baseline</i> (keadaan role saat dibuka) dan <i>desired</i> (keadaan yang diinginkan), dan
-   /// selisih keduanya baru dihitung serta dikirim saat tombol simpan ditekan.
+   /// The content of a role is not written directly. What is edited on this screen is access rights, so
+   /// revoking one right by a misclick must not be sent right away: this view model holds the
+   /// <i>baseline</i> (the state of the role when it was opened) and the <i>desired</i> state, and their
+   /// difference is only computed and sent when the save button is pressed.
    /// </para>
    /// </summary>
    public class RoleManagerVm : MvvmModelBase
@@ -61,39 +67,38 @@ namespace Em.Ui.Wpf.Navigations
 
       private RoleCollection? _collection;
 
-      // Isi role yang sudah pernah dibaca, disimpan selama layar hidup dan dibuang saat reload:
-      // membandingkan dua role berarti bolak-balik antara keduanya, dan tiga permintaan ke server
-      // per klik terlalu mahal untuk dibayar berulang.
+      // The content of roles that have been read, kept while the screen lives and discarded on reload:
+      // comparing two roles means going back and forth between them, and three requests to the server per
+      // click is too expensive to pay repeatedly.
       private readonly Dictionary<string, RoleContent> _content = [];
 
-      // Keadaan role yang sedang terbuka, seperti yang tersimpan di server.
+      // The state of the role that is currently open, as stored on the server.
       private readonly HashSet<string> _baselineClaims = new(StringComparer.OrdinalIgnoreCase);
       private readonly Dictionary<string, ta_UserRole> _baselineMembers = [];
 
-      // Selisih baseline terhadap desired, dihitung ulang setiap kali salah satu berubah. Angka di
-      // action bar dibaca dari sini, jadi tidak ada penghitung kedua yang bisa melenceng darinya.
+      // The difference between baseline and desired, recomputed every time either changes. The number in the
+      // action bar is read from here, so there is no second counter that could drift from it.
       private RoleSet? _pending;
 
-      // Waktu server, dibaca sekali per reload: keterangan ACTIVE / SCHEDULED / EXPIRED di setiap
-      // baris anggota dihitung terhadapnya, dan menanyakannya per baris berarti satu perjalanan ke
-      // server untuk setiap orang di dalam daftar.
+      // Server time, read once per reload: the ACTIVE / SCHEDULED / EXPIRED label on every member row is
+      // computed against it, and asking per row would mean one trip to the server for everyone in the list.
       private DateTime _serverNow = DateTime.Now;
 
-      // Menyala selama view model sendiri yang memindahkan pilihan di rail, supaya penjaga
-      // perpindahan tidak menanyakan lagi apa yang barusan dijawab.
+      // On while the view model itself moves the selection in the rail, so the move guard does not ask again
+      // what it just answered.
       private bool _selectionSuspended;
 
-      // Menyala selama desired disusun ulang dari baseline, supaya menyalakan seratus centang
-      // sekaligus tidak menghitung ulang selisihnya seratus kali.
+      // On while desired is being rebuilt from baseline, so turning on a hundred checkboxes at once does not
+      // recompute the difference a hundred times.
       private bool _rebuildingDesired;
 
-      // Yang memadamkan kabar jatuhan terakhir. Dibuat sekali lalu dipakai ulang: setiap jatuhan
-      // baru mengulang hitungannya dari awal, sehingga menyeret beberapa hak berturut-turut tidak
-      // memadamkan kabar yang barusan terbit.
+      // Clears the last drop notice. Created once and reused: every new drop restarts its count from the
+      // beginning, so dragging several rights in a row does not clear the notice that was just published.
       private DispatcherTimer? _dropFeedbackTimer;
 
       private Role? _watchedRole;
 
+      /// <summary>Creates a new instance of <see cref="RoleManagerVm"/>.</summary>
       public RoleManagerVm() {
          RegisterCommand(nameof(NewRoleCommand), NewRoleCommand, NewRoleCommandAllowed);
          RegisterCommand(nameof(DuplicateRoleCommand), DuplicateRoleCommand, DuplicateRoleCommandAllowed);
@@ -109,15 +114,15 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(PreviousPageCommand), PreviousPageCommand, PreviousPageCommandAllowed);
          RegisterCommand(nameof(NextPageCommand), NextPageCommand, NextPageCommandAllowed);
 
-         // Keduanya dibaca dari isi rail, jadi mereka ikut isinya - bukan ikut jalur yang kebetulan
-         // mengubahnya. Satu baris draft yang masuk atau keluar pun sudah cukup untuk menggeser
-         // keterangan di kaki rail dan menyingkirkan pesan "belum ada role".
+         // Both are read from the content of the rail, so they follow its content - not whichever path happened
+         // to change it. A single draft row entering or leaving is enough to shift the caption at the foot of
+         // the rail and remove the "no roles yet" message.
          Roles.CollectionChanged += (_, _) => {
             NotifyChanged(nameof(HasNoRole));
             NotifyChanged(nameof(RailCaption));
          };
 
-         // Sama alasannya: keterangan hak dibaca dari daftar grup, jadi ia ikut daftarnya.
+         // Same reason: the claim caption is read from the group list, so it follows that list.
          GrantedGroups.CollectionChanged += (_, _) => {
             NotifyChanged(nameof(GrantedSummaryCaption));
             NotifyChanged(nameof(ClaimDetailCaption));
@@ -130,31 +135,30 @@ namespace Em.Ui.Wpf.Navigations
       #region Data
 
       /// <summary>
-      /// Role yang tampil di rail: satu halaman hasil pembacaan terakhir, ditambah baris draft yang
-      /// belum pernah tersimpan kalau memang sedang ada.
+      /// The roles shown in the rail: one page from the latest read, plus the draft row that has never been
+      /// saved when there is one.
       /// </summary>
       public ObservableCollection<Role> Roles { get; } = [];
 
       /// <summary>
-      /// Seluruh katalog hak yang dikenal aplikasi, dikelompokkan per module. Dibaca sekali per
-      /// reload, bukan per role - katalognya sama untuk role mana pun.
+      /// The whole catalog of rights known to the application, grouped by module. Read once per reload, not
+      /// per role - the catalog is the same for any role.
       /// </summary>
       public ObservableCollection<ClaimGroupVm> ClaimGroups { get; } = [];
 
       /// <summary>
-      /// Bagian dari <see cref="ClaimGroups"/> yang benar-benar membawa hak pada role yang terbuka.
-      /// Inilah yang digambar tab Permissions: module yang role ini tidak punya urusan dengannya
-      /// tidak perlu memakan tempat di sana.
+      /// The part of <see cref="ClaimGroups"/> that really carries rights in the open role. This is what the
+      /// Permissions tab draws: a module the role has no business with need not take up room there.
       /// </summary>
       public ObservableCollection<ClaimGroupVm> GrantedGroups { get; } = [];
 
-      /// <summary>Anggota role yang terbuka - keadaan yang diinginkan, bukan yang tersimpan.</summary>
+      /// <summary>The members of the open role - the desired state, not the stored one.</summary>
       public ObservableCollection<MemberRowVm> MemberRows { get; } = [];
 
       /// <summary>
-      /// Role yang sedang terbuka di pane kanan. Mengubahnya saat masih ada perubahan yang belum
-      /// disimpan akan memunculkan pertanyaan lebih dulu, dan pilihannya dihormati: rail tidak
-      /// berpindah sebelum perubahannya benar-benar tersimpan atau dibuang.
+      /// The role currently open in the right pane. Changing it while there are unsaved changes raises a
+      /// question first, and the answer is respected: the rail does not move until the changes are really
+      /// saved or discarded.
       /// </summary>
       public Role? SelectedRole {
          get => Get<Role?>();
@@ -167,18 +171,17 @@ namespace Em.Ui.Wpf.Navigations
                return;
             }
 
-            // Rail-nya sudah terlanjur berpindah saat kita sampai di sini, dan jawaban atas
-            // pertanyaannya bisa memakan satu perjalanan ke server - jadi barisnya dikembalikan
-            // dulu, lalu dipindahkan sungguhan hanya kalau perubahannya memang sudah beres.
+            // The rail has already moved by the time we get here, and the answer to the question may take a trip to
+            // the server - so the row is put back first, then really moved only if the changes are indeed settled.
             RestoreSelection();
             _ = MoveSelectionAsync(value);
          }
       }
 
-      /// <summary><c>true</c> kalau tidak ada satu pun role di rail.</summary>
+      /// <summary><c>true</c> when there is no role at all in the rail.</summary>
       public bool HasNoRole => Roles.Count == 0;
 
-      /// <summary><c>true</c> kalau ada role yang terbuka di pane kanan.</summary>
+      /// <summary><c>true</c> when there is a role open in the right pane.</summary>
       public bool HasSelectedRole => SelectedRole is not null;
 
       #endregion
@@ -186,46 +189,45 @@ namespace Em.Ui.Wpf.Navigations
       #region Header & details
 
       /// <summary>
-      /// Menyala saat nama dan keterangan role sedang diedit di header pane. Yang menutupnya adalah
-      /// tombol simpan di action bar, bukan tombol OK tersendiri - nama ikut alur simpan yang sama
-      /// dengan hak dan anggota. Untuk role baru mode ini menyala paksa: nama role wajib diisi.
+      /// On while the name and description of the role are being edited in the pane header. What closes it is
+      /// the save button in the action bar, not a separate OK button - the name follows the same save flow as
+      /// rights and members. For a new role this mode is forced on: the role name is required.
       /// </summary>
       public bool IsEditingDetails {
          get => Get<bool>();
          private set => Set(value, _ => RaiseCommandsChanged());
       }
 
-      /// <summary>Keterangan singkat keadaan role yang terbuka, untuk chip di sebelah namanya.</summary>
+      /// <summary>Short description of the state of the open role, for the chip beside its name.</summary>
       public string StateCaption => SelectedRole?.cRoleState == RoleState.Active ? "IN USE" : "OFF";
 
-      /// <summary>Keterangan jumlah anggota role yang terbuka, mis. "4 members".</summary>
+      /// <summary>Caption of the member count of the open role, e.g. "4 members".</summary>
       public string MemberCountCaption => Plural(SelectedRole?.MemberCount ?? 0, "member");
 
-      /// <summary>Keterangan jumlah hak role yang terbuka, mis. "12 claims granted".</summary>
+      /// <summary>Caption of the right count of the open role, e.g. "12 claims granted".</summary>
       public string ClaimCountCaption => $"{Plural(SelectedRole?.ClaimCount ?? 0, "claim")} granted";
 
-      /// <summary>Kapan role yang terbuka terakhir berubah, seperti yang dicatat barisnya sendiri.</summary>
+      /// <summary>When the open role last changed, as recorded by its own row.</summary>
       public string LastChangedCaption =>
          SelectedRole is { IsBlank: false } role && role.ustamp != default
             ? role.ustamp.ToString($"{DateFormat}, HH:mm")
             : "Not saved yet";
 
       /// <summary>
-      /// Kalimat utuhnya untuk baris fakta di header. Disusun di sini, bukan dirangkai di XAML dari
-      /// sepotong kata dan sepotong nilai: baris yang belum pernah tersimpan tidak punya "kapan"
-      /// untuk disebut, dan menempelkan kata "Last changed" di depannya menghasilkan kalimat yang
-      /// tidak berarti apa-apa.
+      /// The complete sentence for the fact row in the header. Composed here, not assembled in XAML from a
+      /// piece of a word and a piece of a value: a row that has never been saved has no "when" to mention,
+      /// and attaching the words "Last changed" in front of it would produce a meaningless sentence.
       /// </summary>
       public string LastChangedLine =>
          SelectedRole is { IsBlank: false } ? $"Last changed {LastChangedCaption}" : "Not saved yet";
 
-      /// <summary>Id role yang terbuka, atau penanda yang terbaca orang selama id-nya belum terbit.</summary>
+      /// <summary>Id of the open role, or a human-readable placeholder while its id has not been issued.</summary>
       public string IdentifierCaption => SelectedRole?.cRoleId ?? string.Empty;
 
-      /// <summary>Keadaan role yang terbuka, dieja penuh untuk tab Details.</summary>
+      /// <summary>State of the open role, spelled out in full for the Details tab.</summary>
       public string StateDetailCaption => SelectedRole?.cRoleState == RoleState.Active ? "In use" : "Disabled";
 
-      /// <summary>Ringkasan anggota untuk tab Details, mis. "4 accounts, 1 of them scheduled".</summary>
+      /// <summary>Member summary for the Details tab, e.g. "4 accounts, 1 of them scheduled".</summary>
       public string MemberDetailCaption {
          get {
             if (SelectedRole is null) return string.Empty;
@@ -236,7 +238,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Ringkasan hak untuk tab Details, mis. "12 claims, from 4 modules".</summary>
+      /// <summary>Right summary for the Details tab, e.g. "12 claims, from 4 modules".</summary>
       public string ClaimDetailCaption {
          get {
             if (SelectedRole is null) return string.Empty;
@@ -248,7 +250,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Keterangan jumlah hak untuk kepala tab Permissions, mis. "12 in 5 modules".</summary>
+      /// <summary>Caption of the right count for the Permissions tab header, e.g. "12 in 5 modules".</summary>
       public string GrantedSummaryCaption {
          get {
             var claims = GrantedGroups.Sum(g => g.GrantedCount);
@@ -256,13 +258,13 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Keterangan isi katalog untuk kaki lembar katalog, mis. "20 claims in 5 modules".</summary>
+      /// <summary>Caption of the catalog content for the foot of the catalog sheet, e.g. "20 claims in 5 modules".</summary>
       public string CatalogueSummaryCaption =>
          $"{Plural(ClaimGroups.Sum(g => g.Claims.Count), "claim")} in {Plural(ClaimGroups.Count, "module")}";
 
       /// <summary>
-      /// Alasan tab Permissions dan Members terkunci selama role belum tersimpan. Bukan sekadar
-      /// mematikan tabnya: yang perlu dibaca adalah kenapa, bukan cuma bahwa ia mati.
+      /// The reason the Permissions and Members tabs are locked while the role has not been saved. Not just
+      /// turning the tab off: what needs to be read is why, not merely that it is off.
       /// </summary>
       public string DraftLockCaption {
          get {
@@ -274,9 +276,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Membuka atau melipat seluruh grup module di tab Permissions sekaligus. Grup yang sesudah
-      /// itu dilipat sendiri oleh pembacanya berpisah jalan dengan tombol ini sampai tombolnya
-      /// ditekan lagi - persis seperti yang dijanjikan tulisan di tombolnya.
+      /// Opens or collapses all module groups on the Permissions tab at once. A group that the reader has
+      /// collapsed by hand afterwards parts ways with this button until it is pressed again - exactly as the
+      /// text on the button promises.
       /// </summary>
       public bool ArePermissionGroupsExpanded {
          get => Get(true);
@@ -286,8 +288,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Pasangannya untuk lembar katalog. Terpisah karena keduanya memang dua tombol yang berbeda
-      /// di dua daftar yang berbeda.
+      /// Its counterpart for the catalog sheet. Kept separate because they are really two different buttons
+      /// on two different lists.
       /// </summary>
       public bool AreCatalogueGroupsExpanded {
          get => Get(true);
@@ -297,11 +299,11 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Apa yang terjadi pada jatuhan terakhir, mis. "3 of 5 claims from core.contact granted".
+      /// What happened in the last drop, e.g. "3 of 5 claims from core.contact granted".
       /// <para>
-      /// Angka di kepala tab memang sudah bergerak sendiri, tapi jatuhan yang tidak mengubah apa
-      /// pun - hak yang sudah dipegang, module yang sudah penuh - tidak menggerakkan apa pun juga,
-      /// dan tanpa sepatah kata pun ia terbaca sebagai drag yang gagal.
+      /// The number in the tab header already moves by itself, but a drop that changes nothing - a right
+      /// that is already held, a module that is already full - moves nothing either, and without a word it
+      /// reads as a failed drag.
       /// </para>
       /// </summary>
       public string DropFeedbackCaption {
@@ -309,20 +311,20 @@ namespace Em.Ui.Wpf.Navigations
          set => Set(value, _ => NotifyChanged(nameof(HasDropFeedback)));
       }
 
-      /// <summary>Apakah ada kabar jatuhan yang masih perlu ditampilkan.</summary>
+      /// <summary>Whether there is a drop notice that still needs to be shown.</summary>
       public bool HasDropFeedback => !string.IsNullOrEmpty(DropFeedbackCaption);
 
       #endregion
 
       #region Paging & counters
 
-      /// <summary>Banyaknya role seluruhnya di server, untuk chip di toolbar.</summary>
+      /// <summary>Total number of roles on the server, for the chip in the toolbar.</summary>
       public string TotalCaption => Plural(_collection?.TotalCount ?? 0, "role");
 
-      /// <summary>Banyaknya penugasan role seluruhnya di server, untuk chip di toolbar.</summary>
+      /// <summary>Total number of role assignments on the server, for the chip in the toolbar.</summary>
       public string AssignmentCaption => Plural(_collection?.TotalAssignments ?? 0, "assignment");
 
-      /// <summary>Keterangan isi rail, mis. "6 of 24 roles".</summary>
+      /// <summary>Caption of the rail content, e.g. "6 of 24 roles".</summary>
       public string RailCaption {
          get {
             var total = _collection?.TotalCount ?? 0;
@@ -344,13 +346,13 @@ namespace Em.Ui.Wpf.Navigations
       #region Pending changes
 
       /// <summary>
-      /// <c>true</c> kalau ada yang belum tersimpan pada role yang terbuka - baris draft yang belum
-      /// pernah lahir, kolom role yang berubah, atau selisih hak dan anggota.
+      /// <c>true</c> when the open role has anything unsaved - a draft row that has never been born, a role
+      /// column that changed, or a difference in rights and members.
       /// </summary>
       public bool HasPendingChanges =>
          SelectedRole is { } role && (role.IsBlank || role.IsDirty || _pending is { IsEmpty: false });
 
-      /// <summary>Kalimat di action bar yang menyebut apa saja yang berubah sejak role ini dibuka.</summary>
+      /// <summary>Sentence in the action bar naming everything that changed since this role was opened.</summary>
       public string ChangeCaption {
          get {
             if (SelectedRole is not { } role) return string.Empty;
@@ -378,8 +380,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Commands
 
       /// <summary>
-      /// Membuat role baru tanpa dialog: barisnya muncul di puncak rail, hidup di memory, dan baru
-      /// lahir di database saat tombol simpan ditekan.
+      /// Creates a new role without a dialog: its row appears at the top of the rail, lives in memory, and is
+      /// only born in the database when the save button is pressed.
       /// </summary>
       public async Task NewRoleCommand() {
          if (EmApp == null || !await ConfirmLeavePendingAsync()) return;
@@ -387,20 +389,19 @@ namespace Em.Ui.Wpf.Navigations
          AddDraft(Role.CreateNewRole(EmApp));
       }
 
-      /// <summary>Hanya boleh dijalankan kalau daftarnya sudah termuat dan tidak ada yang sedang berjalan.</summary>
+      /// <summary>May only run when the list is loaded and nothing else is running.</summary>
       public bool NewRoleCommandAllowed() => _collection is not null && !IsBusy;
 
       /// <summary>
-      /// Menggandakan role yang terbuka menjadi baris draft baru: nama, keterangan, dan seluruh
-      /// haknya ikut, anggotanya tidak - yang digandakan adalah bentuk sebuah jabatan, bukan siapa
-      /// yang sedang memegangnya. Sama seperti New Role, tidak ada apa pun yang menyentuh server
-      /// sampai tombol simpan ditekan.
+      /// Duplicates the open role into a new draft row: its name, description, and all its rights come along,
+      /// its members do not - what is duplicated is the shape of a position, not who is currently holding it.
+      /// Like New Role, nothing touches the server until the save button is pressed.
       /// </summary>
       public async Task DuplicateRoleCommand() {
          if (EmApp == null || SelectedRole is not { IsBlank: false } source) return;
 
-         // Dibaca sekarang, selagi role sumbernya masih terbuka: begitu draft-nya terpilih, desired
-         // yang ada di layar adalah milik draft itu.
+         // Read now, while the source role is still open: as soon as the draft is selected, the desired state
+         // on screen belongs to that draft.
          var claims = ClaimGroups.SelectMany(g => g.Claims).Where(c => c.IsGranted).Select(c => c.Key).ToArray();
 
          if (!await ConfirmLeavePendingAsync()) return;
@@ -414,26 +415,24 @@ namespace Em.Ui.Wpf.Navigations
          AddDraft(draft, claims);
       }
 
-      /// <summary>Hanya boleh dijalankan kalau yang terbuka adalah role yang sudah tersimpan.</summary>
+      /// <summary>May only run when what is open is a role that has been saved.</summary>
       public bool DuplicateRoleCommandAllowed() => SelectedRole is { IsBlank: false } && !IsBusy;
 
-      /// <summary>Membuka mode edit nama dan keterangan di header pane.</summary>
+      /// <summary>Opens the edit mode of the name and description in the pane header.</summary>
       public void EditDetailsCommand() => IsEditingDetails = true;
 
       /// <summary>
-      /// Hanya boleh dijalankan kalau ada role terbuka yang sudah tersimpan dan modenya belum
-      /// menyala. Untuk role baru tombolnya mati - modenya memang sudah menyala dan tidak bisa
-      /// dimatikan.
+      /// May only run when there is an open role that has been saved and the mode is not on yet. For a new
+      /// role the button is off - the mode is already on and cannot be turned off.
       /// </summary>
       public bool EditDetailsCommandAllowed() => SelectedRole is { IsBlank: false } && !IsEditingDetails;
 
       /// <summary>
-      /// Mengirim seluruh perubahan role yang terbuka: kolomnya sendiri lewat jalur biasa, isinya
-      /// lewat satu pintu <see cref="Role.SaveContentAsync"/>.
+      /// Sends all changes of the open role: its own columns through the ordinary route, its content through
+      /// the single door <see cref="Role.SaveContentAsync"/>.
       /// <para>
-      /// Kalau pengirimannya gagal, tidak ada apa pun di layar yang disentuh: baseline tetap
-      /// baseline, desired tetap desired, dan menekan simpan sekali lagi akan menghitung selisih
-      /// yang sama persis lalu mengirimkannya ulang.
+      /// If the sending fails, nothing on screen is touched: baseline stays baseline, desired stays desired,
+      /// and pressing save once more computes exactly the same difference and sends it again.
       /// </para>
       /// </summary>
       public async Task SaveChangesCommand() {
@@ -467,15 +466,15 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Hanya boleh dijalankan kalau memang ada yang belum tersimpan.</summary>
+      /// <summary>May only run when there really is something unsaved.</summary>
       public bool SaveChangesCommandAllowed() => HasPendingChanges && !IsBusy;
 
       /// <summary>
-      /// Mengembalikan role yang terbuka ke keadaan saat ia dibuka, sekaligus menutup mode edit
-      /// nama dan keterangan. Untuk baris draft yang berarti membuang barisnya dari rail:
-      /// <see cref="UiModel{TEntity,TService}.RollBack"/> hanya mengembalikan kolom ke data
-      /// aslinya, dan data asli sebuah draft adalah baris kosong berisi penanda - membuang
-      /// objeknya adalah urusan layar.
+      /// Returns the open role to the state it had when opened, and closes the name and description edit
+      /// mode. For a draft row this means removing its row from the rail:
+      /// <see cref="UiModel{TEntity,TService}.RollBack"/> only returns the columns to their original data, and
+      /// the original data of a draft is an empty row holding a placeholder - discarding the object is the
+      /// screen's business.
       /// </summary>
       public void DiscardCommand() {
          if (SelectedRole is not { } role) return;
@@ -493,39 +492,37 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Boleh dijalankan kalau memang ada yang bisa dibatalkan - dan juga selama mode edit nama
-      /// dan keterangan menyala meski belum ada yang diketik, karena tombol inilah satu-satunya
-      /// jalan menutup mode itu di tempat. Tanpa itu, menekan Edit details lalu berubah pikiran
-      /// mematikan ketiga tombol sekaligus, dan membatalkan niatnya harus dibayar dengan pindah
-      /// dari role yang sedang dibuka.
+      /// May run when there is something that can be cancelled - and also while the name and description edit
+      /// mode is on even if nothing has been typed yet, because this button is the only way to close that mode
+      /// in place. Without that, pressing Edit details and then changing one's mind would turn off all three
+      /// buttons at once, and cancelling the intention would have to be paid for by leaving the open role.
       /// </summary>
       public bool DiscardCommandAllowed() => (HasPendingChanges || IsEditingDetails) && !IsBusy;
 
       /// <summary>
-      /// Mencabut satu hak dari role yang terbuka - di layar saja. Yang berubah adalah keadaan yang
-      /// diinginkan; servernya baru mendengar saat tombol simpan ditekan.
+      /// Revokes one right from the open role - on screen only. What changes is the desired state; the server
+      /// only hears about it when the save button is pressed.
       /// </summary>
       public void RevokeClaimCommand(ClaimItemVm? claim) {
          if (claim is not null) claim.IsGranted = false;
       }
 
-      /// <summary>Hanya boleh dijalankan untuk hak yang memang sedang dipegang.</summary>
+      /// <summary>May only run for a right that is actually held.</summary>
       public bool RevokeClaimCommandAllowed(ClaimItemVm? claim) =>
          claim is { IsGranted: true } && SelectedRole is { IsBlank: false } && !IsBusy;
 
       /// <summary>
-      /// Mencabut seluruh hak satu module dari role yang terbuka sekaligus - kebalikan dari
-      /// menjatuhkan kartu module ke tab ini, dan seperti pencabutan satuan ia hanya menggeser
-      /// keadaan yang diinginkan. Kartunya lenyap dari tab Permissions begitu hak terakhirnya
-      /// dilepas, karena tab ini memang hanya menggambar module yang role ini punya urusan
-      /// dengannya. Tidak ditanyakan lebih dulu: tidak ada yang terkirim sampai tombol simpan
-      /// ditekan, dan Discard mengembalikan semuanya.
+      /// Revokes all rights of one module from the open role at once - the opposite of dropping a module card
+      /// onto this tab, and like single revocation it only moves the desired state. The card vanishes from the
+      /// Permissions tab as soon as its last right is released, because this tab only draws modules the role
+      /// has business with. Not asked first: nothing is sent until the save button is pressed, and Discard
+      /// restores everything.
       /// </summary>
       public void RevokeModuleCommand(ClaimGroupVm? group) {
          if (group is null) return;
 
-         // Disalin lebih dulu: Granted disusun ulang setiap kali satu hak padam, jadi mencabut
-         // sambil menelusurinya berarti menelusuri daftar yang menyusut di bawah tangan sendiri.
+         // Copied first: Granted is rebuilt every time one right goes away, so revoking while walking through it
+         // would mean walking a list that shrinks under one's own hands.
          var held = group.Granted.ToArray();
          if (held.Length == 0) return;
 
@@ -543,15 +540,15 @@ namespace Em.Ui.Wpf.Navigations
          RaiseRoleDerived();
       }
 
-      /// <summary>Hanya boleh dijalankan untuk module yang memang sedang membawa hak.</summary>
+      /// <summary>May only run for a module that is actually carrying rights.</summary>
       public bool RevokeModuleCommandAllowed(ClaimGroupVm? group) =>
          group is { GrantedCount: > 0 } && SelectedRole is { IsBlank: false } && !IsBusy;
 
       /// <summary>
-      /// Memberikan hak yang barusan diseret dari katalog ke role yang terbuka - di layar saja,
-      /// seperti pencabutan. Muatannya bisa satu hak (<see cref="ClaimItemVm"/>) atau satu module
-      /// utuh (<see cref="ClaimGroupVm"/>), dan keduanya masuk lewat pintu yang sama karena yang
-      /// diseret orangnya memang satu hal: apa yang ada di bawah kursornya.
+      /// Grants the right that was just dragged from the catalog to the open role - on screen only, like
+      /// revocation. The payload may be one right (<see cref="ClaimItemVm"/>) or one whole module
+      /// (<see cref="ClaimGroupVm"/>), and both come in through the same door because what is being dragged
+      /// is really one thing: whatever is under the cursor.
       /// </summary>
       public void GrantDroppedCommand(object? payload) {
          switch (payload) {
@@ -566,16 +563,15 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Boleh dijalankan untuk muatan yang memang dikenal layar ini, selama ada role tersimpan
-      /// yang terbuka. Module yang seluruh haknya sudah dipegang tetap dijawab boleh: ia memang
-      /// tidak akan mengubah apa pun, tapi itu dikatakan sesudah dijatuhkan, bukan dengan kursor
-      /// "tidak boleh" yang membuat orangnya mengira drag-nya yang gagal.
+      /// May run for a payload this screen recognizes, as long as a saved role is open. A module whose rights
+      /// are all already held is still answered as allowed: it will not change anything, but that is said
+      /// after the drop, not with a "not allowed" cursor that makes people think their drag failed.
       /// </summary>
       public bool GrantDroppedCommandAllowed(object? payload) =>
          payload is ClaimItemVm or ClaimGroupVm && SelectedRole is { IsBlank: false } && !IsBusy;
 
-      // Satu hak: menyalakan saklarnya sudah cukup, karena setternya sendiri yang menyusun ulang
-      // tab Permissions dan menghitung ulang selisihnya.
+      // One right: turning its switch on is enough, because the setter itself rebuilds the Permissions tab
+      // and recomputes the difference.
       private void GrantOne(ClaimItemVm claim) {
          if (claim.IsGranted) {
             ShowDropFeedback($"{claim.Key} is already on this role");
@@ -586,9 +582,9 @@ namespace Em.Ui.Wpf.Navigations
          ShowDropFeedback($"{claim.Key} granted");
       }
 
-      // Satu module: yang belum dipegang dikumpulkan lebih dulu, baru dinyalakan bersama-sama.
-      // Tanpa itu penyegaran tab dan penghitungan selisihnya dibayar sekali per hak - dan yang
-      // dilihat orangnya tetap sama persis.
+      // One module: the ones not yet held are collected first, then turned on together. Without that, the tab
+      // refresh and the difference computation are paid once per right - and what the person sees stays
+      // exactly the same.
       private void GrantModule(ClaimGroupVm group) {
          var wanted = group.Claims.Where(c => !c.IsGranted).ToArray();
          if (wanted.Length == 0) {
@@ -627,15 +623,15 @@ namespace Em.Ui.Wpf.Navigations
          return timer;
       }
 
-      // Dipanggil juga saat role berpindah dan saat layar dibaca ulang: kalimat yang menyebut role
-      // sebelumnya tidak boleh tertinggal di layar role berikutnya.
+      // Also called when the role changes and when the screen is read again: a sentence naming the previous
+      // role must not linger on the screen of the next role.
       private void ClearDropFeedback() {
          _dropFeedbackTimer?.Stop();
          DropFeedbackCaption = string.Empty;
       }
 
       /// <summary>
-      /// Mengeluarkan satu anggota dari role yang terbuka - di layar saja, seperti pencabutan hak.
+      /// Removes one member from the open role - on screen only, like revoking a right.
       /// </summary>
       public void RemoveMemberCommand(MemberRowVm? member) {
          if (member is null || !MemberRows.Remove(member)) return;
@@ -644,14 +640,13 @@ namespace Em.Ui.Wpf.Navigations
          RaiseRoleDerived();
       }
 
-      /// <summary>Hanya boleh dijalankan untuk baris anggota yang memang ada di daftar.</summary>
+      /// <summary>May only run for a member row that is really in the list.</summary>
       public bool RemoveMemberCommandAllowed(MemberRowVm? member) =>
          member is not null && SelectedRole is { IsBlank: false } && !IsBusy;
 
       /// <summary>
-      /// Menonaktifkan role yang terbuka, atau menyalakannya kembali. Keduanya hanya mengubah kolom
-      /// keadaan, jadi mereka ikut alur simpan yang sama dengan seluruh isi layar ini - bukan
-      /// perintah yang langsung terkirim sendiri.
+      /// Deactivates the open role, or turns it back on. Both only change the state column, so they follow the
+      /// same save flow as the whole content of this screen - not a command that is sent by itself right away.
       /// </summary>
       public void DisableRoleCommand() {
          if (SelectedRole is not { } role) return;
@@ -661,13 +656,12 @@ namespace Em.Ui.Wpf.Navigations
          RaiseRoleDerived();
       }
 
-      /// <summary>Hanya boleh dijalankan untuk role yang sudah tersimpan.</summary>
+      /// <summary>May only run for a role that has been saved.</summary>
       public bool DisableRoleCommandAllowed() => SelectedRole is { IsBlank: false } && !IsBusy;
 
       /// <summary>
-      /// Menghapus role yang terbuka sungguhan, berikut seluruh hak dan penugasannya. Ditanyakan
-      /// lebih dulu, dan tidak lewat action bar: ini satu-satunya hal di layar ini yang tidak bisa
-      /// dibatalkan.
+      /// Deletes the open role for real, together with all its rights and assignments. Asked first, and not
+      /// through the action bar: it is the one thing on this screen that cannot be undone.
       /// </summary>
       public async Task DeleteRoleCommand() {
          if (_collection == null || SelectedRole is not { IsBlank: false } role) return;
@@ -699,19 +693,19 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Hanya boleh dijalankan untuk role yang sudah tersimpan.</summary>
+      /// <summary>May only run for a role that has been saved.</summary>
       public bool DeleteRoleCommandAllowed() => SelectedRole is { IsBlank: false } && !IsBusy;
 
-      /// <summary>Mundur satu halaman di rail.</summary>
+      /// <summary>Goes back one page in the rail.</summary>
       public Task PreviousPageCommand() => GoToPageAsync((_collection?.Page ?? 1) - 1);
 
-      /// <summary>Hanya boleh dijalankan kalau masih ada halaman sebelum halaman yang terbuka.</summary>
+      /// <summary>May only run when there is still a page before the open page.</summary>
       public bool PreviousPageCommandAllowed() => _collection is { Page: > 1 } && !IsBusy;
 
-      /// <summary>Maju satu halaman di rail.</summary>
+      /// <summary>Goes forward one page in the rail.</summary>
       public Task NextPageCommand() => GoToPageAsync((_collection?.Page ?? 1) + 1);
 
-      /// <summary>Hanya boleh dijalankan kalau masih ada halaman sesudah halaman yang terbuka.</summary>
+      /// <summary>May only run when there is still a page after the open page.</summary>
       public bool NextPageCommandAllowed() => _collection is not null && _collection.Page < PageCount && !IsBusy;
 
       #endregion
@@ -719,9 +713,9 @@ namespace Em.Ui.Wpf.Navigations
       #region Reload
 
       /// <summary>
-      /// Membaca ulang seluruh isi layar: satu halaman role, katalog hak, dan angka-angkanya. Isi
-      /// role yang sempat di-cache ikut dibuang - yang diminta adalah keadaan terbaru, bukan yang
-      /// sempat terbaca tadi.
+      /// Reads the whole content of the screen again: one page of roles, the catalog of rights, and their
+      /// numbers. Role content that was cached is discarded too - what is asked for is the latest state, not
+      /// what happened to be read a moment ago.
       /// </summary>
       public async Task ReloadAsync() {
          if (EmApp == null || IsBusy) return;
@@ -761,9 +755,9 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      // Katalognya sendiri tidak berubah selama aplikasi berjalan - ia dideklarasikan module saat
-      // server start - tapi angka "dipegang berapa role" berubah setiap kali ada yang menyimpan,
-      // jadi yang dibaca ulang setiap reload adalah angkanya, bukan katalognya.
+      // The catalog itself does not change while the application runs - the module declares it when the
+      // server starts - but the "held by how many roles" number changes every time someone saves, so what is
+      // read again on each reload is the number, not the catalog.
       private async Task BuildClaimCatalogueAsync() {
          var service = EmApp!.ServiceProvider.GetRequiredService<ICredentialServices>();
          var usage = (await service.GetMeta_ClaimUsage())
@@ -786,9 +780,9 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Opening a role
 
-      // Baseline dibaca sekali per role lalu disimpan; desired dibangun dari baseline itu. Yang
-      // diikat XAML adalah desired, jadi mencentang dan membatalkan centang yang sama otomatis
-      // kembali menjadi nol perubahan tanpa ada daftar niat yang harus dicari dan dibersihkan.
+      // The baseline is read once per role and then kept; desired is built from that baseline. What XAML
+      // binds to is desired, so ticking and un-ticking the same box automatically returns to zero changes
+      // without any list of intentions that would have to be found and cleaned.
       private async Task OpenRoleAsync(Role? role) {
          WatchRole(role);
          ClearDropFeedback();
@@ -802,8 +796,8 @@ namespace Em.Ui.Wpf.Navigations
          IsEditingDetails = role.IsBlank;
 
          if (role.IsBlank) {
-            // Draft belum punya apa-apa di server - baseline-nya kosong, dan desired-nya adalah
-            // apa pun yang sudah dititipkan pemanggil (mis. hasil menggandakan role lain).
+            // A draft has nothing on the server yet - its baseline is empty, and its desired state is whatever the
+            // caller already put in (e.g. the result of duplicating another role).
             _baselineClaims.Clear();
             _baselineMembers.Clear();
             RefreshPendingState();
@@ -811,8 +805,8 @@ namespace Em.Ui.Wpf.Navigations
             return;
          }
 
-         // Dipanggil sendiri maupun dari tengah reload; yang memasang lapisan tunggu adalah yang
-         // pertama sampai, supaya yang kedua tidak mencabutnya selagi yang pertama masih berjalan.
+         // Called on its own or from the middle of a reload; whoever arrives first installs the wait layer, so
+         // the second does not remove it while the first is still running.
          var ownsWaiting = false;
 
          try {
@@ -889,8 +883,8 @@ namespace Em.Ui.Wpf.Navigations
          IsEditingDetails = false;
       }
 
-      // Role-nya sendiri yang memberi tahu kalau nama atau keadaannya berubah, sehingga penghitung
-      // di action bar dan tombol simpan ikut bergerak saat orangnya sedang mengetik.
+      // The role itself reports when its name or state changes, so the counter in the action bar and the
+      // save button move along while the person is still typing.
       private void WatchRole(Role? role) {
          if (ReferenceEquals(_watchedRole, role)) return;
 
@@ -977,13 +971,12 @@ namespace Em.Ui.Wpf.Navigations
       #region The guard on leaving unsaved changes
 
       /// <summary>
-      /// Menanyakan apa yang harus dilakukan atas perubahan yang belum tersimpan, lalu menjalankan
-      /// jawabannya. Dipakai ketiga jalan keluar dari sebuah role: pindah baris di rail, pindah
-      /// halaman, dan pindah navigasi.
+      /// Asks what to do about unsaved changes, then carries out the answer. Used by all three ways out of a
+      /// role: moving to another row in the rail, moving to another page, and moving to another navigation.
       /// </summary>
       /// <returns>
-      /// <c>true</c> kalau layar boleh ditinggalkan - entah karena memang tidak ada yang tertahan,
-      /// karena perubahannya sudah tersimpan, atau karena orangnya memilih membuangnya.
+      /// <c>true</c> when the screen may be left - either because nothing was held back, because the changes
+      /// were saved, or because the person chose to discard them.
       /// </returns>
       public async Task<bool> ConfirmLeavePendingAsync() {
          if (!HasPendingChanges) return true;
@@ -999,8 +992,8 @@ namespace Em.Ui.Wpf.Navigations
             case MessageBoxResult.Yes:
                await SaveChangesCommand();
 
-               // Simpan yang gagal tidak boleh terbaca seperti simpan yang berhasil: kalau masih ada
-               // yang tertahan, layarnya tetap di tempat dan perubahannya masih utuh untuk dicoba lagi.
+               // A failed save must not read like a successful one: if anything is still held back, the screen stays
+               // where it is and its changes remain whole to try again.
                return !HasPendingChanges;
 
             case MessageBoxResult.No:
@@ -1015,8 +1008,8 @@ namespace Em.Ui.Wpf.Navigations
       private async Task MoveSelectionAsync(Role? target) {
          if (!await ConfirmLeavePendingAsync()) return;
 
-         // Draft yang dibuang sudah membawa pilihannya sendiri ke baris lain, jadi target yang
-         // sudah tidak ada di rail tidak dikejar lagi.
+         // The discarded draft already carried its choice over to another row, so a target that is no longer in
+         // the rail is not chased anymore.
          if (target != null && !Roles.Contains(target)) return;
 
          _selectionSuspended = true;
@@ -1064,9 +1057,9 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      // Rail-nya sudah terlanjur memindahkan sorotannya sendiri sebelum setter dipanggil, dan
-      // nilai di view model tidak berubah - jadi satu-satunya yang mengembalikannya adalah
-      // notifikasi. Lewat dispatcher, supaya klik yang sedang berjalan selesai lebih dulu.
+      // The rail has already moved its highlight by itself before the setter was called, and the value in the
+      // view model did not change - so the only thing that puts it back is the notification. Through the
+      // dispatcher, so the click that is running finishes first.
       private void RestoreSelection() {
          var dispatcher = Application.Current?.Dispatcher;
          if (dispatcher == null) {
@@ -1089,9 +1082,9 @@ namespace Em.Ui.Wpf.Navigations
          RaiseRoleDerived();
       }
 
-      // Tab Permissions hanya menggambar module yang role ini benar-benar punya urusan dengannya.
-      // Urutannya mengikuti katalog, jadi sebuah module selalu muncul di tempat yang sama entah ia
-      // baru saja mendapat haknya yang pertama atau sudah lama ada di sana.
+      // The Permissions tab only draws modules this role really has business with. The order follows the
+      // catalog, so a module always appears in the same place whether it has just received its first right
+      // or has long been there.
       private void RefreshGrantedGroups() {
          var wanted = ClaimGroups.Where(g => g.GrantedCount > 0).ToArray();
 
@@ -1114,9 +1107,9 @@ namespace Em.Ui.Wpf.Navigations
          RaiseCommandsChanged();
       }
 
-      // Selisih desired terhadap baseline. Untuk baris draft id yang terbawa masih berupa penanda -
-      // itu tidak apa-apa, karena satu-satunya yang membacanya sebelum role lahir adalah penghitung
-      // di action bar; yang benar-benar dikirim disusun ulang sesudah id-nya terbit.
+      // The difference of desired against baseline. For a draft row the id that comes along is still a
+      // placeholder - that is fine, because the only thing that reads it before the role is born is the
+      // counter in the action bar; what is really sent is rebuilt after its id has been issued.
       private RoleSet BuildRoleSet(Role role, DateTime stamp) {
          var desired = ClaimGroups
             .SelectMany(g => g.Claims)
@@ -1152,9 +1145,8 @@ namespace Em.Ui.Wpf.Navigations
 
             if (original.cUserRoleStart == row.Start && original.cUserRoleExpiry == row.Expiry) continue;
 
-            // datestamp baris lamanya dibawa apa adanya: ia menyimpan kapan penugasan ini pertama
-            // kali dibuat, dan menulis "sekarang" di atasnya akan terbaca seolah orang ini baru saja
-            // diberi role-nya.
+            // The datestamp of the old row is carried over as-is: it records when this assignment was first
+            // created, and writing "now" over it would read as if this person had just been given the role.
             rescheduled.Add(new ta_UserRole {
                cUserId = original.cUserId,
                cRoleId = role.cRoleId,
@@ -1181,8 +1173,8 @@ namespace Em.Ui.Wpf.Navigations
          };
       }
 
-      // Dipanggil hanya setelah pengiriman benar-benar berhasil: sejak titik ini keadaan yang
-      // diinginkan itulah keadaan yang tersimpan, jadi penghitungnya kembali nol dengan sendirinya.
+      // Called only after sending has really succeeded: from this point the desired state is the stored
+      // state, so the counter returns to zero by itself.
       private void AcceptAsBaseline(Role role, RoleSet set, DateTime stamp) {
          foreach (var claim in set.ClaimsRevoked) _baselineClaims.Remove(claim.cClaimName);
          foreach (var claim in set.ClaimsGranted) _baselineClaims.Add(claim.cClaimName);
@@ -1236,14 +1228,14 @@ namespace Em.Ui.Wpf.Navigations
 
       #endregion
 
-      // Isi satu role seperti yang terbaca dari server. Disimpan utuh supaya berpindah ke role lain
-      // lalu kembali tidak berarti membacanya lagi.
+      // The content of one role as read from the server. Kept whole so moving to another role and coming
+      // back does not mean reading it again.
       private sealed record RoleContent(ClaimAction[] Claims, User[] Members, ta_UserRole[] Assignments);
    }
 
    /// <summary>
-   /// Satu module di daftar hak: namanya, seluruh hak yang dideklarasikannya, dan bagian dari hak
-   /// itu yang sedang dipegang role yang terbuka.
+   /// One module in the rights list: its name, all rights it declares, and the part of those rights that
+   /// is held by the open role.
    /// </summary>
    public class ClaimGroupVm : NotifyPropertyBase
    {
@@ -1266,37 +1258,37 @@ namespace Em.Ui.Wpf.Navigations
          IsCatalogueExpanded = true;
       }
 
-      /// <summary>Nama module yang mendeklarasikan hak-hak di dalam grup ini.</summary>
+      /// <summary>Name of the module that declares the rights in this group.</summary>
       public string ModuleName { get; }
 
-      /// <summary>Seluruh hak yang dideklarasikan module ini - inilah yang digambar lembar katalog.</summary>
+      /// <summary>All rights this module declares - this is what the catalog sheet draws.</summary>
       public ObservableCollection<ClaimItemVm> Claims { get; } = [];
 
       /// <summary>
-      /// Bagian dari <see cref="Claims"/> yang sedang dipegang role yang terbuka - inilah yang
-      /// digambar tab Permissions, yang memang hanya bicara soal hak yang dibawa role ini.
+      /// The part of <see cref="Claims"/> that is held by the open role - this is what the Permissions tab
+      /// draws, which only talks about rights this role carries.
       /// </summary>
       public ObservableCollection<ClaimItemVm> Granted { get; } = [];
 
-      /// <summary>Banyaknya hak dari module ini yang dipegang role yang terbuka.</summary>
+      /// <summary>Number of rights of this module held by the open role.</summary>
       public int GrantedCount => Granted.Count;
 
-      /// <summary>Angka di lencana grup pada tab Permissions.</summary>
+      /// <summary>The number on the group badge on the Permissions tab.</summary>
       public string GrantedCaption => $"{GrantedCount:N0}";
 
-      /// <summary>Angka di lencana grup pada lembar katalog, mis. "3 of 4".</summary>
+      /// <summary>The number on the group badge on the catalog sheet, e.g. "3 of 4".</summary>
       public string CatalogueCaption => $"{GrantedCount:N0} of {Claims.Count:N0}";
 
-      /// <summary>Terbuka atau terlipat di tab Permissions.</summary>
+      /// <summary>Open or collapsed on the Permissions tab.</summary>
       public bool IsExpanded {
          get => Get<bool>();
          set => Set(value);
       }
 
       /// <summary>
-      /// Terbuka atau terlipat di lembar katalog. Terpisah dari <see cref="IsExpanded"/> karena
-      /// keduanya punya tombol "buka semua"-nya sendiri, dan satu module yang dilipat di satu daftar
-      /// belum tentu ingin dilipat juga di daftar satunya.
+      /// Open or collapsed on the catalog sheet. Kept apart from <see cref="IsExpanded"/> because the two have
+      /// their own "open all" button, and a module collapsed in one list is not necessarily wanted collapsed
+      /// in the other.
       /// </summary>
       public bool IsCatalogueExpanded {
          get => Get<bool>();
@@ -1327,8 +1319,8 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// Satu hak di daftar: deklarasinya, berapa role yang membawanya, dan apakah role yang terbuka
-   /// <i>ingin</i> membawanya - bukan apakah ia sudah membawanya menurut server.
+   /// One right in the list: its declaration, how many roles carry it, and whether the open role
+   /// <i>wants</i> to carry it - not whether it already carries it according to the server.
    /// </summary>
    public class ClaimItemVm : NotifyPropertyBase
    {
@@ -1340,24 +1332,24 @@ namespace Em.Ui.Wpf.Navigations
          RoleCount = roleCount;
       }
 
-      /// <summary>Deklarasi hak ini - module pemiliknya dan namanya.</summary>
+      /// <summary>Declaration of this right - its owning module and its name.</summary>
       public ClaimAction Action { get; }
 
-      /// <summary>Kunci gabungan hak ini, <c>module:name</c>.</summary>
+      /// <summary>Combined key of this right, <c>module:name</c>.</summary>
       public string Key => Action.Key;
 
-      /// <summary>Nama hak ini tanpa nama module-nya, mis. <c>Approve</c>.</summary>
+      /// <summary>Name of this right without its module name, e.g. <c>Approve</c>.</summary>
       public string Name => Action.Name;
 
-      /// <summary>Banyaknya role yang membawa hak ini, di seluruh server.</summary>
+      /// <summary>Number of roles that carry this right, across the whole server.</summary>
       public int RoleCount { get; }
 
-      /// <summary>Keterangan pemakaian hak ini untuk lembar katalog, mis. "Carried by 4 roles".</summary>
+      /// <summary>Usage caption of this right for the catalog sheet, e.g. "Carried by 4 roles".</summary>
       public string UsageCaption => RoleCount == 1 ? "Carried by 1 role" : $"Carried by {RoleCount:N0} roles";
 
       /// <summary>
-      /// Apakah role yang terbuka membawa hak ini. Inilah keadaan yang diinginkan: mengubahnya tidak
-      /// mengirim apa pun ke server, hanya menggeser selisih yang akan dikirim tombol simpan.
+      /// Whether the open role carries this right. This is the desired state: changing it sends nothing to
+      /// the server, it only moves the difference that the save button will send.
       /// </summary>
       public bool IsGranted {
          get => Get<bool>();
@@ -1365,22 +1357,22 @@ namespace Em.Ui.Wpf.Navigations
       }
    }
 
-   /// <summary>Keadaan satu penugasan role terhadap waktu server saat layar dimuat.</summary>
+   /// <summary>State of one role assignment against the server time when the screen was loaded.</summary>
    public enum MemberPeriodState
    {
-      /// <summary>Sedang berlaku.</summary>
+      /// <summary>Currently in effect.</summary>
       Active,
 
-      /// <summary>Sudah diberikan, tapi tanggal mulainya belum tiba.</summary>
+      /// <summary>Already granted, but its start date has not yet arrived.</summary>
       Scheduled,
 
-      /// <summary>Masa berlakunya sudah lewat.</summary>
+      /// <summary>Its validity period has passed.</summary>
       Expired
    }
 
    /// <summary>
-   /// Satu baris di tab Members: siapa yang memegang role ini, sejak dan sampai kapan, dan apakah
-   /// penugasan itu sedang berlaku.
+   /// One row on the Members tab: who holds this role, from when until when, and whether that assignment
+   /// is currently in effect.
    /// </summary>
    public class MemberRowVm : NotifyPropertyBase
    {
@@ -1393,34 +1385,34 @@ namespace Em.Ui.Wpf.Navigations
          Expiry = assignment?.cUserRoleExpiry;
       }
 
-      /// <summary>User yang memegang role ini.</summary>
+      /// <summary>The user who holds this role.</summary>
       public User User { get; }
 
-      /// <summary>Nama akunnya.</summary>
+      /// <summary>The account name.</summary>
       public string Account => User.cUserAccount;
 
-      /// <summary>Nama lengkap orangnya.</summary>
+      /// <summary>The full name of the person.</summary>
       public string FullName => User.cContactFullName;
 
-      /// <summary>Awal masa berlaku penugasan ini; <c>null</c> berarti sejak penugasannya dibuat.</summary>
+      /// <summary>Start of this assignment's validity; <c>null</c> means since the assignment was created.</summary>
       public DateTime? Start {
          get => Get<DateTime?>();
          set => Set(value, _ => RaiseDerived());
       }
 
-      /// <summary>Akhir masa berlaku penugasan ini; <c>null</c> berarti tanpa akhir.</summary>
+      /// <summary>End of this assignment's validity; <c>null</c> means no end.</summary>
       public DateTime? Expiry {
          get => Get<DateTime?>();
          set => Set(value, _ => RaiseDerived());
       }
 
-      /// <summary>Keterangan awal masa berlaku untuk kolom ASSIGNED.</summary>
+      /// <summary>Caption of the start of validity for the ASSIGNED column.</summary>
       public string StartCaption => Start?.ToString("dd MMM yyyy") ?? "From the start";
 
-      /// <summary>Keterangan akhir masa berlaku untuk kolom EXPIRES.</summary>
+      /// <summary>Caption of the end of validity for the EXPIRES column.</summary>
       public string ExpiryCaption => Expiry?.ToString("dd MMM yyyy") ?? "No end date";
 
-      /// <summary>Keadaan penugasan ini terhadap waktu server saat layar dimuat.</summary>
+      /// <summary>State of this assignment against the server time when the screen was loaded.</summary>
       public MemberPeriodState State {
          get {
             if (Start is { } start && start > _now) return MemberPeriodState.Scheduled;
@@ -1429,15 +1421,15 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Keadaan penugasan ini sebagai teks untuk chip di kolom STATE.</summary>
+      /// <summary>State of this assignment as text for the chip in the STATE column.</summary>
       public string StateCaption => State switch {
          MemberPeriodState.Scheduled => "SCHEDULED",
          MemberPeriodState.Expired => "EXPIRED",
          _ => "ACTIVE"
       };
 
-      // Dipanggil sesudah penyimpanan berhasil: baris ini sekarang mencerminkan apa yang tersimpan,
-      // dan waktu acuannya ikut maju ke waktu server yang barusan dibaca.
+      // Called after saving has succeeded: this row now reflects what is stored, and the reference time also
+      // moves forward to the server time that was just read.
       internal void Accept(ta_UserRole assignment, DateTime now) {
          _now = now;
          Start = assignment.cUserRoleStart;

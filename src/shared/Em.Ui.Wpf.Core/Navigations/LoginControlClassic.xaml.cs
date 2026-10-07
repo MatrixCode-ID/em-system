@@ -14,11 +14,12 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Layar login aplikasi, dibangun sistem navigasi sebagai body navigasi <c>admin.logon</c> di kedua
-   /// layout: pada layout multi-tab ia memenuhi <see cref="Windows.TabbedMainWindow"/>, pada layout
-   /// satu halaman ia tampil di dalam host navigasi window itu. Yang diserahkan cuma objek aplikasi
-   /// lewat constructor; sisanya — tampilan brand maupun sambungan ViewModel ke aplikasi — disiapkan
-   /// sendiri oleh control ini, jadi tampilannya tidak bisa berbeda antar layout.
+   /// The application's login screen, built by the navigation system as the body of navigation
+   /// <c>admin.logon</c> in both layouts: in the multi-tab layout it fills the
+   /// <see cref="Windows.TabbedMainWindow"/>, in the single-page layout it appears inside that window's
+   /// navigation host. Only the application object is handed over, through the constructor; the rest - the
+   /// brand display and the connection of the view model to the application - is prepared by this control
+   /// itself, so its look cannot differ between layouts.
    /// </summary>
    public partial class LoginControlClassic : UserControl, ILoginScreen
    {
@@ -26,11 +27,11 @@ namespace Em.Ui.Wpf.Navigations
       private readonly LoginScreenBinding _binding;
 
       /// <summary>
-      /// Membuat layar login untuk <paramref name="app"/>. Objek aplikasi diterima di sini supaya
-      /// control ini tidak bergantung pada host-nya untuk apa pun: ViewModel-nya langsung dihubungkan
-      /// ke aplikasi, dan panel brand langsung digambar lewat <see cref="RenderBranding"/>.
+      /// Creates the login screen for <paramref name="app"/>. The application object is received here so this
+      /// control depends on its host for nothing: its view model is connected to the application right away,
+      /// and the brand panel is drawn right away through <see cref="RenderBranding"/>.
       /// </summary>
-      /// <param name="app">Objek aplikasi tempat layar login ini berjalan.</param>
+      /// <param name="app">The application object in which this login screen runs.</param>
       public LoginControlClassic(EmApp app) {
          _app = app;
          InitializeComponent();
@@ -40,26 +41,25 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// ViewModel control ini.
+      /// The view model of this control.
       /// </summary>
       public LoginControlVm Vm => (LoginControlVm)DataContext;
 
       #region Render Branding
 
       /// <summary>
-      /// Menggambar panel brand di sisi kiri layar login dari pengaturan brand aplikasi: logo, judul,
-      /// sub-judul, deskripsi, dan teks hak cipta.
+      /// Draws the brand panel on the left side of the login screen from the application's brand settings: the
+      /// logo, title, subtitle, description, and copyright text.
       /// <para>
-      /// Isinya ditulis langsung ke elemen XAML-nya, bukan lewat binding. Panel brand cuma dibaca dan
-      /// tidak pernah diubah user, sumbernya satu — <c>EmApp.Branding</c> — dan tidak ada control
-      /// lain yang perlu mengaturnya dari luar, jadi tidak ada keadaan yang perlu diikuti UI. Nilai
-      /// yang tertulis di XAML adalah tampilan tanpa objek aplikasi (mis. di designer), dan method ini
-      /// yang menggantinya.
+      /// Its content is written straight to its XAML elements, not through binding. The brand panel is only
+      /// read and never changed by the user, its source is one - <c>EmApp.Branding</c> - and no other control
+      /// needs to set it from outside, so there is no state for the UI to follow. The values written in XAML
+      /// are the display without an application object (e.g. in the designer), and this method replaces them.
       /// </para>
       /// <para>
-      /// Dipanggil sekali dari constructor, jadi layar login selalu tampil lengkap siapa pun host-nya.
-      /// Warna panel tidak ditulis di sini: warnanya diambil dari tema aktif lewat resource tema, jadi
-      /// ikut berganti sendiri setiap kali tema aplikasi berganti.
+      /// It is called once from the constructor, so the login screen always appears complete whoever its host
+      /// is. The panel color is not written here: its color is taken from the active theme through theme
+      /// resources, so it changes by itself every time the application theme changes.
       /// </para>
       /// </summary>
       public void RenderBranding() {
@@ -80,12 +80,16 @@ namespace Em.Ui.Wpf.Navigations
       // admin.logon navigation itself (see EmApp.InitInternalNavigation), instead of being
       // switched on and off from here - the navigation these two receive is the one being left,
       // not this one, so toggling through it would repaint the wrong screen's toolbar.
+      /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
+      /// <inheritdoc />
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
+      /// <inheritdoc />
       public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Task.CompletedTask;
 
+      /// <inheritdoc />
       public Task OnRelease(INavigation sender) {
          _binding.Release();
          return Task.CompletedTask;

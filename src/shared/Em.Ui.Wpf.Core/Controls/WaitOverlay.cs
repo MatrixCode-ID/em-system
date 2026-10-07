@@ -4,26 +4,23 @@ using Control = System.Windows.Controls.Control;
 namespace Em.Ui.Wpf.Controls
 {
    /// <summary>
-   /// Lapisan tunggu yang menutupi layar selama ada pekerjaan yang harus ditunggu - memuat daftar,
-   /// menyimpan baris, atau apa pun yang menunggu jawaban server. Selain memberi tahu bahwa
-   /// aplikasi sedang bekerja, lapisan ini juga menahan klik, sehingga pekerjaan yang sama tidak
-   /// bisa dijalankan dua kali hanya karena tombolnya sempat ditekan lagi.
+   /// A wait layer that covers the screen while there is work to wait for - loading a list, saving a row,
+   /// or anything waiting for the server's answer. Besides telling that the application is working, it also
+   /// holds back clicks, so the same work cannot be run twice just because its button was pressed again.
    /// </summary>
    /// <remarks>
-   /// Kontrol ini lookless: tampilannya seluruhnya berasal dari default style di
-   /// <c>Themes/Generic.xaml</c>, jadi pemakainya cukup menaruhnya sebagai anak terakhir dari
-   /// panel yang mau ditutupi dan mengikat <see cref="IsWaiting"/>. Menaruhnya di urutan terakhir
-   /// itu penting: yang terakhir digambarlah yang berada paling atas.
+   /// This control is lookless: its look comes entirely from the default style in
+   /// <c>Themes/Generic.xaml</c>, so its user only needs to put it as the last child of the panel to be
+   /// covered and bind <see cref="IsWaiting"/>. Putting it last matters: what is drawn last is on top.
    /// <code>
    /// &lt;local:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" /&gt;
    /// </code>
-   /// Lapisan ini hanya menutupi panel tempat ia ditaruh, jadi satu layar boleh punya beberapa
-   /// lapisan sekaligus - misalnya satu per grid - masing-masing diikat ke property miliknya
-   /// sendiri (<c>LeftGridWaiting</c>, <c>RightGridWaiting</c>, ...) dengan <see cref="Heading"/>,
-   /// <see cref="Caption"/> dan <c>Background</c> sendiri. Bidang yang kecil otomatis hanya
-   /// menampilkan titik tunggu (lihat <see cref="IsCompact"/>).
-   /// <c>InWaiting</c> bawaan view model cukup untuk satu lapisan; untuk beberapa lapisan buat
-   /// property bool per bidang.
+   /// This layer only covers the panel where it is placed, so one screen may have several layers at the
+   /// same time - for example one per grid - each bound to its own property (<c>LeftGridWaiting</c>,
+   /// <c>RightGridWaiting</c>, ...) with its own <see cref="Heading"/>, <see cref="Caption"/> and
+   /// <c>Background</c>. A small area automatically shows only the wait dots (see
+   /// <see cref="IsCompact"/>). The view model's built-in <c>InWaiting</c> is enough for one layer; for
+   /// several layers create a bool property per area.
    /// </remarks>
    public class WaitOverlay : Control
    {
@@ -45,9 +42,9 @@ namespace Em.Ui.Wpf.Controls
             new FrameworkPropertyMetadata(new CornerRadius(0)));
 
       /// <summary>
-      /// Kalau <c>true</c>, lapisan hanya menampilkan titik tunggu yang besar langsung di atas
-      /// scrim: tanpa kartu, <see cref="Heading"/>, dan <see cref="Caption"/>. Cocok untuk grid
-      /// atau daftar yang cukup digelapkan sementara datanya dimuat ulang.
+      /// When <c>true</c>, the layer only shows the large wait dots directly on the scrim: without the card,
+      /// <see cref="Heading"/>, and <see cref="Caption"/>. Suitable for a grid or list that only needs to be
+      /// dimmed while its data is reloaded.
       /// </summary>
       public bool IsBare {
          get => (bool)GetValue(IsBareProperty);
@@ -55,8 +52,8 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Kelengkungan sudut scrim. Samakan dengan <c>CornerRadius</c> panel yang ditutupi supaya
-      /// sudut scrim tidak menyembul keluar dari panel yang bersudut membulat.
+      /// The corner curvature of the scrim. Match it to the <c>CornerRadius</c> of the panel being covered so
+      /// the scrim corners do not stick out of a panel with rounded corners.
       /// </summary>
       public CornerRadius CornerRadius {
          get => (CornerRadius)GetValue(CornerRadiusProperty);
@@ -72,10 +69,10 @@ namespace Em.Ui.Wpf.Controls
       public static readonly DependencyProperty IsCompactProperty = IsCompactPropertyKey.DependencyProperty;
 
       /// <summary>
-      /// Bernilai <c>true</c> selama bidang yang ditutupi terlalu kecil untuk memuat kartu lengkap
-      /// (lebih sempit dari 220 atau lebih pendek dari 140). Kartunya lalu hanya menampilkan titik
-      /// tunggu, tanpa <see cref="Heading"/> dan <see cref="Caption"/>. Dihitung ulang setiap
-      /// ukuran bidangnya berubah, jadi lapisan yang sama bisa dipakai di grid besar maupun kecil.
+      /// <c>true</c> while the area being covered is too small to hold the full card (narrower than 220 or
+      /// shorter than 140). The card then only shows the wait dots, without <see cref="Heading"/> and
+      /// <see cref="Caption"/>. Recomputed every time the area's size changes, so the same layer can be used
+      /// on both big and small grids.
       /// </summary>
       public bool IsCompact => (bool)GetValue(IsCompactProperty);
 
@@ -104,13 +101,13 @@ namespace Em.Ui.Wpf.Controls
             new FrameworkPropertyMetadata(default(string)));
 
       /// <summary>
-      /// Menyalakan dan mematikan lapisan ini. Biasanya diikat ke
-      /// <c>NotifyPropertyBase.InWaiting</c> milik view model layarnya.
+      /// Turns this layer on and off. Usually bound to <c>NotifyPropertyBase.InWaiting</c> of its screen's
+      /// view model.
       /// </summary>
       /// <remarks>
-      /// Lapisan mulai menahan klik begitu bernilai <c>true</c>, tapi baru terlihat setelah
-      /// jeda pendek. Jadi pekerjaan yang selesai dalam sekejap tidak menyisakan kedipan
-      /// penanda tunggu di layar, sementara klik kedua tetap tertahan sejak detik pertama.
+      /// The layer starts holding back clicks as soon as it is <c>true</c>, but only becomes visible after a
+      /// short delay. So work that finishes in an instant leaves no flicker of the wait marker on screen,
+      /// while a second click is still held back from the first moment.
       /// </remarks>
       public bool IsWaiting {
          get => (bool)GetValue(IsWaitingProperty);
@@ -118,8 +115,8 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Baris pertama di bawah titik tunggu. Isinya tetap sepanjang layar itu hidup, jadi
-      /// pakailah kalimat yang berlaku untuk semua pekerjaan di layar tersebut.
+      /// The first line below the wait dots. Its content stays the same for as long as the screen lives, so
+      /// use a sentence that applies to all work on that screen.
       /// </summary>
       public string Heading {
          get => (string)GetValue(HeadingProperty);
@@ -127,8 +124,8 @@ namespace Em.Ui.Wpf.Controls
       }
 
       /// <summary>
-      /// Baris kedua, yang menyebut pekerjaan yang sedang berjalan sekarang - biasanya diikat ke
-      /// <c>NotifyPropertyBase.WaiterText</c>. Kalau kosong, barisnya tidak digambar sama sekali.
+      /// The second line, which names the work running right now - usually bound to
+      /// <c>NotifyPropertyBase.WaiterText</c>. When empty, the line is not drawn at all.
       /// </summary>
       public string? Caption {
          get => (string?)GetValue(CaptionProperty);

@@ -9,13 +9,17 @@ namespace Em.Ui.Wpf.Publish;
 /// <c>A.B.C-channel.N</c>, and N is not typed but taken from the tags the registry already holds.
 /// </summary>
 public readonly record struct ContainerVersion(int Major,int Minor,int Patch,string Channel) {
+ /// <summary>Name of the release channel.</summary>
  public const string Release="release";
+ /// <summary>The channels in order from the least to the most stable.</summary>
  public static readonly string[] Channels=["prealpha","alpha","beta","rc",Release];
  private static readonly Regex FloatingPattern=new(@"^(?:latest|release|prealpha|alpha|beta|rc|\d{1,4}(?:\.\d{1,4})?)$",RegexOptions.CultureInvariant);
  /// <summary>The first version of a new image, as the convention asks (not 0.0.0).</summary>
  public static readonly ContainerVersion First=new(0,1,0,"prealpha");
  private static readonly Regex Pattern=new(@"^(\d{1,4})\.(\d{1,4})\.(\d{1,4})(?:-(prealpha|alpha|beta|rc)\.(\d+))?$",RegexOptions.CultureInvariant);
+ /// <summary>Indicates release.</summary>
  public bool IsRelease=>Channel==Release;
+ /// <summary>The core.</summary>
  public string Core=>$"{Major}.{Minor}.{Patch}";
  /// <summary>False for a manual tag such as <c>dev</c>.</summary>
  public static bool TryParse(string? tag,out ContainerVersion version) {
@@ -23,6 +27,7 @@ public readonly record struct ContainerVersion(int Major,int Minor,int Patch,str
   version=m.Success?new(int.Parse(m.Groups[1].Value),int.Parse(m.Groups[2].Value),int.Parse(m.Groups[3].Value),m.Groups[4].Success?m.Groups[4].Value:Release):First;
   return m.Success;
  }
+ /// <summary>Composes the version tag for a build number.</summary>
  public string Tag(int number)=>IsRelease?Core:$"{Core}-{Channel}.{number}";
  /// <summary>
  /// The floating tags that move with this version (doc/convention/container-naming.md): a prerelease moves only its

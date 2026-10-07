@@ -18,6 +18,7 @@ namespace Em.Ui.Wpf.Navigations
    {
       private readonly EmApp _app;
 
+      /// <summary>Creates a new instance of <see cref="DefaultHomeControl"/>.</summary>
       public DefaultHomeControl(EmApp app) {
          _app = app;
          InitializeComponent();
@@ -32,11 +33,15 @@ namespace Em.Ui.Wpf.Navigations
          _app.UIConnections.CollectionChanged += OnApiConnectionsChanged;
       }
 
+      /// <summary>The vm.</summary>
       public DefaultHomeControlVm Vm => (DefaultHomeControlVm)DataContext;
 
+      /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
+      /// <inheritdoc />
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
+      /// <inheritdoc />
       public async Task OnReloadRequested(INavigation sender, NavigationEventArgs args) {
          await _app.ServiceProvider.GetRequiredService<ApprovalAccessCatalog>().LoadAsync();
          RenderStaticItems();
@@ -85,6 +90,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
+      /// <inheritdoc />
       public Task OnRelease(INavigation sender) {
          _app.UIConnections.CollectionChanged -= OnApiConnectionsChanged;
          return Task.CompletedTask;
@@ -167,8 +173,10 @@ namespace Em.Ui.Wpf.Navigations
       }
    }
 
+   /// <summary>View model of the default home screen.</summary>
    public class DefaultHomeControlVm : MvvmModelBase
    {
+      /// <summary>Creates a new instance of <see cref="DefaultHomeControlVm"/>.</summary>
       public DefaultHomeControlVm() {
          // AppMenus is the only thing a caller fills. Everything the view binds to - the loose
          // items and the group tree - is rebuilt from it here, so no rendering code is needed
@@ -181,46 +189,46 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Daftar datar semua menu aplikasi. Cukup isi koleksi ini: <see cref="RootAppMenus"/> dan
-      /// <see cref="AppMenuGroups"/> otomatis dibangun ulang dari <c>Navigation.MenuPath</c>.
+      /// The flat list of all application menus. Just fill this collection: <see cref="RootAppMenus"/> and
+      /// <see cref="AppMenuGroups"/> are rebuilt automatically from <c>Navigation.MenuPath</c>.
       /// </summary>
       public ObservableCollection<MenuNavigation> AppMenus { get; } = [];
 
       /// <summary>
-      /// Menu tanpa <c>MenuPath</c>, ditampilkan langsung di paling atas tanpa group.
+      /// Menus without a <c>MenuPath</c>, shown directly at the very top without a group.
       /// </summary>
       public ObservableCollection<MenuNavigation> RootAppMenus { get; } = [];
 
       /// <summary>
-      /// Group menu level teratas hasil pemecahan <c>MenuPath</c>; tiap group menyimpan
-      /// sub-group dan menu miliknya sendiri.
+      /// The top level menu groups resulting from splitting <c>MenuPath</c>; each group holds its own
+      /// sub-groups and menus.
       /// </summary>
       public ObservableCollection<MenuGroup> AppMenuGroups { get; } = [];
 
+      /// <summary>The static tool menus.</summary>
       public ObservableCollection<MenuNavigation> StaticToolMenus { get; } = [];
 
       #region API Connections
 
       /// <summary>
-      /// Daftar profil koneksi API yang ditampilkan kartu API Connections. Ini koleksi milik
-      /// <see cref="Core.EmApp.UIConnections"/> apa adanya - bukan salinannya - jadi profil yang
-      /// ditambah atau dihapus lewat dialog Connection Config langsung ikut terlihat di kartu.
-      /// Null-safe karena XAML membuat ViewModel ini sebelum <see cref="MvvmModelBase.EmApp"/>
-      /// sempat di-set.
+      /// The list of API connection profiles shown by the API Connections card. This is the collection of
+      /// <see cref="Core.EmApp.UIConnections"/> as-is - not a copy of it - so a profile added or removed
+      /// through the Connection Config dialog is immediately visible on the card. Null-safe because XAML
+      /// creates this view model before <see cref="MvvmModelBase.EmApp"/> could be set.
       /// </summary>
       public ObservableCollection<ApiConnection>? ApiConnections => EmApp?.UIConnections;
 
       /// <summary>
-      /// <c>true</c> kalau aplikasi sedang berjalan dalam mode debug. Kartu API Connections hanya
-      /// tampil pada mode ini: di luar debug, koneksi ditentukan aplikasi, bukan dipilih user dari
-      /// layar home.
+      /// <c>true</c> when the application is running in debug mode. The API Connections card only appears in
+      /// this mode: outside debug, the connection is decided by the application, not chosen by the user from
+      /// the home screen.
       /// </summary>
       public bool IsDebugMode => EmApp?.IsDebugMode ?? false;
 
       /// <summary>
-      /// Profil yang sedang dipilih di kartu API Connections. Menyetelnya sekaligus menjadikannya
-      /// koneksi aktif aplikasi (<see cref="Core.EmApp.ActiveConnection"/>), jadi kartu inilah yang
-      /// menentukan server mana yang dipakai - sama seperti combobox koneksi di toolbar multi-tab.
+      /// The profile currently chosen on the API Connections card. Setting it also makes it the application's
+      /// active connection (<see cref="Core.EmApp.ActiveConnection"/>), so this card decides which server is
+      /// used - just like the connection combobox in the multi-tab toolbar.
       /// </summary>
       public ApiConnection? SelectedConnection {
          get => Get<ApiConnection?>();
@@ -228,7 +236,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Teks status hasil tes koneksi terakhir, ditampilkan di kartu. Default: <c>"Not tested"</c>.
+      /// The status text of the last connection test, shown on the card. Default: <c>"Not tested"</c>.
       /// </summary>
       public string StatusText {
          get => Get<string>() ?? "Not tested";
@@ -236,7 +244,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Warna indikator status hasil tes koneksi. Default: abu-abu (belum ada tes).
+      /// The color of the status indicator of the last connection test. Default: gray (no test yet).
       /// </summary>
       public Brush StatusBrush {
          get => Get<Brush>() ?? Brushes.Gray;
@@ -244,9 +252,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menguji koneksi yang sedang dipilih lewat handshake: server harus bisa menandatangani nonce
-      /// acak dengan private key dari public key yang dikembalikannya. Kalau berhasil, public key
-      /// tersebut disimpan sebagai key server aktif.
+      /// Tests the chosen connection through the handshake: the server must be able to sign a random nonce
+      /// with the private key of the public key it returns. If it succeeds, that public key is stored as the
+      /// active server key.
       /// </summary>
       public async Task TestConnectionCommand() {
          var connection = SelectedConnection;
@@ -274,12 +282,12 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menyambungkan ViewModel ini ke aplikasi, lalu memberi tahu UI supaya binding kartu API
-      /// Connections dievaluasi ulang. Notifikasinya wajib: XAML sudah membuat ViewModel ini berikut
-      /// seluruh binding-nya sebelum <see cref="MvvmModelBase.EmApp"/> sempat di-set, jadi tanpa
-      /// ini <see cref="IsDebugMode"/> keburu terbaca <c>false</c> dan kartunya tidak pernah muncul.
+      /// Connects this view model to the application, then tells the UI to re-evaluate the API Connections
+      /// card bindings. The notification is required: XAML creates this view model together with all its
+      /// bindings before <see cref="MvvmModelBase.EmApp"/> could be set, so without it
+      /// <see cref="IsDebugMode"/> would be read as <c>false</c> too early and the card would never appear.
       /// </summary>
-      /// <param name="app">Objek aplikasi pemilik ViewModel ini.</param>
+      /// <param name="app">The application object that owns this view model.</param>
       public void AttachApp(EmApp app) {
          EmApp = app;
          NotifyChanged(nameof(IsDebugMode));
@@ -288,11 +296,11 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menyamakan pilihan di kartu dengan isi <see cref="ApiConnections"/> yang terbaru. Urutan
-      /// prioritasnya: profil yang tadi dipilih di kartu ini, lalu koneksi yang sedang aktif di
-      /// aplikasi (<see cref="Core.EmApp.ActiveConnection"/>) - supaya pilihan user tetap bertahan
-      /// walau control home dibuat ulang saat user pergi lalu kembali ke home - lalu koneksi debug
-      /// bawaan, dan terakhir profil pertama yang tersedia.
+      /// Aligns the choice on the card with the latest content of <see cref="ApiConnections"/>. Priority
+      /// order: the profile chosen on this card earlier, then the connection active in the application
+      /// (<see cref="Core.EmApp.ActiveConnection"/>) - so the user's choice survives even if the home control
+      /// is created again when the user leaves and comes back to home - then the default debug connection, and
+      /// lastly the first profile available.
       /// </summary>
       public void SyncSelectedConnection() {
          if (EmApp is null) return;
@@ -371,37 +379,41 @@ namespace Em.Ui.Wpf.Navigations
    #region Support Objects
 
    /// <summary>
-   /// Satu level pada pohon menu aplikasi, hasil pemecahan <c>Navigation.MenuPath</c>.
+   /// One level of the application menu tree, resulting from splitting <c>Navigation.MenuPath</c>.
    /// </summary>
    public class MenuGroup : MvvmModelBase
    {
       /// <summary>
-      /// Nama group, yaitu satu segmen dari <c>MenuPath</c>.
+      /// The group name, that is, one segment of <c>MenuPath</c>.
       /// </summary>
       public required string Header { get; init; }
 
       /// <summary>
-      /// Kedalaman group, dimulai dari 1 untuk group teratas. Dipakai view untuk memilih gaya tampilan.
+      /// The depth of the group, starting from 1 for the top group. Used by the view to choose a display style.
       /// </summary>
       public required int Level { get; init; }
 
       /// <summary>
-      /// Group anak di bawah group ini.
+      /// The child groups under this group.
       /// </summary>
       public ObservableCollection<MenuGroup> Groups { get; } = [];
 
       /// <summary>
-      /// Menu yang berada langsung di group ini.
+      /// The menus that sit directly in this group.
       /// </summary>
       public ObservableCollection<MenuNavigation> Items { get; } = [];
    }
 
+   /// <summary>One tile of the home menu.</summary>
    public class MenuNavigation : MvvmModelBase
    {
+      /// <summary>The refresh card command.</summary>
       public UiCommandBase? RefreshCardCommand { get; set; }
 
+      /// <summary>Indicates there is storage refresh.</summary>
       public bool HasStorageRefresh => RefreshCardCommand is not null;
 
+      /// <summary>The storage description.</summary>
       public string? StorageDescription => Navigation?.Name switch {
          "admin.cdn" => "Total public file sizes across all CDN folders. Excludes internal/temporary, hidden/system files, symlinks and filesystem overhead.",
          "admin.nupak" => "Stored packages including recycled versions; excludes database/filesystem overhead.",
@@ -409,35 +421,38 @@ namespace Em.Ui.Wpf.Navigations
          _ => null
       };
 
+      /// <summary>Indicates storage refreshing.</summary>
       public bool IsStorageRefreshing {
          get => Get<bool>();
          set => Set(value);
       }
 
+      /// <summary>The storage caption.</summary>
       public string StorageCaption {
          get => Get<string>() ?? "";
          set => Set(value);
       }
 
       /// <summary>
-      /// Navigasi asal item ini, atau <c>null</c> untuk item yang ditambahkan manual (tool statis
-      /// yang tidak membuka navigasi apa pun).
+      /// The navigation this item comes from, or <c>null</c> for an item that was added manually (a static
+      /// tool that opens no navigation).
       /// </summary>
       public Navigation? Navigation { get; init; }
 
       /// <summary>
-      /// Judul yang tampil di tile. Disalin sekali saat item dibuat, jadi tidak ikut berubah
-      /// kalau judul navigasinya diganti saat aplikasi berjalan.
+      /// The title shown on the tile. Copied once when the item is created, so it does not change if the
+      /// navigation's title is replaced while the application runs.
       /// </summary>
       public required string Title { get; init; }
 
       /// <summary>
-      /// Baris kedua pada tile. Kosongkan bila tidak perlu - barisnya otomatis disembunyikan.
+      /// The second line on the tile. Leave it empty when not needed - the line is hidden automatically.
       /// </summary>
       public required string SubTitle { get; init; }
 
       /// <summary>
-      /// Teks tooltip tile. Kosongkan bila tidak perlu - tooltip-nya otomatis tidak muncul.
+      /// The tooltip text of the tile. Leave it empty when not needed - the tooltip does not appear
+      /// automatically.
       /// </summary>
       public string Description { get; init; } = string.Empty;
 
@@ -447,11 +462,11 @@ namespace Em.Ui.Wpf.Navigations
       public required ImageSource Icon { get; init; }
 
       /// <summary>
-      /// Perintah yang dijalankan saat tile diklik.
+      /// The command that runs when the tile is clicked.
       /// </summary>
-      // UiCommandBase, bukan UiCommand: membuka sebuah navigasi itu asynchronous sekarang, jadi
-      // item yang menuju navigasi memakai UiCommandAsync, sedangkan tool yang hanya membuka dialog
-      // tetap sinkron. Keduanya bertemu di base class ini.
+      // UiCommandBase, not UiCommand: opening a navigation is asynchronous now, so an item that leads to a
+      // navigation uses UiCommandAsync, while a tool that only opens a dialog stays synchronous. The two meet
+      // in this base class.
       public required UiCommandBase NavigateCommand { get; init; }
    }
 

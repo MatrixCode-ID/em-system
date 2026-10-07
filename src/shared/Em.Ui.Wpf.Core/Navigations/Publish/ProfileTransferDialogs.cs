@@ -6,8 +6,8 @@ using Em.Ui.Wpf.Publish;
 namespace Em.Ui.Wpf.Navigations.Publish;
 
 /// <summary>
-/// Pilihan saat mengekspor profil: tanpa secret, atau dengan secret sebagai berkas terenkripsi (passphrase)
-/// atau plain text. Dibangun lewat kode, mengikuti <see cref="PublisherSettingsDialog"/>.
+/// The choice when exporting a profile: without secrets, or with secrets as an encrypted file
+/// (passphrase) or as plain text. Built in code, following <see cref="PublisherSettingsDialog"/>.
 /// </summary>
 public sealed class ExportProfileDialog : EmWindow {
  private readonly CheckBox _include=new() {Content="Include sensitive data (passwords and tokens)"};
@@ -19,11 +19,12 @@ public sealed class ExportProfileDialog : EmWindow {
  private readonly StackPanel _options=new() {Margin=new Thickness(24,0,0,0),Visibility=Visibility.Collapsed};
  private readonly StackPanel _passphraseRows=new();
 
- /// <summary>Apakah secret ikut diekspor, dan bagaimana berkasnya dilindungi.</summary>
+ /// <summary>Whether the secrets are exported, and how the file is protected.</summary>
  public ExportSecrets Secrets { get; private set; }
- /// <summary>Passphrase untuk mode <see cref="ExportSecrets.Encrypted"/>.</summary>
+ /// <summary>The passphrase for mode <see cref="ExportSecrets.Encrypted"/>.</summary>
  public string? Passphrase { get; private set; }
 
+ /// <summary>Creates a new instance of <see cref="ExportProfileDialog"/>.</summary>
  public ExportProfileDialog(string profileName) {
   Title="Export profile";Width=560;SizeToContent=SizeToContent.Height;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;
   Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});
@@ -64,11 +65,12 @@ public sealed class ExportProfileDialog : EmWindow {
  }
 }
 
-/// <summary>Meminta passphrase untuk membuka berkas profil terenkripsi.</summary>
+/// <summary>Asks for a passphrase to open an encrypted profile file.</summary>
 public sealed class PassphraseDialog : EmWindow {
- /// <summary>Passphrase yang diketik pengguna.</summary>
+ /// <summary>The passphrase typed by the user.</summary>
  public string Passphrase { get; private set; }="";
 
+ /// <summary>Creates a new instance of <see cref="PassphraseDialog"/>.</summary>
  public PassphraseDialog(string fileName) {
   Title="Encrypted profile";Width=480;SizeToContent=SizeToContent.Height;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;
   Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});

@@ -16,14 +16,14 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Layar pengelola container registry: root, folder dan container (tiga panel).
-   /// Robot dan haknya dikelola di UserManager. Server yang registry-nya tidak dinyalakan menjawab 404; layar ini
-   /// lalu hanya menampilkan keadaan "tidak dinyalakan".
+   /// The container registry manager screen: roots, folders, and containers (three panels). Robots and
+   /// their rights are managed in UserManager. A server whose registry is not turned on answers 404; this
+   /// screen then only shows the "not turned on" state.
    /// </summary>
    public partial class ContainerManager : UserControl, INavigationBody
    {
       /// <summary>
-      /// Membuat layar pengelola container registry untuk aplikasi <paramref name="app"/>.
+      /// Creates the container registry manager screen for application <paramref name="app"/>.
       /// </summary>
       public ContainerManager(EmApp app) {
          InitializeComponent();
@@ -36,7 +36,7 @@ namespace Em.Ui.Wpf.Navigations
          rootList.PreviewMouseRightButtonDown += (_, e) => SelectUnderPointer(e.OriginalSource);
       }
 
-      /// <summary>ViewModel layar ini.</summary>
+      /// <summary>The view model of this screen.</summary>
       public ContainerManagerVm Vm => (ContainerManagerVm)DataContext;
 
       private static void SelectUnderPointer(object? source) {
@@ -73,46 +73,46 @@ namespace Em.Ui.Wpf.Navigations
       public Task OnRelease(INavigation sender) => Task.CompletedTask;
    }
 
-   /// <summary>Satu root di daftar kiri tab Containers.</summary>
+   /// <summary>One root in the left list of the Containers tab.</summary>
    public class CtnRootItem
    {
       internal CtnRootItem(CtnRootInfo info) {
          Info = info;
       }
 
-      /// <summary>Data root apa adanya dari server.</summary>
+      /// <summary>The root data as-is from the server.</summary>
       public CtnRootInfo Info { get; }
 
       /// <summary>Id root.</summary>
       public string Id => Info.Id;
 
-      /// <summary>Nama root, bagian pertama nama pull.</summary>
+      /// <summary>Name of the root, the first part of the pull name.</summary>
       public string Name => Info.Name;
 
-      /// <summary>Deskripsi; string kosong kalau tidak ada.</summary>
+      /// <summary>Description; an empty string when there is none.</summary>
       public string Description => Info.Description ?? "";
 
-      /// <summary><c>true</c> kalau deskripsi ada.</summary>
+      /// <summary><c>true</c> when there is a description.</summary>
       public bool HasDescription => !string.IsNullOrWhiteSpace(Info.Description);
 
-      /// <summary>Status aktif.</summary>
+      /// <summary>Active status.</summary>
       public bool IsActive => Info.IsActive;
 
-      /// <summary>Jumlah container, untuk lencana di daftar.</summary>
+      /// <summary>Number of containers, for the badge in the list.</summary>
       public int ImageCount => Info.ImageCount;
 
-      /// <summary>Jumlah folder dan container, mis. <c>"3 folders · 12 containers"</c>.</summary>
+      /// <summary>Number of folders and containers, e.g. <c>"3 folders · 12 containers"</c>.</summary>
       public string Summary =>
          $"{Info.FolderCount:N0} folder{(Info.FolderCount == 1 ? "" : "s")} · {Info.ImageCount:N0} container{(Info.ImageCount == 1 ? "" : "s")}";
 
-      /// <summary>Waktu dibuat dalam waktu lokal.</summary>
+      /// <summary>Creation time in local time.</summary>
       public string CreatedCaption => ContainerManagerVm.LocalTime(Info.CreatedAt);
    }
 
    /// <summary>
-   /// Satu simpul tree di tengah tab Containers: sebuah folder atau sebuah container. Server mengirim tree
-   /// datar; <see cref="ContainerManagerVm"/> menyusunnya menjadi simpul-simpul ini. Simpul ini juga muatan
-   /// drag untuk memindahkan folder atau container ke folder lain.
+   /// One node of the tree in the middle of the Containers tab: a folder or a container. The server sends a
+   /// flat tree; <see cref="ContainerManagerVm"/> arranges it into these nodes. This node is also the drag
+   /// payload for moving a folder or container to another folder.
    /// </summary>
    public class CtnTreeNode : NotifyPropertyBase
    {
@@ -130,56 +130,56 @@ namespace Em.Ui.Wpf.Navigations
          _owner = owner;
       }
 
-      /// <summary>Data folder; <c>null</c> untuk simpul container.</summary>
+      /// <summary>The folder data; <c>null</c> for a container node.</summary>
       public CtnFolderInfo? Folder { get; }
 
-      /// <summary>Data container; <c>null</c> untuk simpul folder.</summary>
+      /// <summary>The container data; <c>null</c> for a folder node.</summary>
       public CtnImageInfo? Image { get; }
 
-      /// <summary>Folder induk; <c>null</c> kalau langsung di root.</summary>
+      /// <summary>The parent folder; <c>null</c> when directly under the root.</summary>
       public CtnTreeNode? Parent { get; }
 
-      /// <summary>Isi simpul folder: folder lebih dulu, lalu container, masing-masing urut nama.</summary>
+      /// <summary>Content of a folder node: folders first, then containers, each sorted by name.</summary>
       public ObservableCollection<CtnTreeNode> Children { get; } = [];
 
-      /// <summary><c>true</c> untuk folder.</summary>
+      /// <summary><c>true</c> for a folder.</summary>
       public bool IsFolder => Folder is not null;
 
-      /// <summary>Id folder atau container.</summary>
+      /// <summary>Id of the folder or container.</summary>
       public string Id => Folder?.Id ?? Image!.Id;
 
-      /// <summary>Nama folder atau container.</summary>
+      /// <summary>Name of the folder or container.</summary>
       public string Name => Folder?.Name ?? Image!.Name;
 
-      /// <summary>Deskripsi container; string kosong untuk folder atau kalau tidak ada.</summary>
+      /// <summary>Description of the container; an empty string for a folder or when there is none.</summary>
       public string Description => Image?.Description ?? "";
 
-      /// <summary><c>true</c> kalau <see cref="Description"/> ada isinya.</summary>
+      /// <summary><c>true</c> when <see cref="Description"/> has content.</summary>
       public bool HasDescription => !string.IsNullOrWhiteSpace(Image?.Description);
 
-      /// <summary>Waktu container dibuat dalam waktu lokal; kosong untuk folder.</summary>
+      /// <summary>Creation time of the container in local time; empty for a folder.</summary>
       public string CreatedCaption => Image is null ? "" : ContainerManagerVm.LocalTime(Image.CreatedAt);
 
-      /// <summary>Folder atau container yang aktif; folder selalu aktif.</summary>
+      /// <summary>Whether the folder or container is active; a folder is always active.</summary>
       public bool IsActive => Image?.IsActive ?? true;
 
-      /// <summary>Ikon simpul: folder atau kotak container.</summary>
+      /// <summary>Icon of the node: a folder or a container box.</summary>
       public EFontAwesomeIcon Icon => IsFolder
          ? (IsExpanded ? EFontAwesomeIcon.Solid_FolderOpen : EFontAwesomeIcon.Solid_Folder)
          : EFontAwesomeIcon.Solid_Box;
 
-      /// <summary>Keterangan di kanan nama: jumlah tag container, atau isi folder.</summary>
+      /// <summary>Caption to the right of the name: the container's tag count, or the folder's content.</summary>
       public string Caption => IsFolder
          ? (Children.Count == 0 ? "empty" : $"{Children.Count:N0} item{(Children.Count == 1 ? "" : "s")}")
          : $"{Image!.TagCount:N0} tag{(Image.TagCount == 1 ? "" : "s")}";
 
-      /// <summary>Kedalaman simpul; folder yang langsung di root bernilai 1.</summary>
+      /// <summary>Depth of the node; a folder directly under the root is 1.</summary>
       public int Depth => Parent is null ? 1 : Parent.Depth + 1;
 
-      /// <summary>Jalur folder dari root, mis. <c>"services / api"</c>.</summary>
+      /// <summary>Path of the folder from the root, e.g. <c>"services / api"</c>.</summary>
       public string Path => Parent is null ? Name : $"{Parent.Path} / {Name}";
 
-      /// <summary>Seluruh simpul di bawah simpul ini, tidak termasuk dirinya.</summary>
+      /// <summary>All nodes below this node, not including itself.</summary>
       public IEnumerable<CtnTreeNode> Descendants() {
          foreach (var child in Children) {
             yield return child;
@@ -187,7 +187,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary><c>true</c> kalau <paramref name="other"/> ada di bawah simpul ini, di kedalaman mana pun.</summary>
+      /// <summary><c>true</c> when <paramref name="other"/> is below this node, at any depth.</summary>
       public bool Contains(CtnTreeNode other) {
          for (var node = other.Parent; node is not null; node = node.Parent) {
             if (node == this) return true;
@@ -196,22 +196,23 @@ namespace Em.Ui.Wpf.Navigations
          return false;
       }
 
-      /// <summary>Folder terbuka atau tertutup.</summary>
+      /// <summary>Whether the folder is open or closed.</summary>
       public bool IsExpanded {
          get => Get<bool>();
          set => Set(value, _ => NotifyChanged(nameof(Icon)));
       }
 
       /// <summary>
-      /// <c>true</c> kalau container ini terbukti punya blob yang hilang dari storage server. Baru diketahui
-      /// setelah manifest container dibaca (saat dipilih), dan hilang lagi saat tree dibaca ulang.
+      /// <c>true</c> when this container is proven to have a blob that is missing from the server storage.
+      /// Only known after the container's manifests are read (when it is selected), and gone again when the
+      /// tree is read again.
       /// </summary>
       public bool HasMissingBlobs {
          get => Get<bool>();
          internal set => Set(value);
       }
 
-      /// <summary>Simpul ini yang dipilih; dipasang dua arah oleh gaya item TreeView.</summary>
+      /// <summary>This node is the selected one; set two-way by the TreeView item style.</summary>
       public bool IsSelected {
          get => Get<bool>();
          set => Set(value, selected => {
@@ -223,64 +224,64 @@ namespace Em.Ui.Wpf.Navigations
       internal void RefreshCaption() => NotifyChanged(nameof(Caption));
    }
 
-   /// <summary>Satu manifest di detail container: tag, digest, media type, ukuran, dan siapa yang mengirim.</summary>
+   /// <summary>One manifest in the container details: tag, digest, media type, size, and who pushed it.</summary>
    public class CtnManifestItem
    {
       internal CtnManifestItem(CtnManifestInfo info) {
          Info = info;
       }
 
-      /// <summary>Data manifest apa adanya dari server.</summary>
+      /// <summary>The manifest data as-is from the server.</summary>
       public CtnManifestInfo Info { get; }
 
       /// <summary>Digest lengkap.</summary>
       public string Digest => Info.Digest;
 
-      /// <summary>Digest yang dipotong untuk tampilan.</summary>
+      /// <summary>The digest shortened for display.</summary>
       public string ShortDigest => CtnInput.ShortDigest(Info.Digest);
 
       /// <summary>Media type manifest.</summary>
       public string MediaType => Info.MediaType;
 
-      /// <summary>Tag yang menunjuk manifest ini.</summary>
+      /// <summary>The tags that point to this manifest.</summary>
       public string[] Tags => Info.Tags;
 
-      /// <summary><c>true</c> kalau ada tag yang menunjuk manifest ini.</summary>
+      /// <summary><c>true</c> when a tag points to this manifest.</summary>
       public bool HasTags => Info.Tags.Length > 0;
 
       /// <summary>
-      /// Ukuran manifest itu sendiri - bukan ukuran image atau layer-nya, yang tidak dilaporkan server.
+      /// Size of the manifest itself - not the size of the image or its layers, which the server does not report.
       /// </summary>
       public string SizeCaption => $"Manifest size {CdnManagerVm.FormatSize(Info.Size)}";
 
-      /// <summary><c>true</c> kalau ada blob manifest ini yang berkasnya tidak ada di storage server.</summary>
+      /// <summary><c>true</c> when a blob of this manifest has no file in the server storage.</summary>
       public bool HasMissingBlobs => Info.MissingBlobCount > 0;
 
-      /// <summary>Peringatan blob hilang; kosong kalau semua blob ada.</summary>
+      /// <summary>Warning about a missing blob; empty when all blobs exist.</summary>
       public string MissingBlobCaption => Info.MissingBlobCount switch {
          0 => "",
          var missing => $"{missing} of {Info.BlobCount} blob(s) missing from server storage - this image cannot be pulled " +
                         "until the files are restored. The database may be shared with a server whose storage holds them."
       };
 
-      /// <summary>Satu baris keterangan: ukuran manifest, waktu push, dan pengirimnya.</summary>
+      /// <summary>One caption line: manifest size, push time, and the pusher.</summary>
       public string MetaCaption => $"{SizeCaption} · pushed {PushedCaption} · {PushedByCaption}";
 
-      /// <summary>Waktu push dalam waktu lokal.</summary>
+      /// <summary>Push time in local time.</summary>
       public string PushedCaption => ContainerManagerVm.LocalTime(Info.PushedAt);
 
-      /// <summary>Siapa yang mengirim: nama robot, atau "deleted robot" kalau robotnya sudah dihapus.</summary>
+      /// <summary>Who pushed it: the robot's name, or "deleted robot" when the robot has been deleted.</summary>
       public string PushedByCaption => Info.PushedBy is { Length: > 0 } robot ? robot : "deleted robot";
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="ContainerManager"/>. Data dan seleksi di Containers.cs,
-   /// mutasi di Containers.Edit.cs; berkas ini memegang status dan penanganan jawaban server.
+   /// View model for <see cref="ContainerManager"/>. Data and selection are in Containers.cs, mutations in
+   /// Containers.Edit.cs; this file holds the state and the handling of server answers.
    /// </summary>
    public partial class ContainerManagerVm : MvvmModelBase
    {
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan seluruh command layar.
+      /// Creates a new view model and registers all commands of the screen.
       /// </summary>
       public ContainerManagerVm() {
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
@@ -289,11 +290,13 @@ namespace Em.Ui.Wpf.Navigations
 
       private ICtnServices Service => EmApp!.ServiceProvider.GetRequiredService<ICtnServices>();
 
+      /// <summary>The storage caption.</summary>
       public string StorageCaption {
          get => Get<string>() ?? "Storage: not checked";
          private set => Set(value);
       }
 
+      /// <summary>The storage detail.</summary>
       public string StorageDetail {
          get => Get<string>() ?? "";
          private set => Set(value);
@@ -302,20 +305,20 @@ namespace Em.Ui.Wpf.Navigations
       #region Data
 
       /// <summary>
-      /// <c>true</c> kalau server menjawab bahwa container registry-nya tidak dinyalakan. Selama itu
-      /// semua perintah kecuali Refresh mati dan layar hanya menampilkan pesannya.
+      /// <c>true</c> when the server answers that its container registry is not turned on. While that holds,
+      /// all commands except Refresh are off and the screen only shows its message.
       /// </summary>
       public bool IsRegistryDisabled {
          get => Get<bool>();
          private set => Set(value, _ => NotifyChanged(nameof(IsRegistryAvailable)));
       }
 
-      /// <summary>Kebalikan <see cref="IsRegistryDisabled"/>, untuk binding.</summary>
+      /// <summary>The opposite of <see cref="IsRegistryDisabled"/>, for binding.</summary>
       public bool IsRegistryAvailable => !IsRegistryDisabled;
 
       /// <summary>
-      /// <c>true</c> sejak jawaban pertama dari server diterima - daftar root maupun kabar bahwa
-      /// registry nonaktif. Sebelum itu semua perintah kecuali Refresh mati.
+      /// <c>true</c> since the first answer from the server was received - the root list or the news that the
+      /// registry is off. Before that all commands except Refresh are off.
       /// </summary>
       public bool IsLoaded {
          get => Get<bool>();
@@ -323,14 +326,14 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// <c>host[:port]</c> registry untuk perintah <c>docker</c>, diambil dari koneksi aktif - server
-      /// tidak mengirimkannya. Kosong kalau belum ada koneksi aktif.
+      /// The registry's <c>host[:port]</c> for <c>docker</c> commands, taken from the active connection - the
+      /// server does not send it. Empty when there is no active connection yet.
       /// </summary>
       public string RegistryHost => CtnInput.RegistryHost(EmApp?.ActiveConnection?.Host);
 
       /// <summary>
-      /// <c>true</c> kalau alamat server memakai HTTP polos bukan ke <c>localhost</c>: Docker akan menolak
-      /// <c>docker login</c> ke alamat seperti itu, jadi layar menampilkan catatan.
+      /// <c>true</c> when the server address uses plain HTTP to something other than <c>localhost</c>: Docker
+      /// refuses <c>docker login</c> to such an address, so the screen shows a note.
       /// </summary>
       public bool IsInsecureHost => CtnInput.IsInsecureRemote(EmApp?.ActiveConnection?.Host);
 
@@ -338,10 +341,10 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Commands
 
-      /// <summary>Membaca ulang seluruh layar dari server.</summary>
+      /// <summary>Reads the whole screen again from the server.</summary>
       public Task RefreshCommand() => ReloadAsync();
 
-      /// <summary>Selalu boleh selama layar tidak sibuk, termasuk saat registry nonaktif.</summary>
+      /// <summary>Always allowed while the screen is not busy, including when the registry is off.</summary>
       public bool RefreshCommandAllowed() => IsNotBusy;
 
       #endregion
@@ -349,8 +352,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Methods
 
       /// <summary>
-      /// Membaca ulang root dan tree root yang dipilih. Dipanggil host setiap kali layar dibuka
-      /// lewat navigasi dan dari tombol Refresh.
+      /// Reads the roots and the tree of the selected root again. Called by the host every time the screen is
+      /// opened through navigation and from the Refresh button.
       /// </summary>
       public Task ReloadAsync() => RunBusyAsync("Loading...", ReadAllAsync);
 
@@ -363,8 +366,11 @@ namespace Em.Ui.Wpf.Navigations
          if (!await ReadRootsAsync()) return;
       }
 
+      /// <summary>Indicates storage refreshing.</summary>
       public bool IsStorageRefreshing { get => Get<bool>(); private set { Set(value); RaiseCommandsChanged(); } }
+      /// <summary>Whether the refresh storage command may run now.</summary>
       public bool RefreshStorageCommandAllowed() => !IsStorageRefreshing;
+      /// <summary>Runs the refresh storage command.</summary>
       public async Task RefreshStorageCommand() {
          try { await ReadStorageAsync(); } catch (Exception ex) { AlertError(ex); }
       }
@@ -400,17 +406,17 @@ namespace Em.Ui.Wpf.Navigations
          IsLoaded = true;
       }
 
-      /// <summary>Waktu UTC dari server dalam waktu lokal, untuk tampilan.</summary>
+      /// <summary>UTC time from the server in local time, for display.</summary>
       internal static string LocalTime(DateTime utc) =>
          utc.ToLocalTime().ToString("dd MMM yyyy HH:mm", CultureInfo.CurrentCulture);
 
-      // Pesan dari server dibuang awalan "Server Error: " supaya yang tampil hanya kalimatnya.
+      // The "Server Error: " prefix is removed from the server's message so only the sentence is shown.
       internal static string ServerMessage(ActionException x) => x.Message.Replace("Server Error: ", "");
 
-      // Satu perubahan di server. 400 (nama tidak sah), 404 (barangnya sudah dihapus orang lain), dan
-      // 409 (bentrok) adalah jawaban sehari-hari: ditampilkan sebagai pemberitahuan, bukan galat, lalu
-      // bagian layar yang terkena dibaca ulang lewat reread - berhasil maupun tidak, karena yang
-      // tampil mungkin sudah usang. Jawaban lain jatuh ke AlertError milik RunBusyAsync.
+      // One change on the server. 400 (invalid name), 404 (the item was already deleted by someone else), and
+      // 409 (conflict) are everyday answers: shown as a notice, not an error, then the affected part of the
+      // screen is read again through reread - whether it succeeded or not, because what is shown may already
+      // be stale. Other answers fall to AlertError of RunBusyAsync.
       private async Task RunMutationAsync(string waiterText, string title, Func<Task> action, Func<Task> reread) {
          var owner = DialogOwner;
          await RunBusyAsync(waiterText, async () => {
@@ -426,8 +432,8 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      // showOverlay: false menjaga IsBusy - semua command tetap mati - tanpa lapisan tunggu, untuk
-      // pekerjaan yang menampilkan kemajuannya sendiri.
+      // showOverlay: false keeps IsBusy - all commands stay off - without the wait layer, for work that shows
+      // its own progress.
       private async Task RunBusyAsync(string waiterText, Func<Task> work, bool showOverlay = true) {
          if (EmApp == null || IsBusy) return;
 
@@ -447,8 +453,8 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      // Semua command di sini bergantung pada fakta yang sama - sibuk, registry mati, baris terpilih -
-      // jadi dievaluasi ulang sebagai satu himpunan.
+      // All commands here depend on the same facts - busy, registry off, selected row - so they are
+      // re-evaluated as one set.
       private void RaiseCommandsChanged() {
          foreach (var command in Commands)
             command.RaiseCanExecuteChanged();

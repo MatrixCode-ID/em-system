@@ -6,19 +6,19 @@ using Em.Ui.Wpf.Windows;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog untuk menampilkan detail lengkap sebuah exception (pesan, stack trace, data,
-   /// dan seluruh inner exception) kepada user, dengan opsi salin ke clipboard.
+   /// A dialog to show the complete details of an exception (message, stack trace, data, and all inner
+   /// exceptions) to the user, with an option to copy to the clipboard.
    /// </summary>
    public partial class DisplayExceptionData : EmWindow
    {
       private readonly DisplayExceptionDataVm _vm;
 
       /// <summary>
-      /// Membuat dialog dan menyusun detail dari objek exception (atau objek lain) yang diberikan.
+      /// Creates the dialog and composes the details from the given exception object (or other object).
       /// </summary>
       /// <param name="exception">
-      /// Exception yang akan ditampilkan detailnya. Jika bukan bertipe <see cref="Exception"/>,
-      /// hanya representasi <c>ToString()</c>-nya yang ditampilkan.
+      /// The exception whose details are shown. If it is not of type <see cref="Exception"/>, only its
+      /// <c>ToString()</c> representation is shown.
       /// </param>
       public DisplayExceptionData(object exception) {
          InitializeComponent();
@@ -46,8 +46,8 @@ namespace Em.Ui.Wpf.Dialogs
    }
 
    /// <summary>
-   /// ViewModel read-only untuk <see cref="DisplayExceptionData"/>, berisi detail exception
-   /// yang sudah disusun dalam bentuk teks siap tampil (termasuk gabungan seluruh inner exception).
+   /// Read-only view model for <see cref="DisplayExceptionData"/>, holding the exception details already
+   /// composed as ready-to-show text (including the combination of all inner exceptions).
    /// </summary>
    public sealed class DisplayExceptionDataVm
    {
@@ -73,40 +73,40 @@ namespace Em.Ui.Wpf.Dialogs
          FullDetail = fullDetail;
       }
 
-      /// <summary>Nama lengkap tipe exception.</summary>
+      /// <summary>The full name of the exception type.</summary>
       public string ExceptionType { get; }
 
-      /// <summary>Pesan exception, atau <c>"(no message)"</c> jika kosong.</summary>
+      /// <summary>The exception message, or <c>"(no message)"</c> when empty.</summary>
       public string Message { get; }
 
-      /// <summary>Sumber exception (<see cref="Exception.Source"/>), atau <c>"-"</c> jika kosong.</summary>
+      /// <summary>The source of the exception (<see cref="Exception.Source"/>), or <c>"-"</c> when empty.</summary>
       public string ExceptionSource { get; }
 
-      /// <summary>Method tempat exception dilempar (<see cref="Exception.TargetSite"/>), atau <c>"-"</c> jika kosong.</summary>
+      /// <summary>The method where the exception was thrown (<see cref="Exception.TargetSite"/>), or <c>"-"</c> when empty.</summary>
       public string TargetSite { get; }
 
-      /// <summary>Kode <see cref="Exception.HResult"/> dalam format heksadesimal.</summary>
+      /// <summary>The <see cref="Exception.HResult"/> code in hexadecimal format.</summary>
       public string HResult { get; }
 
-      /// <summary>Ringkasan pesan seluruh exception bertingkat (lihat <c>Extensions.SerializedMessagesDefault</c>).</summary>
+      /// <summary>The summary of the messages of all tiered exceptions (see <c>Extensions.SerializedMessagesDefault</c>).</summary>
       public string SerializedMessages { get; }
 
-      /// <summary>Gabungan stack trace dari exception utama dan seluruh inner exception-nya.</summary>
+      /// <summary>The combination of the stack traces of the main exception and all its inner exceptions.</summary>
       public string StackTrace { get; }
 
-      /// <summary>Gabungan isi <see cref="Exception.Data"/> dari exception utama dan seluruh inner exception-nya.</summary>
+      /// <summary>The combination of the <see cref="Exception.Data"/> content of the main exception and all its inner exceptions.</summary>
       public string Data { get; }
 
-      /// <summary>Teks laporan lengkap (gabungan seluruh informasi di atas), siap disalin ke clipboard.</summary>
+      /// <summary>The full report text (the combination of all the information above), ready to be copied to the clipboard.</summary>
       public string FullDetail { get; }
 
       /// <summary>
-      /// Membuat <see cref="DisplayExceptionDataVm"/> dari sebuah objek. Jika objeknya adalah
-      /// <see cref="Exception"/>, seluruh detail (pesan, stack trace, data, inner exception) diekstrak;
-      /// jika bukan, hanya representasi <c>ToString()</c>-nya yang dipakai untuk semua field teks.
+      /// Creates a <see cref="DisplayExceptionDataVm"/> from an object. If the object is an
+      /// <see cref="Exception"/>, all details (message, stack trace, data, inner exceptions) are extracted;
+      /// if not, only its <c>ToString()</c> representation is used for all text fields.
       /// </summary>
-      /// <param name="exception">Objek exception (atau objek lain) yang akan ditampilkan.</param>
-      /// <returns>ViewModel berisi detail exception yang siap ditampilkan.</returns>
+      /// <param name="exception">The exception object (or other object) to be shown.</param>
+      /// <returns>A view model holding the exception details ready to be shown.</returns>
       public static DisplayExceptionDataVm Create(object exception) {
          if (exception is Exception x) {
             return Create(x);

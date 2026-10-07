@@ -7,7 +7,7 @@ using Em.Ui.Wpf.Shared;
 
 namespace Em.Ui.Wpf.Navigations
 {
-   // Bagian tab Robots: daftar robot, token, dan hak per manager/resource.
+   // The Robots tab part: the robot list, tokens, and rights per manager/resource.
    public partial class RobotManagerVm
    {
       private void RegisterRobotCommands() {
@@ -19,10 +19,10 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Data
 
-      /// <summary>Seluruh robot, urut nama.</summary>
+      /// <summary>All robots, ordered by name.</summary>
       public ObservableCollection<RobotItem> Robots { get; } = [];
 
-      /// <summary>Robot yang dipilih di daftar kiri tab Robots.</summary>
+      /// <summary>The robot chosen in the left list of the Robots tab.</summary>
       public RobotItem? SelectedRobot {
          get => Get<RobotItem?>();
          set => Set(value, _ => {
@@ -31,10 +31,10 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Ada robot yang dipilih, jadi panel detailnya tampil.</summary>
+      /// <summary>A robot is chosen, so its detail panel is shown.</summary>
       public bool ShowRobotDetail => SelectedRobot is not null;
 
-      /// <summary>Server belum punya satu robot pun.</summary>
+      /// <summary>The server has no robot at all yet.</summary>
       public bool HasNoRobots => IsLoaded && Robots.Count == 0;
 
       #endregion
@@ -42,8 +42,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Commands
 
       /// <summary>
-      /// Meminta nama, deskripsi, dan masa berlaku, membuat robot, lalu menampilkan tokennya sekali di
-      /// <see cref="RobotTokenDialog"/>. Robot baru belum punya hak di resource mana pun.
+      /// Asks for a name, description, and validity, creates the robot, then shows its token once in
+      /// <see cref="RobotTokenDialog"/>. A new robot has no rights on any resource yet.
       /// </summary>
       public async Task NewRobotCommand() {
          RobotOwnerInfo[]? owners = null;
@@ -63,10 +63,10 @@ namespace Em.Ui.Wpf.Navigations
          ShowToken(created);
       }
 
-      /// <summary>Hanya saat data sudah terbaca dan layar tidak sibuk.</summary>
+      /// <summary>Only when the data has been read and the screen is not busy.</summary>
       public bool NewRobotCommandAllowed() => CanAct;
 
-      /// <summary>Mengubah deskripsi, status aktif, dan masa berlaku token robot yang dipilih.</summary>
+      /// <summary>Changes the description, active status, and token validity of the chosen robot.</summary>
       public async Task EditRobotCommand() {
          if (SelectedRobot is not { } robot) return;
 
@@ -81,12 +81,12 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRobotsAsync(robot.Id));
       }
 
-      /// <summary>Hanya untuk robot yang dipilih.</summary>
+      /// <summary>Only for the chosen robot.</summary>
       public bool EditRobotCommandAllowed() => CanAct && SelectedRobot is not null;
 
       /// <summary>
-      /// Membuat token baru untuk robot yang dipilih, lalu menampilkannya sekali. Token lama langsung tidak
-      /// berlaku: dialognya mengatakan itu dan meminta masa berlaku tokennya sekaligus.
+      /// Creates a new token for the chosen robot, then shows it once. The old token stops being valid at
+      /// once: the dialog says so and asks for the token's validity at the same time.
       /// </summary>
       public async Task RegenerateRobotCommand() {
          if (SelectedRobot is not { } robot) return;
@@ -103,10 +103,10 @@ namespace Em.Ui.Wpf.Navigations
          ShowToken(created);
       }
 
-      /// <summary>Hanya untuk robot yang dipilih.</summary>
+      /// <summary>Only for the chosen robot.</summary>
       public bool RegenerateRobotCommandAllowed() => CanAct && SelectedRobot is not null;
 
-      /// <summary>Menghapus robot yang dipilih beserta hak-haknya, setelah dikonfirmasi.</summary>
+      /// <summary>Deletes the chosen robot together with its rights, after confirmation.</summary>
       public async Task DeleteRobotCommand() {
          if (SelectedRobot is not { } robot || DialogOwner is not { } owner) return;
 
@@ -121,15 +121,16 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRobotsAsync());
       }
 
-      /// <summary>Hanya untuk robot yang dipilih.</summary>
+      /// <summary>Only for the chosen robot.</summary>
       public bool DeleteRobotCommandAllowed() => CanAct && SelectedRobot is not null;
 
       #endregion
 
       #region Reading
 
-      // Membaca robot dan menyusun tabel haknya terhadap definisi manager yang sedang terbaca, jadi dipanggil
-      // sesudah definisi manager terbaca. selectId memilih robot tertentu, mis. yang baru dibuat.
+      // Reads the robots and arranges the table of their rights against the manager definitions currently
+      // read, so it is called after the manager definitions have been read. selectId chooses a specific
+      // robot, e.g. one that was just created.
       private async Task ReadRobotsAsync(string? selectId = null) {
          var robots = await Service.GetMeta_Robots();
 
@@ -148,9 +149,9 @@ namespace Em.Ui.Wpf.Navigations
 
       internal void OnAccessSelected(RobotAccessItem row) => _ = ApplyAccessAsync(row);
 
-      // Satu perubahan hak langsung dikirim, dengan indikator di barisnya saja dan tanpa lapisan tunggu
-      // layar penuh. Kalau gagal, pilihannya dikembalikan ke yang terakhir diterima server; jawaban
-      // sehari-hari (400/404/409) ditampilkan dan daftar robot dibaca ulang karena mungkin sudah usang.
+      // A single rights change is sent right away, with an indicator on its row only and without a
+      // full-screen wait layer. If it fails, the choice is returned to the last one the server accepted;
+      // everyday answers (400/404/409) are shown and the robot list is read again because it may be stale.
       private async Task ApplyAccessAsync(RobotAccessItem row) {
          var requested = row.SelectedAccess;
          var owner = DialogOwner;
@@ -182,8 +183,8 @@ namespace Em.Ui.Wpf.Navigations
 
       #endregion
 
-      // Token hanya ada di jawaban pembuatan; dialog ini satu-satunya tempat ia tampil, dan tidak
-      // disimpan di VM layar ini sesudah dialognya ditutup.
+      // The token only exists in the creation answer; this dialog is the only place it is shown, and it is
+      // not kept in this screen's view model after the dialog is closed.
       private void ShowToken(RobotToken? created) {
          if (created is null) return;
 

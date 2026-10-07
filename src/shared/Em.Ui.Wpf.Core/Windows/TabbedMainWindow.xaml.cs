@@ -17,15 +17,15 @@ using Point = System.Windows.Point;
 namespace Em.Ui.Wpf.Windows
 {
    /// <summary>
-   /// Window utama aplikasi di kedua layout, dengan chrome buatan sendiri: satu baris judul yang memuat logo,
-   /// menu Apps, deretan tab, menu Tools, tombol tema, tombol akun, dan tombol caption window, lalu
-   /// kartu konten di bawahnya.
+   /// The application's main window in both layouts, with its own hand-made chrome: one title row holding
+   /// the logo, the Apps menu, the row of tabs, the Tools menu, the theme button, the account button, and
+   /// the window caption buttons, then the content card below it.
    /// <para>
-   /// Di layout multi-tab setiap tab adalah satu entri <see cref="NavigationStack"/> window ini, dan
-   /// kartu konten menampilkan body entri yang sedang aktif; selama belum ada yang masuk, kartu itu
-   /// berisi layar login dan hampir seluruh baris judul disembunyikan. Di layout satu halaman kartu
-   /// konten berisi host navigasi <see cref="EmApp.MainStack"/>, dan baris judul hanya memuat logo,
-   /// judul, dan tombol caption.
+   /// In the multi-tab layout every tab is one entry of this window's <see cref="NavigationStack"/>, and
+   /// the content card shows the body of the active entry; until someone signs in, the card holds the login
+   /// screen and almost the whole title row is hidden. In the single-page layout the content card holds the
+   /// navigation host <see cref="EmApp.MainStack"/>, and the title row only holds the logo, the title, and
+   /// the caption buttons.
    /// </para>
    /// </summary>
    public partial class TabbedMainWindow : Window
@@ -37,10 +37,11 @@ namespace Em.Ui.Wpf.Windows
       private Task _release = Task.CompletedTask;
 
       /// <summary>
-      /// Membuat window utama aplikasi. Constructor-nya hanya memuat XAML dan menyambungkan aplikasi;
-      /// isi window disiapkan oleh <see cref="EmApp.Run"/> sesuai layout yang dipilih.
+      /// Creates the application's main window. Its constructor only loads the XAML and connects the
+      /// application; the window's content is prepared by <see cref="EmApp.Run"/> according to the chosen
+      /// layout.
       /// </summary>
-      /// <param name="app">Aplikasi pemilik window ini.</param>
+      /// <param name="app">The application that owns this window.</param>
       public TabbedMainWindow(EmApp app) : this(app, null) { }
 
       // A window a tab was torn off into: it shows the given tabbed stack and nothing else of the
@@ -76,14 +77,14 @@ namespace Em.Ui.Wpf.Windows
          LauncherIntegration.AttachToWindow(this, app.ApplicationName);
       }
 
-      /// <summary>ViewModel window ini, dideklarasikan di XAML sebagai <c>DataContext</c>.</summary>
+      /// <summary>The view model of this window, declared in XAML as the <c>DataContext</c>.</summary>
       public TabbedMainWindowVm Vm => (TabbedMainWindowVm)DataContext;
 
       // Only the torn-off windows close themselves once empty; the main window never does.
       private bool IsTearOff => Vm.ClosesWhenEmpty;
 
       /// <summary>
-      /// Stack yang ditampilkan window ini sebagai tab, atau <c>null</c> di layout satu halaman.
+      /// The stack this window shows as tabs, or <c>null</c> in the single-page layout.
       /// </summary>
       public NavigationStack? Stack => Vm.Stack;
 
@@ -337,34 +338,46 @@ namespace Em.Ui.Wpf.Windows
       #endregion
    }
 
+   /// <summary>One section of the task hub, from one source.</summary>
    public class HubTaskSectionVm(string source, IEnumerable<HubTaskInfo> tasks) : MvvmModelBase
    {
+      /// <summary>The title.</summary>
       public string Title { get; } = source switch {
          "approval.document" => "DOCUMENT NEED APPROVAL",
          "approval.data" => "DATA NEED APPROVAL",
          _ => source
       };
+      /// <summary>The items.</summary>
       public HubTaskRowVm[] Items { get; } = tasks.Select(t => new HubTaskRowVm(t)).ToArray();
    }
 
+   /// <summary>One row of the task hub.</summary>
    public class HubTaskRowVm(HubTaskInfo info) : MvvmModelBase
    {
+      /// <summary>The info.</summary>
       public HubTaskInfo Info { get; } = info;
+      /// <summary>The title.</summary>
       public string Title => Info.Title;
+      /// <summary>The count.</summary>
       public int Count => Info.Count;
+      /// <summary>The description.</summary>
       public string? Description => Info.Description;
+      /// <summary>The action name.</summary>
       public string? ActionName => Info.ActionName;
+      /// <summary>Indicates it can open.</summary>
       public bool CanOpen => Info.ActionName == "Open"
          && Info.NavigationTarget == ApprovalManagerNavigationPayload.NavigationName;
+      /// <summary>The oldest age text.</summary>
       public string OldestAgeText => Info.OldestAge is not { } age ? "" : age.TotalDays >= 1
          ? $"Oldest {Math.Floor(age.TotalDays):0}d" : age.TotalHours >= 1
          ? $"Oldest {Math.Floor(age.TotalHours):0}h" : $"Oldest {Math.Max(0, Math.Floor(age.TotalMinutes)):0}m";
    }
 
    /// <summary>
-   /// ViewModel <see cref="TabbedMainWindow"/>: tab-tab yang mengikuti stack window, isi menu Apps
-   /// dan Tools, koneksi aktif, identitas pengguna di tombol akun, bagian baris judul yang tampil
-   /// untuk layout dan keadaan login saat ini, serta keadaan window (minimize/maximize/tutup).
+   /// View model of <see cref="TabbedMainWindow"/>: the tabs that follow the window's stack, the content of
+   /// the Apps and Tools menus, the active connection, the user's identity on the account button, the parts
+   /// of the title row shown for the current layout and sign-in state, and the window state
+   /// (minimize/maximize/close).
    /// </summary>
    public class TabbedMainWindowVm : MvvmModelBase
    {
@@ -378,6 +391,7 @@ namespace Em.Ui.Wpf.Windows
 
       private bool _appAttached;
 
+      /// <summary>Creates a new instance of <see cref="TabbedMainWindowVm"/>.</summary>
       public TabbedMainWindowVm() {
          Tabs = [];
          Tabs.CollectionChanged += (_, _) => {
@@ -410,29 +424,29 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Dipicu saat window perlu ditutup: pengguna menekan tombol tutup, atau window hasil tab yang
-      /// ditarik keluar kehabisan tab. Window menjembataninya ke <see cref="Window.Close"/>, karena
-      /// menutup window adalah urusan view.
+      /// Raised when the window needs to be closed: the user pressed the close button, or a window born from
+      /// a dragged-out tab ran out of tabs. The window bridges it to <see cref="Window.Close"/>, because
+      /// closing a window is the view's business.
       /// </summary>
       public event Action? RequestClose;
 
       /// <summary>
-      /// Dipicu saat pengguna memilih "Move to New Window" pada sebuah tab. Membuat window adalah
-      /// urusan view, jadi window-lah yang menjawabnya dengan memindahkan tab itu ke window baru.
+      /// Raised when the user chooses "Move to New Window" on a tab. Creating a window is the view's
+      /// business, so the window answers it by moving that tab to a new window.
       /// </summary>
       public event Action<TabbedMainWindowTab>? TearOffRequested;
 
       #region Window
 
-      /// <summary>Judul window, tampil di baris judul dan di taskbar.</summary>
+      /// <summary>Title of the window, shown in the title row and on the taskbar.</summary>
       public string Title {
          get => Get("Em");
          set => Set(value);
       }
 
       /// <summary>
-      /// Keadaan window (normal, minimize, maximize), terikat dua arah dengan window sehingga tombol
-      /// caption cukup mengubah nilai ini.
+      /// The window state (normal, minimized, maximized), bound two-way to the window so the caption buttons
+      /// only need to change this value.
       /// </summary>
       public WindowState WindowState {
          get => Get<WindowState>();
@@ -440,8 +454,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// <c>true</c> kalau window ini dipakai layout satu halaman: kartu konten berisi host navigasi
-      /// (<see cref="SpaHost"/>), dan baris judul hanya memuat logo, judul, dan tombol caption.
+      /// <c>true</c> when this window uses the single-page layout: the content card holds the navigation host
+      /// (<see cref="SpaHost"/>), and the title row only holds the logo, the title, and the caption buttons.
       /// </summary>
       public bool IsSpaLayout {
          get => Get<bool>();
@@ -449,10 +463,10 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// <c>true</c> selama ada yang masuk di layout multi-tab. Selama <c>false</c>, kartu konten
-      /// menampilkan layar login dan deretan tab, menu, combobox koneksi, tombol tema, serta tombol
-      /// akun disembunyikan. Ditulis oleh aplikasi saat alur login berpindah, bukan dihitung dari
-      /// pengguna aktif, karena mode debug punya pengguna tanpa pernah login.
+      /// <c>true</c> while someone has signed in, in the multi-tab layout. While <c>false</c>, the content
+      /// card shows the login screen, and the row of tabs, the menus, the connection combobox, the theme
+      /// button, and the account button are hidden. Written by the application when the login flow moves,
+      /// not computed from the active user, because debug mode has a user who never signed in.
       /// </summary>
       public bool IsSignedIn {
          get => Get<bool>();
@@ -460,46 +474,46 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// <c>true</c> untuk window yang lahir dari tab yang ditarik keluar: window seperti itu tidak punya
-      /// isi selain tabnya, jadi menutup dirinya begitu tab terakhirnya ditutup atau dipindah, dan tidak
-      /// menampilkan menu Apps, menu Tools, combobox koneksi, tombol tema, maupun tombol akun - semuanya
-      /// hanya ada di window utama. Window utama bernilai <c>false</c> dan tidak pernah dibiarkan
-      /// kosong karena drag.
+      /// <c>true</c> for a window born from a dragged-out tab: such a window has no content other than its
+      /// tabs, so it closes itself as soon as its last tab is closed or moved, and shows neither the Apps
+      /// menu, the Tools menu, the connection combobox, the theme button, nor the account button - all of
+      /// those exist only in the main window. The main window is <c>false</c> and is never left empty
+      /// because of a drag.
       /// </summary>
       public bool ClosesWhenEmpty {
          get => Get<bool>();
          set => Set(value, _ => RefreshChrome());
       }
 
-      /// <summary>Apakah aplikasi berjalan dalam mode debug.</summary>
+      /// <summary>Whether the application is running in debug mode.</summary>
       public bool IsDebugMode => EmApp?.IsDebugMode ?? false;
 
-      /// <summary>Visibilitas deretan tab dan tombol daftar tab: hanya di mode tab layout multi-tab.</summary>
+      /// <summary>Visibility of the row of tabs and the tab list button: only in the multi-tab layout's tab mode.</summary>
       public Visibility TabStripVisibility =>
          !IsSpaLayout && IsSignedIn ? Visibility.Visible : Visibility.Collapsed;
 
       /// <summary>
-      /// Visibilitas tombol dropdown daftar tab: seperti <see cref="TabStripVisibility"/>, dan hanya
-      /// selama ada tab - tanpa tab, daftarnya kosong dan kartu konten sudah menampilkan "No tab open".
+      /// Visibility of the tab list dropdown button: like <see cref="TabStripVisibility"/>, and only while
+      /// there are tabs - without tabs the list is empty and the content card already shows "No tab open".
       /// </summary>
       public Visibility TabListButtonVisibility =>
          TabStripVisibility == Visibility.Visible && Tabs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
       /// <summary>
-      /// Visibilitas menu Apps, menu Tools, tombol tema, dan tombol akun: hanya di window utama layout
-      /// multi-tab, dan hanya selama ada yang masuk.
+      /// Visibility of the Apps menu, the Tools menu, the theme button, and the account button: only in the
+      /// main window of the multi-tab layout, and only while someone has signed in.
       /// </summary>
       public Visibility WorkspaceToolsVisibility =>
          !IsSpaLayout && IsSignedIn && !ClosesWhenEmpty ? Visibility.Visible : Visibility.Collapsed;
 
       /// <summary>
-      /// Visibilitas combobox koneksi: seperti <see cref="WorkspaceToolsVisibility"/>, dan hanya di mode
-      /// debug - di luar itu koneksi dipilih di layar login.
+      /// Visibility of the connection combobox: like <see cref="WorkspaceToolsVisibility"/>, and only in
+      /// debug mode - otherwise the connection is chosen on the login screen.
       /// </summary>
       public Visibility ConnectionVisibility =>
          IsDebugMode && WorkspaceToolsVisibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
 
-      /// <summary>Apakah teks "No tab open" ditampilkan: mode tab tanpa satu tab pun yang aktif.</summary>
+      /// <summary>Whether the text "No tab open" is shown: tab mode with no active tab at all.</summary>
       public bool IsEmptyHintVisible => !IsSpaLayout && IsSignedIn && ActiveTab == null;
 
       private void RefreshChrome() {
@@ -512,8 +526,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Host navigasi yang mengisi kartu konten di layout satu halaman, atau <c>null</c> di layout
-      /// multi-tab.
+      /// The navigation host that fills the content card in the single-page layout, or <c>null</c> in the
+      /// multi-tab layout.
       /// </summary>
       public object? SpaHost {
          get => Get<object?>();
@@ -521,8 +535,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Isi kartu konten: host navigasi di layout satu halaman, atau body entri yang sedang aktif di
-      /// layout multi-tab (termasuk layar login selama belum ada yang masuk).
+      /// The content of the content card: the navigation host in the single-page layout, or the body of the
+      /// active entry in the multi-tab layout (including the login screen until someone signs in).
       /// </summary>
       public object? CardContent => IsSpaLayout ? SpaHost : ActiveTab?.Content;
 
@@ -531,8 +545,8 @@ namespace Em.Ui.Wpf.Windows
       #region Tabs
 
       /// <summary>
-      /// Stack yang ditampilkan window ini sebagai tab, atau <c>null</c> di layout satu halaman.
-      /// <see cref="Tabs"/>, <see cref="SelectedTab"/>, dan isi kartu konten mengikuti stack ini.
+      /// The stack this window shows as tabs, or <c>null</c> in the single-page layout.
+      /// <see cref="Tabs"/>, <see cref="SelectedTab"/>, and the content of the content card follow this stack.
       /// </summary>
       public NavigationStack? Stack {
          get;
@@ -601,16 +615,16 @@ namespace Em.Ui.Wpf.Windows
          return -1;
       }
 
-      /// <summary>Tab yang sedang terbuka, berurutan dari kiri ke kanan.</summary>
+      /// <summary>The tabs that are open, in order from left to right.</summary>
       public ObservableCollection<TabbedMainWindowTab> Tabs {
          get => Get<ObservableCollection<TabbedMainWindowTab>>();
          private set => Set(value);
       }
 
       /// <summary>
-      /// Tab yang disorot di deretan tab. Memilih tab dari UI memindahkan stack ke entri tab itu - body
-      /// yang ditinggalkan tetap ditanya dan boleh menolak; kalau menolak, sorotan kembali ke tab
-      /// semula.
+      /// The tab highlighted in the row of tabs. Choosing a tab from the UI moves the stack to that tab's
+      /// entry - the body being left is still asked and may refuse; if it refuses, the highlight returns to
+      /// the previous tab.
       /// </summary>
       public TabbedMainWindowTab? SelectedTab {
          get => Get<TabbedMainWindowTab?>();
@@ -626,8 +640,9 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Tab yang body-nya sedang tampil di kartu konten, yaitu entri <see cref="NavigationStack.Current"/>.
-      /// Bisa sesaat berbeda dari <see cref="SelectedTab"/> selama body yang ditinggalkan masih ditanya.
+      /// The tab whose body is shown in the content card, that is, the <see cref="NavigationStack.Current"/>
+      /// entry. It may briefly differ from <see cref="SelectedTab"/> while the body being left is still being
+      /// asked.
       /// </summary>
       public TabbedMainWindowTab? ActiveTab {
          get => Get<TabbedMainWindowTab?>();
@@ -652,8 +667,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Apakah dropdown daftar tab (tombol di kanan deretan tab) sedang terbuka. Membukanya
-      /// sekaligus mengosongkan <see cref="TabListFilter"/>, supaya daftar selalu mulai lengkap.
+      /// Whether the tab list dropdown (the button at the right of the row of tabs) is open. Opening it also
+      /// empties <see cref="TabListFilter"/>, so the list always starts complete.
       /// </summary>
       public bool IsTabListOpen {
          get => Get<bool>();
@@ -662,27 +677,28 @@ namespace Em.Ui.Wpf.Windows
          });
       }
 
-      /// <summary>Teks pencarian di dropdown daftar tab; dicocokkan ke judul tab tanpa peduli huruf besar/kecil.</summary>
+      /// <summary>Search text in the tab list dropdown; matched against tab titles, case-insensitively.</summary>
       public string TabListFilter {
          get => Get(string.Empty);
          set => Set(value, _ => NotifyChanged(nameof(TabListItems)));
       }
 
-      /// <summary>Tab yang ditampilkan dropdown daftar tab: semua tab, disaring oleh <see cref="TabListFilter"/>.</summary>
+      /// <summary>The tabs shown by the tab list dropdown: all tabs, filtered by <see cref="TabListFilter"/>.</summary>
       public IEnumerable<TabbedMainWindowTab> TabListItems =>
          string.IsNullOrWhiteSpace(TabListFilter)
             ? Tabs
             : Tabs.Where(t => t.Title.Contains(TabListFilter.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
 
       /// <summary>
-      /// Apakah kotak pencarian di dropdown daftar tab ditampilkan. Baru muncul saat tabnya cukup banyak
-      /// untuk perlu dicari; dengan sedikit tab, daftar itu sendiri sudah cukup dibaca sekilas.
+      /// Whether the search box in the tab list dropdown is shown. It only appears when there are enough tabs
+      /// to need searching; with few tabs, the list itself is readable at a glance.
       /// </summary>
       public bool IsTabSearchVisible => Tabs.Count >= TabSearchThreshold;
 
       // The number of open tabs from which the tab list offers a search box.
       private const int TabSearchThreshold = 8;
 
+      /// <summary>Runs the close tab command.</summary>
       public async Task CloseTabCommand(TabbedMainWindowTab tab) {
          try {
             await tab.Entry.Close();
@@ -692,6 +708,7 @@ namespace Em.Ui.Wpf.Windows
          }
       }
 
+      /// <summary>Runs the reload tab command.</summary>
       public async Task ReloadTabCommand(TabbedMainWindowTab tab) {
          try {
             await tab.Entry.Reload();
@@ -703,6 +720,7 @@ namespace Em.Ui.Wpf.Windows
 
       // The tab clicked becomes the one shown first, then the others go one by one; the first body
       // that refuses keeps its tab and stops the rest.
+      /// <summary>Runs the close other tabs command.</summary>
       public async Task CloseOtherTabsCommand(TabbedMainWindowTab tab) {
          if (Stack is not { } stack) return;
 
@@ -717,9 +735,11 @@ namespace Em.Ui.Wpf.Windows
          }
       }
 
+      /// <summary>Whether the close other tabs command may run now.</summary>
       public bool CloseOtherTabsCommandAllowed(TabbedMainWindowTab tab) => Tabs.Contains(tab) && Tabs.Count > 1;
 
       // When the tab shown is among the ones going, the tab clicked is the natural one to land on.
+      /// <summary>Runs the close tabs to right command.</summary>
       public async Task CloseTabsToRightCommand(TabbedMainWindowTab tab) {
          if (Stack is not { } stack) return;
 
@@ -739,13 +759,16 @@ namespace Em.Ui.Wpf.Windows
          }
       }
 
+      /// <summary>Whether the close tabs to right command may run now.</summary>
       public bool CloseTabsToRightCommandAllowed(TabbedMainWindowTab tab) {
          var index = Tabs.IndexOf(tab);
          return index >= 0 && index < Tabs.Count - 1;
       }
 
+      /// <summary>Runs the move tab to new window command.</summary>
       public void MoveTabToNewWindowCommand(TabbedMainWindowTab tab) => TearOffRequested?.Invoke(tab);
 
+      /// <summary>Whether the move tab to new window command may run now.</summary>
       public bool MoveTabToNewWindowCommandAllowed(TabbedMainWindowTab tab) => CanTearOff(tab);
 
       // UiCommand is not tied to CommandManager.RequerySuggested, so the tab menu's commands have to be
@@ -756,43 +779,44 @@ namespace Em.Ui.Wpf.Windows
          Commands[nameof(MoveTabToNewWindowCommand)]?.RaiseCanExecuteChanged();
       }
 
+      /// <summary>Runs the select tab command.</summary>
       public void SelectTabCommand(TabbedMainWindowTab tab) {
          IsTabListOpen = false;
          SelectedTab = tab;
       }
 
       /// <summary>
-      /// Apakah <paramref name="tab"/> boleh ditarik keluar menjadi window baru. Hanya kalau window ini
-      /// masih punya tab lain: tab tunggal tidak dipisah lagi, window-nya cukup ditutup.
+      /// Whether <paramref name="tab"/> may be dragged out to become a new window. Only when this window
+      /// still has other tabs: a single tab is not split off anymore, its window is simply closed.
       /// </summary>
-      /// <param name="tab">Tab yang hendak ditarik.</param>
+      /// <param name="tab">The tab about to be dragged out.</param>
       public bool CanTearOff(TabbedMainWindowTab tab) => Tabs.Contains(tab) && Stack is { Entries.Count: > 1 };
 
       /// <summary>
-      /// Apakah <paramref name="tab"/> boleh keluar dari window ini, entah menjadi window baru atau
-      /// pindah ke window lain. Tab terakhir window utama tidak boleh, supaya window utama tidak
-      /// kosong; tab terakhir window hasil drag-out boleh pindah ke window lain, lalu window-nya
-      /// menutup sendiri.
+      /// Whether <paramref name="tab"/> may leave this window, either to become a new window or to move to
+      /// another window. The last tab of the main window may not, so the main window is not left empty; the
+      /// last tab of a window born from a drag-out may move to another window, after which its window closes
+      /// itself.
       /// </summary>
-      /// <param name="tab">Tab yang hendak ditarik.</param>
+      /// <param name="tab">The tab about to be dragged out.</param>
       public bool CanMoveOut(TabbedMainWindowTab tab) =>
          Tabs.Contains(tab) && (ClosesWhenEmpty || Stack is { Entries.Count: > 1 });
 
       /// <summary>
-      /// Apakah <paramref name="tab"/> dari window lain boleh masuk ke window ini. Ditolak kalau di sini
-      /// sudah ada tab lain dengan judul yang sama, karena judul adalah kunci unik tab.
+      /// Whether <paramref name="tab"/> from another window may enter this window. Refused when there is
+      /// already another tab here with the same title, because the title is the tab's unique key.
       /// </summary>
-      /// <param name="tab">Tab yang hendak dimasukkan.</param>
+      /// <param name="tab">The tab about to be brought in.</param>
       public bool CanAcceptTab(TabbedMainWindowTab tab) =>
          Stack != null
          && !Tabs.Any(t => t != tab && string.Equals(t.Title, tab.Title, NavigationStack.TitleComparison));
 
       /// <summary>
-      /// Menggeser <paramref name="tab"/> ke posisi <paramref name="index"/> di deretan tab window ini,
-      /// tanpa mengubah tab yang aktif dan tanpa memberi tahu body mana pun.
+      /// Moves <paramref name="tab"/> to position <paramref name="index"/> in this window's row of tabs,
+      /// without changing the active tab and without notifying any body.
       /// </summary>
-      /// <param name="tab">Tab yang digeser; harus milik window ini.</param>
-      /// <param name="index">Posisi barunya, dihitung dari kiri mulai 0.</param>
+      /// <param name="tab">The tab being moved; it must belong to this window.</param>
+      /// <param name="index">Its new position, counted from the left starting at 0.</param>
       public void MoveTab(TabbedMainWindowTab tab, int index) => Stack?.Move(tab.Entry, index);
 
       #endregion
@@ -800,9 +824,9 @@ namespace Em.Ui.Wpf.Windows
       #region Menus
 
       /// <summary>
-      /// Isi menu Apps, level teratas: navigasi yang tampil di menu dan boleh dibuka pengguna aktif,
-      /// dikelompokkan menurut jalur menunya. Item yang punya <see cref="TabbedMainWindowMenuItem.Items"/>
-      /// membuka submenu ke kanan, jadi menunya bisa bertingkat sedalam yang dibutuhkan.
+      /// Content of the Apps menu, top level: the navigations that appear in the menu and may be opened by
+      /// the active user, grouped by their menu path. An item that has <see cref="TabbedMainWindowMenuItem.Items"/>
+      /// opens a submenu to its right, so the menu can be as deep as needed.
       /// </summary>
       public ObservableCollection<TabbedMainWindowMenuItem> AppMenu {
          get => Get<ObservableCollection<TabbedMainWindowMenuItem>>();
@@ -810,8 +834,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Isi dropdown Tools di kanan baris judul: tool bawaan aplikasi, sama dengan yang tampil di home
-      /// layout satu halaman. Bentuknya sama dengan <see cref="AppMenu"/>.
+      /// Content of the Tools dropdown at the right of the title row: the application's built-in tools, the
+      /// same as those shown on the single-page layout's home. It has the same shape as <see cref="AppMenu"/>.
       /// </summary>
       public ObservableCollection<TabbedMainWindowMenuItem> ToolsMenu {
          get => Get<ObservableCollection<TabbedMainWindowMenuItem>>();
@@ -819,15 +843,15 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Apakah dropdown Apps sedang terbuka. Tombol Apps dan menunya sama-sama terikat ke property
-      /// ini, jadi keduanya tidak pernah berbeda keadaan.
+      /// Whether the Apps dropdown is open. The Apps button and its menu are both bound to this property, so
+      /// their states never differ.
       /// </summary>
       public bool IsAppsMenuOpen {
          get => Get<bool>();
          set => Set(value);
       }
 
-      /// <summary>Apakah dropdown Tools sedang terbuka.</summary>
+      /// <summary>Whether the Tools dropdown is open.</summary>
       public bool IsToolsMenuOpen {
          get => Get<bool>();
          set => Set(value);
@@ -905,6 +929,7 @@ namespace Em.Ui.Wpf.Windows
          if (IsSignedIn) RebuildMenus();
       }
 
+      /// <summary>Runs the open menu item command.</summary>
       public async Task OpenMenuItemCommand(TabbedMainWindowMenuItem item) {
          // A branch only opens its submenu; there is nothing behind it.
          if (item.IsBranch) return;
@@ -963,15 +988,15 @@ namespace Em.Ui.Wpf.Windows
       private void AppConnectionsChanged(object? sender, NotifyCollectionChangedEventArgs e) => SyncSelectedConnection();
 
       /// <summary>
-      /// Profil koneksi yang ditawarkan combobox koneksi, yaitu koleksi milik
-      /// <see cref="Core.EmApp.UIConnections"/> apa adanya. Null-safe karena XAML membuat ViewModel ini
-      /// sebelum <see cref="MvvmModelBase.EmApp"/> sempat di-set.
+      /// The connection profiles offered by the connection combobox, which are the collection of
+      /// <see cref="Core.EmApp.UIConnections"/> as-is. Null-safe because XAML creates this view model before
+      /// <see cref="MvvmModelBase.EmApp"/> has been set.
       /// </summary>
       public ObservableCollection<ApiConnection>? Connections => EmApp?.UIConnections;
 
       /// <summary>
-      /// Profil koneksi yang dipilih di combobox koneksi. Memilihnya menjadikannya koneksi aktif
-      /// aplikasi (<see cref="Core.EmApp.ActiveConnection"/>).
+      /// The connection profile chosen in the connection combobox. Choosing it makes it the application's
+      /// active connection (<see cref="Core.EmApp.ActiveConnection"/>).
       /// </summary>
       public ApiConnection? SelectedConnection {
          get => Get<ApiConnection?>();
@@ -1090,13 +1115,19 @@ namespace Em.Ui.Wpf.Windows
          NotifyChanged(nameof(IsTaskHubEmpty));
       }
 
+      /// <summary>The hub task sections.</summary>
       public ObservableCollection<HubTaskSectionVm> HubTaskSections { get; } = [];
+      /// <summary>Indicates there is hub tasks.</summary>
       public bool HasHubTasks => HubTaskSections.Count > 0;
+      /// <summary>Indicates there is running tasks.</summary>
       public bool HasRunningTasks => TaskHubItems.Count > 0;
+      /// <summary>Indicates hub task load failed.</summary>
       public bool HubTaskLoadFailed { get => Get<bool>(); private set => Set(value); }
 
+      /// <summary>Whether the open hub task command may run now.</summary>
       public bool OpenHubTaskCommandAllowed(HubTaskRowVm? row) => row?.CanOpen == true && EmApp?.ActiveUser is not null;
 
+      /// <summary>Runs the open hub task command.</summary>
       public async Task OpenHubTaskCommand(HubTaskRowVm? row) {
          if (!OpenHubTaskCommandAllowed(row)) return;
          try {
@@ -1135,35 +1166,35 @@ namespace Em.Ui.Wpf.Windows
          NotifyChanged(nameof(HasRunningTasks));
       }
 
-      /// <summary>Task personal user yang login, sebagaimana dipantau <see cref="BusinessTaskTracker"/>.</summary>
+      /// <summary>The signed-in user's personal tasks, as monitored by <see cref="BusinessTaskTracker"/>.</summary>
       public ObservableCollection<BusinessTaskItem> TaskHubItems { get; } = [];
 
       /// <summary>
-      /// Visibilitas tombol hub task: di window utama kedua layout, selama ada user yang login.
+      /// Visibility of the task hub button: in the main window of both layouts, while a user is signed in.
       /// </summary>
       public Visibility TaskHubVisibility =>
          _taskTracker is not null && !ClosesWhenEmpty && EmApp?.ActiveUser is not null
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-      /// <summary>Jumlah task personal yang masih antri atau berjalan, untuk badge tombol hub.</summary>
+      /// <summary>Number of personal tasks still queued or running, for the hub button's badge.</summary>
       public int TaskHubAliveCount => _taskTracker?.AliveCount ?? 0;
 
-      /// <summary><c>true</c> selama ada task personal yang hidup: ikon hub berputar dan badge tampil.</summary>
+      /// <summary><c>true</c> while a personal task is live: the hub icon spins and the badge appears.</summary>
       public bool IsTaskHubBusy => TaskHubAliveCount > 0;
 
-      /// <summary><c>true</c> kalau ada task yang selesai sejak popup hub terakhir dibuka.</summary>
+      /// <summary><c>true</c> when a task has finished since the hub popup was last opened.</summary>
       public bool TaskHubHasUnseen => _taskTracker?.HasUnseen ?? false;
 
-      /// <summary><c>true</c> kalau di antara task yang belum dilihat ada yang gagal; titik penandanya merah.</summary>
+      /// <summary><c>true</c> when one of the tasks not yet seen has failed; the marker dot is red.</summary>
       public bool TaskHubHasUnseenFailure => _taskTracker?.HasUnseenFailure ?? false;
 
-      /// <summary><c>true</c> kalau semua bagian daftar pekerjaan kosong.</summary>
+      /// <summary><c>true</c> when every part of the task list is empty.</summary>
       public bool IsTaskHubEmpty => TaskHubItems.Count == 0 && !HasHubTasks;
 
       /// <summary>
-      /// Apakah popup hub task sedang terbuka. Membukanya memuat ulang daftar task dan menandai semua
-      /// task yang sudah selesai sebagai sudah dilihat.
+      /// Whether the task hub popup is open. Opening it reloads the task list and marks every finished task as
+      /// seen.
       /// </summary>
       public bool IsTaskHubOpen {
          get => Get<bool>();
@@ -1176,7 +1207,7 @@ namespace Em.Ui.Wpf.Windows
          });
       }
 
-      /// <summary>Membuka dialog status task <paramref name="item"/>.</summary>
+      /// <summary>Opens the status dialog of task <paramref name="item"/>.</summary>
       public void OpenTaskCommand(BusinessTaskItem? item) {
          if (item is null || EmApp is not { } app) return;
 
@@ -1186,34 +1217,34 @@ namespace Em.Ui.Wpf.Windows
          _ = _taskTracker?.RefreshAsync();
       }
 
-      /// <summary>Hanya untuk sebuah baris task.</summary>
+      /// <summary>Only for a task row.</summary>
       public bool OpenTaskCommandAllowed(BusinessTaskItem? item) => item is not null;
 
       #endregion
 
       #region Account
 
-      /// <summary>Apakah menu akun (dropdown di balik tombol pengguna) sedang terbuka.</summary>
+      /// <summary>Whether the account menu (the dropdown behind the user button) is open.</summary>
       public bool IsUserMenuOpen {
          get => Get<bool>();
          set => Set(value);
       }
 
-      /// <summary>Nama pengguna yang ditampilkan di menu akun dan tooltip tombol akun.</summary>
+      /// <summary>The user name shown in the account menu and the account button's tooltip.</summary>
       public string UserDisplayName {
          get => Get(string.Empty);
          set => Set(value);
       }
 
-      /// <summary>Nama akun pengguna, baris kedua di menu akun.</summary>
+      /// <summary>The user's account name, the second line in the account menu.</summary>
       public string UserAccount {
          get => Get(string.Empty);
          set => Set(value);
       }
 
       /// <summary>
-      /// Inisial untuk lingkaran avatar. Selalu berisi sesuatu: <c>?</c> kalau dikosongkan, supaya
-      /// lingkarannya tidak pernah tampil kosong.
+      /// The initials for the avatar circle. It always holds something: <c>?</c> when emptied, so the circle
+      /// never appears empty.
       /// </summary>
       public string UserInitials {
          get => Get("?");
@@ -1221,8 +1252,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Warna lingkaran avatar, dari palet yang sama dengan tombol akun layout satu halaman: orang yang
-      /// sama selalu dapat warna yang sama.
+      /// Color of the avatar circle, from the same palette as the account button of the single-page layout:
+      /// the same person always gets the same color.
       /// </summary>
       public System.Windows.Media.Brush? UserAvatarBrush {
          get => Get<System.Windows.Media.Brush?>();
@@ -1239,13 +1270,16 @@ namespace Em.Ui.Wpf.Windows
          UserAvatarBrush = UserAvatar.Brush(user);
       }
 
+      /// <summary>Runs the change password command.</summary>
       public void ChangePasswordCommand() {
          IsUserMenuOpen = false;
       }
 
+      /// <summary>Whether the change password command may run now.</summary>
       public bool ChangePasswordCommandAllowed() => false;
 
       // The same sign-out path as the single-page layout's account button.
+      /// <summary>Runs the sign out command.</summary>
       public async Task SignOutCommand() {
          IsUserMenuOpen = false;
 
@@ -1260,22 +1294,24 @@ namespace Em.Ui.Wpf.Windows
       }
 
       // The theme belongs to the whole application, so switching it here repaints every window.
+      /// <summary>Runs the color theme command.</summary>
       public void ColorThemeCommand() {
          EmApp!.CurrentTheme = EmApp.CurrentTheme == ThemeVariant.Dark ? ThemeVariant.Light : ThemeVariant.Dark;
       }
 
+      /// <summary>Whether the color theme command may run now.</summary>
       public bool ColorThemeCommandAllowed() => EmApp != null;
 
       #endregion
 
       /// <summary>
-      /// Menyalin bingkai window lain ke window ini - judul, keadaan login, dan aplikasinya - lalu
-      /// menandainya <see cref="ClosesWhenEmpty"/>. Dipakai untuk window baru yang menampung tab yang
-      /// ditarik keluar. Window seperti itu hanya berisi deretan tab dan dropdown daftar tab: menu
-      /// Apps, menu Tools, dan identitas pengguna milik window utama saja, jadi tidak ikut disalin.
-      /// Tab-tabnya sendiri mengikuti stack window ini.
+      /// Copies the frame of another window to this window - the title, the sign-in state, and the
+      /// application - then marks it <see cref="ClosesWhenEmpty"/>. Used for a new window that holds a tab
+      /// that was dragged out. Such a window only holds the row of tabs and the tab list dropdown: the Apps
+      /// menu, the Tools menu, and the user identity belong to the main window alone, so they are not copied.
+      /// Its tabs follow this window's stack.
       /// </summary>
-      /// <param name="source">Window asal tab.</param>
+      /// <param name="source">The window the tab came from.</param>
       public void CopyShellFrom(TabbedMainWindowVm source) {
          Title = source.Title;
          IsSignedIn = source.IsSignedIn;
@@ -1283,22 +1319,25 @@ namespace Em.Ui.Wpf.Windows
          EmApp = source.EmApp;
       }
 
+      /// <summary>Runs the minimize command.</summary>
       public void MinimizeCommand() {
          WindowState = WindowState.Minimized;
       }
 
+      /// <summary>Runs the maximize restore command.</summary>
       public void MaximizeRestoreCommand() {
          WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
       }
 
+      /// <summary>Runs the close window command.</summary>
       public void CloseWindowCommand() {
          RequestClose?.Invoke();
       }
    }
 
    /// <summary>
-   /// Satu tab di <see cref="TabbedMainWindow"/>: satu entri navigasi di stack window itu. Judulnya
-   /// mengikuti judul entri, termasuk sesudah entrinya mengganti judul sendiri.
+   /// One tab in <see cref="TabbedMainWindow"/>: one navigation entry in that window's stack. Its title
+   /// follows the entry's title, including after the entry changes its own title.
    /// </summary>
    public class TabbedMainWindowTab : NotifyPropertyBase
    {
@@ -1309,25 +1348,25 @@ namespace Em.Ui.Wpf.Windows
          entry.PropertyChanged += EntryPropertyChanged;
       }
 
-      /// <summary>Entri navigasi yang ditampilkan tab ini.</summary>
+      /// <summary>The navigation entry shown by this tab.</summary>
       public NavigationEntry Entry { get; }
 
-      /// <summary>Judul tab, yaitu judul entrinya - sekaligus kunci uniknya di seluruh aplikasi.</summary>
+      /// <summary>Title of the tab, which is its entry's title - and also its unique key across the application.</summary>
       public string Title {
          get => Get(string.Empty);
          private set => Set(value);
       }
 
       /// <summary>
-      /// Apakah tab ini yang sedang disorot di window-nya. Diisi oleh
-      /// <see cref="TabbedMainWindowVm.SelectedTab"/>, dipakai dropdown daftar tab untuk menandainya.
+      /// Whether this tab is the one highlighted in its window. Set by
+      /// <see cref="TabbedMainWindowVm.SelectedTab"/>, and used by the tab list dropdown to mark it.
       /// </summary>
       public bool IsActive {
          get => Get<bool>();
          set => Set(value);
       }
 
-      /// <summary>Isi tab, yaitu body entrinya; dipakai ulang setiap kali tab dipilih.</summary>
+      /// <summary>Content of the tab, which is its entry's body; reused every time the tab is selected.</summary>
       public object Content { get; }
 
       private void EntryPropertyChanged(object? sender, PropertyChangedEventArgs e) {
@@ -1339,12 +1378,13 @@ namespace Em.Ui.Wpf.Windows
    }
 
    /// <summary>
-   /// Satu item di menu Apps atau Tools. Item daun membuka <see cref="Navigation"/> - sebagai tab baru,
-   /// atau memilih tab yang sudah membukanya - atau menjalankan <see cref="Invoke"/>. Item cabang
-   /// (keduanya <c>null</c>) hanya membuka submenu berisi <see cref="Items"/>.
+   /// One item in the Apps or Tools menu. A leaf item opens its <see cref="Navigation"/> - as a new tab,
+   /// or by selecting the tab that already has it open - or runs <see cref="Invoke"/>. A branch item (both
+   /// <c>null</c>) only opens a submenu holding <see cref="Items"/>.
    /// </summary>
    public class TabbedMainWindowMenuItem : NotifyPropertyBase
    {
+      /// <summary>Creates a new instance of <see cref="TabbedMainWindowMenuItem"/>.</summary>
       public TabbedMainWindowMenuItem() {
          Items = [];
       }
@@ -1355,28 +1395,28 @@ namespace Em.Ui.Wpf.Windows
          set => Set(value);
       }
 
-      /// <summary>Keterangan singkat di bawah judul, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>Short caption below the title, or <c>null</c> when there is none.</summary>
       public string? Subtitle {
          get => Get<string?>();
          set => Set(value);
       }
 
-      /// <summary>Navigasi yang dibuka item ini, atau <c>null</c> untuk item cabang dan tool yang bukan navigasi.</summary>
+      /// <summary>The navigation this item opens, or <c>null</c> for branch items and tools that are not navigations.</summary>
       public Navigation? Navigation {
          get => Get<Navigation?>();
          set => Set(value);
       }
 
-      /// <summary>Aksi item yang bukan navigasi (mis. membuka dialog), atau <c>null</c>.</summary>
+      /// <summary>The action of an item that is not a navigation (e.g. opening a dialog), or <c>null</c>.</summary>
       public Func<Task>? Invoke {
          get => Get<Func<Task>?>();
          set => Set(value);
       }
 
-      /// <summary>Apakah item ini cabang: tidak membuka apa pun selain submenunya.</summary>
+      /// <summary>Whether this item is a branch: it opens nothing but its submenu.</summary>
       public bool IsBranch => Navigation == null && Invoke == null;
 
-      /// <summary>Anak-anak item ini, ditampilkan sebagai submenu. Kosong untuk item daun.</summary>
+      /// <summary>The children of this item, shown as a submenu. Empty for a leaf item.</summary>
       public ObservableCollection<TabbedMainWindowMenuItem> Items {
          get => Get<ObservableCollection<TabbedMainWindowMenuItem>>();
          private set => Set(value);

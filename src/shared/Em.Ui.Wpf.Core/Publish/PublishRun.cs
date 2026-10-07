@@ -6,87 +6,165 @@ using NuGet.Common;
 
 namespace Em.Ui.Wpf.Publish;
 
-public enum PublishResult { Running, Success, Skipped, Duplicate, Failed, Cancelled, NotRun, Interrupted }
+/// <summary>The publish result.</summary>
+public enum PublishResult
+{
+   /// <summary>The run is in progress.</summary>
+   Running,
+   /// <summary>The run succeeded.</summary>
+   Success,
+   /// <summary>The step was skipped.</summary>
+   Skipped,
+   /// <summary>The version already exists.</summary>
+   Duplicate,
+   /// <summary>The run failed.</summary>
+   Failed,
+   /// <summary>The run was cancelled.</summary>
+   Cancelled,
+   /// <summary>The step was not run.</summary>
+   NotRun,
+   /// <summary>The run was interrupted before it finished.</summary>
+   Interrupted,
+}
+/// <summary>The publish artifact.</summary>
 public sealed class PublishArtifact {
+ /// <summary>Indicates selected.</summary>
  public bool Selected { get; set; }=true;
+ /// <summary>The profile id.</summary>
  public string ProfileId { get; set; }="";
+ /// <summary>The source.</summary>
  public string Source { get; set; }="";
+ /// <summary>The file.</summary>
  public string File { get; set; }="";
+ /// <summary>The id.</summary>
  public string Id { get; set; }="";
+ /// <summary>The version.</summary>
  public string Version { get; set; }="";
+ /// <summary>The image id.</summary>
  public string ImageId { get; set; }="";
+ /// <summary>The digest.</summary>
  public string Digest { get; set; }="";
+ /// <summary>The hash.</summary>
  public string Hash { get; set; }="";
+ /// <summary>The target.</summary>
  public string Target { get; set; }="";
+ /// <summary>The result.</summary>
  public PublishResult Result { get; set; }=PublishResult.NotRun;
+ /// <summary>The exit code.</summary>
  public int? ExitCode { get; set; }
+ /// <summary>The message.</summary>
  public string Message { get; set; }="";
+ /// <summary>The verification.</summary>
  public string Verification { get; set; }="Not checked";
  /// <summary>Tags pushed for <see cref="Digest"/> in this run: the version tag and each floating tag that succeeded.</summary>
  public List<string> PushedTags { get; set; }=[];
+ /// <inheritdoc />
  public override string ToString()=>$"{Id} {Version} · {Result} · {Verification}";
 }
+/// <summary>The publish run.</summary>
 public sealed class PublishRun {
+ /// <summary>The id.</summary>
  public string Id { get; set; }=Guid.NewGuid().ToString("N");
+ /// <summary>The profile id.</summary>
  public string ProfileId { get; set; }="";
+ /// <summary>The profile name.</summary>
  public string ProfileName { get; set; }="";
+ /// <summary>The kind.</summary>
  public PublishKind Kind { get; set; }
+ /// <summary>The operation.</summary>
  public string Operation { get; set; }="";
+ /// <summary>The started.</summary>
  public DateTimeOffset Started { get; set; }=DateTimeOffset.Now;
+ /// <summary>The finished.</summary>
  public DateTimeOffset? Finished { get; set; }
+ /// <summary>The duration seconds.</summary>
  public double? DurationSeconds { get; set; }
+ /// <summary>The windows user.</summary>
  public string WindowsUser { get; set; }=Environment.UserName;
+ /// <summary>The release notes.</summary>
  public string ReleaseNotes { get; set; }="";
+ /// <summary>The target.</summary>
  public string Target { get; set; }="";
+ /// <summary>The retry of.</summary>
  public string? RetryOf { get; set; }
+ /// <summary>The result.</summary>
  public PublishResult Result { get; set; }=PublishResult.Running;
+ /// <summary>The artifacts.</summary>
  public List<PublishArtifact> Artifacts { get; set; }=[];
+ /// <summary>The stages.</summary>
  public List<PublishStage> Stages { get; set; }=[];
  /// <summary>Deploys the server ran after the push (Built-in registry, Auto deploy on). Kept apart from <see cref="Stages"/>: a failed
  /// deploy does not make the publish run fail.</summary>
  public List<PublishDeployment> Deployments { get; set; }=[];
+ /// <summary>The settings.</summary>
  public JsonElement? Settings { get; set; }
+ /// <inheritdoc />
  public override string ToString()=>$"{Started:g} · {ProfileName} · {Operation} · {Result}";
 }
 /// <summary>One deploy after a push: what was deployed and how it ended, as reported by the server.</summary>
 public sealed class PublishDeployment {
  /// <summary>Pull name without host: root/name.</summary>
  public string Repository { get; set; }="";
+ /// <summary>The image id.</summary>
  public string ImageId { get; set; }="";
+ /// <summary>The tag.</summary>
  public string Tag { get; set; }="";
+ /// <summary>The digest.</summary>
  public string Digest { get; set; }="";
+ /// <summary>The result.</summary>
  public Em.Api.Core.Models.CtnDeployResult Result { get; set; }
+ /// <summary>The message.</summary>
  public string Message { get; set; }="";
  /// <summary>Server run id; empty when the deploy was skipped or the server could not be reached.</summary>
  public string RunId { get; set; }="";
+ /// <inheritdoc />
  public override string ToString()=>$"{Repository} {Tag} · {Result} · {Message}";
 }
+/// <summary>One stage of a publish run and its result.</summary>
 public sealed record PublishStage(string Name,PublishResult Result,string Message,int? ExitCode=null);
+/// <summary>One entry of the publish history.</summary>
 public sealed record HistoryEntry(string Directory,PublishRun Run);
+/// <summary>The secret masker.</summary>
 public sealed class SecretMasker {
  private readonly HashSet<string> _values=[];
+ /// <summary>Adds a value to be masked in logs.</summary>
  public void Add(string? value) {if(!string.IsNullOrEmpty(value)) { _values.Add(value);_values.Add(Convert.ToBase64String(Encoding.UTF8.GetBytes(value)));_values.Add(JsonSerializer.Serialize(value)[1..^1]);_values.Add(Uri.EscapeDataString(value)); }}
+ /// <summary>Adds a credential whose secret is masked in logs.</summary>
  public void AddCredential(string username,string? secret) {Add(secret);if(!string.IsNullOrEmpty(secret))_values.Add(Convert.ToBase64String(Encoding.UTF8.GetBytes(username+":"+secret)));}
+ /// <summary>Replaces every known secret in a text with asterisks.</summary>
  public string Mask(string text) {foreach(var value in _values.OrderByDescending(v=>v.Length))text=text.Replace(value,"***",StringComparison.Ordinal);return text;}
 }
+/// <summary>The log of one publish run, written to its history folder.</summary>
 public sealed class PublishLog : LoggerBase {
  private static readonly System.Collections.Concurrent.ConcurrentDictionary<string,byte> Active=[];
  private readonly object _gate=new();
+ /// <summary>The run.</summary>
  public PublishRun Run { get; }
+ /// <summary>The masker.</summary>
  public SecretMasker Masker { get; }
+ /// <summary>The directory.</summary>
  public string Directory { get; }
+ /// <summary>Raised for output.</summary>
  public event Action<string>? Output;
+ /// <summary>Creates a new instance of <see cref="PublishLog"/>.</summary>
  public PublishLog(string root,PublishRun run,SecretMasker masker) {
   Run=run;Masker=masker;
   Directory=PublishPaths.Inside(root,Path.Combine(run.ProfileId,run.Started.ToString("yyyyMMdd-HHmmss")+"-"+run.Id));
   System.IO.Directory.CreateDirectory(Directory);Save();Active.TryAdd(run.Id,0);
  }
+ /// <summary>Saves the result file of the run.</summary>
  public void Save() {lock(_gate)PublishPaths.Atomic(Path.Combine(Directory,"result.json"),Masker.Mask(ProfileJson.Write(Run)));}
+ /// <summary>Writes one masked line to the log.</summary>
  public void Line(string line) {line=Masker.Mask(line);lock(_gate)File.AppendAllText(Path.Combine(Directory,"output.log"),line+Environment.NewLine);Output?.Invoke(line);}
+ /// <summary>Records the result of one stage.</summary>
  public void Stage(string name,PublishResult result,string message="",int? code=null) {Run.Stages.Add(new(name,result,Masker.Mask(message),code));Save();}
+ /// <summary>Finishes the run with a result.</summary>
  public void Finish(PublishResult result) {Run.Result=result;Run.Finished=DateTimeOffset.Now;Run.DurationSeconds=(Run.Finished.Value-Run.Started).TotalSeconds;try {Save();}finally {Active.TryRemove(Run.Id,out _);}}
+ /// <inheritdoc />
  public override void Log(ILogMessage message)=>Line(message.Message);
+ /// <inheritdoc />
  public override Task LogAsync(ILogMessage message) {Log(message);return Task.CompletedTask;}
+ /// <summary>Lists the stored history, newest first.</summary>
  public static IReadOnlyList<HistoryEntry> History(string root,string? profileId=null) {
   if(!System.IO.Directory.Exists(root))return [];
   PublishPaths.ValidateTree(root);var rows=new List<HistoryEntry>();
@@ -96,6 +174,7 @@ public sealed class PublishLog : LoggerBase {
   }
   return rows.OrderByDescending(r=>r.Run.Started).ToArray();
  }
+ /// <summary>Deletes one history entry.</summary>
  public static void Delete(string root,HistoryEntry entry) {
   if(Active.ContainsKey(entry.Run.Id))throw new IOException("Wait for this active run to finish before deleting its log.");
   var path=PublishPaths.Inside(root,Path.GetRelativePath(root,entry.Directory));
@@ -104,9 +183,13 @@ public sealed class PublishLog : LoggerBase {
   System.IO.Directory.Delete(path,true);
  }
 }
+/// <summary>The result of running a process.</summary>
 public sealed record ProcessResult(int ExitCode,string Output);
+/// <summary>The publish process runner.</summary>
 public sealed class PublishProcessRunner {
+ /// <summary>The default environment.</summary>
  public Dictionary<string,string> DefaultEnvironment { get; set; }=[];
+ /// <summary>Runs a process and returns its exit code and output.</summary>
  public async Task<ProcessResult> RunAsync(string executable,IEnumerable<string> args,string cwd,Action<string>? output=null,
   CancellationToken ct=default,Dictionary<string,string>? environment=null,string? stdin=null) {
   var info=new ProcessStartInfo(executable) {WorkingDirectory=cwd,UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,RedirectStandardInput=stdin!=null};
@@ -129,6 +212,7 @@ public sealed class PublishProcessRunner {
    throw;
   }
  }
+ /// <summary>Runs a process and throws when it fails.</summary>
  public async Task<string> RequireAsync(string executable,IEnumerable<string> args,string cwd,PublishLog log,CancellationToken ct,Dictionary<string,string>? environment=null,string? stdin=null) {
   var result=await RunAsync(executable,args,cwd,log.Line,ct,environment,stdin);
   log.Stage(executable, result.ExitCode==0?PublishResult.Success:PublishResult.Failed,"",result.ExitCode);

@@ -6,17 +6,17 @@ using FontAwesome6;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog untuk membuat container (nama, deskripsi) di sebuah root atau mengedit container yang ada
-   /// (deskripsi dan status aktif; nama tidak bisa diganti). Hasilnya dibaca dari <see cref="Vm"/>
-   /// setelah <c>ShowDialog()</c> mengembalikan <c>true</c>.
+   /// A dialog to create a container (name, description) in a root or to edit an existing container
+   /// (description and active status; the name cannot be changed). The result is read from
+   /// <see cref="Vm"/> after <c>ShowDialog()</c> returns <c>true</c>.
    /// </summary>
    public partial class CtnImageDialog : EmWindow
    {
       /// <summary>
-      /// Membuat dialog.
+      /// Creates the dialog.
       /// </summary>
-      /// <param name="rootName">Nama root tempat container berada, untuk menampilkan nama pull dan memeriksa panjangnya.</param>
-      /// <param name="existing"><c>null</c> berarti container baru.</param>
+      /// <param name="rootName">The name of the root the container belongs to, to show the pull name and check its length.</param>
+      /// <param name="existing"><c>null</c> means a new container.</param>
       public CtnImageDialog(string rootName, CtnImageInfo? existing = null) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -25,11 +25,11 @@ namespace Em.Ui.Wpf.Dialogs
          Vm.RequestClose += result => DialogResult = result;
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public CtnImageDialogVm Vm => (CtnImageDialogVm)DataContext;
    }
 
-   /// <summary>ViewModel untuk <see cref="CtnImageDialog"/>.</summary>
+   /// <summary>The view model for <see cref="CtnImageDialog"/>.</summary>
    public class CtnImageDialogVm : CtnFormVmBase
    {
       private string _rootName = "";
@@ -60,7 +60,7 @@ namespace Em.Ui.Wpf.Dialogs
          IsActive = existing.IsActive;
       }
 
-      /// <summary>Nama pull tanpa host untuk nama yang sedang diketik: <c>root/nama</c>.</summary>
+      /// <summary>The pull name without the host for the name being typed: <c>root/name</c>.</summary>
       public string FullNamePreview => NameResult.Length == 0 ? $"{_rootName}/" : $"{_rootName}/{NameResult}";
 
       /// <inheritdoc />

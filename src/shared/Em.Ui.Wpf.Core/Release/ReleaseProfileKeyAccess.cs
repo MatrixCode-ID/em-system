@@ -4,7 +4,7 @@ using Em.Ui.Wpf.Dialogs;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Permintaan password pada thread UI, digunakan Sync dan ekspor key Settings.</summary>
+   /// <summary>Password requests on the UI thread, used by Sync and the Settings key export.</summary>
    internal static class ReleaseProfileKeyAccess
    {
       public static string? AcquirePassword(ReleaseProfile profile, ReleaseProfileStore store, ReleaseSigningSecrets secrets, Window? owner, string okCaption) {

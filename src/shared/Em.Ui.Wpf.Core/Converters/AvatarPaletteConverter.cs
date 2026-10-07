@@ -6,15 +6,15 @@ using Color = System.Windows.Media.Color;
 namespace Em.Ui.Wpf.Converters
 {
    /// <summary>
-   /// Memilih warna avatar untuk satu baris daftar berdasarkan teks identitasnya (mis. nama akun),
-   /// sehingga tiap orang selalu mendapat warna yang sama setiap kali daftar dimuat ulang, tanpa
-   /// perlu menyimpan warna itu di database.
+   /// Chooses the avatar color of one list row from its identity text (e.g. an account name), so each
+   /// person always gets the same color every time the list is reloaded, without that color being stored in
+   /// the database.
    /// </summary>
    /// <remarks>
-   /// Isi <c>ConverterParameter</c> dengan <c>"Text"</c> untuk mendapat warna huruf inisial (warna
-   /// penuh), atau kosongkan/isi apa saja selain itu untuk mendapat warna latar cakram avatar
-   /// (warna yang sama tapi sangat transparan). Warna-warnanya dipilih bernada sedang supaya tetap
-   /// terbaca baik di tema terang maupun gelap.
+   /// Set <c>ConverterParameter</c> to <c>"Text"</c> to get the color of the initial letters (full color),
+   /// or leave it empty/anything else to get the color of the avatar disc background (the same color but
+   /// very transparent). The colors are chosen with a medium tone so they stay readable in both light and
+   /// dark themes.
    /// </remarks>
    public class AvatarPaletteConverter : IValueConverter
    {
@@ -30,8 +30,8 @@ namespace Em.Ui.Wpf.Converters
       ];
 
       /// <summary>
-      /// Menghasilkan <see cref="SolidColorBrush"/> untuk huruf inisial atau latar avatar, sesuai
-      /// <c>ConverterParameter</c> (lihat keterangan kelas).
+      /// Produces a <see cref="SolidColorBrush"/> for the initial letters or the avatar background, according
+      /// to <c>ConverterParameter</c> (see the class remarks).
       /// </summary>
       public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) {
          var color = Palette[PaletteIndexOf(value as string)];
@@ -46,7 +46,7 @@ namespace Em.Ui.Wpf.Converters
       }
 
       /// <summary>
-      /// Tidak didukung: warna avatar hanya dihitung satu arah dari teks identitas.
+      /// Not supported: the avatar color is only computed one way from the identity text.
       /// </summary>
       public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
          throw new NotSupportedException("An avatar colour cannot be converted back to a name.");

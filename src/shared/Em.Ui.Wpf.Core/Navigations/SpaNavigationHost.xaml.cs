@@ -26,6 +26,7 @@ namespace Em.Ui.Wpf.Navigations
       // keyboard shortcuts on.
       private bool _activeUserHooked;
 
+      /// <summary>Creates a new instance of <see cref="SpaNavigationHost"/>.</summary>
       public SpaNavigationHost(EmApp app, NavigationStack stack) {
          _app = app;
          // Vm only exists once InitializeComponent has built the DataContext declared in XAML, so
@@ -46,6 +47,7 @@ namespace Em.Ui.Wpf.Navigations
          Loaded += HostLoaded;
          Unloaded += HostUnloaded;
       }
+      /// <summary>The vm.</summary>
       public SpaNavigationHostVm Vm => (SpaNavigationHostVm)DataContext;
       private async void TestClicked(object sender, RoutedEventArgs e) {
          await _app.NavigateTo("logon");
@@ -178,28 +180,29 @@ namespace Em.Ui.Wpf.Navigations
          if (CanInvoke(commandName, offered)) Vm.Commands[commandName]!.Execute(null);
       }
 
-      // Toolbar yang disembunyikan tidak menawarkan apa-apa, termasuk lewat keyboard dan tombol
-      // thumb mouse: keduanya sampai ke sini sebagai BrowseBack/BrowseForward, dan tanpa syarat ini
-      // sebuah layar seperti login - yang mematikan toolbar-nya tapi tidak menyebut tombolnya satu
-      // per satu - masih bisa ditinggalkan dengan Alt+Left.
+      // A hidden toolbar offers nothing, including through the keyboard and the mouse thumb buttons: both
+      // arrive here as BrowseBack/BrowseForward, and without this condition a screen like login - which turns
+      // off its toolbar but does not name its buttons one by one - could still be left with Alt+Left.
       private bool CanInvoke(string commandName, Visibility offered) =>
          Vm.IsToolbarVisible == Visibility.Visible
          && offered == Visibility.Visible
          && Vm.Commands[commandName]?.CanExecute(null) == true;
    }
+   /// <summary>View model of the single-page navigation host.</summary>
    public class SpaNavigationHostVm : MvvmModelBase
    {
       /// <summary>
-      /// Nama command tombol Back pada toolbar, dipakai sumber input lain (tombol mouse, shortcut
-      /// keyboard) supaya memanggil command yang sama dengan tombolnya.
+      /// The command name of the Back button on the toolbar, used by other input sources (mouse buttons,
+      /// keyboard shortcuts) so they call the same command as the button.
       /// </summary>
       public const string BackCommand = nameof(Back);
 
       /// <summary>
-      /// Nama command tombol Forward pada toolbar. Lihat <see cref="BackCommand"/>.
+      /// The command name of the Forward button on the toolbar. See <see cref="BackCommand"/>.
       /// </summary>
       public const string ForwardCommand = nameof(Forward);
 
+      /// <summary>Creates a new instance of <see cref="SpaNavigationHostVm"/>.</summary>
       public SpaNavigationHostVm() {
          RegisterCommand(nameof(Back), Back, BackAllowed);
          RegisterCommand(nameof(Forward), Forward, ForwardAllowed);
@@ -211,8 +214,8 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(SignOutCommand), SignOutCommand, SignOutCommandAllowed);
       }
       /// <summary>
-      /// Stack yang ditampilkan host ini. Host mengikuti stack itu sendiri - entri yang sedang tampil
-      /// dan isi jalurnya - jadi tidak ada pihak lain yang perlu mendorong perubahan ke sini.
+      /// The stack shown by this host. The host follows that stack itself - the entry being shown and the
+      /// content of its path - so no one else needs to push changes into it.
       /// </summary>
       public NavigationStack? Stack {
          get;
@@ -232,7 +235,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Entri yang sedang tampil, atau <c>null</c> sebelum ada yang pernah ditampilkan.</summary>
+      /// <summary>The entry being shown, or <c>null</c> before anything has ever been shown.</summary>
       public NavigationEntry? Entry {
          get;
          private set {
@@ -275,7 +278,7 @@ namespace Em.Ui.Wpf.Navigations
          return from == to ? null : to > from;
       }
 
-      /// <summary>Definisi layar yang sedang tampil; sumber saklar-saklar toolbar.</summary>
+      /// <summary>The definition of the screen being shown; the source of the toolbar switches.</summary>
       public Navigation? Navigation => Entry?.Navigation;
 
       private void StackPropertyChanged(object? sender, PropertyChangedEventArgs e) {
@@ -302,27 +305,37 @@ namespace Em.Ui.Wpf.Navigations
       // The ContentControl binds to this the moment the XAML DataContext is created, which is long
       // before the first navigation lands, so both the entry and its body have to stay optional
       // here - a throwing getter takes the whole binding down with it.
+      /// <summary>The navigation body.</summary>
       public UserControl? NavigationBody => Entry?.Body as UserControl;
       
       // Each switch is owned by the navigation being shown; the host only translates it for XAML.
       // A navigation is assigned long after the DataContext is built, so a null one still has to
       // render something - the toolbar stays complete until a navigation says otherwise.
+      /// <summary>The is toolbar visible.</summary>
       public Visibility IsToolbarVisible => ToVisibility(Navigation?.IsToolbarVisible);
+      /// <summary>The is title visible.</summary>
       public Visibility IsTitleVisible => ToVisibility(Navigation?.IsTitleVisible);
+      /// <summary>The is back visible.</summary>
       public Visibility IsBackVisible => ToVisibility(Navigation?.IsBackVisible);
+      /// <summary>The is forward visible.</summary>
       public Visibility IsForwardVisible => ToVisibility(Navigation?.IsForwardVisible);
+      /// <summary>The is reload visible.</summary>
       public Visibility IsReloadVisible => ToVisibility(Navigation?.IsReloadVisible);
       // A detached window has no home to go back to, and the session is managed from the main window
       // alone, so both switches are off there whatever the navigation says.
+      /// <summary>The is home visible.</summary>
       public Visibility IsHomeVisible => IsMainHost ? ToVisibility(Navigation?.IsHomeVisible) : Visibility.Collapsed;
+      /// <summary>The is detach visible.</summary>
       public Visibility IsDetachVisible =>
          Entry != null && Entry == Stack?.Home ? Visibility.Collapsed : ToVisibility(Navigation?.IsDetachVisible);
+      /// <summary>The is color theme visible.</summary>
       public Visibility IsColorThemeVisible => ToVisibility(Navigation?.IsColorThemeVisible);
+      /// <summary>The is user visible.</summary>
       public Visibility IsUserVisible => IsMainHost ? ToVisibility(Navigation?.IsUserVisible) : Visibility.Collapsed;
 
       /// <summary>
-      /// <c>true</c> kalau host ini menampilkan stack utama aplikasi di window utama; <c>false</c> untuk
-      /// host di dalam window detach.
+      /// <c>true</c> when this host shows the application's main stack in the main window; <c>false</c> for a
+      /// host inside a detached window.
       /// </summary>
       public bool IsMainHost => Stack != null && EmApp != null && Stack == EmApp.MainStack;
 
@@ -345,9 +358,9 @@ namespace Em.Ui.Wpf.Navigations
       #region Account
 
       /// <summary>
-      /// Apakah menu akun (dropdown di balik tombol pengguna) sedang terbuka. Tombolnya dan popup-nya
-      /// sama-sama terikat ke property ini, jadi keduanya tidak pernah berbeda keadaan — dan command
-      /// di dalam menu bisa menutup menunya cukup dengan mengisi <c>false</c> di sini.
+      /// Whether the account menu (the dropdown behind the user button) is open. The button and its popup are
+      /// both bound to this property, so their states never differ - and a command inside the menu can close
+      /// the menu just by setting <c>false</c> here.
       /// </summary>
       public bool IsUserMenuOpen {
          get => Get<bool>();
@@ -355,38 +368,38 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Pengguna yang sedang aktif, atau <c>null</c> selama belum ada yang sign in. Dibaca ulang dari
-      /// aplikasi setiap kali <see cref="RefreshActiveUser"/> dipanggil.
+      /// The user who is active, or <c>null</c> while nobody has signed in. Read again from the application
+      /// every time <see cref="RefreshActiveUser"/> is called.
       /// </summary>
       public User? ActiveUser => EmApp?.ActiveUser;
 
       /// <summary>
-      /// Nama lengkap pengguna aktif untuk ditampilkan di menu akun; jatuh ke nama akunnya kalau nama
-      /// lengkapnya kosong, dan ke teks penanda belum sign in kalau memang belum ada penggunanya.
+      /// The full name of the active user to show in the account menu; falls back to the account name if the
+      /// full name is empty, and to the "not signed in" text if there is no user at all.
       /// </summary>
       public string ActiveUserDisplayName => UserAvatar.DisplayName(ActiveUser);
 
       /// <summary>
-      /// Nama akun pengguna aktif (baris kedua di menu akun), kosong kalau belum ada yang sign in.
+      /// The account name of the active user (the second line in the account menu), empty when nobody has
+      /// signed in.
       /// </summary>
       public string ActiveUserAccount => UserAvatar.Account(ActiveUser);
 
       /// <summary>
-      /// Inisial pengguna aktif untuk dipakai sebagai avatar, mis. "SYSTEM DEBUGGER" jadi "SD".
-      /// Selalu berisi sesuatu: <c>?</c> selama belum ada yang sign in, supaya lingkaran avatarnya
-      /// tidak pernah tampil kosong.
+      /// The initials of the active user, used as an avatar, e.g. "SYSTEM DEBUGGER" becomes "SD". It always
+      /// holds something: <c>?</c> while nobody has signed in, so the avatar circle never appears empty.
       /// </summary>
       public string ActiveUserInitials => UserAvatar.Initials(ActiveUser);
 
       /// <summary>
-      /// Warna lingkaran avatar pengguna aktif. Dipilih dari palet tetap berdasarkan identitas akunnya,
-      /// jadi orang yang sama selalu dapat warna yang sama; abu netral selama belum ada yang sign in.
+      /// The color of the active user's avatar circle. Chosen from a fixed palette based on the account's
+      /// identity, so the same person always gets the same color; a neutral gray while nobody has signed in.
       /// </summary>
       public SolidColorBrush ActiveUserAvatarBrush => UserAvatar.Brush(ActiveUser);
 
       /// <summary>
-      /// Memberi tahu UI supaya membaca ulang identitas pengguna aktif. Perlu dipanggil sendiri karena
-      /// pemiliknya (<see cref="Core.EmApp.ActiveUser"/>) bukan sumber binding ber-notifikasi.
+      /// Tells the UI to read the active user's identity again. It needs to be called by hand because its
+      /// owner (<see cref="Core.EmApp.ActiveUser"/>) is not a source of bindings with notification.
       /// </summary>
       public void RefreshActiveUser() {
          NotifyChanged(nameof(ActiveUser));
@@ -399,27 +412,28 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Membuka layar ganti password milik pengguna aktif. Layarnya belum ada, jadi command ini masih
-      /// kosong dan <see cref="ChangePasswordCommandAllowed"/> selalu menolak — tombolnya sengaja tetap
-      /// ada di menu supaya tempatnya sudah pasti saat layarnya menyusul.
+      /// Opens the active user's change password screen. The screen does not exist yet, so this command is
+      /// still empty and <see cref="ChangePasswordCommandAllowed"/> always refuses - its button deliberately
+      /// stays in the menu so its place is already settled when the screen follows.
       /// </summary>
       public void ChangePasswordCommand() {
          IsUserMenuOpen = false;
       }
 
+      /// <summary>Whether the change password command may run now.</summary>
       public bool ChangePasswordCommandAllowed() => false;
 
       /// <summary>
-      /// Mengakhiri sesi: menutup menu akun, lalu meminta aplikasi membuang sesinya — di server
-      /// sekaligus di sisi client. Jalurnya sama dengan tombol akun di layout multi-tab, jadi keluar
-      /// dari layout mana pun berakhir di keadaan yang sama.
+      /// Ends the session: closes the account menu, then asks the application to discard its session - on the
+      /// server as well as on the client side. The path is the same as the account button of the multi-tab
+      /// layout, so signing out from either layout ends in the same state.
       /// </summary>
       public async Task SignOutCommand() {
          IsUserMenuOpen = false;
 
-         // Tidak boleh ada yang lolos dari sini. ICommand.Execute itu void, jadi UiCommandAsync
-         // menjalankannya sebagai async void: exception yang keluar dilempar ulang di dispatcher, dan
-         // aplikasi ini tidak punya DispatcherUnhandledException yang menangkapnya.
+         // Nothing may escape from here. ICommand.Execute is void, so UiCommandAsync runs it as async void: an
+         // exception that comes out is rethrown on the dispatcher, and this application has no
+         // DispatcherUnhandledException to catch it.
          try {
             await EmApp!.SignOutAsync();
          }
@@ -428,6 +442,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
+      /// <summary>Whether the sign out command may run now.</summary>
       public bool SignOutCommandAllowed() => EmApp != null;
 
       #endregion
@@ -436,7 +451,7 @@ namespace Em.Ui.Wpf.Navigations
          await Stack!.Backward();
       }
       bool BackAllowed() {
-         //nanti bisa saja tidak boleh back dari module atas kondisi tertentu
+         // later it may be that going back from a module is not allowed under certain conditions
          return Stack?.CanGoBack == true;
       }
 

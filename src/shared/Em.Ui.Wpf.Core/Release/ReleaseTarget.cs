@@ -4,79 +4,79 @@ using System.IO;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Satu isi folder <c>binaries/</c> di tujuan rilis.
+   /// One item of the <c>binaries/</c> folder at the release target.
    /// </summary>
-   /// <param name="Path">Path relatif terhadap <c>binaries/</c>, dipisah <c>/</c>.</param>
-   /// <param name="IsFolder"><c>true</c> untuk folder.</param>
-   /// <param name="Size">Ukuran file dalam byte; <c>0</c> untuk folder.</param>
+   /// <param name="Path">Path relative to <c>binaries/</c>, separated by <c>/</c>.</param>
+   /// <param name="IsFolder"><c>true</c> for a folder.</param>
+   /// <param name="Size">File size in bytes; <c>0</c> for a folder.</param>
    public sealed record ReleaseTargetEntry(string Path, bool IsFolder, long Size);
 
    /// <summary>
-   /// Kemajuan sebuah operasi rilis (Prepare, Compare, Sync, Verify) untuk ditampilkan di layar.
+   /// Progress of a release operation (Prepare, Compare, Sync, Verify) to be shown on screen.
    /// </summary>
-   /// <param name="Stage">Tahap yang sedang berjalan, mis. <c>"Uploading"</c>.</param>
-   /// <param name="FileIndex">Urutan file yang sedang dikerjakan, mulai 1; <c>0</c> kalau tahap ini tidak per file.</param>
-   /// <param name="FileCount">Jumlah file di tahap ini.</param>
-   /// <param name="CurrentPath">Path file yang sedang dikerjakan, kalau ada.</param>
-   /// <param name="BytesDone">Byte yang sudah diproses di tahap ini.</param>
-   /// <param name="BytesTotal">Total byte tahap ini; <c>0</c> kalau tidak diketahui.</param>
+   /// <param name="Stage">The stage that is running, e.g. <c>"Uploading"</c>.</param>
+   /// <param name="FileIndex">Sequence of the file being worked on, starting at 1; <c>0</c> when this stage is not per file.</param>
+   /// <param name="FileCount">The number of files in this stage.</param>
+   /// <param name="CurrentPath">The path of the file being worked on, if any.</param>
+   /// <param name="BytesDone">The bytes already processed in this stage.</param>
+   /// <param name="BytesTotal">The total bytes of this stage; <c>0</c> when not known.</param>
    public sealed record ReleaseProgress(string Stage, int FileIndex, int FileCount, string? CurrentPath, long BytesDone,
       long BytesTotal);
 
    /// <summary>
-   /// Tempat sebuah folder rilis berada - CDN server atau folder biasa - beserta operasi yang dibutuhkan
-   /// Compare, Sync, dan Verify. Setiap path di sini relatif terhadap folder rilis itu sendiri dan
-   /// dipisah <c>/</c> (mis. <c>release.json</c>, <c>binaries/runtimes/x.dll</c>).
+   /// Where a release folder lives - the server CDN or an ordinary folder - together with the operations
+   /// needed by Compare, Sync, and Verify. Every path here is relative to the release folder itself and
+   /// separated by <c>/</c> (e.g. <c>release.json</c>, <c>binaries/runtimes/x.dll</c>).
    /// </summary>
    public abstract class ReleaseTarget
    {
-      /// <summary>Keterangan tujuan yang bisa dibaca manusia, dipakai di konfirmasi dan log.</summary>
+      /// <summary>A human-readable description of the target, used in confirmations and logs.</summary>
       public abstract string Description { get; }
 
-      /// <summary>Isi sebuah file, atau <c>null</c> kalau file itu tidak ada.</summary>
+      /// <summary>The content of a file, or <c>null</c> when the file does not exist.</summary>
       public abstract Task<byte[]?> ReadFileAsync(string path, CancellationToken token);
 
       /// <summary>
-      /// Ukuran dan SHA-256 sebuah file, dihitung sambil membacanya tanpa menyimpan isinya; <c>null</c>
-      /// kalau file itu tidak ada.
+      /// The size and SHA-256 of a file, computed while reading it without keeping its content; <c>null</c>
+      /// when the file does not exist.
       /// </summary>
       public abstract Task<(long Size, string Sha256)?> HashFileAsync(string path, IProgress<long>? progress,
          CancellationToken token);
 
       /// <summary>
-      /// Seluruh file dan folder di bawah <c>binaries/</c>, path-nya relatif terhadap <c>binaries/</c>.
-      /// Daftar kosong kalau <c>binaries/</c> belum ada.
+      /// All files and folders under <c>binaries/</c>, with paths relative to <c>binaries/</c>. An empty list
+      /// when <c>binaries/</c> does not exist yet.
       /// </summary>
       public abstract Task<IReadOnlyList<ReleaseTargetEntry>> ListBinariesAsync(CancellationToken token);
 
-      /// <summary>Memastikan sebuah folder (dan folder di atasnya) ada.</summary>
+      /// <summary>Makes sure a folder (and the folders above it) exists.</summary>
       public abstract Task EnsureFolderAsync(string folder, CancellationToken token);
 
       /// <summary>
-      /// Menulis sebuah file, menimpa yang lama. Isi baru tidak pernah terlihat setengah jadi: ditulis ke
-      /// nama sementara dulu, baru dipindah ke namanya. Folder tempatnya harus sudah ada.
+      /// Writes a file, overwriting the old one. New content is never seen half-finished: it is written to a
+      /// temporary name first, then moved to its name. The folder it lives in must already exist.
       /// </summary>
-      /// <param name="path">Path file.</param>
-      /// <param name="content">Isi file, dibaca dari posisinya sekarang sampai habis.</param>
-      /// <param name="progress">Menerima jumlah byte yang sudah terkirim; boleh <c>null</c>.</param>
-      /// <param name="token">Membatalkan penulisan; file lama tetap utuh.</param>
+      /// <param name="path">The file path.</param>
+      /// <param name="content">The file content, read from its current position to the end.</param>
+      /// <param name="progress">Receives the number of bytes sent; may be <c>null</c>.</param>
+      /// <param name="token">Cancels the write; the old file stays intact.</param>
       public abstract Task WriteFileAsync(string path, Stream content, IProgress<long>? progress, CancellationToken token);
 
-      /// <summary>Menghapus sebuah file, atau folder beserta isinya. Yang sudah tidak ada diabaikan.</summary>
+      /// <summary>Deletes a file, or a folder together with its content. Something that no longer exists is ignored.</summary>
       public abstract Task DeleteAsync(string path, bool isFolder, CancellationToken token);
 
       /// <summary>
-      /// Batas ukuran satu file yang bisa ditulis ke tujuan ini, atau <c>null</c> kalau tidak dibatasi.
-      /// Sekaligus memastikan tujuannya bisa dipakai (mis. CDN server memang dinyalakan).
+      /// The size limit of one file that can be written to this target, or <c>null</c> when it is not
+      /// limited. It also makes sure the target can be used (e.g. the server CDN is really turned on).
       /// </summary>
       public virtual Task<long?> GetMaxFileSizeAsync(CancellationToken token) => Task.FromResult<long?>(null);
 
-      /// <summary>Path sebuah file rilis di dalam folder rilis: <c>binaries/</c> + <paramref name="path"/>.</summary>
+      /// <summary>The path of a release file inside the release folder: <c>binaries/</c> + <paramref name="path"/>.</summary>
       public static string BinaryPath(string path) => $"{ReleaseLayout.BinariesFolder}/{path}";
 
       /// <summary>
-      /// Merapikan nama folder rilis yang diketik user: pemisah menjadi <c>/</c> dan tanpa <c>/</c> di
-      /// ujungnya. String kosong menjadi <see cref="ReleaseLayout.DefaultReleaseFolder"/>.
+      /// Tidies the release folder name typed by the user: separators become <c>/</c> and there is no
+      /// trailing <c>/</c>. An empty string becomes <see cref="ReleaseLayout.DefaultReleaseFolder"/>.
       /// </summary>
       public static string NormalizeReleaseFolder(string? releaseFolder) {
          var normalized = (releaseFolder ?? "").Replace('\\', '/').Trim().Trim('/');
@@ -90,10 +90,10 @@ namespace Em.Ui.Wpf.Core.Release
    }
 
    /// <summary>
-   /// Membungkus stream yang sedang dikirim: melaporkan berapa yang sudah terbaca, paling sering sepuluh
-   /// kali sedetik, dan memutus pengiriman dengan melempar dari Read begitu token dibatalkan. Seek
-   /// diteruskan, supaya request masih punya Content-Length dan bisa dikirim ulang setelah token
-   /// login diperbarui.
+   /// Wraps a stream that is being sent: it reports how much has been read, at most ten times a second, and
+   /// interrupts the sending by throwing from Read as soon as the token is cancelled. Seek is passed
+   /// through, so the request still has a Content-Length and can be sent again after the login token is
+   /// renewed.
    /// </summary>
    internal sealed class ProgressReadStream(Stream inner, IProgress<long>? progress, CancellationToken token) : Stream
    {

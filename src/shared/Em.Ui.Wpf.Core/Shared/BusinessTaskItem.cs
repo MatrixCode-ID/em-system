@@ -10,29 +10,27 @@ using Em.Shared;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Satu business task yang siap ditampilkan: potret dari server ditambah keterangan status, waktu,
-   /// dan ikon yang sudah jadi. Dipakai bersama oleh layar Business Task Manager, daftar task di hub
-   /// window utama, dan dialog status task, supaya ketiganya menyebut keadaan yang sama dengan kata
-   /// yang sama.
+   /// One business task ready to be shown: the snapshot from the server plus ready-made status captions,
+   /// times, and icon. Used jointly by the Business Task Manager screen, the task list in the main window's
+   /// hub, and the task status dialog, so all three state the same condition in the same words.
    /// </summary>
    /// <remarks>
-   /// Objeknya dipertahankan selama task-nya masih tampil dan diperbarui lewat <see cref="Update"/>,
-   /// bukan diganti objek baru, sehingga baris daftar dan progress bar-nya tidak dibangun ulang setiap
-   /// kali status dimuat ulang.
+   /// The object is kept as long as its task is still shown and is refreshed through <see cref="Update"/>,
+   /// not replaced by a new object, so the list row and its progress bar are not rebuilt every time the
+   /// status is reloaded.
    /// </remarks>
    public class BusinessTaskItem : NotifyPropertyBase
    {
-      /// <summary>Membuat tampilan untuk task <paramref name="info"/>.</summary>
+      /// <summary>Creates the display for task <paramref name="info"/>.</summary>
       public BusinessTaskItem(BusinessTaskInfo info) {
          Info = info;
       }
 
-      /// <summary>Potret task terbaru dari server.</summary>
+      /// <summary>The latest snapshot of the task from the server.</summary>
       public BusinessTaskInfo Info { get; private set; }
 
       /// <summary>
-      /// Mengganti potret task dengan yang lebih baru, lalu memberi tahu binding bahwa semua keterangan
-      /// ikut berubah.
+      /// Replaces the task snapshot with a newer one, then tells the bindings that all captions changed too.
       /// </summary>
       public void Update(BusinessTaskInfo info) {
          Info = info;
@@ -45,38 +43,38 @@ namespace Em.Ui.Wpf.Shared
       /// <summary>Judul task.</summary>
       public string Title => Info.Title;
 
-      /// <summary>Kunci task.</summary>
+      /// <summary>The key of the task.</summary>
       public string Key => Info.Key;
 
-      /// <summary>Module yang memulai task.</summary>
+      /// <summary>The module that started the task.</summary>
       public string ModuleName => Info.ModuleName;
 
-      /// <summary>Nama user yang memulai task.</summary>
+      /// <summary>Name of the user who started the task.</summary>
       public string OwnerName => Info.OwnerName;
 
-      /// <summary><c>"Personal"</c> atau <c>"Global"</c>.</summary>
+      /// <summary><c>"Personal"</c> or <c>"Global"</c>.</summary>
       public string ScopeCaption => Info.Scope == BusinessTaskScope.Personal ? "Personal" : "Global";
 
-      /// <summary>Bentuk hasil task: <c>"None"</c>, <c>"JSON"</c>, atau <c>"File"</c>.</summary>
+      /// <summary>Shape of the task result: <c>"None"</c>, <c>"JSON"</c>, or <c>"File"</c>.</summary>
       public string OutputCaption => Info.OutputKind switch {
          BusinessTaskOutputKind.Json => "JSON",
          BusinessTaskOutputKind.File => "File",
          _ => "None"
       };
 
-      /// <summary>Tahap task saat ini.</summary>
+      /// <summary>The current stage of the task.</summary>
       public BusinessTaskStatus Status => Info.Status;
 
-      /// <summary><c>true</c> selama task masih antri atau berjalan.</summary>
+      /// <summary><c>true</c> while the task is still queued or running.</summary>
       public bool IsAlive => Info.IsAlive;
 
-      /// <summary><c>true</c> kalau task sudah selesai, apa pun hasilnya.</summary>
+      /// <summary><c>true</c> when the task has finished, whatever its result.</summary>
       public bool IsFinished => !Info.IsAlive;
 
-      /// <summary><c>true</c> kalau task gagal.</summary>
+      /// <summary><c>true</c> when the task failed.</summary>
       public bool IsFailed => Info.Status == BusinessTaskStatus.Failed;
 
-      /// <summary>Keadaan task dalam satu kata, ditambah persen kemajuan kalau sedang berjalan.</summary>
+      /// <summary>The state of the task in one word, plus the progress percent when it is running.</summary>
       public string StatusCaption => Info.Status switch {
          BusinessTaskStatus.Queued => "Queued",
          BusinessTaskStatus.Running => Info.Percent is { } percent ? $"Running {percent:0}%" : "Running",
@@ -86,28 +84,28 @@ namespace Em.Ui.Wpf.Shared
          _ => Info.Status.ToString()
       };
 
-      /// <summary>Kemajuan 0–100 untuk progress bar; 0 kalau belum diketahui.</summary>
+      /// <summary>Progress 0-100 for the progress bar; 0 when not yet known.</summary>
       public double Percent => Info.Percent ?? 0;
 
       /// <summary>
-      /// <c>true</c> kalau progress bar harus tampil tak tentu: task masih hidup dan kemajuannya tidak
-      /// bisa diukur.
+      /// <c>true</c> when the progress bar must be shown as indeterminate: the task is still live and its
+      /// progress cannot be measured.
       /// </summary>
       public bool IsIndeterminate => Info.IsAlive && Info.Percent is null;
 
-      /// <summary>Keterangan langkah yang sedang dikerjakan.</summary>
+      /// <summary>Caption of the step being worked on.</summary>
       public string Caption => Info.Caption;
 
-      /// <summary>Pesan kesalahan task yang gagal; kosong untuk yang lain.</summary>
+      /// <summary>Error message of a failed task; empty for others.</summary>
       public string ErrorMessage => Info.ErrorMessage ?? "";
 
-      /// <summary>Kapan task mulai dikerjakan, dalam waktu lokal; tanda pisah kalau belum.</summary>
+      /// <summary>When the task started being worked on, in local time; a dash when it has not.</summary>
       public string StartedCaption => FormatTime(Info.StartedAt);
 
-      /// <summary>Kapan task selesai, dalam waktu lokal; tanda pisah kalau belum.</summary>
+      /// <summary>When the task finished, in local time; a dash when it has not.</summary>
       public string FinishedCaption => FormatTime(Info.FinishedAt);
 
-      /// <summary>Ikon yang mewakili keadaan task.</summary>
+      /// <summary>Icon that represents the state of the task.</summary>
       public EFontAwesomeIcon StatusIcon => Info.Status switch {
          BusinessTaskStatus.Queued => EFontAwesomeIcon.Regular_Clock,
          BusinessTaskStatus.Running => EFontAwesomeIcon.Solid_Spinner,
@@ -116,25 +114,24 @@ namespace Em.Ui.Wpf.Shared
          _ => EFontAwesomeIcon.Solid_Ban
       };
 
-      /// <summary><c>true</c> kalau pemanggil boleh membatalkan task ini sekarang.</summary>
+      /// <summary><c>true</c> when the caller may cancel this task right now.</summary>
       public bool CanCancel => Info.CanCancel && Info.IsAlive;
 
-      /// <summary><c>true</c> kalau pemanggil boleh membersihkan task ini sekarang.</summary>
+      /// <summary><c>true</c> when the caller may clear this task right now.</summary>
       public bool CanClear => Info.CanClear && !Info.IsAlive;
 
-      /// <summary><c>true</c> kalau task sukses dengan hasil file dan pemanggil boleh mengunduhnya.</summary>
+      /// <summary><c>true</c> when the task succeeded with a file result and the caller may download it.</summary>
       public bool CanDownload => HasResult(BusinessTaskOutputKind.File);
 
-      /// <summary><c>true</c> kalau task sukses dengan hasil JSON dan pemanggil boleh membukanya.</summary>
+      /// <summary><c>true</c> when the task succeeded with a JSON result and the caller may open it.</summary>
       public bool CanOpen => HasResult(BusinessTaskOutputKind.Json);
 
       private bool HasResult(BusinessTaskOutputKind kind) =>
          Info.OutputKind == kind && Info.CanReadResult && Info.Status == BusinessTaskStatus.Succeeded;
 
       /// <summary>
-      /// Menyamakan isi <paramref name="items"/> dengan <paramref name="tasks"/>, dengan urutan yang
-      /// sama: task yang sudah ada diperbarui di tempat, yang baru ditambahkan, dan yang sudah hilang
-      /// dibuang.
+      /// Aligns the content of <paramref name="items"/> with <paramref name="tasks"/>, in the same order: a
+      /// task that already exists is updated in place, a new one is added, and one that is gone is removed.
       /// </summary>
       public static void Sync(ObservableCollection<BusinessTaskItem> items, IEnumerable<BusinessTaskInfo> tasks) {
          var fresh = tasks.ToList();
@@ -166,14 +163,14 @@ namespace Em.Ui.Wpf.Shared
          time?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture) ?? "-";
 
       /// <summary>
-      /// Menanyakan tempat simpan lalu mengunduh file hasil task <paramref name="item"/> ke sana. Isinya
-      /// ditulis ke file sementara di samping tujuan dan baru mengambil nama tujuan setelah lengkap,
-      /// jadi unduhan yang gagal tidak meninggalkan file setengah jadi.
+      /// Asks for a save location, then downloads the result file of task <paramref name="item"/> there. Its
+      /// content is written to a temporary file beside the destination and only takes the destination name
+      /// when complete, so a failed download leaves no half-finished file.
       /// </summary>
-      /// <param name="services">Service business task yang dipakai mengambil isinya.</param>
-      /// <param name="item">Task yang hasilnya diunduh.</param>
-      /// <param name="owner">Window pemilik dialog simpan.</param>
-      /// <returns><c>false</c> kalau user membatalkan dialog simpan.</returns>
+      /// <param name="services">The business task service used to fetch the content.</param>
+      /// <param name="item">The task whose result is downloaded.</param>
+      /// <param name="owner">The window that owns the save dialog.</param>
+      /// <returns><c>false</c> when the user cancelled the save dialog.</returns>
       public static async Task<bool> DownloadResultAsync(IBusinessTaskServices services, BusinessTaskItem item,
          Window? owner) {
          var dialog = new SaveFileDialog {

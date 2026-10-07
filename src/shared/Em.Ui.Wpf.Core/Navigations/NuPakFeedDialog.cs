@@ -5,8 +5,8 @@ using System.Windows.Controls;
 namespace Em.Ui.Wpf.Navigations;
 
 /// <summary>
-/// Dialog kecil untuk membuat atau mengubah feed NuGet: slug (hanya saat membuat), nama, dan deskripsi.
-/// Dialog hanya mengumpulkan teks; validasi dan penyimpanan tetap di layanan.
+/// A small dialog to create or change a NuGet feed: its slug (only when creating), name, and
+/// description. The dialog only collects text; validation and saving stay in the service.
 /// </summary>
 public sealed class NuPakFeedDialog : EmWindow
 {
@@ -14,11 +14,16 @@ public sealed class NuPakFeedDialog : EmWindow
    private readonly TextBox _name = new();
    private readonly TextBox _description = new();
 
+   /// <summary>The slug.</summary>
    public string Slug => _slug.Text.Trim();
+   /// <summary>The feed name.</summary>
    public string FeedName => _name.Text.Trim();
+   /// <summary>The description.</summary>
    public string Description => _description.Text.Trim();
 
-   /// <param name="slug">Slug feed yang diubah; null saat membuat feed baru.</param>
+   /// <param name="slug">The slug of the feed being changed; null when creating a new feed.</param>
+   /// <param name="name">The current name of the feed.</param>
+   /// <param name="description">The current description of the feed.</param>
    public NuPakFeedDialog(string? slug, string name, string? description)
    {
       var creating = slug is null;

@@ -47,9 +47,11 @@ public partial class PublishProfileDialog : EmWindow {
   [nameof(ContainerProfile)+".UseMyDockerLogin"]="Off (default): the publisher uses its own temporary Docker config and runs docker login with the push credential from the Credentials tab; your own Docker login is neither used nor changed. On: the publisher uses your existing Docker login (docker login or Docker Desktop), so no push credential is needed on the Credentials tab. Use it for registries that sign in through a credential helper or SSO. Whoever uses an exported profile must then be logged in to the same registry.",
   [nameof(DockerfileProfile)+".Secrets"]="Secrets the Dockerfile can read during the build without leaving them in the image (RUN --mount=type=secret,id=<id>). Each entry passes the secret of one credential from the Credentials tab.",
  };
+ /// <summary>The profile.</summary>
  public PublishProfile Profile { get; }
  private readonly Dictionary<string,Grid> _rows=[];
  private FrameworkElement? _readProjects;
+ /// <summary>Indicates save as.</summary>
  public bool SaveAs { get; private set; }
  private readonly PublishTargets _targets;
  private readonly PublishSecretStore _secrets;
@@ -59,6 +61,10 @@ public partial class PublishProfileDialog : EmWindow {
  private Action? _modeChanged;
  private Action? _targetTypeChanged;
  private readonly bool _isNew;
+ /// <param name="profile">The profile being edited; the dialog works on a copy.</param>
+ /// <param name="targets">Reads what the publish targets offer.</param>
+ /// <param name="secrets">The store of publish secrets.</param>
+ /// <param name="logs">The folder of the publish logs.</param>
  /// <param name="isNew">True for a profile that has never been saved: only then can its Tagging be chosen.</param>
  public PublishProfileDialog(PublishProfile profile,PublishTargets targets,PublishSecretStore secrets,string logs,bool isNew=false) {
   InitializeComponent();_isNew=isNew;Profile=profile.Clone();foreach(var c in Profile.Credentials)c.Remember=secrets.IsRemembered(c);_targets=targets;_secrets=secrets;_logs=logs;

@@ -12,15 +12,15 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Layar Business Task Manager: seluruh business task di server, personal maupun global, beserta
-   /// pemiliknya, kemajuannya, dan batas jumlah task yang boleh berjalan bersamaan. Pemegang claim
-   /// layar ini yang bukan administrator hanya bisa melihat; membatalkan, membersihkan, dan mengubah
-   /// batas hanya untuk administrator.
+   /// The Business Task Manager screen: all business tasks on the server, personal and global, with their
+   /// owners, their progress, and the limit on how many tasks may run at the same time. A holder of this
+   /// screen's claim who is not an administrator can only view; cancelling, clearing, and changing the
+   /// limit are for administrators only.
    /// </summary>
    public partial class BusinessTaskManager : UserControl, INavigationBody
    {
       /// <summary>
-      /// Membuat layar Business Task Manager untuk aplikasi <paramref name="app"/>.
+      /// Creates the Business Task Manager screen for application <paramref name="app"/>.
       /// </summary>
       public BusinessTaskManager(EmApp app) {
          InitializeComponent();
@@ -32,7 +32,7 @@ namespace Em.Ui.Wpf.Navigations
          Unloaded += (_, _) => Vm.StopPolling();
       }
 
-      /// <summary>ViewModel layar ini.</summary>
+      /// <summary>The view model of this screen.</summary>
       public BusinessTaskManagerVm Vm => (BusinessTaskManagerVm)DataContext;
 
       /// <inheritdoc />
@@ -52,19 +52,19 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// Satu pilihan mode batas di <see cref="BusinessTaskManager"/>.
+   /// One limit mode choice in <see cref="BusinessTaskManager"/>.
    /// </summary>
    public class BusinessTaskLimitModeOption
    {
-      /// <summary>Mode batasnya.</summary>
+      /// <summary>Its limit mode.</summary>
       public BusinessTaskLimitMode Mode { get; init; }
 
-      /// <summary>Nama mode yang tampil.</summary>
+      /// <summary>Name of the mode as shown.</summary>
       public string Caption { get; init; } = "";
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="BusinessTaskManager"/>.
+   /// View model for <see cref="BusinessTaskManager"/>.
    /// </summary>
    public class BusinessTaskManagerVm : MvvmModelBase
    {
@@ -76,7 +76,7 @@ namespace Em.Ui.Wpf.Navigations
       private bool _visible;
 
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan seluruh command layar.
+      /// Creates a new view model and registers all commands of the screen.
       /// </summary>
       public BusinessTaskManagerVm() {
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
@@ -94,42 +94,42 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Data
 
-      /// <summary>Seluruh task di server: yang hidup lebih dulu, lalu yang terbaru.</summary>
+      /// <summary>All tasks on the server: live ones first, then the newest.</summary>
       public ObservableCollection<BusinessTaskItem> Tasks { get; } = [];
 
-      /// <summary>Pilihan mode batas.</summary>
+      /// <summary>The limit mode choices.</summary>
       public IReadOnlyList<BusinessTaskLimitModeOption> LimitModes { get; } = [
          new() { Mode = BusinessTaskLimitMode.Global, Caption = "Global Limit" },
          new() { Mode = BusinessTaskLimitMode.PerUser, Caption = "By User Limit" }
       ];
 
-      /// <summary>Mode batas yang sedang diedit.</summary>
+      /// <summary>The limit mode being edited.</summary>
       public BusinessTaskLimitMode LimitMode {
          get => Get<BusinessTaskLimitMode>();
          set => Set(value, _ => RaiseCommandsChanged());
       }
 
-      /// <summary>Angka batas yang sedang diedit.</summary>
+      /// <summary>The limit number being edited.</summary>
       public int LimitValue {
          get => Get(1);
          set => Set(value, _ => RaiseCommandsChanged());
       }
 
       /// <summary>
-      /// <c>true</c> kalau user yang login administrator, satu-satunya yang boleh mengubah batas,
-      /// membatalkan, dan membersihkan task dari layar ini.
+      /// <c>true</c> when the signed-in user is an administrator, the only one who may change the limit, and
+      /// cancel and clear tasks from this screen.
       /// </summary>
       public bool IsAdmin {
          get => Get<bool>();
          private set => Set(value);
       }
 
-      /// <summary>Keterangan di bawah pengaturan batas.</summary>
+      /// <summary>Caption below the limit setting.</summary>
       public string LimitHint => IsAdmin
          ? "Tasks over the limit wait in the queue until a running one finishes."
          : "Only administrators can change the limit.";
 
-      /// <summary>Ringkasan jumlah task, mis. <c>"2 running · 1 queued"</c>.</summary>
+      /// <summary>Summary of the task count, e.g. <c>"2 running · 1 queued"</c>.</summary>
       public string SummaryCaption {
          get {
             var running = Tasks.Count(r => r.Status == BusinessTaskStatus.Running);
@@ -138,10 +138,10 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary><c>true</c> kalau daftar sudah terbaca dan tidak ada task sama sekali.</summary>
+      /// <summary><c>true</c> when the list has been read and there is no task at all.</summary>
       public bool IsEmpty => IsLoaded && Tasks.Count == 0;
 
-      /// <summary><c>true</c> sejak daftar task pertama kali terbaca.</summary>
+      /// <summary><c>true</c> since the task list was first read.</summary>
       public bool IsLoaded {
          get => Get<bool>();
          private set => Set(value, _ => NotifyChanged(nameof(IsEmpty)));
@@ -151,13 +151,13 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Commands
 
-      /// <summary>Membaca ulang batas dan daftar task.</summary>
+      /// <summary>Reads the limit and the task list again.</summary>
       public Task RefreshCommand() => ReloadAsync();
 
-      /// <summary>Selama layar tidak sibuk.</summary>
+      /// <summary>While the screen is not busy.</summary>
       public bool RefreshCommandAllowed() => IsNotBusy;
 
-      /// <summary>Menyimpan batas baru. Task yang antri langsung dijalankan kalau batas barunya mengizinkan.</summary>
+      /// <summary>Saves the new limit. Queued tasks start right away if the new limit allows it.</summary>
       public Task SaveLimitCommand() =>
          RunBusyAsync("Saving limit...", async () => {
             var limit = new BusinessTaskLimit { Mode = LimitMode, Limit = LimitValue };
@@ -166,12 +166,12 @@ namespace Em.Ui.Wpf.Navigations
             await ReadTasksAsync();
          });
 
-      /// <summary>Hanya administrator, dan hanya kalau nilainya berbeda dari yang tersimpan.</summary>
+      /// <summary>Only for an administrator, and only when the value differs from the stored one.</summary>
       public bool SaveLimitCommandAllowed() =>
          IsNotBusy && IsAdmin && LimitValue >= 1 && _savedLimit is not null &&
          (_savedLimit.Mode != LimitMode || _savedLimit.Limit != LimitValue);
 
-      /// <summary>Membatalkan task <paramref name="item"/> setelah dikonfirmasi.</summary>
+      /// <summary>Cancels task <paramref name="item"/> after confirmation.</summary>
       public async Task CancelTaskCommand(BusinessTaskItem? item) {
          if (item is null || DialogOwner is not { } owner) return;
          if (owner.ShowMboxDecideWarning($"Cancel task '{item.Title}' started by {item.OwnerName}?", "Cancel Task") !=
@@ -187,12 +187,12 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Hanya administrator, untuk task yang masih hidup.</summary>
+      /// <summary>Only for an administrator, for a task that is still live.</summary>
       public bool CancelTaskCommandAllowed(BusinessTaskItem? item) => IsNotBusy && IsAdmin && item is { CanCancel: true };
 
       /// <summary>
-      /// Membersihkan task <paramref name="item"/>. Task yang punya hasil tersimpan dikonfirmasi dulu,
-      /// karena hasilnya ikut terhapus.
+      /// Clears task <paramref name="item"/>. A task that has a stored result is confirmed first, because its
+      /// result is deleted with it.
       /// </summary>
       public async Task ClearTaskCommand(BusinessTaskItem? item) {
          if (item is null || DialogOwner is not { } owner) return;
@@ -211,15 +211,15 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Hanya administrator, untuk task yang sudah selesai.</summary>
+      /// <summary>Only for an administrator, for a task that has finished.</summary>
       public bool ClearTaskCommandAllowed(BusinessTaskItem? item) => IsNotBusy && IsAdmin && item is { CanClear: true };
 
-      /// <summary>Mengunduh file hasil task <paramref name="item"/>.</summary>
+      /// <summary>Downloads the result file of task <paramref name="item"/>.</summary>
       public Task DownloadResultCommand(BusinessTaskItem? item) =>
          item is null ? Task.CompletedTask
          : RunBusyAsync("Downloading result...", () => BusinessTaskItem.DownloadResultAsync(Service, item, DialogOwner));
 
-      /// <summary>Hanya untuk task sukses berhasil file yang boleh dibaca pemanggil.</summary>
+      /// <summary>Only for a successful task whose file result the caller may read.</summary>
       public bool DownloadResultCommandAllowed(BusinessTaskItem? item) => IsNotBusy && item is { CanDownload: true };
 
       #endregion
@@ -227,8 +227,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Methods
 
       /// <summary>
-      /// Membaca ulang batas dan daftar task. Dipanggil host setiap kali layar dibuka lewat navigasi dan
-      /// dari tombol Refresh.
+      /// Reads the limit and the task list again. Called by the host every time the screen is opened through
+      /// navigation and from the Refresh button.
       /// </summary>
       public Task ReloadAsync() =>
          RunBusyAsync("Loading...", async () => {
@@ -242,13 +242,13 @@ namespace Em.Ui.Wpf.Navigations
             await ReadTasksAsync();
          });
 
-      /// <summary>Mulai memuat ulang daftar task tiap dua detik; dipanggil saat layar tampil.</summary>
+      /// <summary>Starts reloading the task list every two seconds; called when the screen is shown.</summary>
       public void StartPolling() {
          _visible = true;
          if (IsLoaded) _pollTimer.Start();
       }
 
-      /// <summary>Menghentikan pemuatan ulang berkala; dipanggil saat layar tidak tampil lagi.</summary>
+      /// <summary>Stops the periodic reloading; called when the screen is no longer shown.</summary>
       public void StopPolling() {
          _visible = false;
          _pollTimer.Stop();

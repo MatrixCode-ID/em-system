@@ -14,32 +14,32 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Hasil pemeriksaan sambungan ke server yang dipilih di layar login. Menentukan warna indikator
-   /// pada status bar layar login, bukan sesuatu yang disimpan ke database — jadi urutannya sekadar
-   /// alur yang dilewati sebuah probe.
+   /// Result of checking the connection to the server chosen on the login screen. It decides the color of
+   /// the indicator on the login screen's status bar, and is not something stored in the database - so its
+   /// order is merely the flow a probe goes through.
    /// </summary>
    public enum ServerProbeStatus
    {
-      /// <summary>Belum ada koneksi yang dipilih, jadi tidak ada yang diperiksa.</summary>
+      /// <summary>No connection is chosen yet, so nothing is being checked.</summary>
       NotSelected,
 
-      /// <summary>Probe sedang berjalan.</summary>
+      /// <summary>The probe is running.</summary>
       Probing,
 
-      /// <summary>Server menjawab probe dan tanda tangannya terverifikasi.</summary>
+      /// <summary>The server answered the probe and its signature was verified.</summary>
       Connected,
 
-      /// <summary>Server tidak menjawab, atau jawabannya tidak lolos verifikasi.</summary>
+      /// <summary>The server did not answer, or its answer did not pass verification.</summary>
       Unreachable
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="ILoginScreen"/>: proses sign in dan pemilihan tema terang/gelap.
+   /// View model for <see cref="ILoginScreen"/>: the sign-in process and the choice of light/dark theme.
    /// </summary>
    public class LoginControlVm : MvvmModelBase
    {
       /// <summary>
-      /// Membuat ViewModel layar login dan mendaftarkan command-nya (sign in dan ganti tema).
+      /// Creates the login screen view model and registers its commands (sign in and change theme).
       /// </summary>
       public LoginControlVm() {
          RegisterCommand(nameof(SignInCommand), SignInCommand, SignInCommandAllowed);
@@ -48,14 +48,14 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Dipicu setelah sign in berhasil. Dipakai aplikasi (<see cref="Core.EmApp"/>) untuk
-      /// berpindah dari layar login ke workspace.
+      /// Raised after a successful sign in. Used by the application (<see cref="Core.EmApp"/>) to move from
+      /// the login screen to the workspace.
       /// </summary>
       public event Action? SignInSucceeded;
 
       /// <summary>
-      /// Nama akun yang diketik user. Terisi sendiri saat layar dibuka kalau sebelumnya user memilih
-      /// diingat (<see cref="RememberMe"/>).
+      /// The account name typed by the user. Filled in by itself when the screen opens if the user chose to
+      /// be remembered earlier (<see cref="RememberMe"/>).
       /// </summary>
       // Empty rather than null when nothing has been typed: a text field always has a value, and
       // every reader of this property - the sign in call included - would otherwise have to guard
@@ -66,8 +66,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Password yang diketik user. Hidupnya hanya selama layar login terbuka: tidak pernah disimpan
-      /// ke Registry maupun ke mana pun, dan tidak ikut diingat oleh <see cref="RememberMe"/>.
+      /// The password typed by the user. It lives only while the login screen is open: it is never stored in
+      /// the Registry or anywhere else, and is not remembered by <see cref="RememberMe"/>.
       /// </summary>
       public string Password {
          get => Get<string>() ?? string.Empty;
@@ -75,9 +75,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Dipicu setiap kali <see cref="Password"/> berubah, supaya view bisa menyamakan kotak
-      /// password-nya. Kotak password tidak bisa di-binding, jadi nilai yang diubah ViewModel sendiri -
-      /// mis. dikosongkan sesudah sign in gagal - hanya sampai ke layar lewat event ini.
+      /// Raised every time <see cref="Password"/> changes, so the view can synchronize its password box. A
+      /// password box cannot be bound, so a value changed by the view model itself - e.g. cleared after a
+      /// failed sign in - only reaches the screen through this event.
       /// </summary>
       public event Action? PasswordBoxSyncRequested;
 
@@ -87,8 +87,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Kenapa sign in terakhir gagal, atau <c>null</c> kalau tidak ada yang perlu dilaporkan. Strip
-      /// merah di atas form membaca properti ini: terisi berarti muncul, <c>null</c> berarti hilang.
+      /// Why the last sign in failed, or <c>null</c> when there is nothing to report. The red strip above the
+      /// form reads this property: filled means it appears, <c>null</c> means it disappears.
       /// </summary>
       public string? SignInError {
          get => Get<string?>();
@@ -96,9 +96,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Keterangan kenapa sesi sebelumnya berakhir, atau <c>null</c> kalau tidak ada yang perlu
-      /// dikatakan. Dibedakan dari <see cref="SignInError"/> yang berwarna merah: sesi yang habis
-      /// umurnya bukan kegagalan user, jadi kalimatnya muncul sebagai keterangan biasa.
+      /// A note on why the previous session ended, or <c>null</c> when there is nothing to say. Kept apart from
+      /// <see cref="SignInError"/>, which is red: a session that simply expired is not the user's failure, so
+      /// its sentence appears as an ordinary note.
       /// </summary>
       public string? SessionEndedNotice {
          get => Get<string?>();
@@ -106,9 +106,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Keterangan teknis dari kegagalan terakhir — pesan exception aslinya — untuk tooltip strip
-      /// error. Selalu <c>null</c> untuk kegagalan kredensial: di situ memang tidak ada detail yang
-      /// boleh diceritakan.
+      /// The technical detail of the last failure - the original exception message - for the tooltip of the
+      /// error strip. Always <c>null</c> for a credential failure: there is no detail that may be told there.
       /// </summary>
       public string? SignInErrorDetail {
          get => Get<string?>();
@@ -116,9 +115,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Pilihan "keep me signed in" milik user. Nilainya langsung tersimpan ke Registry begitu
-      /// diubah (<see cref="Core.EmApp.RememberSignIn"/>), sedangkan nama akunnya baru diingat
-      /// setelah sign in benar-benar dijalankan.
+      /// The user's "keep me signed in" choice. Its value is stored in the Registry as soon as it changes
+      /// (<see cref="Core.EmApp.RememberSignIn"/>), while the account name is only remembered after a sign in
+      /// has really been carried out.
       /// </summary>
       public bool RememberMe {
          get => Get<bool>();
@@ -133,10 +132,10 @@ namespace Em.Ui.Wpf.Navigations
       private const string InvalidCredentialsMessage = "Incorrect username or password. Please try again.";
 
       /// <summary>
-      /// Menjalankan sign in: menyerahkan nama akun dan password ke server, yang memeriksanya dan
-      /// menerbitkan token kalau cocok. Kalau lolos, host diberi tahu lewat
-      /// <see cref="SignInSucceeded"/>; kalau tidak, <see cref="SignInError"/> yang terisi dan layar
-      /// tetap di tempat — command ini tidak pernah melempar exception ke pemanggilnya.
+      /// Runs the sign in: hands the account name and password to the server, which checks them and issues a
+      /// token if they match. When it succeeds, the host is told through <see cref="SignInSucceeded"/>; if
+      /// not, <see cref="SignInError"/> is filled and the screen stays where it is - this command never throws
+      /// an exception to its caller.
       /// </summary>
       // Nothing may escape this method. ICommand.Execute is void, so UiCommandAsync runs it as
       // async void: an exception leaving here is rethrown on the dispatcher, and there is no
@@ -197,9 +196,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Sign in baru boleh dijalankan setelah user memilih koneksi: server tempat kredensialnya
-      /// diperiksa adalah koneksi itu sendiri, jadi tanpa pilihan tidak ada yang bisa dihubungi.
-      /// Berlaku juga di debug mode — di sana layar ini yang menyiapkan koneksi untuk simulasi login.
+      /// Sign in may only run after the user has chosen a connection: the server where the credentials are
+      /// checked is that connection itself, so without a choice there is nobody to contact. This also applies
+      /// in debug mode - there this screen is what prepares the connection for simulating a login.
       /// </summary>
       // Unlike ChangeThemeCommand, a predicate is safe here: it reads this screen's own state, not
       // EmApp, and every property it reads re-raises CanExecuteChanged itself - which UiCommandBase
@@ -214,11 +213,11 @@ namespace Em.Ui.Wpf.Navigations
          Commands[nameof(SignInCommand)]?.RaiseCanExecuteChanged();
 
       /// <summary>
-      /// Menyalakan atau mematikan keadaan "sedang memulihkan sesi tersimpan". Layar login digambar
-      /// lebih dulu dalam keadaan sibuk, bukan ditahan sebagai window kosong, karena penukaran token
-      /// yang dilakukannya memakan waktu jaringan.
+      /// Turns the "restoring the stored session" state on or off. The login screen is drawn first in a busy
+      /// state, rather than being held back as an empty window, because the token exchange it performs takes
+      /// network time.
       /// </summary>
-      /// <param name="restoring"><c>true</c> selama pemulihan berjalan.</param>
+      /// <param name="restoring"><c>true</c> while the restoration is running.</param>
       public void SetRestoringSession(bool restoring) {
          WaiterText = "Restoring session...";
          IsBusy = InWaiting = restoring;
@@ -238,11 +237,11 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Mengganti mode tema aplikasi ke <paramref name="theme"/>. Layar login perlu punya pilihan tema
-      /// sendiri karena toolbar window utama — berikut submenu Color Mode-nya — ikut tersembunyi selama
-      /// layar ini ditampilkan.
+      /// Changes the application's theme mode to <paramref name="theme"/>. The login screen needs its own
+      /// theme choice because the main window's toolbar - with its Color Mode submenu - is hidden while this
+      /// screen is shown.
       /// </summary>
-      /// <param name="theme">Mode tema yang akan diterapkan.</param>
+      /// <param name="theme">The theme mode to apply.</param>
       public void ChangeThemeCommand(ThemeVariant theme) {
          // Guarded instead of gated behind a can-execute predicate on purpose. XAML builds this VM
          // before the host injects EmApp, and UiCommandBase.CanExecuteChanged is a plain event -
@@ -254,21 +253,20 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// <c>true</c> jika mode tema aktif saat ini adalah mode terang.
+      /// <c>true</c> when the currently active theme mode is the light mode.
       /// </summary>
       public bool LightModeSelected =>
          (EmApp?.CurrentTheme ?? ThemeVariant.Dark) == ThemeVariant.Light;
 
       /// <summary>
-      /// <c>true</c> jika mode tema aktif saat ini adalah mode gelap.
+      /// <c>true</c> when the currently active theme mode is the dark mode.
       /// </summary>
       public bool DarkModeSelected =>
          (EmApp?.CurrentTheme ?? ThemeVariant.Dark) == ThemeVariant.Dark;
 
       /// <summary>
-      /// Memberi tahu UI untuk mengevaluasi ulang <see cref="LightModeSelected"/> dan
-      /// <see cref="DarkModeSelected"/>. Dipanggil setiap kali tema aplikasi berganti, dari mana pun
-      /// perubahannya berasal.
+      /// Tells the UI to re-evaluate <see cref="LightModeSelected"/> and <see cref="DarkModeSelected"/>.
+      /// Called every time the application's theme changes, wherever the change came from.
       /// </summary>
       public void RefreshThemeState() {
          NotifyChanged(nameof(LightModeSelected));
@@ -278,18 +276,17 @@ namespace Em.Ui.Wpf.Navigations
       #region API Connections
 
       /// <summary>
-      /// Daftar profil koneksi API yang ditawarkan layar login. Ini koleksi milik
-      /// <see cref="Core.EmApp.UIConnections"/> apa adanya — bukan salinannya — jadi profil yang
-      /// ditambah atau dihapus lewat dialog Connection Config langsung ikut terlihat di sini.
-      /// Null-safe karena XAML membuat ViewModel ini sebelum <see cref="MvvmModelBase.EmApp"/>
-      /// sempat di-set.
+      /// The list of API connection profiles offered by the login screen. This is the collection of
+      /// <see cref="Core.EmApp.UIConnections"/> as-is - not a copy of it - so a profile added or removed
+      /// through the Connection Config dialog is immediately visible here. Null-safe because XAML creates this
+      /// view model before <see cref="MvvmModelBase.EmApp"/> could be set.
       /// </summary>
       public ObservableCollection<ApiConnection>? ApiConnections => EmApp?.UIConnections;
 
       /// <summary>
-      /// Profil yang sedang dipilih user di layar login. Menyetelnya sekaligus menjadikannya koneksi
-      /// aktif aplikasi (<see cref="Core.EmApp.ActiveConnection"/>), jadi server yang dipakai
-      /// sesudah sign in adalah yang dipilih di sini.
+      /// The profile currently chosen by the user on the login screen. Setting it also makes it the
+      /// application's active connection (<see cref="Core.EmApp.ActiveConnection"/>), so the server used after
+      /// sign in is the one chosen here.
       /// </summary>
       public ApiConnection? SelectedConnection {
          get => Get<ApiConnection?>();
@@ -297,7 +294,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Hasil probe terakhir, dipakai status bar di bawah layar login untuk memilih warna indikatornya.
+      /// The result of the last probe, used by the status bar below the login screen to choose the color of
+      /// its indicator.
       /// </summary>
       public ServerProbeStatus ProbeStatus {
          get => Get<ServerProbeStatus>();
@@ -305,7 +303,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Kalimat status yang ditampilkan status bar: koneksi mana yang sedang diperiksa, dan hasilnya.
+      /// The status sentence shown by the status bar: which connection is being checked, and the result.
       /// </summary>
       public string ServerStatusText {
          get => Get<string>() ?? "No server connection selected";
@@ -313,8 +311,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Keterangan panjang dari probe terakhir — biasanya pesan error aslinya — untuk tooltip status
-      /// bar. <c>null</c> kalau tidak ada yang perlu dijelaskan.
+      /// The long description of the last probe - usually its original error message - for the status bar
+      /// tooltip. <c>null</c> when there is nothing to explain.
       /// </summary>
       public string? ServerStatusDetail {
          get => Get<string?>();
@@ -322,12 +320,12 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menyambungkan ViewModel ini ke aplikasi, lalu memberi tahu UI supaya binding daftar koneksi
-      /// dievaluasi ulang dan pilihannya terisi. Notifikasinya wajib: XAML sudah membuat ViewModel ini
-      /// berikut seluruh binding-nya sebelum <see cref="MvvmModelBase.EmApp"/> sempat di-set, jadi
-      /// tanpa ini daftar koneksinya keburu terbaca kosong dan tidak pernah terisi.
+      /// Connects this view model to the application, then tells the UI to re-evaluate the connection list
+      /// binding and fill its selection. The notification is required: XAML creates this view model together
+      /// with all its bindings before <see cref="MvvmModelBase.EmApp"/> could be set, so without it the
+      /// connection list would be read empty too early and never be filled.
       /// </summary>
-      /// <param name="app">Objek aplikasi pemilik ViewModel ini.</param>
+      /// <param name="app">The application object that owns this view model.</param>
       public void AttachApp(EmApp app) {
          EmApp = app;
          NotifyChanged(nameof(ApiConnections));
@@ -360,15 +358,14 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Menyamakan pilihan koneksi dengan isi <see cref="ApiConnections"/> yang terbaru. Urutan
-      /// prioritasnya: profil yang tadi dipilih di layar ini, lalu koneksi yang sedang aktif di
-      /// aplikasi (<see cref="Core.EmApp.ActiveConnection"/>) — supaya pilihan user tetap bertahan
-      /// walau layar login dibuat ulang — lalu koneksi debug bawaan.
+      /// Aligns the connection choice with the latest content of <see cref="ApiConnections"/>. Priority order:
+      /// the profile chosen on this screen earlier, then the connection active in the application
+      /// (<see cref="Core.EmApp.ActiveConnection"/>) - so the user's choice survives even if the login screen
+      /// is created again - then the default debug connection.
       /// <para>
-      /// Kalau tidak ada satu pun yang cocok, pilihannya sengaja dibiarkan kosong dan user harus
-      /// memilih sendiri: sign in memang tidak diizinkan sebelum ada koneksi
-      /// (<see cref="SignInCommandAllowed"/>), jadi memilihkan profil pertama begitu saja cuma
-      /// menyembunyikan keputusan yang seharusnya diambil user.
+      /// If none of them matches, the choice is deliberately left empty and the user must choose: sign in is
+      /// not allowed before there is a connection (<see cref="SignInCommandAllowed"/>), so choosing the first
+      /// profile just like that would only hide a decision that should be the user's.
       /// </para>
       /// </summary>
       public void SyncSelectedConnection() {
@@ -381,9 +378,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Membuka dialog konfigurasi koneksi API (<see cref="Dialogs.ConnectionConfig"/>). Layar login
-      /// perlu punya jalan masuk sendiri ke dialog ini karena toolbar window utama — berikut menu
-      /// Tools-nya — ikut tersembunyi selama layar ini ditampilkan.
+      /// Opens the API connection configuration dialog (<see cref="Dialogs.ConnectionConfig"/>). The login
+      /// screen needs its own way into this dialog because the main window's toolbar - with its Tools menu -
+      /// is hidden while this screen is shown.
       /// </summary>
       public void ConnectionConfigCommand() {
          // Guarded the same way as ChangeThemeCommand: XAML builds this VM before the host injects

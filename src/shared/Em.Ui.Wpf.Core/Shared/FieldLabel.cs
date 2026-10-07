@@ -9,36 +9,36 @@ using ComboBox = System.Windows.Controls.ComboBox;
 
 namespace Em.Ui.Wpf.Shared
 {
-   /// <summary>Label mengambang untuk field Material, tanpa memakai Tag atau menyimpan password.</summary>
+   /// <summary>A floating label for a Material field, without using Tag or storing the password.</summary>
    public static class FieldLabel
    {
       /// <summary>Teks label field.</summary>
       public static readonly DependencyProperty TextProperty = DependencyProperty.RegisterAttached(
          "Text", typeof(string), typeof(FieldLabel), new PropertyMetadata(null, OnTextChanged));
-      /// <summary>Latar takik label; bawaannya mengikuti surface card.</summary>
+      /// <summary>The background of the label notch; by default it follows the card surface.</summary>
       public static readonly DependencyProperty NotchBackgroundProperty = DependencyProperty.RegisterAttached(
          "NotchBackground", typeof(Brush), typeof(FieldLabel), new PropertyMetadata(null));
-      /// <summary>Mengaktifkan animasi label pendek; mengikuti EnableAnimation aplikasi.</summary>
+      /// <summary>Turns on the short label animation; follows the application's EnableAnimation.</summary>
       public static readonly DependencyProperty EnableAnimationProperty = DependencyProperty.RegisterAttached(
          "EnableAnimation", typeof(bool), typeof(FieldLabel), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
-      /// <summary>Penanda label perlu berada di garis tepi atas.</summary>
+      /// <summary>Marker that the label needs to sit on the top border line.</summary>
       public static readonly DependencyProperty IsFloatingProperty = DependencyProperty.RegisterAttached(
          "IsFloating", typeof(bool), typeof(FieldLabel), new PropertyMetadata(false));
-      /// <summary>Membaca teks label.</summary>
+      /// <summary>Reads the label text.</summary>
       public static string? GetText(DependencyObject d) => (string?)d.GetValue(TextProperty);
       /// <summary>Mengatur teks label.</summary>
       public static void SetText(DependencyObject d, string? value) => d.SetValue(TextProperty, value);
-      /// <summary>Membaca latar takik.</summary>
+      /// <summary>Reads the notch background.</summary>
       public static Brush? GetNotchBackground(DependencyObject d) => (Brush?)d.GetValue(NotchBackgroundProperty);
       /// <summary>Mengatur latar takik.</summary>
       public static void SetNotchBackground(DependencyObject d, Brush? value) => d.SetValue(NotchBackgroundProperty, value);
-      /// <summary>Membaca pilihan animasi.</summary>
+      /// <summary>Reads the animation choice.</summary>
       public static bool GetEnableAnimation(DependencyObject d) => (bool)d.GetValue(EnableAnimationProperty);
-      /// <summary>Mengatur pilihan animasi.</summary>
+      /// <summary>Sets the animation choice.</summary>
       public static void SetEnableAnimation(DependencyObject d, bool value) => d.SetValue(EnableAnimationProperty, value);
-      /// <summary>Membaca posisi label.</summary>
+      /// <summary>Reads the label position.</summary>
       public static bool GetIsFloating(DependencyObject d) => (bool)d.GetValue(IsFloatingProperty);
-      /// <summary>Mengatur posisi label.</summary>
+      /// <summary>Sets the label position.</summary>
       public static void SetIsFloating(DependencyObject d, bool value) => d.SetValue(IsFloatingProperty, value);
 
       private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {

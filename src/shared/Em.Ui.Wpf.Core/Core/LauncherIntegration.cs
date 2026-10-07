@@ -8,35 +8,36 @@ using System.Windows.Interop;
 namespace Em.Ui.Wpf.Core
 {
    /// <summary>
-   /// Penghubung aplikasi dengan <c>launcher.exe</c>, program kecil yang memasang, memperbarui, dan
-   /// menjalankan aplikasi di komputer user. Kelas ini menjawab tiga hal: apakah aplikasi terpasang
-   /// lewat launcher (<see cref="IsManaged"/>), di mana launcher-nya (<see cref="LauncherPath"/>), dan
-   /// identitas taskbar mana yang dipakai (<see cref="AppUserModelId"/>).
+   /// The application's link with <c>launcher.exe</c>, a small program that installs, updates, and runs the
+   /// application on the user's computer. This class answers three things: whether the application is
+   /// installed through the launcher (<see cref="IsManaged"/>), where the launcher is
+   /// (<see cref="LauncherPath"/>), and which taskbar identity is used (<see cref="AppUserModelId"/>).
    /// </summary>
    /// <remarks>
-   /// Launcher selalu dijalankan lebih dulu, lalu ia menjalankan aplikasi dengan dua environment
-   /// variable (<see cref="PathVariable"/> dan <see cref="AppIdVariable"/>). Aplikasi yang terpasang
-   /// lewat launcher tetapi dibuka langsung dari folder instalasinya (tanpa environment variable itu)
-   /// menyerahkan dirinya ke launcher lalu keluar, supaya pengecekan update tidak terlewat. Aplikasi yang
-   /// tidak terpasang lewat launcher (dijalankan dari Visual Studio atau folder publish) tidak terpengaruh
-   /// sama sekali.
+   /// The launcher is always run first, then it runs the application with two environment variables
+   /// (<see cref="PathVariable"/> and <see cref="AppIdVariable"/>). An application that is installed
+   /// through the launcher but opened directly from its installation folder (without those environment
+   /// variables) hands itself over to the launcher and exits, so the update check is not skipped. An
+   /// application that is not installed through the launcher (run from Visual Studio or a publish folder)
+   /// is not affected at all.
    /// </remarks>
    public static class LauncherIntegration
    {
       /// <summary>
-      /// Nama environment variable berisi path lengkap launcher, dipasang launcher saat menjalankan aplikasi.
+      /// The name of the environment variable holding the full path of the launcher, set by the launcher when
+      /// it runs the application.
       /// </summary>
       public const string PathVariable = "LAUNCHER_PATH";
 
       /// <summary>
-      /// Nama environment variable berisi AppUserModelID produk, yaitu identitas yang dipakai Windows untuk
-      /// mengelompokkan jendela di taskbar dan menentukan apa yang dijalankan pin taskbar.
+      /// The name of the environment variable holding the product's AppUserModelID, which is the identity
+      /// Windows uses to group windows on the taskbar and to decide what a taskbar pin runs.
       /// </summary>
       public const string AppIdVariable = "LAUNCHER_APP_ID";
 
       /// <summary>
-      /// Nama file yang menandai folder berisi satu versi aplikasi yang dipasang launcher. Tanpa file ini
-      /// aplikasi dianggap tidak terpasang lewat launcher.
+      /// The name of the file that marks a folder holding one version of the application installed by the
+      /// launcher. Without this file the application is considered not installed through the launcher.
       /// </summary>
       public const string ReleaseMarkerFileName = "release.json";
 
@@ -49,20 +50,20 @@ namespace Em.Ui.Wpf.Core
       private static bool _initialized;
 
       /// <summary>
-      /// <c>true</c> kalau aplikasi berjalan dari folder versi yang dipasang launcher, baik dijalankan
-      /// launcher maupun dibuka langsung.
+      /// <c>true</c> when the application runs from a version folder installed by the launcher, whether run by
+      /// the launcher or opened directly.
       /// </summary>
       public static bool IsManaged { get; private set; }
 
       /// <summary>
-      /// Path lengkap launcher yang menjalankan aplikasi ini, atau <c>null</c> kalau aplikasi tidak
-      /// dijalankan lewat launcher. Dipakai sebagai perintah yang dijalankan pin taskbar.
+      /// The full path of the launcher that runs this application, or <c>null</c> when the application is not
+      /// run through the launcher. Used as the command that a taskbar pin runs.
       /// </summary>
       public static string? LauncherPath { get; private set; }
 
       /// <summary>
-      /// AppUserModelID yang dipasang di proses dan setiap jendela utama, atau <c>null</c> kalau aplikasi
-      /// tidak dijalankan lewat launcher (Windows lalu memakai identitas bawaannya sendiri).
+      /// The AppUserModelID installed on the process and every main window, or <c>null</c> when the
+      /// application is not run through the launcher (Windows then uses its own default identity).
       /// </summary>
       public static string? AppUserModelId { get; private set; }
 
@@ -114,17 +115,17 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Memasang AppUserModelID dan perintah relaunch di <paramref name="window"/>, supaya jendela itu
-      /// masuk grup taskbar yang sama dengan shortcut Start menu, dan pin taskbar dari jendela itu
-      /// menjalankan launcher, bukan exe aplikasi di folder versinya. Tidak melakukan apa-apa kalau
-      /// aplikasi tidak dijalankan lewat launcher.
+      /// Installs the AppUserModelID and the relaunch command on <paramref name="window"/>, so that window
+      /// joins the same taskbar group as the Start menu shortcut, and a taskbar pin from that window runs the
+      /// launcher, not the application exe in its version folder. Does nothing when the application is not run
+      /// through the launcher.
       /// </summary>
       /// <remarks>
-      /// Properti dipasang saat handle jendela dibuat, dan dibuang lagi saat jendela ditutup, karena
-      /// Windows tidak membebaskannya sendiri.
+      /// The properties are installed when the window handle is created, and removed again when the window is
+      /// closed, because Windows does not release them by itself.
       /// </remarks>
-      /// <param name="window">Jendela yang diberi identitas.</param>
-      /// <param name="displayName">Nama yang ditampilkan untuk pin taskbar, biasanya nama aplikasi.</param>
+      /// <param name="window">The window that is given the identity.</param>
+      /// <param name="displayName">The name shown for the taskbar pin, usually the application name.</param>
       public static void AttachToWindow(Window window, string displayName) {
          ArgumentNullException.ThrowIfNull(window);
          if (LauncherPath == null || AppUserModelId == null) return;

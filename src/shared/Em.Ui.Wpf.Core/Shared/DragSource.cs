@@ -16,32 +16,31 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Membuat sebuah elemen bisa diseret, cukup dengan memasang muatannya di XAML:
+   /// Makes an element draggable, just by attaching its payload in XAML:
    /// <code>&lt;Grid shared:DragSource.Payload="{Binding}"&gt;</code>
-   /// Elemennya sendiri yang menjadi bayangan yang ikut terseret, dan muatannya diserahkan apa
-   /// adanya ke tempat ia dijatuhkan.
+   /// The element itself becomes the shadow that is dragged along, and its payload is handed as-is to the
+   /// place where it is dropped.
    /// <para>
-   /// Kelas ini tidak tahu apa isi muatannya. Yang menyaring muatan mana yang boleh diterima
-   /// adalah command di sisi penerima (<see cref="DropTarget"/>), bukan di sini - satu aturan di
-   /// satu tempat.
+   /// This class does not know what the payload contains. What filters which payload may be accepted is
+   /// the command on the receiving side (<see cref="DropTarget"/>), not here - one rule in one place.
    /// </para>
    /// </summary>
    public static class DragSource
    {
       /// <summary>
-      /// Nama format tunggal yang dipakai seluruh drag di aplikasi ini. Satu nama untuk semua tipe
-      /// muatan, supaya penerima cukup membuka satu pintu lalu memeriksa sendiri isinya.
+      /// The single format name used by all drags in this application. One name for all payload types, so
+      /// the receiver only needs to open one door and then check the content itself.
       /// </summary>
       public const string PayloadFormat = "Em.Ui.Wpf.DragPayload";
 
-      // Disimpan sekali, bukan dirangkai ulang setiap kali dipasang dan dicopot: AddHandler dan
-      // RemoveHandler mencocokkan delegate-nya, dan menyerahkan method group dua kali menghasilkan
-      // dua objek delegate berbeda - yang kedua tidak akan pernah mencopot yang pertama.
+      // Stored once, not recomposed every time it is attached and detached: AddHandler and RemoveHandler
+      // match the delegate, and handing over the method group twice produces two different delegate objects
+      // - the second would never remove the first.
       private static readonly MouseButtonEventHandler ArmHandler = OnPreviewMouseLeftButtonDown;
       private static readonly MouseEventHandler MoveHandler = OnMouseMove;
 
-      // Hanya ada satu drag pada satu saat, jadi keadaannya statis. Menyimpannya per elemen berarti
-      // membayar satu attached property untuk sesuatu yang memang tidak bisa terjadi dua kali.
+      // There is only one drag at a time, so the state is static. Keeping it per element would mean paying
+      // one attached property for something that cannot happen twice.
       private static FrameworkElement? _armed;
       private static Point _origin;
       private static Point _grip;
@@ -50,18 +49,18 @@ namespace Em.Ui.Wpf.Shared
       private static FrameworkElement? _ghostHost;
 
       /// <summary>
-      /// Muatan drag yang sedang berjalan dari aplikasi ini, atau <c>null</c> kalau tidak ada.
-      /// <see cref="DropTarget"/> membacanya dari sini, bukan dari data drag-nya, karena muatan yang
-      /// juga dibawa keluar aplikasi sebagai file (<see cref="IVirtualFileSource"/>) berjalan lewat
-      /// data object COM yang tidak bisa membawa objek .NET apa adanya.
+      /// The payload of the drag that is running from this application, or <c>null</c> when there is none.
+      /// <see cref="DropTarget"/> reads it from here, not from the drag data, because a payload that is also
+      /// carried out of the application as a file (<see cref="IVirtualFileSource"/>) travels through a COM
+      /// data object that cannot carry a .NET object as-is.
       /// </summary>
       public static object? ActivePayload { get; private set; }
 
       #region Payload
 
       /// <summary>
-      /// Muatan yang dibawa elemen ini kalau ia diseret. Memasangnya sekaligus menyalakan seluruh
-      /// plumbing drag pada elemen itu; melepasnya (<c>null</c>) mematikannya kembali.
+      /// The payload this element carries when it is dragged. Attaching it also turns on all the drag
+      /// plumbing on that element; removing it (<c>null</c>) turns it off again.
       /// </summary>
       public static readonly DependencyProperty PayloadProperty = DependencyProperty.RegisterAttached(
          "Payload",
@@ -69,17 +68,17 @@ namespace Em.Ui.Wpf.Shared
          typeof(DragSource),
          new PropertyMetadata(null, OnPayloadChanged));
 
-      /// <summary>Membaca muatan yang terpasang pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dibaca.</param>
-      /// <returns>Muatannya, atau <c>null</c> kalau elemen itu tidak bisa diseret.</returns>
+      /// <summary>Reads the payload attached to an element.</summary>
+      /// <param name="element">The element being read.</param>
+      /// <returns>Its payload, or <c>null</c> when the element cannot be dragged.</returns>
       public static object? GetPayload(DependencyObject element) {
          ArgumentNullException.ThrowIfNull(element);
          return element.GetValue(PayloadProperty);
       }
 
-      /// <summary>Memasang muatan pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dipasangi.</param>
-      /// <param name="value">Muatannya; <c>null</c> berarti elemen ini tidak bisa diseret.</param>
+      /// <summary>Attaches a payload to an element.</summary>
+      /// <param name="element">The element being attached to.</param>
+      /// <param name="value">The payload; <c>null</c> means this element cannot be dragged.</param>
       public static void SetPayload(DependencyObject element, object? value) {
          ArgumentNullException.ThrowIfNull(element);
          element.SetValue(PayloadProperty, value);
@@ -90,10 +89,10 @@ namespace Em.Ui.Wpf.Shared
       #region IsDragActive
 
       /// <summary>
-      /// Menyala di akar layar selama ada drag yang sedang berjalan, dan diwariskan ke seluruh
-      /// isinya. Dibaca elemen yang perlu menyingkir selama drag - misalnya scrim sebuah side
-      /// sheet, yang harus berhenti menangkap mouse supaya jatuhan bisa mendarat di belakangnya -
-      /// tanpa elemen itu perlu kenal siapa yang sedang diseret.
+      /// On at the root of the screen while a drag is running, and inherited by all its content. Read by
+      /// elements that need to step aside during a drag - for example the scrim of a side sheet, which must
+      /// stop capturing the mouse so the drop can land behind it - without that element needing to know who
+      /// is being dragged.
       /// </summary>
       public static readonly DependencyProperty IsDragActiveProperty = DependencyProperty.RegisterAttached(
          "IsDragActive",
@@ -101,17 +100,17 @@ namespace Em.Ui.Wpf.Shared
          typeof(DragSource),
          new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
 
-      /// <summary>Apakah ada drag yang sedang berjalan di atas elemen ini.</summary>
-      /// <param name="element">Elemen yang dibaca.</param>
-      /// <returns><c>true</c> selama drag berjalan.</returns>
+      /// <summary>Whether a drag is running over this element.</summary>
+      /// <param name="element">The element being read.</param>
+      /// <returns><c>true</c> while a drag is running.</returns>
       public static bool GetIsDragActive(DependencyObject element) {
          ArgumentNullException.ThrowIfNull(element);
          return (bool)element.GetValue(IsDragActiveProperty);
       }
 
-      /// <summary>Menyalakan atau mematikan penanda drag pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dipasangi - biasanya akar layar.</param>
-      /// <param name="value">Keadaannya.</param>
+      /// <summary>Turns the drag marker on or off on an element.</summary>
+      /// <param name="element">The element it is attached to - usually the root of the screen.</param>
+      /// <param name="value">The state.</param>
       public static void SetIsDragActive(DependencyObject element, bool value) {
          ArgumentNullException.ThrowIfNull(element);
          element.SetValue(IsDragActiveProperty, value);
@@ -122,24 +121,24 @@ namespace Em.Ui.Wpf.Shared
       private static void OnPayloadChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e) {
          if (sender is not FrameworkElement element) return;
 
-         // Dicopot lebih dulu tanpa syarat: muatan sebuah baris berganti setiap kali DataContext-nya
-         // berganti, dan berlangganan dua kali berarti drag yang dimulai dua kali.
+         // Detached first unconditionally: the payload of a row changes every time its DataContext changes, and
+         // subscribing twice would mean the drag starts twice.
          element.RemoveHandler(UIElement.PreviewMouseLeftButtonDownEvent, ArmHandler);
          element.RemoveHandler(UIElement.MouseMoveEvent, MoveHandler);
 
          if (e.NewValue == null) return;
 
-         // handledEventsToo, bukan '+=' biasa. Kepala kartu yang bisa dilipat adalah ToggleButton,
-         // dan ToggleButton menandai MouseMove sebagai sudah ditangani selama ia tertekan. Dengan
-         // langganan biasa, kartu yang dipegang dari kepalanya tidak akan pernah berangkat - dan
-         // kepalanya justru satu-satunya bagian kartu yang tidak tertutup baris claim.
+         // handledEventsToo, not a plain '+='. The header of a collapsible card is a ToggleButton, and
+         // ToggleButton marks MouseMove as already handled while it is pressed. With an ordinary subscription,
+         // a card grabbed by its header would never start moving - and the header is precisely the one part of
+         // the card that is not covered by claim rows.
          element.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, ArmHandler, true);
          element.AddHandler(UIElement.MouseMoveEvent, MoveHandler, true);
       }
 
-      // Preview, bukan bubbling: kepala kartu yang bisa dilipat adalah ToggleButton, dan ToggleButton
-      // menelan MouseLeftButtonDown yang biasa. Menerowong dari luar ke dalam berarti elemen terdalam
-      // yang terakhir mencatat dirinya - dan yang terdalam itulah yang paling tepat dimaksud orangnya.
+      // Preview, not bubbling: the header of a collapsible card is a ToggleButton, and ToggleButton swallows
+      // the ordinary MouseLeftButtonDown. Tunneling from the outside in means the innermost element is the
+      // last to register itself - and the innermost is the one the person most precisely meant.
       private static void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
          if (_dragging || sender is not FrameworkElement element) return;
 
@@ -148,12 +147,11 @@ namespace Em.Ui.Wpf.Shared
          _origin = e.GetPosition(null);
       }
 
-      // Bubbling, bukan preview: baris claim ada di dalam kartu module dan keduanya membawa muatan,
-      // dan naik dari dalam ke luar berarti barisnya yang menang. Yang memutuskan siapa berangkat
-      // bukan e.Handled melainkan _armed - elemen terdalam yang tercatat saat tombol ditekan.
-      // Karena langganannya menerima event yang sudah ditangani, e.Handled tidak lagi menghentikan
-      // siapa pun di sini, dan _armed memang penjaga yang lebih tepat: ia menjawab "yang ini yang
-      // dimaksud", bukan sekadar "sudah ada yang mengurus".
+      // Bubbling, not preview: a claim row sits inside a module card and both carry a payload, and rising from
+      // the inside out means the row wins. What decides who departs is not e.Handled but _armed - the
+      // innermost element registered when the button was pressed. Because the subscription receives events
+      // that are already handled, e.Handled no longer stops anyone here, and _armed is indeed the better
+      // guard: it answers "this is the one meant", not merely "someone already took care of it".
       private static void OnMouseMove(object sender, MouseEventArgs e) {
          if (_dragging || sender is not FrameworkElement element) return;
          if (!ReferenceEquals(_armed, element)) return;
@@ -185,10 +183,10 @@ namespace Em.Ui.Wpf.Shared
          _dragging = true;
 
          try {
-            // ToggleButton memegang mouse capture selama ia ditekan, dan memulai drag selagi capture
-            // masih dipegangnya membuat tombolnya tertinggal dalam keadaan tertekan. Melepaskannya di
-            // sini sekaligus membuat seret-lalu-lepas tidak ikut memicu Click-nya, sementara klik
-            // biasa - yang tidak pernah sampai ke sini - tetap bekerja seperti biasa.
+            // ToggleButton holds the mouse capture while it is pressed, and starting a drag while it still holds
+            // the capture leaves its button stuck in the pressed state. Releasing it here also makes
+            // drag-then-release not trigger its Click, while an ordinary click - which never reaches here - still
+            // works as usual.
             Mouse.Capture(null);
 
             if (host != null && layer != null) {
@@ -224,9 +222,9 @@ namespace Em.Ui.Wpf.Shared
          }
       }
 
-      // DragOver hanya menyala di atas target yang sah, jadi ia tidak cukup untuk menggerakkan
-      // bayangan ke mana pun kursornya pergi. GiveFeedback menyala di sumbernya, terus-menerus,
-      // sepanjang drag - tapi ia tidak membawa posisi kursor, jadi posisinya ditanyakan ke Windows.
+      // DragOver only fires over a valid target, so it is not enough to move the shadow wherever the cursor
+      // goes. GiveFeedback fires at the source, continuously, throughout the drag - but it does not carry
+      // the cursor position, so the position is asked from Windows.
       private static void OnGiveFeedback(object sender, GiveFeedbackEventArgs e) {
          e.UseDefaultCursors = false;
          e.Handled = true;
@@ -249,9 +247,9 @@ namespace Em.Ui.Wpf.Shared
          _ghost.Offset(point);
       }
 
-      // Bayangannya digambar di adorner layer milik layar yang memuat elemennya, bukan milik jendela:
-      // sumber dan tujuan sebuah drag ada di dalam satu layar, dan memilih layar membuat koordinatnya
-      // tetap sederhana.
+      // The shadow is drawn in the adorner layer of the screen that holds the element, not of the window:
+      // the source and destination of a drag are inside one screen, and choosing the screen keeps the
+      // coordinates simple.
       private static FrameworkElement? FindAdornerHost(DependencyObject source) {
          for (var node = source; node != null; node = VisualTreeHelper.GetParent(node)) {
             if (node is UserControl or Window) return (FrameworkElement)node;

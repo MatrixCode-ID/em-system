@@ -5,10 +5,10 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Wpf.Core
 {
    /// <summary>
-   /// Satu tempat di sebuah <see cref="NavigationStack"/>: navigasi yang sedang terbuka berikut body,
-   /// data, dan judulnya sendiri. Dibuat oleh stack saat sebuah layar dibuka dengan judul yang belum
-   /// ada; module tidak membuatnya sendiri, melainkan menerimanya lewat
-   /// <see cref="NavigationEventArgs.Entry"/> atau <see cref="Shared.MvvmModelBase.NavigationEntry"/>.
+   /// One place in a <see cref="NavigationStack"/>: a navigation that is open together with its own body,
+   /// data, and title. Created by the stack when a screen is opened with a title that does not yet exist;
+   /// modules do not create it themselves but receive it through <see cref="NavigationEventArgs.Entry"/> or
+   /// <see cref="Shared.MvvmModelBase.NavigationEntry"/>.
    /// </summary>
    public sealed class NavigationEntry : INavigationEntry, INotifyPropertyChanged
    {
@@ -31,34 +31,34 @@ namespace Em.Ui.Wpf.Core
 
       #endregion
 
-      /// <summary>Definisi layar yang dibuka entri ini.</summary>
+      /// <summary>The definition of the screen this entry opens.</summary>
       public Navigation Navigation { get; }
 
       /// <summary>
-      /// Stack yang memegang entri ini. Berganti saat entrinya di-detach ke window sendiri - body dan
-      /// isian yang belum disimpan ikut pindah apa adanya, jadi <see cref="NavigateTo(string,object?)"/>
-      /// sesudahnya membuka layar di window baru itu.
+      /// The stack that holds this entry. It changes when the entry is detached into its own window - the body
+      /// and any unsaved input move as-is, so <see cref="NavigateTo(string,object?)"/> afterwards opens the
+      /// screen in that new window.
       /// </summary>
       public NavigationStack Stack { get; internal set; }
 
-      /// <summary>Objek aplikasi pemilik entri ini.</summary>
+      /// <summary>The application object that owns this entry.</summary>
       public EmApp EmApp => Stack.EmApp;
 
       /// <summary>
-      /// Judul yang tampil, sekaligus kunci unik entri ini di seluruh aplikasi. Diganti lewat
-      /// <see cref="SetTitle"/>, bukan ditulis langsung, supaya keunikannya tetap terjaga.
+      /// The title shown, which is also this entry's unique key across the whole application. Changed through
+      /// <see cref="SetTitle"/>, not written directly, so its uniqueness stays guarded.
       /// </summary>
       public string Title { get; private set; }
 
-      /// <summary>Parameter yang dipakai saat entri ini dibuka, atau <c>null</c> kalau tidak ada.</summary>
+      /// <summary>The parameter used when this entry was opened, or <c>null</c> when there is none.</summary>
       public object? Data { get; }
 
       /// <summary>
-      /// Body milik entri ini. Entri yang dibuka lewat navigasi sudah membangunnya saat dibuat; hanya
-      /// home yang menunggu sampai benar-benar ditampilkan, karena sebelum ada yang masuk body home
-      /// memang belum boleh dibangun.
+      /// The body owned by this entry. An entry opened through navigation already built it when it was
+      /// created; only home waits until it is really shown, because before anyone has signed in the home body
+      /// must not be built yet.
       /// </summary>
-      /// <exception cref="InvalidOperationException">Kalau entri ini sudah dilepas dari stack-nya.</exception>
+      /// <exception cref="InvalidOperationException">When this entry has already been released from its stack.</exception>
       public INavigationBody Body {
          get {
             // A released entry has left every stack for good; building a fresh body for it here would
@@ -106,14 +106,14 @@ namespace Em.Ui.Wpf.Core
          EmApp.NavigateTo(navigation, data, Stack);
 
       /// <summary>
-      /// Membuka PDF di viewer bawaan aplikasi, relatif ke stack entri ini - jadi viewer terbuka di window
-      /// yang sama dengan body pemanggilnya. Aturan parameternya sama dengan
+      /// Opens a PDF in the application's built-in viewer, relative to this entry's stack - so the viewer
+      /// opens in the same window as the calling body. The rules for its parameters are the same as
       /// <see cref="Core.EmApp.ViewPdf"/>.
       /// </summary>
-      /// <param name="title">Judul viewer, sekaligus kunci unik entrinya.</param>
-      /// <param name="loader">Pengambil isi PDF; hak atas dokumennya dijaga di sini, bukan oleh viewer.</param>
-      /// <param name="fileName">Nama file bawaan saat PDF disimpan, atau <c>null</c> untuk memakai judulnya.</param>
-      /// <returns><c>false</c> kalau viewer tidak bisa dibuka.</returns>
+      /// <param name="title">The title of the viewer, which is also its entry's unique key.</param>
+      /// <param name="loader">The PDF content fetcher; the rights to the document are guarded here, not by the viewer.</param>
+      /// <param name="fileName">The default file name when the PDF is saved, or <c>null</c> to use the title.</param>
+      /// <returns><c>false</c> when the viewer cannot be opened.</returns>
       public Task<bool> ViewPdf(string title, Func<CancellationToken, Task<Stream>> loader, string? fileName = null) =>
          NavigateTo(Core.EmApp.PdfViewerNavigationName, new PdfViewerNavigationPayload(title, loader, fileName));
 

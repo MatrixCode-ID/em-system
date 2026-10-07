@@ -4,14 +4,14 @@ using Em.Ui.Core.Shared;
 namespace Em.Ui.Wpf.Core
 {
    /// <summary>
-   /// Jalur navigasi yang ditampilkan satu host: deretan <see cref="NavigationEntry"/> yang bisa
-   /// ditelusuri maju-mundur, ditambah satu home opsional di depannya. Stack utama aplikasi dipegang
-   /// <see cref="EmApp.MainStack"/>; membuka layar dilakukan lewat router
-   /// (<see cref="EmApp.NavigateTo(string,object?)"/>) atau lewat entri
-   /// (<see cref="NavigationEntry.NavigateTo(string,object?)"/>), bukan lewat stack ini langsung.
+   /// The navigation path shown by one host: a row of <see cref="NavigationEntry"/> that can be traversed
+   /// back and forth, plus one optional home in front of it. The application's main stack is held by
+   /// <see cref="EmApp.MainStack"/>; opening a screen is done through the router
+   /// (<see cref="EmApp.NavigateTo(string,object?)"/>) or through an entry
+   /// (<see cref="NavigationEntry.NavigateTo(string,object?)"/>), not through this stack directly.
    /// <para>
-   /// Di layout multi-tab, stack dipakai dalam mode bertab: setiap entri adalah satu tab window-nya,
-   /// entri baru selalu ditambahkan di ujung tanpa membuang apa pun, dan tidak ada maju-mundur.
+   /// In the multi-tab layout, the stack is used in tabbed mode: every entry is one tab of its window, a
+   /// new entry is always added at the end without discarding anything, and there is no back and forth.
    /// </para>
    /// </summary>
    public sealed class NavigationStack : INavigationStack, INotifyPropertyChanged
@@ -43,7 +43,7 @@ namespace Em.Ui.Wpf.Core
 
       #region Properties
 
-      /// <summary>Objek aplikasi pemilik stack ini.</summary>
+      /// <summary>The application object that owns this stack.</summary>
       public EmApp EmApp { get; }
 
       // A tabbed stack backs one window of the multi-tab layout: every entry is a tab, a new entry is
@@ -53,22 +53,22 @@ namespace Em.Ui.Wpf.Core
       // Read-only on purpose: every way out of the stack has to go through NavigateHome,
       // ClearForwardStacks or an entry's Close, otherwise the bodies of the dropped entries are never
       // released.
-      /// <summary>Entri-entri di jalur ini, urut dari yang pertama dibuka. Home tidak termasuk.</summary>
+      /// <summary>The entries of this path, in order from the first opened. Home is not included.</summary>
       public IReadOnlyList<NavigationEntry> Entries => _entries;
 
       /// <summary>
-      /// Entri yang sedang tampil - bisa juga <see cref="Home"/> - atau <c>null</c> kalau belum ada yang
-      /// pernah ditampilkan.
+      /// The entry currently shown - which may also be <see cref="Home"/> - or <c>null</c> when nothing has
+      /// ever been shown.
       /// </summary>
       public NavigationEntry? Current { get; private set; }
 
       /// <summary>
-      /// Entri home, atau <c>null</c> untuk stack tanpa home. Posisinya di depan jalur (bukan di dalam
-      /// <see cref="Entries"/>) dan body-nya tidak pernah dilepas.
+      /// The home entry, or <c>null</c> for a stack without home. Its position is in front of the path (not
+      /// inside <see cref="Entries"/>) and its body is never released.
       /// </summary>
       public NavigationEntry? Home { get; }
 
-      /// <summary>Apakah <see cref="Backward"/> punya tempat untuk dituju.</summary>
+      /// <summary>Whether <see cref="Backward"/> has somewhere to go.</summary>
       public bool CanGoBack {
          get {
             if (IsTabbed) return false;
@@ -77,7 +77,7 @@ namespace Em.Ui.Wpf.Core
          }
       }
 
-      /// <summary>Apakah <see cref="Forward"/> punya tempat untuk dituju.</summary>
+      /// <summary>Whether <see cref="Forward"/> has somewhere to go.</summary>
       public bool CanGoForward {
          get {
             if (IsTabbed) return false;
@@ -87,9 +87,9 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Dipicu setiap kali isi jalur atau posisinya berubah. Host memakainya untuk menghitung ulang
-      /// tombol-tombol navigasinya: mengganti <see cref="Current"/> saja belum cukup, karena jalurnya
-      /// masih bisa berubah sesudah itu.
+      /// Raised every time the content of the path or its position changes. Hosts use it to recompute their
+      /// navigation buttons: replacing <see cref="Current"/> alone is not enough, because the path can still
+      /// change after that.
       /// </summary>
       public event EventHandler? Changed;
 

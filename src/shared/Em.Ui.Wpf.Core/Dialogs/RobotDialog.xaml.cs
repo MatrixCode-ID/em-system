@@ -12,56 +12,56 @@ using FontAwesome6;
 
 namespace Em.Ui.Wpf.Dialogs
 {
-   /// <summary>Untuk apa <see cref="RobotDialog"/> dibuka.</summary>
+   /// <summary>What <see cref="RobotDialog"/> is opened for.</summary>
    public enum RobotDialogMode
    {
-      /// <summary>Membuat robot: nama, deskripsi, masa berlaku token.</summary>
+      /// <summary>Creates a robot: name, description, token validity.</summary>
       Create = 0,
 
-      /// <summary>Mengedit robot: deskripsi, status aktif, masa berlaku token. Nama tidak bisa diganti.</summary>
+      /// <summary>Edits a robot: description, active status, token validity. The name cannot be changed.</summary>
       Edit = 1,
 
-      /// <summary>Membuat token baru untuk robot yang ada: hanya masa berlaku tokennya.</summary>
+      /// <summary>Creates a new token for an existing robot: only its token validity.</summary>
       Regenerate = 2
    }
 
-   /// <summary>Jenis pilihan masa berlaku token.</summary>
+   /// <summary>Kind of token validity choice.</summary>
    public enum CtnExpiryKind
    {
-      /// <summary>Pertahankan masa berlaku yang sekarang.</summary>
+      /// <summary>Keep the current validity.</summary>
       Keep = 0,
 
-      /// <summary>Tidak kedaluwarsa.</summary>
+      /// <summary>Never expires.</summary>
       Never = 1,
 
-      /// <summary>Sekian hari dari sekarang.</summary>
+      /// <summary>This many days from now.</summary>
       Days = 2,
 
-      /// <summary>Tanggal pilihan sendiri.</summary>
+      /// <summary>A date of one's own choosing.</summary>
       Custom = 3
    }
 
-   /// <summary>Satu pilihan di ComboBox masa berlaku token.</summary>
+   /// <summary>One choice in the token validity ComboBox.</summary>
    public sealed class CtnExpiryOption
    {
-      /// <summary>Tulisan di pilihan.</summary>
+      /// <summary>The text of the choice.</summary>
       public string Label { get; init; } = "";
 
-      /// <summary>Jenis pilihannya.</summary>
+      /// <summary>The kind of the choice.</summary>
       public CtnExpiryKind Kind { get; init; }
 
-      /// <summary>Jumlah hari untuk <see cref="CtnExpiryKind.Days"/>.</summary>
+      /// <summary>Number of days for <see cref="CtnExpiryKind.Days"/>.</summary>
       public int Days { get; init; }
    }
 
    /// <summary>
-   /// Dialog robot container registry: membuat robot, mengedit robot, atau membuat token baru
-   /// (<see cref="RobotDialogMode"/>). Hasilnya dibaca dari <see cref="Vm"/> setelah
-   /// <c>ShowDialog()</c> mengembalikan <c>true</c>.
+   /// Container registry robot dialog: create a robot, edit a robot, or create a new token
+   /// (<see cref="RobotDialogMode"/>). The result is read from <see cref="Vm"/> after <c>ShowDialog()</c>
+   /// returns <c>true</c>.
    /// </summary>
    public partial class RobotDialog : EmWindow
    {
-      /// <summary>Membuat dialog; <paramref name="existing"/> wajib untuk mode Edit dan Regenerate.</summary>
+      /// <summary>Creates the dialog; <paramref name="existing"/> is required for Edit and Regenerate modes.</summary>
       public RobotDialog(RobotDialogMode mode, RobotInfo? existing = null, RobotOwnerInfo[]? owners = null) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -113,15 +113,16 @@ namespace Em.Ui.Wpf.Dialogs
          e.Handled = true;
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public RobotDialogVm Vm => (RobotDialogVm)DataContext;
    }
 
-   /// <summary>ViewModel untuk <see cref="RobotDialog"/>.</summary>
+   /// <summary>View model for <see cref="RobotDialog"/>.</summary>
    public class RobotDialogVm : CtnFormVmBase
    {
       private static readonly CtnExpiryOption NeverOption = new() { Label = "No expiry", Kind = CtnExpiryKind.Never };
 
+      /// <summary>Creates a new instance of <see cref="RobotDialogVm"/>.</summary>
       public RobotDialogVm() {
          FilteredOwners = new ListCollectionView(OwnerOptions) {
             Filter = value => value is RobotOwnerInfo owner && (string.IsNullOrEmpty(owner.Id) ||
@@ -130,8 +131,9 @@ namespace Em.Ui.Wpf.Dialogs
          OwnerOptions.CollectionChanged += (_, _) => NotifyChanged(nameof(HasNoMatchingOwners));
       }
 
-      /// <summary>Daftar hasil pencarian; tidak mengubah pilihan owner yang tersimpan.</summary>
+      /// <summary>List of search results; does not change the stored owner choice.</summary>
       public ICollectionView FilteredOwners { get; }
+      /// <summary>The owner search.</summary>
       public string OwnerSearch {
          get => Get<string>() ?? "";
          set => Set(value, _ => {
@@ -139,14 +141,15 @@ namespace Em.Ui.Wpf.Dialogs
             NotifyChanged(nameof(HasNoMatchingOwners));
          });
       }
+      /// <summary>Indicates there is no matching owners.</summary>
       public bool HasNoMatchingOwners => !FilteredOwners.Cast<RobotOwnerInfo>().Any(o => !string.IsNullOrEmpty(o.Id));
 
       private DateTime? _currentExpiry;
 
-      /// <summary>Pilihan masa berlaku token.</summary>
+      /// <summary>The token validity choices.</summary>
       public ObservableCollection<CtnExpiryOption> ExpiryOptions { get; } = [];
 
-      /// <summary>Pilihan masa berlaku yang dipilih.</summary>
+      /// <summary>The token validity choice that is selected.</summary>
       public CtnExpiryOption? SelectedExpiry {
          get => Get<CtnExpiryOption?>();
          set => Set(value, _ => {
@@ -155,28 +158,28 @@ namespace Em.Ui.Wpf.Dialogs
          });
       }
 
-      /// <summary>Tanggal untuk pilihan <see cref="CtnExpiryKind.Custom"/>.</summary>
+      /// <summary>The date for the <see cref="CtnExpiryKind.Custom"/> choice.</summary>
       public DateTime? CustomDate {
          get => Get<DateTime?>();
          set => Set(value, _ => OnInputChanged());
       }
 
-      /// <summary>Isian tanggal tampil hanya untuk pilihan <see cref="CtnExpiryKind.Custom"/>.</summary>
+      /// <summary>The date field is only shown for the <see cref="CtnExpiryKind.Custom"/> choice.</summary>
       public bool ShowCustomDate => SelectedExpiry?.Kind == CtnExpiryKind.Custom;
 
-      /// <summary>Tanggal paling awal yang boleh dipilih: hari ini.</summary>
+      /// <summary>The earliest date that may be chosen: today.</summary>
       public DateTime EarliestDate => DateTime.Today;
 
-      /// <summary>Kalimat peringatan di atas pilihan masa berlaku; hanya untuk Regenerate.</summary>
+      /// <summary>Warning sentence above the validity choice; only for Regenerate.</summary>
       public string Warning {
          get => Get<string>() ?? "";
          set => Set(value, _ => NotifyChanged(nameof(HasWarning)));
       }
 
-      /// <summary><c>true</c> kalau ada peringatan untuk ditampilkan.</summary>
+      /// <summary><c>true</c> when there is a warning to show.</summary>
       public bool HasWarning => Warning.Length > 0;
 
-      /// <summary>Pesan kesalahan pilihan tanggal; kosong kalau tidak ada.</summary>
+      /// <summary>Error message of the date choice; empty when there is none.</summary>
       public string ExpiryError {
          get {
             if (SelectedExpiry?.Kind != CtnExpiryKind.Custom) return "";
@@ -188,8 +191,8 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Masa berlaku token yang dipilih, dalam UTC; <c>null</c> berarti tidak kedaluwarsa. Tanggal
-      /// pilihan sendiri berlaku sampai akhir hari itu menurut waktu lokal.
+      /// The chosen token validity, in UTC; <c>null</c> means it does not expire. A date of one's own choosing
+      /// is valid until the end of that day in local time.
       /// </summary>
       public DateTime? TokenExpiry => SelectedExpiry?.Kind switch {
          CtnExpiryKind.Keep => _currentExpiry,
@@ -198,9 +201,13 @@ namespace Em.Ui.Wpf.Dialogs
          _ => null
       };
 
+      /// <summary>Indicates the owner is shown.</summary>
       public bool ShowOwner { get => Get<bool>(); private set => Set(value); }
+      /// <summary>The owner options.</summary>
       public ObservableCollection<RobotOwnerInfo> OwnerOptions { get; } = [new() { Account = "No owner" }];
+      /// <summary>The selected owner.</summary>
       public RobotOwnerInfo? SelectedOwner { get => Get<RobotOwnerInfo>(); set => Set(value); }
+      /// <summary>The owner user id.</summary>
       public string? OwnerUserId => string.IsNullOrEmpty(SelectedOwner?.Id) ? null : SelectedOwner.Id;
 
       internal void Initialize(RobotDialogMode mode, RobotInfo? existing) {

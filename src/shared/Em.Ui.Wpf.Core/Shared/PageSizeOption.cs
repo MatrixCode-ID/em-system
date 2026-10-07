@@ -3,28 +3,28 @@ using System.Globalization;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Satu pilihan "jumlah baris per halaman" pada daftar berhalaman, berisi angkanya
-   /// (<see cref="Size"/>) sekaligus tulisan yang muncul di combo box (<see cref="Caption"/>).
-   /// Dipakai supaya pilihan "ALL" bisa ikut dalam daftar yang sama tanpa perlu tipe terpisah.
+   /// One "rows per page" choice in a paged list, holding its number (<see cref="Size"/>) together with the
+   /// text that appears in the combo box (<see cref="Caption"/>). Used so the "ALL" choice can be in the
+   /// same list without a separate type.
    /// </summary>
    public sealed class PageSizeOption
    {
       /// <summary>
-      /// Nilai <see cref="Size"/> yang berarti "tampilkan semua baris dalam satu halaman".
-      /// Sengaja dibuat sangat besar (bukan 0 atau negatif) supaya perhitungan halaman biasa
-      /// tetap benar tanpa aturan khusus: jumlah halamannya otomatis menjadi satu.
+      /// The <see cref="Size"/> value that means "show all rows on one page". Deliberately very large (not 0
+      /// or negative) so ordinary page calculations remain correct without a special rule: the page count
+      /// automatically becomes one.
       /// </summary>
       public const int AllRows = int.MaxValue;
 
       /// <summary>
-      /// Pilihan siap pakai untuk "semua baris".
+      /// A ready-made choice for "all rows".
       /// </summary>
       public static PageSizeOption All { get; } = new(AllRows, "ALL");
 
       /// <summary>
-      /// Membuat pilihan dengan jumlah baris tertentu, dengan tulisan berupa angkanya sendiri.
+      /// Creates a choice with a particular number of rows, with its own number as the text.
       /// </summary>
-      /// <param name="size">Jumlah baris per halaman, harus lebih besar dari nol.</param>
+      /// <param name="size">The number of rows per page, which must be greater than zero.</param>
       public static PageSizeOption Of(int size) =>
          new(size, size.ToString(CultureInfo.InvariantCulture));
 
@@ -34,17 +34,17 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Jumlah baris per halaman yang diwakili pilihan ini.
+      /// The number of rows per page that this choice represents.
       /// </summary>
       public int Size { get; }
 
       /// <summary>
-      /// Tulisan yang ditampilkan di UI untuk pilihan ini.
+      /// The text shown in the UI for this choice.
       /// </summary>
       public string Caption { get; }
 
       /// <summary>
-      /// Menandakan pilihan ini adalah "semua baris" dan bukan angka tertentu.
+      /// Indicates this choice is "all rows" and not a particular number.
       /// </summary>
       public bool IsAll => Size == AllRows;
 

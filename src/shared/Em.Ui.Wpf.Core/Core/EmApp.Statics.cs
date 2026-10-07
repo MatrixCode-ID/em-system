@@ -21,38 +21,38 @@ using Application = System.Windows.Application;
 namespace Em.Ui.Wpf.Core
 {
    /// <summary>
-   /// Objek aplikasi utama untuk sisi WPF (analog dengan <c>EmApp</c> di backend), menampung
-   /// DI container, navigasi dan module yang terdaftar, koneksi API tersimpan (di Registry), dan
-   /// tema aplikasi. Dibuat sekali lewat <see cref="BuildApp"/> saat startup aplikasi.
+   /// The main application object for the WPF side (analogous to <c>EmApp</c> in the backend), holding the
+   /// DI container, the registered navigations and modules, the saved API connections (in the Registry), and
+   /// the application theme. Created once through <see cref="BuildApp"/> when the application starts.
    /// </summary>
    public partial class EmApp
    {
       #region Fields and Constants
       /// <summary>
-      /// Nama navigasi layar login, didaftarkan aplikasi sendiri lewat
-      /// <see cref="InitInternalNavigation"/>. Ada sebagai konstanta karena bukan cuma pendaftarnya
-      /// yang menyebut nama ini: window utama memakainya untuk membuka layar login, dan menu akun
-      /// memakainya saat user keluar - ketiganya harus menunjuk navigasi yang sama persis.
+      /// The navigation name of the login screen, registered by the application itself through
+      /// <see cref="InitInternalNavigation"/>. It exists as a constant because it is not only its registrar
+      /// that names it: the main window uses it to open the login screen, and the account menu uses it when
+      /// the user signs out - all three must point to exactly the same navigation.
       /// </summary>
       public const string LogonNavigationName = "admin.logon";
 
       /// <summary>
-      /// Nama navigasi viewer PDF bawaan aplikasi. Viewer ini tidak dijaga claim dan wajib dibuka dengan
-      /// <see cref="PdfViewerNavigationPayload"/>; cara yang biasa dipakai adalah <see cref="ViewPdf"/> atau
-      /// <see cref="NavigationEntry.ViewPdf"/>, bukan <c>NavigateTo</c> dengan nama ini.
+      /// The navigation name of the application's built-in PDF viewer. This viewer is not guarded by a claim
+      /// and must be opened with a <see cref="PdfViewerNavigationPayload"/>; the usual way is
+      /// <see cref="ViewPdf"/> or <see cref="NavigationEntry.ViewPdf"/>, not <c>NavigateTo</c> with this name.
       /// </summary>
       public const string PdfViewerNavigationName = "em.viewer.pdf";
 
       #endregion
 
        /// <summary>
-      /// Membangun instance <see cref="EmApp"/>: mendaftarkan service internal (hashing, sesi, dsb.),
-      /// menjalankan callback <paramref name="builder"/> agar module bisa mendaftarkan service dan
-      /// navigasi masing-masing, lalu membangun <see cref="ServiceProvider"/> dari DI container.
+      /// Builds the <see cref="EmApp"/> instance: registers the internal services (hashing, sessions, etc.),
+      /// runs the <paramref name="builder"/> callback so modules can register their own services and
+      /// navigations, then builds the <see cref="ServiceProvider"/> from the DI container.
       /// </summary>
-      /// <param name="args">Argumen command-line aplikasi.</param>
-      /// <param name="builder">Callback konfigurasi, dipakai module untuk memanggil <c>AddServices</c>/<c>AddNavigation</c>.</param>
-      /// <returns>Instance <see cref="EmApp"/> yang siap dijalankan lewat <see cref="Run"/>.</returns>
+      /// <param name="args">The application's command-line arguments.</param>
+      /// <param name="builder">The configuration callback, used by modules to call <c>AddServices</c>/<c>AddNavigation</c>.</param>
+      /// <returns>The <see cref="EmApp"/> instance, ready to be run through <see cref="Run"/>.</returns>
       public static EmApp BuildApp(string[] args, Action<EmAppBuilder> builder) {
          // Before anything else: it may hand the process over to the launcher and exit.
          LauncherIntegration.Initialize(args);
@@ -61,8 +61,8 @@ namespace Em.Ui.Wpf.Core
          InitInternalServices(app);
          InitBuilder(app, builder);
 
-         // Ditutup di sini, bukan di ujung InitBuilder: dari luar, "selesai dibangun" berarti selesai
-         // seluruh BuildApp, dan satu-satunya tempat yang boleh menentukan saat itu adalah baris ini.
+         // Closed here, not at the end of InitBuilder: from outside, "finished being built" means all of
+         // BuildApp has finished, and the only place that may decide that moment is this line.
          app.SealInternalClaims();
 
          app._serviceProvider = app.Services.BuildServiceProvider();
@@ -70,9 +70,9 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Mendaftarkan service inti bawaan aplikasi ke DI container: hashing, instance
-      /// <see cref="EmApp"/> itu sendiri (lewat ketiga kontraknya), service data inti yang
-      /// dipakai lintas module - saat ini data kontak dan data kredensial pengguna.
+      /// Registers the application's built-in core services into the DI container: hashing, the
+      /// <see cref="EmApp"/> instance itself (through its three contracts), and the core data services used
+      /// across modules - currently contact data and user credential data.
       /// </summary>
       private static void InitInternalServices(EmApp app) {
          app.Services.AddSingleton<IStringHasher, Argon2Hashing>();
@@ -94,8 +94,8 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Menjalankan callback <paramref name="builder"/> untuk konfigurasi dari module, lalu menyiapkan
-      /// stack utama sesuai layout yang dipilih dan mendaftarkan seluruh navigasi yang terkumpul.
+      /// Runs the <paramref name="builder"/> callback for configuration from modules, then prepares the main
+      /// stack according to the chosen layout and registers all the navigations that were collected.
       /// </summary>
       private static void InitBuilder(EmApp app, Action<EmAppBuilder> builder) {
          var pars = new EmAppBuilder() {
@@ -139,13 +139,13 @@ namespace Em.Ui.Wpf.Core
          app.Branding = pars.Branding ?? new BrandingInfo();
          InitLoginNavigation(app);
          app.EnableFieldAnimation = pars.EnableAnimation;
-         // Setiap property PasswordPolicy sudah membawa nilai bawaannya sendiri, jadi instance kosong
-         // adalah aturan yang berlaku kalau aplikasi tidak pernah memanggil UsePasswordPolicy.
+         // Every PasswordPolicy property already carries its own default value, so an empty instance is the rule
+         // in force when the application never calls UsePasswordPolicy.
          app.PasswordPolicy = pars.PasswordPolicy ?? new PasswordPolicy();
 
-         // Didaftarkan di sini, sesudah callback module selesai, supaya isinya sudah lengkap dan
-         // tidak berubah lagi. Selalu didaftarkan - juga saat tidak ada satu panel pun - supaya layar
-         // approval tidak perlu tahu bedanya.
+         // Registered here, after the module callbacks have finished, so its content is complete and no longer
+         // changes. Always registered - even when there is no panel at all - so the approval screen does not
+         // need to know the difference.
          app.Services.AddSingleton(pars.ApprovalPanels);
 
          pars.Navigations.EachOf(app.AddNavigation);
@@ -158,10 +158,10 @@ namespace Em.Ui.Wpf.Core
          app.DebugConnections = [.. pars.DebugBuilder!.Connections!];
          app.DefaultDebugConnection = pars.DebugBuilder!.DefaultConnection;
 
-         // Ditandatangani sekali di sini, sesudah callback debug selesai dan sebelum window pertama muncul,
-         // supaya key yang salah ketik ketahuan sekarang - bukan nanti saat setiap request dijawab dengan
-         // "action not found" tanpa keterangan apa-apa. Yang diteruskan ke koneksi adalah tokennya, bukan
-         // key-nya, jadi jalur request tidak pernah menyentuh kriptografi.
+         // Signed once here, after the debug callback has finished and before the first window appears, so a
+         // mistyped key is found now - not later when every request is answered with "action not found" and no
+         // explanation. What is passed on to the connection is the token, not the key, so the request path never
+         // touches cryptography.
          var debugToken = pars.DebugBuilder!.CreateDebugToken();
          app.DebugConnections.EachOf(r => r.DebugToken = debugToken);
 
@@ -195,10 +195,10 @@ namespace Em.Ui.Wpf.Core
             cCommNote = "N/A"
          });
 
-      // Akun administrator bawaan tidak punya baris pengguna di mana pun - sama seperti akun
-      // debugger di atas, dan dibuatkan di sini dengan alasan yang sama: ia berdiri menggantikan
-      // seorang pengguna tanpa pernah tersimpan sebagai satu. Bedanya, akun ini benar-benar masuk
-      // lewat layar login, jadi ia ada di build apa pun, bukan cuma di mode debug.
+      // The built-in administrator account has no user row anywhere - just like the debugger account above,
+      // and it is created here for the same reason: it stands in for a user without ever being stored as one.
+      // The difference is that this account really signs in through the login screen, so it exists in any
+      // build, not only in debug mode.
       private static User CreateAdminUser(EmApp app) =>
          User.Build(app, new vi_User {
             cUserId = Defaults.AdminUserId,
@@ -222,7 +222,7 @@ namespace Em.Ui.Wpf.Core
             cCommNote = "N/A"
          });
 
-      // Claim milik layar bawaan client. Declared here rather than on the server, because these
+      // The claims of the client's built-in screens. Declared here rather than on the server, because these
       // screens belong to the client and no server module owns them - and read straight out of
       // EmApp.AllClaims, so a screen asks for its own claim the same way a module screen does.
       private const string UserManagerClaim = "Administrative Tools:User Manager Access";
@@ -399,13 +399,13 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Skema URI <c>pack://</c> baru dikenali .NET setelah <see cref="PackUriHelper"/> pertama kali
-      /// disentuh. Aplikasi menyusun pack URI (mis. <see cref="BrandingInfo.LogoSource"/>) di dalam
-      /// callback <see cref="BuildApp"/>, yaitu sebelum <see cref="Application"/> WPF dibuat, jadi
-      /// skemanya didaftarkan lebih dulu di sini supaya <c>new Uri("pack://...")</c> tidak gagal parse.
+      /// The <c>pack://</c> URI scheme is only known to .NET after <see cref="PackUriHelper"/> has first been
+      /// touched. The application composes pack URIs (e.g. <see cref="BrandingInfo.LogoSource"/>) inside the
+      /// <see cref="BuildApp"/> callback, which is before the WPF <see cref="Application"/> is created, so the
+      /// scheme is registered here first so <c>new Uri("pack://...")</c> does not fail to parse.
       /// </summary>
       static EmApp() {
-         _ = PackUriHelper.UriSchemePack; // Paksa .NET mendaftarkan skema URI pack:// lebih awal.
+         _ = PackUriHelper.UriSchemePack; // Force .NET to register the pack:// URI scheme early.
       }
    }
 }

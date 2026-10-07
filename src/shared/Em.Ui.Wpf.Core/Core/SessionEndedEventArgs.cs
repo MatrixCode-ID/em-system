@@ -1,14 +1,13 @@
 namespace Em.Ui.Wpf.Core
 {
    /// <summary>
-   /// Keterangan berakhirnya sebuah sesi. Dipakai layar login untuk membedakan sesi yang memang
-   /// diakhiri user dari sesi yang mati sendiri - yang kedua perlu satu kalimat penjelasan, yang
-   /// pertama tidak.
+   /// Details of how a session ended. Used by the login screen to tell a session that the user ended apart
+   /// from one that died on its own - the second needs a sentence of explanation, the first does not.
    /// </summary>
    /// <param name="reason">
-   /// Alasan sesi berakhir, atau <c>null</c> kalau user sendiri yang keluar. Kalimat ini ditampilkan
-   /// sebagai keterangan biasa, bukan sebagai pesan kesalahan: sesi yang habis umurnya bukan
-   /// kesalahan user.
+   /// The reason the session ended, or <c>null</c> when the user signed out by themselves. This sentence
+   /// is shown as an ordinary note, not as an error message: a session that has simply expired is not the
+   /// user's error.
    /// </param>
    public sealed class SessionEndedEventArgs(string? reason) : EventArgs
    {

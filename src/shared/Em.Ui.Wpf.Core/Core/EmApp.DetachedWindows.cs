@@ -8,8 +8,8 @@ namespace Em.Ui.Wpf.Core
       private readonly List<DetachedWindow> _detachedWindows = [];
 
       /// <summary>
-      /// Window detach yang sedang terbuka, masing-masing dengan stack-nya sendiri. Selalu kosong di
-      /// layout multi-tab, karena detach hanya ada di layout satu halaman.
+      /// The detached windows that are currently open, each with its own stack. Always empty in the multi-tab
+      /// layout, because detach only exists in the single-page layout.
       /// </summary>
       public IReadOnlyList<DetachedWindow> DetachedWindows => _detachedWindows;
 
@@ -21,12 +21,12 @@ namespace Em.Ui.Wpf.Core
             .Prepend(MainStack);
 
       /// <summary>
-      /// Apakah <paramref name="entry"/> boleh dikeluarkan ke window sendiri saat ini. Yang boleh hanya
-      /// entri yang sedang tampil, dengan navigasi yang tidak mematikan
-      /// <see cref="Navigation.IsDetachVisible"/> - dan tidak pernah home, layar login, maupun akar
-      /// sebuah window detach, karena window itu akan jadi kosong.
+      /// Whether <paramref name="entry"/> may currently be taken out into its own window. Only the entry
+      /// being shown may, with a navigation that does not turn off <see cref="Navigation.IsDetachVisible"/> -
+      /// and never home, the login screen, or the root of a detached window, because that window would become
+      /// empty.
       /// </summary>
-      /// <param name="entry">Entri yang hendak di-detach.</param>
+      /// <param name="entry">The entry about to be detached.</param>
       public bool CanDetach(NavigationEntry entry) {
          if (ApplicationLayout != ApplicationLayout.SinglePage) return false;
 
@@ -39,12 +39,12 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Mengeluarkan <paramref name="entry"/> dari stack-nya ke window baru, menjadi akar stack window
-      /// itu. Body-nya dipindah apa adanya - isian yang belum disimpan ikut - dan stack asal mundur ke
-      /// entri sebelumnya tanpa memuat ulang apa pun.
+      /// Takes <paramref name="entry"/> out of its stack into a new window, becoming the root of that
+      /// window's stack. Its body is moved as-is - unsaved input comes along - and the original stack goes
+      /// back to the previous entry without reloading anything.
       /// </summary>
-      /// <param name="entry">Entri yang sedang tampil dan hendak di-detach.</param>
-      /// <returns><c>false</c> kalau entri ini tidak boleh di-detach (lihat <see cref="CanDetach"/>).</returns>
+      /// <param name="entry">The entry being shown that is about to be detached.</param>
+      /// <returns><c>false</c> when this entry may not be detached (see <see cref="CanDetach"/>).</returns>
       public async Task<bool> DetachAsync(NavigationEntry entry) {
          if (!CanDetach(entry)) return false;
 
@@ -71,11 +71,11 @@ namespace Em.Ui.Wpf.Core
       internal void UnregisterDetachedWindow(DetachedWindow window) => _detachedWindows.Remove(window);
 
       /// <summary>
-      /// Window yang menampilkan <paramref name="stack"/>: window utama untuk <see cref="MainStack"/>,
-      /// window hasil tab yang ditarik keluar atau window detach untuk stack lainnya, atau <c>null</c>
-      /// kalau stack itu tidak sedang tampil di mana pun.
+      /// The window that shows <paramref name="stack"/>: the main window for <see cref="MainStack"/>, the
+      /// window born from a dragged-out tab or a detached window for other stacks, or <c>null</c> when that
+      /// stack is not being shown anywhere.
       /// </summary>
-      /// <param name="stack">Stack yang dicari window-nya.</param>
+      /// <param name="stack">The stack whose window is looked for.</param>
       public Window? WindowOf(NavigationStack stack) =>
          stack == _mainStack ? MainWindow
          : (Window?)_tearOffWindows.FirstOrDefault(r => r.Stack == stack)

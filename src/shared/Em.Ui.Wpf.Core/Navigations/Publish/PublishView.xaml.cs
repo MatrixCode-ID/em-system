@@ -31,11 +31,13 @@ public partial class PublishView : UserControl {
  private bool _syncingVersion,_versionDirty,_resolvingVersion;
  private ProfileEntry? Entry=>profileList.SelectedItem as ProfileEntry;
  private PublishProfile? Profile=>Entry?.Profile;
+ /// <summary>Creates a new instance of <see cref="PublishView"/>.</summary>
  public PublishView() {
   InitializeComponent();versionChannel.ItemsSource=ContainerVersion.Channels;_versionTimer.Tick+=VersionTick;
   foreach(var box in new[]{versionMajor,versionMinor,versionPatch})DependencyPropertyDescriptor.FromProperty(NumericBox.ValueProperty,typeof(NumericBox)).AddValueChanged(box,VersionEdited);
   Attach(null,PublishKind.NuGet);
  }
+ /// <summary>Attaches the publish view to the application for a kind of publish (NuGet or container).</summary>
  public void Attach(EmApp? app,PublishKind kind) {
   _app=app;_kind=kind;_settings=new(app);_store=new(_settings.Profiles);_targets=new(app,Secrets);SetPublisher();
   prepareText.Text=kind==PublishKind.NuGet?"Prepare":"Build";combinedText.Text=kind==PublishKind.NuGet?"Prepare & Push":"Build & Push";

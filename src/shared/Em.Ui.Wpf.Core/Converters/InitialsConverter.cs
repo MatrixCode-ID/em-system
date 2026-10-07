@@ -4,19 +4,18 @@ using System.Windows.Data;
 namespace Em.Ui.Wpf.Converters
 {
    /// <summary>
-   /// Mengubah sebuah nama (mis. nama lengkap kontak atau nama akun) menjadi inisial pendek
-   /// untuk ditampilkan di dalam avatar bundar pada daftar. Diambil maksimal dua huruf: huruf
-   /// pertama dari kata pertama dan kata terakhir, supaya inisial tetap terbaca meski nama
-   /// terdiri dari banyak kata.
+   /// Turns a name (e.g. a contact's full name or an account name) into short initials to show inside a
+   /// round avatar in a list. At most two letters are taken: the first letter of the first word and of the
+   /// last word, so the initials stay readable even when the name has many words.
    /// </summary>
    /// <remarks>
-   /// Kalau nama kosong atau tidak berisi huruf sama sekali, hasilnya adalah tanda tanya
-   /// ("?"), sehingga avatar tetap punya isi dan ukuran barisnya tidak berubah.
+   /// When the name is empty or contains no letters at all, the result is a question mark ("?"), so the
+   /// avatar still has content and the row size does not change.
    /// </remarks>
    public class InitialsConverter : IValueConverter
    {
       /// <summary>
-      /// Menghasilkan inisial (maksimal dua huruf, huruf besar) dari nilai teks yang diberikan.
+      /// Produces the initials (at most two letters, uppercase) from the given text value.
       /// </summary>
       public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) {
          var words = (value as string ?? string.Empty)
@@ -33,7 +32,7 @@ namespace Em.Ui.Wpf.Converters
       }
 
       /// <summary>
-      /// Tidak didukung: inisial tidak bisa dikembalikan menjadi nama aslinya.
+      /// Not supported: initials cannot be turned back into the original name.
       /// </summary>
       public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
          throw new NotSupportedException("Initials cannot be converted back to a name.");

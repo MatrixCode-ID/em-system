@@ -6,15 +6,15 @@ using Em.Shared;
 namespace Em.Ui.Wpf.Converters
 {
    /// <summary>
-   /// Menerjemahkan <see cref="UiIconType"/> - token ikon yang tersimpan di data - menjadi gambar
-   /// ikon yang benar-benar digambar WPF. Pemetaannya tinggal di sini, bukan di enum-nya, karena
-   /// gambar mana yang dipakai adalah urusan lapisan tampilan: klien lain boleh memilih gambar lain
-   /// untuk token yang sama tanpa satu baris data pun ikut berubah.
+   /// Translates <see cref="UiIconType"/> - the icon token stored in data - into the icon image that WPF
+   /// really draws. The mapping lives here, not in the enum, because which image is used is a business of
+   /// the presentation layer: another client may choose another image for the same token without a single
+   /// line of data changing.
    /// </summary>
    /// <remarks>
-   /// Token yang belum punya pasangan di sini - termasuk <see cref="UiIconType.Unspecified"/> -
-   /// digambar sebagai label polos. Ikon hanyalah tampilan: satu token yang belum dikenal tidak
-   /// boleh menjatuhkan layar yang menggambarnya.
+   /// A token that has no counterpart here - including <see cref="UiIconType.Unspecified"/> - is drawn as
+   /// a plain label. An icon is only presentation: an unknown token must not bring down the screen that
+   /// draws it.
    /// </remarks>
    public class UiIconConverter : IValueConverter
    {
@@ -46,7 +46,7 @@ namespace Em.Ui.Wpf.Converters
       };
 
       /// <summary>
-      /// Menghasilkan <see cref="EFontAwesomeIcon"/> untuk token ikon yang diberikan.
+      /// Produces an <see cref="EFontAwesomeIcon"/> for the given icon token.
       /// </summary>
       public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
          value is UiIconType icon && Icons.TryGetValue(icon, out var glyph)
@@ -54,8 +54,8 @@ namespace Em.Ui.Wpf.Converters
             : EFontAwesomeIcon.Solid_Tag;
 
       /// <summary>
-      /// Tidak didukung: satu gambar ikon bisa saja dipakai lebih dari satu token, jadi jalan
-      /// pulangnya tidak punya jawaban tunggal.
+      /// Not supported: one icon image may be used by more than one token, so the way back has no single
+      /// answer.
       /// </summary>
       public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
          throw new NotSupportedException("A drawn icon cannot be converted back to an icon token.");

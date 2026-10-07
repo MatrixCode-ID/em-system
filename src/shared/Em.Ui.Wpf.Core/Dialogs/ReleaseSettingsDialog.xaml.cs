@@ -15,21 +15,26 @@ using Clipboard = System.Windows.Clipboard;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog setting Release Manager: sumber publish (<c>.slnx</c>, project host, local publish folder),
-   /// tujuan rilis (CDN server atau folder), dan signing key beserta pengelolaannya. Setting baru disimpan
-   /// saat tombol Save ditekan; Cancel membuang perubahannya. Pengecualiannya operasi signing key (import,
-   /// buat, ekspor): operasi itu langsung terjadi di folder profile atau certificate store Windows, jadi tidak ikut dibatalkan
-   /// Cancel - yang dibatalkan hanya pilihan key-nya.
+   /// The Release Manager settings dialog: the publish source (<c>.slnx</c>, host project, local publish
+   /// folder), the release target (CDN server or folder), and the signing key together with its management.
+   /// New settings are saved when the Save button is pressed; Cancel discards the changes. The exception is
+   /// signing key operations (import, create, export): those happen directly in the profile folder or the
+   /// Windows certificate store, so Cancel does not undo them - only the choice of key is cancelled.
    /// </summary>
    public partial class ReleaseSettingsDialog : EmWindow
    {
       /// <summary>
-      /// Membuat dialog setting Release Manager.
+      /// Creates the Release Manager settings dialog.
       /// </summary>
-      /// <param name="app">Aplikasi pemilik dialog.</param>
-      /// <param name="sdkVersion">Versi .NET SDK 10.x yang ditemukan, atau <c>null</c>.</param>
-      /// <param name="isSdkChecked"><c>true</c> kalau pemeriksaan SDK sudah selesai.</param>
-      /// <param name="canUseCdn"><c>true</c> kalau user boleh memakai CDN server sebagai tujuan.</param>
+      /// <param name="app">The application that owns the dialog.</param>
+      /// <param name="store">The store of the release profiles.</param>
+      /// <param name="profile">The profile being edited.</param>
+      /// <param name="lastWriteUtc">The last write time of the profile file when it was read, to detect outside changes.</param>
+      /// <param name="others">The other profiles, to warn about collisions.</param>
+      /// <param name="secrets">The store of signing key passwords.</param>
+      /// <param name="sdkVersion">The .NET SDK 10.x version that was found, or <c>null</c>.</param>
+      /// <param name="isSdkChecked"><c>true</c> when the SDK check has finished.</param>
+      /// <param name="canUseCdn"><c>true</c> when the user may use the server CDN as a target.</param>
       public ReleaseSettingsDialog(EmApp app, ReleaseProfileStore store, ReleaseProfile profile,
          DateTime lastWriteUtc, IReadOnlyList<ReleaseProfile> others, ReleaseSigningSecrets secrets,
          string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
@@ -40,26 +45,26 @@ namespace Em.Ui.Wpf.Dialogs
          Vm.RequestClose += result => DialogResult = result;
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public ReleaseSettingsDialogVm Vm => (ReleaseSettingsDialogVm)DataContext;
    }
 
-   /// <summary>Satu signing key yang terpasang di mesin ini, siap ditampilkan.</summary>
+   /// <summary>One signing key installed on this machine, ready to be shown.</summary>
    public class ReleaseSigningKey
    {
-      /// <summary>Thumbprint sertifikatnya.</summary>
+      /// <summary>Thumbprint of its certificate.</summary>
       public required string Thumbprint { get; init; }
 
-      /// <summary>Subject sertifikatnya.</summary>
+      /// <summary>Subject of its certificate.</summary>
       public required string Subject { get; init; }
 
-      /// <summary><c>keyId</c> public key-nya, seperti di <c>release.json.sig</c>.</summary>
+      /// <summary>The <c>keyId</c> of its public key, as in <c>release.json.sig</c>.</summary>
       public required string KeyId { get; init; }
 
-      /// <summary>Batas berlaku sertifikatnya.</summary>
+      /// <summary>Validity limit of its certificate.</summary>
       public required DateTime NotAfter { get; init; }
 
-      /// <summary><c>true</c> kalau private key-nya boleh diekspor dari mesin ini.</summary>
+      /// <summary><c>true</c> when its private key may be exported from this machine.</summary>
       public required bool IsExportable { get; init; }
 
       /// <summary>Tulisan di combobox.</summary>
@@ -68,14 +73,14 @@ namespace Em.Ui.Wpf.Dialogs
       /// <summary>Tulisan chip exportable.</summary>
       public string ExportableCaption => IsExportable ? "Exportable" : "Non-exportable";
 
-      /// <summary>Batas berlaku yang mudah dibaca.</summary>
+      /// <summary>The validity limit in a human-friendly form.</summary>
       public string ExpiresCaption => NotAfter.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
       /// <inheritdoc />
-      /// <remarks>Kotak pilihan combobox menampilkan item lewat nilai ini, bukan lewat DisplayMemberPath.</remarks>
+      /// <remarks>The combobox's selection box shows items through this value, not through DisplayMemberPath.</remarks>
       public override string ToString() => Caption;
 
-      /// <summary>Setiap signing key yang terpasang di certificate store user ini.</summary>
+      /// <summary>Every signing key installed in this user's certificate store.</summary>
       public static IReadOnlyList<ReleaseSigningKey> ListInstalled() {
          var keys = new List<ReleaseSigningKey>();
          foreach (var certificate in SigningCertificates.List()) {
@@ -85,16 +90,16 @@ namespace Em.Ui.Wpf.Dialogs
          return keys;
       }
 
-      /// <summary>Signing key dengan thumbprint <paramref name="thumbprint"/>, atau <c>null</c> kalau tidak terpasang.</summary>
+      /// <summary>The signing key with thumbprint <paramref name="thumbprint"/>, or <c>null</c> when it is not installed.</summary>
       public static ReleaseSigningKey? Find(string? thumbprint) {
          using var certificate = SigningCertificates.Find(thumbprint);
          return certificate is null ? null : From(certificate);
       }
 
-      /// <summary>Sumber key yang diwakili.</summary>
+      /// <summary>The key source that is represented.</summary>
       public ReleaseSigningSource Source { get; init; }
 
-      /// <summary>Model key publik dari berkas profile.</summary>
+      /// <summary>Model of the public key from the profile file.</summary>
       public static ReleaseSigningKey FromCertificateFile(X509Certificate2 certificate) => new() {
          Thumbprint = certificate.Thumbprint, Subject = certificate.Subject,
          KeyId = SigningCertificates.KeyIdOf(certificate), NotAfter = certificate.NotAfter,
@@ -111,8 +116,8 @@ namespace Em.Ui.Wpf.Dialogs
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="ReleaseSettingsDialog"/>. Memegang salinan setting yang sedang diedit;
-   /// Berkas profile baru ditulis oleh <see cref="SaveCommand"/>.
+   /// View model for <see cref="ReleaseSettingsDialog"/>. Holds a copy of the settings being edited; the
+   /// profile file is only written by <see cref="SaveCommand"/>.
    /// </summary>
    public class ReleaseSettingsDialogVm : MvvmModelBase
    {
@@ -123,20 +128,26 @@ namespace Em.Ui.Wpf.Dialogs
       private ReleaseSigningSecrets _secrets = null!;
       private DateTime _lastWriteUtc;
       private IReadOnlyList<ReleaseProfile> _others = [];
+      /// <summary>The saved profile.</summary>
       public ReleaseProfile? SavedProfile { get; private set; }
+      /// <summary>The banner title.</summary>
       public string BannerTitle => $"Release Settings · {_profile?.Name}";
+      /// <summary>Indicates store source.</summary>
       public bool IsStoreSource {
          get => Get<bool>();
          set => Set(value, _ => { if (value) SetSource(ReleaseSigningSource.Store); });
       }
+      /// <summary>Indicates file source.</summary>
       public bool IsFileSource {
          get => Get<bool>();
          set => Set(value, _ => { if (value) SetSource(ReleaseSigningSource.ProfileFile); });
       }
+      /// <summary>Indicates separate password.</summary>
       public bool IsSeparatePassword {
          get => Get<bool>();
          set => Set(value, _ => { if (value && _profile is not null) { _profile.Signing.PasswordStorage = ReleasePasswordStorage.Separate; RefreshPassword(); } });
       }
+      /// <summary>Indicates plaintext password.</summary>
       public bool IsPlaintextPassword {
          get => Get<bool>();
          set => Set(value, _ => {
@@ -146,6 +157,7 @@ namespace Em.Ui.Wpf.Dialogs
             RefreshPassword();
          });
       }
+      /// <summary>The password caption.</summary>
       public string PasswordCaption => IsPlaintextPassword
          ? _profile.Signing.Password is null ? "Not set" : "Saved in profile.json"
          : _secrets.IsRemembered(_profile.Id) ? "Remembered on this PC (encrypted for this Windows user)" : "Asked once per session";
@@ -159,7 +171,7 @@ namespace Em.Ui.Wpf.Dialogs
          LoadKeys(_profile.Signing.Thumbprint);
       }
 
-      /// <summary>Membuat ViewModel baru dan mendaftarkan seluruh command dialog.</summary>
+      /// <summary>Creates a new view model and registers all commands of the dialog.</summary>
       public ReleaseSettingsDialogVm() {
          RegisterCommand(nameof(BrowseSolutionCommand), BrowseSolutionCommand);
          RegisterCommand(nameof(BrowsePublishFolderCommand), BrowsePublishFolderCommand);
@@ -176,12 +188,12 @@ namespace Em.Ui.Wpf.Dialogs
          RegisterCommand(nameof(RemoveKeyFileCommand), RemoveKeyFileCommand, () => IsFileSource && (_store.HasKeyFile(_profile.Id) || File.Exists(_store.CertificateFilePath(_profile.Id))));
       }
 
-      /// <summary>Dipicu saat dialog hendak ditutup; <c>true</c> kalau setting disimpan.</summary>
+      /// <summary>Raised when the dialog is about to close; <c>true</c> when the settings are saved.</summary>
       public event Action<bool>? RequestClose;
 
       /// <summary>
-      /// Dipicu untuk setiap kejadian yang layak masuk log Release Manager, mis. signing key yang baru
-      /// diimpor.
+      /// Raised for every event worth entering in the Release Manager log, e.g. a signing key that was just
+      /// imported.
       /// </summary>
       public event Action<string>? Logged;
 
@@ -193,10 +205,10 @@ namespace Em.Ui.Wpf.Dialogs
          private set => Set(value, _ => LoadHostProjects());
       }
 
-      /// <summary>Project aplikasi di <c>.slnx</c>, seperti tertulis di sana.</summary>
+      /// <summary>The application project in the <c>.slnx</c>, as written there.</summary>
       public ObservableCollection<string> HostProjects { get; } = [];
 
-      /// <summary>Project host yang dipublish Prepare.</summary>
+      /// <summary>The host project that Prepare publishes.</summary>
       public string? HostProject {
          get => Get<string?>();
          set => Set(value);
@@ -208,20 +220,20 @@ namespace Em.Ui.Wpf.Dialogs
          private set => Set(value);
       }
 
-      /// <summary>Keterangan .NET SDK di card Source.</summary>
+      /// <summary>Caption of the .NET SDK in the Source card.</summary>
       public string SdkCaption =>
          !_isSdkChecked ? "Checking the .NET SDK..."
          : _sdkVersion is null ? ".NET SDK 10.x was not found on this PC, so Prepare is not available here."
          : $".NET SDK {_sdkVersion} found.";
 
-      /// <summary><c>true</c> kalau SDK tidak ditemukan.</summary>
+      /// <summary><c>true</c> when the SDK is not found.</summary>
       public bool IsSdkMissing => _isSdkChecked && _sdkVersion is null;
 
       #endregion
 
       #region Target
 
-      /// <summary><c>true</c> kalau tujuannya CDN server.</summary>
+      /// <summary><c>true</c> when the target is the server CDN.</summary>
       public bool IsCdnTarget {
          get => Get<bool>();
          set => Set(value, _ => {
@@ -229,7 +241,7 @@ namespace Em.Ui.Wpf.Dialogs
          });
       }
 
-      /// <summary><c>true</c> kalau tujuannya folder.</summary>
+      /// <summary><c>true</c> when the target is a folder.</summary>
       public bool IsFolderTarget {
          get => Get<bool>();
          set => Set(value, _ => {
@@ -237,7 +249,7 @@ namespace Em.Ui.Wpf.Dialogs
          });
       }
 
-      /// <summary>Jenis tujuan yang dipilih.</summary>
+      /// <summary>The kind of target that is chosen.</summary>
       public ReleaseTargetKind TargetKind {
          get => Get<ReleaseTargetKind>();
          private set => Set(value, _ => {
@@ -248,33 +260,33 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// <c>true</c> kalau user boleh memakai CDN server sebagai tujuan: action CDN mensyaratkan hak
-      /// pengelola CDN, yang terpisah dari hak Release Manager.
+      /// <c>true</c> when the user may use the server CDN as a target: the CDN actions require the CDN
+      /// manager right, which is separate from the Release Manager right.
       /// </summary>
       public bool CanUseCdn {
          get => Get<bool>();
          private set => Set(value, _ => RefreshTargetState());
       }
 
-      /// <summary>Folder tujuan untuk tujuan folder.</summary>
+      /// <summary>The target folder for a folder target.</summary>
       public string TargetFolder {
          get => Get<string>() ?? "";
          private set => Set(value, _ => RefreshTargetState());
       }
 
-      /// <summary>Nama folder rilis di dalam tujuan.</summary>
+      /// <summary>Name of the release folder inside the target.</summary>
       public string ReleaseFolder {
          get => Get<string>() ?? "";
          set => Set(value, _ => RefreshTargetState());
       }
 
-      /// <summary>Keterangan tujuan: alamat folder rilisnya, atau kenapa belum bisa dipakai.</summary>
+      /// <summary>Caption of the target: the address of its release folder, or why it cannot be used yet.</summary>
       public string TargetCaption => TargetBlockedReason ?? $"Release at {TargetLocation}";
 
-      /// <summary><c>true</c> kalau <see cref="TargetCaption"/> berupa peringatan.</summary>
+      /// <summary><c>true</c> when <see cref="TargetCaption"/> is a warning.</summary>
       public bool IsTargetBlocked => TargetBlockedReason is not null;
 
-      /// <summary>Keterangan pilihan CDN.</summary>
+      /// <summary>Caption of the CDN choice.</summary>
       public string CdnOptionTooltip =>
          CanUseCdn ? "Publish to the CDN of the connected server" : "You need CDN Manager access to publish to the server CDN";
 
@@ -295,10 +307,10 @@ namespace Em.Ui.Wpf.Dialogs
 
       #region Signing
 
-      /// <summary>Signing key yang terpasang di mesin ini.</summary>
+      /// <summary>The signing keys installed on this machine.</summary>
       public ObservableCollection<ReleaseSigningKey> SigningKeys { get; } = [];
 
-      /// <summary>Signing key yang dipakai Sync.</summary>
+      /// <summary>The signing key used by Sync.</summary>
       public ReleaseSigningKey? SelectedKey {
          get => Get<ReleaseSigningKey?>();
          set => Set(value, _ => {
@@ -309,17 +321,17 @@ namespace Em.Ui.Wpf.Dialogs
          });
       }
 
-      /// <summary><c>true</c> kalau ada signing key yang dipilih.</summary>
+      /// <summary><c>true</c> when a signing key is chosen.</summary>
       public bool HasSigningKey => SelectedKey is not null;
 
-      /// <summary>Keterangan di card Signing key.</summary>
+      /// <summary>Caption in the Signing key card.</summary>
       public string SigningCaption => IsFileSource && !_store.HasKeyFile(_profile.Id)
          ? "No key file in this profile - create or import one."
          : SelectedKey is null
          ? IsFileSource ? "No key file in this profile - create or import one." : "No signing key - import or create one to publish."
          : $"Thumbprint {SelectedKey.Thumbprint}";
 
-      /// <summary>Tooltip tombol Export signing key.</summary>
+      /// <summary>Tooltip of the Export signing key button.</summary>
       public string ExportKeyTooltip => SelectedKey is { IsExportable: false }
          ? "This key was imported as non-exportable"
          : "Write this key to a password-protected .pfx file";
@@ -328,7 +340,7 @@ namespace Em.Ui.Wpf.Dialogs
 
       #region Commands - source and target
 
-      /// <summary>Memilih file <c>.slnx</c>.</summary>
+      /// <summary>Chooses the <c>.slnx</c> file.</summary>
       public void BrowseSolutionCommand() {
          var dialog = new OpenFileDialog {
             Title = "Choose the solution",
@@ -339,14 +351,14 @@ namespace Em.Ui.Wpf.Dialogs
          if (dialog.ShowDialog(DialogOwner) == true) SolutionPath = dialog.FileName;
       }
 
-      /// <summary>Memilih local publish folder.</summary>
+      /// <summary>Chooses the local publish folder.</summary>
       public void BrowsePublishFolderCommand() {
          var dialog = new OpenFolderDialog { Title = "Choose the local publish folder" };
          if (Directory.Exists(PublishFolder)) dialog.InitialDirectory = PublishFolder;
          if (dialog.ShowDialog(DialogOwner) == true) PublishFolder = dialog.FolderName;
       }
 
-      /// <summary>Memilih folder tujuan.</summary>
+      /// <summary>Chooses the target folder.</summary>
       public void BrowseTargetFolderCommand() {
          var dialog = new OpenFolderDialog { Title = "Choose the target folder" };
          if (Directory.Exists(TargetFolder)) dialog.InitialDirectory = TargetFolder;
@@ -357,7 +369,7 @@ namespace Em.Ui.Wpf.Dialogs
 
       #region Commands - signing key
 
-      /// <summary>Memasang signing key dari file <c>.pfx</c>, lalu memilihnya.</summary>
+      /// <summary>Installs a signing key from a <c>.pfx</c> file, then chooses it.</summary>
       public void ImportKeyCommand() {
          var owner = DialogOwner;
          var destination = new SigningKeyDestinationDialog("Import Signing Key", _profile.Signing.Source) { Owner = owner };
@@ -393,8 +405,8 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Membuat signing key baru: file <c>.pfx</c> berpassword sebagai salinan induk, dan key yang
-      /// terpasang tanpa bisa diekspor di mesin ini. Key baru langsung dipilih.
+      /// Creates a new signing key: a password-protected <c>.pfx</c> file as the master copy, and a key
+      /// installed without being exportable on this machine. The new key is chosen right away.
       /// </summary>
       public void CreateKeyCommand() {
          if (DialogOwner is not { } owner) return;
@@ -431,7 +443,7 @@ namespace Em.Ui.Wpf.Dialogs
          }
       }
 
-      /// <summary>Menulis ulang signing key terpilih ke file <c>.pfx</c> dengan password baru.</summary>
+      /// <summary>Rewrites the chosen signing key to a <c>.pfx</c> file with a new password.</summary>
       public void ExportKeyCommand() {
          if (SelectedKey is not { } key || DialogOwner is not { } owner) return;
 
@@ -462,10 +474,10 @@ namespace Em.Ui.Wpf.Dialogs
          }
       }
 
-      /// <summary>Hanya untuk key yang diimpor dengan pilihan exportable.</summary>
+      /// <summary>Only for a key that was imported with the exportable option.</summary>
       public bool ExportKeyCommandAllowed() => SelectedKey is { IsExportable: true } && (!IsFileSource || _store.HasKeyFile(_profile.Id));
 
-      /// <summary>Menyalin public key terpilih (PEM, dengan baris <c>keyId</c>) ke clipboard.</summary>
+      /// <summary>Copies the chosen public key (PEM, with the <c>keyId</c> line) to the clipboard.</summary>
       public void CopyPublicKeyCommand() {
          if (PublicKeyPem() is not { } pem) return;
          try {
@@ -477,10 +489,10 @@ namespace Em.Ui.Wpf.Dialogs
          }
       }
 
-      /// <summary>Hanya kalau ada signing key yang dipilih.</summary>
+      /// <summary>Only when a signing key is chosen.</summary>
       public bool CopyPublicKeyCommandAllowed() => SelectedKey is not null;
 
-      /// <summary>Menyimpan public key terpilih ke file <c>.pem</c>.</summary>
+      /// <summary>Saves the chosen public key to a <c>.pem</c> file.</summary>
       public void ExportPublicKeyCommand() {
          if (SelectedKey is not { } key || PublicKeyPem() is not { } pem) return;
 
@@ -500,17 +512,17 @@ namespace Em.Ui.Wpf.Dialogs
          }
       }
 
-      /// <summary>Hanya kalau ada signing key yang dipilih.</summary>
+      /// <summary>Only when a signing key is chosen.</summary>
       public bool ExportPublicKeyCommandAllowed() => SelectedKey is not null;
 
-      /// <summary>Membaca ulang daftar signing key dari certificate store.</summary>
+      /// <summary>Reads the list of signing keys from the certificate store again.</summary>
       public void RefreshKeysCommand() => LoadKeys(SelectedKey?.Thumbprint);
 
       #endregion
 
       #region Commands - dialog
 
-      /// <summary>Menyimpan seluruh setting ke profile.json lalu menutup dialog.</summary>
+      /// <summary>Saves all settings to profile.json, then closes the dialog.</summary>
       public void SaveCommand() {
          try {
             var settings = _profile.Clone();
@@ -543,12 +555,16 @@ namespace Em.Ui.Wpf.Dialogs
       #region Methods
 
       /// <summary>
-      /// Mengisi dialog dari setting tersimpan; dipanggil sekali setelah <see cref="MvvmModelBase.EmApp"/>
-      /// diisi.
+      /// Fills the dialog from the stored settings; called once after <see cref="MvvmModelBase.EmApp"/> is set.
       /// </summary>
-      /// <param name="sdkVersion">Versi .NET SDK 10.x yang ditemukan, atau <c>null</c>.</param>
-      /// <param name="isSdkChecked"><c>true</c> kalau pemeriksaan SDK sudah selesai.</param>
-      /// <param name="canUseCdn"><c>true</c> kalau user boleh memakai CDN server sebagai tujuan.</param>
+      /// <param name="store">The store of the release profiles.</param>
+      /// <param name="profile">The profile being edited.</param>
+      /// <param name="lastWriteUtc">The last write time of the profile file when it was read, to detect outside changes.</param>
+      /// <param name="others">The other profiles, to warn about collisions.</param>
+      /// <param name="secrets">The store of signing key passwords.</param>
+      /// <param name="sdkVersion">The .NET SDK 10.x version that was found, or <c>null</c>.</param>
+      /// <param name="isSdkChecked"><c>true</c> when the SDK check has finished.</param>
+      /// <param name="canUseCdn"><c>true</c> when the user may use the server CDN as a target.</param>
       public void Load(ReleaseProfileStore store, ReleaseProfile profile, DateTime lastWriteUtc,
          IReadOnlyList<ReleaseProfile> others, ReleaseSigningSecrets secrets,
          string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
@@ -654,7 +670,7 @@ namespace Em.Ui.Wpf.Dialogs
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message, "Create Signing Key"); }
       }
 
-      /// <summary>Menghapus hanya berkas key profile serta password sesi/DPAPI.</summary>
+      /// <summary>Removes only the profile's key files and the session/DPAPI password.</summary>
       public void RemoveKeyFileCommand() {
          if (DialogOwner?.ShowMboxDecideWarning("Remove signing.pfx and signing.cer from this profile?", "Remove Key File") != MessageBoxResult.Yes) return;
          try {
@@ -669,7 +685,7 @@ namespace Em.Ui.Wpf.Dialogs
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
-      /// <summary>Memvalidasi password baru sebelum menyimpannya pada draft profile.</summary>
+      /// <summary>Validates the new password before storing it in the profile draft.</summary>
       public void SetPasswordCommand() {
          var dialog = new PasswordInputDialog("Signing Key Password", "Password of the key file in this profile.", okCaption: "Set") { Owner = DialogOwner };
          if (dialog.ShowDialog() != true) return;
@@ -681,6 +697,7 @@ namespace Em.Ui.Wpf.Dialogs
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
 
+      /// <summary>Runs the forget password command.</summary>
       public void ForgetPasswordCommand() {
          _secrets.Forget(_profile.Id);
          RefreshPassword();

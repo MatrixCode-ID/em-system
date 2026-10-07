@@ -21,8 +21,11 @@ public partial class NuPakManager : UserControl, INavigationBody
    private bool _settingFeeds;
    private int _packageSkip, _binSkip, _auditSkip;
    private string? _binPrefix;
+   /// <summary>Creates a new instance of <see cref="NuPakManager"/>.</summary>
    public NuPakManager() { InitializeComponent(); }
+   /// <summary>Creates a new instance of <see cref="NuPakManager"/>.</summary>
    public NuPakManager(EmApp app) : this() { Attach(app, app.ServiceProvider.GetRequiredService<INuPakServices>()); }
+   /// <summary>Attaches the screen to the application and the NuPak service.</summary>
    public void Attach(EmApp app, INuPakServices service) { _app = app; _service = service; settingsCard.AttachNuGet(app); publisher.Attach(app,Em.Ui.Wpf.Publish.PublishKind.NuGet); ApplyPermissions(); }
    private bool CanManage => _app is not null && _app.AllClaims.Any(c => c.ModuleName == Defaults.AdministrativeToolsModuleName && c.Name == INuPakServices.SettingsClaim)
       && new ClaimCollection(Defaults.AdministrativeToolsModuleName, _app.AllClaims, _app.ActiveUser)[INuPakServices.SettingsClaim];
@@ -61,6 +64,7 @@ public partial class NuPakManager : UserControl, INavigationBody
          if(generation!=_generation && key is not ("settings" or "feeds" or "mutation")) _=RefreshFeedContents();
       }
    }
+   /// <summary>Reads feeds, packages, and settings again.</summary>
    public async Task RefreshAllAsync() {
       await Task.WhenAll(RefreshSettings(),RefreshFeeds());
       await RefreshFeedContents();
@@ -149,8 +153,12 @@ public partial class NuPakManager : UserControl, INavigationBody
    private void CopyAddress(object s, RoutedEventArgs e) { if(FeedId is not null && endpoint.Text.Length>0)Copy(endpoint.Text); }
    private void CopyConfig(object s, RoutedEventArgs e) { if(FeedId is null||endpoint.Text.Length==0)return; Copy($"<configuration>\n  <packageSources><clear /><add key=\"Em\" value=\"{System.Security.SecurityElement.Escape(endpoint.Text)}\" allowInsecureConnections=\"true\" /></packageSources>\n  <packageSourceMapping><packageSource key=\"Em\"><package pattern=\"MatrixCode.*\" /></packageSource></packageSourceMapping>\n</configuration>"); }
    private async void SettingsRefresh(object s, RoutedEventArgs e) => await Task.WhenAll(RefreshSettings(),RefreshFeeds());
+   /// <inheritdoc />
    public Task OnNavigatingIn(INavigation s, NavigatingEventArgs e) { ApplyPermissions(); return Task.CompletedTask; }
+   /// <inheritdoc />
    public Task OnNavigatingAway(INavigation s, NavigatingEventArgs e) { if(!settingsCard.ConfirmLeave()) e.Cancel=true; return Task.CompletedTask; }
+   /// <inheritdoc />
    public Task OnReloadRequested(INavigation s, NavigationEventArgs e) => RefreshAllAsync();
+   /// <inheritdoc />
    public Task OnRelease(INavigation s) => Task.CompletedTask;
 }

@@ -2,8 +2,10 @@ using Em.Ui.Core.Shared;
 
 namespace Em.Ui.Wpf.Core
 {
+   /// <summary>Base class of module services on the WPF side, bound to the WPF <see cref="EmApp"/>.</summary>
    public abstract class ServiceWpfBase : ServiceUiBase
    {
+      /// <summary>Creates a new instance of <see cref="ServiceWpfBase"/>.</summary>
       public ServiceWpfBase(EmApp app) : base(app) {
          App = app;
          // A service is only built the first time something resolves it from the container, which is
@@ -21,9 +23,9 @@ namespace Em.Ui.Wpf.Core
       }
 
       /// <summary>
-      /// Objek aplikasi WPF milik service ini. Tipenya sengaja dipersempit dari <c>IEmApp</c> milik
-      /// <see cref="ServiceUiBase"/> jadi <see cref="EmApp"/> (covariant return), sehingga service di
-      /// layer UI langsung memakai anggota WPF-nya tanpa perlu cast.
+      /// The WPF application object of this service. Its type is deliberately narrowed from the <c>IEmApp</c>
+      /// of <see cref="ServiceUiBase"/> to <see cref="EmApp"/> (covariant return), so a service in the UI
+      /// layer uses its WPF members directly without a cast.
       /// </summary>
       public override EmApp App { get; }
    }

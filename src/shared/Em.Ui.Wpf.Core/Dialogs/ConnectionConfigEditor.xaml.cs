@@ -8,15 +8,15 @@ using Brushes = System.Windows.Media.Brushes;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog untuk membuat atau mengubah satu profil koneksi API.
+   /// A dialog to create or change one API connection profile.
    /// </summary>
    public partial class ConnectionConfigEditor : EmWindow
    {
       /// <summary>
-      /// Membuat dialog editor untuk sebuah koneksi.
+      /// Creates the editor dialog for a connection.
       /// </summary>
-      /// <param name="app">Objek aplikasi, dipakai ViewModel untuk menjalankan handshake saat tes koneksi.</param>
-      /// <param name="connection">Koneksi yang akan diedit (untuk koneksi baru, isi dengan nilai default).</param>
+      /// <param name="app">The application object, used by the view model to run the handshake when testing the connection.</param>
+      /// <param name="connection">The connection to edit (for a new connection, fill it with default values).</param>
       public ConnectionConfigEditor(EmApp app, ApiConnection connection) {
          InitializeComponent();
          Vm.EmApp = app;
@@ -26,18 +26,18 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// ViewModel dialog ini.
+      /// The view model of this dialog.
       /// </summary>
       public ConnectionConfigEditorVm Vm => (ConnectionConfigEditorVm)DataContext;
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="ConnectionConfigEditor"/>: validasi input dan (nantinya) tes koneksi.
+   /// View model for <see cref="ConnectionConfigEditor"/>: input validation and (later) the connection test.
    /// </summary>
    public class ConnectionConfigEditorVm : MvvmModelBase
    {
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan command simpan/tes koneksi.
+      /// Creates a new view model and registers the save/test connection commands.
       /// </summary>
       public ConnectionConfigEditorVm() {
          WaiterText = "Loading...";
@@ -46,13 +46,13 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Dipicu saat dialog akan ditutup, dengan parameter menandakan apakah user menyimpan (<c>true</c>)
-      /// atau membatalkan (<c>false</c>).
+      /// Raised when the dialog is about to close, with a parameter saying whether the user saved
+      /// (<c>true</c>) or cancelled (<c>false</c>).
       /// </summary>
       public event Action<bool>? RequestClose;
 
       /// <summary>
-      /// Koneksi yang sedang diedit pada dialog ini.
+      /// The connection being edited in this dialog.
       /// </summary>
       public ApiConnection Connection {
          get => Get<ApiConnection>();
@@ -60,7 +60,7 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Teks status hasil tes koneksi terakhir, ditampilkan ke user. Default: <c>"Not tested"</c>.
+      /// The status text of the last connection test, shown to the user. Default: <c>"Not tested"</c>.
       /// </summary>
       public string StatusText {
          get => Get<string>() ?? "Not tested";
@@ -68,7 +68,7 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Warna indikator status hasil tes koneksi. Default: abu-abu (belum ada tes).
+      /// The color of the status indicator of the connection test result. Default: gray (no test yet).
       /// </summary>
       public Brush StatusBrush {
          get => Get<Brush>() ?? Brushes.Gray;
@@ -76,12 +76,13 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Memvalidasi input (nama profil dan host wajib diisi) lalu memicu <see cref="RequestClose"/>
-      /// dengan <c>true</c> jika valid.
+      /// Validates the input (profile name and host are required) then raises <see cref="RequestClose"/> with
+      /// <c>true</c> if valid.
       /// </summary>
       public void SaveCommand() {
-         // Koneksi debug sengaja tetap bisa dibuka di editor supaya handshake-nya bisa dites; yang ditolak
-         // hanya penyimpanannya, karena profil ini ditulis di kode dan tidak punya entri di Registry.
+         // A debug connection is deliberately still openable in the editor so its handshake can be tested; what
+         // is refused is only saving it, because this profile is written in code and has no entry in the
+         // Registry.
          if (Connection.IsDebugConnection) {
             AlertWarning(
                $"'{Connection.ProfileName}' is a debug connection defined in code, so it cannot be saved.");
@@ -102,9 +103,9 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Menguji koneksi ke <see cref="Connection"/> saat ini lewat handshake: server harus bisa menandatangani
-      /// nonce acak dengan private key dari public key yang dikembalikannya. Kalau berhasil, public key tersebut
-      /// disimpan sebagai key server aktif.
+      /// Tests the current connection to <see cref="Connection"/> through the handshake: the server must be
+      /// able to sign a random nonce with the private key of the public key it returns. If it succeeds, that
+      /// public key is stored as the active server key.
       /// </summary>
       public async Task TestConnectionCommand() {
          try {
@@ -129,9 +130,9 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Menampilkan pesan peringatan validasi ke user pada window dialog ini.
+      /// Shows a validation warning message to the user on this dialog's window.
       /// </summary>
-      /// <param name="message">Pesan peringatan yang ditampilkan.</param>
+      /// <param name="message">The warning message that is shown.</param>
       private void AlertWarning(string message) {
          var owner = MainWindow ?? EmApp?.MainWindow;
          owner?.ShowMboxWarning(message);

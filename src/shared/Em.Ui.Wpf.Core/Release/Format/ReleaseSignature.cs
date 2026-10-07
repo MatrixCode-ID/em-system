@@ -2,23 +2,23 @@ using System.Security.Cryptography;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Hasil pemeriksaan tanda tangan <c>release.json</c>.</summary>
+   /// <summary>The result of checking the signature of <c>release.json</c>.</summary>
    public enum ReleaseSignatureStatus
    {
-      /// <summary>Tanda tangan sah dan dibuat oleh salah satu public key yang dipercaya.</summary>
+      /// <summary>The signature is valid and was made by one of the trusted public keys.</summary>
       Valid = 0,
 
-      /// <summary><c>keyId</c> di file tanda tangan tidak cocok dengan public key mana pun yang dipercaya.</summary>
+      /// <summary>The <c>keyId</c> in the signature file does not match any trusted public key.</summary>
       UnknownKey = 1,
 
-      /// <summary>Key-nya dikenal, tetapi tanda tangannya tidak cocok dengan byte manifest (atau rusak).</summary>
+      /// <summary>The key is known, but the signature does not match the manifest bytes (or is corrupt).</summary>
       Invalid = 2
    }
 
    /// <summary>
-   /// Menandatangani dan memverifikasi byte <c>release.json</c> dengan ECDSA P-256 + SHA-256, format
-   /// tanda tangan IEEE P1363 (64 byte), serta menghitung <c>keyId</c> dan bentuk PEM sebuah public key.
-   /// Aturan lengkapnya ada di <c>doc/release-format.md</c> bagian 4 dan 5.
+   /// Signs and verifies the <c>release.json</c> bytes with ECDSA P-256 + SHA-256, in the IEEE P1363
+   /// signature format (64 bytes), and computes the <c>keyId</c> and PEM form of a public key. The full
+   /// rules are in <c>doc/release-format.md</c> sections 4 and 5.
    /// </summary>
    public static class ReleaseSignature
    {
@@ -28,18 +28,18 @@ namespace Em.Ui.Wpf.Core.Release
       private const int SignatureLength = 64;
 
       /// <summary>
-      /// <c>keyId</c> sebuah public key: 16 karakter hex huruf kecil pertama SHA-256 dari DER
-      /// SubjectPublicKeyInfo-nya.
+      /// The <c>keyId</c> of a public key: the first 16 lowercase hex characters of the SHA-256 of its DER
+      /// SubjectPublicKeyInfo.
       /// </summary>
       public static string KeyIdOf(ReadOnlySpan<byte> subjectPublicKeyInfo) =>
          Convert.ToHexStringLower(SHA256.HashData(subjectPublicKeyInfo))[..16];
 
       /// <summary>
-      /// Menandatangani byte <c>release.json</c> apa adanya dengan <paramref name="privateKey"/>.
+      /// Signs the <c>release.json</c> bytes as-is with <paramref name="privateKey"/>.
       /// </summary>
-      /// <param name="manifestBytes">Byte <c>release.json</c> persis seperti yang akan ditulis.</param>
-      /// <param name="privateKey">Private key ECDSA P-256.</param>
-      /// <exception cref="CryptographicException">Key-nya bukan P-256.</exception>
+      /// <param name="manifestBytes">The <c>release.json</c> bytes exactly as they will be written.</param>
+      /// <param name="privateKey">The ECDSA P-256 private key.</param>
+      /// <exception cref="CryptographicException">The key is not P-256.</exception>
       public static ReleaseSignatureFile Sign(ReadOnlySpan<byte> manifestBytes, ECDsa privateKey) {
          RequireP256(privateKey);
          var signature = privateKey.SignData(manifestBytes, HashAlgorithmName.SHA256,
@@ -51,19 +51,19 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// <c>true</c> kalau <paramref name="signature"/> adalah tanda tangan sah atas
-      /// <paramref name="manifestBytes"/> oleh salah satu <paramref name="trustedPublicKeys"/>.
+      /// <c>true</c> when <paramref name="signature"/> is a valid signature over
+      /// <paramref name="manifestBytes"/> by one of <paramref name="trustedPublicKeys"/>.
       /// </summary>
-      /// <param name="manifestBytes">Byte <c>release.json</c> persis seperti yang diunduh.</param>
-      /// <param name="signature">Isi <c>release.json.sig</c>.</param>
-      /// <param name="trustedPublicKeys">DER SubjectPublicKeyInfo setiap public key yang dipercaya.</param>
+      /// <param name="manifestBytes">The <c>release.json</c> bytes exactly as downloaded.</param>
+      /// <param name="signature">The content of <c>release.json.sig</c>.</param>
+      /// <param name="trustedPublicKeys">The DER SubjectPublicKeyInfo of every trusted public key.</param>
       public static bool Verify(ReadOnlySpan<byte> manifestBytes, ReleaseSignatureFile signature,
          IEnumerable<ReadOnlyMemory<byte>> trustedPublicKeys) =>
          Check(manifestBytes, signature, trustedPublicKeys) == ReleaseSignatureStatus.Valid;
 
       /// <summary>
-      /// Seperti <see cref="Verify"/>, tetapi menyebut kenapa tanda tangan ditolak: key-nya tidak dikenal,
-      /// atau tanda tangannya tidak cocok.
+      /// Like <see cref="Verify"/>, but states why the signature was refused: the key is unknown, or the
+      /// signature does not match.
       /// </summary>
       public static ReleaseSignatureStatus Check(ReadOnlySpan<byte> manifestBytes, ReleaseSignatureFile signature,
          IEnumerable<ReadOnlyMemory<byte>> trustedPublicKeys) {
@@ -90,13 +90,12 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Bentuk PEM (<c>-----BEGIN PUBLIC KEY-----</c>) sebuah public key, seperti yang ditanam di
-      /// launcher.
+      /// The PEM form (<c>-----BEGIN PUBLIC KEY-----</c>) of a public key, as embedded in the launcher.
       /// </summary>
       public static string ToPem(ReadOnlySpan<byte> subjectPublicKeyInfo) =>
          new string(PemEncoding.Write("PUBLIC KEY", subjectPublicKeyInfo)).ReplaceLineEndings("\n") + "\n";
 
-      /// <summary><c>true</c> kalau <paramref name="key"/> berada di kurva P-256.</summary>
+      /// <summary><c>true</c> when <paramref name="key"/> is on the P-256 curve.</summary>
       public static bool IsP256(ECDsa key) {
          if (key.KeySize != 256) return false;
          try {

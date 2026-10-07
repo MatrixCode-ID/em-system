@@ -1,18 +1,18 @@
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Isi <c>release.json.sig</c>: penunjuk public key penanda tangan dan tanda tangannya. Formatnya
-   /// diatur <c>doc/release-format.md</c> bagian 3.
+   /// The content of <c>release.json.sig</c>: the pointer to the signer's public key and the signature. Its
+   /// format is governed by <c>doc/release-format.md</c> section 3.
    /// </summary>
    public sealed class ReleaseSignatureFile
    {
       /// <summary>
-      /// 16 karakter hex huruf kecil pertama SHA-256 dari public key penanda tangan, untuk memilih public
-      /// key yang dipakai memverifikasi (lihat <see cref="ReleaseSignature.KeyIdOf"/>).
+      /// The first 16 lowercase hex characters of the SHA-256 of the signer's public key, to choose the public
+      /// key used to verify (see <see cref="ReleaseSignature.KeyIdOf"/>).
       /// </summary>
       public required string KeyId { get; init; }
 
-      /// <summary>Tanda tangan ECDSA P-256/SHA-256 format IEEE P1363 (64 byte), di-encode base64.</summary>
+      /// <summary>An ECDSA P-256/SHA-256 signature in the IEEE P1363 format (64 bytes), base64-encoded.</summary>
       public required string Signature { get; init; }
    }
 }

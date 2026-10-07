@@ -6,59 +6,81 @@ using Em.Ui.Wpf.Core;
 
 namespace Em.Ui.Wpf.Publish;
 
+/// <summary>The publisher settings: where working files and history are kept.</summary>
 public sealed class PublisherSettings(EmApp? app = null) {
+ /// <summary>The default profiles.</summary>
  public static string DefaultProfiles => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"Em","Publish","Profiles");
+ /// <summary>The default logs.</summary>
  public static string DefaultLogs => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),"Em","Publish","Logs");
+ /// <summary>The default work.</summary>
  public static string DefaultWork => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Em","Publish","Work");
  private readonly Dictionary<string,string> _memory=[];
  private string Read(string key,string fallback) { if(app==null)return _memory.GetValueOrDefault(key,fallback);using var reg=app.BaseRegKey.OpenSubKey("Publisher");return reg?.GetValue(key) as string is {Length:>0} s?s:fallback; }
  private void Write(string key,string value) { if(app==null) {_memory[key]=value;return;}using var reg=app.BaseRegKey.CreateSubKey("Publisher");reg.SetValue(key,value,RegistryValueKind.String); }
+ /// <summary>The profiles.</summary>
  public string Profiles { get=>Read(nameof(Profiles),DefaultProfiles);set=>Write(nameof(Profiles),Path.GetFullPath(value)); }
+ /// <summary>The logs.</summary>
  public string Logs { get=>Read(nameof(Logs),DefaultLogs);set=>Write(nameof(Logs),Path.GetFullPath(value)); }
+ /// <summary>The work.</summary>
  public string Work { get=>Read(nameof(Work),DefaultWork);set=>Write(nameof(Work),Path.GetFullPath(value)); }
+ /// <summary>The last profile.</summary>
  public string LastProfile { get=>Read(nameof(LastProfile),"");set=>Write(nameof(LastProfile),value); }
 }
+/// <summary>The publish paths.</summary>
 public static class PublishPaths {
+ /// <summary>Combines a root and a relative path, refusing a result that leaves the root.</summary>
  public static string Inside(string root,string relative) {
   var full=Path.GetFullPath(Path.Combine(root,relative));var parent=Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
   if(!full.StartsWith(parent+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)) throw new IOException("Path must stay below the publisher directory.");
   RejectLinks(full);return full;
  }
+ /// <summary>Refuses a path that is a link.</summary>
  public static void RejectLinks(string path) {
   for(string? p=Path.GetFullPath(path);p!=null;p=Path.GetDirectoryName(p)) {
    try { if((File.GetAttributes(p)&FileAttributes.ReparsePoint)!=0) throw new IOException("Publisher paths must not contain symbolic links/reparse points."); }
    catch(FileNotFoundException) {} catch(DirectoryNotFoundException) {}
   }
  }
+ /// <summary>Validates a folder tree, refusing links and unsafe names.</summary>
  public static void ValidateTree(string root) {
   RejectLinks(root);var pending=new Stack<string>();pending.Push(root);
   while(pending.Count>0)foreach(var entry in System.IO.Directory.EnumerateFileSystemEntries(pending.Pop())) {
    RejectLinks(entry);if((File.GetAttributes(entry)&FileAttributes.Directory)!=0)pending.Push(entry);
   }
  }
+ /// <summary>Writes a file atomically.</summary>
  public static void Atomic(string file,string text) {
   RejectLinks(file);Directory.CreateDirectory(Path.GetDirectoryName(file)!);var temp=file+"."+Guid.NewGuid().ToString("N")+".tmp";
   try { using(var stream=new FileStream(temp,FileMode.CreateNew,FileAccess.Write,FileShare.None)) { var bytes=Encoding.UTF8.GetBytes(text);stream.Write(bytes);stream.Flush(true); } File.Move(temp,file,true); }
   finally { if(File.Exists(temp))File.Delete(temp); }
  }
+ /// <summary>Computes the SHA-256 of a file.</summary>
  public static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 }
+/// <summary>One profile file together with its parsed profile, hash, and error.</summary>
 public sealed record ProfileEntry(string File,PublishProfile? Profile,string? Hash,string? Error) {
+ /// <inheritdoc />
  public override string ToString()=>Profile?.Name??$"{Path.GetFileName(File)} · {Error}";
 }
+/// <summary>Thrown when a profile file changed outside the application.</summary>
 public sealed class ProfileConflictException() : IOException("Profile changed outside the application. Reload or explicitly overwrite.");
+/// <summary>Stores profiles as files in a folder.</summary>
 public sealed class ProfileStore(string root) {
+ /// <summary>The root.</summary>
  public string Root=>Path.GetFullPath(root);
+ /// <summary>Lists the profiles of a kind.</summary>
  public IReadOnlyList<ProfileEntry> List(PublishKind kind) {
   var dir=PublishPaths.Inside(Root,kind.ToString());Directory.CreateDirectory(dir);
   return Directory.EnumerateFiles(dir,"*.json").Select(Read).OrderBy(x=>x.Profile?.Name??x.File).ToArray();
  }
+ /// <summary>Reads one profile file.</summary>
  public ProfileEntry Read(string file)=>Read(file,null);
- /// <summary>Membaca profil; berkas bundle terenkripsi (<see cref="ProfileBundle"/>) dibuka dengan <paramref name="passphrase"/>.</summary>
+ /// <summary>Reads a profile; an encrypted bundle file (<see cref="ProfileBundle"/>) is opened with <paramref name="passphrase"/>.</summary>
  public ProfileEntry Read(string file,string? passphrase) {
   try { PublishPaths.RejectLinks(file);var text=File.ReadAllText(file);if(ProfileBundle.IsBundleFile(file))text=ProfileBundle.Decrypt(text,passphrase??"");var p=ProfileJson.Read(text);if(!Path.IsPathFullyQualified(p.Workspace)&&p.Workspace.Length>0)p.Workspace=Path.GetFullPath(p.Workspace,Path.GetDirectoryName(Path.GetFullPath(file))!);return new(file,p,PublishPaths.Hash(file),null); }
   catch(Exception ex) when(ex is IOException or System.Text.Json.JsonException or InvalidDataException or UnauthorizedAccessException) { return new(file,null,null,ex.Message); }
  }
+ /// <summary>Saves a profile, refusing to overwrite changes made elsewhere unless asked.</summary>
  public ProfileEntry Save(PublishProfile profile,ProfileEntry? previous=null,bool overwrite=false) {
   profile.Validate();
   if(profile.SensitiveDataStorage==SensitiveDataStorage.Separate && profile.Credentials.Any(c=>!string.IsNullOrEmpty(c.Secret))) throw new InvalidDataException("Move secrets to separate storage before saving.");
@@ -66,11 +88,13 @@ public sealed class ProfileStore(string root) {
   if(File.Exists(file)&&!overwrite&&(previous?.File!=file || previous.Hash!=PublishPaths.Hash(file)))throw new ProfileConflictException();
   PublishPaths.Atomic(file,ProfileJson.Write(profile));return Read(file);
  }
+ /// <summary>Imports a profile file.</summary>
  public ProfileEntry Import(string file,bool newId=false)=>Import(file,newId,null,null);
  /// <summary>
- /// Mengimpor profil. Secret yang ikut dalam berkas (export plain text atau bundle terenkripsi) dipulihkan: profil
- /// Plaintext menyimpannya inline, profil Separate memasukkannya ke <paramref name="secrets"/> (dengan
- /// <paramref name="rememberSecrets"/>, terenkripsi DPAPI untuk akun ini) sehingga profil langsung bisa dipakai.
+ /// Imports a profile. Secrets that come in the file (plain text export or encrypted bundle) are
+ /// restored: a Plaintext profile stores them inline, a Separate profile puts them into
+ /// <paramref name="secrets"/> (with <paramref name="rememberSecrets"/>, DPAPI-encrypted for this
+ /// account) so the profile can be used right away.
  /// </summary>
  public ProfileEntry Import(string file,bool newId,string? passphrase,PublishSecretStore? secrets,bool rememberSecrets=true) {
   var source=Read(file,passphrase);if(source.Profile is not {} p)throw new InvalidDataException(source.Error);
@@ -90,15 +114,18 @@ public sealed class ProfileStore(string root) {
   foreach(var (credential,secret) in restore)secrets!.Put(credential,secret,rememberSecrets);
   return Save(p);
  }
+ /// <summary>Duplicates a profile under a new id.</summary>
  public ProfileEntry Duplicate(PublishProfile source) {
   var p=source.Clone();p.Id=Guid.NewGuid().ToString("N");p.Name+=" copy";
   var refs=new Dictionary<string,string>();foreach(var c in p.Credentials) { var old=c.Id;c.Id=Guid.NewGuid().ToString("N");refs[old]=c.Id;c.SecretRef=null;if(p.SensitiveDataStorage==SensitiveDataStorage.Separate)c.Secret=null; }
   if(p.Container!=null)foreach(var secret in p.Container.Dockerfile.Secrets)if(refs.TryGetValue(secret.CredentialRef,out var id))secret.CredentialRef=id;
   return Save(p);
  }
+ /// <summary>Loads a profile by id.</summary>
  public PublishProfile Load(string id,PublishKind kind=PublishKind.Container) {
   if(!Guid.TryParse(id,out _))throw new InvalidDataException("Invalid profile ID.");return Read(PublishPaths.Inside(Root,Path.Combine(kind.ToString(),id+".json"))).Profile??throw new InvalidDataException("Profile is unavailable.");
  }
+ /// <summary>Deletes a profile file.</summary>
  public void Delete(ProfileEntry entry) {
   var relative=Path.GetRelativePath(Root,entry.File);File.Delete(PublishPaths.Inside(Root,relative));
  }
@@ -112,14 +139,15 @@ public sealed class ProfileStore(string root) {
   if(p.Container is {} c) {c.Dockerfile.Context=Portable(c.Dockerfile.Context);c.Dockerfile.File=Portable(c.Dockerfile.File);foreach(var ctx in c.Dockerfile.NamedContexts)ctx.Value=Portable(ctx.Value);c.Template.Project=Portable(c.Template.Project);c.Template.ExistingDockerfile=Portable(c.Template.ExistingDockerfile);c.Template.PublishProfile=Portable(c.Template.PublishProfile);c.Compose.File=Portable(c.Compose.File);c.Compose.ProjectDirectory=Portable(c.Compose.ProjectDirectory);}
   p.Workspace=".";return p;
  }
- /// <summary>Export tanpa secret, atau dengan secret inline sebagai plain text.</summary>
+ /// <summary>Export without secrets, or with secrets inline as plain text.</summary>
  public void Export(PublishProfile profile,string file,bool sensitive=false)=>Export(profile,file,sensitive?ExportSecrets.PlainText:ExportSecrets.None);
  /// <summary>
- /// Menulis profil ke <paramref name="file"/> dengan path yang portabel. Dengan <see cref="ExportSecrets.PlainText"/> atau
- /// <see cref="ExportSecrets.Encrypted"/>, secret ikut: yang inline diambil dari profil, yang terpisah dibaca dari
- /// <paramref name="secrets"/> (sesi atau Remember). Pada mode Encrypted isi berkas dienkripsi dengan
- /// <paramref name="passphrase"/>; pada PlainText siapa pun yang membuka berkas bisa membaca secret-nya.
- /// Mengembalikan jumlah kredensial yang tidak punya secret tersimpan sehingga diekspor kosong.
+ /// Writes a profile to <paramref name="file"/> with a portable path. With <see cref="ExportSecrets.PlainText"/>
+ /// or <see cref="ExportSecrets.Encrypted"/>, the secrets come along: inline ones are taken from the
+ /// profile, separate ones are read from <paramref name="secrets"/> (session or Remember). In Encrypted
+ /// mode the file content is encrypted with <paramref name="passphrase"/>; in PlainText anyone who opens
+ /// the file can read its secrets. Returns the number of credentials that have no stored secret and so
+ /// were exported empty.
  /// </summary>
  public int Export(PublishProfile profile,string file,ExportSecrets mode,PublishSecretStore? secrets=null,string? passphrase=null) {
   if(mode==ExportSecrets.Encrypted&&string.IsNullOrEmpty(passphrase))throw new InvalidDataException("A passphrase is required to encrypt the export.");
@@ -134,20 +162,34 @@ public sealed class ProfileStore(string root) {
   return missing;
  }
 }
-/// <summary>Apakah secret ikut diekspor, dan bagaimana berkasnya dilindungi.</summary>
-public enum ExportSecrets { None, PlainText, Encrypted }
+/// <summary>Whether the secrets are exported, and how the file is protected.</summary>
+/// <summary>The export secrets.</summary>
+public enum ExportSecrets
+{
+   /// <summary>Export without secrets.</summary>
+   None,
+   /// <summary>Export with secrets as plain text.</summary>
+   PlainText,
+   /// <summary>Export with secrets in an encrypted bundle.</summary>
+   Encrypted,
+}
+/// <summary>The publish secret store.</summary>
 public sealed class PublishSecretStore {
  private readonly Dictionary<string,(string Host,string Secret)> _session=new();
  private static string DirectoryPath=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Em","Publish","Secrets");
  private static string FilePath(string id) {if(!Guid.TryParse(id,out _))throw new InvalidDataException("Invalid credential reference.");return PublishPaths.Inside(DirectoryPath,id+".bin");}
+ /// <summary>Extracts the host part of a target address.</summary>
  public static string Host(string target) { if(Uri.TryCreate(target,UriKind.Absolute,out var uri)&&uri.Scheme is "http" or "https")return uri.Authority.ToLowerInvariant();return target.Trim().TrimEnd('/').ToLowerInvariant(); }
+ /// <summary>Stores the secret of a credential.</summary>
  public void Put(PublishCredential credential,string secret,bool remember) {
   if(string.IsNullOrWhiteSpace(credential.ScopeHost))throw new InvalidDataException("Credential host scope is required.");
   credential.SecretRef=credential.Id;_session[credential.Id]=(Host(credential.ScopeHost),secret);
   if(remember) {var file=FilePath(credential.Id);Directory.CreateDirectory(DirectoryPath);var data=Encoding.UTF8.GetBytes(ProfileJson.Write(new SecretRecord(Host(credential.ScopeHost),secret)));File.WriteAllBytes(file,ProtectedData.Protect(data,null,DataProtectionScope.CurrentUser));}
   else {var file=FilePath(credential.Id);if(File.Exists(file))File.Delete(file);}
  }
+ /// <summary>Whether the secret of a credential is remembered on this machine.</summary>
  public bool IsRemembered(PublishCredential credential)=>credential.SecretRef==credential.Id&&File.Exists(FilePath(credential.Id));
+ /// <summary>Gets the secret of a credential.</summary>
  public string? Get(PublishCredential credential,string target) {
   var host=Host(target);if(Host(credential.ScopeHost)!=host)return null;
   if(credential.Secret!=null)return credential.Secret;
@@ -156,6 +198,7 @@ public sealed class PublishSecretStore {
   try {var bytes=ProtectedData.Unprotect(File.ReadAllBytes(FilePath(credential.Id)),null,DataProtectionScope.CurrentUser);var data=System.Text.Json.JsonSerializer.Deserialize<SecretRecord>(bytes,ProfileJson.Options);return data?.Host==host?data.Secret:null;}
   catch(Exception ex) when(ex is IOException or CryptographicException or UnauthorizedAccessException or System.Text.Json.JsonException) {return null;}
  }
+ /// <summary>Converts the profile secrets to another storage mode.</summary>
  public void ConvertMode(PublishProfile p,SensitiveDataStorage mode) {
   foreach(var c in p.Credentials) {
    if(mode==SensitiveDataStorage.Separate) {if(c.Secret!=null)Put(c,c.Secret,c.Remember);c.Secret=null;}
@@ -165,15 +208,21 @@ public sealed class PublishSecretStore {
  }
  private sealed record SecretRecord(string Host,string Secret);
 }
+/// <summary>A temporary working folder of one run, deleted when disposed.</summary>
 public sealed class RunWorkspace : IDisposable {
+ /// <summary>The root.</summary>
  public string Root { get; }
+ /// <summary>The directory.</summary>
  public string Directory { get; }
  private readonly bool _keep;
+ /// <summary>Creates a new instance of <see cref="RunWorkspace"/>.</summary>
  public RunWorkspace(string root,string runId,bool keep) {
   if(!Guid.TryParse(runId,out _))throw new ArgumentException("Invalid run ID.");Root=Path.GetFullPath(root);Directory=PublishPaths.Inside(Root,runId);_keep=keep;
   if(System.IO.Directory.Exists(Directory))throw new IOException("Run workspace already exists.");System.IO.Directory.CreateDirectory(Directory);File.WriteAllText(Path.Combine(Directory,".em-publish-run"),runId);
  }
+ /// <summary>The path of a file inside the working folder.</summary>
  public string PathFor(string name)=>PublishPaths.Inside(Directory,name);
+ /// <summary>Deletes the working folder.</summary>
  public void Dispose() {
   if(_keep)return;var path=PublishPaths.Inside(Root,Path.GetFileName(Directory));
   if(!File.Exists(Path.Combine(path,".em-publish-run")))throw new IOException("Workspace ownership marker missing.");

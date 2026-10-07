@@ -15,6 +15,7 @@ namespace Em.Ui.Wpf.Dialogs
    /// </summary>
    public partial class CtnDeployRunDialog : EmWindow
    {
+      /// <summary>Creates a new instance of <see cref="CtnDeployRunDialog"/>.</summary>
       public CtnDeployRunDialog(ICtnServices service, CtnImageInfo image, CtnDeployTargetInfo target, CtnManifestInfo[] manifests) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -32,6 +33,7 @@ namespace Em.Ui.Wpf.Dialogs
       private CtnImageInfo? _image;
       private CtnDeployTargetInfo? _target;
 
+      /// <summary>Creates a new instance of <see cref="CtnDeployRunDialogVm"/>.</summary>
       public CtnDeployRunDialogVm() {
          RegisterCommand(nameof(DeployCommand), DeployCommand, () => IsNotBusy && SelectedManifest is not null);
       }
@@ -49,29 +51,39 @@ namespace Em.Ui.Wpf.Dialogs
 
       private ICtnServices Api => _service ?? throw new InvalidOperationException("The dialog is not initialized.");
 
+      /// <summary>The title.</summary>
       public string Title => _image is null ? "Deploy" : $"Deploy {_image.FullName}";
 
+      /// <summary>The target caption.</summary>
       public string TargetCaption => _target is not { } t
          ? ""
          : $"To {(t.Kind == CtnDeployKind.Ssh ? $"{t.User}@{t.Host}" : t.Host)} · " +
            (t.Mode == CtnDeployMode.Stack ? $"{t.Stack} / {t.Service}" : $"container {t.Container}") +
            ". The tag filter is ignored here.";
 
+      /// <summary>The manifests.</summary>
       public CtnDeployManifestItem[] Manifests { get => Get<CtnDeployManifestItem[]>() ?? []; private set => Set(value); }
 
+      /// <summary>Indicates there is no manifests.</summary>
       public bool HasNoManifests => Manifests.Length == 0;
 
+      /// <summary>The selected manifest.</summary>
       public CtnDeployManifestItem? SelectedManifest {
          get => Get<CtnDeployManifestItem?>();
          set => Set(value, _ => RaiseCommandsChanged());
       }
 
+      /// <summary>The output text.</summary>
       public string OutputText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasOutput))); }
+      /// <summary>Indicates there is output.</summary>
       public bool HasOutput => OutputText.Length > 0;
 
+      /// <summary>The result text.</summary>
       public string ResultText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasResult))); }
+      /// <summary>Indicates there is result.</summary>
       public bool HasResult => ResultText.Length > 0;
 
+      /// <summary>Indicates failed.</summary>
       public bool Failed { get => Get<bool>(); private set => Set(value); }
 
       /// <summary><c>true</c> after a deploy ran, whatever its result.</summary>
@@ -129,10 +141,15 @@ namespace Em.Ui.Wpf.Dialogs
    /// <summary>One manifest to pick in the deploy dialog.</summary>
    public class CtnDeployManifestItem(CtnManifestInfo info)
    {
+      /// <summary>The info.</summary>
       public CtnManifestInfo Info { get; } = info;
+      /// <summary>The short digest.</summary>
       public string ShortDigest => CtnInput.ShortDigest(Info.Digest);
+      /// <summary>The tags caption.</summary>
       public string TagsCaption => Info.Tags.Length == 0 ? "untagged" : string.Join(", ", Info.Tags);
+      /// <summary>The caption.</summary>
       public string Caption => Info.Tags.FirstOrDefault() ?? ShortDigest;
+      /// <summary>The pushed caption.</summary>
       public string PushedCaption => "pushed " + ContainerManagerVm.LocalTime(Info.PushedAt);
    }
 }

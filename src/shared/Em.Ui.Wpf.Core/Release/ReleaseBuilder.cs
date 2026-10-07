@@ -6,19 +6,19 @@ using System.Xml.Linq;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Tahap Prepare Release Manager: memeriksa .NET SDK, membaca daftar project host dari <c>.slnx</c>,
-   /// mengosongkan local publish folder dengan aman, lalu menjalankan <c>dotnet publish</c>
-   /// self-contained <c>win-x64</c> dengan argumen yang membuat hasilnya deterministik.
+   /// The Prepare stage of Release Manager: checks the .NET SDK, reads the list of host projects from the
+   /// <c>.slnx</c>, safely empties the local publish folder, then runs a self-contained <c>win-x64</c>
+   /// <c>dotnet publish</c> with arguments that make the result deterministic.
    /// </summary>
    public static class ReleaseBuilder
    {
-      /// <summary>Runtime identifier hasil publish.</summary>
+      /// <summary>The runtime identifier of the publish result.</summary>
       public const string RuntimeIdentifier = "win-x64";
 
       /// <summary>
-      /// Argumen tambahan yang membuat build yang sama menghasilkan byte yang sama: tanpa hash commit di
-      /// versi informasional, path sumber yang dinormalkan, compile deterministik, dan tanpa single-file.
-      /// Hanya dipakai Prepare; build harian tidak berubah.
+      /// Extra arguments that make the same build produce the same bytes: no commit hash in the
+      /// informational version, normalized source paths, deterministic compilation, and no single-file.
+      /// Only used by Prepare; daily builds are unchanged.
       /// </summary>
       public static readonly IReadOnlyList<string> DeterminismArguments = [
          "-p:IncludeSourceRevisionInInformationalVersion=false",
@@ -28,8 +28,8 @@ namespace Em.Ui.Wpf.Core.Release
       ];
 
       /// <summary>
-      /// Versi .NET SDK 10.x pertama yang terpasang menurut <c>dotnet --list-sdks</c>, atau <c>null</c> kalau
-      /// tidak ada (atau <c>dotnet</c> sendiri tidak ditemukan).
+      /// The first installed .NET SDK 10.x version according to <c>dotnet --list-sdks</c>, or <c>null</c> when
+      /// there is none (or <c>dotnet</c> itself is not found).
       /// </summary>
       public static async Task<string?> FindSdkAsync(CancellationToken token) {
          try {
@@ -54,8 +54,8 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Project di <c>.slnx</c> yang menghasilkan aplikasi (<c>OutputType</c> <c>WinExe</c> atau <c>Exe</c>),
-      /// path-nya seperti tertulis di <c>.slnx</c> (relatif terhadap foldernya).
+      /// The projects in the <c>.slnx</c> that produce an application (<c>OutputType</c> <c>WinExe</c> or
+      /// <c>Exe</c>), with their paths as written in the <c>.slnx</c> (relative to its folder).
       /// </summary>
       public static IReadOnlyList<string> ReadHostProjects(string solutionPath) {
          var folder = Path.GetDirectoryName(Path.GetFullPath(solutionPath))!;
@@ -83,8 +83,9 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <summary>
-      /// Alasan <paramref name="publishFolder"/> tidak boleh dikosongkan, atau <c>null</c> kalau aman:
-      /// akar drive, folder <c>.slnx</c> atau folder di atasnya, dan folder profil user itu sendiri ditolak.
+      /// The reason <paramref name="publishFolder"/> must not be emptied, or <c>null</c> when it is safe:
+      /// a drive root, the <c>.slnx</c> folder or a folder above it, and the user's profile folder itself
+      /// are refused.
       /// </summary>
       public static string? CheckPublishFolder(string publishFolder, string solutionPath) {
          var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(publishFolder));
@@ -104,7 +105,7 @@ namespace Em.Ui.Wpf.Core.Release
          return null;
       }
 
-      /// <summary>Jumlah file dan folder di dalam <paramref name="folder"/>, sampai yang terdalam.</summary>
+      /// <summary>The number of files and folders inside <paramref name="folder"/>, down to the deepest.</summary>
       public static int CountItems(string folder) =>
          Directory.Exists(folder)
             ? Directory.EnumerateFileSystemEntries(folder, "*", new EnumerationOptions {
@@ -112,7 +113,7 @@ namespace Em.Ui.Wpf.Core.Release
             }).Count()
             : 0;
 
-      /// <summary>Menghapus seluruh isi <paramref name="folder"/> tanpa menghapus folder itu sendiri.</summary>
+      /// <summary>Deletes all content of <paramref name="folder"/> without deleting the folder itself.</summary>
       public static Task ClearFolderAsync(string folder, CancellationToken token) =>
          Task.Run(() => {
             var root = new DirectoryInfo(folder);
@@ -135,8 +136,8 @@ namespace Em.Ui.Wpf.Core.Release
          }, token);
 
       /// <summary>
-      /// Argumen lengkap <c>dotnet publish</c> milik Prepare untuk project <paramref name="projectPath"/>
-      /// ke <paramref name="publishFolder"/>.
+      /// The complete <c>dotnet publish</c> arguments of Prepare for project <paramref name="projectPath"/>
+      /// into <paramref name="publishFolder"/>.
       /// </summary>
       public static IReadOnlyList<string> BuildPublishArguments(string projectPath, string publishFolder) => [
          "publish", projectPath,
@@ -148,11 +149,11 @@ namespace Em.Ui.Wpf.Core.Release
       ];
 
       /// <summary>
-      /// Menjalankan <c>dotnet publish</c> project host ke <paramref name="publishFolder"/>, dengan folder
-      /// <c>.slnx</c> sebagai working directory. Setiap baris output diteruskan ke <paramref name="log"/>.
-      /// Membatalkan <paramref name="token"/> membunuh seluruh pohon proses.
+      /// Runs <c>dotnet publish</c> of the host project into <paramref name="publishFolder"/>, with the
+      /// <c>.slnx</c> folder as the working directory. Every output line is passed on to
+      /// <paramref name="log"/>. Cancelling <paramref name="token"/> kills the whole process tree.
       /// </summary>
-      /// <returns>Exit code <c>dotnet publish</c>; <c>0</c> berarti berhasil.</returns>
+      /// <returns>The <c>dotnet publish</c> exit code; <c>0</c> means success.</returns>
       public static async Task<int> PublishAsync(string solutionPath, string hostProject, string publishFolder,
          IProgress<string> log, CancellationToken token) {
          var solutionFolder = Path.GetDirectoryName(Path.GetFullPath(solutionPath))!;

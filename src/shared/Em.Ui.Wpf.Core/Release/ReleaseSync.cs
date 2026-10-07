@@ -5,32 +5,32 @@ using System.Security.Cryptography;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Dilempar Sync saat keadaan yang dibandingkan sudah tidak berlaku lagi: <c>release.json</c> di tujuan
-   /// berubah (ada yang Sync lebih dulu), atau local publish folder berubah. Jalan keluarnya selalu sama:
-   /// bandingkan ulang.
+   /// Thrown by Sync when the state that was compared is no longer valid: the target's <c>release.json</c>
+   /// changed (someone else synced first), or the local publish folder changed. The way out is always the
+   /// same: compare again.
    /// </summary>
    public sealed class ReleaseConflictException(string message) : Exception(message);
 
    /// <summary>
-   /// Menerbitkan local publish folder ke tujuan, satu arah dan tanpa lock, dengan urutan yang tercantum
-   /// di <c>doc/release-format.md</c> bagian 7: folder, unggah file baru/berubah, <c>release.json.sig</c>,
-   /// <c>release.json</c>, lalu hapus yang tidak tercantum.
+   /// Publishes the local publish folder to the target, one way and without a lock, in the order listed in
+   /// <c>doc/release-format.md</c> section 7: folders, upload new/changed files, <c>release.json.sig</c>,
+   /// <c>release.json</c>, then delete what is not listed.
    /// </summary>
    public static class ReleaseSync
    {
       /// <summary>
-      /// Menjalankan Sync di atas hasil perbandingan <paramref name="comparison"/>.
+      /// Runs Sync on top of the comparison result <paramref name="comparison"/>.
       /// </summary>
-      /// <param name="target">Tujuan yang sama dengan yang dipakai saat membandingkan.</param>
-      /// <param name="comparison">Hasil Compare terakhir.</param>
-      /// <param name="signingKey">Private key ECDSA P-256 untuk menandatangani <c>release.json</c>.</param>
-      /// <param name="progress">Menerima kemajuan; boleh <c>null</c>.</param>
+      /// <param name="target">The same target as the one used when comparing.</param>
+      /// <param name="comparison">The last Compare result.</param>
+      /// <param name="signingKey">The ECDSA P-256 private key used to sign <c>release.json</c>.</param>
+      /// <param name="progress">Receives progress; may be <c>null</c>.</param>
       /// <param name="token">
-      /// Membatalkan Sync. Yang dibatalkan sebelum <c>release.json.sig</c> ditulis tidak menulis
-      /// <c>release.json</c> baru; Sync yang sama tinggal diulang.
+      /// Cancels Sync. One that is cancelled before <c>release.json.sig</c> is written does not write a new
+      /// <c>release.json</c>; the same Sync can simply be repeated.
       /// </param>
-      /// <returns>Manifest yang sudah diterbitkan.</returns>
-      /// <exception cref="ReleaseConflictException">Tujuan atau local publish folder berubah sejak dibandingkan.</exception>
+      /// <returns>The manifest that was published.</returns>
+      /// <exception cref="ReleaseConflictException">The target or the local publish folder changed since the comparison.</exception>
       public static async Task<ReleaseManifest> SyncAsync(ReleaseTarget target, ReleaseComparison comparison,
          ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token) {
          var local = comparison.Local;
@@ -130,7 +130,7 @@ namespace Em.Ui.Wpf.Core.Release
          return manifest;
       }
 
-      /// <summary><c>true</c> kalau kedua isi file sama persis, termasuk sama-sama tidak ada.</summary>
+      /// <summary><c>true</c> when both file contents are exactly the same, including both being absent.</summary>
       public static bool SameBytes(byte[]? left, byte[]? right) =>
          left is null ? right is null : right is not null && left.AsSpan().SequenceEqual(right);
 

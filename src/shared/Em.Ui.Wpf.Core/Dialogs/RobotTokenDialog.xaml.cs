@@ -5,19 +5,22 @@ using Clipboard = System.Windows.Clipboard;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog yang menampilkan token sebuah robot, sekali. Token hanya ada di jawaban pembuatan robot
-   /// atau pembuatan ulang token, dan tidak bisa dibaca lagi dari server; dialog ini satu-satunya
-   /// tempatnya tampil. Token tidak ditulis ke log dan dihapus dari ViewModel begitu dialog ditutup.
+   /// A dialog that shows a robot's token, once. The token only exists in the answer to creating the robot
+   /// or recreating its token, and cannot be read from the server again; this dialog is the only place it
+   /// appears. The token is not written to a log and is removed from the view model as soon as the dialog
+   /// is closed.
    /// </summary>
    public partial class RobotTokenDialog : EmWindow
    {
-      /// <summary>Membuat dialog.</summary>
-      /// <param name="robotName">Nama robot, username <c>docker login</c>.</param>
-      /// <param name="token">Token yang ditampilkan.</param>
-      /// <param name="registryHost"><c>host[:port]</c> registry untuk perintah <c>docker login</c>.</param>
+      /// <summary>Creates the dialog.</summary>
+      /// <param name="robotName">The robot's name, the <c>docker login</c> user name.</param>
+      /// <param name="token">The token that is shown.</param>
+      /// <param name="registryHost">The registry <c>host[:port]</c> for the <c>docker login</c> command.</param>
       /// <param name="insecureHost">
-      /// <c>true</c> kalau alamat server memakai HTTP polos bukan ke localhost, yang ditolak Docker.
+      /// <c>true</c> when the server address uses plain HTTP to something other than localhost, which Docker
+      /// refuses.
       /// </param>
+      /// <param name="showContainerLogin"><c>true</c> when the <c>docker login</c> command is shown.</param>
       public RobotTokenDialog(string robotName, string token, string registryHost, bool insecureHost, bool showContainerLogin) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -26,30 +29,30 @@ namespace Em.Ui.Wpf.Dialogs
          Closed += (_, _) => Vm.Wipe();
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public RobotTokenDialogVm Vm => (RobotTokenDialogVm)DataContext;
    }
 
-   /// <summary>ViewModel untuk <see cref="RobotTokenDialog"/>.</summary>
+   /// <summary>View model for <see cref="RobotTokenDialog"/>.</summary>
    public class RobotTokenDialogVm : MvvmModelBase
    {
-      /// <summary>Membuat ViewModel dan mendaftarkan command-nya.</summary>
+      /// <summary>Creates the view model and registers its commands.</summary>
       public RobotTokenDialogVm() {
          RegisterCommand(nameof(CopyTokenCommand), CopyTokenCommand, CopyTokenCommandAllowed);
          RegisterCommand(nameof(CopyLoginCommand), CopyLoginCommand, CopyTokenCommandAllowed);
          RegisterCommand(nameof(CloseCommand), CloseCommand);
       }
 
-      /// <summary>Dipicu saat dialog hendak ditutup.</summary>
+      /// <summary>Raised when the dialog is about to close.</summary>
       public event Action? RequestClose;
 
-      /// <summary>Nama robot.</summary>
+      /// <summary>The robot's name.</summary>
       public string RobotName {
          get => Get<string>() ?? "";
          private set => Set(value);
       }
 
-      /// <summary>Token; kosong sesudah <see cref="Wipe"/>.</summary>
+      /// <summary>The token; empty after <see cref="Wipe"/>.</summary>
       public string Token {
          get => Get<string>() ?? "";
          private set => Set(value);
@@ -61,18 +64,19 @@ namespace Em.Ui.Wpf.Dialogs
          private set => Set(value);
       }
 
-      /// <summary><c>true</c> kalau Docker akan menolak <c>docker login</c> ke alamat ini.</summary>
+      /// <summary><c>true</c> when Docker will refuse <c>docker login</c> to this address.</summary>
       public bool IsInsecureHost {
          get => Get<bool>();
          private set => Set(value);
       }
 
       /// <summary>
-      /// Perintah <c>docker login</c> untuk ditampilkan: tokennya diganti penanda supaya tidak tampil dua
-      /// kali; yang disalin oleh <see cref="CopyLoginCommand"/> memuat token sebenarnya.
+      /// The <c>docker login</c> command to display: the token is replaced by a placeholder so it does not
+      /// appear twice; what <see cref="CopyLoginCommand"/> copies holds the real token.
       /// </summary>
       public bool ShowContainerLogin { get; private set; }
 
+      /// <summary>The login preview.</summary>
       public string LoginPreview => $"docker login {HostOrPlaceholder} -u {RobotName} -p <token>";
 
       internal void Initialize(string robotName, string token, string registryHost, bool insecureHost, bool showContainerLogin) {
@@ -85,7 +89,7 @@ namespace Em.Ui.Wpf.Dialogs
          RaiseCopyCommandsChanged();
       }
 
-      /// <summary>Menghapus token dari ViewModel; dipanggil saat dialog ditutup.</summary>
+      /// <summary>Removes the token from the view model; called when the dialog is closed.</summary>
       public void Wipe() {
          Token = "";
          RaiseCopyCommandsChanged();
@@ -96,13 +100,13 @@ namespace Em.Ui.Wpf.Dialogs
       /// <summary>Menyalin token ke clipboard.</summary>
       public void CopyTokenCommand() => CopyToClipboard(Token);
 
-      /// <summary>Menyalin <c>docker login</c> lengkap dengan token ke clipboard.</summary>
+      /// <summary>Copies the complete <c>docker login</c> with the token to the clipboard.</summary>
       public void CopyLoginCommand() => CopyToClipboard(CtnInput.DockerLogin(HostOrPlaceholder, RobotName, Token));
 
-      /// <summary>Hanya selama token masih ada.</summary>
+      /// <summary>Only while the token is still there.</summary>
       public bool CopyTokenCommandAllowed() => Token.Length > 0;
 
-      /// <summary>Menutup dialog.</summary>
+      /// <summary>Closes the dialog.</summary>
       public void CloseCommand() => RequestClose?.Invoke();
 
       private void RaiseCopyCommandsChanged() {

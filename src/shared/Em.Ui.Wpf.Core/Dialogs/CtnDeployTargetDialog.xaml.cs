@@ -18,6 +18,7 @@ namespace Em.Ui.Wpf.Dialogs
    /// </summary>
    public partial class CtnDeployTargetDialog : EmWindow
    {
+      /// <summary>Creates a new instance of <see cref="CtnDeployTargetDialog"/>.</summary>
       public CtnDeployTargetDialog(ICtnServices service, CtnImageInfo image, CtnDeployTargetInfo? target, string registryHost) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -54,6 +55,7 @@ namespace Em.Ui.Wpf.Dialogs
       [GeneratedRegex(@"^\s*(\d+)\s*(?:·\s*(.*))?$")]
       private static partial Regex IdAndName();
 
+      /// <summary>Creates a new instance of <see cref="CtnDeployTargetDialogVm"/>.</summary>
       public CtnDeployTargetDialogVm() {
          RegisterCommand(nameof(TestCommand), TestCommand, () => IsNotBusy);
          RegisterCommand(nameof(SaveCommand), SaveCommand, () => IsNotBusy);
@@ -103,50 +105,73 @@ namespace Em.Ui.Wpf.Dialogs
 
       #region Fields
 
+      /// <summary>The title.</summary>
       public string Title => _image is null ? "Deploy" : $"Deploy {_image.FullName}";
 
+      /// <summary>The kinds.</summary>
       public CtnDeployChoice<CtnDeployKind>[] Kinds { get; } = [new(CtnDeployKind.Ssh, "SSH"), new(CtnDeployKind.Portainer, "Portainer")];
 
+      /// <summary>The modes.</summary>
       public CtnDeployChoice<CtnDeployMode>[] Modes { get; } = [
          new(CtnDeployMode.Stack, "Stack (compose service)"), new(CtnDeployMode.Container, "Container (standalone)")
       ];
 
+      /// <summary>The ssh auths.</summary>
       public CtnDeployChoice<CtnDeployAuth>[] SshAuths { get; } = [new(CtnDeployAuth.SshKey, "Private key"), new(CtnDeployAuth.SshPassword, "Password")];
 
       // The combo boxes bind to these; the enum properties stay the source of truth.
+      /// <summary>The kind choice.</summary>
       public CtnDeployChoice<CtnDeployKind> KindChoice { get => Kinds.First(k => k.Value == Kind); set => Kind = value.Value; }
+      /// <summary>The mode choice.</summary>
       public CtnDeployChoice<CtnDeployMode> ModeChoice { get => Modes.First(m => m.Value == Mode); set => Mode = value.Value; }
+      /// <summary>The ssh auth choice.</summary>
       public CtnDeployChoice<CtnDeployAuth> SshAuthChoice { get => SshAuths.First(a => a.Value == SshAuth); set => SshAuth = value.Value; }
 
+      /// <summary>Indicates active.</summary>
       public bool IsActive { get => Get<bool>(); set => Set(value); }
 
+      /// <summary>The kind.</summary>
       public CtnDeployKind Kind {
          get => Get(CtnDeployKind.Ssh);
          set => Set(value, _ => NotifyAll());
       }
 
+      /// <summary>The mode.</summary>
       public CtnDeployMode Mode {
          get => Get(CtnDeployMode.Stack);
          set => Set(value, _ => NotifyAll());
       }
 
+      /// <summary>The ssh auth.</summary>
       public CtnDeployAuth SshAuth {
          get => Get(CtnDeployAuth.SshKey);
          set => Set(value, _ => NotifyAll());
       }
 
+      /// <summary>Indicates ssh.</summary>
       public bool IsSsh => Kind == CtnDeployKind.Ssh;
+      /// <summary>Indicates portainer.</summary>
       public bool IsPortainer => Kind == CtnDeployKind.Portainer;
+      /// <summary>Indicates stack.</summary>
       public bool IsStack => Mode == CtnDeployMode.Stack;
+      /// <summary>Indicates container.</summary>
       public bool IsContainer => Mode == CtnDeployMode.Container;
+      /// <summary>Indicates key auth.</summary>
       public bool IsKeyAuth => IsSsh && SshAuth == CtnDeployAuth.SshKey;
+      /// <summary>Indicates password auth.</summary>
       public bool IsPasswordAuth => IsSsh && SshAuth == CtnDeployAuth.SshPassword;
+      /// <summary>Indicates ssh stack.</summary>
       public bool IsSshStack => IsSsh && IsStack;
+      /// <summary>Indicates portainer stack.</summary>
       public bool IsPortainerStack => IsPortainer && IsStack;
+      /// <summary>Indicates the endpoint is shown.</summary>
       public bool ShowEndpoint => IsPortainer;
 
+      /// <summary>The host.</summary>
       public string Host { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The port text.</summary>
       public string PortText { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The user.</summary>
       public string User { get => Get<string>() ?? ""; set => Set(value); }
 
       /// <summary>Private key pasted or loaded from a file; empty keeps the saved one.</summary>
@@ -161,41 +186,68 @@ namespace Em.Ui.Wpf.Dialogs
          });
       }
 
+      /// <summary>The fingerprint caption.</summary>
       public string FingerprintCaption => Fingerprint.Length > 0 ? Fingerprint : "Not pinned - Test connection asks you to accept the server's fingerprint.";
 
+      /// <summary>The endpoint text.</summary>
       public string EndpointText { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The ssh folder.</summary>
       public string SshFolder { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The stack text.</summary>
       public string StackText { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The service.</summary>
       public string Service { get => Get<string>() ?? ""; set => Set(value, _ => NotifyChanged(nameof(VariableHint))); }
+      /// <summary>The container.</summary>
       public string Container { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The image variable.</summary>
       public string ImageVariable { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The tag filter.</summary>
       public string TagFilter { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The registry host.</summary>
       public string RegistryHost { get => Get<string>() ?? ""; set => Set(value); }
+      /// <summary>The registry user.</summary>
       public string RegistryUser { get => Get<string>() ?? ""; set => Set(value); }
 
+      /// <summary>The variable hint.</summary>
       public string VariableHint => "Default: " + DefaultVariable(Service.Length > 0 ? Service : "service");
 
+      /// <summary>The key hint.</summary>
       public string KeyHint => _stored is { HasSecret: true, Auth: CtnDeployAuth.SshKey } ? SavedHint : "Paste the private key (OpenSSH or PEM), or load it from a file.";
+      /// <summary>Indicates there is saved password.</summary>
       public bool HasSavedPassword => _stored is { HasSecret: true, Auth: CtnDeployAuth.SshPassword };
+      /// <summary>Indicates there is saved passphrase.</summary>
       public bool HasSavedPassphrase => _stored is { HasPassphrase: true };
+      /// <summary>Indicates there is saved token.</summary>
       public bool HasSavedToken => _stored is { HasSecret: true, Auth: CtnDeployAuth.PortainerToken };
+      /// <summary>Indicates there is saved registry password.</summary>
       public bool HasSavedRegistryPassword => _stored is { HasRegistrySecret: true };
+      /// <summary>The saved caption.</summary>
       public string SavedCaption => SavedHint;
 
       // Choices filled by Test connection; picking one writes the text field next to it.
+      /// <summary>The endpoint choices.</summary>
       public string[] EndpointChoices { get => Get<string[]>() ?? []; private set => Set(value); }
+      /// <summary>The stack choices.</summary>
       public string[] StackChoices { get => Get<string[]>() ?? []; private set => Set(value); }
+      /// <summary>The service choices.</summary>
       public string[] ServiceChoices { get => Get<string[]>() ?? []; private set => Set(value); }
+      /// <summary>The container choices.</summary>
       public string[] ContainerChoices { get => Get<string[]>() ?? []; private set => Set(value); }
 
+      /// <summary>The test text.</summary>
       public string TestText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasTestText))); }
+      /// <summary>Indicates there is test text.</summary>
       public bool HasTestText => TestText.Length > 0;
 
+      /// <summary>Indicates test failed.</summary>
       public bool TestFailed { get => Get<bool>(); private set => Set(value); }
 
+      /// <summary>Indicates the register portainer is shown.</summary>
       public bool ShowRegisterPortainer { get => Get<bool>(); private set => Set(value); }
 
+      /// <summary>The error text.</summary>
       public string ErrorText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasError))); }
+      /// <summary>Indicates there is error.</summary>
       public bool HasError => ErrorText.Length > 0;
 
       internal void SetPassword(string value) => _password = value;
@@ -427,8 +479,11 @@ namespace Em.Ui.Wpf.Dialogs
    /// <summary>An option of a combo box: the value and the text shown for it.</summary>
    public sealed class CtnDeployChoice<T>(T value, string name)
    {
+      /// <summary>The value.</summary>
       public T Value { get; } = value;
+      /// <summary>The name.</summary>
       public string Name { get; } = name;
+      /// <inheritdoc />
       public override string ToString() => Name;
    }
 }

@@ -2,67 +2,67 @@ using System.Diagnostics;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Jenis masalah yang ditemukan Verify pada satu file.</summary>
+   /// <summary>The kind of problem that Verify found in one file.</summary>
    public enum ReleaseVerifyIssueKind
    {
-      /// <summary>Tercantum di <c>release.json</c>, tetapi tidak ada di tujuan.</summary>
+      /// <summary>Listed in <c>release.json</c>, but not present at the target.</summary>
       Missing = 0,
 
-      /// <summary>Ukurannya berbeda dari yang tercantum.</summary>
+      /// <summary>Its size is different from what is listed.</summary>
       SizeMismatch = 1,
 
-      /// <summary>Ukurannya sama, tetapi SHA-256-nya berbeda.</summary>
+      /// <summary>Its size is the same, but its SHA-256 is different.</summary>
       HashMismatch = 2,
 
-      /// <summary>Ada di <c>binaries/</c> tujuan, tetapi tidak tercantum di <c>release.json</c>.</summary>
+      /// <summary>Present in the target's <c>binaries/</c>, but not listed in <c>release.json</c>.</summary>
       Extra = 3
    }
 
-   /// <summary>Satu masalah yang ditemukan Verify.</summary>
-   /// <param name="Path">Path relatif terhadap <c>binaries/</c>.</param>
-   /// <param name="Kind">Jenis masalahnya.</param>
-   /// <param name="Detail">Keterangan singkat, mis. ukuran yang diharapkan dan yang ditemukan.</param>
+   /// <summary>One problem found by Verify.</summary>
+   /// <param name="Path">Path relative to <c>binaries/</c>.</param>
+   /// <param name="Kind">The kind of the problem.</param>
+   /// <param name="Detail">A short note, e.g. the expected size and the size found.</param>
    public sealed record ReleaseVerifyIssue(string Path, ReleaseVerifyIssueKind Kind, string Detail);
 
-   /// <summary>Hasil Verify atas satu folder rilis.</summary>
+   /// <summary>The result of Verify on one release folder.</summary>
    public sealed class ReleaseVerifyResult
    {
-      /// <summary><c>true</c> kalau <c>release.json</c> ada di tujuan.</summary>
+      /// <summary><c>true</c> when <c>release.json</c> exists at the target.</summary>
       public bool ManifestFound { get; init; }
 
-      /// <summary><c>true</c> kalau <c>release.json.sig</c> ada di tujuan.</summary>
+      /// <summary><c>true</c> when <c>release.json.sig</c> exists at the target.</summary>
       public bool SignatureFound { get; init; }
 
       /// <summary>
-      /// Hasil pemeriksaan tanda tangan; <c>null</c> kalau tidak diperiksa (tidak ada public key untuk
-      /// memeriksanya, atau salah satu file tidak ada).
+      /// The result of the signature check; <c>null</c> when it was not checked (there is no public key to
+      /// check it with, or one of the files is missing).
       /// </summary>
       public ReleaseSignatureStatus? SignatureStatus { get; init; }
 
-      /// <summary>Kenapa <c>release.json</c> atau <c>.sig</c> tidak sah, atau <c>null</c>.</summary>
+      /// <summary>Why <c>release.json</c> or the <c>.sig</c> is not valid, or <c>null</c>.</summary>
       public string? FormatError { get; init; }
 
-      /// <summary>Waktu terbit menurut <c>release.json</c>, kalau terbaca.</summary>
+      /// <summary>The issue time according to <c>release.json</c>, when it can be read.</summary>
       public DateTime? PublishedAtUtc { get; init; }
 
-      /// <summary>Jumlah file yang tercantum di <c>release.json</c>.</summary>
+      /// <summary>The number of files listed in <c>release.json</c>.</summary>
       public int FileCount { get; init; }
 
-      /// <summary>Total ukuran file yang tercantum.</summary>
+      /// <summary>The total size of the listed files.</summary>
       public long TotalSize { get; init; }
 
-      /// <summary>Masalah per file, urut path.</summary>
+      /// <summary>Problems per file, ordered by path.</summary>
       public IReadOnlyList<ReleaseVerifyIssue> Issues { get; init; } = [];
 
       /// <summary>
-      /// <c>true</c> hanya kalau semuanya lolos: kedua file ada, tanda tangan sah, format sah, dan setiap
-      /// file cocok tanpa file tambahan. Tanda tangan yang tidak diperiksa dihitung gagal.
+      /// <c>true</c> only when everything passes: both files exist, the signature is valid, the format is
+      /// valid, and every file matches with no extra files. A signature that was not checked counts as failed.
       /// </summary>
       public bool IsSuccess =>
          ManifestFound && SignatureFound && SignatureStatus == ReleaseSignatureStatus.Valid && FormatError is null &&
          Issues.Count == 0;
 
-      /// <summary>Ringkasan satu baris untuk ditampilkan.</summary>
+      /// <summary>A one-line summary for display.</summary>
       public string Summary {
          get {
             if (!ManifestFound) return "No release.json at the target.";
@@ -81,22 +81,21 @@ namespace Em.Ui.Wpf.Core.Release
    }
 
    /// <summary>
-   /// Memeriksa satu folder rilis di tujuan seperti launcher akan memeriksanya: tanda tangan
-   /// <c>release.json</c>, lalu ukuran dan SHA-256 setiap file yang tercantum, dan file yang tidak
-   /// tercantum.
+   /// Checks one release folder at the target the way the launcher will check it: the <c>release.json</c>
+   /// signature, then the size and SHA-256 of every listed file, and the files that are not listed.
    /// </summary>
    public static class ReleaseVerifier
    {
       /// <summary>
-      /// Menjalankan Verify. File di CDN diunduh dan di-hash sambil mengalir, tanpa disimpan.
+      /// Runs Verify. Files on the CDN are downloaded and hashed while streaming, without being stored.
       /// </summary>
-      /// <param name="target">Tujuan yang diperiksa.</param>
+      /// <param name="target">The target being checked.</param>
       /// <param name="trustedPublicKeys">
-      /// DER SubjectPublicKeyInfo public key yang dipercaya. Kosong berarti tanda tangan tidak bisa
-      /// diperiksa, dan hasilnya gagal.
+      /// DER SubjectPublicKeyInfo of the public keys that are trusted. Empty means the signature cannot be
+      /// checked, and the result fails.
       /// </param>
-      /// <param name="progress">Menerima kemajuan; boleh <c>null</c>.</param>
-      /// <param name="token">Menghentikan Verify di tengah jalan.</param>
+      /// <param name="progress">Receives progress; may be <c>null</c>.</param>
+      /// <param name="token">Stops Verify midway.</param>
       public static async Task<ReleaseVerifyResult> VerifyAsync(ReleaseTarget target,
          IReadOnlyList<ReadOnlyMemory<byte>> trustedPublicKeys, IProgress<ReleaseProgress>? progress,
          CancellationToken token) {

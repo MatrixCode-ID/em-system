@@ -8,16 +8,16 @@ using Em.Ui.Wpf.Core;
 namespace Em.Ui.Wpf.Windows
 {
    /// <summary>
-   /// Mengingat posisi, ukuran, status maximize, dan monitor window utama antar sesi. Posisinya diambil
-   /// dengan <c>GetWindowPlacement</c> saat window ditutup, disimpan sebagai satu nilai biner di
-   /// <c>HKCU\{ApplicationName}</c> (jadi per user Windows), lalu dipulihkan dengan
-   /// <c>SetWindowPlacement</c> sebelum window tampil.
+   /// Remembers the position, size, maximize state, and monitor of the main window between sessions. Its
+   /// placement is taken with <c>GetWindowPlacement</c> when the window is closed, stored as a single
+   /// binary value in <c>HKCU\{ApplicationName}</c> (so per Windows user), then restored with
+   /// <c>SetWindowPlacement</c> before the window is shown.
    /// </summary>
    /// <remarks>
-   /// Yang dipakai Windows sendiri, bukan koordinat hitungan WPF: pada multimonitor, DPI berbeda antar
-   /// monitor, atau monitor yang sudah dicabut, <c>SetWindowPlacement</c> menggeser window ke layar yang
-   /// masih ada. Hanya window utama yang diingat; window hasil tab yang ditarik keluar dan window detach
-   /// sengaja tidak.
+   /// What is used is Windows' own, not coordinates computed by WPF: with multiple monitors, differing DPI
+   /// between monitors, or a monitor that has been unplugged, <c>SetWindowPlacement</c> moves the window to
+   /// a screen that still exists. Only the main window is remembered; windows born from a dragged-out tab
+   /// and detached windows are deliberately not.
    /// </remarks>
    internal static class WindowPlacementStore
    {
@@ -49,8 +49,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Membaca posisi yang tersimpan, atau <c>null</c> kalau belum ada atau isinya tidak masuk akal.
-      /// Window yang tertutup dalam keadaan minimize dikembalikan ke keadaan sebelum diminimize.
+      /// Reads the stored placement, or <c>null</c> when there is none or its content makes no sense. A window
+      /// that was closed while minimized is returned to its state before it was minimized.
       /// </summary>
       internal static Placement? Load(EmApp app) {
          // A window position is a convenience: nothing here may stop the application from opening.
@@ -75,8 +75,8 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Memasang <paramref name="placement"/> ke window. Harus dipanggil setelah handle window ada
-      /// (<c>SourceInitialized</c>) dan sebelum window tampil.
+      /// Applies <paramref name="placement"/> to the window. Must be called after the window handle exists
+      /// (<c>SourceInitialized</c>) and before the window is shown.
       /// </summary>
       internal static void Apply(Window window, Placement placement) {
          if (new WindowInteropHelper(window).Handle is var handle && handle == IntPtr.Zero) return;
@@ -84,7 +84,7 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Menyimpan posisi window saat ini. Dipanggil saat window utama benar-benar akan ditutup.
+      /// Stores the current window placement. Called when the main window is really about to be closed.
       /// </summary>
       internal static void Save(Window window, EmApp app) {
          try {

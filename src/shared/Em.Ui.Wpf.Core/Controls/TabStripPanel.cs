@@ -9,18 +9,18 @@ using Size = System.Windows.Size;
 namespace Em.Ui.Wpf.Controls
 {
    /// <summary>
-   /// Panel deretan tab yang menangani tab banyak dengan dua tahap. Selama muat, setiap tab selebar
-   /// isinya. Kalau tidak muat, tab-tab yang paling lebar disusutkan lebih dulu sampai semuanya muat,
-   /// tapi tidak pernah lebih sempit dari <see cref="MinItemWidth"/>. Kalau di lebar minimum pun masih
-   /// tidak muat, deretannya bisa digeser ke kiri/kanan.
+   /// A tab strip panel that handles many tabs in two stages. While they fit, every tab is as wide as its
+   /// content. When they do not fit, the widest tabs are shrunk first until all fit, but never narrower
+   /// than <see cref="MinItemWidth"/>. If they still do not fit at the minimum width, the row can be
+   /// scrolled left/right.
    /// </summary>
    /// <remarks>
-   /// Penggeserannya lewat <see cref="IScrollInfo"/>, jadi panel ini dipakai sebagai <c>ItemsPanel</c>
-   /// di dalam <see cref="ScrollViewer"/> dengan <c>CanContentScroll="True"</c>. ScrollViewer itulah
-   /// yang meneruskan roda mouse, perintah <see cref="ScrollBar.LineLeftCommand"/>/
-   /// <see cref="ScrollBar.LineRightCommand"/> dari tombol panah, dan permintaan
-   /// <c>BringIntoView</c> saat sebuah tab dipilih. Roda mouse ke atas/bawah menggeser deretan ke
-   /// kiri/kanan, karena deretan tab hanya bergerak mendatar.
+   /// Scrolling goes through <see cref="IScrollInfo"/>, so this panel is used as the <c>ItemsPanel</c>
+   /// inside a <see cref="ScrollViewer"/> with <c>CanContentScroll="True"</c>. That ScrollViewer is what
+   /// passes on the mouse wheel, the <see cref="ScrollBar.LineLeftCommand"/>/
+   /// <see cref="ScrollBar.LineRightCommand"/> commands from the arrow buttons, and the
+   /// <c>BringIntoView</c> request when a tab is selected. The mouse wheel up/down moves the row left/right,
+   /// because a tab strip only moves horizontally.
    /// </remarks>
    public class TabStripPanel : Panel, IScrollInfo
    {
@@ -33,8 +33,8 @@ namespace Em.Ui.Wpf.Controls
          new FrameworkPropertyMetadata(100d, FrameworkPropertyMetadataOptions.AffectsMeasure));
 
       /// <summary>
-      /// Lebar terkecil yang boleh dicapai sebuah tab saat disusutkan. Tab yang isinya memang lebih
-      /// sempit dari ini tetap selebar isinya.
+      /// The narrowest width a tab may reach when shrunk. A tab whose content is already narrower than this
+      /// stays as wide as its content.
       /// </summary>
       public double MinItemWidth {
          get => (double)GetValue(MinItemWidthProperty);

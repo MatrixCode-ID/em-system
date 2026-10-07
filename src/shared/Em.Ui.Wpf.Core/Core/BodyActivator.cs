@@ -5,11 +5,13 @@ using UserControl = System.Windows.Controls.UserControl;
 
 namespace Em.Ui.Wpf.Core
 {
+   /// <summary>The default implementation of <see cref="IBodyType"/>, holding the type of a navigation body.</summary>
    public class BodyType : IBodyType
    {
       private BodyType(Type bodyType) {
          Type = bodyType;
       }
+      /// <summary>The type.</summary>
       public Type Type { get; }
 
       internal INavigationBody Create(NavigationEntry entry) {
@@ -29,7 +31,7 @@ namespace Em.Ui.Wpf.Core
 
       #region Statics
 
-      /// Tanpa lambda sama sekali untuk control ber-ctor kosong.
+      /// Without any lambda at all for a control with an empty constructor.
       public static BodyType Of<T>() where T : UserControl, INavigationBody => new(typeof(T));
 
       #endregion

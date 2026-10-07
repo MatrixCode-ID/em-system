@@ -8,7 +8,9 @@ using Microsoft.Win32;
 
 namespace Em.Ui.Wpf.Navigations.Publish;
 
+/// <summary>Dialog for the publisher settings: where its working files and history are kept.</summary>
 public sealed class PublisherSettingsDialog : EmWindow {
+ /// <summary>Creates a new instance of <see cref="PublisherSettingsDialog"/>.</summary>
  public PublisherSettingsDialog(PublisherSettings settings) {
   Title="Publisher settings";Width=900;Height=430;WindowStartupLocation=WindowStartupLocation.CenterOwner;
   Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});

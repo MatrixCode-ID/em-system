@@ -2,10 +2,10 @@ using Em.Ui.Core.Shared;
 
 namespace Em.Ui.Wpf.Navigations
 {
-   /// <summary>Kontrak bersama layar login WPF.</summary>
+   /// <summary>The shared contract of the WPF login screen.</summary>
    public interface ILoginScreen : INavigationBody
    {
-      /// <summary>ViewModel layar login.</summary>
+      /// <summary>The view model of the login screen.</summary>
       LoginControlVm Vm { get; }
    }
 }

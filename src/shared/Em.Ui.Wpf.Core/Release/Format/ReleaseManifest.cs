@@ -1,23 +1,22 @@
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>
-   /// Isi <c>release.json</c>: kapan rilis diterbitkan dan file apa saja yang menjadi bagiannya. Dibaca
-   /// dan ditulis lewat <see cref="ReleaseManifestSerializer"/>; formatnya diatur
-   /// <c>doc/release-format.md</c> bagian 2.
+   /// The content of <c>release.json</c>: when the release was published and which files are part of it.
+   /// Read and written through <see cref="ReleaseManifestSerializer"/>; its format is governed by
+   /// <c>doc/release-format.md</c> section 2.
    /// </summary>
    public sealed class ReleaseManifest
    {
-      /// <summary>Waktu rilis diterbitkan, dalam UTC. Hanya informasi.</summary>
+      /// <summary>The time the release was published, in UTC. Informational only.</summary>
       public required DateTime PublishedAtUtc { get; init; }
 
-      /// <summary>Seluruh file rilis. Path-nya unik tanpa memandang huruf besar/kecil.</summary>
+      /// <summary>All release files. Their paths are unique regardless of case.</summary>
       public required IReadOnlyList<ReleaseFile> Files { get; init; }
 
       /// <summary>
-      /// Mencari file berdasarkan path-nya, tanpa memandang huruf besar/kecil. <c>null</c> kalau tidak
-      /// tercantum.
+      /// Looks up a file by its path, regardless of case. <c>null</c> when it is not listed.
       /// </summary>
-      /// <param name="path">Path relatif terhadap <c>binaries/</c>, dipisah <c>/</c>.</param>
+      /// <param name="path">The path relative to <c>binaries/</c>, separated by <c>/</c>.</param>
       public ReleaseFile? Find(string path) {
          _index ??= Files.ToDictionary(r => r.Path, StringComparer.OrdinalIgnoreCase);
          return _index.GetValueOrDefault(path);

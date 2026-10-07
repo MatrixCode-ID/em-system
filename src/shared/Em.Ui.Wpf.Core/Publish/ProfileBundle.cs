@@ -6,16 +6,17 @@ using System.Text.Json;
 namespace Em.Ui.Wpf.Publish;
 
 /// <summary>
-/// Berkas profil yang dienkripsi dengan passphrase, dipakai untuk memindahkan profil beserta secret-nya ke PC
-/// lain. Secret yang disimpan DPAPI tidak bisa dibawa karena terkunci ke akun Windows asal; bundle ini tidak
-/// bergantung pada akun mana pun, hanya pada passphrase. Isinya JSON profil yang sama dengan export biasa.
+/// A profile file encrypted with a passphrase, used to move a profile together with its secrets to
+/// another PC. A secret stored by DPAPI cannot be carried because it is locked to the original Windows
+/// account; this bundle does not depend on any account, only on the passphrase. Its content is the same
+/// profile JSON as an ordinary export.
 /// </summary>
 public static class ProfileBundle {
  /// <summary>Ekstensi bundle profil Container Manager.</summary>
  public const string ContainerExtension=".ctnconfig";
  /// <summary>Ekstensi bundle profil NuGet Manager.</summary>
  public const string NuGetExtension=".nugetconfig";
- /// <summary>Panjang minimum passphrase.</summary>
+ /// <summary>The minimum length of the passphrase.</summary>
  public const int MinPassphraseLength=8;
 
  private const string Format="em-publish-profile";
@@ -24,16 +25,16 @@ public static class ProfileBundle {
  private const int MaxIterations=5_000_000;
  private static readonly byte[] Aad=Encoding.ASCII.GetBytes(Format+":"+Version);
 
- /// <summary>Ekstensi bundle untuk jenis profil <paramref name="kind"/>.</summary>
+ /// <summary>The bundle extension for profile kind <paramref name="kind"/>.</summary>
  public static string Extension(PublishKind kind)=>kind==PublishKind.Container?ContainerExtension:NuGetExtension;
 
- /// <summary>Apakah <paramref name="file"/> bundle terenkripsi, dilihat dari ekstensinya.</summary>
+ /// <summary>Whether <paramref name="file"/> is an encrypted bundle, judging by its extension.</summary>
  public static bool IsBundleFile(string file) {
   var extension=Path.GetExtension(file);
   return extension.Equals(ContainerExtension,StringComparison.OrdinalIgnoreCase)||extension.Equals(NuGetExtension,StringComparison.OrdinalIgnoreCase);
  }
 
- /// <summary>Mengenkripsi <paramref name="json"/> dengan AES-256-GCM; kuncinya diturunkan dari passphrase (PBKDF2-SHA256).</summary>
+ /// <summary>Encrypts <paramref name="json"/> with AES-256-GCM; its key is derived from the passphrase (PBKDF2-SHA256).</summary>
  public static string Encrypt(string json,string passphrase) {
   if(string.IsNullOrEmpty(passphrase)||passphrase.Length<MinPassphraseLength)throw new InvalidDataException($"Passphrase must be at least {MinPassphraseLength} characters.");
   var salt=RandomNumberGenerator.GetBytes(16);var nonce=RandomNumberGenerator.GetBytes(12);
@@ -44,8 +45,8 @@ public static class ProfileBundle {
   return ProfileJson.Write(new Envelope(Format,Version,"PBKDF2-SHA256",Iterations,Convert.ToBase64String(salt),Convert.ToBase64String(nonce),Convert.ToBase64String(tag),Convert.ToBase64String(cipher)));
  }
 
- /// <summary>Membuka bundle. Passphrase salah dan berkas rusak sengaja memberi pesan yang sama.</summary>
- /// <exception cref="InvalidDataException">Bukan bundle yang dikenali, passphrase salah, atau isinya rusak.</exception>
+ /// <summary>Opens a bundle. A wrong passphrase and a corrupt file deliberately give the same message.</summary>
+ /// <exception cref="InvalidDataException">Not a recognized bundle, the passphrase is wrong, or its content is corrupt.</exception>
  public static string Decrypt(string envelope,string passphrase) {
   Envelope e;
   try { e=JsonSerializer.Deserialize<Envelope>(envelope,ProfileJson.Options)??throw new InvalidDataException("Not an encrypted profile file."); }

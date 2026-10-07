@@ -9,11 +9,11 @@ using Em.Ui.Wpf.Shared;
 namespace Em.Ui.Wpf.Windows
 {
    /// <summary>
-   /// Window tempat sebuah entri navigasi yang di-detach tampil sendiri, mis. supaya dua dokumen bisa
-   /// dibandingkan berdampingan. Isinya satu <see cref="SpaNavigationHost"/> tanpa home, tanpa menu
-   /// aplikasi, dan tanpa tombol akun, dengan <see cref="NavigationStack"/>-nya sendiri; entri yang
-   /// di-detach menjadi akar stack itu. Dibuat oleh <see cref="EmApp.DetachAsync"/>, bukan oleh
-   /// module.
+   /// The window where a detached navigation entry is shown by itself, e.g. so two documents can be
+   /// compared side by side. Its content is one <see cref="SpaNavigationHost"/> without home, without the
+   /// application menu, and without the account button, with its own <see cref="NavigationStack"/>; the
+   /// detached entry becomes the root of that stack. Created by <see cref="EmApp.DetachAsync"/>, not by
+   /// modules.
    /// </summary>
    public partial class DetachedWindow : EmWindow
    {
@@ -38,10 +38,10 @@ namespace Em.Ui.Wpf.Windows
          stack.Changed += StackChanged;
       }
 
-      /// <summary>Stack yang ditampilkan window ini. Tidak punya home.</summary>
+      /// <summary>The stack shown by this window. It has no home.</summary>
       public NavigationStack Stack { get; }
 
-      /// <summary>ViewModel window ini.</summary>
+      /// <summary>The view model of this window.</summary>
       public DetachedWindowVm Vm => (DetachedWindowVm)DataContext;
 
       // A detached window never stands empty: once its last entry has left - typically a root body
@@ -112,13 +112,14 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Menempatkan window ini di samping <paramref name="source"/>, window asal entrinya: ukurannya
-      /// sama dengan ukuran normal window asal (ukuran sebelum di-maximize kalau window asal sedang
-      /// maximized), posisinya digeser sedikit ke kanan-bawah - lebih jauh lagi kalau tempat itu sudah
-      /// ditempati window detach lain - dan tetap di dalam area kerja layar window asal.
+      /// Places this window beside <paramref name="source"/>, the window the entry came from: its size equals
+      /// the normal size of the source window (the size before maximizing when the source window is
+      /// maximized), its position is shifted a little to the lower right - further still if that place is
+      /// already taken by another detached window - and it stays inside the work area of the source window's
+      /// screen.
       /// </summary>
-      /// <param name="source">Window asal entri yang di-detach.</param>
-      /// <param name="others">Window detach yang sudah terbuka, supaya tidak ditumpuk persis.</param>
+      /// <param name="source">The window the detached entry came from.</param>
+      /// <param name="others">The detached windows that are already open, so they are not stacked exactly.</param>
       internal void PlaceBeside(Window source, IEnumerable<Window> others) {
          var bounds = source.WindowState == WindowState.Normal
             ? new Rect(source.Left, source.Top, source.ActualWidth, source.ActualHeight)
@@ -196,15 +197,15 @@ namespace Em.Ui.Wpf.Windows
    }
 
    /// <summary>
-   /// ViewModel <see cref="DetachedWindow"/>: mengikuti stack window itu supaya judul window selalu
-   /// sama dengan judul entri yang sedang tampil - termasuk sesudah entrinya mengganti judul - dan
-   /// dua dokumen yang di-detach mudah dibedakan di taskbar.
+   /// The view model of <see cref="DetachedWindow"/>: it follows that window's stack so the window title is
+   /// always the same as the title of the entry being shown - including after the entry changes its title -
+   /// and two detached documents are easy to tell apart on the taskbar.
    /// </summary>
    public class DetachedWindowVm : MvvmModelBase
    {
       private NavigationEntry? _entry;
 
-      /// <summary>Stack yang ditampilkan window ini.</summary>
+      /// <summary>The stack shown by this window.</summary>
       public NavigationStack? Stack {
          get;
          set {
@@ -216,7 +217,7 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Judul window: judul entri yang sedang tampil, atau nama aplikasi selama belum ada entri.
+      /// The window title: the title of the entry being shown, or the application name while there is no entry.
       /// </summary>
       public string WindowTitle => _entry?.Title ?? EmApp?.ApplicationName ?? string.Empty;
 

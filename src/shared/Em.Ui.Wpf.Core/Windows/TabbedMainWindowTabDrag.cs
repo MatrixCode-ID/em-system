@@ -14,10 +14,10 @@ using Point = System.Windows.Point;
 namespace Em.Ui.Wpf.Windows
 {
    /// <summary>
-   /// Perilaku drag untuk deretan tab <see cref="TabbedMainWindow"/>: tab digeser ke kiri/kanan di
-   /// deretannya sendiri, ditarik ke deretan tab window lain, atau ditarik keluar dan dilepas di tempat
-   /// kosong untuk menjadi window baru. Dipasang di XAML lewat
-   /// <c>local:TabbedMainWindowTabDrag.IsEnabled="True"</c> pada <see cref="ListBox"/> deretan tab.
+   /// Drag behavior for the tab strip of <see cref="TabbedMainWindow"/>: a tab is moved left/right in its
+   /// own strip, dragged onto the tab strip of another window, or dragged out and released on empty space
+   /// to become a new window. Installed in XAML through
+   /// <c>local:TabbedMainWindowTabDrag.IsEnabled="True"</c> on the <see cref="ListBox"/> of the tab strip.
    /// </summary>
    public static class TabbedMainWindowTabDrag
    {
@@ -25,12 +25,12 @@ namespace Em.Ui.Wpf.Windows
       // pulled out of it.
       private const double TearOffDistance = 24;
 
-      /// <summary>Menyalakan perilaku drag tab pada sebuah deretan tab.</summary>
+      /// <summary>Turns on the tab drag behavior on a tab strip.</summary>
       public static readonly DependencyProperty IsEnabledProperty = DependencyProperty.RegisterAttached(
          "IsEnabled", typeof(bool), typeof(TabbedMainWindowTabDrag),
          new PropertyMetadata(false, IsEnabledChanged));
 
-      /// <summary>Membaca <see cref="IsEnabledProperty"/>.</summary>
+      /// <summary>Reads <see cref="IsEnabledProperty"/>.</summary>
       public static bool GetIsEnabled(DependencyObject element) => (bool)element.GetValue(IsEnabledProperty);
 
       /// <summary>Mengisi <see cref="IsEnabledProperty"/>.</summary>

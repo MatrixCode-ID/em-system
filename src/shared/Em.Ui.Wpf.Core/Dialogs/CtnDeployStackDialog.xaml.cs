@@ -14,6 +14,7 @@ namespace Em.Ui.Wpf.Dialogs
    /// </summary>
    public partial class CtnDeployStackDialog : EmWindow
    {
+      /// <summary>Creates a new instance of <see cref="CtnDeployStackDialog"/>.</summary>
       public CtnDeployStackDialog(ICtnServices service, CtnImageInfo image, CtnDeployKind kind) {
          InitializeComponent();
          Vm.MainWindow = this;
@@ -31,6 +32,7 @@ namespace Em.Ui.Wpf.Dialogs
       private ICtnServices? _service;
       private CtnImageInfo? _image;
 
+      /// <summary>Creates a new instance of <see cref="CtnDeployStackDialogVm"/>.</summary>
       public CtnDeployStackDialogVm() {
          RegisterCommand(nameof(CreateCommand), CreateCommand, () => IsNotBusy && !Created && Content.Trim().Length > 0);
       }
@@ -45,8 +47,10 @@ namespace Em.Ui.Wpf.Dialogs
 
       private ICtnServices Api => _service ?? throw new InvalidOperationException("The dialog is not initialized.");
 
+      /// <summary>The title.</summary>
       public string Title => _image is null ? "Create stack" : $"Create stack for {_image.FullName}";
 
+      /// <summary>The caption.</summary>
       public string Caption { get => Get<string>() ?? ""; private set => Set(value); }
 
       /// <summary>Compose file to create; only the image and the container name are filled in.</summary>
@@ -55,10 +59,14 @@ namespace Em.Ui.Wpf.Dialogs
          set => Set(value, _ => RaiseCommandsChanged());
       }
 
+      /// <summary>The output text.</summary>
       public string OutputText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasOutput))); }
+      /// <summary>Indicates there is output.</summary>
       public bool HasOutput => OutputText.Length > 0;
 
+      /// <summary>The error text.</summary>
       public string ErrorText { get => Get<string>() ?? ""; private set => Set(value, _ => NotifyChanged(nameof(HasError))); }
+      /// <summary>Indicates there is error.</summary>
       public bool HasError => ErrorText.Length > 0;
 
       /// <summary><c>true</c> once the stack was created.</summary>

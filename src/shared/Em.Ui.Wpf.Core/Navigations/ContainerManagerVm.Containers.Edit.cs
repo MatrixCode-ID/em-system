@@ -5,9 +5,9 @@ using Em.Ui.Wpf.Shared;
 
 namespace Em.Ui.Wpf.Navigations
 {
-   // Bagian tab Containers yang mengubah data: root, folder, container, pindah, dan hapus. Semua
-   // perubahan lewat RunMutationAsync: jawaban 400/404/409 server ditampilkan apa adanya, lalu bagian
-   // layar yang terkena dibaca ulang.
+   // The part of the Containers tab that changes data: root, folder, container, move, and delete. All
+   // changes go through RunMutationAsync: the server's 400/404/409 answers are shown as-is, then the part
+   // of the screen that was affected is read again.
    public partial class ContainerManagerVm
    {
       private void RegisterContainerEditCommands() {
@@ -31,18 +31,18 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Data
 
-      /// <summary>Tulisan tombol edit di detail: <c>Rename</c> untuk folder, <c>Edit</c> untuk container.</summary>
+      /// <summary>Text of the edit button in the details: <c>Rename</c> for a folder, <c>Edit</c> for a container.</summary>
       public string EditNodeCaption => SelectedNode is { IsFolder: true } ? "Rename" : "Edit";
 
-      // Folder tempat folder atau container baru dibuat: folder yang dipilih, folder tempat container
-      // yang dipilih berada, atau - tanpa pilihan - root itu sendiri (null).
+      // The folder where a new folder or container is created: the selected folder, the folder where the
+      // selected container sits, or - with no selection - the root itself (null).
       private CtnTreeNode? CreationParent => SelectedNode is { IsFolder: true } folder ? folder : SelectedNode?.Parent;
 
       #endregion
 
       #region Root
 
-      /// <summary>Meminta nama dan deskripsi lalu membuat root baru, dan memilihnya.</summary>
+      /// <summary>Asks for a name and description, then creates a new root, and selects it.</summary>
       public async Task NewRootCommand() {
          var dialog = new CtnRootDialog { Owner = DialogOwner };
          if (dialog.ShowDialog() != true) return;
@@ -57,10 +57,10 @@ namespace Em.Ui.Wpf.Navigations
             });
       }
 
-      /// <summary>Hanya saat registry aktif dan layar tidak sibuk.</summary>
+      /// <summary>Only when the registry is on and the screen is not busy.</summary>
       public bool NewRootCommandAllowed() => CanAct;
 
-      /// <summary>Mengubah deskripsi dan status aktif root yang dipilih.</summary>
+      /// <summary>Changes the description and active status of the selected root.</summary>
       public async Task EditRootCommand() {
          if (SelectedRoot is not { } root) return;
 
@@ -74,12 +74,12 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRootsAsync());
       }
 
-      /// <summary>Hanya untuk root yang dipilih.</summary>
+      /// <summary>Only for the selected root.</summary>
       public bool EditRootCommandAllowed() => CanAct && SelectedRoot is not null;
 
       /// <summary>
-      /// Menghapus root yang dipilih setelah dikonfirmasi. Server menolak (409) root yang masih punya
-      /// folder, container, atau hak robot; jawabannya ditampilkan apa adanya.
+      /// Deletes the selected root after confirmation. The server refuses (409) a root that still has folders,
+      /// containers, or robot rights; its answer is shown as-is.
       /// </summary>
       public async Task DeleteRootCommand() {
          if (SelectedRoot is not { } root || DialogOwner is not { } owner) return;
@@ -97,7 +97,7 @@ namespace Em.Ui.Wpf.Navigations
             });
       }
 
-      /// <summary>Hanya untuk root yang dipilih.</summary>
+      /// <summary>Only for the selected root.</summary>
       public bool DeleteRootCommandAllowed() => CanAct && SelectedRoot is not null;
 
       #endregion
@@ -105,8 +105,8 @@ namespace Em.Ui.Wpf.Navigations
       #region Folder and container
 
       /// <summary>
-      /// Meminta nama lalu membuat folder baru di folder yang dipilih (atau di folder tempat container yang
-      /// dipilih berada, atau di root kalau tidak ada yang dipilih), dan memilihnya.
+      /// Asks for a name, then creates a new folder in the selected folder (or in the folder where the
+      /// selected container sits, or in the root when nothing is selected), and selects it.
       /// </summary>
       public async Task NewFolderCommand() {
          if (SelectedRoot is not { } root) return;
@@ -125,13 +125,13 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRootsAsync(selectNodeId: createdId));
       }
 
-      /// <summary>Hanya untuk root yang dipilih, dan selama folder barunya tidak melewati kedalaman maksimum.</summary>
+      /// <summary>Only for the selected root, and as long as the new folder does not pass the maximum depth.</summary>
       public bool NewFolderCommandAllowed() =>
          CanAct && SelectedRoot is not null && (CreationParent?.Depth ?? 0) < CtnInput.MaxFolderDepth;
 
       /// <summary>
-      /// Meminta nama dan deskripsi lalu membuat container baru di folder yang dipilih (atau di root), dan
-      /// memilihnya. Container harus ada dulu sebelum image bisa di-push ke sana.
+      /// Asks for a name and description, then creates a new container in the selected folder (or in the
+      /// root), and selects it. A container must exist before an image can be pushed to it.
       /// </summary>
       public async Task NewImageCommand() {
          if (SelectedRoot is not { } root) return;
@@ -148,12 +148,12 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRootsAsync(selectNodeId: createdId));
       }
 
-      /// <summary>Hanya untuk root yang dipilih.</summary>
+      /// <summary>Only for the selected root.</summary>
       public bool NewImageCommandAllowed() => CanAct && SelectedRoot is not null;
 
       /// <summary>
-      /// Mengganti nama folder yang dipilih, atau mengedit deskripsi dan status aktif container yang
-      /// dipilih. Nama root dan container tidak bisa diganti: kontraknya tidak punya rename untuk keduanya.
+      /// Renames the selected folder, or edits the description and active status of the selected container.
+      /// The names of roots and containers cannot be changed: the contract has no rename for either.
       /// </summary>
       public async Task EditNodeCommand() {
          if (SelectedNode is not { } node || SelectedRoot is not { } root) return;
@@ -181,12 +181,12 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRootsAsync(selectNodeId: node.Id));
       }
 
-      /// <summary>Hanya untuk folder atau container yang dipilih.</summary>
+      /// <summary>Only for the selected folder or container.</summary>
       public bool EditNodeCommandAllowed() => CanAct && SelectedNode is not null;
 
       /// <summary>
-      /// Memindahkan folder atau container yang dipilih lewat dialog pemilih folder. Nama pull tidak
-      /// berubah karena folder tidak ikut nama pull.
+      /// Moves the selected folder or container through the folder picker dialog. The pull name does not
+      /// change because folders are not part of the pull name.
       /// </summary>
       public async Task MoveNodeCommand() {
          if (SelectedNode is not { } node || SelectedRoot is not { } root || DialogOwner is not { } owner) return;
@@ -205,13 +205,13 @@ namespace Em.Ui.Wpf.Navigations
          await MoveAsync(node, target.FolderId);
       }
 
-      /// <summary>Hanya untuk folder atau container yang dipilih.</summary>
+      /// <summary>Only for the selected folder or container.</summary>
       public bool MoveNodeCommandAllowed() => CanAct && SelectedNode is not null;
 
       /// <summary>
-      /// Menghapus folder yang dipilih (harus kosong) atau container yang dipilih, setelah dikonfirmasi.
-      /// Menghapus container membuang manifest, tag, dan tautan blob-nya; berkas di disk menunggu garbage
-      /// collection, dan konfirmasinya mengatakan itu.
+      /// Deletes the selected folder (which must be empty) or the selected container, after confirmation.
+      /// Deleting a container removes its manifests, tags, and blob links; the files on disk wait for garbage
+      /// collection, and the confirmation says so.
       /// </summary>
       public async Task DeleteNodeCommand() {
          if (SelectedNode is not { } node || DialogOwner is not { } owner) return;
@@ -237,7 +237,7 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadRootsAsync());
       }
 
-      /// <summary>Hanya untuk container yang dipilih, atau folder yang sudah kosong.</summary>
+      /// <summary>Only for the selected container, or a folder that is already empty.</summary>
       public bool DeleteNodeCommandAllowed() =>
          CanAct && SelectedNode is { } node && (!node.IsFolder || node.Children.Count == 0);
 
@@ -245,7 +245,7 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Tag and manifest
 
-      /// <summary>Menghapus satu tag container yang dipilih; manifest-nya tetap ada.</summary>
+      /// <summary>Deletes one tag of the selected container; its manifest stays.</summary>
       public async Task DeleteTagCommand(string? tag) {
          if (string.IsNullOrEmpty(tag) || SelectedNode?.Image is not { } image || DialogOwner is not { } owner) return;
          var node = SelectedNode;
@@ -258,9 +258,10 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadTreeAsync(node.Id));
       }
 
+      /// <summary>Whether the delete tag command may run now.</summary>
       public bool DeleteTagCommandAllowed(string? tag) => CanAct && SelectedNode?.Image is not null && !string.IsNullOrEmpty(tag);
 
-      /// <summary>Menghapus satu manifest beserta tag-nya. Ditolak server (409) bila masih dirujuk index.</summary>
+      /// <summary>Deletes one manifest together with its tags. Refused by the server (409) while still referenced by an index.</summary>
       public async Task DeleteManifestCommand(CtnManifestItem? manifest) {
          if (manifest is null || SelectedNode?.Image is not { } image || DialogOwner is not { } owner) return;
          var node = SelectedNode;
@@ -274,28 +275,30 @@ namespace Em.Ui.Wpf.Navigations
             () => ReadTreeAsync(node.Id));
       }
 
+      /// <summary>Whether the delete manifest command may run now.</summary>
       public bool DeleteManifestCommandAllowed(CtnManifestItem? manifest) => CanAct && SelectedNode?.Image is not null && manifest is not null;
 
       #endregion
 
       #region Garbage collection
 
-      /// <summary>Membuka dialog review garbage collection; storage dibaca ulang bila GC dijalankan.</summary>
+      /// <summary>Opens the garbage collection review dialog; the storage is read again if GC is run.</summary>
       public async Task GarbageCollectionCommand() {
          var dialog = new CtnGcDialog(Service) { Owner = DialogOwner };
          dialog.ShowDialog();
          if (dialog.Vm.HasRun) await RefreshStorageCommand();
       }
 
+      /// <summary>Whether the garbage collection command may run now.</summary>
       public bool GarbageCollectionCommandAllowed() => CanAct;
 
       #endregion
 
       #region Move
 
-      // Tujuan yang boleh dipilih untuk memindahkan simpul: root-nya sendiri dan setiap folder, kecuali
-      // tempat simpul itu sudah berada, simpul itu sendiri berikut isinya (folder tidak boleh masuk ke
-      // dalam dirinya), dan folder yang membuat tree melewati kedalaman maksimum.
+      // The destinations that may be chosen to move a node: the root itself and every folder, except where
+      // that node already is, the node itself with its content (a folder must not go into itself), and
+      // folders that would make the tree pass the maximum depth.
       private List<CtnFolderChoice> BuildMoveChoices(CtnTreeNode node, CtnRootItem root) {
          var choices = new List<CtnFolderChoice>();
          var height = node.IsFolder ? FolderHeight(node) : 0;
@@ -318,7 +321,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      // Jumlah tingkat folder dari folder ini ke bawah, folder ini sendiri dihitung.
+      // Number of folder levels from this folder downward, counting this folder itself.
       private static int FolderHeight(CtnTreeNode folder) =>
          1 + folder.Children.Where(r => r.IsFolder).Select(FolderHeight).DefaultIfEmpty(0).Max();
 
@@ -335,16 +338,16 @@ namespace Em.Ui.Wpf.Navigations
       #region Drag and drop
 
       /// <summary>
-      /// Menerima jatuhan sebuah simpul tree: ke baris folder (masuk ke folder itu), ke baris root
-      /// (keluar ke tingkat teratas root), atau ke ruang kosong tree (sama dengan baris root). Jatuhan
-      /// di root lain tidak diterima karena server hanya memindahkan di root yang sama.
+      /// Accepts the drop of a tree node: onto a folder row (into that folder), onto the root row (out to the
+      /// root's top level), or onto the empty space of the tree (same as the root row). A drop onto another
+      /// root is not accepted because the server only moves within the same root.
       /// </summary>
       public Task DropCommand(object? payload) {
          var drop = ResolveDrop(payload);
          return drop.IsValid ? MoveAsync(drop.Node!, drop.TargetFolderId) : Task.CompletedTask;
       }
 
-      /// <summary>Boleh kalau jatuhan itu pindahan yang sah; kursor "tidak boleh" muncul kalau tidak.</summary>
+      /// <summary>Allowed when the drop is a valid move; the "not allowed" cursor appears otherwise.</summary>
       public bool DropCommandAllowed(object? payload) => CanAct && ResolveDrop(payload).IsValid;
 
       private (CtnTreeNode? Node, string? TargetFolderId, bool IsValid) ResolveDrop(object? payload) {

@@ -7,19 +7,19 @@ using Color = System.Windows.Media.Color;
 namespace Em.Ui.Wpf.Converters
 {
    /// <summary>
-   /// Memilih warna sebuah baris data dari namanya - dipakai emblem role, lencana module, dan baris
-   /// lain yang perlu dibedakan sekilas tanpa warnanya ikut disimpan di database. Slot warnanya
-   /// ditentukan <see cref="UiTint"/>, sehingga nama yang sama selalu mendapat warna yang sama di
-   /// mana pun ia muncul - hari ini, besok, dan di klien lain sekali pun.
+   /// Chooses the color of a data row from its name - used for role emblems, module badges, and other rows
+   /// that need to be told apart at a glance without their color being stored in the database. The color
+   /// slot is decided by <see cref="UiTint"/>, so the same name always gets the same color wherever it
+   /// appears - today, tomorrow, and even on another client.
    /// </summary>
    /// <remarks>
-   /// Isi <c>ConverterParameter</c> dengan <c>"Text"</c> untuk warna penuh (glyph dan huruf), atau
-   /// kosongkan untuk warna cakram di belakangnya - warna yang sama pada kepekatan 14%. Nadanya
-   /// dipilih sedang supaya terbaca baik di tema terang maupun gelap.
+   /// Set <c>ConverterParameter</c> to <c>"Text"</c> for the full color (glyph and letters), or leave it
+   /// empty for the color of the disc behind it - the same color at 14% opacity. Its tone is chosen to be
+   /// medium so it reads well in both light and dark themes.
    /// <para>
-   /// Sepasang dengan <see cref="AvatarPaletteConverter"/> tapi bukan penggantinya: yang itu
-   /// mewarnai orang dan tetap memakai penjumlahan hurufnya sendiri, yang ini mewarnai entitas dan
-   /// memakai perhitungan bersama yang juga dipahami sisi server.
+   /// A pair with <see cref="AvatarPaletteConverter"/> but not its replacement: that one colors people and
+   /// keeps using its own sum of letters, while this one colors entities and uses the shared computation
+   /// that the server side also understands.
    /// </para>
    /// </remarks>
    public class EntityTintConverter : IValueConverter
@@ -36,8 +36,8 @@ namespace Em.Ui.Wpf.Converters
       ];
 
       /// <summary>
-      /// Menghasilkan <see cref="SolidColorBrush"/> untuk glyph atau untuk cakram di belakangnya,
-      /// sesuai <c>ConverterParameter</c> (lihat keterangan kelas).
+      /// Produces a <see cref="SolidColorBrush"/> for the glyph or for the disc behind it, according to
+      /// <c>ConverterParameter</c> (see the class remarks).
       /// </summary>
       public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) {
          var color = Palette[UiTint.SlotOf(value as string, Palette.Length)];
@@ -51,7 +51,7 @@ namespace Em.Ui.Wpf.Converters
       }
 
       /// <summary>
-      /// Tidak didukung: warna entitas hanya dihitung satu arah dari namanya.
+      /// Not supported: the entity color is only computed one way from its name.
       /// </summary>
       public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
          throw new NotSupportedException("An entity tint cannot be converted back to a name.");

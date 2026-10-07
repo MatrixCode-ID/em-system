@@ -10,17 +10,17 @@ using Em.Ui.Wpf.Windows;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Dialog status satu business task personal, dibuka dari hub task di window utama. Selama task
-   /// berjalan dialog ini menampilkan kemajuannya dan bisa membatalkannya; setelah selesai ia
-   /// menawarkan hasilnya (unduh file, atau buka data JSON), pesan kesalahannya, dan membersihkannya.
+   /// Status dialog of one personal business task, opened from the task hub in the main window. While the
+   /// task runs this dialog shows its progress and can cancel it; once it finishes it offers its result
+   /// (download the file, or open the JSON data), its error message, and clearing it.
    /// </summary>
    public partial class BusinessTaskStatusDialog : EmWindow
    {
       /// <summary>
-      /// Membuat dialog status untuk task <paramref name="task"/>.
+      /// Creates the status dialog for task <paramref name="task"/>.
       /// </summary>
-      /// <param name="app">Aplikasi pemilik dialog.</param>
-      /// <param name="task">Potret task terakhir yang diketahui; dialog memuat ulang sendiri selama task hidup.</param>
+      /// <param name="app">The application that owns the dialog.</param>
+      /// <param name="task">The last known snapshot of the task; the dialog reloads by itself while the task is live.</param>
       public BusinessTaskStatusDialog(EmApp app, BusinessTaskInfo task) {
          InitializeComponent();
          Vm.EmApp = app;
@@ -32,12 +32,12 @@ namespace Em.Ui.Wpf.Dialogs
          Closed += (_, _) => Vm.StopPolling();
       }
 
-      /// <summary>ViewModel dialog ini.</summary>
+      /// <summary>The view model of this dialog.</summary>
       public BusinessTaskStatusDialogVm Vm => (BusinessTaskStatusDialogVm)DataContext;
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="BusinessTaskStatusDialog"/>.
+   /// View model for <see cref="BusinessTaskStatusDialog"/>.
    /// </summary>
    public class BusinessTaskStatusDialogVm : MvvmModelBase
    {
@@ -47,7 +47,7 @@ namespace Em.Ui.Wpf.Dialogs
       private bool _polling;
 
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan seluruh command dialog.
+      /// Creates a new view model and registers all commands of the dialog.
       /// </summary>
       public BusinessTaskStatusDialogVm() {
          RegisterCommand(nameof(CancelTaskCommand), CancelTaskCommand, CancelTaskCommandAllowed);
@@ -60,7 +60,7 @@ namespace Em.Ui.Wpf.Dialogs
       }
 
       /// <summary>
-      /// Dipicu saat dialog hendak ditutup; <c>true</c> setelah task-nya dibersihkan.
+      /// Raised when the dialog is about to close; <c>true</c> after its task has been cleared.
       /// </summary>
       public event Action<bool>? RequestClose;
 
@@ -68,22 +68,22 @@ namespace Em.Ui.Wpf.Dialogs
 
       #region Data
 
-      /// <summary>Task yang ditampilkan.</summary>
+      /// <summary>The task that is shown.</summary>
       public BusinessTaskItem? Item {
          get => Get<BusinessTaskItem?>();
          private set => Set(value);
       }
 
       /// <summary>
-      /// <c>true</c> kalau server tidak lagi mengenal task ini: sudah dibersihkan, atau hilang sendiri
-      /// setelah masa tampilnya lewat. Dialog tetap menampilkan potret terakhirnya.
+      /// <c>true</c> when the server no longer knows this task: it was cleared, or it disappeared by itself
+      /// after its display period passed. The dialog keeps showing its last snapshot.
       /// </summary>
       public bool IsGone {
          get => Get<bool>();
          private set => Set(value, _ => Refresh());
       }
 
-      /// <summary>Kalimat keadaan task untuk task yang sudah selesai; kosong selama task hidup atau gagal.</summary>
+      /// <summary>The sentence of the state of a finished task; empty while the task is live or failed.</summary>
       public string StateMessage {
          get {
             if (Item is not { } item) return "";
@@ -102,14 +102,14 @@ namespace Em.Ui.Wpf.Dialogs
          }
       }
 
-      /// <summary><c>true</c> kalau <see cref="StateMessage"/> berisi sesuatu.</summary>
+      /// <summary><c>true</c> when <see cref="StateMessage"/> has content.</summary>
       public bool HasStateMessage => StateMessage.Length > 0;
 
       #endregion
 
       #region Commands
 
-      /// <summary>Membatalkan task setelah dikonfirmasi.</summary>
+      /// <summary>Cancels the task after confirmation.</summary>
       public async Task CancelTaskCommand() {
          if (Item is not { } item || DialogOwner is not { } owner) return;
          if (owner.ShowMboxDecideWarning($"Cancel task '{item.Title}'?", "Cancel Task") != MessageBoxResult.Yes)
@@ -121,12 +121,12 @@ namespace Em.Ui.Wpf.Dialogs
          });
       }
 
-      /// <summary>Selama task hidup dan pemanggil boleh membatalkannya.</summary>
+      /// <summary>While the task is live and the caller may cancel it.</summary>
       public bool CancelTaskCommandAllowed() => IsNotBusy && !IsGone && Item is { CanCancel: true };
 
       /// <summary>
-      /// Membersihkan task, lalu menutup dialog. Task yang punya hasil tersimpan dikonfirmasi dulu, karena
-      /// hasilnya ikut terhapus.
+      /// Clears the task, then closes the dialog. A task that has a stored result is confirmed first, because
+      /// its result is deleted with it.
       /// </summary>
       public async Task ClearTaskCommand() {
          if (Item is not { } item || DialogOwner is not { } owner) return;
@@ -143,40 +143,40 @@ namespace Em.Ui.Wpf.Dialogs
          if (cleared) RequestClose?.Invoke(true);
       }
 
-      /// <summary>Untuk task yang sudah selesai, kalau pemanggil boleh membersihkannya.</summary>
+      /// <summary>For a finished task, if the caller may clear it.</summary>
       public bool ClearTaskCommandAllowed() => IsNotBusy && !IsGone && Item is { CanClear: true };
 
-      /// <summary>Mengunduh file hasil task.</summary>
+      /// <summary>Downloads the result file of the task.</summary>
       public Task DownloadResultCommand() =>
          Item is not { } item
             ? Task.CompletedTask
             : RunBusyAsync(() => BusinessTaskItem.DownloadResultAsync(Service, item, DialogOwner));
 
-      /// <summary>Untuk task sukses berhasil file yang boleh dibaca pemanggil.</summary>
+      /// <summary>For a successful task with a file result that the caller may read.</summary>
       public bool DownloadResultCommandAllowed() => IsNotBusy && !IsGone && Item is { CanDownload: true };
 
       /// <summary>
-      /// Membuka hasil JSON task. Belum tersedia: cara membukanya diputuskan setelah kebutuhannya
-      /// terlihat, jadi untuk sekarang user hanya diberi tahu.
+      /// Opens the JSON result of the task. Not available yet: how to open it will be decided once the need
+      /// is visible, so for now the user is only told so.
       /// </summary>
       public void OpenResultCommand() =>
          DialogOwner?.ShowMboxInfo("Opening this result is not available yet.", "Open Result");
 
-      /// <summary>Untuk task sukses berhasil JSON yang boleh dibaca pemanggil.</summary>
+      /// <summary>For a successful task with a JSON result that the caller may read.</summary>
       public bool OpenResultCommandAllowed() => IsNotBusy && !IsGone && Item is { CanOpen: true };
 
       #endregion
 
       #region Methods
 
-      /// <summary>Menampilkan potret task <paramref name="task"/>.</summary>
+      /// <summary>Shows the snapshot of task <paramref name="task"/>.</summary>
       public void Show(BusinessTaskInfo task) {
          if (Item is { } item && item.Id == task.Id) item.Update(task);
          else Item = new BusinessTaskItem(task);
          Refresh();
       }
 
-      /// <summary>Mulai memuat ulang status tiap dua detik selama task masih hidup.</summary>
+      /// <summary>Starts reloading the status every two seconds while the task is still live.</summary>
       public void StartPolling() {
          if (Item is { IsAlive: true }) _pollTimer.Start();
       }

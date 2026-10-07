@@ -1,9 +1,9 @@
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Implementasi <see cref="UiCommandBase"/> untuk command asynchronous dengan parameter
-   /// bertipe <see cref="object"/>. Otomatis mencegah eksekusi ganda (re-entrancy) selama
-   /// command masih berjalan, lewat <see cref="CanExecute"/>.
+   /// Implementation of <see cref="UiCommandBase"/> for an asynchronous command with a parameter of type
+   /// <see cref="object"/>. Automatically prevents double execution (re-entrancy) while the command is
+   /// still running, through <see cref="CanExecute"/>.
    /// </summary>
    public class UiCommandAsync : UiCommandBase
    {
@@ -12,12 +12,12 @@ namespace Em.Ui.Wpf.Shared
       private bool _isExecuting;
 
       /// <summary>
-      /// Membuat command async baru.
+      /// Creates a new async command.
       /// </summary>
-      /// <param name="name">Nama unik command, dipakai sebagai key pada <see cref="UiCommandBaseCollection"/>.</param>
-      /// <param name="executeHandler">Aksi async yang dijalankan saat command dieksekusi. Wajib diisi.</param>
-      /// <param name="canExecuteHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
-      /// <exception cref="ArgumentNullException">Dilempar jika <paramref name="executeHandler"/> <c>null</c>.</exception>
+      /// <param name="name">The unique name of the command, used as the key in <see cref="UiCommandBaseCollection"/>.</param>
+      /// <param name="executeHandler">The async action that runs when the command is executed. Required.</param>
+      /// <param name="canExecuteHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
+      /// <exception cref="ArgumentNullException">Thrown when <paramref name="executeHandler"/> is <c>null</c>.</exception>
       public UiCommandAsync(
          string name,
          Func<object?, Task> executeHandler,
@@ -31,24 +31,24 @@ namespace Em.Ui.Wpf.Shared
       public override bool IsAsync => true;
 
       /// <summary>
-      /// <c>true</c> hanya jika command sedang tidak berjalan (<see cref="_isExecuting"/> <c>false</c>)
-      /// dan kondisi <c>canExecuteHandler</c> terpenuhi.
+      /// <c>true</c> only when the command is not running (<see cref="_isExecuting"/> is <c>false</c>) and the
+      /// <c>canExecuteHandler</c> condition is met.
       /// </summary>
       /// <inheritdoc />
       public override bool CanExecute(object? parameter) => !_isExecuting && _canExecuteHandler(parameter);
 
       /// <summary>
-      /// Menjalankan command secara async tanpa parameter.
+      /// Runs the command asynchronously without a parameter.
       /// </summary>
-      /// <returns>Task yang selesai saat eksekusi command selesai.</returns>
+      /// <returns>A task that completes when the command's execution completes.</returns>
       public Task ExecuteAsync() => ExecuteAsync(null);
 
       /// <summary>
-      /// Menjalankan command secara async dengan parameter. Selama berjalan, <see cref="CanExecute"/>
-      /// bernilai <c>false</c> dan event <c>CanExecuteChanged</c> dipicu di awal dan akhir eksekusi.
+      /// Runs the command asynchronously with a parameter. While running, <see cref="CanExecute"/> is
+      /// <c>false</c> and the <c>CanExecuteChanged</c> event is raised at the start and end of execution.
       /// </summary>
-      /// <param name="parameter">Parameter yang diteruskan ke handler eksekusi.</param>
-      /// <returns>Task yang selesai saat eksekusi command selesai.</returns>
+      /// <param name="parameter">The parameter passed to the execution handler.</param>
+      /// <returns>A task that completes when the command's execution completes.</returns>
       public async Task ExecuteAsync(object? parameter) {
          if (!CanExecute(parameter)) return;
 
@@ -68,9 +68,9 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Implementasi <see cref="System.Windows.Input.ICommand.Execute"/> yang memanggil
-      /// <see cref="ExecuteAsync(object?)"/> secara fire-and-forget (dibutuhkan karena
-      /// <c>ICommand.Execute</c> bersifat sinkron/<c>void</c>).
+      /// The implementation of <see cref="System.Windows.Input.ICommand.Execute"/> that calls
+      /// <see cref="ExecuteAsync(object?)"/> fire-and-forget (needed because <c>ICommand.Execute</c> is
+      /// synchronous/<c>void</c>).
       /// </summary>
       /// <inheritdoc />
       public override async void Execute(object? parameter) {
@@ -79,18 +79,18 @@ namespace Em.Ui.Wpf.Shared
    }
 
    /// <summary>
-   /// Varian <see cref="UiCommandAsync"/> dengan parameter bertipe kuat <typeparamref name="T"/>,
-   /// otomatis melakukan cast parameter sebelum diteruskan ke handler.
+   /// A variant of <see cref="UiCommandAsync"/> with a strongly typed parameter <typeparamref name="T"/>,
+   /// automatically casting the parameter before passing it to the handler.
    /// </summary>
-   /// <typeparam name="T">Tipe parameter command.</typeparam>
+   /// <typeparam name="T">The type of the command parameter.</typeparam>
    public class UiCommandAsync<T> : UiCommandAsync
    {
       /// <summary>
-      /// Membuat command async baru dengan parameter bertipe kuat <typeparamref name="T"/>.
+      /// Creates a new async command with a strongly typed parameter <typeparamref name="T"/>.
       /// </summary>
-      /// <param name="name">Nama unik command, dipakai sebagai key pada <see cref="UiCommandBaseCollection"/>.</param>
-      /// <param name="executeHandler">Aksi async yang dijalankan saat command dieksekusi.</param>
-      /// <param name="canExecuteHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
+      /// <param name="name">The unique name of the command, used as the key in <see cref="UiCommandBaseCollection"/>.</param>
+      /// <param name="executeHandler">The async action that runs when the command is executed.</param>
+      /// <param name="canExecuteHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
       public UiCommandAsync(
          string name,
          Func<T, Task> executeHandler,
@@ -102,10 +102,10 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Menjalankan command secara async dengan parameter bertipe kuat <typeparamref name="T"/>.
+      /// Runs the command asynchronously with a strongly typed parameter <typeparamref name="T"/>.
       /// </summary>
-      /// <param name="parameter">Parameter yang diteruskan ke handler eksekusi.</param>
-      /// <returns>Task yang selesai saat eksekusi command selesai.</returns>
+      /// <param name="parameter">The parameter passed to the execution handler.</param>
+      /// <returns>A task that completes when the command's execution completes.</returns>
       public Task ExecuteAsync(T parameter) => ExecuteAsync((object?)parameter);
    }
 }

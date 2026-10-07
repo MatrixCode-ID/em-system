@@ -9,14 +9,13 @@ using IDataObject = System.Windows.IDataObject;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Membuat sebuah elemen bisa menerima jatuhan dari <see cref="DragSource"/>, cukup dengan
-   /// menyerahkan command yang mengerjakannya di XAML:
+   /// Makes an element able to receive a drop from <see cref="DragSource"/>, just by handing over the
+   /// command that does the work in XAML:
    /// <code>&lt;Grid shared:DropTarget.Command="{Binding Commands[GrantDroppedCommand]}"&gt;</code>
    /// <para>
-   /// Tidak ada penyaringan tipe di sini: yang menjawab boleh atau tidaknya sebuah muatan mendarat
-   /// adalah <c>CanExecute</c> command-nya sendiri, dan jawaban itu sekaligus yang menentukan
-   /// bentuk kursornya. Menaruh aturan yang sama di dua tempat berarti dua tempat yang bisa
-   /// berselisih.
+   /// There is no type filtering here: what answers whether a payload may land is the command's own
+   /// <c>CanExecute</c>, and that answer also decides the shape of the cursor. Putting the same rule in two
+   /// places means two places that can disagree.
    /// </para>
    /// </summary>
    public static class DropTarget
@@ -24,8 +23,8 @@ namespace Em.Ui.Wpf.Shared
       #region Command
 
       /// <summary>
-      /// Command yang dijalankan saat sebuah muatan dijatuhkan di elemen ini, dengan muatannya
-      /// sebagai parameter. Memasangnya sekaligus menyalakan <see cref="UIElement.AllowDrop"/>.
+      /// The command that runs when a payload is dropped on this element, with the payload as its parameter.
+      /// Attaching it also turns on <see cref="UIElement.AllowDrop"/>.
       /// </summary>
       public static readonly DependencyProperty CommandProperty = DependencyProperty.RegisterAttached(
          "Command",
@@ -33,17 +32,17 @@ namespace Em.Ui.Wpf.Shared
          typeof(DropTarget),
          new PropertyMetadata(null, OnCommandChanged));
 
-      /// <summary>Membaca command penerima jatuhan yang terpasang pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dibaca.</param>
-      /// <returns>Command-nya, atau <c>null</c> kalau elemen ini bukan tempat jatuhan.</returns>
+      /// <summary>Reads the drop receiver command attached to an element.</summary>
+      /// <param name="element">The element being read.</param>
+      /// <returns>Its command, or <c>null</c> when this element is not a drop place.</returns>
       public static ICommand? GetCommand(DependencyObject element) {
          ArgumentNullException.ThrowIfNull(element);
          return (ICommand?)element.GetValue(CommandProperty);
       }
 
-      /// <summary>Memasang command penerima jatuhan pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dipasangi.</param>
-      /// <param name="value">Command-nya; <c>null</c> berarti elemen ini berhenti menerima jatuhan.</param>
+      /// <summary>Attaches a drop receiver command to an element.</summary>
+      /// <param name="element">The element being attached to.</param>
+      /// <param name="value">The command; <c>null</c> means this element stops receiving drops.</param>
       public static void SetCommand(DependencyObject element, ICommand? value) {
          ArgumentNullException.ThrowIfNull(element);
          element.SetValue(CommandProperty, value);
@@ -54,9 +53,9 @@ namespace Em.Ui.Wpf.Shared
       #region Target
 
       /// <summary>
-      /// Sasaran jatuhan pada elemen ini, biasanya <c>{Binding}</c> sebuah baris. Kalau diisi,
-      /// parameter command-nya menjadi <see cref="DropRequest"/> yang membawa muatan sekaligus
-      /// sasaran ini; kalau kosong, parameternya muatan itu sendiri.
+      /// The drop target on this element, usually the <c>{Binding}</c> of a row. When it is set, the
+      /// command's parameter becomes a <see cref="DropRequest"/> that carries both the payload and this
+      /// target; when empty, the parameter is the payload itself.
       /// </summary>
       public static readonly DependencyProperty TargetProperty = DependencyProperty.RegisterAttached(
          "Target",
@@ -64,17 +63,17 @@ namespace Em.Ui.Wpf.Shared
          typeof(DropTarget),
          new PropertyMetadata(null));
 
-      /// <summary>Membaca sasaran jatuhan pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dibaca.</param>
-      /// <returns>Sasarannya, atau <c>null</c>.</returns>
+      /// <summary>Reads the drop target of an element.</summary>
+      /// <param name="element">The element being read.</param>
+      /// <returns>Its target, or <c>null</c>.</returns>
       public static object? GetTarget(DependencyObject element) {
          ArgumentNullException.ThrowIfNull(element);
          return element.GetValue(TargetProperty);
       }
 
-      /// <summary>Memasang sasaran jatuhan pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dipasangi.</param>
-      /// <param name="value">Sasarannya.</param>
+      /// <summary>Attaches a drop target to an element.</summary>
+      /// <param name="element">The element being attached to.</param>
+      /// <param name="value">The target.</param>
       public static void SetTarget(DependencyObject element, object? value) {
          ArgumentNullException.ThrowIfNull(element);
          element.SetValue(TargetProperty, value);
@@ -85,9 +84,9 @@ namespace Em.Ui.Wpf.Shared
       #region Effect
 
       /// <summary>
-      /// Bentuk kursor saat muatan boleh mendarat di sini: <see cref="DragDropEffects.Copy"/>
-      /// (bawaan) atau mis. <see cref="DragDropEffects.Move"/> untuk tempat yang memindahkan apa yang
-      /// dijatuhkan. Hanya tampilan - yang benar-benar terjadi tetap ditentukan command-nya.
+      /// The cursor shape when a payload may land here: <see cref="DragDropEffects.Copy"/> (default) or e.g.
+      /// <see cref="DragDropEffects.Move"/> for a place that moves what is dropped. Display only - what
+      /// really happens is still decided by its command.
       /// </summary>
       public static readonly DependencyProperty EffectProperty = DependencyProperty.RegisterAttached(
          "Effect",
@@ -95,17 +94,17 @@ namespace Em.Ui.Wpf.Shared
          typeof(DropTarget),
          new PropertyMetadata(DragDropEffects.Copy));
 
-      /// <summary>Membaca bentuk kursor jatuhan pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dibaca.</param>
-      /// <returns>Efek yang ditampilkan.</returns>
+      /// <summary>Reads the drop cursor shape of an element.</summary>
+      /// <param name="element">The element being read.</param>
+      /// <returns>The effect that is shown.</returns>
       public static DragDropEffects GetEffect(DependencyObject element) {
          ArgumentNullException.ThrowIfNull(element);
          return (DragDropEffects)element.GetValue(EffectProperty);
       }
 
-      /// <summary>Memasang bentuk kursor jatuhan pada sebuah elemen.</summary>
-      /// <param name="element">Elemen yang dipasangi.</param>
-      /// <param name="value">Efek yang ditampilkan.</param>
+      /// <summary>Attaches the drop cursor shape to an element.</summary>
+      /// <param name="element">The element being attached to.</param>
+      /// <param name="value">The effect that is shown.</param>
       public static void SetEffect(DependencyObject element, DragDropEffects value) {
          ArgumentNullException.ThrowIfNull(element);
          element.SetValue(EffectProperty, value);
@@ -122,15 +121,15 @@ namespace Em.Ui.Wpf.Shared
          new PropertyMetadata(false));
 
       /// <summary>
-      /// Menyala selama ada muatan yang <i>boleh</i> mendarat sedang melayang di atas elemen ini.
-      /// Hanya untuk dibaca XAML - inilah yang membuat sorotan area jatuhan bisa digambar lewat
-      /// trigger, tanpa satu baris pun keadaan sorotan itu masuk ke view model.
+      /// On while a payload that <i>may</i> land is hovering over this element. Only for XAML to read - this
+      /// is what lets the highlight of the drop area be drawn through a trigger, without a single line of the
+      /// highlight's state entering the view model.
       /// </summary>
       public static readonly DependencyProperty IsDraggingOverProperty = IsDraggingOverKey.DependencyProperty;
 
-      /// <summary>Apakah ada muatan yang boleh mendarat sedang melayang di atas elemen ini.</summary>
-      /// <param name="element">Elemen yang dibaca.</param>
-      /// <returns><c>true</c> selama muatannya melayang di atas elemen ini.</returns>
+      /// <summary>Whether a payload that may land is hovering over this element.</summary>
+      /// <param name="element">The element being read.</param>
+      /// <returns><c>true</c> while the payload hovers over this element.</returns>
       public static bool GetIsDraggingOver(DependencyObject element) {
          ArgumentNullException.ThrowIfNull(element);
          return (bool)element.GetValue(IsDraggingOverProperty);
@@ -158,9 +157,9 @@ namespace Em.Ui.Wpf.Shared
          element.Drop += OnDrop;
       }
 
-      // DragOver menyala terus-menerus selama kursor ada di atas elemen ini, jadi ia sekaligus yang
-      // menegaskan kembali sorotannya. Itu yang menahan kedipan saat kursor melintasi kartu-kartu di
-      // dalamnya: sorotannya dinyalakan ulang lebih cepat daripada mata bisa melihatnya padam.
+      // DragOver fires continuously while the cursor is over this element, so it is also what reasserts its
+      // highlight. That is what suppresses flicker when the cursor crosses the cards inside it: the highlight
+      // is turned on again faster than the eye can see it go out.
       private static void OnDragOver(object sender, DragEventArgs e) {
          if (sender is not UIElement element) return;
 
@@ -182,8 +181,8 @@ namespace Em.Ui.Wpf.Shared
          }
       }
 
-      // DragLeave juga menyala saat kursor sekadar berpindah ke anak elemen, jadi keluarnya
-      // dipastikan dari koordinat kursornya sendiri - bukan dari event-nya semata.
+      // DragLeave also fires when the cursor merely moves to a child of the element, so leaving is confirmed
+      // from the cursor's own coordinates - not from the event alone.
       private static void OnDragLeave(object sender, DragEventArgs e) {
          if (sender is not FrameworkElement element) return;
 

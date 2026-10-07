@@ -16,15 +16,15 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Ui.Wpf.Navigations
 {
    /// <summary>
-   /// Viewer PDF bawaan aplikasi, dibuka lewat <see cref="EmApp.ViewPdf"/> atau
-   /// <see cref="NavigationEntry.ViewPdf"/> dengan <see cref="PdfViewerNavigationPayload"/>. Menampilkan,
-   /// mencari, mencetak, dan menyimpan PDF apa pun yang diberikan pemanggilnya; tidak dijaga claim, karena
-   /// hak atas isinya diperiksa di tempat isi itu diambil.
+   /// The application's built-in PDF viewer, opened through <see cref="EmApp.ViewPdf"/> or
+   /// <see cref="NavigationEntry.ViewPdf"/> with a <see cref="PdfViewerNavigationPayload"/>. It shows,
+   /// searches, prints, and saves any PDF its caller provides; it is not guarded by a claim, because the
+   /// rights to its content are checked where that content is fetched.
    /// </summary>
    public partial class PdfViewer : UserControl, INavigationBody
    {
       /// <summary>
-      /// Membuat viewer PDF untuk aplikasi <paramref name="app"/>.
+      /// Creates a PDF viewer for application <paramref name="app"/>.
       /// </summary>
       public PdfViewer(EmApp app) {
          InitializeComponent();
@@ -33,7 +33,7 @@ namespace Em.Ui.Wpf.Navigations
          Loaded += (_, _) => Vm.DeviceScale = VisualTreeHelper.GetDpi(this).DpiScaleX;
       }
 
-      /// <summary>ViewModel layar ini.</summary>
+      /// <summary>The view model of this screen.</summary>
       public PdfViewerVm Vm => (PdfViewerVm)DataContext;
 
       /// <inheritdoc />
@@ -81,7 +81,7 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// ViewModel untuk <see cref="PdfViewer"/>.
+   /// View model for <see cref="PdfViewer"/>.
    /// </summary>
    public class PdfViewerVm : MvvmModelBase
    {
@@ -111,7 +111,7 @@ namespace Em.Ui.Wpf.Navigations
       private int _hitIndex = -1;
 
       /// <summary>
-      /// Membuat ViewModel baru dan mendaftarkan seluruh command layar.
+      /// Creates a new view model and registers all commands of the screen.
       /// </summary>
       public PdfViewerVm() {
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
@@ -128,49 +128,51 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Diminta ViewModel saat tampilan harus digulir ke posisi tertentu (dalam DIP dari atas daftar
-      /// halaman) - pindah halaman, hasil pencarian, atau menjaga posisi saat zoom berubah.
+      /// Requested by the view model when the display must scroll to a given position (in DIPs from the top
+      /// of the page list) - changing page, a search result, or keeping the position when the zoom changes.
       /// </summary>
       public event Action<double>? ScrollRequested;
 
-      /// <summary>Parameter yang membuka layar ini: judul, pengambil isi PDF, dan nama file bawaannya.</summary>
+      /// <summary>The parameter that opened this screen: the title, the PDF fetcher, and its default file name.</summary>
       public PdfViewerNavigationPayload? Payload { get; internal set; }
+      /// <summary>Indicates allow save as.</summary>
       public bool AllowSaveAs { get => Get(true); set => Set(value, _ => RaiseCommandsChanged()); }
+      /// <summary>Indicates the error details is shown.</summary>
       public bool ShowErrorDetails { get; set; } = true;
 
       #region Pages
 
-      /// <summary>Seluruh halaman dokumen yang sedang dibuka, sesuai urutannya.</summary>
+      /// <summary>All pages of the document that is open, in their order.</summary>
       public ObservableCollection<PdfPageVm> Pages { get; } = [];
 
-      /// <summary>Jarak daftar halaman dari tepi kartu.</summary>
+      /// <summary>Distance of the page list from the edge of the card.</summary>
       public Thickness PagesMargin { get; } = new(SidePadding, PageGap, SidePadding, 0);
 
-      /// <summary>Jarak di bawah setiap halaman.</summary>
+      /// <summary>Distance below each page.</summary>
       public Thickness PageMargin { get; } = new(0, 0, 0, PageGap);
 
       /// <summary>
-      /// Skala layar tempat viewer tampil (1 = 96 DPI). Dipakai supaya halaman dirender setajam piksel
-      /// layar yang sebenarnya, bukan sekadar ukuran DIP-nya.
+      /// Screen scale where the viewer is shown (1 = 96 DPI). Used so pages are rendered as sharp as the
+      /// real screen pixels, not just their DIP size.
       /// </summary>
       public double DeviceScale {
          get => Get(1.0);
          set => Set(value, _ => RefreshVisiblePages());
       }
 
-      /// <summary><c>true</c> kalau ada dokumen yang terbuka.</summary>
+      /// <summary><c>true</c> when a document is open.</summary>
       public bool HasDocument => _document != null;
 
-      /// <summary>Pesan kegagalan memuat dokumen, ditampilkan selama belum ada dokumen yang terbuka.</summary>
+      /// <summary>Error message of loading the document, shown while no document is open.</summary>
       public string? ErrorMessage {
          get => Get<string?>();
          private set => Set(value, _ => NotifyChanged(nameof(HasError)));
       }
 
-      /// <summary><c>true</c> kalau dokumen gagal dimuat dan tidak ada dokumen lain yang bisa ditampilkan.</summary>
+      /// <summary><c>true</c> when the document failed to load and there is no other document to show.</summary>
       public bool HasError => !string.IsNullOrEmpty(ErrorMessage) && !HasDocument;
 
-      /// <summary>Nomor halaman (mulai dari 1) yang sedang paling banyak terlihat.</summary>
+      /// <summary>Number of the page (starting from 1) that is most visible right now.</summary>
       public int CurrentPage {
          get => Get(0);
          private set => Set(value, r => {
@@ -179,20 +181,20 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Isi kotak nomor halaman; Enter memindahkan tampilan ke halaman itu.</summary>
+      /// <summary>Content of the page number box; Enter moves the view to that page.</summary>
       public string PageNumberText {
          get => Get("");
          set => Set(value);
       }
 
-      /// <summary>Keterangan jumlah halaman di samping kotak nomor halaman, mis. <c>"/ 12"</c>.</summary>
+      /// <summary>Caption of the page count beside the page number box, e.g. <c>"/ 12"</c>.</summary>
       public string PageCountCaption => $"/ {Pages.Count:N0}";
 
       #endregion
 
       #region Zoom
 
-      /// <summary>Perbesaran tampilan: 1 berarti ukuran asli halaman.</summary>
+      /// <summary>Zoom of the view: 1 means the original page size.</summary>
       public double Zoom {
          get => Get(1.0);
          private set => Set(value, _ => {
@@ -201,11 +203,11 @@ namespace Em.Ui.Wpf.Navigations
          });
       }
 
-      /// <summary>Perbesaran dalam persen, mis. <c>"100%"</c>.</summary>
+      /// <summary>Zoom in percent, e.g. <c>"100%"</c>.</summary>
       public string ZoomCaption => $"{Math.Round(Zoom * 100):0}%";
 
-      /// <summary>Memperbesar atau memperkecil satu langkah - dipakai Ctrl + roda mouse.</summary>
-      /// <param name="zoomIn"><c>true</c> untuk memperbesar.</param>
+      /// <summary>Zooms in or out one step - used by Ctrl + mouse wheel.</summary>
+      /// <param name="zoomIn"><c>true</c> to zoom in.</param>
       public void ZoomStep(bool zoomIn) {
          if (!HasDocument) return;
          if (zoomIn) ZoomInCommand();
@@ -216,13 +218,13 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Search
 
-      /// <summary>Teks yang dicari di dokumen.</summary>
+      /// <summary>Text searched for in the document.</summary>
       public string SearchText {
          get => Get("");
          set => Set(value, _ => RaiseCommandsChanged());
       }
 
-      /// <summary>Posisi hasil pencarian yang sedang disorot, mis. <c>"3 of 12"</c>.</summary>
+      /// <summary>Position of the search result currently highlighted, e.g. <c>"3 of 12"</c>.</summary>
       public string SearchCaption {
          get => Get("");
          private set => Set(value);
@@ -233,12 +235,12 @@ namespace Em.Ui.Wpf.Navigations
       #region Viewport
 
       /// <summary>
-      /// Memberi tahu posisi dan ukuran area tampilan halaman. Menentukan halaman mana yang dirender, mana
-      /// yang bitmapnya dibuang, dan nomor halaman yang sedang terlihat.
+      /// Tells the position and size of the page display area. Decides which pages are rendered, which have
+      /// their bitmaps discarded, and the number of the page currently visible.
       /// </summary>
-      /// <param name="offset">Posisi gulir vertikal, dalam DIP.</param>
-      /// <param name="height">Tinggi area tampilan, dalam DIP.</param>
-      /// <param name="width">Lebar area tampilan, dalam DIP.</param>
+      /// <param name="offset">The vertical scroll position, in DIPs.</param>
+      /// <param name="height">Height of the display area, in DIPs.</param>
+      /// <param name="width">Width of the display area, in DIPs.</param>
       public void UpdateViewport(double offset, double height, double width) {
          _viewportOffset = offset;
          _viewportHeight = height;
@@ -317,9 +319,9 @@ namespace Em.Ui.Wpf.Navigations
       #region Loading
 
       /// <summary>
-      /// Mengambil isi PDF lewat <see cref="PdfViewerNavigationPayload.Loader"/> lalu menampilkannya.
-      /// Dipanggil saat viewer dibuka dan oleh tombol Refresh. Kalau gagal, dokumen yang sudah tampil
-      /// (kalau ada) tetap ditampilkan.
+      /// Fetches the PDF content through <see cref="PdfViewerNavigationPayload.Loader"/> and then shows it.
+      /// Called when the viewer opens and by the Refresh button. If it fails, the document that is already
+      /// shown (if any) stays shown.
       /// </summary>
       public async Task LoadAsync() {
          if (Payload is not { } payload || _lifetime.IsCancellationRequested) return;
@@ -393,8 +395,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Melepas dokumen dan menghentikan seluruh pekerjaan yang masih berjalan. Dipanggil saat entri
-      /// viewer ini ditutup.
+      /// Releases the document and stops all work still running. Called when this viewer's entry is closed.
       /// </summary>
       public void Release() {
          _lifetime.Cancel();
@@ -475,25 +476,25 @@ namespace Em.Ui.Wpf.Navigations
       // Almost every command applies only while a document is open and nothing is being waited for.
       private bool IsDocumentReady => HasDocument && !InWaiting;
 
-      /// <summary>Mengambil ulang isi PDF lewat pemanggilnya.</summary>
+      /// <summary>Fetches the PDF content again through its caller.</summary>
       public Task RefreshCommand() => LoadAsync();
 
-      /// <summary>Refresh bisa dijalankan selama tidak sedang memuat.</summary>
+      /// <summary>Refresh may run as long as it is not loading.</summary>
       public bool RefreshCommandAllowed() => Payload != null && !InWaiting;
 
-      /// <summary>Pindah ke halaman sebelumnya.</summary>
+      /// <summary>Goes to the previous page.</summary>
       public void PreviousPageCommand() => ScrollToPage(CurrentPage - 1);
 
-      /// <summary>Ada halaman sebelum halaman yang sedang terlihat.</summary>
+      /// <summary>There is a page before the page currently visible.</summary>
       public bool PreviousPageCommandAllowed() => IsDocumentReady && CurrentPage > 1;
 
-      /// <summary>Pindah ke halaman berikutnya.</summary>
+      /// <summary>Goes to the next page.</summary>
       public void NextPageCommand() => ScrollToPage(CurrentPage + 1);
 
-      /// <summary>Ada halaman sesudah halaman yang sedang terlihat.</summary>
+      /// <summary>There is a page after the page currently visible.</summary>
       public bool NextPageCommandAllowed() => IsDocumentReady && CurrentPage < Pages.Count;
 
-      /// <summary>Pindah ke halaman yang diketik di kotak nomor halaman.</summary>
+      /// <summary>Goes to the page typed in the page number box.</summary>
       public void GoToPageCommand() {
          if (int.TryParse(PageNumberText.Trim(), out var number))
             ScrollToPage(Math.Clamp(number, 1, Pages.Count));
@@ -501,46 +502,46 @@ namespace Em.Ui.Wpf.Navigations
             PageNumberText = CurrentPage > 0 ? $"{CurrentPage}" : "";
       }
 
-      /// <summary>Ada dokumen yang bisa dituju halamannya.</summary>
+      /// <summary>There is a document whose pages can be navigated.</summary>
       public bool GoToPageCommandAllowed() => IsDocumentReady;
 
-      /// <summary>Memperkecil satu langkah.</summary>
+      /// <summary>Zooms out one step.</summary>
       public void ZoomOutCommand() {
          var next = ZoomSteps.LastOrDefault(r => r < Zoom - 0.001);
          ApplyZoom(next > 0 ? next : MinZoom);
       }
 
-      /// <summary>Masih bisa diperkecil.</summary>
+      /// <summary>Can still be zoomed out.</summary>
       public bool ZoomOutCommandAllowed() => IsDocumentReady && Zoom > MinZoom + 0.001;
 
-      /// <summary>Memperbesar satu langkah.</summary>
+      /// <summary>Zooms in one step.</summary>
       public void ZoomInCommand() {
          var next = ZoomSteps.FirstOrDefault(r => r > Zoom + 0.001);
          ApplyZoom(next > 0 ? next : MaxZoom);
       }
 
-      /// <summary>Masih bisa diperbesar.</summary>
+      /// <summary>Can still be zoomed in.</summary>
       public bool ZoomInCommandAllowed() => IsDocumentReady && Zoom < MaxZoom - 0.001;
 
-      /// <summary>Menyesuaikan perbesaran supaya halaman terlebar memenuhi lebar tampilan.</summary>
+      /// <summary>Adjusts the zoom so the widest page fills the width of the display.</summary>
       public void FitWidthCommand() => ApplyZoom(FitWidthZoom());
 
-      /// <summary>Ada dokumen yang bisa disesuaikan lebarnya.</summary>
+      /// <summary>There is a document whose width can be adjusted.</summary>
       public bool FitWidthCommandAllowed() => IsDocumentReady;
 
-      /// <summary>Menyorot hasil pencarian berikutnya; pencarian pertama menyusun daftar hasilnya.</summary>
+      /// <summary>Highlights the next search result; the first search builds the list of results.</summary>
       public Task FindNextCommand() => FindAsync(forward: true);
 
-      /// <summary>Ada teks yang bisa dicari.</summary>
+      /// <summary>There is text that can be searched.</summary>
       public bool FindNextCommandAllowed() => IsDocumentReady && !string.IsNullOrWhiteSpace(SearchText);
 
-      /// <summary>Menyorot hasil pencarian sebelumnya.</summary>
+      /// <summary>Highlights the previous search result.</summary>
       public Task FindPreviousCommand() => FindAsync(forward: false);
 
-      /// <summary>Ada teks yang bisa dicari.</summary>
+      /// <summary>There is text that can be searched.</summary>
       public bool FindPreviousCommandAllowed() => FindNextCommandAllowed();
 
-      /// <summary>Mencetak dokumen lewat dialog cetak Windows.</summary>
+      /// <summary>Prints the document through the Windows print dialog.</summary>
       public async Task PrintCommand() {
          if (_document is not { } document) return;
 
@@ -574,12 +575,12 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Ada dokumen yang bisa dicetak.</summary>
+      /// <summary>There is a document that can be printed.</summary>
       public bool PrintCommandAllowed() => IsDocumentReady;
 
       /// <summary>
-      /// Menyimpan PDF ke file. Yang ditulis adalah byte asli dari pemanggilnya, tanpa lewat PDFium, supaya
-      /// tanda tangan digital di dalamnya tetap sah.
+      /// Saves the PDF to a file. What is written is the original bytes from the caller, without going through
+      /// PDFium, so any digital signature in it stays valid.
       /// </summary>
       public async Task SaveAsCommand() {
          if (!AllowSaveAs || _data is not { } data) return;
@@ -600,7 +601,7 @@ namespace Em.Ui.Wpf.Navigations
          }
       }
 
-      /// <summary>Ada dokumen yang bisa disimpan.</summary>
+      /// <summary>There is a document that can be saved.</summary>
       public bool SaveAsCommandAllowed() => AllowSaveAs && IsDocumentReady && _data != null;
 
       private string SuggestedFileName() {
@@ -702,8 +703,8 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// Satu halaman di <see cref="PdfViewer"/>: ukuran dan letaknya di daftar halaman, bitmap hasil render
-   /// kalau sedang terlihat, dan sorotan hasil pencarian di atasnya.
+   /// One page in <see cref="PdfViewer"/>: its size and place in the page list, the rendered bitmap when it
+   /// is visible, and the search highlights over it.
    /// </summary>
    public class PdfPageVm : NotifyPropertyBase
    {
@@ -715,37 +716,37 @@ namespace Em.Ui.Wpf.Navigations
          PageSize = pageSize;
       }
 
-      /// <summary>Nomor urut halaman, mulai dari 0.</summary>
+      /// <summary>Sequence number of the page, starting from 0.</summary>
       public int Index { get; }
 
-      /// <summary>Ukuran halaman dalam point (1/72 inci).</summary>
+      /// <summary>Size of the page in points (1/72 inch).</summary>
       public Size PageSize { get; }
 
-      /// <summary>Lebar halaman di layar, dalam DIP.</summary>
+      /// <summary>Width of the page on screen, in DIPs.</summary>
       public double Width {
          get => Get(0.0);
          private set => Set(value);
       }
 
-      /// <summary>Tinggi halaman di layar, dalam DIP.</summary>
+      /// <summary>Height of the page on screen, in DIPs.</summary>
       public double Height {
          get => Get(0.0);
          private set => Set(value);
       }
 
-      /// <summary>Posisi tepi atas halaman dari awal daftar halaman, dalam DIP.</summary>
+      /// <summary>Position of the page's top edge from the start of the page list, in DIPs.</summary>
       public double Top { get; private set; }
 
       /// <summary>
-      /// Hasil render halaman, atau <c>null</c> selama halaman ini jauh dari layar. Ditampilkan
-      /// direntangkan sampai render untuk perbesaran yang baru selesai.
+      /// The render result of the page, or <c>null</c> while this page is far from the screen. Shown stretched
+      /// until the render for the new zoom finishes.
       /// </summary>
       public BitmapSource? Bitmap {
          get => Get<BitmapSource?>();
          private set => Set(value);
       }
 
-      /// <summary>Sorotan hasil pencarian di halaman ini.</summary>
+      /// <summary>Search result highlights on this page.</summary>
       public ObservableCollection<PdfHighlightVm> Highlights { get; } = [];
 
       internal bool IsWanted {
@@ -778,8 +779,8 @@ namespace Em.Ui.Wpf.Navigations
    }
 
    /// <summary>
-   /// Satu kotak sorotan hasil pencarian di atas sebuah halaman <see cref="PdfViewer"/>, dalam DIP dari
-   /// pojok kiri atas halamannya.
+   /// One search result highlight box over a page of <see cref="PdfViewer"/>, in DIPs from the top-left
+   /// corner of its page.
    /// </summary>
    public class PdfHighlightVm
    {
@@ -791,19 +792,19 @@ namespace Em.Ui.Wpf.Navigations
          IsCurrent = isCurrent;
       }
 
-      /// <summary>Jarak dari tepi kiri halaman.</summary>
+      /// <summary>Distance from the left edge of the page.</summary>
       public double Left { get; }
 
-      /// <summary>Jarak dari tepi atas halaman.</summary>
+      /// <summary>Distance from the top edge of the page.</summary>
       public double Top { get; }
 
-      /// <summary>Lebar kotak.</summary>
+      /// <summary>Width of the box.</summary>
       public double Width { get; }
 
-      /// <summary>Tinggi kotak.</summary>
+      /// <summary>Height of the box.</summary>
       public double Height { get; }
 
-      /// <summary><c>true</c> untuk hasil pencarian yang sedang dituju.</summary>
+      /// <summary><c>true</c> for the search result currently being targeted.</summary>
       public bool IsCurrent { get; }
    }
 }

@@ -64,8 +64,8 @@
          <conv:InitialsConverter x:Key="initialsConverter" />
          <conv:AvatarPaletteConverter x:Key="avatarPaletteConverter" />
 
-         <!-- Sepasang dengan boolToVisibility milik Cards.xaml: dua sisi dari satu keadaan, mis.
-              nama yang tampil saat diam dan isian yang menggantikannya saat diedit. -->
+         <!-- A pair with boolToVisibility of Cards.xaml: two sides of one state, e.g. the
+              name shown while idle and the input that replaces it while editing. -->
          <conv:InverseBoolToVisibilityConverter x:Key="inverseBoolToVisibility" />
 
          <!-- ============================================================

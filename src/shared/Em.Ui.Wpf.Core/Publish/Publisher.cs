@@ -11,15 +11,24 @@ using NuGet.Versioning;
 
 namespace Em.Ui.Wpf.Publish;
 
+/// <summary>The prepared publish.</summary>
 public sealed class PreparedPublish {
+ /// <summary>The profile.</summary>
  public required PublishProfile Profile { get; init; }
+ /// <summary>The build fingerprint.</summary>
  public required string BuildFingerprint { get; init; }
+ /// <summary>The connection.</summary>
  public required string Connection { get; init; }
+ /// <summary>The artifacts.</summary>
  public List<PublishArtifact> Artifacts { get; init; }=[];
+ /// <summary>The run id.</summary>
  public string RunId { get; init; }="";
+ /// <summary>The publish outputs.</summary>
  public Dictionary<string,string> PublishOutputs { get; init; }=[];
+ /// <summary>The set profiles.</summary>
  public Dictionary<string,PublishProfile> SetProfiles { get; init; }=[];
 }
+/// <summary>Runs publish: checks the profile, prepares the artifacts, pushes them, and verifies the result.</summary>
 public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,PublishSecretStore secrets,PublishTargets targets) {
  private static readonly ConcurrentDictionary<string,byte> Busy=new();
  private readonly PublishProcessRunner _process=new();
@@ -35,18 +44,23 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   if(_effective.TryGetValue(p.Id,out var cached))return cached;
   var result=await Targets.ResolveContainer(p,ct);_effective[p.Id]=result;return result;
  }
+ /// <summary>The prepared.</summary>
  public PreparedPublish? Prepared { get; private set; }
  /// <summary>The run of the last operation and its log folder, for Retry deploy after Push.</summary>
  public PublishRun? LastRun { get; private set; }
+ /// <summary>The last run directory.</summary>
  public string? LastRunDirectory { get; private set; }
  // Artifacts pushed by the Push operation in progress; only these are deployed afterwards.
  private List<(PublishProfile Profile,PublishArtifact Artifact)> _pushedNow=[];
+ /// <summary>Raised for output.</summary>
  public event Action<string>? Output;
+ /// <summary>Computes a fingerprint of the parts of a profile that decide what is built.</summary>
  public static string Fingerprint(PublishProfile profile) {
   var p=profile.Clone();p.Credentials=[];p.SensitiveDataStorage=SensitiveDataStorage.Separate;p.Name="";p.Description="";p.KeepWorkspace=false;p.RequireReleaseNotes=false;
   if(p.NuGet!=null)p.NuGet.Target=new();if(p.Container!=null) {p.Container.Target=new();p.Container.UseMyDockerLogin=false;p.Container.AutoDeploy=true;foreach(var service in p.Container.Compose.Services){service.Repository="";service.VersionTag="";}}
   return Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ProfileJson.Write(p))));
  }
+ /// <summary>Checks a profile and returns the problems found.</summary>
  public async Task<string[]> Check(PublishProfile profile,CancellationToken ct) {
   profile.Validate();if(!Directory.Exists(profile.Workspace))throw new DirectoryNotFoundException("Select an existing workspace.");
   var tools=await _process.CheckTools(profile,ct);
@@ -122,6 +136,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   } catch(Exception ex) {if(log!=null) {log.Line(ex.Message);log.Stage(operation,PublishResult.Failed,ex.Message);log.Finish(PublishResult.Failed);}throw;}
   finally {try {if(auth!=null&&Directory.Exists(auth)) {PublishPaths.ValidateTree(auth);Directory.Delete(auth,true);}_process.DefaultEnvironment=[];work?.Dispose();}finally {_dockerConfig=null;_operationTargets=null;_effective=[];foreach(var id in reserved)Busy.TryRemove(id,out _);Busy.TryRemove(p.Id,out _);}}
  }
+ /// <summary>Builds the artifacts of a profile.</summary>
  public async Task Prepare(PublishProfile profile,CancellationToken ct) {
   var p=profile.Clone();Prepared=null;
   await Execute(p,"Prepare","",async(log,work,token)=> {
@@ -167,10 +182,12 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   }
   if(prepared.Artifacts.Count==0)throw new InvalidDataException("Pack produced no .nupkg artifacts.");
  }
+ /// <summary>Reads a package file as a publish artifact.</summary>
  public static PublishArtifact ReadPackage(string file,string profileId) {
   using var reader=new PackageArchiveReader(file);var identity=reader.GetIdentity();
   using var stream=File.OpenRead(file);return new() {ProfileId=profileId,File=file,Id=identity.Id,Version=identity.Version.ToNormalizedString(),Hash=Convert.ToBase64String(SHA512.HashData(stream))};
  }
+ /// <summary>Adds package files as artifacts of a profile.</summary>
  public void AddPackages(PublishProfile p,IEnumerable<string> files) {
   if(p.Kind!=PublishKind.NuGet)throw new InvalidOperationException("Existing packages belong to NuGet profiles.");
   Prepared??=new() {Profile=p.Clone(),BuildFingerprint=Fingerprint(p),Connection=targets.Scope};
@@ -253,11 +270,13 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   prepared.Artifacts.Add(new() {ProfileId=p.Id,Id=Repository(target),Version=c.Target.VersionTag,ImageId=await ImageId(image,p,log,ct),Target=target});
  }
  private async Task<string> ImageId(string image,PublishProfile p,PublishLog log,CancellationToken ct)=> (await _process.RequireAsync("docker",["image","inspect","--format","{{.Id}}",image],p.Workspace,log,ct)).Trim();
+ /// <summary>Validates the release notes of a profile.</summary>
  public void ValidateReleaseNotes(PublishProfile p,string notes) {
   if(!string.IsNullOrWhiteSpace(notes))return;
   if(p.RequireReleaseNotes)throw new InvalidDataException("Release notes are required.");
   if(p.Container?.Mode==ContainerMode.Set)foreach(var step in p.Container.Set.Steps)if(profiles.Load(step.ProfileId).RequireReleaseNotes)throw new InvalidDataException("Release notes are required by a Set step.");
  }
+ /// <summary>Pushes the prepared artifacts to the target.</summary>
  public async Task Push(PublishProfile profile,string notes,CancellationToken ct) {
   var prepared=Prepared??throw new InvalidOperationException("Prepare or add packages first.");
   if(Fingerprint(profile)!=prepared.BuildFingerprint)throw new InvalidOperationException("Source/build settings changed; Prepare ulang.");
@@ -381,6 +400,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   PublishPaths.Atomic(file,ProfileJson.Write(stored));
   return failed;
  }
+ /// <summary>Checks that what was published is really there.</summary>
  public async Task Verify(PublishProfile profile,CancellationToken ct) {
   var prepared=Prepared??throw new InvalidOperationException("No artifacts to verify.");var p=profile.Clone();
   await Execute(p,"Verify","",async(log,work,token)=> {

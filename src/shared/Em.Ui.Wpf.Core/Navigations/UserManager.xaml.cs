@@ -21,6 +21,7 @@ namespace Em.Ui.Wpf.Navigations
    public partial class UserManager : UserControl, INavigationBody
    {
       private EmApp _app;
+      /// <summary>Creates a new instance of <see cref="UserManager"/>.</summary>
       public UserManager(EmApp app) {
          _app = app;
          InitializeComponent();
@@ -28,26 +29,31 @@ namespace Em.Ui.Wpf.Navigations
          robotManager.Vm.EmApp = _app;
       }
 
+      /// <summary>The vm.</summary>
       public UserManagerVm Vm => (UserManagerVm)DataContext;
 
       // Nothing is read here: the host raises this on every way into the screen, back and forward
       // included, and those two return to a list that is already filled. Filling it belongs to
       // OnReloadRequested, which only a real navigation raises.
+      /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) {
          robotManager.Vm.NavigationEntry = Vm.NavigationEntry;
          robotManager.Vm.MainWindow = Vm.MainWindow;
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
-      // Bukan async void lagi: yang meminta reload sekarang menunggunya selesai, jadi daftar ini
-      // sudah terisi sebelum perpindahan yang memicunya dianggap tuntas.
+      // No longer async void: whoever asks for a reload now waits for it to finish, so this list is already
+      // filled before the move that triggered it counts as complete.
+      /// <inheritdoc />
       public async Task OnReloadRequested(INavigation sender, NavigationEventArgs args) {
          await Vm.ReloadAsync();
          await robotManager.Vm.ReloadAsync();
       }
 
+      /// <inheritdoc />
       public Task OnRelease(INavigation sender) => Task.CompletedTask;
 
       // The one gesture on this screen that is not a binding. ListBoxItem exposes no command for a
@@ -198,6 +204,7 @@ namespace Em.Ui.Wpf.Navigations
       #endregion
    }
 
+   /// <summary>View model of the user manager screen.</summary>
    public class UserManagerVm : MvvmModelBase
    {
       // Pages either side of the current one that always stay on the pager; anything further out
@@ -209,6 +216,7 @@ namespace Em.Ui.Wpf.Navigations
       private bool _pagingSuspended;
       private bool _pagerRebuildQueued;
 
+      /// <summary>Creates a new instance of <see cref="UserManagerVm"/>.</summary>
       public UserManagerVm() {
          RegisterCommand(nameof(FirstPageCommand), FirstPageCommand, FirstPageCommandAllowed);
          RegisterCommand(nameof(PreviousPageCommand), PreviousPageCommand, PreviousPageCommandAllowed);
@@ -228,13 +236,13 @@ namespace Em.Ui.Wpf.Navigations
       #region Data
 
       /// <summary>
-      /// Baris-baris yang sedang ditampilkan, yaitu isi satu halaman hasil pembacaan terakhir.
+      /// The rows currently shown, which is the content of one page from the latest read.
       /// </summary>
       public ObservableCollection<User> Users { get; } = [];
 
       /// <summary>
-      /// Jumlah seluruh user di database, bukan hanya yang ada di halaman ini. Dipakai untuk
-      /// menghitung jumlah halaman dan menyusun keterangan rentang di kaki daftar.
+      /// Total number of users in the database, not just those on this page. Used to compute the page count
+      /// and to compose the range caption at the foot of the list.
       /// </summary>
       public int TotalRecords {
          get => Get<int>();
@@ -249,7 +257,7 @@ namespace Em.Ui.Wpf.Navigations
       #region Paging
 
       /// <summary>
-      /// Pilihan jumlah baris per halaman yang ditawarkan combo box di kaki daftar.
+      /// The choices of rows per page offered by the combo box at the foot of the list.
       /// </summary>
       public IReadOnlyList<PageSizeOption> PageSizes { get; } = [
          PageSizeOption.Of(100),
@@ -261,8 +269,8 @@ namespace Em.Ui.Wpf.Navigations
       ];
 
       /// <summary>
-      /// Pilihan yang sedang terpilih di combo box. Setiap perpindahan pilihan langsung
-      /// memperbarui <see cref="DefaultPageSize"/>.
+      /// The choice currently selected in the combo box. Every change of choice immediately updates
+      /// <see cref="DefaultPageSize"/>.
       /// </summary>
       public PageSizeOption SelectedPageSize {
          get => Get<PageSizeOption>();
@@ -270,7 +278,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Jumlah baris yang dibaca untuk satu halaman.
+      /// Number of rows read for one page.
       /// </summary>
       public int DefaultPageSize {
          get => Get<int>();
@@ -281,8 +289,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Halaman yang sedang dibuka, dimulai dari 1. Nilai di luar jangkauan otomatis dijepit ke
-      /// halaman pertama atau terakhir, jadi isian lompat-halaman tidak perlu memvalidasi sendiri.
+      /// The page that is open, starting from 1. A value out of range is clamped to the first or last page
+      /// automatically, so the jump-to-page field need not validate by itself.
       /// </summary>
       public int CurrentPage {
          get => Get<int>();
@@ -290,8 +298,8 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Jumlah halaman menurut <see cref="TotalRecords"/> dan <see cref="DefaultPageSize"/>,
-      /// minimal 1 walaupun datanya kosong.
+      /// Number of pages according to <see cref="TotalRecords"/> and <see cref="DefaultPageSize"/>, at least 1
+      /// even when the data is empty.
       /// </summary>
       public int PageCount {
          get {
@@ -304,13 +312,13 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Deretan tombol halaman beserta selanya ("..."), disusun ulang setiap kali halaman aktif
-      /// atau jumlah halaman berubah.
+      /// The row of page buttons together with their gaps ("..."), rebuilt every time the active page or the
+      /// page count changes.
       /// </summary>
       public ObservableCollection<PagerSlot> PagerSlots { get; } = [];
 
       /// <summary>
-      /// Keterangan rentang baris di kaki daftar, mis. "Showing 201 - 400 of 1,024 users".
+      /// Caption of the row range at the foot of the list, e.g. "Showing 201 - 400 of 1,024 users".
       /// </summary>
       public string RangeCaption {
          get {
@@ -323,12 +331,12 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Jumlah user yang ditampilkan sekarang beserta satuannya, untuk chip di toolbar.
+      /// The number of users shown now together with its unit, for the chip in the toolbar.
       /// </summary>
       public string TotalCaption => $"{TotalRecords:N0} users";
 
       /// <summary>
-      /// Keterangan singkat posisi halaman untuk chip di toolbar, mis. "Page 3 of 6".
+      /// Short caption of the page position for the chip in the toolbar, e.g. "Page 3 of 6".
       /// </summary>
       public string PageCaption => $"Page {CurrentPage:N0} of {PageCount:N0}";
 
@@ -336,28 +344,28 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Commands
 
-      /// <summary>Pindah ke halaman pertama.</summary>
+      /// <summary>Goes to the first page.</summary>
       public void FirstPageCommand() => CurrentPage = 1;
 
-      /// <summary>Hanya boleh dijalankan kalau halaman aktif bukan halaman pertama.</summary>
+      /// <summary>May only run when the active page is not the first page.</summary>
       public bool FirstPageCommandAllowed() => CurrentPage > 1;
 
-      /// <summary>Mundur satu halaman.</summary>
+      /// <summary>Goes back one page.</summary>
       public void PreviousPageCommand() => CurrentPage--;
 
-      /// <summary>Hanya boleh dijalankan kalau masih ada halaman sebelum halaman aktif.</summary>
+      /// <summary>May only run when there is still a page before the active page.</summary>
       public bool PreviousPageCommandAllowed() => CurrentPage > 1;
 
-      /// <summary>Maju satu halaman.</summary>
+      /// <summary>Goes forward one page.</summary>
       public void NextPageCommand() => CurrentPage++;
 
-      /// <summary>Hanya boleh dijalankan kalau masih ada halaman sesudah halaman aktif.</summary>
+      /// <summary>May only run when there is still a page after the active page.</summary>
       public bool NextPageCommandAllowed() => CurrentPage < PageCount;
 
-      /// <summary>Pindah ke halaman terakhir.</summary>
+      /// <summary>Goes to the last page.</summary>
       public void LastPageCommand() => CurrentPage = PageCount;
 
-      /// <summary>Hanya boleh dijalankan kalau halaman aktif bukan halaman terakhir.</summary>
+      /// <summary>May only run when the active page is not the last page.</summary>
       public bool LastPageCommandAllowed() => CurrentPage < PageCount;
 
       #endregion
@@ -375,22 +383,22 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>
-      /// Membuka satu baris di layar editor. Barisnya diserahkan apa adanya, bukan dibaca ulang
-      /// dari server: daftar ini dan editor memakai objek yang sama, jadi apa pun yang disimpan di
-      /// sana langsung terlihat di baris ini tanpa perlu memuat ulang halaman.
+      /// Opens one row on the editor screen. The row is handed over as-is, not read again from the server:
+      /// this list and the editor use the same object, so whatever is saved there is immediately visible in
+      /// this row without reloading the page.
       /// </summary>
-      /// <param name="user">Baris yang diklik, diteruskan lewat CommandParameter.</param>
+      /// <param name="user">The row that was clicked, passed through CommandParameter.</param>
       public async Task EditUserCommand(User? user) {
          var payload = UserEditorNavigationPayload.Create(user);
          await NavigationEntry!.NavigateTo("admin.users.editor", payload);
       }
 
-      /// <summary>Hanya boleh dijalankan kalau ada baris yang diteruskan sebagai parameter.</summary>
+      /// <summary>May only run when a row is passed as the parameter.</summary>
       public bool EditUserCommandAllowed(User? user) => user is not null;
 
       /// <summary>
-      /// Membaca jumlah seluruh user lalu mengisi <see cref="Users"/> dengan satu halaman data.
-      /// Tidak melakukan apa-apa kalau aplikasi belum ter-set atau pembacaan lain masih berjalan.
+      /// Reads the total number of users then fills <see cref="Users"/> with one page of data. Does nothing
+      /// when the application has not been set yet or another read is still running.
       /// </summary>
       public async Task ReloadAsync() {
          if (EmApp == null || IsBusy) return;

@@ -7,43 +7,43 @@ using Application = System.Windows.Application;
 namespace Em.Ui.Wpf.Shared
 {
    /// <summary>
-   /// Base class untuk ViewModel di aplikasi WPF, menyediakan notifikasi perubahan property
-   /// (lewat <see cref="NotifyPropertyBase"/>), pendaftaran <see cref="UiCommandBase"/>, akses ke
-   /// <see cref="EmApp"/>, dan helper untuk menampilkan pesan/detail error.
+   /// Base class for view models in the WPF application, providing property change notification (through
+   /// <see cref="NotifyPropertyBase"/>), registration of <see cref="UiCommandBase"/>, access to
+   /// <see cref="EmApp"/>, and helpers to show messages/error details.
    /// </summary>
    public abstract class MvvmModelBase : NotifyPropertyBase
    {
       /// <summary>
-      /// Dipicu setiap kali salah satu command terdaftar pada ViewModel ini selesai dieksekusi.
+      /// Raised every time one of the commands registered on this view model has finished executing.
       /// </summary>
       public event EventHandler? CommandExecuted;
 
       /// <summary>
-      /// Window pemilik ViewModel ini, dipakai sebagai owner dialog (mis. message box, dialog error)
-      /// jika ada; kalau <c>null</c>, dialog memakai <see cref="Core.EmApp.MainWindow"/> sebagai fallback.
+      /// The window that owns this view model, used as the dialog owner (e.g. message box, error dialog) when
+      /// present; when <c>null</c>, dialogs use <see cref="Core.EmApp.MainWindow"/> as a fallback.
       /// </summary>
       public Window? MainWindow { get; set; }
 
       /// <summary>
-      /// Referensi ke objek aplikasi. Di-set otomatis oleh Engine (<see cref="Core.EmApp"/>) saat
-      /// ViewModel ini menjadi DataContext body yang dibangun lewat navigasi, atau di-set manual oleh
-      /// dialog/window yang membuat ViewModel ini.
+      /// Reference to the application object. Set automatically by the engine (<see cref="Core.EmApp"/>) when
+      /// this view model becomes the DataContext of a body built through navigation, or set manually by the
+      /// dialog/window that creates this view model.
       /// </summary>
       public EmApp? EmApp { get; internal set; }
 
       /// <summary>
-      /// Entri navigasi yang body-nya memakai ViewModel ini, di-set otomatis oleh engine saat body
-      /// dibangun lewat navigasi. Lewat entri inilah body membuka layar lain
-      /// (<see cref="Core.NavigationEntry.NavigateTo(string,object?)"/>), mengganti judulnya, atau
-      /// menutup dirinya. <c>null</c> untuk ViewModel yang tidak dibangun lewat navigasi - mis. dialog.
+      /// The navigation entry whose body uses this view model, set automatically by the engine when the body
+      /// is built through navigation. Through this entry the body opens another screen
+      /// (<see cref="Core.NavigationEntry.NavigateTo(string,object?)"/>), changes its title, or closes itself.
+      /// <c>null</c> for a view model that is not built through navigation - e.g. a dialog.
       /// </summary>
       public NavigationEntry? NavigationEntry { get; internal set; }
 
       /// <summary>
-      /// Window yang dipakai sebagai owner dialog ViewModel ini: <see cref="MainWindow"/> kalau di-set,
-      /// lalu window yang sedang menampilkan entri navigasinya - window utama, window detach, atau
-      /// window hasil tab yang ditarik keluar - dan terakhir window utama aplikasi. Dengan begitu
-      /// pertanyaan dari body di window lain muncul di window itu, bukan di window utama.
+      /// The window used as the dialog owner of this view model: <see cref="MainWindow"/> if set, then the
+      /// window currently showing its navigation entry - the main window, a detached window, or a window born
+      /// from a dragged-out tab - and lastly the application's main window. That way a question from a body in
+      /// another window appears in that window, not in the main window.
       /// </summary>
       public Window? DialogOwner =>
          MainWindow
@@ -51,26 +51,26 @@ namespace Em.Ui.Wpf.Shared
          ?? EmApp?.MainWindow;
 
       /// <summary>
-      /// Koleksi command yang terdaftar pada ViewModel ini, bisa diakses lewat nama command
-      /// (lihat <see cref="UiCommandBaseCollection"/>).
+      /// The collection of commands registered on this view model, accessible by command name (see
+      /// <see cref="UiCommandBaseCollection"/>).
       /// </summary>
       public UiCommandBaseCollection Commands { get; } = [];
 
       /// <summary>
-      /// Memicu event <see cref="CommandExecuted"/> untuk command dengan nama tertentu, jika ditemukan.
+      /// Raises the <see cref="CommandExecuted"/> event for the command with a given name, if found.
       /// </summary>
-      /// <param name="commandName">Nama command, sesuai yang dipakai saat <c>RegisterCommand</c>.</param>
+      /// <param name="commandName">The command name, as used in <c>RegisterCommand</c>.</param>
       public void RaiseCommandExecutedEvent(string commandName) {
          if (Commands[commandName] is { } command)
             RaiseCommandExecutedEvent(command);
       }
 
       /// <summary>
-      /// Menampilkan message box error untuk sebuah exception, dengan owner window dari
-      /// <see cref="MainWindow"/> atau <see cref="Core.EmApp.MainWindow"/>. Tidak melakukan apa-apa
-      /// jika <see cref="EmApp"/> belum ter-set.
+      /// Shows an error message box for an exception, with the owner window taken from
+      /// <see cref="MainWindow"/> or <see cref="Core.EmApp.MainWindow"/>. Does nothing if <see cref="EmApp"/>
+      /// has not been set.
       /// </summary>
-      /// <param name="e">Exception yang akan ditampilkan pesannya.</param>
+      /// <param name="e">The exception whose message is shown.</param>
       public void AlertError(Exception e) {
          if (EmApp != null) {
             DialogOwner?.ShowMboxError(e);
@@ -78,10 +78,10 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Menampilkan dialog detail exception (<see cref="DisplayExceptionData"/>). Tidak melakukan
-      /// apa-apa jika <see cref="EmApp"/> belum ter-set.
+      /// Shows the exception detail dialog (<see cref="DisplayExceptionData"/>). Does nothing if
+      /// <see cref="EmApp"/> has not been set.
       /// </summary>
-      /// <param name="e">Exception yang detailnya akan ditampilkan.</param>
+      /// <param name="e">The exception whose details are shown.</param>
       public void DiaplayException(Exception e) {
          if (EmApp == null) return;
 
@@ -96,40 +96,40 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Memicu event <see cref="CommandExecuted"/> untuk command tertentu.
+      /// Raises the <see cref="CommandExecuted"/> event for a given command.
       /// </summary>
-      /// <param name="command">Command yang baru selesai dieksekusi.</param>
+      /// <param name="command">The command that has just finished executing.</param>
       public void RaiseCommandExecutedEvent(UiCommandBase command) {
          CommandExecuted?.Invoke(command, EventArgs.Empty);
       }
 
       /// <summary>
-      /// Mendaftarkan satu atau lebih command yang sudah dibuat sebelumnya ke <see cref="Commands"/>.
+      /// Registers one or more commands that were created earlier into <see cref="Commands"/>.
       /// </summary>
-      /// <param name="commands">Command-command yang akan didaftarkan.</param>
+      /// <param name="commands">The commands to register.</param>
       public void RegisterCommand(params UiCommandBase[] commands) {
          foreach (var command in commands)
             AddCommand(command);
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommand"/> sinkron tanpa parameter, selalu bisa dieksekusi.
+      /// Creates and registers a synchronous <see cref="UiCommand"/> without a parameter, always executable.
       /// </summary>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi yang dijalankan saat command dieksekusi.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The action that runs when the command is executed.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommand RegisterCommand(string commandName, Action commandProcessHandler) {
          return RegisterCommand(commandName, commandProcessHandler, () => true);
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommand"/> sinkron tanpa parameter, dengan kondisi
-      /// boleh-dieksekusi kustom.
+      /// Creates and registers a synchronous <see cref="UiCommand"/> without a parameter, with a custom
+      /// can-execute condition.
       /// </summary>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi yang dijalankan saat command dieksekusi.</param>
-      /// <param name="commandAllowedHandler">Kondisi apakah command boleh dieksekusi saat ini.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The action that runs when the command is executed.</param>
+      /// <param name="commandAllowedHandler">The condition of whether the command may be executed right now.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommand RegisterCommand(
          string commandName,
          Action commandProcessHandler,
@@ -142,12 +142,12 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommand"/> sinkron dengan parameter bertipe <see cref="object"/>.
+      /// Creates and registers a synchronous <see cref="UiCommand"/> with a parameter of type <see cref="object"/>.
       /// </summary>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi yang dijalankan saat command dieksekusi, menerima parameter command.</param>
-      /// <param name="commandAllowedHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The action that runs when the command is executed, receiving the command parameter.</param>
+      /// <param name="commandAllowedHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommand RegisterCommand(
          string commandName,
          Action<object?> commandProcessHandler,
@@ -157,13 +157,13 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommand{T}"/> sinkron dengan parameter bertipe kuat <typeparamref name="T"/>.
+      /// Creates and registers a synchronous <see cref="UiCommand{T}"/> with a strongly typed parameter <typeparamref name="T"/>.
       /// </summary>
-      /// <typeparam name="T">Tipe parameter command.</typeparam>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi yang dijalankan saat command dieksekusi.</param>
-      /// <param name="commandAllowedHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <typeparam name="T">The type of the command parameter.</typeparam>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The action that runs when the command is executed.</param>
+      /// <param name="commandAllowedHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommand<T> RegisterCommand<T>(
          string commandName,
          Action<T> commandProcessHandler,
@@ -173,23 +173,23 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommandAsync"/> tanpa parameter, selalu bisa dieksekusi.
+      /// Creates and registers a <see cref="UiCommandAsync"/> without a parameter, always executable.
       /// </summary>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi async yang dijalankan saat command dieksekusi.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The async action that runs when the command is executed.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommandAsync RegisterCommand(string commandName, Func<Task> commandProcessHandler) {
          return RegisterCommand(commandName, commandProcessHandler, () => true);
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommandAsync"/> tanpa parameter, dengan kondisi
-      /// boleh-dieksekusi kustom.
+      /// Creates and registers a <see cref="UiCommandAsync"/> without a parameter, with a custom can-execute
+      /// condition.
       /// </summary>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi async yang dijalankan saat command dieksekusi.</param>
-      /// <param name="commandAllowedHandler">Kondisi apakah command boleh dieksekusi saat ini.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The async action that runs when the command is executed.</param>
+      /// <param name="commandAllowedHandler">The condition of whether the command may be executed right now.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommandAsync RegisterCommand(
          string commandName,
          Func<Task> commandProcessHandler,
@@ -202,12 +202,12 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommandAsync"/> dengan parameter bertipe <see cref="object"/>.
+      /// Creates and registers a <see cref="UiCommandAsync"/> with a parameter of type <see cref="object"/>.
       /// </summary>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi async yang dijalankan saat command dieksekusi, menerima parameter command.</param>
-      /// <param name="commandAllowedHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The async action that runs when the command is executed, receiving the command parameter.</param>
+      /// <param name="commandAllowedHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommandAsync RegisterCommand(
          string commandName,
          Func<object?, Task> commandProcessHandler,
@@ -217,13 +217,13 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Membuat dan mendaftarkan <see cref="UiCommandAsync{T}"/> dengan parameter bertipe kuat <typeparamref name="T"/>.
+      /// Creates and registers a <see cref="UiCommandAsync{T}"/> with a strongly typed parameter <typeparamref name="T"/>.
       /// </summary>
-      /// <typeparam name="T">Tipe parameter command.</typeparam>
-      /// <param name="commandName">Nama command, dipakai sebagai key pada <see cref="Commands"/>.</param>
-      /// <param name="commandProcessHandler">Aksi async yang dijalankan saat command dieksekusi.</param>
-      /// <param name="commandAllowedHandler">Kondisi opsional apakah command boleh dieksekusi; default selalu boleh.</param>
-      /// <returns>Command yang baru dibuat dan sudah terdaftar.</returns>
+      /// <typeparam name="T">The type of the command parameter.</typeparam>
+      /// <param name="commandName">The command name, used as the key in <see cref="Commands"/>.</param>
+      /// <param name="commandProcessHandler">The async action that runs when the command is executed.</param>
+      /// <param name="commandAllowedHandler">An optional condition of whether the command may be executed; by default always allowed.</param>
+      /// <returns>The command that was just created and is already registered.</returns>
       public UiCommandAsync<T> RegisterCommand<T>(
          string commandName,
          Func<T, Task> commandProcessHandler,
@@ -233,8 +233,8 @@ namespace Em.Ui.Wpf.Shared
       }
 
       /// <summary>
-      /// Menambahkan command ke <see cref="Commands"/> dan berlangganan event <c>CommandExecuted</c>-nya
-      /// agar diteruskan ke event <see cref="CommandExecuted"/> milik ViewModel ini.
+      /// Adds a command to <see cref="Commands"/> and subscribes to its <c>CommandExecuted</c> event so it is
+      /// forwarded to this view model's <see cref="CommandExecuted"/> event.
       /// </summary>
       private TCommand AddCommand<TCommand>(TCommand command) where TCommand : UiCommandBase {
          command.CommandExecuted += CommandOnCommandExecuted;

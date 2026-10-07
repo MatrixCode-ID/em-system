@@ -4,32 +4,51 @@ using System.Text.Json.Serialization;
 
 namespace Em.Ui.Wpf.Core.Release
 {
-   /// <summary>Jenis tujuan rilis di Release Manager.</summary>
+   /// <summary>The kind of release target in Release Manager.</summary>
    public enum ReleaseTargetKind
    {
-      /// <summary>CDN bawaan server yang sedang tersambung.</summary>
+      /// <summary>The built-in CDN of the server that is currently connected.</summary>
       Cdn = 0,
-      /// <summary>Folder biasa, lokal atau jaringan, yang ditulis langsung.</summary>
+      /// <summary>An ordinary folder, local or on a network, that is written to directly.</summary>
       Folder = 1
    }
 
-   /// <summary>Lokasi private key untuk menandatangani rilis.</summary>
-   public enum ReleaseSigningSource { Store = 0, ProfileFile = 1 }
-   /// <summary>Cara menyimpan password berkas key.</summary>
-   public enum ReleasePasswordStorage { Separate = 0, Plaintext = 1 }
+   /// <summary>The location of the private key used to sign releases.</summary>
+   /// <summary>The release signing source.</summary>
+   public enum ReleaseSigningSource
+   {
+      /// <summary>The key is in the Windows certificate store.</summary>
+      Store = 0,
+      /// <summary>The key is a file in the profile folder.</summary>
+      ProfileFile = 1,
+   }
+   /// <summary>How the password of the key file is stored.</summary>
+   /// <summary>The release password storage.</summary>
+   public enum ReleasePasswordStorage
+   {
+      /// <summary>The password is kept apart from the profile (session or DPAPI).</summary>
+      Separate = 0,
+      /// <summary>The password is stored in the profile file as plain text.</summary>
+      Plaintext = 1,
+   }
 
-   /// <summary>Pengaturan signing key milik satu profile.</summary>
+   /// <summary>The signing key settings that belong to one profile.</summary>
    public sealed class ReleaseProfileSigning
    {
+      /// <summary>The source.</summary>
       public ReleaseSigningSource Source { get; set; }
+      /// <summary>The thumbprint.</summary>
       public string Thumbprint { get; set; } = "";
+      /// <summary>The password storage.</summary>
       public ReleasePasswordStorage PasswordStorage { get; set; }
+      /// <summary>The password.</summary>
       public string? Password { get; set; }
    }
 
-   /// <summary>Sumber, tujuan, dan signing key satu aplikasi; disimpan sebagai profile.json.</summary>
+   /// <summary>The source, target, and signing key of one application; stored as profile.json.</summary>
    public sealed class ReleaseProfile
    {
+      /// <summary>The json options.</summary>
       public static readonly JsonSerializerOptions JsonOptions = new() {
          PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
          WriteIndented = true,
@@ -37,20 +56,31 @@ namespace Em.Ui.Wpf.Core.Release
          Converters = { new JsonStringEnumConverter() }
       };
 
+      /// <summary>The format version.</summary>
       public int FormatVersion { get; set; } = 1;
+      /// <summary>The id.</summary>
       public string Id { get; set; } = Guid.NewGuid().ToString("N");
+      /// <summary>The name.</summary>
       public string Name { get; set; } = "";
+      /// <summary>The solution path.</summary>
       public string SolutionPath { get; set; } = "";
+      /// <summary>The host project.</summary>
       public string HostProject { get; set; } = "";
+      /// <summary>The publish folder.</summary>
       public string PublishFolder { get; set; } = "";
+      /// <summary>The target kind.</summary>
       public ReleaseTargetKind TargetKind { get; set; }
+      /// <summary>The target folder.</summary>
       public string TargetFolder { get; set; } = "";
+      /// <summary>The release folder.</summary>
       public string ReleaseFolder { get; set; } = ReleaseLayout.DefaultReleaseFolder;
+      /// <summary>The signing.</summary>
       public ReleaseProfileSigning Signing { get; set; } = new();
 
-      /// <summary>Salinan dalam, termasuk pengaturan signing.</summary>
+      /// <summary>A deep copy, including the signing settings.</summary>
       public ReleaseProfile Clone() => FromJson(JsonSerializer.Serialize(this, JsonOptions));
 
+      /// <summary>Validates the profile, throwing when a value is not acceptable.</summary>
       public void Validate() {
          if (FormatVersion != 1) throw new InvalidDataException($"Unsupported profile format version {FormatVersion}.");
          ValidateId(Id);
@@ -68,15 +98,18 @@ namespace Em.Ui.Wpf.Core.Release
          if (Signing.PasswordStorage == ReleasePasswordStorage.Separate) Signing.Password = null;
       }
 
+      /// <summary>Validates a profile id.</summary>
       public static void ValidateId(string id) {
          if (!Guid.TryParseExact(id, "N", out _)) throw new InvalidDataException("Invalid profile id; expected a GUID in N format.");
       }
 
+      /// <summary>Serializes a profile to JSON.</summary>
       public static string ToJson(ReleaseProfile profile) {
          profile.Validate();
          return JsonSerializer.Serialize(profile, JsonOptions);
       }
 
+      /// <summary>Reads a profile from JSON.</summary>
       public static ReleaseProfile FromJson(string json) {
          try {
             var profile = JsonSerializer.Deserialize<ReleaseProfile>(json, JsonOptions)
@@ -90,6 +123,6 @@ namespace Em.Ui.Wpf.Core.Release
       }
    }
 
-   /// <summary>Profile atau kesalahan satu folder; kesalahan tidak menghalangi daftar lain.</summary>
+   /// <summary>A profile or the error of one folder; an error does not block the other lists.</summary>
    public sealed record ReleaseProfileEntry(string Directory, ReleaseProfile? Profile, string? Error, DateTime LastWriteUtc);
 }
