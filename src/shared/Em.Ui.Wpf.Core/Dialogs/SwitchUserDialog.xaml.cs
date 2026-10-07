@@ -223,6 +223,9 @@ namespace Em.Ui.Wpf.Dialogs
       /// <summary>Whether the account is an administrator or a plain user.</summary>
       public string RoleCaption => User.cUserIsAdmin ? "Admin" : "User";
 
+      /// <summary>The kind of account the card is coloured by: <c>System</c>, <c>Admin</c> or <c>User</c>.</summary>
+      public string Kind => IsSystem ? "System" : RoleCaption;
+
       /// <summary>Whether this is one of the two system accounts.</summary>
       public bool IsSystem { get; }
 

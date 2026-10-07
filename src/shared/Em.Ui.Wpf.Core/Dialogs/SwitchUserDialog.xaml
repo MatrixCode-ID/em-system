@@ -18,8 +18,8 @@
                     WindowStartupLocation="CenterOwner">
 
    <!--
-      Debug only: pick the account the developer acts as. Laid out like Connection Config - a
-      banner, one card holding the list, and the actions under it.
+      Debug only: pick the account the developer acts as. A banner, the search with its refresh
+      button, a grid of account cards coloured by kind, and the actions under it.
    -->
 
    <windows:EmWindow.Resources>
@@ -29,16 +29,12 @@
                Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
          </ResourceDictionary.MergedDictionaries>
 
-         <Style x:Key="listCaptionStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Opacity" Value="0.55" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-         </Style>
-
-         <!-- A row that cannot be picked keeps the surface and dims its content, so neither the
-              disabled row nor a busy list ever turns system white. -->
-         <Style x:Key="userRowStyle" TargetType="ListBoxItem">
+         <!-- One card per account, laid out in a wrapping grid so more accounts fit. A card that
+              cannot be picked keeps the surface and dims its content, so neither the disabled card
+              nor a busy list ever turns system white. -->
+         <Style x:Key="userCardStyle" TargetType="ListBoxItem">
+            <Setter Property="Width" Value="224" />
+            <Setter Property="Margin" Value="0,0,8,8" />
             <Setter Property="FontSize" Value="12.5" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -50,28 +46,42 @@
             <Setter Property="Template">
                <Setter.Value>
                   <ControlTemplate TargetType="ListBoxItem">
-                     <Border x:Name="row"
-                             Height="42"
-                             Margin="6,1"
-                             Padding="16,0"
-                             CornerRadius="8"
-                             Background="Transparent">
+                     <Border x:Name="card"
+                             Padding="12,12,12,10"
+                             CornerRadius="12"
+                             BorderThickness="1"
+                             BorderBrush="{StaticResource outlineBrush}"
+                             Background="{StaticResource surfaceBrush}">
                         <Border.InputBindings>
                            <MouseBinding MouseAction="LeftDoubleClick"
                                          Command="{Binding DataContext.Commands[SwitchCommand], RelativeSource={RelativeSource AncestorType=Window}}" />
                         </Border.InputBindings>
-                        <ContentPresenter x:Name="content" VerticalAlignment="Center" />
+                        <Grid>
+                           <ContentPresenter x:Name="content" />
+                           <!-- Picked card: an accent tick in the corner on top of the accent outline. -->
+                           <fa:FontAwesome x:Name="tick"
+                                           Icon="Solid_CircleCheck"
+                                           FontSize="14"
+                                           Margin="0,-4,-4,0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Top"
+                                           Visibility="Collapsed"
+                                           Foreground="{DynamicResource themeAccentBrush}" />
+                        </Grid>
                      </Border>
                      <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                           <Setter TargetName="row" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                           <Setter TargetName="card" Property="Background" Value="{StaticResource stateHoverBrush}" />
+                           <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource outlineStrongBrush}" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                           <Setter TargetName="row" Property="Background" Value="{StaticResource statePressedBrush}" />
-                           <Setter Property="FontWeight" Value="SemiBold" />
+                           <Setter TargetName="card" Property="Background" Value="{StaticResource statePressedBrush}" />
+                           <Setter TargetName="card" Property="BorderBrush" Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="tick" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                           <Setter TargetName="row" Property="Background" Value="Transparent" />
+                           <Setter TargetName="card" Property="Background" Value="{StaticResource surfaceBrush}" />
+                           <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource outlineBrush}" />
                            <Setter TargetName="content" Property="Opacity" Value="0.5" />
                            <Setter Property="Cursor" Value="Arrow" />
                         </Trigger>
@@ -79,6 +89,85 @@
                   </ControlTemplate>
                </Setter.Value>
             </Setter>
+         </Style>
+
+         <!-- The avatar plate takes the colour of the account kind: system accounts info,
+              administrators warning, plain users success. -->
+         <Style x:Key="avatarPlateStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{StaticResource successChipBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource successBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{StaticResource successBrush}" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Kind}" Value="Admin">
+                  <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Kind}" Value="System">
+                  <Setter Property="Background" Value="{StaticResource infoChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource infoBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource infoBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="avatarIconStyle" TargetType="fa:FontAwesome">
+            <Setter Property="Icon" Value="Solid_User" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Kind}" Value="Admin">
+                  <Setter Property="Icon" Value="Solid_UserShield" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Kind}" Value="System">
+                  <Setter Property="Icon" Value="Solid_UserSecret" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <Style x:Key="kindChipStyle" TargetType="Border" BasedOn="{StaticResource chipSuccessStyle}">
+            <Setter Property="Padding" Value="7,1" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="TextElement.FontSize" Value="9.5" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding Kind}" Value="Admin">
+                  <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding Kind}" Value="System">
+                  <Setter Property="Background" Value="{StaticResource infoChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource infoBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource infoBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
+         </Style>
+
+         <!-- Active reads as nothing special; every other state is called out. -->
+         <Style x:Key="stateChipStyle" TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+            <Setter Property="Padding" Value="7,1" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="TextElement.FontSize" Value="9.5" />
+            <Style.Triggers>
+               <DataTrigger Binding="{Binding StateCaption}" Value="Pending">
+                  <Setter Property="Opacity" Value="1" />
+                  <Setter Property="Background" Value="{StaticResource warningChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource warningBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource warningBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding StateCaption}" Value="Suspended">
+                  <Setter Property="Opacity" Value="1" />
+                  <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+               <DataTrigger Binding="{Binding StateCaption}" Value="Deleted">
+                  <Setter Property="Opacity" Value="1" />
+                  <Setter Property="Background" Value="{StaticResource dangerChipBrush}" />
+                  <Setter Property="BorderBrush" Value="{StaticResource dangerBrush}" />
+                  <Setter Property="TextElement.Foreground" Value="{StaticResource dangerBrush}" />
+               </DataTrigger>
+            </Style.Triggers>
          </Style>
       </ResourceDictionary>
    </windows:EmWindow.Resources>
@@ -138,136 +227,134 @@
       </Border>
 
       <!-- ==== search ==== -->
-      <Border Grid.Row="1" Margin="0,16,0,0" Style="{StaticResource searchFieldStyle}">
-         <Grid Margin="14,0">
-            <Grid.ColumnDefinitions>
-               <ColumnDefinition Width="Auto" />
-               <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
-            <TextBox Grid.Column="1"
-                     Margin="10,0,0,0"
-                     Style="{StaticResource searchBoxStyle}"
-                     Tag="Search account, name or e-mail"
-                     AutomationProperties.Name="Search users"
-                     Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
-         </Grid>
-      </Border>
+      <Grid Grid.Row="1" Margin="0,16,0,0">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+         </Grid.ColumnDefinitions>
+         <Border Style="{StaticResource searchFieldStyle}">
+            <Grid Margin="14,0">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+               </Grid.ColumnDefinitions>
+               <fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="12" Opacity="0.55" VerticalAlignment="Center" />
+               <TextBox Grid.Column="1"
+                        Margin="10,0,0,0"
+                        Style="{StaticResource searchBoxStyle}"
+                        Tag="Search account, name or e-mail"
+                        AutomationProperties.Name="Search users"
+                        Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
+            </Grid>
+         </Border>
+         <!-- The list is dynamic, so it carries its own refresh button. -->
+         <Button Grid.Column="1"
+                 Margin="8,0,0,0"
+                 Width="32" Height="32"
+                 FontSize="12"
+                 VerticalAlignment="Center"
+                 Style="{StaticResource flatIconButtonStyle}"
+                 Command="{Binding Commands[RefreshCommand]}"
+                 ToolTip="Reload users"
+                 AutomationProperties.Name="Reload users">
+            <fa:FontAwesome Icon="Solid_RotateRight" />
+         </Button>
+      </Grid>
 
       <!-- ==== list ==== -->
-      <Border Grid.Row="2" Margin="0,12,0,0" Style="{StaticResource cardStyle}">
-         <Grid>
-            <Grid.RowDefinitions>
-               <RowDefinition Height="Auto" />
-               <RowDefinition Height="Auto" />
-               <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+      <Grid Grid.Row="2" Margin="0,12,0,0">
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+         </Grid.RowDefinitions>
 
-            <Border Grid.Row="0"
-                    Height="38"
-                    Padding="22,0,8,0"
-                    Background="{StaticResource surfaceStrongBrush}"
-                    BorderBrush="{StaticResource dividerBrush}"
-                    BorderThickness="0,0,0,1"
-                    CornerRadius="13,13,0,0">
-               <Grid>
-                  <Grid.ColumnDefinitions>
-                     <ColumnDefinition Width="230" />
-                     <ColumnDefinition Width="*" />
-                     <ColumnDefinition Width="100" />
-                     <ColumnDefinition Width="70" />
-                     <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Text="ACCOUNT" Style="{StaticResource listCaptionStyle}" />
-                  <TextBlock Grid.Column="1" Text="NAME" Style="{StaticResource listCaptionStyle}" />
-                  <TextBlock Grid.Column="2" Text="STATE" Style="{StaticResource listCaptionStyle}" />
-                  <TextBlock Grid.Column="3" Text="ROLE" Style="{StaticResource listCaptionStyle}" />
-                  <!-- The list is dynamic, so it carries its own refresh button. -->
-                  <Button Grid.Column="4"
-                          Width="28" Height="28"
-                          FontSize="12"
-                          Style="{StaticResource flatIconButtonStyle}"
-                          Command="{Binding Commands[RefreshCommand]}"
-                          ToolTip="Reload users"
-                          AutomationProperties.Name="Reload users">
-                     <fa:FontAwesome Icon="Solid_RotateRight" />
-                  </Button>
-               </Grid>
-            </Border>
+         <!-- A row of its own above the cards: the two system accounts are still listed. -->
+         <Grid Grid.Row="0" Margin="2,0,0,8"
+               Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Error}" Foreground="{StaticResource dangerBrush}"
+                       TextWrapping="Wrap" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Margin="8,0,0,0"
+                    Style="{StaticResource textButtonStyle}"
+                    Command="{Binding Commands[RefreshCommand]}"
+                    Content="Try again" />
+         </Grid>
 
-            <ListBox Grid.Row="2"
-                     Padding="0,4"
-                     BorderThickness="0"
-                     Style="{StaticResource surfaceListBoxStyle}"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     ItemContainerStyle="{StaticResource userRowStyle}"
-                     ItemsSource="{Binding VisibleRows}"
-                     SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
-                     IsEnabled="{Binding IsNotBusy}">
-               <ListBox.ItemTemplate>
-                  <DataTemplate>
+         <ListBox Grid.Row="1"
+                  BorderThickness="0"
+                  Style="{StaticResource surfaceListBoxStyle}"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ItemContainerStyle="{StaticResource userCardStyle}"
+                  ItemsSource="{Binding VisibleRows}"
+                  SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                  IsEnabled="{Binding IsNotBusy}">
+            <ListBox.ItemsPanel>
+               <ItemsPanelTemplate>
+                  <WrapPanel />
+               </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+               <DataTemplate>
+                  <StackPanel>
                      <Grid>
                         <Grid.ColumnDefinitions>
-                           <ColumnDefinition Width="230" />
+                           <ColumnDefinition Width="Auto" />
                            <ColumnDefinition Width="*" />
-                           <ColumnDefinition Width="100" />
-                           <ColumnDefinition Width="70" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,12,0">
-                           <TextBlock Text="{Binding Account}" TextTrimming="CharacterEllipsis"
-                                      VerticalAlignment="Center" MaxWidth="100" ToolTip="{Binding Account}" />
-                           <Border Style="{StaticResource chipMutedStyle}" Margin="6,0,0,0" Padding="6,0"
-                                   Visibility="{Binding IsSystem, Converter={StaticResource boolToVisibility}}">
-                              <TextBlock Text="SYSTEM" FontSize="9.5" />
-                           </Border>
-                           <Border Style="{StaticResource chipAccentStyle}" Margin="6,0,0,0" Padding="6,0"
-                                   Visibility="{Binding IsCurrent, Converter={StaticResource boolToVisibility}}">
-                              <TextBlock Text="CURRENT" FontSize="9.5" />
-                           </Border>
+                        <Border Width="40" Height="40" VerticalAlignment="Center"
+                                Style="{StaticResource avatarPlateStyle}">
+                           <fa:FontAwesome FontSize="16"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Style="{StaticResource avatarIconStyle}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center">
+                           <TextBlock Text="{Binding Account}"
+                                      FontSize="13.5"
+                                      FontWeight="SemiBold"
+                                      TextTrimming="CharacterEllipsis"
+                                      ToolTip="{Binding Account}" />
+                           <TextBlock Margin="0,2,0,0"
+                                      FontSize="11.5"
+                                      Opacity="0.7"
+                                      Text="{Binding FullName}"
+                                      TextTrimming="CharacterEllipsis"
+                                      ToolTip="{Binding FullName}" />
                         </StackPanel>
-                        <TextBlock Grid.Column="1"
-                                   Margin="0,0,12,0"
-                                   Opacity="0.8"
-                                   VerticalAlignment="Center"
-                                   Text="{Binding FullName}"
-                                   TextTrimming="CharacterEllipsis"
-                                   ToolTip="{Binding FullName}" />
-                        <TextBlock Grid.Column="2" Opacity="0.8" VerticalAlignment="Center" Text="{Binding StateCaption}" />
-                        <TextBlock Grid.Column="3" Opacity="0.8" VerticalAlignment="Center" Text="{Binding RoleCaption}" />
                      </Grid>
-                  </DataTemplate>
-               </ListBox.ItemTemplate>
-            </ListBox>
+                     <WrapPanel Margin="0,10,0,0">
+                        <Border Style="{StaticResource kindChipStyle}">
+                           <TextBlock Text="{Binding Kind}" />
+                        </Border>
+                        <Border Style="{StaticResource stateChipStyle}">
+                           <TextBlock Text="{Binding StateCaption}" />
+                        </Border>
+                        <Border Style="{StaticResource chipAccentStyle}" Padding="7,1" TextElement.FontSize="9.5"
+                                Visibility="{Binding IsCurrent, Converter={StaticResource boolToVisibility}}">
+                           <TextBlock Text="CURRENT" />
+                        </Border>
+                     </WrapPanel>
+                  </StackPanel>
+               </DataTemplate>
+            </ListBox.ItemTemplate>
+         </ListBox>
 
-            <!-- Loading, failure and an empty search answer take the list's place. -->
-            <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Orientation="Horizontal" IsHitTestVisible="False"
-                        Visibility="{Binding IsLoading, Converter={StaticResource boolToVisibility}}">
-               <fa:FontAwesome Icon="Solid_Spinner" Spin="True" FontSize="12" Opacity="0.6" VerticalAlignment="Center" />
-               <TextBlock Text="Loading users..." Margin="8,0,0,0" Opacity="0.6" VerticalAlignment="Center" />
-            </StackPanel>
+         <!-- Loading and an empty search answer take the cards' place. -->
+         <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Orientation="Horizontal" IsHitTestVisible="False"
+                     Visibility="{Binding IsLoading, Converter={StaticResource boolToVisibility}}">
+            <fa:FontAwesome Icon="Solid_Spinner" Spin="True" FontSize="12" Opacity="0.6" VerticalAlignment="Center" />
+            <TextBlock Text="Loading users..." Margin="8,0,0,0" Opacity="0.6" VerticalAlignment="Center" />
+         </StackPanel>
 
-            <!-- A row of its own above the list: the two system accounts are still listed. -->
-            <Grid Grid.Row="1" Margin="22,8,8,4"
-                  Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}">
-               <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-               </Grid.ColumnDefinitions>
-               <TextBlock Text="{Binding Error}" Foreground="{StaticResource dangerBrush}"
-                          TextWrapping="Wrap" VerticalAlignment="Center" />
-               <Button Grid.Column="1" Margin="8,0,0,0"
-                       Style="{StaticResource textButtonStyle}"
-                       Command="{Binding Commands[RefreshCommand]}"
-                       Content="Try again" />
-            </Grid>
-
-            <TextBlock Grid.Row="2" Text="No account matches the search"
-                       Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       IsHitTestVisible="False"
-                       Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
-         </Grid>
-      </Border>
+         <TextBlock Grid.Row="1" Text="No account matches the search"
+                    Opacity="0.55" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    IsHitTestVisible="False"
+                    Visibility="{Binding IsEmpty, Converter={StaticResource boolToVisibility}}" />
+      </Grid>
 
       <!-- ==== actions ==== -->
       <StackPanel Grid.Row="3"
