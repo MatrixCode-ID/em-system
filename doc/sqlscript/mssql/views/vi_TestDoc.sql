@@ -1,9 +1,9 @@
 /*
-    vi_TestDoc - view, satu objek per berkas.
+    vi_TestDoc - view, one object per file.
 
-    Jalankan sesudah tables/ yang memuat ta_TestDoc (tables/900-emtest.sql).
-    Aman dijalankan ulang (DROP IF EXISTS lalu CREATE). Query di bawah GO terakhir
-    adalah uji eksekusi, boleh ikut jalan.
+    Run after the tables/ files that hold ta_TestDoc (tables/900-emtest.sql).
+    Safe to run again (DROP IF EXISTS, then CREATE). The query below the last GO
+    is an execution test and may run along.
 */
 
 DROP VIEW IF EXISTS [dbo].[vi_TestDoc];
@@ -13,6 +13,6 @@ CREATE VIEW [dbo].[vi_TestDoc] AS
 SELECT * FROM [dbo].[ta_TestDoc]
 GO
 
--- Uji eksekusi
+-- Execution test
 SELECT TOP 100 * FROM [dbo].[vi_TestDoc];
 GO

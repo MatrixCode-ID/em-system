@@ -1,8 +1,8 @@
 /*
-    Native SQL Server ULID functions (set lengkap, jalankan sekali pada database baru).
+    Native SQL Server ULID functions (the complete set, run once on a new database).
 
-    Jalankan pada database target (USE [NamaDatabase]) sebelum skrip ini.
-    Urutan objek mengikuti ketergantungan: _UlidBase32Value, _UlidEntropy, NewUlid,
+    Run on the target database (USE [DatabaseName]) before the scripts that need it.
+    The objects are ordered by dependency: _UlidBase32Value, _UlidEntropy, NewUlid,
     GetUlidRandomPart(String), GetUlidDatePart(String), NewUlidStringFromBytes, NewUlidString.
 */
 

@@ -1,18 +1,18 @@
 <#
-Membuat dan push tag git v<versi> dari main untuk memicu workflow .github/workflows/publish-nuget.yml
-(build + test, approval environment release, pack, push ke nuget.org lewat Trusted Publishing).
+Creates and pushes the git tag v<version> from main to trigger the workflow .github/workflows/publish-nuget.yml
+(build + test, release environment approval, pack, push to nuget.org through Trusted Publishing).
 
-Prasyarat: branch main aktif, working tree bersih, dan sama persis dengan origin/main, serta release note
-doc/ReleaseNote/<PackageId>/<versi>.md sudah ada di main untuk setiap paket di scripts/pack-nuget/packages.txt
-(workflow juga menolak tag tanpa berkas itu). Bila ada versi yang release note-nya lengkap tapi belum dirilis,
-versi terendah di antaranya menjadi default.
-Versi ditanyakan saat jalan. Default-nya versi berikutnya dari versi tertinggi di tag git v* (origin)
-dan di nuget.org (EmSys.Libs): channel.N naik satu, rilis X.Y.Z lanjut ke X.(Y+1).0-alpha.1,
-belum ada versi sama sekali menjadi 0.1.0-alpha.1.
-Dampak: membuat tag annotated v<versi> lalu push ke origin. Versi tidak pernah dipakai ulang di feed,
-jadi tag yang sudah terbit tidak dihapus; bila salah, terbitkan versi berikutnya.
+Prerequisites: the main branch is checked out, the working tree is clean and exactly equal to origin/main, and
+the release note doc/ReleaseNote/<PackageId>/<version>.md exists on main for every package in
+scripts/pack-nuget/packages.txt (the workflow also rejects a tag without those files). When some versions have
+complete release notes but have not been released, the lowest of them becomes the default.
+The version is asked for at run time. Its default is the next version after the highest one among the git v*
+tags (origin) and on nuget.org (EmSys.Libs): channel.N goes up by one, a release X.Y.Z continues to
+X.(Y+1).0-alpha.1, and no version at all becomes 0.1.0-alpha.1.
+Impact: creates the annotated tag v<version> and pushes it to origin. A version is never reused in the feed,
+so a tag that was published is not deleted; if it was wrong, publish the next version.
 
-Pemakaian: scripts\release-nuget.cmd   (versi opsional sebagai argumen, melewati pertanyaan)
+Usage: scripts\release-nuget.cmd   (the version is an optional argument, which skips the question)
 #>
 param(
     [string]$Version
@@ -25,19 +25,19 @@ Set-Location -LiteralPath $repoRoot
 
 function Invoke-Git {
     $output = & git @args 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') gagal: $output" }
+    if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed: $output" }
     return $output
 }
 
 $branch = (Invoke-Git rev-parse --abbrev-ref HEAD).Trim()
 if ($branch -ne 'main') { throw "Branch aktif '$branch'. Pindah dulu ke main (git switch main)." }
 
-if (Invoke-Git status --porcelain) { throw 'Working tree belum bersih. Commit atau stash perubahan dulu.' }
+if (Invoke-Git status --porcelain) { throw 'The working tree is not clean. Commit or stash your changes first.' }
 
 Invoke-Git fetch --quiet --tags origin main | Out-Null
 $head = (Invoke-Git rev-parse HEAD).Trim()
 $remote = (Invoke-Git rev-parse origin/main).Trim()
-if ($head -ne $remote) { throw 'main lokal berbeda dengan origin/main. Jalankan git pull (atau push commit lokal) dulu.' }
+if ($head -ne $remote) { throw 'Local main differs from origin/main. Run git pull (or push the local commits) first.' }
 
 $tagVersions = @(Invoke-Git ls-remote --tags --refs origin 'refs/tags/v*' |
     ForEach-Object { ($_ -split "`t")[1] -replace '^refs/tags/v', '' } |
@@ -50,7 +50,7 @@ try {
     $nugetVersions = @($index.versions | ForEach-Object { ConvertTo-SemVer $_ } | Where-Object { $_ })
 } catch {
     $status = $_.Exception.Response.StatusCode
-    $nugetNote = if ($status -and [int]$status -eq 404) { 'belum ada paket' } else { "tidak terjangkau ($($_.Exception.Message))" }
+    $nugetNote = if ($status -and [int]$status -eq 404) { 'no package yet' } else { "unreachable ($($_.Exception.Message))" }
 }
 
 $latestTag = Get-Highest $tagVersions
@@ -64,13 +64,13 @@ $lowestPending = Get-Lowest $pendingNotes
 $default = if ($lowestPending) { $lowestPending.Text } else { Get-NextVersion $latest }
 
 Write-Host ''
-Write-Host "Versi terakhir tag git : $(if ($latestTag) { "v$($latestTag.Text)" } else { 'belum ada' })"
-Write-Host "Versi terakhir nuget   : $(if ($latestNuget) { $latestNuget.Text } elseif ($nugetNote) { $nugetNote } else { 'belum ada paket' })"
-Write-Host "Release note siap      : $(if ($pendingNotes) { ($pendingNotes | ForEach-Object Text) -join ', ' } else { 'belum ada (doc/ReleaseNote/<PackageId>/<versi>.md untuk semua paket)' })"
+Write-Host "Latest git tag version: $(if ($latestTag) { "v$($latestTag.Text)" } else { 'none' })"
+Write-Host "Latest nuget version  : $(if ($latestNuget) { $latestNuget.Text } elseif ($nugetNote) { $nugetNote } else { 'no package yet' })"
+Write-Host "Release notes ready   : $(if ($pendingNotes) { ($pendingNotes | ForEach-Object Text) -join ', ' } else { 'none (doc/ReleaseNote/<PackageId>/<version>.md for all packages)' })"
 Write-Host ''
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
-    $Version = Read-Host "Versi yang dirilis [$default]"
+    $Version = Read-Host "Version to release [$default]"
     if ([string]::IsNullOrWhiteSpace($Version)) { $Version = $default }
 }
 $Version = $Version.Trim() -replace '^v', ''
@@ -78,30 +78,30 @@ $Version = $Version.Trim() -replace '^v', ''
 $parsed = ConvertTo-SemVer $Version
 if (-not $parsed) { throw "Versi '$Version' bukan format MAJOR.MINOR.PATCH[-channel.N]." }
 if ($Version -match '(?i)pre-?alpha') {
-    throw "Versi '$Version' adalah prealpha. Sesuai doc/convention/nuget-naming.md, prealpha tidak diterbitkan ke feed publik."
+    throw "Version '$Version' is a prealpha. Per doc/convention/nuget-naming.md, prealpha is not published to a public feed."
 }
 if ($latest -and (Compare-SemVer $parsed $latest) -le 0) {
-    throw "Versi '$Version' tidak lebih tinggi dari versi terakhir '$($latest.Text)'. Versi tidak pernah dipakai ulang atau mundur."
+    throw "Version '$Version' is not higher than the latest version '$($latest.Text)'. A version is never reused or lowered."
 }
 $missing = Get-MissingNotes $repoRoot $packageIds $Version
 if ($missing) {
-    throw "Release note belum ada atau kosong:`n  $($missing -join "`n  ")`nBuat dan merge ke main dulu, lalu jalankan ulang."
+    throw "Release note is missing or empty:`n  $($missing -join "`n  ")`nCreate it and merge it into main first, then run again."
 }
 $tag = "v$Version"
 
 & git rev-parse -q --verify "refs/tags/$tag" *> $null
-if ($LASTEXITCODE -eq 0) { throw "Tag $tag sudah ada di lokal." }
+if ($LASTEXITCODE -eq 0) { throw "Tag $tag already exists locally." }
 
 $subject = (Invoke-Git log -1 --format='%h %s').Trim()
 Write-Host ''
 Write-Host "Tag     : $tag"
 Write-Host "Commit  : $subject"
 Write-Host "Paket   : $($packageIds -join ', ')"
-Write-Host 'Tujuan  : nuget.org (permanen, versi tidak bisa dihapus)'
+Write-Host 'Target  : nuget.org (permanent, a version cannot be deleted)'
 Write-Host ''
-$answer = (Read-Host "Buat dan push tag $tag ? [y/N]").Trim().ToLowerInvariant()
+$answer = (Read-Host "Create and push tag $tag ? [y/N]").Trim().ToLowerInvariant()
 if ($answer -notin @('y', 'yes')) {
-    Write-Host 'Dibatalkan. Tidak ada tag yang dibuat.'
+    Write-Host 'Cancelled. No tag was created.'
     exit 0
 }
 
@@ -109,5 +109,5 @@ Invoke-Git tag -a $tag -m "Release $Version" | Out-Null
 Invoke-Git push origin $tag | Out-Null
 
 Write-Host ''
-Write-Host "Tag $tag sudah dipush. Pantau dan setujui job publish di:"
+Write-Host "Tag $tag has been pushed. Watch and approve the publish job at:"
 Write-Host 'https://github.com/MatrixCode-ID/em-system/actions/workflows/publish-nuget.yml'

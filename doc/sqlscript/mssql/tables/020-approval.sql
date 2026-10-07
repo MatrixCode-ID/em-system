@@ -1,32 +1,33 @@
 /*
-    020 - Tabel engine approval: jenis dokumen (ta_Doc) dan tujuh tabel request approval.
+    020 - Approval engine tables: document types (ta_Doc) and the seven approval request tables.
 
-    Jalankan pada database target (USE [NamaDatabase]) sesudah tables/010-core.sql (foreign key
-    penanda tangan, peminta, dan atas-nama merujuk ta_User). Bagian 1 ditujukan untuk database baru;
-    bagian 2 dan 3 aman dijalankan ulang (setiap tabel, index, dan foreign key dibuat hanya kalau
-    belum ada).
+    Run on the target database (USE [DatabaseName]) after tables/010-core.sql (the foreign keys
+    of the signer, the requester, and on-behalf-of refer to ta_User). Part 1 is meant for a new
+    database; parts 2 and 3 are safe to run again (each table, index, and foreign key is only
+    created when it does not exist yet).
 
-    Baris jenis dokumen di ta_Doc TIDAK dibuat di sini: diisi aplikasi/modul pemakai (mis.
-    tables/900-emtest.sql). Request approval untuk jenis dokumen yang belum terdaftar ditolak FK.
+    The document type rows in ta_Doc are NOT created here: they are filled in by the application or
+    module that uses them (e.g. tables/900-emtest.sql). An approval request for a document type
+    that is not registered is rejected by the FK.
 
-    Dua hal di bawah ini bagian dari PERILAKU engine, bukan optimasi:
-      - unique index tersaring (jenis dokumen, kunci, versi) WHERE Stage = 1, yang menjadi penjaga
-        balapan dua pengajuan berbarengan - engine mengandalkannya, bukan hanya memeriksa di kode;
-      - foreign key penanda tangan/peminta/atas-nama ke ta_User, yang membuat akun sistem (admin
-        bawaan dan debugger, id-nya bukan ULID sah) gagal saat mencoba menandatangani.
+    The two things below are part of the engine's BEHAVIOR, not an optimization:
+      - the filtered unique index (document type, key, version) WHERE Stage = 1, which guards against
+        two submissions racing at the same time - the engine relies on it, not only on a check in code;
+      - the foreign keys from the signer/requester/on-behalf-of to ta_User, which make a system account
+        (the built-in admin and the debugger, whose ids are not valid ULIDs) fail when it tries to sign.
 
-    Panduan: doc/engine/engine-approval.md.
+    Guide: doc/engine/engine-approval.md.
 */
 
-/* Wajib untuk filtered index; sqlcmd menjalankan batch dengan QUOTED_IDENTIFIER
-   OFF, dan tanpa ini pembuatan index gagal dengan "SET options have incorrect
+/* Required for the filtered index; sqlcmd runs batches with QUOTED_IDENTIFIER
+   OFF, and without this the index creation fails with "SET options have incorrect
    settings". */
 SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 GO
 
 -- ============================================================================
--- 1. Jenis dokumen (ta_Doc)
+-- 1. Document types (ta_Doc)
 -- ============================================================================
 
 -- ----------------------------
@@ -50,15 +51,15 @@ WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW
 ON [PRIMARY]
 GO
 
--- Singkatan dokumen menjadi awalan Id setiap dokumen, jadi dua jenis dokumen dengan singkatan
--- yang sama tidak bisa dibedakan lagi.
+-- The document abbreviation becomes the Id prefix of every document, so two document types with the
+-- same abbreviation could no longer be told apart.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'UX_ta_Doc_cDocAbv'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_Doc]'))
 BEGIN
    IF EXISTS (SELECT [cDocAbv] FROM [dbo].[ta_Doc] GROUP BY [cDocAbv] HAVING COUNT(*) > 1)
    BEGIN
-      -- cDocAbv bukan kolom unicode, dan STRING_AGG menolak pemisah unicode untuknya.
+      -- cDocAbv is not a unicode column, and STRING_AGG rejects a unicode separator for it.
       DECLARE @dup nvarchar(max) =
          (SELECT STRING_AGG(CAST([cDocAbv] AS nvarchar(7)), N', ')
             FROM (SELECT [cDocAbv] FROM [dbo].[ta_Doc] GROUP BY [cDocAbv] HAVING COUNT(*) > 1) d);
@@ -73,11 +74,11 @@ END
 GO
 
 -- ============================================================================
--- 2. Tabel request approval
+-- 2. Approval request tables
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. ta_ApprovalRequest - header request
+-- 1. ta_ApprovalRequest - the request header
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequest]', N'U') IS NULL
 BEGIN
@@ -105,7 +106,7 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 2. ta_ApprovalRequestStep - satu baris per langkah
+-- 2. ta_ApprovalRequestStep - one row per step
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequestStep]', N'U') IS NULL
 BEGIN
@@ -134,8 +135,8 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 3. ta_ApprovalRequestStepSigner - penanda tangan yang ditetapkan saat submit
---    Ramping dengan sengaja: tanpa kolom standar, kunci gabungan ketiga kolom.
+-- 3. ta_ApprovalRequestStepSigner - the signers assigned at submit
+--    Deliberately lean: no standard columns, a composite key of the three columns.
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequestStepSigner]', N'U') IS NULL
 BEGIN
@@ -151,7 +152,7 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 4. ta_ApprovalRequestItem - entitas yang diusulkan berubah
+-- 4. ta_ApprovalRequestItem - the entities proposed to change
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequestItem]', N'U') IS NULL
 BEGIN
@@ -174,8 +175,8 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 5. ta_ApprovalRequestItemKey - bagian-bagian kunci entitas
---    Ramping: tanpa kolom standar, kunci gabungan entitas + nama bagian.
+-- 5. ta_ApprovalRequestItemKey - the parts of an entity's key
+--    Lean: no standard columns, a composite key of entity + part name.
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequestItemKey]', N'U') IS NULL
 BEGIN
@@ -192,8 +193,8 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 6. ta_ApprovalRequestItemField - kolom yang diusulkan berubah
---    Ramping: tanpa kolom standar, kunci gabungan entitas + nama kolom.
+-- 6. ta_ApprovalRequestItemField - the columns proposed to change
+--    Lean: no standard columns, a composite key of entity + column name.
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequestItemField]', N'U') IS NULL
 BEGIN
@@ -212,7 +213,7 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 7. ta_ApprovalRequestComment - komentar bebas
+-- 7. ta_ApprovalRequestComment - free comments
 -- ----------------------------------------------------------------------------
 IF OBJECT_ID(N'[dbo].[ta_ApprovalRequestComment]', N'U') IS NULL
 BEGIN
@@ -232,12 +233,12 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 8. Index
+-- 8. Indexes
 -- ----------------------------------------------------------------------------
 
-/* Penjaga balapan dua pengajuan berbarengan untuk dokumen + versi yang sama.
-   Bagian dari perilaku engine: tanpa index ini dua request bisa sama-sama lolos
-   pemeriksaan di kode lalu dua-duanya tersimpan sebagai menunggu. */
+/* Guard against two submissions racing at the same time for the same document + version.
+   Part of the engine's behavior: without this index two requests could both pass the
+   check in code and both be saved as waiting. */
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'UX_ta_ApprovalRequest_Pending'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequest]'))
@@ -249,7 +250,7 @@ BEGIN
 END
 GO
 
--- Seluruh request satu dokumen, termasuk yang sudah selesai dan yang ditarik.
+-- All requests of one document, including finished and withdrawn ones.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequest_Doc'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequest]'))
@@ -261,7 +262,7 @@ BEGIN
 END
 GO
 
--- Daftar request ber-paging, disaring tahap lalu jenis dokumen.
+-- The paged list of requests, filtered by stage then document type.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequest_Stage'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequest]'))
@@ -272,7 +273,7 @@ BEGIN
 END
 GO
 
--- Request yang diajukan seorang user.
+-- The requests submitted by one user.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequest_Requester'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequest]'))
@@ -284,7 +285,7 @@ BEGIN
 END
 GO
 
--- Langkah-langkah satu request, dan langkah di level yang sedang berjalan.
+-- The steps of one request, and the steps at the level that is running.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestStep_Request'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestStep]'))
@@ -297,9 +298,9 @@ BEGIN
 END
 GO
 
-/* Daftar pekerjaan: langkah yang masih menunggu, dicocokkan dengan claim yang
-   dipegang user. Tersaring ke yang menunggu saja, karena hanya baris itu yang
-   pernah dicari lewat jalan ini. */
+/* The task list: steps that are still waiting, matched with the claims the user
+   holds. Filtered to waiting ones only, because only those rows are ever looked
+   up this way. */
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestStep_Waiting'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestStep]'))
@@ -312,7 +313,7 @@ BEGIN
 END
 GO
 
--- Tanda tangan seorang user, untuk riwayat dan untuk pemeriksaan empat mata.
+-- The signatures of one user, for history and for the four-eyes check.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestStep_Signer'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestStep]'))
@@ -325,7 +326,7 @@ BEGIN
 END
 GO
 
--- Daftar pekerjaan: langkah yang penanda tangannya ditetapkan per orang.
+-- The task list: steps whose signer is assigned per person.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestStepSigner_User'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestStepSigner]'))
@@ -337,7 +338,7 @@ BEGIN
 END
 GO
 
--- Entitas usulan satu request, dalam urutan penerapannya.
+-- The proposed entities of one request, in the order they are applied.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestItem_Request'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestItem]'))
@@ -349,8 +350,8 @@ BEGIN
 END
 GO
 
-/* Riwayat usulan atas satu entitas - dipakai saat melihat siapa pernah mengubah
-   apa pada sebuah baris data. */
+/* The history of proposals on one entity - used to see who changed what
+   on a data row. */
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestItem_Entity'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestItem]'))
@@ -362,7 +363,7 @@ BEGIN
 END
 GO
 
--- Komentar satu request, terurut waktu.
+-- The comments of one request, ordered by time.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes
                 WHERE [name] = N'IX_ta_ApprovalRequestComment_Request'
                   AND [object_id] = OBJECT_ID(N'[dbo].[ta_ApprovalRequestComment]'))
@@ -375,15 +376,15 @@ END
 GO
 
 -- ----------------------------------------------------------------------------
--- 9. Foreign key
+-- 9. Foreign keys
 --
---    Ke ta_User: NO ACTION dengan sengaja. User tidak pernah dibuang (hanya
---    ditandai tidak aktif), dan tanda tangan tidak boleh ikut hilang kalau
---    kelak ada yang mencoba membuangnya. FK inilah yang membuat akun sistem
---    gagal saat mencoba menandatangani - lihat catatan di kepala berkas.
+--    To ta_User: NO ACTION on purpose. A user is never removed (only marked
+--    inactive), and a signature must not disappear if someone later tries to
+--    remove them. This FK is what makes a system account fail when it tries
+--    to sign - see the note at the head of the file.
 --
---    Ke request/entitas induk: CASCADE, supaya membuang satu request membuang
---    seluruh isinya dan tidak meninggalkan baris menggantung.
+--    To the parent request/entity: CASCADE, so removing one request removes
+--    all its content and leaves no dangling rows.
 -- ----------------------------------------------------------------------------
 
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'FK_ta_ApprovalRequest_ta_Doc')

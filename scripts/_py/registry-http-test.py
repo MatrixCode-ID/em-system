@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-Uji HTTP container registry Em (jalur /v2 dan layanan manajemen), meniru klien Docker: unggah blob
-bersegmen, mount lintas root, manifest, tag, Range, hak per root, dan kasus negatifnya.
+HTTP test of the Em container registry (the /v2 path and the management services), imitating a Docker
+client: chunked blob upload, cross-root mount, manifests, tags, Range, per-root grants, and their
+negative cases.
 
-Prasyarat: Python 3.8+ (tanpa paket tambahan); Em.Api berjalan dengan registry menyala dan tabel
-ta_Ctn* sudah dibuat (doc/sqlscript/mssql/tables/030-registry.sql); akun yang boleh masuk dan memegang claim
-"Administrative Tools:Container Manager Access" dan "Administrative Tools:User Manager Access" (atau administrator).
-Parameter (environment variable):
-  EM_BASE_URL   alamat server, bawaan http://localhost:5055
-  EM_ACCOUNT    akun penguji, bawaan admin
-  EM_PASSWORD   password akun penguji (wajib)
-Dampak: membuat dua root, folder, container, dan robot BERAKHIRAN ACAK (mis. server-a1b2), mendorong
-beberapa MB ke disk registry, lalu menghapus yang dibuatnya. Blob yang sudah terunggah tetap ada di disk
-sampai garbage collection (tahap 2). Jalankan hanya terhadap database dan server uji.
-Keluar dengan kode 0 bila semua lulus, 1 bila ada yang gagal.
+Prerequisites: Python 3.8+ (no extra packages); Em.Api running with the registry on and the ta_Ctn*
+tables created (doc/sqlscript/mssql/tables/030-registry.sql); an account that may sign in and holds the claims
+"Administrative Tools:Container Manager Access" and "Administrative Tools:User Manager Access" (or is an administrator).
+Parameters (environment variables):
+  EM_BASE_URL   the server address, default http://localhost:5055
+  EM_ACCOUNT    the test account, default admin
+  EM_PASSWORD   the test account's password (required)
+Impact: creates two roots, folders, containers, and robots with a RANDOM SUFFIX (e.g. server-a1b2), pushes
+a few MB to the registry disk, then deletes what it created. Blobs that were uploaded stay on disk until
+garbage collection runs. Run only against a test database and server.
+Exits with code 0 when everything passes, 1 when anything fails.
 """
 import json, hashlib, base64, urllib.request, urllib.error, sys, os
 
@@ -306,7 +307,7 @@ check("image delete ok", mg("PostMeta_CtnImageDelete", img_api["Id"])[0] == 200)
 check("robot delete ok", mg("PostMeta_RobotDelete", acme_ci[2])[0] == 200)
 check("root delete with robot grants -> 409", mg("PostMeta_CtnRootDelete", r_server["Id"])[0] == 409)
 
-# Bersihkan semua yang dibuat skrip ini: robot, image, folder (yang terdalam dulu), lalu root.
+# Clean up everything this script created: robots, images, folders (deepest first), then roots.
 for rb in (plat, acme_dev, other): mg("PostMeta_RobotDelete", rb[2])
 mg("PostMeta_CtnImageDelete", img_base["Id"])
 folders = data(act(M, "GetMeta_CtnTree", get=True, *[{"par1": r_acme["Id"]}]))["Folders"]

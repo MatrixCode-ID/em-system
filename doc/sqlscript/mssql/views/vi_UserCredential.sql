@@ -1,9 +1,9 @@
 /*
-    vi_UserCredential - view, satu objek per berkas.
+    vi_UserCredential - view, one object per file.
 
-    Jalankan sesudah tables/ yang memuat ta_UserCredential (tables/010-core.sql).
-    Aman dijalankan ulang (DROP IF EXISTS lalu CREATE). Query di bawah GO terakhir
-    adalah uji eksekusi, boleh ikut jalan.
+    Run after the tables/ files that hold ta_UserCredential (tables/010-core.sql).
+    Safe to run again (DROP IF EXISTS, then CREATE). The query below the last GO
+    is an execution test and may run along.
 */
 
 DROP VIEW IF EXISTS [dbo].[vi_UserCredential];
@@ -23,6 +23,6 @@ SELECT
 FROM ta_UserCredential AS a
 GO
 
--- Uji eksekusi
+-- Execution test
 SELECT TOP 100 * FROM [dbo].[vi_UserCredential];
 GO

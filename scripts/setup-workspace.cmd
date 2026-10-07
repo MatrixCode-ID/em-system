@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 where pwsh.exe >nul 2>nul
 if errorlevel 1 (
-    echo PowerShell 7 ^(pwsh^) tidak ditemukan di PATH. Pasang dari https://aka.ms/powershell lalu coba lagi.
+    echo PowerShell 7 ^(pwsh^) was not found on PATH. Install it from https://aka.ms/powershell and try again.
     pause
     exit /b 1
 )
@@ -10,10 +10,10 @@ pwsh.exe -NoLogo -NoProfile -File "%~dp0setup-workspace\setup-workspace.ps1" %*
 set "SETUP_EXIT_CODE=%errorlevel%"
 echo.
 if not "%SETUP_EXIT_CODE%"=="0" (
-    echo Setup gagal. Exit code: %SETUP_EXIT_CODE%
-    echo Salin pesan error di atas sebelum menutup jendela.
+    echo Setup failed. Exit code: %SETUP_EXIT_CODE%
+    echo Copy the error message above before closing the window.
 ) else (
-    echo Selesai. Exit code: %SETUP_EXIT_CODE%
+    echo Done. Exit code: %SETUP_EXIT_CODE%
 )
 pause
 exit /b %SETUP_EXIT_CODE%

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Uji HTTP module uji Em.Test terhadap Em.Api yang sedang berjalan: binding parameter GET dan POST,
-action publik, kegagalan berstatus, batas waktu, claim, stream unggah dan unduh, CRUD item berikut
-paging dan pencarian, business task, serta aksi dokumen approval.
+HTTP test of the Em.Test module against a running Em.Api: GET and POST parameter binding, public
+actions, status failures, time limits, claims, upload and download streams, item CRUD with paging and
+search, business tasks, and approval document actions.
 
-Prasyarat: Python 3.8+ (tanpa paket tambahan); Em.Api berjalan dengan module uji terpasang; skrip
-doc/sqlscript/mssql/tables/900-emtest.sql sudah dijalankan; akun penguji memegang semua claim module "test"
-atau administrator.
-Parameter (environment variable):
-  EM_BASE_URL   alamat server, bawaan http://localhost:5132
-  EM_ACCOUNT    akun penguji, bawaan admin
-  EM_PASSWORD   password akun penguji (wajib)
-Dampak: menambah beberapa item bertanda "HTTPT-" dan satu dokumen uji, lalu menghapus item yang dibuatnya.
-Item contoh TST-001..010 tetap ada. Jalankan hanya terhadap database dan server uji.
-Keluar dengan kode 0 bila semua lulus, 1 bila ada yang gagal.
+Prerequisites: Python 3.8+ (no extra packages); Em.Api running with the test module installed; the script
+doc/sqlscript/mssql/tables/900-emtest.sql has been run; the test account holds all claims of module "test"
+or is an administrator.
+Parameters (environment variables):
+  EM_BASE_URL   the server address, default http://localhost:5132
+  EM_ACCOUNT    the test account, default admin
+  EM_PASSWORD   the test account's password (required)
+Impact: adds a few items marked "HTTPT-" and one test document, then deletes the items it created.
+The sample items TST-001..010 stay. Run only against a test database and server.
+Exits with code 0 when everything passes, 1 when anything fails.
 """
 import base64, hashlib, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 
@@ -57,7 +57,7 @@ def ptype(v):
 
 
 def payload(*vals):
-    """Argumen POST posisional. Nilai berupa (nama tipe, nilai) dipakai apa adanya; None dilewati."""
+    """Positional POST arguments. A (type name, value) pair is used as it is; None is skipped."""
     out = []
     for i, v in enumerate(vals):
         if v is None: continue

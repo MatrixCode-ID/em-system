@@ -1,17 +1,17 @@
 /*
-    Tabel module uji Em.Test (set lengkap, jalankan sekali pada database inti).
+    Tables of the Em.Test test module (the complete set, run once on the core database).
 
-    Jalankan pada database target (USE [NamaDatabase]). Aman dijalankan ulang: setiap tabel dan
-    baris jenis dokumen hanya dibuat kalau belum ada. View-nya di views/vi_TestItem.sql dan
-    views/vi_TestDoc.sql.
+    Run on the target database (USE [DatabaseName]). Safe to run again: each table and
+    document type row is only created when it does not exist. Its views are in views/vi_TestItem.sql
+    and views/vi_TestDoc.sql.
 
-    Isi:
-    - ta_TestItem               : data induk sederhana untuk uji CRUD, paging, UiModel, dan data approval.
-    - ta_TestDoc                : dokumen transaksi untuk uji document approval (PDF + stamp).
-    - ta_Doc                    : dua jenis dokumen yang dipakai engine approval untuk module ini
-                                  (EmTestDoc, EmTestItem). Tanpa baris ini request approval ditolak FK.
+    Contents:
+    - ta_TestItem               : simple master data to test CRUD, paging, UiModel, and data approval.
+    - ta_TestDoc                : a transaction document to test document approval (PDF + stamp).
+    - ta_Doc                    : the two document types the approval engine uses for this module
+                                  (EmTestDoc, EmTestItem). Without these rows an approval request is rejected by the FK.
 
-    Dokumentasi module: doc/engine/engine-test-module.md
+    Module documentation: doc/engine/engine-test-module.md
 */
 
 SET XACT_ABORT ON;
@@ -48,7 +48,7 @@ IF OBJECT_ID(N'[dbo].[ta_TestDoc]', N'U') IS NULL
          [cTestDocNo]        varchar(30)   COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cTestDocTitle]     varchar(100)  COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cTestDocAmount]    decimal(18,2) NOT NULL,
-         -- 0 draf, 1 dalam approval, 2 disetujui, 3 ditolak
+         -- 0 draft, 1 in approval, 2 approved, 3 rejected
          [cTestDocStatus]    int           NOT NULL,
          [cTestDocQaPassed]  bit           NULL,
          [cTestDocQaRemarks] varchar(500)  COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
@@ -62,7 +62,7 @@ IF OBJECT_ID(N'[dbo].[ta_TestDoc]', N'U') IS NULL
 GO
 --endregion
 
---region ta_Doc: jenis dokumen approval module uji
+--region ta_Doc: the approval document types of the test module
 IF NOT EXISTS (SELECT 1 FROM [dbo].[ta_Doc] WHERE [cDocName] = 'EmTestDoc')
    INSERT INTO [dbo].[ta_Doc] ([cDocName], [cDocDesc], [cDocAbv])
    VALUES ('EmTestDoc', 'Em Test Document (document approval)', 'TESTDOC');

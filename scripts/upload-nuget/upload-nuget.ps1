@@ -1,9 +1,9 @@
 <#
-Pack lima paket library EmSys.* lewat scripts/pack-nuget/pack-nuget.ps1, lalu tanya konfirmasi untuk push
-ke feed NuGet GitHub Packages (doc/convention/nuget-naming.md). PAT classic GitHub
-(scope write:packages, read:packages) diambil berurutan dari: environment variable
-EM_NUGET_PAT, lalu berkas ..\.artefacts\em-system\github-pat.txt, lalu prompt tersembunyi
-bila keduanya tidak ada. PAT tidak pernah ditulis ke log.
+Packs the five EmSys.* library packages through scripts/pack-nuget/pack-nuget.ps1, then asks for
+confirmation before pushing to the GitHub Packages NuGet feed (doc/convention/nuget-naming.md). The classic
+GitHub PAT (scopes write:packages, read:packages) is taken in this order: the environment variable
+EM_NUGET_PAT, then the file ..\.artefacts\em-system\github-pat.txt, then a hidden prompt when neither
+exists. The PAT is never written to the log.
 #>
 param(
     [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$')]
@@ -19,24 +19,24 @@ $outputDir = Join-Path $repoRoot 'dist/nuget-pack'
 
 & (Join-Path $repoRoot 'scripts' 'pack-nuget' 'pack-nuget.ps1') -Version $Version
 if ($LASTEXITCODE -ne 0) {
-    throw "pack-nuget.ps1 gagal (exit code $LASTEXITCODE)."
+    throw "pack-nuget.ps1 failed (exit code $LASTEXITCODE)."
 }
 
 $packages = Get-ChildItem -LiteralPath $outputDir -Filter "*.$Version.nupkg" -File | Sort-Object Name
 if (-not $packages) {
-    throw "Tidak ada paket *.$Version.nupkg di $outputDir."
+    throw "No *.$Version.nupkg package in $outputDir."
 }
 
 Write-Host ''
 Write-Host "$($packages.Count) paket versi $Version siap di: $outputDir"
-$answer = (Read-Host "Push ke $Source ? [y/N]").Trim().ToLowerInvariant()
+$answer = (Read-Host "Push to $Source ? [y/N]").Trim().ToLowerInvariant()
 if ($answer -ne 'y' -and $answer -ne 'yes') {
     Write-Host 'Push dilewati. Paket tetap di folder di atas.'
     exit 0
 }
 
 if ($Version -match '(?i)pre-?alpha') {
-    throw "Versi '$Version' adalah prealpha. Sesuai doc/convention/nuget-naming.md (keputusan 2026-10-05), prealpha tidak diterbitkan ke feed publik; cukup di $outputDir untuk uji lokal. Feed publik dimulai dari alpha."
+    throw "Version '$Version' is a prealpha. Per doc/convention/nuget-naming.md (decision 2026-10-05), prealpha is not published to a public feed; keeping it in $outputDir for local testing is enough. Feed publik dimulai dari alpha."
 }
 
 $tokenFile = Join-Path $repoRoot '..' '.artefacts' 'em-system' 'github-pat.txt'
@@ -46,15 +46,15 @@ if (-not $apiKey -and (Test-Path -LiteralPath $tokenFile -PathType Leaf)) {
     $fromFile = (Get-Content -LiteralPath $tokenFile -Raw).Trim()
     if ($fromFile) {
         $apiKey = $fromFile
-        Write-Host "PAT dibaca dari $tokenFile"
+        Write-Host "PAT read from $tokenFile"
     }
 }
 if (-not $apiKey) {
-    Write-Host "PAT tidak ada di EM_NUGET_PAT maupun $tokenFile."
-    Write-Host 'Masukkan PAT classic GitHub dengan scope write:packages dan read:packages.'
+    Write-Host "No PAT in EM_NUGET_PAT or in $tokenFile."
+    Write-Host 'Enter a classic GitHub PAT with the scopes write:packages and read:packages.'
     $secureToken = Read-Host 'GitHub PAT (hidden)' -AsSecureString
     if (-not $secureToken.Length) {
-        throw 'PAT tidak boleh kosong.'
+        throw 'The PAT must not be empty.'
     }
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureToken)
     try {
@@ -70,9 +70,9 @@ foreach ($package in $packages) {
     Write-Host "  -> $($package.Name)"
     & dotnet nuget push $package.FullName --source $Source --api-key $apiKey --skip-duplicate
     if ($LASTEXITCODE -ne 0) {
-        throw "dotnet nuget push gagal untuk $($package.Name) (exit code $LASTEXITCODE)."
+        throw "dotnet nuget push failed for $($package.Name) (exit code $LASTEXITCODE)."
     }
 }
 
 Write-Host ''
-Write-Host "Selesai. Versi $Version tidak boleh dipakai ulang di feed; bila ada kesalahan, naikkan N atau PATCH (doc/convention/nuget-naming.md)."
+Write-Host "Done. Version $Version must not be reused in the feed; if there was a mistake, raise N or PATCH (doc/convention/nuget-naming.md)."

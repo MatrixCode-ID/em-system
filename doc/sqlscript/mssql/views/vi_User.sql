@@ -1,9 +1,9 @@
 /*
-    vi_User - view, satu objek per berkas.
+    vi_User - view, one object per file.
 
-    Jalankan sesudah tables/ yang memuat ta_Address, ta_Comm, ta_Contact, ta_User (tables/010-core.sql).
-    Aman dijalankan ulang (DROP IF EXISTS lalu CREATE). Query di bawah GO terakhir
-    adalah uji eksekusi, boleh ikut jalan.
+    Run after the tables/ files that hold ta_Address, ta_Comm, ta_Contact, ta_User (tables/010-core.sql).
+    Safe to run again (DROP IF EXISTS, then CREATE). The query below the last GO
+    is an execution test and may run along.
 */
 
 DROP VIEW IF EXISTS [dbo].[vi_User];
@@ -39,6 +39,6 @@ LEFT OUTER JOIN ta_Address AS c
    ON b.cContactDefaultAddress_cAddressId = c.cAddressId
 GO
 
--- Uji eksekusi
+-- Execution test
 SELECT TOP 100 * FROM [dbo].[vi_User];
 GO

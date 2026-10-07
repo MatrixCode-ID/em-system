@@ -1,13 +1,13 @@
 /*
-    100 - Objek bisnis: produk, transaksi produk, mitra bisnis, mata uang, satuan, dan karyawan.
+    100 - Business objects: products, product transactions, business partners, currencies, units, and employees.
 
-    Jalankan pada database target (USE [NamaDatabase]) sesudah tables/010-core.sql (ta_Contact)
-    dan tables/020-approval.sql (ta_Doc). Ditujukan untuk database baru (CREATE TABLE tanpa
-    pemeriksaan).
+    Run on the target database (USE [DatabaseName]) after tables/010-core.sql (ta_Contact)
+    and tables/020-approval.sql (ta_Doc). Meant for a new database (CREATE TABLE without
+    checks).
 
-    Isi: ta_Product, ta_ProductType, ta_ProductTran, ta_ProductTranData, ta_ShoeHelper,
-    ta_BusinessPartner, ta_Currency, ta_Unit, ta_Emp beserta unique, index, primary key, dan
-    foreign key-nya.
+    Contents: ta_Product, ta_ProductType, ta_ProductTran, ta_ProductTranData, ta_ShoeHelper,
+    ta_BusinessPartner, ta_Currency, ta_Unit, ta_Emp with their uniques, indexes, primary keys,
+    and foreign keys.
 */
 
 -- ----------------------------

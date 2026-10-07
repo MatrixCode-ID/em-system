@@ -1,18 +1,18 @@
 <#
-Menyiapkan folder kerja em-system di mesin baru: satu folder lokal bernama em-system dengan dua remote,
-  private -> MatrixCode-ID/em-system-work (privat, branch work-bench)
-  origin  -> MatrixCode-ID/em-system      (publik, main dan ci-sandbox)
+Sets up the em-system working folder on a new machine: one local folder named em-system with two remotes,
+  private -> MatrixCode-ID/em-system-work (private, branch work-bench)
+  origin  -> MatrixCode-ID/em-system      (public, main and ci-sandbox)
 
-Mode otomatis:
-- Dijalankan dari dalam repo (scripts\setup-workspace.cmd di clone yang sudah ada, mis. hasil clone
-  GitHub Desktop): hanya menyusun remote dan tracking branch. Aman dijalankan berulang.
-- Dijalankan di luar repo (setup-workspace.cmd + folder setup-workspace disalin ke mesin baru): clone
-  em-system-work ke <folder induk>\em-system, lalu menyusun remote.
+Automatic modes:
+- Run from inside the repo (scripts\setup-workspace.cmd in an existing clone, e.g. one made by GitHub
+  Desktop): only arranges the remotes and tracking branches. Safe to run repeatedly.
+- Run outside the repo (setup-workspace.cmd + the setup-workspace folder copied to the new machine): clones
+  em-system-work to <parent folder>\em-system, then arranges the remotes.
 
-Prasyarat: git di PATH dan akun GitHub yang punya akses ke kedua repo (login muncul saat clone/fetch).
-Dampak: clone baru, rename/tambah remote, membuat atau mengatur tracking branch lokal. Tidak menghapus
-branch, tidak push, dan tidak menyentuh perubahan yang belum di-commit.
-Folder ..\.artefacts\em-system (config, key, PAT) tidak ada di Git; salin manual dari mesin lama.
+Prerequisites: git on PATH and a GitHub account with access to both repos (a login appears during clone/fetch).
+Impact: a new clone, renaming/adding remotes, creating or setting local tracking branches. It does not delete
+branches, does not push, and does not touch uncommitted changes.
+The folder ..\.artefacts\em-system (config, keys, PAT) is not in Git; copy it manually from the old machine.
 #>
 param(
     [string]$ParentDir
@@ -25,7 +25,7 @@ $folderName = 'em-system'
 
 function Invoke-Git {
     $output = & git @args 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') gagal: $output" }
+    if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed: $output" }
     return $output
 }
 
@@ -40,7 +40,7 @@ function Test-SameUrl([string]$a, [string]$b) {
     return (& $norm $a) -eq (& $norm $b)
 }
 
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'git tidak ditemukan di PATH. Pasang Git for Windows lalu coba lagi.' }
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'git was not found on PATH. Install Git for Windows and try again.' }
 
 $candidate = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..' '..'))
 & git -C $candidate rev-parse --is-inside-work-tree *> $null
@@ -50,16 +50,16 @@ if ($LASTEXITCODE -eq 0) {
 } else {
     if ([string]::IsNullOrWhiteSpace($ParentDir)) {
         $defaultParent = (Get-Location).Path
-        $ParentDir = Read-Host "Folder induk tempat clone [$defaultParent]"
+        $ParentDir = Read-Host "Parent folder to clone into [$defaultParent]"
         if ([string]::IsNullOrWhiteSpace($ParentDir)) { $ParentDir = $defaultParent }
     }
     $ParentDir = [IO.Path]::GetFullPath($ParentDir.Trim().Trim('"'))
-    if (-not (Test-Path -LiteralPath $ParentDir -PathType Container)) { throw "Folder induk '$ParentDir' tidak ada." }
+    if (-not (Test-Path -LiteralPath $ParentDir -PathType Container)) { throw "Parent folder '$ParentDir' does not exist." }
     $repoRoot = Join-Path $ParentDir $folderName
-    if (Test-Path -LiteralPath $repoRoot) { throw "'$repoRoot' sudah ada. Jalankan scripts\setup-workspace.cmd dari dalam folder itu, atau pilih folder induk lain." }
+    if (Test-Path -LiteralPath $repoRoot) { throw "'$repoRoot' already exists. Run scripts\setup-workspace.cmd from inside that folder, or choose another parent folder." }
     Write-Host "Clone $privateUrl ke $repoRoot ..."
     & git clone --origin private $privateUrl $repoRoot
-    if ($LASTEXITCODE -ne 0) { throw 'git clone gagal. Pastikan akun GitHub punya akses ke repo privat em-system-work.' }
+    if ($LASTEXITCODE -ne 0) { throw 'git clone failed. Make sure the GitHub account has access to the private repo em-system-work.' }
 }
 
 Set-Location -LiteralPath $repoRoot
@@ -69,7 +69,7 @@ $privateRemoteUrl = Get-RemoteUrl 'private'
 
 if (-not $privateRemoteUrl -and $originUrl -and (Test-SameUrl $originUrl $privateUrl)) {
     Invoke-Git remote rename origin private | Out-Null
-    Write-Host 'Remote origin (em-system-work) diganti nama menjadi private.'
+    Write-Host 'Remote origin (em-system-work) was renamed to private.'
     $privateRemoteUrl = $originUrl
     $originUrl = $null
 }
@@ -86,7 +86,7 @@ if (-not $originUrl) {
     throw "Remote origin menunjuk '$originUrl', bukan $publicUrl. Periksa manual (git remote -v)."
 }
 
-Write-Host 'Fetch private dan origin ...'
+Write-Host 'Fetching private and origin ...'
 Invoke-Git fetch --prune private | Out-Null
 Invoke-Git fetch --prune origin | Out-Null
 
@@ -94,7 +94,7 @@ $tracking = [ordered]@{ 'work-bench' = 'private'; 'main' = 'origin'; 'ci-sandbox
 foreach ($branch in $tracking.Keys) {
     $remote = $tracking[$branch]
     & git rev-parse -q --verify "refs/remotes/$remote/$branch" *> $null
-    if ($LASTEXITCODE -ne 0) { Write-Host "Lewati $branch`: $remote/$branch tidak ada."; continue }
+    if ($LASTEXITCODE -ne 0) { Write-Host "Skipping $branch`: $remote/$branch does not exist."; continue }
     & git rev-parse -q --verify "refs/heads/$branch" *> $null
     if ($LASTEXITCODE -eq 0) {
         Invoke-Git branch --set-upstream-to "$remote/$branch" $branch | Out-Null
@@ -107,7 +107,7 @@ foreach ($branch in $tracking.Keys) {
 $current = (& git branch --show-current).Trim()
 if ($current -ne 'work-bench') {
     if (& git status --porcelain) {
-        Write-Host "Branch aktif tetap '$current' karena ada perubahan yang belum di-commit."
+        Write-Host "The active branch stays '$current' because there are uncommitted changes."
     } else {
         Invoke-Git switch work-bench | Out-Null
         Write-Host 'Pindah ke branch work-bench.'
@@ -123,6 +123,6 @@ $artefacts = [IO.Path]::GetFullPath((Join-Path $repoRoot '..' '.artefacts' 'em-s
 if (Test-Path -LiteralPath $artefacts) {
     Write-Host "Folder artefak ada: $artefacts"
 } else {
-    Write-Host "Folder artefak belum ada: $artefacts"
-    Write-Host 'Salin dari mesin lama (config, debug key, PAT, harness uji); isinya tidak ada di Git.'
+    Write-Host "The artifacts folder does not exist yet: $artefacts"
+    Write-Host 'Copy it from the old machine (config, debug key, PAT, test harness); its content is not in Git.'
 }

@@ -1,20 +1,20 @@
 /*
-    010 - Tabel inti Em: identitas user, role dan claim, sesi, log, meta, kontak, dan robot.
+    010 - Em core tables: user identity, roles and claims, sessions, log, meta, contacts, and robots.
 
-    Jalankan pada database target (USE [NamaDatabase]) sesudah sets/000-ulid.sql, sebelum
-    berkas tables/ bernomor lebih besar. Bagian 1 ditujukan untuk database baru (CREATE TABLE
-    tanpa pemeriksaan); bagian Robot aman dijalankan ulang. View-nya ada di views/ (satu
-    berkas per objek), dijalankan sesudah semua berkas tables/.
+    Run on the target database (USE [DatabaseName]) after sets/000-ulid.sql and before the
+    tables/ files with a higher number. Part 1 is meant for a new database (CREATE TABLE
+    without checks); the Robot part is safe to run again. Its views are in views/ (one
+    file per object), run after all tables/ files.
 
-    Isi:
-    1. Tabel inti (User, UserClaim, UserCredential, UserRole, UserSession, SystemSession, Role,
-       RoleClaim, Log, Meta, Contact, Address, Comm) beserta unique, index, primary key, dan
-       foreign key-nya.
-    2. ta_Robot - identitas robot bersama (bergantung pada ta_User).
+    Contents:
+    1. Core tables (User, UserClaim, UserCredential, UserRole, UserSession, SystemSession, Role,
+       RoleClaim, Log, Meta, Contact, Address, Comm) with their uniques, indexes, primary keys,
+       and foreign keys.
+    2. ta_Robot - the shared robot identity (depends on ta_User).
 */
 
 -- ============================================================================
--- 1. Tabel inti
+-- 1. Core tables
 -- ============================================================================
 
 -- ----------------------------
@@ -525,7 +525,7 @@ IF OBJECT_ID(N'[dbo].[ta_Robot]', N'U') IS NULL
          [cRobotOwner_cUserId] char(26)     COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
          [cRobotState]         int          NOT NULL,
          [cRobotDescription]   varchar(500) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
-         -- SHA-256 hex dari token; tokennya sendiri tidak pernah disimpan.
+         -- SHA-256 hex of the token; the token itself is never stored.
          [cRobotTokenHash]     varchar(64)  COLLATE SQL_Latin1_General_CP1_CS_AS NOT NULL,
          [cRobotTokenPrefix]   varchar(20)  COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cRobotTokenExpiry]   datetime     NULL,

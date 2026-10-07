@@ -10,7 +10,7 @@ New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
 $projects = @(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'packages.txt') |
     ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
-if (-not $projects) { throw 'packages.txt tidak berisi project.' }
+if (-not $projects) { throw 'packages.txt contains no projects.' }
 
 $notesDir = Join-Path $outputDir '.release-notes'
 New-Item -ItemType Directory -Path $notesDir -Force | Out-Null

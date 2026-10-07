@@ -1,9 +1,9 @@
 /*
-    vi_NuPakPrefix - view, satu objek per berkas.
+    vi_NuPakPrefix - view, one object per file.
 
-    Jalankan sesudah tables/ yang memuat ta_NuPakPrefix (tables/040-nupak.sql).
-    Aman dijalankan ulang (DROP IF EXISTS lalu CREATE). Query di bawah GO terakhir
-    adalah uji eksekusi, boleh ikut jalan.
+    Run after the tables/ files that hold ta_NuPakPrefix (tables/040-nupak.sql).
+    Safe to run again (DROP IF EXISTS, then CREATE). The query below the last GO
+    is an execution test and may run along.
 */
 
 DROP VIEW IF EXISTS [dbo].[vi_NuPakPrefix];
@@ -22,6 +22,6 @@ SELECT
 FROM dbo.ta_NuPakPrefix t
 GO
 
--- Uji eksekusi
+-- Execution test
 SELECT TOP 100 * FROM [dbo].[vi_NuPakPrefix];
 GO

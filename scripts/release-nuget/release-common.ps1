@@ -1,5 +1,5 @@
-# Fungsi bersama aturan versi dan release note rilis NuGet. Di-dot-source oleh release-nuget.ps1 dan
-# job validate di .github/workflows/publish-nuget.yml, supaya skrip lokal dan workflow memakai aturan sama.
+# Shared version and release note rules for NuGet releases. Dot-sourced by release-nuget.ps1 and by the
+# validate job in .github/workflows/publish-nuget.yml, so the local script and the workflow use the same rules.
 
 $script:SemVerPattern = '^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z][0-9A-Za-z.-]*))?$'
 
@@ -57,11 +57,11 @@ function Get-PackageIds([string]$repoRoot) {
     $ids = @(Get-Content -LiteralPath (Join-Path $repoRoot 'scripts' 'pack-nuget' 'packages.txt') |
         ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') } |
         ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) -replace '^Em\.', 'EmSys.' })
-    if (-not $ids) { throw 'scripts/pack-nuget/packages.txt tidak berisi project.' }
+    if (-not $ids) { throw 'scripts/pack-nuget/packages.txt contains no projects.' }
     return $ids
 }
 
-# Release note yang belum ada atau kosong untuk satu versi, sebagai path relatif repo.
+# Release notes that are missing or empty for one version, as repo-relative paths.
 function Get-MissingNotes([string]$repoRoot, [string[]]$packageIds, [string]$version) {
     @($packageIds | Where-Object {
         $path = Join-Path $repoRoot 'doc' 'ReleaseNote' $_ "$version.md"
@@ -69,7 +69,7 @@ function Get-MissingNotes([string]$repoRoot, [string[]]$packageIds, [string]$ver
     } | ForEach-Object { "doc/ReleaseNote/$_/$version.md" })
 }
 
-# Semua versi yang punya release note untuk minimal satu paket di daftar.
+# All versions that have a release note for at least one package in the list.
 function Get-NoteVersions([string]$repoRoot, [string[]]$packageIds) {
     $noteDir = Join-Path $repoRoot 'doc' 'ReleaseNote'
     @(Get-ChildItem -LiteralPath $noteDir -Directory -ErrorAction SilentlyContinue |

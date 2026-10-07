@@ -48,7 +48,7 @@ IF OBJECT_ID(N'[dbo].[ta_CtnFolder]', N'U') IS NULL
       (
          [cCtnFolderId]                  char(26)     COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cCtnRootId]                    char(26)     COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-         -- Kosong = langsung di root.
+         -- Empty = directly in the root.
          [cCtnFolderParent_cCtnFolderId] char(26)     COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
          [cCtnFolderName]                varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cCtnFolderOrder]               int          NOT NULL CONSTRAINT [DF_ta_CtnFolder_cCtnFolderOrder] DEFAULT (-1),
@@ -99,7 +99,7 @@ IF OBJECT_ID(N'[dbo].[ta_CtnManifest]', N'U') IS NULL
          [cCtnManifestDigest]              varchar(128)  COLLATE SQL_Latin1_General_CP1_CS_AS NOT NULL,
          [cCtnManifestMediaType]           varchar(255)  COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cCtnManifestSize]                bigint        NOT NULL,
-         -- Byte persis seperti yang dikirim: digest dihitung dari byte-nya.
+         -- The bytes exactly as sent: the digest is computed from its bytes.
          [cCtnManifestContent]             varbinary(max) NOT NULL,
          [cCtnManifestPushedBy_cRobotId] char(26)     COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
          [ustamp]                          datetime      NOT NULL,
@@ -152,7 +152,7 @@ GO
 --endregion
 
 --region ta_CtnBlobLink
--- Pagar keamanan: blob hanya bisa diambil lewat container yang terhubung dengannya.
+-- Security fence: a blob can only be fetched through a container linked to it.
 IF OBJECT_ID(N'[dbo].[ta_CtnBlobLink]', N'U') IS NULL
    BEGIN
       CREATE TABLE [dbo].[ta_CtnBlobLink]
@@ -177,7 +177,7 @@ IF OBJECT_ID(N'[dbo].[ta_CtnManifestBlob]', N'U') IS NULL
          [cCtnManifestId]        char(26)    COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cCtnManifestBlobOrder] int         NOT NULL,
          [cCtnBlobId]            char(26)    COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-         -- 'config' atau 'layer'.
+         -- 'config' or 'layer'.
          [cCtnManifestBlobRole]  varchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          CONSTRAINT [PK_ta_CtnManifestBlob] PRIMARY KEY CLUSTERED ([cCtnManifestId], [cCtnManifestBlobOrder]),
          CONSTRAINT [FK_ta_CtnManifestBlob_ta_CtnManifest] FOREIGN KEY ([cCtnManifestId]) REFERENCES [dbo].[ta_CtnManifest] ([cCtnManifestId]) ON DELETE CASCADE,
@@ -196,7 +196,7 @@ IF OBJECT_ID(N'[dbo].[ta_CtnUpload]', N'U') IS NULL
          [cCtnUploadId]   char(26) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cCtnImageId]    char(26) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cRobotId]    char(26) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-         -- Offset: berapa byte yang sudah diterima. Berkas sementara di disk bernama sesuai Id.
+         -- Offset: how many bytes have been received. The temporary file on disk is named after the Id.
          [cCtnUploadSize] bigint   NOT NULL,
          [ustamp]         datetime NOT NULL,
          [datestamp]      datetime NOT NULL,
@@ -217,7 +217,7 @@ IF OBJECT_ID(N'[dbo].[ta_CtnRootRobot]', N'U') IS NULL
       (
          [cRobotId]         char(26) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
          [cCtnRootId]          char(26) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-         -- 'R' (pull) atau 'W' (push; mencakup pull).
+         -- 'R' (pull) or 'W' (push; includes pull).
          [cCtnRootRobotAccess] char(1)  COLLATE SQL_Latin1_General_CP1_CS_AS NOT NULL,
          [ustamp]              datetime NOT NULL,
          [datestamp]           datetime NOT NULL,

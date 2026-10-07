@@ -1,5 +1,5 @@
 {
-  // Salin ke ..\.artefacts\em-system\config\emapi-config.json di sebelah repo. Jangan commit nilai asli.
+  // Copy to ..\.artefacts\em-system\config\emapi-config.json next to the repo. Do not commit real values.
   "database": {
     "provider": "MicrosoftSqlServer",
     "connectionString": "Server=localhost,1433;Database=Em;User ID=em;Password=CHANGE_ME;Encrypt=True;TrustServerCertificate=True",
@@ -8,7 +8,7 @@
   "admin": {
     "initialPassword": "CHANGE_ME"
   },
-  // Hanya public key (RSA Base64 DER PKCS#1). Kosongkan pada server publik.
+  // Public key only (RSA Base64 DER PKCS#1). Leave empty on a public server.
   "debugTokens": [],
   "http": {
     "requestTimeoutSeconds": 30,
@@ -24,7 +24,7 @@
     "nuPakMaxPackageMb": 250,
     "binaryPath": "./data/binary"
   },
-  // Modul opsional; yang tidak disebut mati. Bisa ditimpa EM_MODULE_<NAMA>=true|false (mis. EM_MODULE_TEST).
+  // Optional modules; one that is not mentioned is off. Can be overridden by EM_MODULE_<NAME>=true|false (e.g. EM_MODULE_TEST).
   "modules": {
     "test": false
   }
