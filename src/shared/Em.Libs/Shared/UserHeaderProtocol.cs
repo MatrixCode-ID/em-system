@@ -4,50 +4,48 @@ using System.Text.Json.Serialization;
 namespace Em.Shared
 {
    /// <summary>
-   /// Aturan penyusunan isi header <see cref="Defaults.UserHeader"/> - keterangan client tentang akun
-   /// siapa yang sedang aktif di layarnya. Kelas ini dipakai kedua sisi: client yang menyusunnya dan
-   /// server yang membacanya harus menyebut kata yang sama persis.
+   /// Rules for composing the content of the <see cref="Defaults.UserHeader"/> header - the client's note
+   /// of which account is active on its screen. Both sides use this class: the client that composes the
+   /// header and the server that reads it must say exactly the same thing.
    /// </summary>
    /// <remarks>
-   /// Bentuknya sebuah objek JSON yang membawa id sekaligus nama akun, mis.
-   /// <c>{"cUserId":"01K5Z0X9P7QW3M8V2ND6TJHFAB","cUserAccount":"budi"}</c>. Id ikut dibawa karena nama
-   /// akun bisa berganti sementara id tidak, sehingga yang dipakai server adalah identitas yang memang
-   /// permanen dan namanya tinggal jadi keterangan yang terbaca manusia di log.
+   /// The content is a JSON object carrying both the id and the account name, e.g.
+   /// <c>{"cUserId":"01K5Z0X9P7QW3M8V2ND6TJHFAB","cUserAccount":"budi"}</c>. The id is carried because an
+   /// account name can change while the id does not, so the server relies on the permanent identity and
+   /// the name merely serves as a human-readable note in logs.
    /// <para>
-   /// <see cref="TryRead"/> juga masih menerima satu nama akun polos (teks yang tidak diawali
-   /// <c>{</c>), supaya pengembang tetap bisa mengetik <c>X-Em-User: budi</c> di curl/Postman tanpa
-   /// menyusun JSON.
+   /// <see cref="TryRead"/> also still accepts a plain account name (text that does not start with
+   /// <c>{</c>), so developers can keep typing <c>X-Em-User: budi</c> in curl/Postman without composing
+   /// JSON.
    /// </para>
    /// <para>
-   /// Aturan yang tidak berubah sedikit pun: isi header ini tidak pernah menjadi sumber identitas
-   /// dengan sendirinya. Ia hanya dipercaya kalau request-nya juga membawa token debug yang lolos
-   /// verifikasi - kalau pernah dipercaya sendirian, siapa pun cukup menyebut id mana saja untuk
-   /// menjadi pemiliknya.
+   /// One rule never changes: the header content is never a source of identity by itself. It is trusted
+   /// only when the request also carries a debug token that passes verification - if it were ever trusted
+   /// alone, anyone could become any owner just by naming an id.
    /// </para>
    /// </remarks>
    public static class UserHeaderProtocol
    {
       /// <summary>
-      /// Panjang maksimum isi header yang mau diproses. Longgar untuk sepasang id dan nama akun;
-      /// gunanya supaya pemanggil yang belum terbukti apa-apa tidak bisa memaksa server mem-parse
-      /// blob besar.
+      /// Maximum header length that will be processed. Generous for an id plus an account name; it exists
+      /// so a caller that has proven nothing cannot force the server to parse a large blob.
       /// </summary>
       public const int MaxHeaderLength = 1024;
 
       /// <summary>
-      /// Menyusun isi header dari id dan/atau nama akun yang sedang aktif. Anggota yang kosong
-      /// dilewatkan, jadi header tidak pernah memuat <c>"cUserId":null</c>.
+      /// Composes the header content from the active id and/or account name. Empty members are skipped,
+      /// so the header never contains <c>"cUserId":null</c>.
       /// </summary>
-      /// <param name="cUserId">Id pengguna yang sedang aktif, atau <c>null</c> kalau belum diketahui.</param>
-      /// <param name="cUserAccount">Nama akun yang sedang aktif, atau <c>null</c> kalau belum diketahui.</param>
+      /// <param name="cUserId">Id of the active user, or <c>null</c> when not known.</param>
+      /// <param name="cUserAccount">Account name of the active user, or <c>null</c> when not known.</param>
       /// <returns>
-      /// Isi header siap kirim, atau teks kosong kalau tidak ada satu pun yang bisa disebutkan - dan
-      /// header yang tidak menyebut siapa-siapa memang lebih baik tidak dikirim sama sekali.
+      /// The header content ready to send, or an empty string when neither can be named - a header that
+      /// names nobody is better not sent at all.
       /// </returns>
       /// <remarks>
-      /// Serialisasinya memakai encoder bawaan <see cref="System.Text.Json"/>, yang meng-escape
-      /// karakter non-ASCII menjadi <c>\uXXXX</c>. Nilai yang dihasilkan karena itu selalu aman
-      /// dikirim apa adanya sebagai nilai header, berapa pun isi nama akunnya.
+      /// Serialization uses the default <see cref="System.Text.Json"/> encoder, which escapes non-ASCII
+      /// characters as <c>\uXXXX</c>. The result is therefore always safe to send as-is as a header value,
+      /// whatever the account name contains.
       /// </remarks>
       public static string Create(string? cUserId, string? cUserAccount) {
          var hasId = !string.IsNullOrWhiteSpace(cUserId);
@@ -62,15 +60,15 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Membaca isi header menjadi id dan nama akun yang disebutnya.
+      /// Reads the header content into the id and account name it names.
       /// </summary>
-      /// <param name="header">Isi header apa adanya.</param>
-      /// <param name="cUserId">Id yang disebut header, atau <c>null</c> kalau tidak disebut.</param>
-      /// <param name="cUserAccount">Nama akun yang disebut header, atau <c>null</c> kalau tidak disebut.</param>
+      /// <param name="header">The header content as received.</param>
+      /// <param name="cUserId">The id named by the header, or <c>null</c> when not named.</param>
+      /// <param name="cUserAccount">The account name named by the header, or <c>null</c> when not named.</param>
       /// <returns>
-      /// <c>true</c> kalau header menyebut setidaknya salah satu dari keduanya. Header yang ada tapi
-      /// tidak bisa dibaca sama sekali dianggap tidak menyebut siapa-siapa, bukan sebuah kesalahan:
-      /// yang menentukan identitas tetap token yang dibawa request, bukan header ini.
+      /// <c>true</c> when the header names at least one of the two. A header that is present but cannot be
+      /// read at all counts as naming nobody, not as an error: identity is still decided by the token the
+      /// request carries, not by this header.
       /// </returns>
       public static bool TryRead(string? header, out string? cUserId, out string? cUserAccount) {
          cUserId = null;
@@ -82,9 +80,8 @@ namespace Em.Shared
 
          var text = header.Trim();
 
-         // Bentuk lama - satu nama akun polos. Dipertahankan supaya pengembang tetap bisa mengetiknya
-         // langsung di curl/Postman, dan supaya tripwire di gerbang tetap menangkap header yang
-         // ditulis dengan bentuk itu.
+         // Legacy form - a plain account name. Kept so developers can still type it directly in
+         // curl/Postman, and so the tripwire at the gate still catches headers written in that form.
          if (text[0] != '{') {
             cUserAccount = text;
             return true;

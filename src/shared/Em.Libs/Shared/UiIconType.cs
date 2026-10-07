@@ -1,38 +1,36 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Daftar ikon yang bisa dipilih user untuk menandai sebuah baris data - role, user, modul,
-   /// kategori, dan entitas lain memakai daftar yang sama supaya satu ikon berarti sama di mana pun
-   /// dia muncul. Isinya berupa token abstrak, bukan nama ikon dari framework UI tertentu:
-   /// yang tersimpan di data hanya makna ikonnya, sedangkan gambar mana yang dipakai untuk
-   /// menampilkannya adalah urusan lapisan tampilan.
+   /// Icons a user can pick to mark a data row - roles, users, modules, categories, and other
+   /// entities share the same list so one icon means the same thing wherever it appears. The members
+   /// are abstract tokens, not icon names of a particular UI framework: only the meaning of the icon
+   /// is stored in data, and which image displays it is up to the presentation layer.
    /// <para>
-   /// Daftar ini hanya boleh bertambah. Member yang sudah ada tidak boleh dihapus atau diganti
-   /// namanya, karena namanyalah yang tersimpan di data - menghapus satu member membuat baris lama
-   /// yang memakainya kehilangan ikonnya.
+   /// This list may only grow. Existing members must not be removed or renamed, because the name is
+   /// what is stored in data - removing a member would make old rows that use it lose their icon.
    /// </para>
    /// </summary>
    public enum UiIconType
    {
-      /// <summary>Belum ditentukan - user belum memilih ikon apa pun. Sengaja bukan gambar, supaya
-      /// baris yang belum dipilihkan ikon bisa jatuh ke ikon bawaan entitasnya.</summary>
+      /// <summary>Not specified - the user has not picked any icon. Deliberately not an image, so a
+      /// row without a chosen icon can fall back to its entity's default icon.</summary>
       Unspecified = 0,
 
-      #region Otoritas
+      #region Authority
 
-      /// <summary>Pengawas, keamanan.</summary>
+      /// <summary>Oversight, security.</summary>
       Shield,
 
-      /// <summary>Pemegang akses.</summary>
+      /// <summary>Access holder.</summary>
       Key,
 
-      /// <summary>Pembatasan.</summary>
+      /// <summary>Restriction.</summary>
       Lock,
 
-      /// <summary>Pimpinan tertinggi.</summary>
+      /// <summary>Top leadership.</summary>
       Crown,
 
-      /// <summary>Persetujuan, legal.</summary>
+      /// <summary>Approval, legal.</summary>
       Gavel,
 
       /// <summary>Approver.</summary>
@@ -40,68 +38,68 @@ namespace Em.Shared
 
       #endregion
 
-      #region Orang
+      #region People
 
-      /// <summary>Perorangan.</summary>
+      /// <summary>Individual.</summary>
       User,
 
-      /// <summary>Tim, grup.</summary>
+      /// <summary>Team, group.</summary>
       Users,
 
-      /// <summary>Manajer, eksekutif.</summary>
+      /// <summary>Manager, executive.</summary>
       UserTie,
 
-      /// <summary>Kepegawaian.</summary>
+      /// <summary>Human resources.</summary>
       IdCard,
 
-      /// <summary>Layanan pelanggan.</summary>
+      /// <summary>Customer service.</summary>
       Headset,
 
-      /// <summary>Cabang, unit organisasi.</summary>
+      /// <summary>Branch, organizational unit.</summary>
       Building,
 
       #endregion
 
-      #region Operasi
+      #region Operations
 
-      /// <summary>Penjualan, pembelian.</summary>
+      /// <summary>Sales, purchasing.</summary>
       Cart,
 
-      /// <summary>Gudang, stok.</summary>
+      /// <summary>Warehouse, stock.</summary>
       Boxes,
 
-      /// <summary>Pengiriman, logistik.</summary>
+      /// <summary>Shipping, logistics.</summary>
       Truck,
 
-      /// <summary>Produksi.</summary>
+      /// <summary>Production.</summary>
       Factory,
 
-      /// <summary>Teknik, perawatan.</summary>
+      /// <summary>Engineering, maintenance.</summary>
       Wrench,
 
-      /// <summary>QC, inspeksi.</summary>
+      /// <summary>QC, inspection.</summary>
       ClipboardCheck,
 
       #endregion
 
-      #region Angka & sistem
+      #region Numbers & system
 
-      /// <summary>Analitik, target.</summary>
+      /// <summary>Analytics, targets.</summary>
       ChartLine,
 
-      /// <summary>Kas, keuangan.</summary>
+      /// <summary>Cash, finance.</summary>
       Coins,
 
-      /// <summary>Tagihan, piutang.</summary>
+      /// <summary>Billing, receivables.</summary>
       Invoice,
 
-      /// <summary>Akuntansi.</summary>
+      /// <summary>Accounting.</summary>
       Calculator,
 
-      /// <summary>IT, sistem.</summary>
+      /// <summary>IT, systems.</summary>
       Database,
 
-      /// <summary>Konfigurasi.</summary>
+      /// <summary>Configuration.</summary>
       Gear,
 
       #endregion

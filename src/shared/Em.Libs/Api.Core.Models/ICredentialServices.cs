@@ -19,7 +19,9 @@ namespace Em.Api.Core.Models
       Task<ta_User[]> GetTa_Users_ByContactId(string cContactId);
       /// <summary>Gets one page of <c>ta_User</c> rows; <paramref name="page"/> starts at one.</summary>
       Task<ta_User[]> GetTa_Users_InPage(int page, int pageSize);
+      /// <summary>Creates a user together with its contact, address, comm, and credential rows.</summary>
       Task PostTa_User_New(DtoPayload<ta_User, ta_Contact, ta_Address, ta_Comm, ta_UserCredential> data);
+      /// <summary>Creates several users together with their related rows.</summary>
       Task PostTa_User_NewBatch(DtoPayload<ta_User, ta_Contact, ta_Address, ta_Comm, ta_UserCredential>[] datas);
       /// <summary>Updates one <c>ta_User</c> row.</summary>
       Task PostTa_User_Update(ta_User data);

@@ -1,27 +1,27 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Penerjemah antara token ikon yang tersimpan di data dan <see cref="UiIconType"/> yang dipakai
-   /// di dalam program. Yang tersimpan adalah nama membernya, bukan angkanya, supaya isi data tetap
-   /// terbaca manusia dan tidak ikut bergeser maknanya kalau urutan member di enum berubah.
+   /// Translates between the icon token stored in data and the <see cref="UiIconType"/> used inside
+   /// the program. The member name is stored, not its number, so the data stays human-readable and its
+   /// meaning does not shift when the order of enum members changes.
    /// </summary>
    public static class UiIcons
    {
       /// <summary>
-      /// Menerjemahkan token ikon yang tersimpan menjadi <see cref="UiIconType"/>. Token yang kosong,
-      /// salah tulis, atau tidak dikenal versi program ini tidak dianggap kesalahan - semuanya jatuh
-      /// ke <paramref name="fallback"/>. Ikon hanyalah tampilan: satu token asing yang ikut terbawa
-      /// dari data lama, hasil impor, atau klien lain tidak boleh menggagalkan apa pun.
+      /// Translates a stored icon token into a <see cref="UiIconType"/>. A token that is empty,
+      /// misspelled, or unknown to this version of the program is not an error - all of them fall back
+      /// to <paramref name="fallback"/>. An icon is only presentation: a foreign token carried over
+      /// from old data, an import, or another client must never make anything fail.
       /// </summary>
-      /// <param name="token">Token ikon yang tersimpan, mis. <c>"Shield"</c>. Boleh <c>null</c>.</param>
-      /// <param name="fallback">Nilai yang dipakai kalau tokennya tidak bisa diterjemahkan.</param>
-      /// <returns>Ikon yang sesuai dengan token tersebut, atau <paramref name="fallback"/>.</returns>
+      /// <param name="token">The stored icon token, e.g. <c>"Shield"</c>. May be <c>null</c>.</param>
+      /// <param name="fallback">The value used when the token cannot be translated.</param>
+      /// <returns>The icon matching the token, or <paramref name="fallback"/>.</returns>
       public static UiIconType Parse(string? token, UiIconType fallback) {
          if (string.IsNullOrWhiteSpace(token)) return fallback;
 
-         // Enum.TryParse juga menerima teks berisi angka - termasuk angka yang bukan member mana pun -
-         // dan akan mengembalikan nilai yang tidak ada namanya. Karena itu hasilnya masih diperiksa
-         // dengan Enum.IsDefined sebelum diterima.
+         // Enum.TryParse also accepts numeric text - including numbers that match no member - and
+         // returns a value that has no name. The result is therefore still checked with
+         // Enum.IsDefined before it is accepted.
          return Enum.TryParse<UiIconType>(token.Trim(), ignoreCase: true, out var icon)
                 && Enum.IsDefined(icon)
             ? icon
@@ -29,12 +29,12 @@ namespace Em.Shared
       }
 
       /// <summary>
-      /// Menerjemahkan <see cref="UiIconType"/> menjadi token yang disimpan di data.
+      /// Translates a <see cref="UiIconType"/> into the token stored in data.
       /// </summary>
-      /// <param name="icon">Ikon yang akan disimpan.</param>
+      /// <param name="icon">The icon to store.</param>
       /// <returns>
-      /// Nama token ikonnya, atau <c>null</c> untuk <see cref="UiIconType.Unspecified"/> - "belum
-      /// dipilih" tidak punya token, dan memang tidak seharusnya meninggalkan jejak apa pun di data.
+      /// The icon's token name, or <c>null</c> for <see cref="UiIconType.Unspecified"/> - "not chosen"
+      /// has no token and should leave no trace in the data.
       /// </returns>
       public static string? ToToken(UiIconType icon) {
          return icon == UiIconType.Unspecified ? null : icon.ToString();

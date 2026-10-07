@@ -1,29 +1,29 @@
 namespace Em.Shared
 {
    /// <summary>
-   /// Menentukan warna sebuah baris data dari namanya. Warnanya tidak disimpan di mana pun: nama
-   /// entitas dihitung dengan <see cref="Crc32"/> lalu sisa baginya menunjuk salah satu slot warna
-   /// di palette. Nama yang sama karena itu selalu mendapat warna yang sama - hari ini, besok, dan
-   /// di klien lain sekali pun, selama normalisasi dan algoritmanya sama. Itu sebabnya keduanya
-   /// tinggal di sini, bukan di lapisan tampilan masing-masing klien.
+   /// Derives the color of a data row from its name. The color is never stored: the entity name is
+   /// hashed with <see cref="Crc32"/> and the remainder selects one color slot in the palette. The
+   /// same name therefore always gets the same color - today, tomorrow, and on any other client, as
+   /// long as the normalization and the algorithm match. That is why both live here rather than in
+   /// each client's presentation layer.
    /// <para>
-   /// Konsekuensi yang disadari: mengganti nama sebuah baris akan memindahkan warnanya.
+   /// Known consequence: renaming a row moves its color.
    /// </para>
    /// </summary>
    public static class UiTint
    {
       /// <summary>
-      /// Memilih slot warna untuk sebuah nama. Huruf besar-kecil dan spasi di ujung nama tidak
-      /// berpengaruh - <c>" Admin "</c> dan <c>"admin"</c> mendapat slot yang sama.
+      /// Picks a color slot for a name. Case and leading/trailing whitespace do not matter -
+      /// <c>" Admin "</c> and <c>"admin"</c> get the same slot.
       /// </summary>
-      /// <param name="name">Nama entitas yang diwarnai; kosong atau <c>null</c> selalu slot 0.</param>
+      /// <param name="name">Name of the entity being colored; empty or <c>null</c> always yields slot 0.</param>
       /// <param name="slotCount">
-      /// Banyaknya warna yang tersedia di palette. Diserahkan pemanggil karena jumlah warna adalah
-      /// keputusan lapisan tampilan dan boleh bertambah kapan saja - karena warnanya tidak disimpan,
-      /// menambah warna hanya mengubah tampilan, tidak ada data yang jadi salah.
+      /// Number of colors available in the palette. Supplied by the caller because the color count is a
+      /// presentation decision that may grow at any time - since colors are not stored, adding colors only
+      /// changes the display and never makes any data wrong.
       /// </param>
-      /// <returns>Nomor slot antara 0 sampai <paramref name="slotCount"/> - 1.</returns>
-      /// <exception cref="ArgumentOutOfRangeException">Jika <paramref name="slotCount"/> kurang dari 1.</exception>
+      /// <returns>A slot number from 0 to <paramref name="slotCount"/> - 1.</returns>
+      /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="slotCount"/> is less than 1.</exception>
       public static int SlotOf(string? name, int slotCount) {
          ArgumentOutOfRangeException.ThrowIfLessThan(slotCount, 1);
 

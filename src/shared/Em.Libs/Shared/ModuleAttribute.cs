@@ -26,7 +26,6 @@ namespace Em.Shared
       /// <c>true</c> when the type must carry <see cref="ModuleAttribute"/> - throws when it does not.
       /// <c>false</c> lets a type without the attribute fall back to its own type name, used for UI services
       /// that have long run without this attribute.
-      /// yang sudah lama berjalan tanpa atribut ini.
       /// </param>
       /// <exception cref="InvalidOperationException">
       /// Thrown when <paramref name="required"/> is <c>true</c> and <paramref name="serviceType"/> does not

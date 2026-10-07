@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Em.Api.Core.Models
 {
-   // Ini adalah temporary claim per user
+   // This is a temporary claim per user
    /// <summary>Row of table <c>ta_UserClaim</c>.</summary>
    [Table("ta_UserClaim")]
    public class ta_UserClaim
