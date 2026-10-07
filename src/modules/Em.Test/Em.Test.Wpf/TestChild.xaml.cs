@@ -5,8 +5,9 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Layar anak contoh untuk menguji siklus hidup navigasi: payload wajib, penolakan meninggalkan layar,
-   /// ganti judul, membuka manager dari editor, dan membuka viewer PDF dari jendela layar ini.
+   /// A sample child screen to test the navigation lifecycle: a required payload, refusing to be left,
+   /// changing the title, opening a manager from an editor, and opening the PDF viewer from this screen's
+   /// window.
    /// </summary>
    public partial class TestChild : UserControl, INavigationBody
    {

@@ -4,7 +4,7 @@ using UserControl = System.Windows.Controls.UserControl;
 
 namespace Em.Test.Wpf
 {
-   /// <summary>Panel hasil uji bersama: daftar <see cref="TestLogEntry"/> dengan tombol kosongkan.</summary>
+   /// <summary>The shared test result panel: a list of <see cref="TestLogEntry"/> with a clear button.</summary>
    public partial class TestLogPanel : UserControl
    {
       public static readonly DependencyProperty EntriesProperty = DependencyProperty.Register(
@@ -15,7 +15,7 @@ namespace Em.Test.Wpf
          InitializeComponent();
       }
 
-      /// <summary>Daftar hasil yang ditampilkan; diikat ke <c>Entries</c> milik view model layar.</summary>
+      /// <summary>The list of results shown; bound to <c>Entries</c> of the screen's view model.</summary>
       public ObservableCollection<TestLogEntry>? Entries {
          get => (ObservableCollection<TestLogEntry>?)GetValue(EntriesProperty);
          set => SetValue(EntriesProperty, value);

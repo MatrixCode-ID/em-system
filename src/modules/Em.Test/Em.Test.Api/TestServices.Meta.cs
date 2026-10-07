@@ -146,8 +146,8 @@ namespace Em.Test.Api
       };
 
       /// <summary>
-      /// Stream baca-saja berisi byte yang ditentukan posisinya, tanpa menampung isinya di memori. Dipakai
-      /// untuk unduhan besar: yang diuji adalah jalur streaming-nya, bukan isinya.
+      /// A read-only stream of bytes whose position is determined, without holding its content in memory. Used
+      /// for large downloads: what is tested is the streaming path, not the content.
       /// </summary>
       private sealed class PatternStream(long length) : Stream
       {

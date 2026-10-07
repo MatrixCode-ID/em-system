@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Em.Test.Api
 {
    /// <summary>
-   /// Sumber pekerjaan hub milik module uji: dokumen uji yang masih draf dan belum diajukan. Menguji bahwa
-   /// satu module bisa menambah jenis pekerjaan ke hub tanpa mengubah engine.
+   /// The hub task source of the test module: test documents that are still drafts and have not been
+   /// submitted. It tests that a module can add kinds of tasks to the hub without changing the engine.
    /// </summary>
    internal sealed class TestHubTaskSource(TestDbContext ctx, ActionRequest request) : IHubTaskSource
    {

@@ -9,9 +9,10 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Layar dokumen uji: membuat draf, mengajukannya lewat document approval, melihat PDF dasarnya di viewer
-   /// bawaan, dan membuka Approval Manager untuk dokumen itu. Dibuka juga dari tombol Source document di
-   /// Approval Manager dan dari hub, dengan kunci dokumen sebagai parameter.
+   /// The test documents screen: creating a draft, submitting it through document approval, viewing its base
+   /// PDF in the built-in viewer, and opening the Approval Manager for that document. Also opened from the
+   /// Source document button in the Approval Manager and from the hub, with the document key as its
+   /// parameter.
    /// </summary>
    public partial class TestDocs : UserControl, INavigationBody
    {

@@ -1,6 +1,6 @@
 namespace Em.Test.Models
 {
-   /// <summary>Isi uji echo dengan berbagai tipe parameter, supaya binding query dan body bisa dibandingkan.</summary>
+   /// <summary>The content of the echo test with various parameter types, so query and body binding can be compared.</summary>
    public class TestEchoRequest
    {
       public string Text { get; set; } = string.Empty;
@@ -20,7 +20,7 @@ namespace Em.Test.Models
       public string[] Tags { get; set; } = [];
    }
 
-   /// <summary>Jawaban uji echo: isi yang diterima server beserta keterangan siapa pemanggilnya.</summary>
+   /// <summary>The answer of the echo test: the content the server received together with who the caller is.</summary>
    public class TestEchoResult
    {
       public TestEchoRequest Received { get; set; } = new();
@@ -32,7 +32,7 @@ namespace Em.Test.Models
       public DateTime ServerTimeUtc { get; set; }
    }
 
-   /// <summary>Keadaan pemanggil menurut server, dipakai membandingkan dengan keadaan menurut client.</summary>
+   /// <summary>The caller's state according to the server, used to compare with the state according to the client.</summary>
    public class TestSessionInfo
    {
       public string? UserId { get; set; }
@@ -48,13 +48,13 @@ namespace Em.Test.Models
       public string[] Claims { get; set; } = [];
    }
 
-   /// <summary>Payload header untuk unggahan stream uji.</summary>
+   /// <summary>The header payload for the test stream upload.</summary>
    public class TestStreamRequest
    {
       public string Name { get; set; } = string.Empty;
    }
 
-   /// <summary>Hasil unggahan stream uji: apa yang benar-benar sampai ke server.</summary>
+   /// <summary>The result of the test stream upload: what really reached the server.</summary>
    public class TestStreamResult
    {
       public string Name { get; set; } = string.Empty;
@@ -64,22 +64,22 @@ namespace Em.Test.Models
       public string Sha256 { get; set; } = string.Empty;
    }
 
-   /// <summary>Permintaan menjalankan business task uji.</summary>
+   /// <summary>A request to run a test business task.</summary>
    public class TestTaskRequest
    {
-      /// <summary>Lama pekerjaan dalam detik; progresnya dilaporkan tiap detik.</summary>
+      /// <summary>The duration of the work in seconds; its progress is reported every second.</summary>
       public int Seconds { get; set; } = 10;
 
-      /// <summary>Kalau true pekerjaan gagal di tengah jalan, untuk menguji status gagal.</summary>
+      /// <summary>When true, the work fails midway, to test the failed status.</summary>
       public bool Fail { get; set; }
 
-      /// <summary>true = task global milik layar module; false = task personal milik pemulainya.</summary>
+      /// <summary>true = a global task belonging to the module screen; false = a personal task belonging to its starter.</summary>
       public bool Global { get; set; }
 
       public TestTaskOutput Output { get; set; }
    }
 
-   /// <summary>Syarat pencarian item beserta halamannya.</summary>
+   /// <summary>The conditions of an item search together with its page.</summary>
    public class TestItemQuery
    {
       public int Page { get; set; } = 1;
@@ -91,7 +91,7 @@ namespace Em.Test.Models
       public TestItemState? State { get; set; }
    }
 
-   /// <summary>Satu halaman hasil pencarian item.</summary>
+   /// <summary>One page of item search results.</summary>
    public class TestItemPage
    {
       public vi_TestItem[] Items { get; set; } = [];
@@ -103,12 +103,12 @@ namespace Em.Test.Models
       public int PageSize { get; set; }
    }
 
-   /// <summary>Usulan perubahan data item yang diajukan lewat data approval.</summary>
+   /// <summary>An item data change proposal submitted through data approval.</summary>
    public class TestItemChange
    {
       public TestItemOperation Operation { get; set; }
 
-      /// <summary>Id item yang diubah atau dihapus; kosong untuk item baru.</summary>
+      /// <summary>The id of the item being changed or deleted; empty for a new item.</summary>
       public string? ItemId { get; set; }
 
       public string Code { get; set; } = string.Empty;
@@ -122,16 +122,16 @@ namespace Em.Test.Models
       public string? Note { get; set; }
    }
 
-   /// <summary>Hasil mengajukan usulan perubahan data.</summary>
+   /// <summary>The result of submitting a data change proposal.</summary>
    public class TestSubmitResult
    {
       public string ApprovalRequestId { get; set; } = string.Empty;
 
-      /// <summary>true kalau pemanggil memegang claim persetujuan sehingga perubahan langsung diterapkan.</summary>
+      /// <summary>true when the caller holds the approval claim, so the change is applied directly.</summary>
       public bool AppliedImmediately { get; set; }
    }
 
-   /// <summary>Isian langkah QA Check pada dokumen uji.</summary>
+   /// <summary>The input of the QA Check step on a test document.</summary>
    public class TestQaPayload
    {
       public bool Passed { get; set; }

@@ -13,8 +13,8 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Layar uji business task dan CDN: menjalankan task personal dan global dengan progres, batal, gagal, dan
-   /// hasil berkas atau JSON; mengunggah, mendaftar, mengarsip, dan menghapus berkas di CDN.
+   /// The business task and CDN test screen: running personal and global tasks with progress, cancel,
+   /// failure, and file or JSON results; uploading, listing, archiving, and deleting files on the CDN.
    /// </summary>
    public partial class TestTasks : UserControl, INavigationBody
    {

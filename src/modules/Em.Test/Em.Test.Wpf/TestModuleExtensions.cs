@@ -14,8 +14,9 @@ namespace Em.Test.Wpf
       private const string MenuRoot = "Em Test";
 
       /// <summary>
-      /// Mendaftarkan service client, semua navigasi, dan panel approval module uji. Semua navigasi terikat
-      /// pada claim dasar module, jadi menu dan <c>NavigateTo</c> menolak pengguna yang tidak memegangnya.
+      /// Registers the client service, all navigations, and the approval panels of the test module. All
+      /// navigations are bound to the module's base claim, so the menu and <c>NavigateTo</c> refuse a user who
+      /// does not hold it.
       /// </summary>
       public static void AddTestModule(this EmAppBuilder builder) {
          ArgumentNullException.ThrowIfNull(builder);

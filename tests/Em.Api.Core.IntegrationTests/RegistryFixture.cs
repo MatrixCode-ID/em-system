@@ -5,9 +5,10 @@ using Em.Api.Core.Registry;
 namespace Em.Api.Core.IntegrationTests
 {
    /// <summary>
-   /// Registry di database kosong tambahan plus folder storage sementara, untuk test garbage collection dan
-   /// penghapusan manifest. Skema dibuat EF tanpa foreign key (modelnya tidak punya relasi); itu cukup untuk
-   /// perilaku yang diuji di sini. Folder dan database dihapus saat <see cref="DisposeAsync"/> / akhir run.
+   /// An additional registry in an empty database plus a temporary storage folder, for the garbage
+   /// collection and manifest deletion tests. The schema is created by EF without foreign keys (the model
+   /// has no relations); that is enough for the behavior tested here. The folder and the database are
+   /// deleted at <see cref="DisposeAsync"/> / the end of the run.
    /// </summary>
    internal sealed class RegistryFixture : IAsyncDisposable
    {
@@ -44,7 +45,7 @@ namespace Em.Api.Core.IntegrationTests
          }
       }
 
-      /// <summary>Membuat root dan container; mengembalikan id container.</summary>
+      /// <summary>Creates a root and a container; returns the container id.</summary>
       public async Task<string> AddImageAsync(string root, string name, CancellationToken ct) {
          var now = DateTime.UtcNow;
          var rootId = await Db.Roots.Where(r => r.cCtnRootName == root).Select(r => r.cCtnRootId).SingleOrDefaultAsync(ct);
@@ -61,7 +62,7 @@ namespace Em.Api.Core.IntegrationTests
          return imageId;
       }
 
-      /// <summary>Mencatat blob dengan isi unik; berkasnya ditulis (kecuali <paramref name="writeFile"/> false).</summary>
+      /// <summary>Records a blob with unique content; its file is written (unless <paramref name="writeFile"/> is false).</summary>
       public async Task<(string Id, string Digest, long Size)> AddBlobAsync(DateTime createdUtc, CancellationToken ct, bool writeFile = true, bool writeRow = true) {
          var bytes = Encoding.UTF8.GetBytes("blob-" + Interlocked.Increment(ref counter) + "-" + Guid.NewGuid());
          var digest = CtnBlobStore.ComputeDigest(bytes);
@@ -86,7 +87,7 @@ namespace Em.Api.Core.IntegrationTests
          await Db.SaveChangesAsync(ct);
       }
 
-      /// <summary>Mencatat manifest berikut daftar blob dan tag-nya; mengembalikan id dan digest manifest.</summary>
+      /// <summary>Records a manifest together with its list of blobs and tags; returns the manifest id and digest.</summary>
       public async Task<(string Id, string Digest)> AddManifestAsync(
          string imageId, string mediaType, string content, string[] blobIds, string[] tags, DateTime createdUtc, CancellationToken ct) {
          var bytes = Encoding.UTF8.GetBytes(content);
@@ -110,7 +111,7 @@ namespace Em.Api.Core.IntegrationTests
          return (id, digest);
       }
 
-      /// <summary>Mencatat upload; berkasnya ditulis dengan waktu tulis <paramref name="ustamp"/>.</summary>
+      /// <summary>Records an upload; its file is written with the write time <paramref name="ustamp"/>.</summary>
       public async Task<string> AddUploadAsync(string imageId, DateTime ustamp, bool writeFile, CancellationToken ct) {
          var id = $"{Ulid.NewUlid()}";
          Db.Uploads.Add(new ta_CtnUpload {
@@ -126,7 +127,7 @@ namespace Em.Api.Core.IntegrationTests
          return id;
       }
 
-      /// <summary>Berkas upload tanpa baris metadata, dengan nama ULID baru dan waktu tulis tertentu.</summary>
+      /// <summary>An upload file without a metadata row, with a new ULID name and a particular write time.</summary>
       public async Task<string> AddLooseUploadFileAsync(DateTime writtenUtc, CancellationToken ct) {
          var id = $"{Ulid.NewUlid()}";
          var path = Store.UploadPath(id);

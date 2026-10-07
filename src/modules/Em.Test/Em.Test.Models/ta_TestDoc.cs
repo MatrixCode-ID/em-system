@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Em.Test.Models
 {
-   /// <summary>Dokumen uji: dokumen transaksi yang diajukan lewat document approval dan di-stamp ke PDF.</summary>
+   /// <summary>A test document: a transaction document submitted through document approval and stamped onto a PDF.</summary>
    [Table("ta_TestDoc")]
    public class ta_TestDoc
    {
@@ -18,7 +18,7 @@ namespace Em.Test.Models
 
       public TestDocStatus cTestDocStatus { get; set; }
 
-      /// <summary>Hasil pemeriksaan langkah QA Check, atau kosong kalau belum diperiksa.</summary>
+      /// <summary>The result of the QA Check step check, or empty when not yet checked.</summary>
       public bool? cTestDocQaPassed { get; set; }
 
       public string? cTestDocQaRemarks { get; set; }

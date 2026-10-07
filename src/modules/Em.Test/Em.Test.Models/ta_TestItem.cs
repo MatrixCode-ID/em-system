@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Em.Test.Models
 {
-   /// <summary>Item uji: data induk sederhana untuk menguji CRUD, paging, UiModel, dan data approval.</summary>
+   /// <summary>A test item: simple master data to test CRUD, paging, UiModel, and data approval.</summary>
    [Table("ta_TestItem")]
    public class ta_TestItem
    {

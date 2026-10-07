@@ -9,9 +9,9 @@ namespace Em.Test.Api
    public static class TestModuleExtensions
    {
       /// <summary>
-      /// Memasang module uji: context datanya, service, claim, dua alur approval, dan sumber pekerjaan hub.
-      /// Prasyarat: skrip tabel module uji sudah dijalankan pada database inti, dan penyimpanan berkas
-      /// (<c>AddLocalBinaryStorage</c>) sudah dinyalakan aplikasi untuk PDF approval.
+      /// Installs the test module: its data context, service, claims, two approval flows, and the hub task
+      /// source. Prerequisites: the test module's table script has been run on the core database, and file
+      /// storage (<c>AddLocalBinaryStorage</c>) has been turned on by the application for the approval PDFs.
       /// </summary>
       public static void AddTestModule(this EmAppBuilder builder) {
          ArgumentNullException.ThrowIfNull(builder);

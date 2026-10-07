@@ -164,7 +164,7 @@ namespace Em.Api.Core.IntegrationTests
          Assert.Equal(1, report.OrphanUploadFileCount);
          Assert.False(File.Exists(oldUpload));
          Assert.True(File.Exists(youngUpload));
-         // Peringatan tidak boleh membocorkan path absolut mesin.
+         // A warning must not leak the machine's absolute path.
          Assert.DoesNotContain(report.Warnings, w => w.Contains(f.Folder, StringComparison.OrdinalIgnoreCase));
       }
 

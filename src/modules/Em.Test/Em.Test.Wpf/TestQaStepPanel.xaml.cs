@@ -7,9 +7,10 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Panel isian langkah QA Check di Approval Manager. Menunjukkan kontrak panel langkah: panel menulis
-   /// payload ke <see cref="IApprovalPanelHost.InputPayload"/> dan menyatakan sahnya lewat
-   /// <see cref="IApprovalPanelHost.IsInputValid"/>; Approval Manager mengirimnya bersama keputusan.
+   /// The input panel of the QA Check step in the Approval Manager. It shows the contract of a step panel:
+   /// the panel writes its payload to <see cref="IApprovalPanelHost.InputPayload"/> and declares its
+   /// validity through <see cref="IApprovalPanelHost.IsInputValid"/>; the Approval Manager sends it
+   /// together with the decision.
    /// </summary>
    public partial class TestQaStepPanel : UserControl
    {

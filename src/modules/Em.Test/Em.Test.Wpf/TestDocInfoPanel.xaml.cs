@@ -6,9 +6,9 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Kartu informasi tambahan di Approval Manager untuk dokumen uji. Approval Manager menyerahkan kunci
-   /// dokumen lewat <see cref="Input"/>; kartu membaca dokumennya sendiri dari module, jadi yang tampil
-   /// adalah keadaan dokumen saat ini, bukan potret saat diajukan.
+   /// An extra info card in the Approval Manager for test documents. The Approval Manager hands over the
+   /// document key through <see cref="Input"/>; the card reads the document itself from the module, so what
+   /// it shows is the current state of the document, not a snapshot from when it was submitted.
    /// </summary>
    public partial class TestDocInfoPanel : UserControl, IApprovalPanelInput
    {

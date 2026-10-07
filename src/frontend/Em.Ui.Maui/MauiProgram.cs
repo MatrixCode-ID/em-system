@@ -23,8 +23,8 @@ public static class MauiProgram {
          });
 #if DEBUG
          // builder.AddDebug(opt => {
-         //    // 10.0.2.2 adalah alamat yang dipakai emulator Android untuk menyebut localhost mesin
-         //    // pengembang - "localhost" di dalam emulator menunjuk emulator itu sendiri.
+         //    // 10.0.2.2 is the address the Android emulator uses to name the developer machine's
+         //    // localhost - "localhost" inside the emulator points to the emulator itself.
          //    opt.AddDebugConnection("Localhost", "http://10.0.2.2:5132", true);
          //    if (ReadDevelopmentToken() is { } privateKey) {
          //       opt.SetDebugKey("Development Token", privateKey);
@@ -46,7 +46,7 @@ public static class MauiProgram {
    }
 
 #if DEBUG
-   /// <summary>Private key yang di-embed dari ArtefactsPath saat build, atau null bila berkasnya tidak ada.</summary>
+   /// <summary>The private key embedded from ArtefactsPath at build time, or null when its file does not exist.</summary>
    private static string? ReadDevelopmentToken() {
       using var stream = typeof(MauiProgram).Assembly.GetManifestResourceStream("DevelopmentToken");
       if (stream is null) return null;

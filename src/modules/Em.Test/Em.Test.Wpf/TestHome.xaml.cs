@@ -10,9 +10,9 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Layar utama module uji: peluncur ke layar uji lain dan ke manager bawaan engine, ditambah probe untuk
-   /// binding parameter, kegagalan berstatus, batas waktu, claim, dan stream. Tombol Self-test menjalankan
-   /// semuanya dengan hasil yang diharapkan.
+   /// The main screen of the test module: a launcher to the other test screens and to the engine's built-in
+   /// managers, plus probes for parameter binding, status failures, time limits, claims, and streams. The
+   /// Self-test button runs all of them with their expected results.
    /// </summary>
    public partial class TestHome : UserControl, INavigationBody
    {

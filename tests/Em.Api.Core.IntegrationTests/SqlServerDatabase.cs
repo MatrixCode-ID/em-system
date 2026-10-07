@@ -5,22 +5,22 @@ using Microsoft.Data.SqlClient;
 namespace Em.Api.Core.IntegrationTests
 {
    /// <summary>
-   /// Database SQL Server sementara untuk satu kali jalan test integrasi. Dibuat di server lokal
-   /// dengan Windows Authentication, jadi tidak ada password di mana pun, dan dihapus lagi setelah
-   /// semua test selesai.
+   /// A temporary SQL Server database for one run of the integration tests. Created on the local server
+   /// with Windows Authentication, so there is no password anywhere, and deleted again after all the tests
+   /// finish.
    /// <para>
-   /// Servernya <c>(local)</c>, atau isi <see cref="ServerVariable"/> untuk instance lain (mis.
-   /// <c>.\SQLEXPRESS</c> atau <c>(localdb)\MSSQLLocalDB</c>). Kalau server tidak terjangkau, test yang
-   /// memakainya di-skip dengan alasannya, bukan gagal, supaya mesin tanpa SQL Server tetap bisa
-   /// menjalankan seluruh test.
+   /// The server is <c>(local)</c>, or fill <see cref="ServerVariable"/> for another instance (e.g.
+   /// <c>.\SQLEXPRESS</c> or <c>(localdb)\MSSQLLocalDB</c>). When the server cannot be reached, the tests
+   /// that use it are skipped with the reason, not failed, so a machine without SQL Server can still run all
+   /// the tests.
    /// </para>
    /// </summary>
    public sealed class SqlServerDatabase : IAsyncLifetime
    {
-      /// <summary>Environment variable untuk mengganti server, default <c>(local)</c>.</summary>
+      /// <summary>The environment variable to change the server, default <c>(local)</c>.</summary>
       public const string ServerVariable = "EM_TEST_DB_SERVER";
 
-      /// <summary>Awalan nama database, supaya sisa run yang terputus mudah dikenali dan dibersihkan.</summary>
+      /// <summary>The database name prefix, so leftovers from an interrupted run are easy to recognize and clean up.</summary>
       public const string DatabasePrefix = "EmSystem_IntegrationTest_";
 
       private string? masterConnectionString;
@@ -30,8 +30,8 @@ namespace Em.Api.Core.IntegrationTests
       private readonly List<string> extraDatabases = [];
 
       /// <summary>
-      /// Connection string ke database sementara. Kalau server tidak tersedia, test pemanggilnya
-      /// di-skip dengan alasannya.
+      /// The connection string to the temporary database. When the server is not available, the calling test
+      /// is skipped with the reason.
       /// </summary>
       public string ConnectionString {
          get {
@@ -70,9 +70,9 @@ namespace Em.Api.Core.IntegrationTests
          connectionString = builder.ConnectionString;
       }
 
-      /// <summary>Membuat database kosong tambahan untuk satu kelas test; ikut dihapus di DisposeAsync.</summary>
+      /// <summary>Creates an extra empty database for one test class; it is also deleted in DisposeAsync.</summary>
       public async Task<string> CreateExtraDatabaseAsync(CancellationToken ct) {
-         _ = ConnectionString; // skip bila server tidak tersedia
+         _ = ConnectionString; // skips the test when the server is not available
          var name = DatabasePrefix + Guid.NewGuid().ToString("N");
          await using (var connection = new SqlConnection(masterConnectionString)) {
             await connection.OpenAsync(ct);

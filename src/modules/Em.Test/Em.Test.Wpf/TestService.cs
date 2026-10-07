@@ -6,7 +6,7 @@ using Em.Ui.Wpf.Core;
 
 namespace Em.Test.Wpf
 {
-   /// <summary>Client WPF module uji: setiap method memanggil action server yang namanya sama.</summary>
+   /// <summary>The WPF client of the test module: every method calls the server action with the same name.</summary>
    [Module(ITestServices.ModuleName)]
    public class TestService(EmApp emApp) : ServiceWpfBase(emApp), ITestServices
    {

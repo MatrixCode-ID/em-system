@@ -7,15 +7,15 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Em.Test.Models.Ui
 {
    /// <summary>
-   /// Model UI satu item uji. Menunjukkan pola <see cref="UiModel{TEntity,TService}"/>: pelacakan perubahan,
-   /// batal perubahan (<see cref="UiModel{TEntity,TService}.RollBack"/>), muat ulang dari server, dan baris
-   /// baru yang baru lahir saat disimpan.
+   /// The UI model of one test item. It shows the pattern of <see cref="UiModel{TEntity,TService}"/>:
+   /// change tracking, cancelling changes (<see cref="UiModel{TEntity,TService}.RollBack"/>), reloading
+   /// from the server, and a new row that is only born when it is saved.
    /// </summary>
    public class TestItem : UiModel<vi_TestItem, ITestServices>
    {
       #region Statics
 
-      /// <summary>Membuat item kosong yang belum tersimpan; barisnya baru ada di server setelah disimpan.</summary>
+      /// <summary>Creates an empty item that has not been saved; its row only exists on the server after it is saved.</summary>
       public static TestItem CreateNew(IEmApp app) =>
          new(app, new vi_TestItem {
             cTestItemId = "Save To Generate ID",
@@ -31,7 +31,7 @@ namespace Em.Test.Models.Ui
          return data is null ? null : Build(app, data);
       }
 
-      /// <summary>Satu halaman item dari pencarian di server, bersama jumlah seluruh hasilnya.</summary>
+      /// <summary>One page of items from a search on the server, together with the total number of results.</summary>
       public static async Task<(TestItem[] Items, int Total)> SearchAsync(IEmApp app, TestItemQuery query) {
          var page = await Api(app).GetVi_TestItems_Search(query.Search, query.State, query.Page, query.PageSize);
          return ([.. page.Items.Select(r => Build(app, r))], page.Total);

@@ -3,16 +3,17 @@ using Em.Api.Shared;
 namespace Em.Api;
 
 /// <summary>
-/// Membaca <see cref="EmApiConfig"/> host dari folder artefak lokal lalu menerapkannya ke builder.
+/// Reads the host's <see cref="EmApiConfig"/> from the local artifacts folder and applies it to the
+/// builder.
 /// </summary>
 internal static class Helper
 {
-   /// <summary>Environment variable berisi path eksplisit ke emapi-config.json, misalnya berkas yang di-mount ke container.</summary>
+   /// <summary>Environment variable holding an explicit path to emapi-config.json, for example a file mounted into a container.</summary>
    public const string ConfigPathVariable = "EM_API_CONFIG";
 
    /// <summary>
-   /// Membaca emapi-config.json dari <c>EM_API_CONFIG</c>, atau dari output build tempat build menyalin
-   /// <c>$(ArtefactsPath)config\emapi-config.json</c>. Mengembalikan false bila keduanya tidak ada.
+   /// Reads emapi-config.json from <c>EM_API_CONFIG</c>, or from the build output where the build copies
+   /// <c>$(ArtefactsPath)config\emapi-config.json</c>. Returns false when neither exists.
    /// </summary>
    public static bool TryLoadConfigArtefact(out EmApiConfig config) {
       var path = Environment.GetEnvironmentVariable(ConfigPathVariable);
@@ -27,8 +28,8 @@ internal static class Helper
    }
 
    /// <summary>
-   /// Membaca config artefak, membiarkan environment variable EM_* mengesampingkannya (dipakai container dan
-   /// secret manager), lalu menerapkan hasilnya ke <paramref name="builder"/>.
+   /// Reads the artifacts config, lets the EM_* environment variables override it (used by containers and
+   /// secret managers), then applies the result to <paramref name="builder"/>.
    /// </summary>
    public static EmApiConfig ApplyConfig(EmAppBuilder builder) {
       TryLoadConfigArtefact(out var config);
@@ -86,7 +87,7 @@ internal static class Helper
       }
    }
 
-   /// <summary>Prefix environment variable saklar modul; sisa namanya adalah nama modul (<c>EM_MODULE_TEST</c> → <c>test</c>).</summary>
+   /// <summary>Prefix of the environment variables that switch modules; the rest of the name is the module name (<c>EM_MODULE_TEST</c> → <c>test</c>).</summary>
    public const string ModuleVariablePrefix = "EM_MODULE_";
 
    private static string? Read(string name) =>

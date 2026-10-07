@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Em.Test.Wpf
 {
-   /// <summary>Satu baris hasil uji di panel log: apa yang dijalankan, apa yang kembali, dan berhasil atau tidak.</summary>
+   /// <summary>One row of test results in the log panel: what was run, what came back, and whether it succeeded.</summary>
    public sealed class TestLogEntry(string title, string detail, bool isError, long elapsedMs)
    {
       public string Time { get; } = DateTime.Now.ToString("HH:mm:ss");
@@ -22,25 +22,25 @@ namespace Em.Test.Wpf
    }
 
    /// <summary>
-   /// Dasar view model layar uji: panel log dan pembungkus yang menjalankan satu pengujian, mengukur
-   /// waktunya, dan mencatat hasilnya - termasuk kegagalan berstatus dari server.
+   /// The base view model of the test screens: the log panel and a wrapper that runs one test, measures its
+   /// time, and records its result - including status failures from the server.
    /// </summary>
    public abstract class TestVmBase : MvvmModelBase
    {
-      /// <summary>Hasil uji, yang terbaru di atas.</summary>
+      /// <summary>The test results, the newest on top.</summary>
       public ObservableCollection<TestLogEntry> Entries { get; } = [];
 
-      /// <summary>Layanan module uji untuk koneksi aktif.</summary>
+      /// <summary>The test module service for the active connection.</summary>
       protected Em.Test.Models.ITestServices Service =>
          EmApp!.ServiceProvider.GetRequiredService<Em.Test.Models.ITestServices>();
 
-      /// <summary>Mencatat satu baris log.</summary>
+      /// <summary>Records one log line.</summary>
       public void Log(string title, string detail = "", bool isError = false, long elapsedMs = -1) =>
          RunOnUi(() => Entries.Insert(0, new TestLogEntry(title, detail, isError, elapsedMs)));
 
       /// <summary>
-      /// Menjalankan <paramref name="work"/> dan mencatat jawabannya, atau kegagalannya. Kegagalan tidak
-      /// dilempar ke atas: yang diuji justru bagaimana kegagalan itu tampak, jadi ia jadi hasil, bukan galat.
+      /// Runs <paramref name="work"/> and records its answer, or its failure. A failure is not thrown upward:
+      /// what is tested is precisely how the failure looks, so it becomes a result, not an error.
       /// </summary>
       protected async Task RunAsync(string title, Func<Task<string>> work) {
          if (EmApp is null) return;
@@ -55,14 +55,14 @@ namespace Em.Test.Wpf
          }
       }
 
-      /// <summary>Sama dengan <see cref="RunAsync(string, Func{Task{string}})"/> untuk pekerjaan tanpa jawaban.</summary>
+      /// <summary>The same as <see cref="RunAsync(string, Func{Task{string}})"/> for work that has no answer.</summary>
       protected Task RunAsync(string title, Func<Task> work) =>
          RunAsync(title, async () => {
             await work();
             return "OK";
          });
 
-      /// <summary>Ringkasan sebuah exception, dengan status HTTP kalau datang dari server.</summary>
+      /// <summary>A summary of an exception, with the HTTP status if it came from the server.</summary>
       public static string Describe(Exception x) => x switch {
          ActionException a => $"ActionException {a.StatusCode}: {a.Message}",
          _ => $"{x.GetType().Name}: {x.Message}"
@@ -72,8 +72,8 @@ namespace Em.Test.Wpf
       public void ClearLogCommand() => Entries.Clear();
 
       /// <summary>
-      /// <c>true</c> kalau pengguna aktif boleh memegang claim <paramref name="claim"/> di module uji:
-      /// administrator dan mode debug lolos, seperti yang dilakukan gerbang di server.
+      /// <c>true</c> when the active user may hold claim <paramref name="claim"/> in the test module:
+      /// administrators and debug mode pass, as the gate on the server does.
       /// </summary>
       protected bool Holds(string claim) {
          if (EmApp is null) return false;
@@ -81,14 +81,14 @@ namespace Em.Test.Wpf
          return Service.Claims()[claim];
       }
 
-      /// <summary>Mengembalikan <paramref name="action"/> ke thread UI kalau dipanggil dari thread lain.</summary>
+      /// <summary>Brings <paramref name="action"/> back to the UI thread when it is called from another thread.</summary>
       protected static void RunOnUi(Action action) {
          var dispatcher = Application.Current?.Dispatcher;
          if (dispatcher is null || dispatcher.CheckAccess()) action();
          else dispatcher.Invoke(action);
       }
 
-      /// <summary>Membangkitkan ulang status enable semua command layar.</summary>
+      /// <summary>Raises the enabled state of all commands of the screen again.</summary>
       protected void RaiseCommandsChanged() {
          foreach (var command in Commands) command.RaiseCanExecuteChanged();
       }

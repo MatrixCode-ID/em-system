@@ -39,7 +39,7 @@ internal static class Program
    }
 
 #if DEBUG
-   /// <summary>Private key yang di-embed dari ArtefactsPath saat build, atau null bila berkasnya tidak ada.</summary>
+   /// <summary>The private key embedded from ArtefactsPath at build time, or null when its file does not exist.</summary>
    private static string? ReadDevelopmentToken() {
       using var stream = typeof(Program).Assembly.GetManifestResourceStream("DevelopmentToken");
       if (stream is null) return null;

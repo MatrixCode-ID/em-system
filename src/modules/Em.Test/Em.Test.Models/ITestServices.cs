@@ -4,37 +4,38 @@ using Em.Shared;
 namespace Em.Test.Models
 {
    /// <summary>
-   /// Kontrak module uji. Isinya sengaja mencakup setiap bentuk action yang dikenal engine - CRUD tabel dan
-   /// view, query berbentuk DTO, parameter stream, claim per action, action publik, batas waktu, kegagalan
-   /// berstatus, business task, dan approval - supaya satu module cukup untuk mengujinya dari ujung ke ujung.
+   /// The contract of the test module. Its content deliberately covers every form of action known to the
+   /// engine - table and view CRUD, DTO-shaped queries, stream parameters, claims per action, public
+   /// actions, time limits, status failures, business tasks, and approval - so one module is enough to test
+   /// them end to end.
    /// </summary>
    public interface ITestServices : IServices
    {
-      /// <summary>Nama module di route dan di claim.</summary>
+      /// <summary>The module name in the route and in claims.</summary>
       const string ModuleName = "test";
 
-      /// <summary>Claim dasar module: membuka layar uji dan memanggil action tanpa claim sendiri.</summary>
+      /// <summary>The base claim of the module: opening the test screens and calling actions that have no claim of their own.</summary>
       const string RunClaim = "Run Tests";
 
-      /// <summary>Claim untuk menambah dan mengubah item dan dokumen uji.</summary>
+      /// <summary>The claim to add and change test items and documents.</summary>
       const string EditItemsClaim = "Edit Items";
 
-      /// <summary>Claim untuk menghapus item dan dokumen uji.</summary>
+      /// <summary>The claim to delete test items and documents.</summary>
       const string DeleteItemsClaim = "Delete Items";
 
-      /// <summary>Claim untuk action probe yang sengaja lebih sempit dari akses module.</summary>
+      /// <summary>The claim for probe actions that are deliberately narrower than module access.</summary>
       const string ProbeClaim = "Run Probes";
 
-      /// <summary>Claim yang memberi hak menyetujui usulan perubahan item dan menyimpannya langsung.</summary>
+      /// <summary>The claim that grants the right to approve item change proposals and save them directly.</summary>
       const string ApproveItemClaim = "Approve Item Change";
 
-      /// <summary>Jenis dokumen approval untuk dokumen uji.</summary>
+      /// <summary>The approval document type for test documents.</summary>
       const string DocType = "EmTestDoc";
 
-      /// <summary>Jenis dokumen approval untuk usulan perubahan item.</summary>
+      /// <summary>The approval document type for item change proposals.</summary>
       const string ItemDocType = "EmTestItem";
 
-      /// <summary>Awalan kunci business task uji.</summary>
+      /// <summary>The prefix of test business task keys.</summary>
       const string TaskKeyPrefix = "test.task.";
 
       #region Tables
@@ -89,7 +90,7 @@ namespace Em.Test.Models
 
       Task<vi_TestItem[]> GetVi_TestItems_InPage(int page, int pageSize);
 
-      /// <summary>Pencarian dengan satu parameter query per syarat: GET tidak membawa objek atau JSON.</summary>
+      /// <summary>A search with one query parameter per condition: GET carries no object or JSON.</summary>
       Task<TestItemPage> GetVi_TestItems_Search(string? search, TestItemState? state, int page, int pageSize);
 
       #endregion
@@ -106,65 +107,65 @@ namespace Em.Test.Models
 
       #region Meta's
 
-      /// <summary>Action publik: dipanggil tanpa token sama sekali.</summary>
+      /// <summary>A public action: called with no token at all.</summary>
       Task<string> GetMeta_TestPublicPing();
 
       Task<string> GetMeta_TestPing();
 
       Task<TestSessionInfo> GetMeta_TestSession();
 
-      /// <summary>Echo dengan parameter bertipe sederhana, masing-masing satu parameter query.</summary>
+      /// <summary>An echo with simple typed parameters, each one query parameter.</summary>
       Task<TestEchoResult> GetMeta_TestEchoSimple(string text, int number, decimal amount, bool flag, DateTime when,
          TestItemState state);
 
-      /// <summary>Echo lewat POST: DTO dan array sebagai argumen posisional di body.</summary>
+      /// <summary>An echo through POST: a DTO and an array as positional arguments in the body.</summary>
       Task<TestEchoResult> PostGetMeta_TestEcho(TestEchoRequest request, string[] tags);
 
-      /// <summary>Menjawab dengan status yang diminta (400, 403, 404, 409, 500) untuk menguji penanganan kegagalan.</summary>
+      /// <summary>Answers with the requested status (400, 403, 404, 409, 500) to test failure handling.</summary>
       Task<string> GetMeta_TestFail(int status);
 
-      /// <summary>Menunggu sekian detik; batas waktu action ini lima detik, jadi lebih dari itu dibatalkan server.</summary>
+      /// <summary>Waits some seconds; this action's time limit is five seconds, so anything longer is cancelled by the server.</summary>
       Task<string> GetMeta_TestSlow(int seconds);
 
-      /// <summary>Menunggu sekian detik tanpa batas waktu server; hanya putusnya pemanggil yang membatalkan.</summary>
+      /// <summary>Waits some seconds with no server time limit; only the caller disconnecting cancels it.</summary>
       Task<string> GetMeta_TestSlowUnlimited(int seconds);
 
-      /// <summary>Hanya pemegang claim probe, atau administrator.</summary>
+      /// <summary>Only holders of the probe claim, or an administrator.</summary>
       Task<string> GetMeta_TestClaimGated();
 
       Task<string> GetMeta_TestAdminOnly();
 
       Task<string> GetMeta_TestSelfOrAdmin(string cUserId);
 
-      /// <summary>Menerima isi stream mentah dan menjawab apa yang sampai: panjang dan SHA-256.</summary>
+      /// <summary>Receives the raw stream content and answers with what arrived: its length and SHA-256.</summary>
       Task<TestStreamResult> PostGetMeta_TestStreamUpload(TestStreamRequest request, Stream content);
 
-      /// <summary>Mengirim stream berisi byte deterministik sebesar yang diminta (dalam KB).</summary>
+      /// <summary>Sends a stream of deterministic bytes of the requested size (in KB).</summary>
       Task<Stream> GetMeta_TestStreamDownload(int kilobytes);
 
-      /// <summary>PDF contoh dengan jumlah halaman yang diminta, untuk viewer PDF.</summary>
+      /// <summary>A sample PDF with the requested number of pages, for the PDF viewer.</summary>
       Task<Stream> GetMeta_TestPdfSample(int pages);
 
-      /// <summary>Memulai business task uji dan langsung kembali.</summary>
+      /// <summary>Starts a test business task and returns right away.</summary>
       Task<BusinessTaskInfo> PostGetMeta_TestStartTask(TestTaskRequest request);
 
-      /// <summary>Task uji global yang masih ada, hidup maupun gagal-belum-di-clear.</summary>
+      /// <summary>The global test task that still exists, live or failed and not yet cleared.</summary>
       Task<BusinessTaskInfo[]> GetMeta_TestGlobalTasks();
 
       Task PostMeta_TestGlobalTaskCancel(string key);
 
       Task PostMeta_TestGlobalTaskClear(string key);
 
-      /// <summary>Menyisipkan sepuluh item contoh yang belum ada, untuk bahan uji paging.</summary>
+      /// <summary>Inserts ten sample items that do not exist yet, as material for paging tests.</summary>
       Task<int> PostGetMeta_TestSeedItems();
 
-      /// <summary>Mengajukan usulan perubahan item lewat data approval.</summary>
+      /// <summary>Submits an item change proposal through data approval.</summary>
       Task<TestSubmitResult> PostGetMeta_TestItemSubmitChange(TestItemChange change);
 
-      /// <summary>Mengajukan dokumen uji lewat document approval; mengembalikan id request-nya.</summary>
+      /// <summary>Submits a test document through document approval; returns its request id.</summary>
       Task<string> PostGetMeta_TestDocSubmit(string cTestDocId, string? note);
 
-      /// <summary>PDF dasar dokumen uji (tanpa stamp), untuk tombol Source document dan viewer.</summary>
+      /// <summary>The base PDF of a test document (without stamps), for the Source document button and the viewer.</summary>
       Task<Stream> GetMeta_TestDocPdf(string cTestDocId);
 
       #endregion

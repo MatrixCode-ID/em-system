@@ -1,54 +1,54 @@
 namespace Em.Test.Models
 {
-   /// <summary>Keadaan sebuah item uji.</summary>
+   /// <summary>The state of a test item.</summary>
    public enum TestItemState
    {
-      /// <summary>Item aktif dan boleh dipakai.</summary>
+      /// <summary>The item is active and may be used.</summary>
       Active = 0,
 
       /// <summary>Item dinonaktifkan.</summary>
       Disabled = 1
    }
 
-   /// <summary>Tahap hidup sebuah dokumen uji terhadap approval.</summary>
+   /// <summary>The life stage of a test document with respect to approval.</summary>
    public enum TestDocStatus
    {
-      /// <summary>Draf: masih bisa diubah dan belum diajukan.</summary>
+      /// <summary>Draft: it can still be changed and has not been submitted.</summary>
       Draft = 0,
 
-      /// <summary>Sudah diajukan dan menunggu keputusan.</summary>
+      /// <summary>Submitted and waiting for a decision.</summary>
       InApproval = 1,
 
-      /// <summary>Seluruh langkah approval selesai.</summary>
+      /// <summary>All approval steps are complete.</summary>
       Approved = 2,
 
-      /// <summary>Ditolak oleh salah satu langkah.</summary>
+      /// <summary>Rejected by one of the steps.</summary>
       Rejected = 3
    }
 
-   /// <summary>Jenis hasil sebuah business task uji.</summary>
+   /// <summary>The kind of result of a test business task.</summary>
    public enum TestTaskOutput
    {
-      /// <summary>Tanpa hasil yang diambil.</summary>
+      /// <summary>No result to fetch.</summary>
       None = 0,
 
-      /// <summary>Hasil berupa data JSON.</summary>
+      /// <summary>The result is JSON data.</summary>
       Json = 1,
 
-      /// <summary>Hasil berupa berkas teks yang diunduh.</summary>
+      /// <summary>The result is a downloaded text file.</summary>
       File = 2
    }
 
-   /// <summary>Operasi yang diusulkan sebuah perubahan data item.</summary>
+   /// <summary>The operation proposed by an item data change.</summary>
    public enum TestItemOperation
    {
-      /// <summary>Item baru.</summary>
+      /// <summary>A new item.</summary>
       Create = 1,
 
-      /// <summary>Mengubah item yang ada.</summary>
+      /// <summary>Changes an existing item.</summary>
       Update = 2,
 
-      /// <summary>Menghapus item.</summary>
+      /// <summary>Deletes the item.</summary>
       Delete = 3
    }
 }

@@ -11,7 +11,7 @@ using UserControl = System.Windows.Controls.UserControl;
 
 namespace Em.Test.Wpf
 {
-   /// <summary>Navigasi ke layar anak contoh: judulnya mengandung nama, jadi satu nama satu tab.</summary>
+   /// <summary>Navigation to a sample child screen: its title contains the name, so one name is one tab.</summary>
    public sealed class TestChildPayload(string name) : NavigationPayloadBase(null)
    {
       public string Name { get; } = name;
@@ -20,8 +20,8 @@ namespace Em.Test.Wpf
    }
 
    /// <summary>
-   /// Lab UI module uji: viewer PDF, navigasi (editor, fokus ke judul yang sudah terbuka, payload yang
-   /// hilang, navigasi tidak dikenal), tema, dialog, NumericBox, lapisan tunggu, dan drag-drop.
+   /// The UI lab of the test module: PDF viewer, navigation (editor, focusing a title that is already open,
+   /// a missing payload, an unknown navigation), theme, dialogs, NumericBox, the wait layer, and drag-drop.
    /// </summary>
    public partial class TestUiLab : UserControl, INavigationBody
    {

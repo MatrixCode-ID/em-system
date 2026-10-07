@@ -5,8 +5,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Em.Test.Api
 {
    /// <summary>
-   /// Context data module uji. Didaftarkan lewat <c>AddDbContext</c> pada koneksi bawaan, jadi module tidak
-   /// menyunting context milik engine dan tetap ikut transaksi approval satu server.
+   /// The data context of the test module. Registered through <c>AddDbContext</c> on the default
+   /// connection, so the module does not edit the engine's context and still takes part in the
+   /// single-server approval transaction.
    /// </summary>
    public class TestDbContext(DbContextOptions<TestDbContext> options) : EmDbContext(options)
    {

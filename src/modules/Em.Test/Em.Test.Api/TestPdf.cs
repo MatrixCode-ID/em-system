@@ -6,8 +6,8 @@ using Em.Test.Models;
 namespace Em.Test.Api
 {
    /// <summary>
-   /// Pembuat PDF contoh. Ditulis langsung sebagai teks PDF dengan font standar Helvetica, sehingga tidak
-   /// bergantung pada font terpasang di server dan tidak berbenturan dengan pengaturan font engine approval.
+   /// Sample PDF builder. Written directly as PDF text with the standard Helvetica font, so it does not
+   /// depend on fonts installed on the server and does not collide with the approval engine's font setup.
    /// </summary>
    internal static class TestPdf
    {
@@ -15,7 +15,7 @@ namespace Em.Test.Api
       private const double PageHeight = 841.89;
       private const double Pt = 72.0 / 25.4;
 
-      /// <summary>PDF contoh dengan <paramref name="pages"/> halaman, masing-masing berjudul dan berbingkai.</summary>
+      /// <summary>A sample PDF with <paramref name="pages"/> pages, each with a title and a frame.</summary>
       public static Stream Sample(int pages) {
          var writer = new PdfWriter();
          for (var i = 1; i <= pages; i++) {
@@ -34,8 +34,8 @@ namespace Em.Test.Api
       }
 
       /// <summary>
-      /// PDF dasar dokumen uji, lengkap dengan kotak tanda tangan di letak yang sama dengan deklarasi alur
-      /// approval, supaya stamp jatuh tepat di dalam kotaknya.
+      /// The base PDF of a test document, complete with signature boxes at the same place as the approval
+      /// flow declaration, so the stamp falls exactly inside its box.
       /// </summary>
       public static Stream Document(ta_TestDoc doc) {
          var writer = new PdfWriter();

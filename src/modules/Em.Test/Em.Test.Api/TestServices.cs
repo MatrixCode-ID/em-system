@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Em.Test.Api
 {
    /// <summary>
-   /// Implementasi server module uji. Dibagi per topik dalam beberapa berkas partial: data (berkas ini),
-   /// probe engine, business task, dan approval.
+   /// The server implementation of the test module. Split by topic across several partial files: data
+   /// (this file), engine probes, business tasks, and approval.
    /// </summary>
    [Module(ITestServices.ModuleName)]
    public partial class TestServices(TestDbContext ctx) : ServicesBase, ITestServices

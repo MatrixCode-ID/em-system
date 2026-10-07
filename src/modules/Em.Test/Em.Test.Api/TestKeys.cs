@@ -2,15 +2,16 @@ using Em.Api.Core.Approval;
 
 namespace Em.Test.Api
 {
-   /// <summary>Kunci sebuah item uji pada data approval.</summary>
+   /// <summary>The key of a test item in data approval.</summary>
    public record TestItemKey([property: KeyPart(1)] string ItemId);
 
-   /// <summary>Kunci sebuah dokumen uji pada document approval.</summary>
+   /// <summary>The key of a test document in document approval.</summary>
    public record TestDocKey([property: KeyPart(1)] string DocId);
 
    /// <summary>
-   /// Letak kotak tanda tangan dan isian pada PDF dokumen uji, dalam milimeter dari kiri atas halaman.
-   /// Dipakai dua kali: oleh deklarasi alur approval, dan oleh pembuat PDF yang menggambar kotaknya.
+   /// The place of the signature boxes and input on the test document PDF, in millimeters from the top-left
+   /// of the page. Used twice: by the approval flow declaration, and by the PDF builder that draws the
+   /// boxes.
    /// </summary>
    internal static class TestSlots
    {

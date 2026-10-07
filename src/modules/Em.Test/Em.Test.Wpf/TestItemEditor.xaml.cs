@@ -8,8 +8,9 @@ using UserControl = System.Windows.Controls.UserControl;
 namespace Em.Test.Wpf
 {
    /// <summary>
-   /// Editor satu item uji. Menguji layar Editor yang dibuka dengan payload, pelacakan perubahan lewat
-   /// UiModel, penolakan meninggalkan layar saat masih ada perubahan, dan pengajuan perubahan lewat approval.
+   /// The editor of one test item. It tests an Editor screen opened with a payload, change tracking through
+   /// UiModel, refusing to leave the screen while there are still changes, and submitting changes through
+   /// approval.
    /// </summary>
    public partial class TestItemEditor : UserControl, INavigationBody
    {

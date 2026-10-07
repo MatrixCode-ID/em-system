@@ -9,7 +9,7 @@ using UserControl = System.Windows.Controls.UserControl;
 
 namespace Em.Test.Wpf
 {
-   /// <summary>Navigasi ke editor item: item yang dibuka, atau kosong untuk item baru.</summary>
+   /// <summary>Navigation to the item editor: the item being opened, or empty for a new item.</summary>
    public sealed class TestItemEditorPayload : NavigationPayloadBase
    {
       private readonly string? _code;
@@ -20,14 +20,14 @@ namespace Em.Test.Wpf
          DataState = itemId is null ? DataState.NewData : DataState.EditData;
       }
 
-      /// <summary>Id item yang dibuka, atau <c>null</c> untuk item baru.</summary>
+      /// <summary>The id of the item being opened, or <c>null</c> for a new item.</summary>
       public string? ItemId { get; }
 
       // The title is the key of the entry: one tab per item, and one for the new-item form.
       public override string? Title => ItemId is null ? "New test item" : $"Test item {_code ?? ItemId}";
    }
 
-   /// <summary>Daftar item uji: pencarian di server, paging, aksi massal, dan pintu ke editor.</summary>
+   /// <summary>The test items list: server-side search, paging, bulk actions, and the door to the editor.</summary>
    public partial class TestItems : UserControl, INavigationBody
    {
       public TestItems() {
@@ -116,7 +116,7 @@ namespace Em.Test.Wpf
 
       public Task ReloadAsync() => GoToPageAsync(1);
 
-      /// <summary>Muat ulang diam-diam saat layar tampil lagi, mis. sesudah editor menyimpan.</summary>
+      /// <summary>A quiet reload when the screen is shown again, e.g. after the editor saved.</summary>
       public async Task RefreshIfStaleAsync() {
          if (!_loaded || IsBusy || EmApp is null) return;
          try {
