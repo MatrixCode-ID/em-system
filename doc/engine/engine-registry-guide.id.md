@@ -382,7 +382,7 @@ hapus entri itu secara manual untuk membatalkannya.
 | "No credential for host '...'" / "The credential for host '...' has no secret in this session" | Tidak ada kredensial yang **Scope Host**-nya sama dengan host registry (pesannya menyebut host yang memang dimiliki profil), atau secret-nya tidak disimpan. Host registry pada tujuan bawaan adalah koneksi yang aktif, sehingga profil yang disimpan untuk satu server gagal saat Check selama server lain yang dipilih |
 | "Built-in connection changed. Select this server and Check again." | Koneksi aktif berbeda dengan server di profil; pilih ulang tujuannya |
 | "Root missing. Open Containers, then refresh." / "Container missing..." | Buat di tab Containers, atau pilih ulang |
-| "Source/build settings changed; Prepare ulang." | Profil berubah setelah Build; jalankan Build lagi |
+| "Source/build settings changed; Prepare again." | Profil berubah setelah Build; jalankan Build lagi |
 | "Version tag is required and must be a valid Docker tag." | Isi **Version Tag**: huruf, angka, `_`, `.`, `-`, maksimal 128 karakter |
 | "Release notes are required." | Isi **Release notes** atau matikan **Require Release Notes** |
 | "Registry storage disabled." | Registry mati di server; lihat [3. Tab Settings](#3-tab-settings) |

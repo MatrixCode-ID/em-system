@@ -62,7 +62,7 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>The screen this card opens.</summary>
       public Navigation Navigation { get; }
 
-      /// <summary>Judul di kartu.</summary>
+      /// <summary>The title on the card.</summary>
       public string Title { get; }
 
       /// <summary>The second line of the card.</summary>

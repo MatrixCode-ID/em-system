@@ -64,7 +64,7 @@ namespace Em.Ui.Wpf.Dialogs
       /// <summary>Raised when the dialog is about to close; <c>true</c> when the user confirmed.</summary>
       public event Action<bool>? RequestClose;
 
-      /// <summary>Judul dialog.</summary>
+      /// <summary>The dialog title.</summary>
       public string Title {
          get => Get<string>() ?? "";
          set => Set(value);

@@ -40,7 +40,7 @@ namespace Em.Ui.Wpf.Shared
       /// <summary>Id task.</summary>
       public string Id => Info.Id;
 
-      /// <summary>Judul task.</summary>
+      /// <summary>The task title.</summary>
       public string Title => Info.Title;
 
       /// <summary>The key of the task.</summary>

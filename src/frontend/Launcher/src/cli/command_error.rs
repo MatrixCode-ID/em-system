@@ -10,7 +10,7 @@ use super::ExitCode;
 /// returns `Result<(), CommandError>`, and `main` shows the message and exits with that exit code.
 #[derive(Debug)]
 pub struct CommandError {
-   /// Exit code proses.
+   /// The process exit code.
    pub code: ExitCode,
 
    /// The message for the user.
@@ -33,7 +33,7 @@ impl CommandError {
       Self::new(ExitCode::InvalidArguments, message)
    }
 
-   /// Dibatalkan user ([`ExitCode::Cancelled`]).
+   /// Cancelled by the user ([`ExitCode::Cancelled`]).
    pub fn cancelled(message: impl Into<String>) -> Self {
       Self::new(ExitCode::Cancelled, message)
    }

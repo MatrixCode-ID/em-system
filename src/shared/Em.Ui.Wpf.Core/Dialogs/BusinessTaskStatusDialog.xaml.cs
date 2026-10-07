@@ -181,7 +181,7 @@ namespace Em.Ui.Wpf.Dialogs
          if (Item is { IsAlive: true }) _pollTimer.Start();
       }
 
-      /// <summary>Menghentikan pemuatan ulang berkala.</summary>
+      /// <summary>Stops the periodic reload.</summary>
       public void StopPolling() => _pollTimer.Stop();
 
       private async Task PollAsync() {

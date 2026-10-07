@@ -279,10 +279,10 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  /// <summary>Pushes the prepared artifacts to the target.</summary>
  public async Task Push(PublishProfile profile,string notes,CancellationToken ct) {
   var prepared=Prepared??throw new InvalidOperationException("Prepare or add packages first.");
-  if(Fingerprint(profile)!=prepared.BuildFingerprint)throw new InvalidOperationException("Source/build settings changed; Prepare ulang.");
+  if(Fingerprint(profile)!=prepared.BuildFingerprint)throw new InvalidOperationException("Source/build settings changed; Prepare again.");
   if(profile.Container?.Mode==ContainerMode.Set)foreach(var step in profile.Container.Set.Steps) {
    var current=profiles.Load(step.ProfileId).Clone();
-   if(prepared.SetProfiles.TryGetValue(step.ProfileId,out var previous)&&Fingerprint(current)!=Fingerprint(previous))throw new InvalidOperationException("Set step source/build settings changed; Prepare ulang: "+current.Name);
+   if(prepared.SetProfiles.TryGetValue(step.ProfileId,out var previous)&&Fingerprint(current)!=Fingerprint(previous))throw new InvalidOperationException("Set step source/build settings changed; Prepare again: "+current.Name);
    prepared.SetProfiles[step.ProfileId]=current;
   }
   ValidateReleaseNotes(profile,notes);

@@ -380,7 +380,7 @@ it to apply, then run Check again. Nothing is removed automatically; delete the 
 | "No credential for host '...'" / "The credential for host '...' has no secret in this session" | No credential whose **Scope Host** equals the registry host (the message lists the hosts the profile does have), or its secret was not remembered. The registry host of a built-in destination is the active connection, so a profile saved for one server fails Check while another server is selected |
 | "Built-in connection changed. Select this server and Check again." | The active connection differs from the profile's server; select the destination again |
 | "Root missing. Open Containers, then refresh." / "Container missing..." | Create it on the Containers tab, or select it again |
-| "Source/build settings changed; Prepare ulang." | The profile changed after Build; run Build again |
+| "Source/build settings changed; Prepare again." | The profile changed after Build; run Build again |
 | "Version tag is required and must be a valid Docker tag." | Fill **Version Tag**: letters, digits, `_`, `.`, `-`, up to 128 characters |
 | "Release notes are required." | Fill **Release notes** or clear **Require Release Notes** |
 | "Registry storage disabled." | The registry is off on the server; see [3. Settings tab](#3-settings-tab) |

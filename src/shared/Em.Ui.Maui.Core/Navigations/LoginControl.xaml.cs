@@ -76,10 +76,10 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>The application logo that is in force.</summary>
       public ImageSource? LogoImage => EmApp is { } app ? BrandingImages.LoadLogo(app.Branding) : null;
 
-      /// <summary>Judul brand aplikasi.</summary>
+      /// <summary>The brand title of the application.</summary>
       public string BrandTitle => EmApp?.Branding.DisplayTitle ?? string.Empty;
 
-      /// <summary>Sub-judul brand aplikasi.</summary>
+      /// <summary>The brand subtitle of the application.</summary>
       public string BrandTagline => EmApp?.Branding.DisplayTagline ?? string.Empty;
 
       /// <summary>The copyright text of the application brand.</summary>

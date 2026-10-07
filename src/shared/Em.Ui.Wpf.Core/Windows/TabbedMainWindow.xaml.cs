@@ -1389,7 +1389,7 @@ namespace Em.Ui.Wpf.Windows
          Items = [];
       }
 
-      /// <summary>Judul item.</summary>
+      /// <summary>The item title.</summary>
       public string Title {
          get => Get(string.Empty);
          set => Set(value);

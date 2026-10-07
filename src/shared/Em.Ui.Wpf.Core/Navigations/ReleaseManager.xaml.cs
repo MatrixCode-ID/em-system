@@ -139,7 +139,7 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>The group that is represented.</summary>
       public ReleaseGroup Group { get; }
 
-      /// <summary>Judul kelompok.</summary>
+      /// <summary>The group title.</summary>
       public string Title { get; }
 
       /// <summary>The rows that are shown, according to the "Hide unchanged" filter.</summary>

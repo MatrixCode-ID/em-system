@@ -12,7 +12,7 @@ namespace Em.Ui.Wpf.Shared
    /// <summary>A floating label for a Material field, without using Tag or storing the password.</summary>
    public static class FieldLabel
    {
-      /// <summary>Teks label field.</summary>
+      /// <summary>The text of the field label.</summary>
       public static readonly DependencyProperty TextProperty = DependencyProperty.RegisterAttached(
          "Text", typeof(string), typeof(FieldLabel), new PropertyMetadata(null, OnTextChanged));
       /// <summary>The background of the label notch; by default it follows the card surface.</summary>
@@ -26,7 +26,7 @@ namespace Em.Ui.Wpf.Shared
          "IsFloating", typeof(bool), typeof(FieldLabel), new PropertyMetadata(false));
       /// <summary>Reads the label text.</summary>
       public static string? GetText(DependencyObject d) => (string?)d.GetValue(TextProperty);
-      /// <summary>Mengatur teks label.</summary>
+      /// <summary>Sets the label text.</summary>
       public static void SetText(DependencyObject d, string? value) => d.SetValue(TextProperty, value);
       /// <summary>Reads the notch background.</summary>
       public static Brush? GetNotchBackground(DependencyObject d) => (Brush?)d.GetValue(NotchBackgroundProperty);

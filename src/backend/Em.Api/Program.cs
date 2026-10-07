@@ -2,9 +2,9 @@ using Em.Api.Core;
 using Em.Test.Api;
 
 /*
-   Konfigurasi: salin emapi-config.example.json ke ..\.artefacts\em-system\config\emapi-config.json di sebelah
-   repo, lalu isi database dan password awal admin. Build menyalin berkas itu ke output; tidak ikut publish.
-   Environment variable EM_* mengesampingkan isi berkas (lihat Helper.cs).
+   Configuration: copy emapi-config.example.json to ..\.artefacts\em-system\config\emapi-config.json next to the
+   repo, then fill in the database and the initial admin password. The build copies that file to the output; it is not
+   part of publish. EM_* environment variables override the file's content (see Helper.cs).
  */
 
 var app = EmApp.BuildApp(args, builder => {

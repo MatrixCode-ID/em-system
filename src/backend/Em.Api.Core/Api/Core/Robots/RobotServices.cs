@@ -35,7 +35,7 @@ public class RobotServices(RobotContext db, IEnumerable<IRobotAccessManager> man
       .Select(u => new RobotOwnerInfo { Id = u.cUserId, Account = u.cUserAccount })
       .ToArrayAsync(AbortToken);
 
-   #region Robot dan hak
+   #region Robots and grants
 
    /// <inheritdoc />
    [GetAction(claim: IRobotServices.RobotClaim)]

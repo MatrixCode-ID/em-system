@@ -77,13 +77,13 @@ if (-not $privateRemoteUrl) {
     Invoke-Git remote add private $privateUrl | Out-Null
     Write-Host 'Remote private ditambahkan.'
 } elseif (-not (Test-SameUrl $privateRemoteUrl $privateUrl)) {
-    throw "Remote private menunjuk '$privateRemoteUrl', bukan $privateUrl. Periksa manual (git remote -v)."
+    throw "Remote private points to '$privateRemoteUrl', not $privateUrl. Check manually (git remote -v)."
 }
 if (-not $originUrl) {
     Invoke-Git remote add origin $publicUrl | Out-Null
     Write-Host 'Remote origin (em-system publik) ditambahkan.'
 } elseif (-not (Test-SameUrl $originUrl $publicUrl)) {
-    throw "Remote origin menunjuk '$originUrl', bukan $publicUrl. Periksa manual (git remote -v)."
+    throw "Remote origin points to '$originUrl', not $publicUrl. Check manually (git remote -v)."
 }
 
 Write-Host 'Fetching private and origin ...'
@@ -121,7 +121,7 @@ Write-Host ''
 Write-Host ''
 $artefacts = [IO.Path]::GetFullPath((Join-Path $repoRoot '..' '.artefacts' 'em-system'))
 if (Test-Path -LiteralPath $artefacts) {
-    Write-Host "Folder artefak ada: $artefacts"
+    Write-Host "The artifacts folder exists: $artefacts"
 } else {
     Write-Host "The artifacts folder does not exist yet: $artefacts"
     Write-Host 'Copy it from the old machine (config, debug key, PAT, test harness); its content is not in Git.'

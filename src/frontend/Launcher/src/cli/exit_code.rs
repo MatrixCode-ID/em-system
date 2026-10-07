@@ -17,7 +17,7 @@ pub enum ExitCode {
    /// Failed to read or write on disk or in the registry.
    IoFailed = 3,
 
-   /// Dibatalkan user.
+   /// Cancelled by the user.
    Cancelled = 4,
 
    /// The app is still running from the install folder, so the work cannot be done.

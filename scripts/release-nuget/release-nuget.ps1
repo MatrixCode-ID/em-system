@@ -30,7 +30,7 @@ function Invoke-Git {
 }
 
 $branch = (Invoke-Git rev-parse --abbrev-ref HEAD).Trim()
-if ($branch -ne 'main') { throw "Branch aktif '$branch'. Pindah dulu ke main (git switch main)." }
+if ($branch -ne 'main') { throw "The active branch is '$branch'. Switch to main first (git switch main)." }
 
 if (Invoke-Git status --porcelain) { throw 'The working tree is not clean. Commit or stash your changes first.' }
 
@@ -76,7 +76,7 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
 $Version = $Version.Trim() -replace '^v', ''
 
 $parsed = ConvertTo-SemVer $Version
-if (-not $parsed) { throw "Versi '$Version' bukan format MAJOR.MINOR.PATCH[-channel.N]." }
+if (-not $parsed) { throw "Version '$Version' is not in the format MAJOR.MINOR.PATCH[-channel.N]." }
 if ($Version -match '(?i)pre-?alpha') {
     throw "Version '$Version' is a prealpha. Per doc/convention/nuget-naming.md, prealpha is not published to a public feed."
 }

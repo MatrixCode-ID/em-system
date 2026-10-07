@@ -5,7 +5,7 @@ using Em.Test.Models;
 
 namespace Em.Test.Api
 {
-   /// <summary>Pemasangan module uji ke server.</summary>
+   /// <summary>Installs the test module on the server.</summary>
    public static class TestModuleExtensions
    {
       /// <summary>

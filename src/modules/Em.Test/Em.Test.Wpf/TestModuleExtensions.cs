@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace Em.Test.Wpf
 {
-   /// <summary>Pemasangan module uji ke aplikasi WPF.</summary>
+   /// <summary>Installs the test module in the WPF application.</summary>
    public static class TestModuleExtensions
    {
       private const string MenuRoot = "Em Test";

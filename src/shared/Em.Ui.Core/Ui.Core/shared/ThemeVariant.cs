@@ -7,12 +7,12 @@ namespace Em.Ui.Core.Shared
    public enum ThemeVariant
    {
       /// <summary>
-      /// Mode terang: bidang berwarna muda, teks berwarna gelap.
+      /// Light mode: light-colored surfaces, dark text.
       /// </summary>
       Light,
 
       /// <summary>
-      /// Mode gelap: bidang berwarna gelap, teks berwarna muda.
+      /// Dark mode: dark-colored surfaces, light text.
       /// </summary>
       Dark
    }

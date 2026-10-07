@@ -124,7 +124,7 @@ namespace Em.Api.Core
       /// </summary>
       public DateTime ReceivedAtUtc { get; init; }
 
-      #region Pemeriksa hak
+      #region Permission checks
 
       /// <summary>
       /// <c>true</c> when <paramref name="cUserId"/> is the caller themselves.
