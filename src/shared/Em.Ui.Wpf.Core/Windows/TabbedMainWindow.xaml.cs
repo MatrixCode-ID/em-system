@@ -896,6 +896,8 @@ namespace Em.Ui.Wpf.Windows
                Title = tool.Title,
                Subtitle = string.IsNullOrWhiteSpace(tool.Subtitle) ? null : tool.Subtitle,
                Navigation = tool.Navigation,
+               Icon = tool.Icon,
+               StartsGroup = tool.StartsGroup,
                Invoke = invoke == null ? null : () => invoke(DialogOwner!)
             });
          }
@@ -1474,6 +1476,18 @@ namespace Em.Ui.Wpf.Windows
       /// <summary>The action of an item that is not a navigation (e.g. opening a dialog), or <c>null</c>.</summary>
       public Func<Task>? Invoke {
          get => Get<Func<Task>?>();
+         set => Set(value);
+      }
+
+      /// <summary>The icon shown before the title, or <c>null</c> for an item drawn without one.</summary>
+      public ImageSource? Icon {
+         get => Get<ImageSource?>();
+         set => Set(value);
+      }
+
+      /// <summary>Whether a divider is drawn above this item, separating it from the group before it.</summary>
+      public bool StartsGroup {
+         get => Get<bool>();
          set => Set(value);
       }
 

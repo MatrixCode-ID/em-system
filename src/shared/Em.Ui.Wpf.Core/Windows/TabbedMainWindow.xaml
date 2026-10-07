@@ -158,17 +158,37 @@
                             <Setter.Value>
                                 <ControlTemplate TargetType="MenuItem">
                                     <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <!-- Divider above the first item of a new group (StartsGroup), e.g. after
+                                             the connection and debug tools at the top of the Tools menu. -->
+                                        <Border x:Name="divider"
+                                                Height="1"
+                                                Margin="6,5"
+                                                Visibility="Collapsed"
+                                                Background="{StaticResource outlineBrush}" />
                                         <Border x:Name="highlight"
+                                                Grid.Row="1"
                                                 MinHeight="34"
                                                 Padding="10,6"
                                                 CornerRadius="6"
                                                 Background="Transparent">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <Image x:Name="icon"
+                                                       Grid.Column="0"
+                                                       Width="16"
+                                                       Height="16"
+                                                       Margin="0,0,10,0"
+                                                       VerticalAlignment="Center"
+                                                       Source="{Binding Icon}" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                                                     <TextBlock Text="{Binding Subtitle}"
                                                                FontSize="11"
@@ -186,7 +206,7 @@
                                                     </TextBlock>
                                                 </StackPanel>
                                                 <fa:FontAwesome x:Name="arrow"
-                                                                Grid.Column="1"
+                                                                Grid.Column="2"
                                                                 Margin="12,0,0,0"
                                                                 FontSize="9"
                                                                 VerticalAlignment="Center"
@@ -195,6 +215,7 @@
                                             </Grid>
                                         </Border>
                                         <Popup x:Name="PART_Popup"
+                                               Grid.Row="1"
                                                Placement="Right"
                                                HorizontalOffset="-2"
                                                VerticalOffset="-7"
@@ -210,6 +231,12 @@
                                         </Popup>
                                     </Grid>
                                     <ControlTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding StartsGroup}" Value="True">
+                                            <Setter TargetName="divider" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                            <Setter TargetName="icon" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
                                         <Trigger Property="HasItems" Value="True">
                                             <Setter TargetName="arrow" Property="Visibility" Value="Visible" />
                                         </Trigger>

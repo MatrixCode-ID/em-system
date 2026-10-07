@@ -240,6 +240,8 @@ namespace Em.Ui.Wpf.Core
       // The application's built-in tools, in the order every surface lists them: the home screen of
       // the single-page layout and the Tools menu of the multi-tab window. A tool that is a
       // navigation the user may not open is left out, by the same rule the application menu follows.
+      // Connection Config and the debug tools come first, and the first tool after them starts a new
+      // group (StartsGroup), so a developer sees them as soon as the list opens.
       internal IReadOnlyList<StaticTool> GetStaticTools() {
          var tools = new List<StaticTool> {
             new() {
@@ -255,27 +257,7 @@ namespace Em.Ui.Wpf.Core
             }
          };
 
-         foreach (var name in (string[])["admin.users", "admin.roles", "admin.cdn", "admin.tasks", "admin.release", "admin.container", "admin.nupak"]) {
-            var nav = Navigations.Single(r => r.Name == name);
-            if (!CanOpen(nav)) continue;
-
-            tools.Add(new StaticTool {
-               Name = nav.Name,
-               Title = nav.Title,
-               Subtitle = nav.Subtitle,
-               Description = nav.Description,
-               Icon = nav.NavigationIcon,
-               Navigation = nav
-            });
-         }
-
-         if (Navigations.FirstOrDefault(n => n.Name == ApprovalManagerNavigationPayload.NavigationName) is { } approval &&
-             Em.Ui.Wpf.Navigations.ApprovalManagerVm.CanOpenManager(this)) {
-            tools.Add(new StaticTool { Name = "approval.manager", Title = approval.Title,
-               Subtitle = approval.Subtitle, Description = approval.Description, Navigation = approval,
-               Icon = EFontAwesomeIcon.Solid_Check.CreateImageSource(System.Windows.Media.Brushes.Gray) });
-         }
-         // The two debug tools close the list. Neither is offered while a login is being simulated: the
+         // The two debug tools follow it. Neither is offered while a login is being simulated: the
          // application is then meant to behave exactly as it does without debug.
          if (IsDebugActive) {
             tools.Add(new StaticTool {
@@ -307,6 +289,30 @@ namespace Em.Ui.Wpf.Core
                }
             });
          }
+
+         var groupEnd = tools.Count;
+
+         foreach (var name in (string[])["admin.users", "admin.roles", "admin.cdn", "admin.tasks", "admin.release", "admin.container", "admin.nupak"]) {
+            var nav = Navigations.Single(r => r.Name == name);
+            if (!CanOpen(nav)) continue;
+
+            tools.Add(new StaticTool {
+               Name = nav.Name,
+               Title = nav.Title,
+               Subtitle = nav.Subtitle,
+               Description = nav.Description,
+               Icon = nav.NavigationIcon,
+               Navigation = nav
+            });
+         }
+
+         if (Navigations.FirstOrDefault(n => n.Name == ApprovalManagerNavigationPayload.NavigationName) is { } approval &&
+             Em.Ui.Wpf.Navigations.ApprovalManagerVm.CanOpenManager(this)) {
+            tools.Add(new StaticTool { Name = "approval.manager", Title = approval.Title,
+               Subtitle = approval.Subtitle, Description = approval.Description, Navigation = approval,
+               Icon = EFontAwesomeIcon.Solid_Check.CreateImageSource(System.Windows.Media.Brushes.Gray) });
+         }
+         if (tools.Count > groupEnd) tools[groupEnd].StartsGroup = true;
 
          return tools;
       }

@@ -16,5 +16,9 @@ namespace Em.Ui.Wpf.Shared
       public required ImageSource Icon { get; init; }
       public Navigation? Navigation { get; init; }
       public Func<Window, Task>? Invoke { get; init; }
+
+      // Whether a divider is drawn above this tool: set on the first tool after the connection and debug
+      // group, so that group stands apart at the top of every surface.
+      public bool StartsGroup { get; set; }
    }
 }

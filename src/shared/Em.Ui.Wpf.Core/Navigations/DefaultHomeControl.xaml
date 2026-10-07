@@ -358,6 +358,21 @@
            of any lookup back to the view model.
            ============================================================ -->
       <DataTemplate x:Key="toolTileTemplate" DataType="{x:Type local:MenuNavigation}">
+         <DockPanel>
+         <!-- Divider above the first tool after the connection and debug group (StartsGroup). -->
+         <Border DockPanel.Dock="Top" Height="1" Margin="8,6,8,6"
+                 Background="{StaticResource outlineBrush}">
+            <Border.Style>
+               <Style TargetType="Border">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                     <DataTrigger Binding="{Binding StartsGroup}" Value="True">
+                        <Setter Property="Visibility" Value="Visible" />
+                     </DataTrigger>
+                  </Style.Triggers>
+               </Style>
+            </Border.Style>
+         </Border>
          <Grid>
          <Button Style="{StaticResource toolTileBoundStyle}"
                  Command="{Binding NavigateCommand}">
@@ -408,6 +423,7 @@
             <fa:FontAwesome Icon="Solid_ArrowsRotate" FontSize="12" />
          </Button>
          </Grid>
+         </DockPanel>
       </DataTemplate>
 
       <!-- ============================================================

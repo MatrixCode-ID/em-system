@@ -107,13 +107,13 @@ namespace Em.Ui.Wpf.Navigations
          Vm.StaticToolMenus.Clear();
          foreach (var tool in _app.GetStaticTools()) {
             if (tool.Navigation != null) {
-               AddStaticItems(tool.Navigation);
+               AddStaticItems(tool.Navigation, tool.StartsGroup);
                continue;
             }
 
             AddCustomStaticItem(tool.Name, tool.Title, tool.Subtitle, tool.Icon,
                _ => tool.Invoke?.Invoke(Window.GetWindow(this) ?? _app.MainWindow),
-               description: tool.Description);
+               description: tool.Description, startsGroup: tool.StartsGroup);
          }
       }
 
@@ -129,11 +129,12 @@ namespace Em.Ui.Wpf.Navigations
       // The text and the icon are copied out of the navigation here, not bound to it: the menu
       // has to keep reading the same after a navigation re-titles itself while it is open.
       // A tool the user may not open is left out, by the same rule the application menu follows.
-      void AddStaticItems(Navigation nav) {
+      void AddStaticItems(Navigation nav, bool startsGroup = false) {
          if (!_app.CanOpen(nav)) return;
 
          var tile = new MenuNavigation() {
             Navigation = nav,
+            StartsGroup = startsGroup,
             Title = nav.Title,
             SubTitle = nav.Subtitle,
             Description = nav.Description,
@@ -150,9 +151,11 @@ namespace Em.Ui.Wpf.Navigations
       // A tool that is not a navigation: it carries its own text, icon and command, so it lands
       // in the same collection and renders through the same template as the rest.
       void AddCustomStaticItem(string commandName, string title, string subtitle, ImageSource icon,
-         Action<object?> action, Func<object?, bool>? allowedHandler = null, string description = "") {
+         Action<object?> action, Func<object?, bool>? allowedHandler = null, string description = "",
+         bool startsGroup = false) {
          var nav = new MenuNavigation {
             Navigation = null,
+            StartsGroup = startsGroup,
             Title = title,
             SubTitle = subtitle,
             Description = description,
@@ -451,6 +454,12 @@ namespace Em.Ui.Wpf.Navigations
       /// tool that opens no navigation).
       /// </summary>
       public Navigation? Navigation { get; init; }
+
+      /// <summary>
+      /// Whether a divider is drawn above this tile, separating it from the group before it (the connection
+      /// and debug tools at the top of the tools list).
+      /// </summary>
+      public bool StartsGroup { get; init; }
 
       /// <summary>
       /// The title shown on the tile. Copied once when the item is created, so it does not change if the
