@@ -7,47 +7,48 @@ use super::{ConfigLocation, RegistryHive};
 
 const TRUSTED_KEYS_KEY: &str = "TrustedKeys";
 
-/// Public key tepercaya untuk memverifikasi rilis, yang disimpan di registry: milik kebijakan IT (HKLM) dan
-/// milik user (HKCU). Launcher tidak membawa key bawaan; semua key masuk lewat file `.pem` (form setup,
-/// `--import`, atau IT).
+/// The trusted public keys for verifying releases, stored in the registry: the IT policy's (HKLM) and the
+/// user's (HKCU). The launcher carries no built-in keys; every key comes in through a `.pem` file (the
+/// setup form, `--import`, or IT).
 ///
-/// Setiap key disimpan sebagai value `REG_SZ` berisi PEM, dengan nama value `keyId` yang dihitung ulang dari
-/// isi key. Saat dibaca, `keyId` juga selalu dihitung ulang, jadi nama value tidak pernah dipercaya.
+/// Each key is stored as a `REG_SZ` value holding the PEM, with the value name being the `keyId`
+/// recalculated from the key's content. When it is read, the `keyId` is also always recalculated, so the
+/// value name is never trusted.
 pub struct TrustedKeys;
 
-/// Satu key tepercaya beserta asalnya.
+/// One trusted key together with where it comes from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrustedKey {
    /// Public key-nya.
    pub key: ReleasePublicKey,
 
-   /// Asal key ini.
+   /// Where this key comes from.
    pub scope: KeyScope,
 }
 
 /// Asal key tepercaya.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyScope {
-   /// Kebijakan IT di HKLM. Tidak bisa dihapus dari launcher.
+   /// The IT policy in HKLM. It cannot be removed from the launcher.
    Machine,
 
-   /// Milik user di HKCU. Diabaikan kalau kebijakan IT berisi `AllowUserKeys = 0`.
+   /// The user's in HKCU. Ignored when the IT policy holds `AllowUserKeys = 0`.
    User,
 }
 
 impl TrustedKeys {
    // region: Statics
 
-   /// Semua key yang tersimpan, key kebijakan IT lebih dulu. Value yang isinya bukan public key P-256 yang
-   /// sah dilewati dan dicatat di log.
+   /// All stored keys, the IT policy keys first. A value whose content is not a valid P-256 public key is
+   /// skipped and recorded in the log.
    pub fn list(location: &ConfigLocation) -> io::Result<Vec<TrustedKey>> {
       let mut keys = read(location.policy_hive, &location.policy_key, KeyScope::Machine)?;
       keys.extend(read(RegistryHive::CurrentUser, &location.user_key, KeyScope::User)?);
       Ok(keys)
    }
 
-   /// Key yang boleh dipakai memverifikasi rilis: key kebijakan IT, ditambah key milik user kalau
-   /// `allow_user_keys`. Key yang sama tidak muncul dua kali.
+   /// The keys that may be used to verify a release: the IT policy keys, plus the user-owned keys when
+   /// `allow_user_keys`. The same key does not appear twice.
    pub fn usable(location: &ConfigLocation, allow_user_keys: bool) -> io::Result<Vec<ReleasePublicKey>> {
       let mut usable: Vec<ReleasePublicKey> = Vec::new();
       for trusted in Self::list(location)? {
@@ -61,13 +62,13 @@ impl TrustedKeys {
       Ok(usable)
    }
 
-   /// Menyimpan `key` sebagai key milik user. Menyimpan key yang sudah ada hanya menimpanya.
+   /// Saves `key` as a user-owned key. Saving a key that already exists only overwrites it.
    pub fn add(location: &ConfigLocation, key: &ReleasePublicKey) -> io::Result<()> {
       RegistryHive::CurrentUser.write_string(&subkey(&location.user_key), key.key_id(), &key.to_pem())
    }
 
-   /// Menghapus key milik user dengan `key_id` (tanpa memandang huruf besar/kecil). `Ok(false)` kalau tidak
-   /// ada key milik user dengan `keyId` itu; key kebijakan IT tidak bisa dihapus dari sini.
+   /// Deletes the user-owned key with `key_id` (case-insensitive). `Ok(false)` when there is no user-owned key
+   /// with that `keyId`; an IT policy key cannot be removed from here.
    pub fn remove(location: &ConfigLocation, key_id: &str) -> io::Result<bool> {
       let hive = RegistryHive::CurrentUser;
       let key = subkey(&location.user_key);

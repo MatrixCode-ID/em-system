@@ -2,29 +2,30 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::io;
 
-/// Kesalahan saat membaca folder rilis dari sumbernya (CDN atau folder). Bedanya dengan kesalahan format:
-/// di sini isi rilisnya belum sempat diperiksa, sumbernya sendiri yang tidak bisa dibaca.
+/// An error while reading a release folder from its source (a CDN or a folder). The difference from a
+/// format error: here the content of the release has not been checked yet, it is the source itself that
+/// cannot be read.
 #[derive(Debug)]
 pub struct SourceError {
    kind: SourceErrorKind,
    message: String,
 }
 
-/// Jenis [`SourceError`].
+/// The kind of [`SourceError`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceErrorKind {
-   /// Sumbernya bisa dihubungi, tetapi file yang diminta tidak ada (HTTP 404, file tidak ditemukan).
+   /// The source can be reached, but the requested file is not there (HTTP 404, file not found).
    NotFound,
 
-   /// Sumbernya tidak bisa dibaca: server mati, jaringan putus, timeout, akses ditolak, atau server menjawab
-   /// dengan status yang tidak diharapkan. Biasanya sementara.
+   /// The source cannot be read: the server is down, the network is cut, a timeout, access denied, or the
+   /// server answered with an unexpected status. Usually temporary.
    Unavailable,
 }
 
 impl SourceError {
    // region: Statics
 
-   /// Kesalahan "file tidak ada" untuk `what` (nama file atau alamat lengkapnya).
+   /// A "file not found" error for `what` (the file name or its full address).
    pub fn not_found(what: impl Display) -> Self {
       Self {
          kind: SourceErrorKind::NotFound,
@@ -32,7 +33,7 @@ impl SourceError {
       }
    }
 
-   /// Kesalahan "sumber tidak bisa dibaca" dengan pesan penjelasnya.
+   /// A "source cannot be read" error with its explanatory message.
    pub fn unavailable(message: impl Into<String>) -> Self {
       Self {
          kind: SourceErrorKind::Unavailable,
@@ -40,8 +41,8 @@ impl SourceError {
       }
    }
 
-   /// Menerjemahkan kesalahan I/O saat membaca `what`: file yang tidak ada menjadi
-   /// [`SourceErrorKind::NotFound`], selain itu [`SourceErrorKind::Unavailable`].
+   /// Translates an I/O error while reading `what`: a file that does not exist becomes
+   /// [`SourceErrorKind::NotFound`], anything else [`SourceErrorKind::Unavailable`].
    pub fn from_io(what: impl Display, error: &io::Error) -> Self {
       match error.kind() {
          io::ErrorKind::NotFound => Self::not_found(what),
@@ -53,12 +54,12 @@ impl SourceError {
 
    // region: Properties
 
-   /// Jenis kesalahannya.
+   /// The kind of the error.
    pub fn kind(&self) -> SourceErrorKind {
       self.kind
    }
 
-   /// Pesan kesalahannya, dalam bahasa Inggris.
+   /// The error message.
    pub fn message(&self) -> &str {
       &self.message
    }

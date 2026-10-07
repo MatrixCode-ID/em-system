@@ -12,17 +12,18 @@ use super::{CurrentVersion, InstallLayout, UpdateError, UpdatePhase, UpdateProgr
 const COPY_BUFFER_SIZE: usize = 64 * 1024;
 const PART_SUFFIX: &str = ".part";
 
-/// Memasang rilis dari sebuah sumber ke folder instalasi: install pertama, update, dan repair memakai
-/// urutan yang sama.
+/// Installs a release from a source into the install folder: the first install, an update, and a repair
+/// use the same sequence.
 ///
-/// 1. [`Self::check`]: ambil dan verifikasi rilis di sumber.
-/// 2. [`Self::install`]: siapkan versi baru di `.staging-<id>` (file yang sama disalin dari versi aktif,
-///    sisanya diunduh dengan resume), cocokkan ukuran dan SHA-256 setiap file, pindahkan ke `app-<id>`,
-///    tulis `current.json`, ganti launcher root kalau berubah, lalu hapus versi lain.
+/// 1. [`Self::check`]: fetch and verify the release in the source.
+/// 2. [`Self::install`]: prepare the new version in `.staging-<id>` (identical files are copied from the
+///    active version, the rest are downloaded with resume), match the size and SHA-256 of every file, move
+///    it to `app-<id>`, write `current.json`, replace the root launcher if it changed, then delete the
+///    other versions.
 ///
-/// Versi aktif tidak pernah disentuh sebelum versi baru utuh, jadi update boleh berjalan walaupun app versi
-/// lama masih terbuka, dan kegagalan di tengah jalan tidak merusak apa pun. Kemajuan dan pembatalan lewat
-/// [`UpdateProgress`], supaya pekerjaan ini bisa dijalankan di thread lain.
+/// The active version is never touched before the new version is complete, so an update may run even
+/// while the app of the old version is still open, and a failure midway does not break anything. Progress
+/// and cancellation go through [`UpdateProgress`], so this work can be run on another thread.
 pub struct Updater<'a> {
    // pub(super): repair.rs is a sibling module and still needs them.
    pub(super) source: &'a dyn ReleaseSource,
@@ -30,37 +31,39 @@ pub struct Updater<'a> {
    pub(super) progress: Arc<UpdateProgress>,
 }
 
-/// Hasil [`Updater::install`] dan [`Updater::repair`].
+/// The result of [`Updater::install`] and [`Updater::repair`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UpdateOutcome {
-   /// Rilis di sumber sudah menjadi versi aktif; tidak ada yang dikerjakan.
+   /// The release in the source is already the active version; nothing was done.
    AlreadyActive,
 
-   /// Rilis dipasang sebagai versi baru dan sekarang aktif.
+   /// The release was installed as a new version and is now active.
    Installed(UpdateSummary),
 
-   /// Versi aktif diperbaiki di tempat: file yang rusak atau hilang diunduh ulang.
+   /// The active version was repaired in place: files that were broken or missing were downloaded again.
    Repaired(UpdateSummary),
 }
 
-/// Berapa file yang diunduh dan berapa yang dipakai ulang tanpa diunduh.
+/// How many files were downloaded and how many were reused without downloading.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UpdateSummary {
-   /// Jumlah file yang diunduh dari sumber.
+   /// The number of files downloaded from the source.
    pub downloaded_files: usize,
 
-   /// Jumlah byte yang diterima dari sumber, tanpa bagian yang sudah ada dari unduhan sebelumnya.
+   /// The number of bytes received from the source, without the part that already existed from a previous
+   /// download.
    pub downloaded_bytes: u64,
 
-   /// Jumlah file yang tidak perlu diunduh: disalin dari versi aktif, sudah ada di staging, atau (saat
-   /// repair) masih utuh.
+   /// The number of files that did not need to be downloaded: copied from the active version, already in
+   /// staging, or (during repair) still intact.
    pub reused_files: usize,
 }
 
 impl<'a> Updater<'a> {
    // region: Statics
 
-   /// Membuat updater yang memasang rilis dari `source` ke `layout`, melaporkan kemajuannya ke `progress`.
+   /// Creates an updater that installs a release from `source` into `layout`, reporting its progress to
+   /// `progress`.
    pub fn new(source: &'a dyn ReleaseSource, layout: &'a InstallLayout, progress: Arc<UpdateProgress>) -> Self {
       Self {
          source,
@@ -73,7 +76,7 @@ impl<'a> Updater<'a> {
 
    // region: Properties
 
-   /// Kemajuan pekerjaan updater ini.
+   /// The progress of this updater's work.
    pub fn progress(&self) -> &Arc<UpdateProgress> {
       &self.progress
    }
@@ -82,8 +85,8 @@ impl<'a> Updater<'a> {
 
    // region: Methods
 
-   /// Mengambil rilis dari sumber dan memverifikasinya dengan `trusted_keys` (`doc/release-format.md`
-   /// bagian 6 langkah 1–4). Belum ada yang ditulis ke folder instalasi.
+   /// Fetches the release from the source and verifies it with `trusted_keys` (`doc/release-format.md`
+   /// section 6 steps 1–4). Nothing has been written to the install folder yet.
    pub fn check(&self, trusted_keys: &[ReleasePublicKey]) -> Result<VerifiedRelease, UpdateError> {
       self.progress.begin(UpdatePhase::Checking, 0);
       match VerifiedRelease::fetch(self.source, trusted_keys) {
@@ -105,7 +108,7 @@ impl<'a> Updater<'a> {
       }
    }
 
-   /// `true` kalau `release` sudah menjadi versi aktif.
+   /// `true` when `release` is already the active version.
    pub fn is_active(&self, release: &VerifiedRelease) -> bool {
       self
          .layout
@@ -115,8 +118,8 @@ impl<'a> Updater<'a> {
          .is_some_and(|current| current.version == release.id())
    }
 
-   /// Jumlah byte yang perlu diunduh untuk memasang `release`: file yang tidak ada di versi aktif dengan
-   /// ukuran dan SHA-256 yang sama. Dipakai untuk tawaran update.
+   /// The number of bytes that must be downloaded to install `release`: files that are not in the active
+   /// version with the same size and SHA-256. Used for the update offer.
    pub fn download_size(&self, release: &VerifiedRelease) -> u64 {
       let active = self.layout.active_version().and_then(|active| active.manifest);
       release
@@ -133,8 +136,9 @@ impl<'a> Updater<'a> {
          .sum()
    }
 
-   /// Memasang `release` sebagai versi aktif (urutan update langkah 3–7). Kalau gagal atau dibatalkan,
-   /// versi aktif tidak berubah dan file yang sudah disiapkan tetap di `.staging-<id>` untuk dilanjutkan.
+   /// Installs `release` as the active version (update steps 3–7). When it fails or is cancelled, the active
+   /// version does not change and the files that were already prepared stay in `.staging-<id>` to be
+   /// resumed.
    pub fn install(&self, release: &VerifiedRelease) -> Result<UpdateOutcome, UpdateError> {
       let active = self.layout.active_version();
       if active
@@ -208,9 +212,9 @@ impl<'a> Updater<'a> {
       Ok(UpdateOutcome::Installed(summary))
    }
 
-   /// Membersihkan sisa run sebelumnya: `launcher.old.exe` dan folder `app-*` selain versi aktif yang dulu
-   /// belum bisa dihapus (app lama masih berjalan). Folder `.staging-*` dibiarkan untuk resume. Kegagalan
-   /// hanya dicatat di log.
+   /// Cleans up what the previous run left: `launcher.old.exe` and `app-*` folders other than the active
+   /// version that could not be deleted back then (the old app was still running). `.staging-*` folders are
+   /// left for resuming. A failure is only recorded in the log.
    pub fn remove_leftovers(&self) {
       let old_launcher = self.layout.old_launcher_path();
       if old_launcher.exists()

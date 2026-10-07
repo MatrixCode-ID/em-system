@@ -7,7 +7,7 @@ use crate::install::Uninstaller;
 
 use super::CommandError;
 
-/// Teks bantuan `--help`.
+/// The `--help` text.
 pub const USAGE: &str = "\
 Usage: launcher.exe [options] [-- <app arguments>]
 
@@ -29,11 +29,11 @@ Arguments after -- are passed to the application unchanged.
 Exit codes: 0 success, 1 invalid arguments, 2 release source unreadable or release not valid,
 3 disk or registry error, 4 cancelled, 5 the application is still running.";
 
-/// Perintah yang diminta lewat argumen, sudah divalidasi.
+/// The command requested through the arguments, already validated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Command {
-   /// Tanpa perintah: cek update, lalu jalankan app dengan `app_args`. `from_app` menandai launcher yang
-   /// dijalankan ulang oleh app yang dibuka langsung dari folder instalasi (argumen internal `--from-app`).
+   /// No command: check for an update, then run the app with `app_args`. `from_app` marks a launcher that was
+   /// run again by an app opened directly from the install folder (the internal `--from-app` argument).
    Start { app_args: Vec<OsString>, from_app: bool },
 
    /// `--install`.
@@ -51,7 +51,7 @@ pub enum Command {
    /// `--uninstall`.
    Uninstall,
 
-   /// `--import <file>` tanpa `--install`.
+   /// `--import <file>` without `--install`.
    Import { file: PathBuf },
 
    /// `--list-keys`.
@@ -60,26 +60,26 @@ pub enum Command {
    /// `--remove-key <keyId>`.
    RemoveKey { key_id: String },
 
-   /// `--apply --pid <pid>`: tunggu proses `pid` selesai, lalu alur normal tanpa bertanya.
+   /// `--apply --pid <pid>`: wait for process `pid` to finish, then take the normal flow without asking.
    Apply { pid: u32, app_args: Vec<OsString> },
 
-   /// Tahap kedua uninstall (argumen internal, lihat [`Uninstaller::FINISH_ARGUMENT`]).
+   /// The second stage of uninstall (an internal argument, see [`Uninstaller::FINISH_ARGUMENT`]).
    UninstallFinish { install: PathBuf, parent_pid: u32 },
 
    /// `--help`.
    Help,
 }
 
-/// Isian `--install`. Isian yang tidak diberikan memakai konfigurasi yang ada atau nilai bawaan.
+/// The `--install` fields. A field that is not given uses the existing configuration or the default.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct InstallOptions {
-   /// `--source`: alamat folder rilis.
+   /// `--source`: the address of the release folder.
    pub source: Option<String>,
 
-   /// `--target`: folder instalasi.
+   /// `--target`: the install folder.
    pub target: Option<PathBuf>,
 
-   /// `--import` (boleh berulang): file `.pem` berisi public key tepercaya.
+   /// `--import` (may be repeated): a `.pem` file holding a trusted public key.
    pub imports: Vec<PathBuf>,
 
    /// `--no-start-menu`.
@@ -88,17 +88,17 @@ pub struct InstallOptions {
    /// `--no-desktop`.
    pub no_desktop: bool,
 
-   /// `--no-run`: jangan jalankan app setelah install.
+   /// `--no-run`: do not run the app after install.
    pub no_run: bool,
 }
 
-/// Argumen launcher yang sudah di-parse: perintahnya dan `--quiet`.
+/// The parsed launcher arguments: its command and `--quiet`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandLine {
-   /// Perintah yang diminta.
+   /// The requested command.
    pub command: Command,
 
-   /// `--quiet`: tanpa GUI dan tanpa pertanyaan. Pesan tetap ditulis ke console induk, kalau ada.
+   /// `--quiet`: no GUI and no questions. Messages are still written to the parent console, if there is one.
    pub quiet: bool,
 }
 
@@ -119,8 +119,8 @@ struct Collected {
 impl CommandLine {
    // region: Statics
 
-   /// Mem-parse argumen proses (tanpa nama exe). Argumen setelah `--` pertama tidak di-parse dan diteruskan ke
-   /// app apa adanya.
+   /// Parses the process arguments (without the exe name). Arguments after the first `--` are not parsed and
+   /// are passed on to the app as they are.
    pub fn parse<I>(args: I) -> Result<Self, CommandError>
    where
       I: IntoIterator<Item = OsString>,

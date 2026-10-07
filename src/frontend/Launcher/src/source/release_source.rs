@@ -2,39 +2,40 @@ use std::io::Read;
 
 use super::{FolderSource, HttpSource, SourceError};
 
-/// Tempat folder rilis dibaca: CDN lewat HTTP(S) ([`HttpSource`]) atau folder lokal/jaringan
-/// ([`FolderSource`]). Updater hanya bicara dengan trait ini, jadi ia tidak tahu dan tidak peduli dari
-/// mana byte-nya datang; test juga bisa memasang sumber buatan sendiri.
+/// Where a release folder is read from: a CDN over HTTP(S) ([`HttpSource`]) or a local/network folder
+/// ([`FolderSource`]). The updater only talks to this trait, so it does not know or care where the bytes
+/// come from; tests can also plug in a source of their own.
 ///
-/// Sumber hanya mengantar byte. Memeriksa tanda tangan, ukuran, dan hash adalah tugas pemanggil
-/// (`doc/release-format.md` bagian 6).
+/// A source only delivers bytes. Checking the signature, size, and hash is the caller's job
+/// (`doc/release-format.md` section 6).
 pub trait ReleaseSource: Send + Sync {
-   /// Alamat folder rilis seperti diisi user, untuk log dan pesan.
+   /// The release folder address as the user entered it, for the log and messages.
    fn address(&self) -> &str;
 
-   /// Membaca seluruh isi file kecil di akar folder rilis, yaitu `release.json` atau `release.json.sig`.
+   /// Reads the whole content of a small file at the root of the release folder, that is `release.json` or
+   /// `release.json.sig`.
    fn read_file(&self, name: &str) -> Result<Vec<u8>, SourceError>;
 
-   /// Membuka file rilis `path` (relatif terhadap `binaries/`, dipisah `/`) mulai dari byte ke-`offset`,
-   /// untuk melanjutkan unduhan yang terputus. Sumber boleh mengabaikan `offset` dan mengirim file dari
-   /// awal; [`SourceStream::offset`] memberi tahu mana yang terjadi.
+   /// Opens release file `path` (relative to `binaries/`, separated by `/`) starting at byte `offset`, to
+   /// resume an interrupted download. A source may ignore `offset` and send the file from the start;
+   /// [`SourceStream::offset`] tells which happened.
    fn open_binary(&self, path: &str, offset: u64) -> Result<SourceStream, SourceError>;
 }
 
-/// Isi file rilis yang sedang dibaca dari sumber, hasil [`ReleaseSource::open_binary`].
+/// The content of a release file being read from the source, the result of [`ReleaseSource::open_binary`].
 pub struct SourceStream {
-   /// Posisi byte pertama yang dikirim `reader`: sama dengan `offset` yang diminta, atau `0` kalau sumber
-   /// tidak bisa melanjutkan dan mengirim file dari awal. Pemanggil harus membuang byte yang sudah ia punya
-   /// kalau nilainya `0`.
+   /// The position of the first byte that `reader` sends: equal to the requested `offset`, or `0` when the
+   /// source cannot resume and sends the file from the start. The caller must discard the bytes it already
+   /// has when the value is `0`.
    pub offset: u64,
 
-   /// Isi file mulai dari [`Self::offset`] sampai habis.
+   /// The file content from [`Self::offset`] to the end.
    pub reader: Box<dyn Read + Send>,
 }
 
-/// Membuat sumber untuk alamat folder rilis yang diisi user: alamat berawalan `http://` atau `https://`
-/// dibaca lewat [`HttpSource`], selain itu dianggap path folder (lokal atau UNC) dan dibaca lewat
-/// [`FolderSource`].
+/// Creates a source for the release folder address the user entered: an address starting with `http://`
+/// or `https://` is read through [`HttpSource`], anything else is treated as a folder path (local or UNC)
+/// and read through [`FolderSource`].
 pub fn from_address(address: &str) -> Result<Box<dyn ReleaseSource>, SourceError> {
    let address = address.trim();
    if address.is_empty() {

@@ -25,23 +25,25 @@ const MARGIN: i32 = 16;
 const BUTTON_WIDTH: i32 = 88;
 const GAP: i32 = 8;
 
-/// Hasil form setup.
+/// The result of the setup form.
 #[derive(Debug)]
 pub enum SetupOutcome {
-   /// User menutup form tanpa memasang apa pun (atau install-nya tidak pernah selesai).
+   /// The user closed the form without installing anything (or the install never finished).
    Cancelled,
 
-   /// Produk terpasang di `layout`; `run` = user memilih menjalankan app setelah install.
+   /// The product is installed in `layout`; `run` = the user chose to run the app after install.
    Installed { layout: InstallLayout, run: bool },
 }
 
-/// Form setup (keputusan 7): sumber rilis, folder instalasi, key tepercaya, dan tiga pilihan shortcut/jalankan,
-/// lalu halaman progres dan halaman selesai dengan petunjuk pin ke taskbar, semuanya di satu jendela.
+/// The setup form (decision 7): the release source, the install folder, trusted keys, and three
+/// shortcut/run choices, then a progress page and a finish page with a hint to pin to the taskbar, all in
+/// one window.
 ///
-/// **Install** memeriksa isian lebih dulu ([`InstallCommand::prepare`]), lalu menjalankan install di thread
-/// pekerja. Form tetap tampil (tidak aktif) selama rilis di sumber diperiksa; kesalahan di tahap itu, termasuk
-/// tanda tangan yang tidak sah, ditampilkan di form tanpa ada yang tertulis. Begitu pemeriksaan lolos, jendela
-/// berganti ke halaman progres. Install yang dibatalkan atau gagal kembali ke form, dan bisa diulang.
+/// **Install** checks the fields first ([`InstallCommand::prepare`]), then runs the install on a worker
+/// thread. The form stays visible (inactive) while the release in the source is checked; an error in that
+/// phase, including an invalid signature, is shown in the form without anything being written. Once the
+/// check passes, the window switches to the progress page. An install that is cancelled or fails goes back
+/// to the form, and can be repeated.
 #[derive(Clone)]
 pub struct SetupWindow {
    wnd: gui::WindowMain,
@@ -101,8 +103,9 @@ struct SetupState {
 impl SetupWindow {
    // region: Statics
 
-   /// Membuka form setup yang terisi dari `options` dan konfigurasi yang ada, lalu memblokir sampai jendelanya
-   /// ditutup. File `.pem` di folder exe ikut masuk daftar key. Pemanggil harus memegang kunci launcher.
+   /// Opens the setup form filled in from `options` and the existing configuration, then blocks until the
+   /// window is closed. `.pem` files in the exe's folder are added to the key list. The caller must hold the
+   /// launcher lock.
    pub fn run(context: &CommandContext, options: &InstallOptions) -> Result<SetupOutcome, CommandError> {
       let config = context.load_config()?;
       let saved_keys =

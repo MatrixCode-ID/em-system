@@ -6,18 +6,17 @@ use sha2::{Digest, Sha256};
 
 const BUFFER_SIZE: usize = 81920;
 
-/// Menghitung ukuran dan SHA-256 isi file rilis (`doc/release-format.md` bagian 2.4) sambil membacanya
-/// sekali dari awal sampai habis, jadi file besar maupun unduhan yang masih mengalir tidak perlu
-/// ditampung di memori. Pasangan `ReleaseHash` di C#.
+/// Computes the size and SHA-256 of a release file's content (`doc/release-format.md` section 2.4) while
+/// reading it once from start to end, so neither a big file nor a download that is still streaming has to
+/// be held in memory. The counterpart of `ReleaseHash` in C#.
 pub struct ReleaseHash;
 
 impl ReleaseHash {
-   /// Membaca `content` sampai habis dan mengembalikan jumlah byte-nya beserta SHA-256-nya dalam hex huruf
-   /// kecil.
+   /// Reads `content` to the end and returns its number of bytes together with its SHA-256 in lowercase hex.
    ///
-   /// `progress` dipanggil setiap kali sebagian data terbaca, dengan jumlah byte yang sudah terbaca dari
-   /// `content`. Kalau `progress` mengembalikan `Err`, pembacaan berhenti dan kesalahan itu diteruskan;
-   /// dengan cara ini pemanggil bisa membatalkan hash di tengah jalan.
+   /// `progress` is called every time some data has been read, with the number of bytes read from `content`
+   /// so far. When `progress` returns `Err`, reading stops and that error is passed on; this way the caller
+   /// can cancel the hash midway.
    pub fn compute(
       content: &mut impl Read,
       mut progress: impl FnMut(u64) -> io::Result<()>,
@@ -40,13 +39,13 @@ impl ReleaseHash {
       Ok((size, to_hex(&hash.finalize())))
    }
 
-   /// Menghitung ukuran dan SHA-256 file di disk (lihat [`Self::compute`]).
+   /// Computes the size and SHA-256 of a file on disk (see [`Self::compute`]).
    pub fn compute_file(path: &Path, progress: impl FnMut(u64) -> io::Result<()>) -> io::Result<(u64, String)> {
       let mut file = File::open(path)?;
       Self::compute(&mut file, progress)
    }
 
-   /// SHA-256 sebuah blok byte di memori, dalam 64 karakter hex huruf kecil.
+   /// The SHA-256 of a block of bytes in memory, as 64 lowercase hex characters.
    pub fn sha256_hex(bytes: &[u8]) -> String {
       to_hex(&Sha256::digest(bytes))
    }

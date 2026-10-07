@@ -14,21 +14,21 @@ const TIMER_MS: u32 = 200;
 const WIDTH: i32 = 460;
 const MARGIN: i32 = 16;
 
-/// Jendela progres untuk pekerjaan updater (update, repair) yang dijalankan tanpa `--quiet`.
+/// The progress window for updater work (update, repair) run without `--quiet`.
 ///
-/// Pekerjaannya berjalan di thread pekerja; jendelanya membaca [`UpdateProgress`] setiap 200 ms dan menutup
-/// diri begitu pekerjaan selesai. **Cancel** (atau tombol tutup jendela) meminta pembatalan lewat
-/// `UpdateProgress::cancel`, lalu jendelanya tetap terbuka sampai pekerja benar-benar berhenti.
+/// The work runs on a worker thread; the window reads [`UpdateProgress`] every 200 ms and closes itself
+/// as soon as the work finishes. **Cancel** (or the window's close button) asks for cancellation through
+/// `UpdateProgress::cancel`, and the window stays open until the worker has really stopped.
 pub struct ProgressWindow;
 
 impl ProgressWindow {
    // region: Statics
 
-   /// Menjalankan `job` di thread pekerja sambil menampilkan `progress` di jendela berjudul `title`, lalu
-   /// mengembalikan hasil `job`. Memblokir sampai `job` selesai.
+   /// Runs `job` on a worker thread while showing `progress` in a window titled `title`, then returns the
+   /// result of `job`. Blocks until `job` finishes.
    ///
-   /// `job` boleh meminjam data milik pemanggil (misalnya `Updater` yang meminjam sumber dan folder instalasi),
-   /// karena thread pekerjanya dijamin selesai sebelum fungsi ini kembali.
+   /// `job` may borrow data owned by the caller (for example an `Updater` that borrows the source and the
+   /// install folder), because the worker thread is guaranteed to finish before this function returns.
    pub fn run<R: Send>(title: &str, progress: &Arc<UpdateProgress>, job: impl FnOnce() -> R + Send) -> R {
       let finished = Arc::new(AtomicBool::new(false));
       thread::scope(|scope| {

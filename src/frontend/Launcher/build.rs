@@ -88,22 +88,22 @@ fn product_constants(product: &Product) -> String {
    let mut code = String::new();
    let items = [
       (
-         "Nama aplikasi, sama dengan `ApplicationName` host; juga root registry `HKCU\\<APP_NAME>`.",
+         "The application name, the same as the host's `ApplicationName`; also the registry root `HKCU\\<APP_NAME>`.",
          "APP_NAME",
          &product.app_name,
       ),
       (
-         "Nama penerbit, ditampilkan di Apps & Features.",
+         "The publisher name, shown in Apps & Features.",
          "PUBLISHER",
          &product.publisher,
       ),
       (
-         "Nama file exe aplikasi di dalam folder versi.",
+         "The file name of the application exe inside the version folder.",
          "APP_EXE",
          &product.app_exe,
       ),
       (
-         "AppUserModelID aplikasi, sekaligus nama key entri Uninstall.",
+         "The application's AppUserModelID, which is also the name of the Uninstall entry key.",
          "APP_ID",
          &product.app_id,
       ),

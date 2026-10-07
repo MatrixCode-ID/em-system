@@ -8,14 +8,14 @@ use crate::ui::{format_published, format_size};
 
 use super::CommandContext;
 
-/// Perintah `--update` dan `--repair` terhadap instalasi yang sudah ada.
+/// The `--update` and `--repair` commands against an existing installation.
 pub struct UpdateCommand;
 
 impl UpdateCommand {
    // region: Statics
 
-   /// `--update`: cek sumber rilis dan pasang rilisnya tanpa bertanya kalau berbeda dari versi aktif. Juga
-   /// membersihkan sisa run sebelumnya dan memperbarui entri Apps & Features.
+   /// `--update`: checks the release source and installs its release without asking when it differs from the
+   /// active version. Also cleans up what the previous run left and refreshes the Apps & Features entry.
    pub fn update(context: &CommandContext) -> Result<(), CommandError> {
       let config = context.load_config()?;
       let layout = context.installed_layout(&config)?;
@@ -59,9 +59,9 @@ impl UpdateCommand {
       Ok(())
    }
 
-   /// `--repair`: hash ulang setiap file versi aktif terhadap rilis di sumber, unduh ulang yang rusak atau
-   /// hilang, lalu pasang ulang launcher root, shortcut, dan entri Apps & Features. App harus ditutup dulu,
-   /// karena file yang sedang dipakai tidak bisa diganti.
+   /// `--repair`: hashes every file of the active version again against the release in the source,
+   /// downloads again the ones that are broken or missing, then reinstalls the root launcher, the shortcuts,
+   /// and the Apps & Features entry. The app must be closed first, because a file in use cannot be replaced.
    pub fn repair(context: &CommandContext) -> Result<(), CommandError> {
       let config = context.load_config()?;
       let layout = context.installed_layout(&config)?;
@@ -89,7 +89,7 @@ impl UpdateCommand {
       Ok(())
    }
 
-   /// Ringkasan hasil install, update, atau repair untuk pesan ke user.
+   /// The summary of an install, update, or repair result for the message to the user.
    pub fn describe(outcome: &UpdateOutcome) -> String {
       match outcome {
          UpdateOutcome::AlreadyActive => "nothing had to be done".to_string(),

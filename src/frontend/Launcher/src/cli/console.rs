@@ -9,21 +9,23 @@ use windows::Win32::System::Console::{
    ATTACH_PARENT_PROCESS, AttachConsole, GetStdHandle, STD_ERROR_HANDLE, STD_HANDLE, STD_OUTPUT_HANDLE, SetStdHandle,
 };
 
-/// Keluaran teks launcher ke console tempat ia dijalankan.
+/// The launcher's text output to the console it runs in.
 ///
-/// Build release bersubsistem `windows` (tanpa jendela console yang berkedip saat dibuka dari shortcut), jadi
-/// tidak punya console sendiri. [`Self::attach`] menumpang ke console proses induk (cmd, PowerShell), kalau
-/// ada, supaya perintah CLI tetap bisa menulis hasilnya. Tanpa console induk, tulisan diabaikan.
+/// The release build has the `windows` subsystem (no console window flashing when opened from a shortcut),
+/// so it has no console of its own. [`Self::attach`] latches onto the parent process's console (cmd,
+/// PowerShell), if there is one, so CLI commands can still write their results. Without a parent console,
+/// the text is ignored.
 ///
-/// Karena exe-nya bukan aplikasi console, cmd dan PowerShell tidak menunggunya selesai. Untuk membaca exit
-/// code, jalankan dengan `start /wait launcher.exe ...` (cmd) atau `Start-Process -Wait -PassThru` (PowerShell).
+/// Because the exe is not a console application, cmd and PowerShell do not wait for it to finish. To read
+/// the exit code, run it with `start /wait launcher.exe ...` (cmd) or `Start-Process -Wait -PassThru`
+/// (PowerShell).
 pub struct Console;
 
 impl Console {
    // region: Statics
 
-   /// Menumpang ke console proses induk. `true` kalau berhasil, `false` kalau tidak ada console induk (dibuka
-   /// dari shortcut atau Explorer) atau proses ini sudah punya console sendiri (build debug).
+   /// Latches onto the parent process's console. `true` on success, `false` when there is no parent console
+   /// (opened from a shortcut or Explorer) or this process already has a console of its own (debug build).
    pub fn attach() -> bool {
       let attached = unsafe { AttachConsole(ATTACH_PARENT_PROCESS) }.is_ok();
       if attached {
@@ -35,12 +37,12 @@ impl Console {
       attached
    }
 
-   /// Menulis satu baris ke stdout.
+   /// Writes one line to stdout.
    pub fn out(message: impl Display) {
       let _ = writeln!(std::io::stdout(), "{message}");
    }
 
-   /// Menulis satu baris ke stderr.
+   /// Writes one line to stderr.
    pub fn err(message: impl Display) {
       let _ = writeln!(std::io::stderr(), "{message}");
    }

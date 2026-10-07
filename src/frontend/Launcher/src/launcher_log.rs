@@ -14,20 +14,20 @@ struct LogFile {
    file: File,
 }
 
-/// Log launcher di `launcher.log` folder instalasi. Satu log untuk seluruh proses: dibuka sekali lewat
-/// [`Self::open`], lalu setiap bagian launcher cukup memanggil [`Self::info`], [`Self::warn`], atau
-/// [`Self::error`]. Sebelum dibuka, semua tulisan diabaikan, jadi kode yang menulis log tetap bisa dipakai
-/// di test tanpa folder instalasi.
+/// The launcher log in `launcher.log` of the install folder. One log for the whole process: opened once
+/// through [`Self::open`], after which every part of the launcher only calls [`Self::info`],
+/// [`Self::warn`], or [`Self::error`]. Before it is opened, all writes are ignored, so code that writes
+/// the log can still be used in tests without an install folder.
 ///
-/// Begitu ukurannya melewati 1 MB, file dipindah menjadi `launcher.log.1` (menimpa cadangan lama) dan log
-/// dimulai dari kosong, sehingga di disk paling banyak ada sekitar 2 MB log.
+/// Once its size passes 1 MB, the file is moved to `launcher.log.1` (overwriting the old backup) and the
+/// log starts empty, so at most about 2 MB of log is on disk.
 pub struct LauncherLog;
 
 impl LauncherLog {
    // region: Statics
 
-   /// Mulai menulis log ke `path` (ditambahkan di akhir file). Kegagalan membuka file tidak dianggap fatal:
-   /// launcher tetap berjalan, hanya tanpa log.
+   /// Starts writing the log to `path` (appended at the end of the file). A failure to open the file is not
+   /// fatal: the launcher keeps running, only without a log.
    pub fn open(path: &Path) {
       if let Some(parent) = path.parent() {
          let _ = fs::create_dir_all(parent);
@@ -43,7 +43,7 @@ impl LauncherLog {
       }
    }
 
-   /// Berhenti menulis log dan menutup file-nya, misalnya sebelum folder instalasi dihapus.
+   /// Stops writing the log and closes its file, for example before the install folder is deleted.
    pub fn close() {
       if let Ok(mut log) = LOG.lock() {
          *log = None;
@@ -55,7 +55,7 @@ impl LauncherLog {
       Self::write("INFO", message);
    }
 
-   /// Mencatat hal yang tidak wajar tapi tidak menghentikan pekerjaan (mis. folder lama belum bisa dihapus).
+   /// Records something unusual that does not stop the work (e.g. an old folder could not be deleted yet).
    pub fn warn(message: impl Display) {
       Self::write("WARN", message);
    }
@@ -65,9 +65,9 @@ impl LauncherLog {
       Self::write("ERROR", message);
    }
 
-   /// Mencatat panic, dipanggil dari panic hook sebelum proses berhenti. Berbeda dengan [`Self::error`], log
-   /// tidak ditunggu: kalau panic terjadi saat log sedang ditulis (log terkunci), catatannya dilewati daripada
-   /// proses macet selamanya.
+   /// Records a panic, called from the panic hook before the process stops. Unlike [`Self::error`], it does
+   /// not wait for the log: when the panic happens while the log is being written (the log is locked), the
+   /// record is skipped rather than let the process hang forever.
    pub fn panic(message: impl Display) {
       let guard = match LOG.try_lock() {
          Ok(guard) => guard,

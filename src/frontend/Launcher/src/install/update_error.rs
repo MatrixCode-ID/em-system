@@ -6,41 +6,41 @@ use std::path::Path;
 use crate::format::{ReleaseFormatError, SignatureError};
 use crate::source::SourceError;
 
-/// Alasan install, update, atau repair tidak selesai. Apa pun alasannya, versi aktif tidak berubah:
-/// versi baru baru dipakai setelah semua filenya lolos pemeriksaan.
+/// The reason an install, update, or repair did not finish. Whatever the reason, the active version does
+/// not change: the new version is only used after all its files pass the checks.
 #[derive(Debug)]
 pub enum UpdateError {
-   /// Sumber rilis tidak bisa dibaca, atau `release.json`/`.sig` tidak ada di sana.
+   /// The release source cannot be read, or `release.json`/`.sig` is not there.
    Source(SourceError),
 
-   /// Tanda tangan `release.json` ditolak (langkah 2–3 `doc/release-format.md` bagian 6).
+   /// The `release.json` signature was rejected (steps 2–3 of `doc/release-format.md` section 6).
    Signature(SignatureError),
 
-   /// `release.json` atau `.sig` tidak sesuai format (langkah 4).
+   /// `release.json` or `.sig` does not match the format (step 4).
    Format(ReleaseFormatError),
 
-   /// Ukuran atau SHA-256 file dari sumber tidak sama dengan manifest (langkah 5). Biasanya rilis sedang
-   /// di-Sync ulang di server; update ini dibatalkan dan dicoba lagi nanti (bagian 7).
+   /// The size or SHA-256 of a file from the source differs from the manifest (step 5). Usually the release
+   /// is being Synced again on the server; this update is cancelled and tried again later (section 7).
    ServerChanged {
-      /// Path file rilis yang tidak cocok.
+      /// The path of the release file that does not match.
       path: String,
    },
 
-   /// Gagal membaca atau menulis di folder instalasi.
+   /// Failed to read or write in the install folder.
    Io {
-      /// Apa yang sedang dikerjakan saat gagal, dalam bahasa Inggris.
+      /// What was being done when it failed.
       action: String,
-      /// Kesalahan aslinya.
+      /// The original error.
       error: io::Error,
    },
 
-   /// Dibatalkan lewat [`super::UpdateProgress::cancel`].
+   /// Cancelled through [`super::UpdateProgress::cancel`].
    Cancelled,
 }
 
 impl UpdateError {
-   /// Membuat pembungkus kesalahan I/O untuk `map_err`, dengan keterangan apa yang sedang dikerjakan pada
-   /// `path`, misalnya `.map_err(UpdateError::io("create", &folder))`.
+   /// Creates an I/O error wrapper for `map_err`, saying what was being done to `path`, for example
+   /// `.map_err(UpdateError::io("create", &folder))`.
    pub fn io(action: &str, path: &Path) -> impl FnOnce(io::Error) -> UpdateError {
       let action = format!("cannot {action} {}", path.display());
       move |error| UpdateError::Io { action, error }

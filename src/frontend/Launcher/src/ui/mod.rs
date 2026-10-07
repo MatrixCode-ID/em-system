@@ -1,5 +1,6 @@
-//! Tampilan untuk user (Win32 lewat `winsafe`): form setup, jendela progres, jendela maintenance, dan
-//! TaskDialog untuk pertanyaan dan pesan singkat. Tidak ada yang dipakai saat `--quiet`.
+//! The user-facing display (Win32 through `winsafe`): the setup form, the progress window, the
+//! maintenance window, and TaskDialogs for questions and short messages. None of it is used with
+//! `--quiet`.
 
 mod file_dialogs;
 mod key_list_view;

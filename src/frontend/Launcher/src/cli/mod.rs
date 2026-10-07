@@ -1,4 +1,5 @@
-//! Antarmuka baris perintah: parse argumen, exit code, kegagalan perintah, dan keluaran ke console induk.
+//! The command-line interface: argument parsing, exit codes, command failures, and output to the parent
+//! console.
 
 mod command_error;
 mod command_line;

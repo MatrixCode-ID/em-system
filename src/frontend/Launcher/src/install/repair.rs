@@ -7,12 +7,12 @@ use super::updater::write_release_files;
 use super::{InstallLayout, UpdateError, UpdateOutcome, UpdatePhase, UpdateSummary, Updater, VerifiedRelease};
 
 impl Updater<'_> {
-   /// Memperbaiki instalasi terhadap `release`. Kalau folder versi `release` sudah ada, setiap file di sana
-   /// di-hash ulang, dan yang rusak atau hilang diunduh ulang langsung ke tempatnya (lewat `.part`), lalu
-   /// versi itu diaktifkan lagi. Kalau belum ada (versi aktif lebih lama, atau instalasinya hilang), repair
-   /// sama dengan [`Self::install`].
+   /// Repairs the installation against `release`. When the folder of version `release` already exists, every
+   /// file there is hashed again, and ones that are broken or missing are downloaded again straight into
+   /// place (through `.part`), then that version is activated again. When it does not exist (the active
+   /// version is older, or the installation is gone), repair is the same as [`Self::install`].
    ///
-   /// File yang sedang dipakai app yang berjalan tidak bisa diganti; tutup app-nya dulu.
+   /// A file in use by a running app cannot be replaced; close the app first.
    pub fn repair(&self, release: &VerifiedRelease) -> Result<UpdateOutcome, UpdateError> {
       let folder = self.layout.version_folder(release.id());
       if !folder.is_dir() {

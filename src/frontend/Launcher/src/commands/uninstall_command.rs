@@ -14,15 +14,15 @@ use super::CommandContext;
 const PARENT_WAIT: Duration = Duration::from_secs(60);
 const LOCK_WAIT: Duration = Duration::from_secs(10);
 
-/// Perintah `--uninstall` dan tahap keduanya (lihat [`Uninstaller`]).
+/// The `--uninstall` command and its second stage (see [`Uninstaller`]).
 pub struct UninstallCommand;
 
 impl UninstallCommand {
    // region: Statics
 
-   /// `--uninstall`: konfirmasi (tidak senyap), pastikan app sudah ditutup, lalu hapus instalasi. Kalau
-   /// launcher ini berjalan dari folder instalasi, penghapusannya diteruskan ke salinan di `%TEMP%` dan
-   /// perintah ini selesai begitu salinan itu berjalan.
+   /// `--uninstall`: confirm (when not silent), make sure the app is closed, then delete the installation.
+   /// When this launcher runs from the install folder, the deletion is handed over to a copy in `%TEMP%` and
+   /// this command finishes as soon as that copy is running.
    pub fn run(context: &CommandContext) -> Result<(), CommandError> {
       let config = context.load_config()?;
       let layout = context.installed_layout(&config)?;
@@ -54,11 +54,12 @@ impl UninstallCommand {
       Ok(())
    }
 
-   /// Tahap kedua uninstall, dijalankan salinan launcher di `%TEMP%`: tunggu launcher `parent_pid` keluar, hapus
-   /// instalasi di `install`, lalu jadwalkan penghapusan folder salinan ini.
+   /// The second stage of uninstall, run by the launcher copy in `%TEMP%`: wait for the launcher
+   /// `parent_pid` to exit, delete the installation in `install`, then schedule the deletion of this copy's
+   /// own folder.
    ///
-   /// `install` harus sama dengan folder instalasi yang tercatat di konfigurasi, supaya argumen internal ini
-   /// tidak bisa dipakai untuk menghapus folder lain.
+   /// `install` must be the same as the install folder recorded in the configuration, so this internal
+   /// argument cannot be used to delete another folder.
    pub fn finish(context: &CommandContext, install: &Path, parent_pid: u32) -> Result<(), CommandError> {
       let result = Self::remove(context, install, parent_pid);
       if let Ok(exe) = std::env::current_exe()

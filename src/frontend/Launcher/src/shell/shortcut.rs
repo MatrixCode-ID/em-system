@@ -26,11 +26,11 @@ const PKEY_APP_USER_MODEL_ID: PROPERTYKEY = PROPERTYKEY {
 const SLGP_RAWPATH: u32 = 4;
 const MAX_PATH_BUFFER: usize = 32_768;
 
-/// Shortcut (`.lnk`) ke launcher: dibuat saat install dan Repair, dibaca dan dihapus saat uninstall.
+/// A shortcut (`.lnk`) to the launcher: created on install and Repair, read and deleted on uninstall.
 ///
-/// Shortcut Start menu diberi AppUserModelID produk. Dengan itu Windows menganggap jendela app (yang memasang
-/// ID yang sama) sebagai milik shortcut ini, sehingga pin taskbar dari jendela app yang berjalan menunjuk ke
-/// launcher, bukan ke exe app di folder versi yang berganti setiap update.
+/// The Start menu shortcut is given the product's AppUserModelID. With it Windows treats the app's window
+/// (which sets the same ID) as belonging to this shortcut, so a taskbar pin from a running app window
+/// points to the launcher, not to the app exe in a version folder that changes with every update.
 pub struct Shortcut;
 
 impl Shortcut {
@@ -46,9 +46,9 @@ impl Shortcut {
       Ok(known_folder(&co::KNOWNFOLDERID::Desktop)?.join(file_name()))
    }
 
-   /// Membuat (atau menimpa) shortcut `path` yang menjalankan `target` tanpa argumen, dengan ikon dari
-   /// `target` dan folder `target` sebagai working directory. Kalau `app_id` diisi, shortcut itu diberi
-   /// AppUserModelID tersebut.
+   /// Creates (or overwrites) shortcut `path` that runs `target` without arguments, with the icon from
+   /// `target` and the folder of `target` as the working directory. When `app_id` is given, the shortcut gets
+   /// that AppUserModelID.
    pub fn create(path: &Path, target: &Path, app_id: Option<&str>) -> io::Result<()> {
       if let Some(parent) = path.parent() {
          std::fs::create_dir_all(parent)?;
@@ -85,7 +85,7 @@ impl Shortcut {
       }
    }
 
-   /// Target shortcut `path`, atau `None` kalau file shortcut-nya tidak ada.
+   /// The target of shortcut `path`, or `None` when the shortcut file does not exist.
    pub fn target_of(path: &Path) -> io::Result<Option<PathBuf>> {
       let _com = ComScope::enter()?;
       let Some(link) = load(path)? else {
@@ -101,7 +101,7 @@ impl Shortcut {
       Ok(Some(PathBuf::from(String::from_utf16_lossy(&buffer[..length]))))
    }
 
-   /// AppUserModelID shortcut `path`, atau `None` kalau file-nya tidak ada atau tidak punya ID.
+   /// The AppUserModelID of shortcut `path`, or `None` when the file does not exist or has no ID.
    pub fn app_id_of(path: &Path) -> io::Result<Option<String>> {
       let _com = ComScope::enter()?;
       let Some(link) = load(path)? else {
@@ -118,8 +118,8 @@ impl Shortcut {
       }
    }
 
-   /// Menghapus shortcut `path`, tapi hanya kalau target-nya `target` (tanpa memandang huruf besar/kecil).
-   /// Shortcut dengan nama sama milik instalasi lain dibiarkan. `Ok(false)` kalau tidak ada yang dihapus.
+   /// Deletes shortcut `path`, but only when its target is `target` (case-insensitive). A shortcut with the
+   /// same name belonging to another installation is left alone. `Ok(false)` when nothing was deleted.
    pub fn remove_if_targets(path: &Path, target: &Path) -> io::Result<bool> {
       match Self::target_of(path)? {
          Some(actual) if InstallLayout::same_path(&actual, target) => {

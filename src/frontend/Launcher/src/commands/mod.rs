@@ -1,5 +1,5 @@
-//! Perintah launcher, satu tipe per kelompok perintah CLI. `main` mem-parse argumen lalu memanggil salah satu
-//! di sini dengan [`CommandContext`] yang sama.
+//! The launcher commands, one type per group of CLI commands. `main` parses the arguments and then calls
+//! one of the types here with the same [`CommandContext`].
 
 mod command_context;
 mod install_command;

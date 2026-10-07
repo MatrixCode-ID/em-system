@@ -17,34 +17,33 @@ use crate::shell::ShellIntegration;
 use crate::source::{self, ReleaseSource};
 use crate::ui::{ProgressWindow, Prompts};
 
-/// Semua yang dibutuhkan perintah launcher tentang tempat kerjanya: letak konfigurasi, jejak di Windows, key
-/// registry app, nama kunci, dan apakah perintahnya senyap.
+/// Everything a launcher command needs to know about where it works: the location of the configuration,
+/// the traces in Windows, the app's registry key, the names of locks, and whether the command is silent.
 ///
-/// Untuk produk sebenarnya pakai [`Self::for_product`]. Semua field publik, supaya test bisa mengarahkan
-/// perintah ke registry, folder, dan kunci sementara tanpa menyentuh instalasi di mesin developer.
+/// For the real product use [`Self::for_product`]. All fields are public, so tests can point a command at
+/// a temporary registry, folder, and lock without touching the installation on the developer's machine.
 #[derive(Debug, Clone)]
 pub struct CommandContext {
-   /// Letak konfigurasi launcher dan kebijakan IT.
+   /// The location of the launcher configuration and the IT policy.
    pub location: ConfigLocation,
 
-   /// Letak shortcut dan entri Apps & Features.
+   /// The location of the shortcuts and the Apps & Features entry.
    pub integration: ShellIntegration,
 
-   /// Key registry app di bawah `HKEY_CURRENT_USER` (`<ApplicationName>`), yang dihapus seluruhnya saat
-   /// uninstall.
+   /// The app's registry key under `HKEY_CURRENT_USER` (`<ApplicationName>`), deleted entirely on uninstall.
    pub app_key: String,
 
-   /// Nama mutex [`LauncherLock`].
+   /// The name of the [`LauncherLock`] mutex.
    pub lock_name: String,
 
-   /// `--quiet`: tidak ada GUI dan tidak ada pertanyaan; setiap keputusan memakai jawaban bawaan.
+   /// `--quiet`: no GUI and no questions; every decision uses the default answer.
    pub quiet: bool,
 }
 
 impl CommandContext {
    // region: Statics
 
-   /// Konteks produk ini untuk user yang sedang login.
+   /// The context of this product for the signed-in user.
    pub fn for_product(quiet: bool) -> Result<Self, CommandError> {
       Ok(Self {
          location: ConfigLocation::for_product(),
@@ -56,7 +55,7 @@ impl CommandContext {
       })
    }
 
-   /// Folder instalasi bawaan: `%LocalAppData%\<APP_NAME>`.
+   /// The default install folder: `%LocalAppData%\<APP_NAME>`.
    pub fn default_install_folder() -> Result<PathBuf, CommandError> {
       w::SHGetKnownFolderPath(&co::KNOWNFOLDERID::LocalAppData, co::KF::DEFAULT, None)
          .map(|folder| PathBuf::from(folder).join(product::APP_NAME))
@@ -67,9 +66,9 @@ impl CommandContext {
          })
    }
 
-   /// `true` kalau `folder` boleh dijadikan folder instalasi: belum ada, kosong, atau sudah berisi instalasi
-   /// launcher (ada `launcher.exe`, `current.json`, atau folder versi). Uninstall menghapus seluruh folder
-   /// instalasi, jadi folder berisi data lain tidak boleh dipakai.
+   /// `true` when `folder` may be used as the install folder: it does not exist yet, is empty, or already
+   /// holds a launcher installation (it has `launcher.exe`, `current.json`, or a version folder). Uninstall
+   /// deletes the whole install folder, so a folder holding other data must not be used.
    pub fn is_usable_install_folder(folder: &Path) -> bool {
       let layout = InstallLayout::new(folder);
       match fs::read_dir(folder) {
@@ -87,13 +86,13 @@ impl CommandContext {
 
    // region: Methods
 
-   /// Membaca konfigurasi launcher.
+   /// Reads the launcher configuration.
    pub fn load_config(&self) -> Result<LauncherConfig, CommandError> {
       LauncherConfig::load(&self.location).map_err(CommandError::io("cannot read the launcher configuration"))
    }
 
-   /// Susunan folder instalasi dari `config`, lalu log launcher di folder itu dibuka. Gagal kalau produk belum
-   /// terpasang.
+   /// The layout of the install folder from `config`, then the launcher log in that folder is opened. Fails
+   /// when the product is not installed yet.
    pub fn installed_layout(&self, config: &LauncherConfig) -> Result<InstallLayout, CommandError> {
       let layout = config
          .install_layout()
@@ -102,7 +101,7 @@ impl CommandContext {
       Ok(layout)
    }
 
-   /// Mengambil [`LauncherLock`] tanpa menunggu. Gagal kalau launcher lain sedang mengubah instalasi.
+   /// Takes the [`LauncherLock`] without waiting. Fails when another launcher is changing the installation.
    pub fn lock(&self) -> Result<LauncherLock, CommandError> {
       LauncherLock::acquire(&self.lock_name, Duration::ZERO)
          .map_err(CommandError::io("cannot take the launcher lock"))?
@@ -117,7 +116,7 @@ impl CommandContext {
          })
    }
 
-   /// Sumber rilis yang dipakai `config` (kebijakan IT lebih dulu).
+   /// The release source used by `config` (IT policy first).
    pub fn source(&self, config: &LauncherConfig) -> Result<Box<dyn ReleaseSource>, CommandError> {
       let address = config.effective_source();
       if address.trim().is_empty() {
@@ -126,7 +125,7 @@ impl CommandContext {
       source::from_address(address).map_err(|error| CommandError::new(ExitCode::SourceFailed, error.to_string()))
    }
 
-   /// Key tepercaya yang boleh dipakai `config`. Gagal kalau tidak ada satu pun.
+   /// The trusted keys that `config` may use. Fails when there is not a single one.
    pub fn trusted_keys(&self, config: &LauncherConfig) -> Result<Vec<ReleasePublicKey>, CommandError> {
       let keys = TrustedKeys::usable(&self.location, config.allow_user_keys())
          .map_err(CommandError::io("cannot read the trusted keys"))?;
@@ -138,8 +137,9 @@ impl CommandContext {
       Ok(keys)
    }
 
-   /// Menunggu sampai tidak ada app yang berjalan dari folder instalasi. Senyap: langsung gagal dengan
-   /// [`ExitCode::AppRunning`]. Tidak senyap: user diminta menutup app-nya lalu memilih Retry, atau Cancel.
+   /// Waits until no app is running from the install folder. Silent: fails right away with
+   /// [`ExitCode::AppRunning`]. Not silent: the user is asked to close the app and then choose Retry, or
+   /// Cancel.
    pub fn wait_until_app_closed(&self, layout: &InstallLayout) -> Result<(), CommandError> {
       loop {
          let running = Uninstaller::new(layout)
@@ -161,8 +161,8 @@ impl CommandContext {
       }
    }
 
-   /// Memastikan launcher root ada. Rilis yang tidak membawa `launcher.exe` (mis. rilis uji) tidak mengisinya,
-   /// jadi exe yang sedang berjalan yang disalin ke sana.
+   /// Makes sure the root launcher exists. A release that does not carry `launcher.exe` (e.g. a test release)
+   /// does not fill it in, so the exe that is currently running is the one copied there.
    pub fn ensure_root_launcher(&self, layout: &InstallLayout) -> Result<(), CommandError> {
       let root = layout.launcher_path();
       if root.is_file() {
@@ -177,16 +177,16 @@ impl CommandContext {
       Ok(())
    }
 
-   /// Menjalankan app versi aktif dengan `args` (kontrak launcher → app).
+   /// Runs the app of the active version with `args` (the launcher → app contract).
    pub fn start_app(&self, layout: &InstallLayout, args: &[std::ffi::OsString]) -> Result<(), CommandError> {
       AppProcess::start(layout, args)
          .map(|_| ())
          .map_err(CommandError::io(&format!("cannot start {}", product::APP_NAME)))
    }
 
-   /// Menjalankan `job`, pekerjaan updater yang melaporkan kemajuannya ke `progress`. Senyap: langsung di thread
-   /// ini. Tidak senyap: di thread pekerja, sementara jendela progres berjudul `title` menampilkan `progress` dan
-   /// tombol Cancel-nya meminta pembatalan lewat `progress`.
+   /// Runs `job`, the updater work that reports its progress to `progress`. Silent: right on this thread.
+   /// Not silent: on a worker thread, while a progress window titled `title` shows `progress` and its Cancel
+   /// button asks for cancellation through `progress`.
    pub fn with_progress<R: Send>(
       &self,
       title: &str,
@@ -200,7 +200,8 @@ impl CommandContext {
       }
    }
 
-   /// Melaporkan hasil perintah: ditulis ke console dan log, dan kalau tidak senyap juga ditampilkan ke user.
+   /// Reports the result of a command: written to the console and the log, and also shown to the user when
+   /// not silent.
    pub fn done(&self, message: &str) {
       LauncherLog::info(message);
       Console::out(message);
@@ -209,7 +210,7 @@ impl CommandContext {
       }
    }
 
-   /// Menulis keterangan ke console dan log tanpa menampilkannya ke user.
+   /// Writes a note to the console and the log without showing it to the user.
    pub fn note(&self, message: &str) {
       LauncherLog::info(message);
       Console::out(message);

@@ -19,21 +19,22 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const REMOVE_ATTEMPTS: u32 = 10;
 const REMOVE_RETRY_DELAY: Duration = Duration::from_millis(500);
 
-/// Mencabut instalasi: folder instalasi, shortcut, entri Apps & Features, dan seluruh key registry app
-/// (`HKCU\<ApplicationName>`, termasuk pengaturan app dan konfigurasi launcher).
+/// Removes the installation: the install folder, the shortcuts, the Apps & Features entry, and the app's
+/// whole registry key (`HKCU\<ApplicationName>`, including the app's settings and the launcher
+/// configuration).
 ///
-/// Uninstall biasanya dijalankan oleh launcher root di dalam folder instalasi itu sendiri, padahal exe yang
-/// sedang berjalan tidak bisa dihapus. Karena itu pekerjaannya dibagi dua proses:
+/// Uninstall is usually run by the root launcher inside the install folder itself, yet a running exe
+/// cannot be deleted. So the work is split across two processes:
 ///
-/// 1. launcher yang diminta uninstall menyalin dirinya ke `%TEMP%\launcher-uninstall-<acak>\launcher.exe`,
-///    menjalankan salinan itu dengan [`Self::FINISH_ARGUMENT`] ([`Self::start_finisher`]), lalu keluar;
-/// 2. salinan itu menunggu proses pertama selesai, menghapus semuanya ([`Self::remove`]), lalu menjadwalkan
-///    penghapusan foldernya sendiri di `%TEMP%` ([`Self::schedule_removal_of`]).
+/// 1. the launcher asked to uninstall copies itself to `%TEMP%\launcher-uninstall-<random>\launcher.exe`,
+///    runs that copy with [`Self::FINISH_ARGUMENT`] ([`Self::start_finisher`]), then exits;
+/// 2. that copy waits for the first process to finish, deletes everything ([`Self::remove`]), then
+///    schedules the deletion of its own folder in `%TEMP%` ([`Self::schedule_removal_of`]).
 pub struct Uninstaller<'a> {
    layout: &'a InstallLayout,
 }
 
-/// Proses yang exe-nya ada di dalam folder instalasi, misalnya app yang masih terbuka.
+/// A process whose exe is inside the install folder, for example an app that is still open.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RunningProcess {
    /// ID prosesnya.
@@ -46,21 +47,21 @@ pub struct RunningProcess {
 impl<'a> Uninstaller<'a> {
    // region: Statics
 
-   /// Argumen internal yang menjalankan tahap kedua uninstall: `--uninstall-finish <install> --parent-pid <pid>`.
-   /// Hanya dipakai launcher sendiri, tidak untuk user.
+   /// The internal argument that runs the second stage of uninstall:
+   /// `--uninstall-finish <install> --parent-pid <pid>`. Only used by the launcher itself, not by users.
    pub const FINISH_ARGUMENT: &'static str = "--uninstall-finish";
 
-   /// Argumen internal berisi PID launcher yang harus ditunggu selesai oleh tahap kedua.
+   /// The internal argument holding the PID of the launcher that the second stage must wait to finish.
    pub const PARENT_PID_ARGUMENT: &'static str = "--parent-pid";
 
-   /// Membuat uninstaller untuk instalasi `layout`. Belum ada yang disentuh.
+   /// Creates an uninstaller for installation `layout`. Nothing is touched yet.
    pub fn new(layout: &'a InstallLayout) -> Self {
       Self { layout }
    }
 
-   /// Menjadwalkan penghapusan `folder` setelah proses ini keluar, lewat proses `cmd` terpisah yang mencoba
-   /// menghapusnya kira-kira setiap detik, paling lama sekitar 10 menit. Dipakai salinan launcher di `%TEMP%`
-   /// untuk membuang dirinya sendiri; salinan itu masih bisa menunggu user menutup pesan terakhirnya.
+   /// Schedules the deletion of `folder` after this process exits, through a separate `cmd` process that
+   /// tries to delete it about every second, for about 10 minutes at most. Used by the launcher copy in
+   /// `%TEMP%` to remove itself; that copy may still be waiting for the user to close its last message.
    pub fn schedule_removal_of(folder: &Path) -> io::Result<()> {
       let working = folder.parent().unwrap_or(Path::new(r"C:\"));
       let folder = folder.display();
@@ -80,8 +81,8 @@ impl<'a> Uninstaller<'a> {
 
    // region: Methods
 
-   /// Proses lain (selain proses ini) yang exe-nya ada di dalam folder instalasi. Selama daftar ini tidak
-   /// kosong, folder instalasi tidak bisa dihapus.
+   /// Other processes (not this one) whose exe is inside the install folder. While this list is not empty,
+   /// the install folder cannot be deleted.
    pub fn running_processes(&self) -> io::Result<Vec<RunningProcess>> {
       let own = w::GetCurrentProcessId();
       let mut snapshot = w::HPROCESSLIST::CreateToolhelp32Snapshot(co::TH32CS::SNAPPROCESS, None).map_err(to_io)?;
@@ -106,15 +107,15 @@ impl<'a> Uninstaller<'a> {
       Ok(running)
    }
 
-   /// `true` kalau exe proses ini ada di dalam folder instalasi, sehingga uninstall harus lewat salinan di
-   /// `%TEMP%` ([`Self::start_finisher`]) dan tidak bisa dikerjakan langsung.
+   /// `true` when this process's exe is inside the install folder, so uninstall has to go through a copy in
+   /// `%TEMP%` ([`Self::start_finisher`]) and cannot be done directly.
    pub fn runs_from_install_folder(&self) -> bool {
       std::env::current_exe().is_ok_and(|exe| self.layout.contains(&exe))
    }
 
-   /// Menyalin exe proses ini ke folder baru di `%TEMP%` dan menjalankannya sebagai tahap kedua uninstall
-   /// (lihat [`Self::FINISH_ARGUMENT`]). Setelah ini proses pemanggil harus segera keluar, karena tahap kedua
-   /// menunggunya. `quiet` diteruskan, supaya tahap kedua tidak menampilkan apa pun.
+   /// Copies this process's exe to a new folder in `%TEMP%` and runs it as the second stage of uninstall (see
+   /// [`Self::FINISH_ARGUMENT`]). After this the calling process must exit right away, because the second
+   /// stage waits for it. `quiet` is passed on, so the second stage shows nothing.
    pub fn start_finisher(&self, quiet: bool) -> io::Result<()> {
       let exe = std::env::current_exe()?;
       let temp = PathBuf::from(w::GetTempPath().map_err(to_io)?);
@@ -151,12 +152,13 @@ impl<'a> Uninstaller<'a> {
       Ok(())
    }
 
-   /// Menghapus instalasi: folder instalasi lebih dulu, lalu jejaknya di Windows (`integration`), lalu key
-   /// registry app `app_key` (path di bawah `HKEY_CURRENT_USER`, untuk produk `<ApplicationName>`).
+   /// Deletes the installation: the install folder first, then its traces in Windows (`integration`), then
+   /// the app's registry key `app_key` (a path under `HKEY_CURRENT_USER`, `<ApplicationName>` for the
+   /// product).
    ///
-   /// Kalau folder instalasi tidak bisa dihapus (ada file yang dipakai), pekerjaan berhenti di situ dan
-   /// shortcut, entri Apps & Features, serta registry dibiarkan, supaya uninstall bisa diulang. Folder dicoba
-   /// beberapa kali dulu, karena antivirus atau indexer sering menahan file sebentar.
+   /// When the install folder cannot be deleted (a file is in use), the work stops there and the shortcuts,
+   /// the Apps & Features entry, and the registry are left alone, so uninstall can be repeated. The folder is
+   /// tried several times first, because antivirus or an indexer often holds a file for a moment.
    pub fn remove(&self, integration: &ShellIntegration, app_key: &str) -> io::Result<()> {
       LauncherLog::close();
       let root = self.layout.root();

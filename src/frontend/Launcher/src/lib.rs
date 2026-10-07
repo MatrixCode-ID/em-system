@@ -1,5 +1,5 @@
-//! Launcher, installer, dan updater generik untuk client desktop yang diterbitkan dalam format rilis
-//! bertanda tangan (`doc/release-format.md`). Semua yang spesifik produk ada di modul [`product`].
+//! A generic launcher, installer, and updater for desktop clients published in the signed release format
+//! (`doc/release-format.md`). Everything product-specific is in the [`product`] module.
 
 pub mod cli;
 pub mod commands;

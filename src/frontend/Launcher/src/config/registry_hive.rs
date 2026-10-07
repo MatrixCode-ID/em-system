@@ -2,22 +2,22 @@ use std::io;
 
 use winsafe::{self as w, RegistryValue, co};
 
-/// Hive registry tempat konfigurasi launcher dibaca atau ditulis, beserta operasi kecil yang dibutuhkan
-/// launcher. Semua kesalahan Win32 diterjemahkan ke `io::Error`, dan key atau value yang tidak ada dibaca
-/// sebagai `None`, bukan kesalahan.
+/// The registry hive where the launcher configuration is read or written, together with the small
+/// operations the launcher needs. All Win32 errors are translated to `io::Error`, and a key or value that
+/// does not exist is read as `None`, not as an error.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RegistryHive {
-   /// `HKEY_CURRENT_USER`: pengaturan milik user, bisa ditulis tanpa hak admin.
+   /// `HKEY_CURRENT_USER`: the user's settings, which can be written without admin rights.
    CurrentUser,
 
-   /// `HKEY_LOCAL_MACHINE`: kebijakan yang ditulis IT. Launcher hanya membacanya.
+   /// `HKEY_LOCAL_MACHINE`: the policy written by IT. The launcher only reads it.
    LocalMachine,
 }
 
 impl RegistryHive {
    // region: Methods
 
-   /// Membaca value `REG_SZ` bernama `name` di `key`. `None` kalau key atau value-nya tidak ada.
+   /// Reads the `REG_SZ` value named `name` in `key`. `None` when the key or the value does not exist.
    pub fn read_string(self, key: &str, name: &str) -> io::Result<Option<String>> {
       match self.hkey().RegGetValue(Some(key), Some(name), co::RRF::RT_REG_SZ) {
          Ok(RegistryValue::Sz(value)) => Ok(Some(value)),
@@ -27,7 +27,7 @@ impl RegistryHive {
       }
    }
 
-   /// Membaca value `REG_DWORD` bernama `name` di `key`. `None` kalau key atau value-nya tidak ada.
+   /// Reads the `REG_DWORD` value named `name` in `key`. `None` when the key or the value does not exist.
    pub fn read_dword(self, key: &str, name: &str) -> io::Result<Option<u32>> {
       match self.hkey().RegGetValue(Some(key), Some(name), co::RRF::RT_REG_DWORD) {
          Ok(RegistryValue::Dword(value)) => Ok(Some(value)),
@@ -37,8 +37,8 @@ impl RegistryHive {
       }
    }
 
-   /// Menulis value `REG_SZ`; key-nya dibuat kalau belum ada. String kosong menghapus value-nya, sehingga
-   /// [`Self::read_string`] mengembalikan `None`.
+   /// Writes a `REG_SZ` value; its key is created when it does not exist. An empty string deletes the value,
+   /// so [`Self::read_string`] returns `None`.
    pub fn write_string(self, key: &str, name: &str, value: &str) -> io::Result<()> {
       if value.is_empty() {
          // winsafe passes a null buffer for "", which RegSetValueExW rejects with ERROR_NOACCESS.
@@ -47,12 +47,12 @@ impl RegistryHive {
       self.write(key, name, RegistryValue::Sz(value.to_string()))
    }
 
-   /// Menulis value `REG_DWORD`; key-nya dibuat kalau belum ada.
+   /// Writes a `REG_DWORD` value; its key is created when it does not exist.
    pub fn write_dword(self, key: &str, name: &str, value: u32) -> io::Result<()> {
       self.write(key, name, RegistryValue::Dword(value))
    }
 
-   /// Menghapus value `name` di `key`. `Ok(false)` kalau value-nya memang tidak ada.
+   /// Deletes the value `name` in `key`. `Ok(false)` when the value did not exist in the first place.
    pub fn delete_value(self, key: &str, name: &str) -> io::Result<bool> {
       let opened = match self
          .hkey()
@@ -69,8 +69,8 @@ impl RegistryHive {
       }
    }
 
-   /// Semua value `REG_SZ` di `key` sebagai pasangan `(nama, isi)`. Value jenis lain dilewati; key yang tidak
-   /// ada menghasilkan daftar kosong.
+   /// All `REG_SZ` values in `key` as `(name, content)` pairs. Values of other kinds are skipped; a key that
+   /// does not exist yields an empty list.
    pub fn string_values(self, key: &str) -> io::Result<Vec<(String, String)>> {
       let opened = match self
          .hkey()
@@ -94,7 +94,7 @@ impl RegistryHive {
       Ok(values)
    }
 
-   /// Menghapus `key` beserta semua isinya. Key yang tidak ada tidak dianggap kesalahan.
+   /// Deletes `key` with everything in it. A key that does not exist is not an error.
    pub fn delete_tree(self, key: &str) -> io::Result<()> {
       match self.hkey().RegDeleteTree(Some(key)) {
          Ok(()) | Err(co::ERROR::FILE_NOT_FOUND) => Ok(()),

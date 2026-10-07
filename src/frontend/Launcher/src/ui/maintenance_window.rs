@@ -23,25 +23,26 @@ const MARGIN: i32 = 16;
 const BUTTON_WIDTH: i32 = 88;
 const GAP: i32 = 8;
 
-/// Pekerjaan yang dipilih di jendela maintenance, dijalankan setelah jendelanya tertutup.
+/// The work chosen in the maintenance window, run after the window closes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MaintenanceAction {
-   /// Tutup tanpa pekerjaan lanjutan (perubahan sumber dan key sudah tersimpan di jendela itu sendiri).
+   /// Close with no follow-up work (changes to the source and keys are already saved in the window itself).
    Close,
 
-   /// Jalankan Repair.
+   /// Run Repair.
    Repair,
 
-   /// Jalankan Uninstall (dengan konfirmasinya sendiri).
+   /// Run Uninstall (with its own confirmation).
    Uninstall,
 }
 
-/// Jendela maintenance, target **Modify** di Apps & Features: versi terpasang, folder instalasi, sumber rilis,
-/// dan key tepercaya, dengan tombol **Repair**, **Uninstall**, dan **Close**.
+/// The maintenance window, the **Modify** target in Apps & Features: the installed version, the install
+/// folder, the release source, and the trusted keys, with the **Repair**, **Uninstall**, and **Close**
+/// buttons.
 ///
-/// Mengganti sumber (**Save**) memeriksa rilis di sumber baru lebih dulu di thread pekerja; kalau tidak lolos,
-/// user ditanya apakah tetap mau menyimpannya. Import dan Remove key langsung tersimpan. Repair dan Uninstall
-/// menutup jendela ini dan dikerjakan pemanggil.
+/// Changing the source (**Save**) first checks the release in the new source on a worker thread; when it
+/// does not pass, the user is asked whether to save it anyway. Importing and removing a key are saved
+/// right away. Repair and Uninstall close this window and are done by the caller.
 #[derive(Clone)]
 pub struct MaintenanceWindow {
    wnd: gui::WindowMain,
@@ -73,7 +74,7 @@ struct MaintenanceState {
 impl MaintenanceWindow {
    // region: Statics
 
-   /// Membuka jendela maintenance untuk instalasi di `layout` dan memblokir sampai jendelanya ditutup.
+   /// Opens the maintenance window for the installation in `layout` and blocks until the window is closed.
    pub fn run(context: &CommandContext, layout: &InstallLayout) -> Result<MaintenanceAction, CommandError> {
       let state = Rc::new(MaintenanceState {
          context: context.clone(),

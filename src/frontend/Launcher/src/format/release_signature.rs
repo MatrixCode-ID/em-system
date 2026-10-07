@@ -11,39 +11,41 @@ use super::{ReleaseHash, ReleasePublicKey, ReleaseSignatureFile};
 const KEY_ID_LENGTH: usize = 16;
 const SIGNATURE_LENGTH: usize = 64;
 
-/// Memverifikasi byte `release.json` dengan ECDSA P-256 + SHA-256, format tanda tangan IEEE P1363 (64 byte),
-/// dan menghitung `keyId` sebuah public key (`doc/release-format.md` bagian 4 dan 5). Pasangan
-/// `ReleaseSignature` di C#, tanpa bagian menandatangani: launcher hanya membaca rilis.
+/// Verifies the bytes of `release.json` with ECDSA P-256 + SHA-256, the IEEE P1363 signature format (64
+/// bytes), and computes the `keyId` of a public key (`doc/release-format.md` sections 4 and 5). The
+/// counterpart of `ReleaseSignature` in C#, without the signing part: the launcher only reads releases.
 pub struct ReleaseSignature;
 
-/// Alasan tanda tangan `release.json` ditolak. Apa pun alasannya, rilis itu tidak boleh dipakai.
+/// The reason the `release.json` signature was rejected. Whatever the reason, that release must not be
+/// used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SignatureError {
-   /// `keyId` di file tanda tangan tidak cocok dengan public key tepercaya mana pun (langkah 2 bagian 6).
+   /// The `keyId` in the signature file does not match any trusted public key (step 2 of section 6).
    UnknownKey,
 
-   /// Key-nya dikenal dan tanda tangannya berbentuk benar, tetapi tidak cocok dengan byte manifest
-   /// (langkah 3 bagian 6). Bisa berarti manifest diubah, atau pembaca kebetulan membaca di tengah Sync.
+   /// The key is known and the signature is well-formed, but it does not match the manifest bytes (step 3 of
+   /// section 6). It can mean the manifest was changed, or the reader happened to read in the middle of a
+   /// Sync.
    Invalid,
 
-   /// Tanda tangannya sendiri rusak: bukan base64 standar, panjangnya bukan 64 byte, atau nilai `r`/`s`-nya
-   /// di luar rentang kurva.
+   /// The signature itself is broken: it is not standard base64, its length is not 64 bytes, or its `r`/`s`
+   /// values are outside the range of the curve.
    Malformed,
 }
 
 impl ReleaseSignature {
-   /// `keyId` sebuah public key: 16 karakter hex huruf kecil pertama SHA-256 dari DER
-   /// SubjectPublicKeyInfo-nya.
+   /// The `keyId` of a public key: the first 16 lowercase hex characters of the SHA-256 of its DER
+   /// SubjectPublicKeyInfo.
    pub fn key_id_of(spki_der: &[u8]) -> String {
       let mut hash = ReleaseHash::sha256_hex(spki_der);
       hash.truncate(KEY_ID_LENGTH);
       hash
    }
 
-   /// Memeriksa bahwa `signature` adalah tanda tangan sah atas `manifest_bytes` oleh salah satu
-   /// `trusted_keys`. Key dipilih lewat `keyId` di file tanda tangan.
+   /// Checks that `signature` is a valid signature over `manifest_bytes` by one of `trusted_keys`. The key is
+   /// chosen by the `keyId` in the signature file.
    ///
-   /// `manifest_bytes` harus persis byte `release.json` seperti yang diunduh, bukan hasil parse.
+   /// `manifest_bytes` must be exactly the bytes of `release.json` as downloaded, not a parsed result.
    pub fn verify(
       manifest_bytes: &[u8],
       signature: &ReleaseSignatureFile,

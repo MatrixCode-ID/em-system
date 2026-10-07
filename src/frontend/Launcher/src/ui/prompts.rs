@@ -9,41 +9,42 @@ use super::WindowStyle;
 const FIRST_ID: u16 = 100;
 const SECOND_ID: u16 = 101;
 
-/// Pilihan user saat launcher dari paket setup dibuka padahal produknya sudah terpasang di folder lain.
+/// The user's choice when the launcher from the setup package is opened although the product is already
+/// installed in another folder.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AlreadyInstalledChoice {
-   /// Jalankan app yang sudah terpasang (lewat launcher instalasi itu).
+   /// Run the app that is already installed (through that installation's launcher).
    Run,
 
-   /// Buka jendela maintenance.
+   /// Open the maintenance window.
    Maintenance,
 
-   /// Tutup tanpa melakukan apa pun.
+   /// Close without doing anything.
    Cancel,
 }
 
-/// Pertanyaan dan pesan singkat untuk user (TaskDialog): tawaran update, konfirmasi, dan kesalahan.
+/// Questions and short messages for the user (TaskDialog): the update offer, confirmations, and errors.
 ///
-/// Semua fungsi di sini memblokir sampai user menjawab, dan hanya dipanggil kalau `--quiet` tidak diberikan.
-/// Judul setiap dialog adalah nama produk. Kalau jendela launcher sedang terbuka, dialognya menjadi milik
-/// jendela itu (modal), jadi jendelanya tidak bisa diklik sampai dialog ditutup.
+/// Every function here blocks until the user answers, and is only called when `--quiet` is not given. The
+/// title of every dialog is the product name. When a launcher window is open, the dialog belongs to that
+/// window (modal), so the window cannot be clicked until the dialog is closed.
 pub struct Prompts;
 
 impl Prompts {
    // region: Statics
 
-   /// Menampilkan pesan kesalahan.
+   /// Shows an error message.
    pub fn error(message: &str) {
       Dialog::new(Icon::Error, message).show();
    }
 
-   /// Menampilkan pesan informasi.
+   /// Shows an informational message.
    pub fn info(message: &str) {
       Dialog::new(Icon::Information, message).show();
    }
 
-   /// Bertanya sebelum tindakan yang berisiko: `instruction` adalah pertanyaannya, `content` penjelasannya, dan
-   /// `action` teks tombol tindakannya. `true` kalau user memilih tombol itu; Enter dan Esc memilih Cancel.
+   /// Asks before a risky action: `instruction` is the question, `content` its explanation, and `action` the
+   /// text of its action button. `true` when the user chose that button; Enter and Esc choose Cancel.
    pub fn ask(instruction: &str, content: &str, action: &str) -> bool {
       Dialog::new(Icon::Warning, content)
          .instruction(instruction)
@@ -53,7 +54,7 @@ impl Prompts {
          == FIRST_ID
    }
 
-   /// Menawarkan update: `true` = *Update now*, `false` = *Later* (jalankan versi terpasang).
+   /// Offers an update: `true` = *Update now*, `false` = *Later* (run the installed version).
    pub fn offer_update(published_at_utc: &str, download_size: u64) -> bool {
       let content = format!(
          "Published: {}\nDownload: {}",
@@ -69,7 +70,7 @@ impl Prompts {
          == FIRST_ID
    }
 
-   /// Menawarkan Repair untuk instalasi yang rusak; `reason` menjelaskan apa yang rusak.
+   /// Offers Repair for a broken installation; `reason` explains what is broken.
    pub fn offer_repair(reason: &str) -> bool {
       let content = format!(
          "{}\n\nRepair downloads the missing or damaged files again.",
@@ -82,7 +83,7 @@ impl Prompts {
          == FIRST_ID
    }
 
-   /// Meminta konfirmasi sebelum mempercayai public key dengan `key_id`.
+   /// Asks for confirmation before trusting the public key with `key_id`.
    pub fn confirm_import(key_id: &str) -> bool {
       let content = format!(
          "Key ID: {key_id}\n\nReleases signed with this key will be installed without further questions. Only \
@@ -95,7 +96,7 @@ impl Prompts {
          == FIRST_ID
    }
 
-   /// Meminta konfirmasi uninstall, dengan peringatan bahwa pengaturan user ikut dihapus.
+   /// Asks for confirmation of uninstall, with a warning that the user's settings are deleted too.
    pub fn confirm_uninstall() -> bool {
       Self::ask(
          &format!("Uninstall {}?", product::APP_NAME),
@@ -105,7 +106,7 @@ impl Prompts {
       )
    }
 
-   /// Memberi tahu bahwa app masih berjalan: `true` = coba lagi setelah user menutupnya, `false` = batal.
+   /// Tells the user the app is still running: `true` = try again after the user closes it, `false` = cancel.
    pub fn app_running(processes: &[RunningProcess]) -> bool {
       let names = processes
          .iter()
@@ -119,7 +120,7 @@ impl Prompts {
          == co::DLGID::RETRY.raw()
    }
 
-   /// Memberi tahu bahwa produk sudah terpasang di `folder` dan menanyakan apa yang ingin dilakukan.
+   /// Tells the user the product is already installed in `folder` and asks what they want to do.
    pub fn already_installed(folder: &str) -> AlreadyInstalledChoice {
       let run = format!("Start {}", product::APP_NAME);
       let maintenance = "Maintenance\nRepair, change the release source or uninstall";
@@ -137,7 +138,7 @@ impl Prompts {
    // endregion
 }
 
-/// Ukuran byte dalam satuan yang mudah dibaca (`12.3 MB`).
+/// A byte size in an easy-to-read unit (`12.3 MB`).
 pub fn format_size(bytes: u64) -> String {
    const UNITS: [&str; 4] = ["bytes", "KB", "MB", "GB"];
    let mut value = bytes as f64;
@@ -153,8 +154,8 @@ pub fn format_size(bytes: u64) -> String {
    }
 }
 
-/// Waktu terbit rilis (`publishedAtUtc`, `2026-09-27T10:15:00.123Z`) dalam bentuk yang mudah dibaca
-/// (`2026-09-27 10:15 UTC`). Teks yang bentuknya lain dikembalikan apa adanya.
+/// The release publish time (`publishedAtUtc`, `2026-09-27T10:15:00.123Z`) in an easy-to-read form
+/// (`2026-09-27 10:15 UTC`). Text of any other form is returned as it is.
 pub fn format_published(published_at_utc: &str) -> String {
    match published_at_utc.split_once('T') {
       Some((date, time)) if time.len() >= 5 => format!("{date} {} UTC", &time[..5]),
@@ -162,8 +163,9 @@ pub fn format_published(published_at_utc: &str) -> String {
    }
 }
 
-/// `text` sebagai kalimat untuk user: huruf pertama besar dan diakhiri titik. Pesan kesalahan launcher ditulis
-/// huruf kecil tanpa titik, supaya bisa disambung di tengah kalimat lain.
+/// `text` as a sentence for the user: the first letter capitalized and ending with a period. Launcher
+/// error messages are written in lowercase without a period, so they can be joined into the middle of
+/// another sentence.
 pub fn sentence(text: &str) -> String {
    let mut chars = text.trim().chars();
    let mut sentence: String = chars

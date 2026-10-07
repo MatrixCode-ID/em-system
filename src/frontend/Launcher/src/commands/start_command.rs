@@ -16,24 +16,25 @@ use super::{CommandContext, InstallCommand, MaintenanceCommand, UpdateCommand};
 // How long --apply waits for the application to close itself.
 const APPLY_WAIT: Duration = Duration::from_secs(5 * 60);
 
-/// Alur tanpa perintah (dari shortcut atau pin): bersihkan sisa run sebelumnya, cek update, tawarkan ke user,
-/// lalu jalankan app dan keluar. Juga `--apply --pid`, alur yang sama tanpa bertanya.
+/// The flow with no command (from a shortcut or a pin): clean up what the previous run left, check for an
+/// update, offer it to the user, then run the app and exit. Also `--apply --pid`, the same flow without
+/// asking.
 pub struct StartCommand;
 
 impl StartCommand {
    // region: Statics
 
-   /// Menjalankan alur normal. `app_args` diteruskan ke app; `from_app` menandai launcher yang dijalankan app
-   /// yang dibuka langsung dari folder instalasi (hanya untuk log).
+   /// Runs the normal flow. `app_args` is passed on to the app; `from_app` marks a launcher that was run by
+   /// an app opened directly from the install folder (for the log only).
    ///
-   /// Kegagalan cek update (offline, timeout, rilis tidak sah) tidak mengganggu user: hanya dicatat di log, dan
-   /// versi terpasang dijalankan.
+   /// A failure to check for an update (offline, timeout, invalid release) does not bother the user: it is
+   /// only recorded in the log, and the installed version is run.
    pub fn run(context: &CommandContext, app_args: &[OsString], from_app: bool) -> Result<(), CommandError> {
       Self::start(context, app_args, from_app, true)
    }
 
-   /// `--apply --pid <pid>`: menunggu proses `pid` (app yang meminta update) selesai, lalu menjalankan alur
-   /// normal yang langsung memasang update tanpa bertanya.
+   /// `--apply --pid <pid>`: waits for process `pid` (the app that asked for the update) to finish, then runs
+   /// the normal flow, which installs the update right away without asking.
    pub fn apply(context: &CommandContext, pid: u32, app_args: &[OsString]) -> Result<(), CommandError> {
       let exited =
          AppProcess::wait_for_exit(pid, Some(APPLY_WAIT)).map_err(CommandError::io("cannot wait for the process"))?;

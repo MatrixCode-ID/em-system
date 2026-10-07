@@ -7,11 +7,12 @@ use windows::core::HSTRING;
 
 use crate::product;
 
-/// Kunci "satu launcher yang mengubah instalasi per produk per user", lewat mutex bernama Windows.
+/// The lock "one launcher changing the installation per product per user", through a named Windows
+/// mutex.
 ///
-/// Install, update, Repair, dan uninstall memegang kunci ini selama bekerja, supaya dua launcher (misalnya
-/// shortcut diklik dua kali) tidak mengisi folder instalasi yang sama bersamaan. Kunci dilepas saat nilai ini
-/// di-drop, atau otomatis oleh Windows saat prosesnya berhenti.
+/// Install, update, Repair, and uninstall hold this lock while they work, so two launchers (for example a
+/// shortcut clicked twice) do not fill the same install folder at once. The lock is released when this
+/// value is dropped, or automatically by Windows when the process stops.
 #[derive(Debug)]
 pub struct LauncherLock {
    handle: HANDLE,
@@ -20,13 +21,13 @@ pub struct LauncherLock {
 impl LauncherLock {
    // region: Statics
 
-   /// Nama mutex milik produk ini, di namespace sesi login (`Local\`).
+   /// The name of this product's mutex, in the login session namespace (`Local\`).
    pub fn product_name() -> String {
       format!(r"Local\{}.Launcher", product::APP_ID)
    }
 
-   /// Mengambil kunci bernama `name`, menunggu paling lama `timeout` kalau sedang dipegang launcher lain.
-   /// `Ok(None)` kalau waktunya habis.
+   /// Takes the lock named `name`, waiting at most `timeout` when another launcher holds it. `Ok(None)` when
+   /// the time ran out.
    pub fn acquire(name: &str, timeout: Duration) -> io::Result<Option<Self>> {
       let handle = unsafe { CreateMutexW(None, false, &HSTRING::from(name)) }.map_err(io::Error::other)?;
       let milliseconds = u32::try_from(timeout.as_millis()).unwrap_or(u32::MAX - 1);

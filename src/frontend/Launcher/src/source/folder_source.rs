@@ -6,15 +6,15 @@ use crate::format::ReleaseLayout;
 
 use super::{ReleaseSource, SourceError, SourceStream};
 
-/// Folder rilis yang dibaca langsung dari path, lokal maupun jaringan (`\\server\share\wpf-release`).
+/// A release folder read directly from a path, local or on the network (`\\server\share\wpf-release`).
 pub struct FolderSource {
    address: String,
    root: PathBuf,
 }
 
 impl FolderSource {
-   /// Membuat sumber untuk folder rilis di `path`. Folder-nya belum diperiksa di sini; kesalahan baru muncul
-   /// saat file pertama dibaca.
+   /// Creates a source for the release folder at `path`. The folder is not checked here; an error only
+   /// appears when the first file is read.
    pub fn new(path: &str) -> Self {
       Self {
          address: path.to_string(),

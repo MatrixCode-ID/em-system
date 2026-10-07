@@ -4,9 +4,9 @@ use serde::Deserialize;
 
 use super::{ReleaseFile, ReleaseFormatError};
 
-/// Isi `release.json`: kapan rilis diterbitkan dan file apa saja yang menjadi bagiannya
-/// (`doc/release-format.md` bagian 2). Nilai bertipe ini selalu sudah lolos semua aturan format, karena
-/// satu-satunya cara membuatnya adalah [`Self::from_bytes`].
+/// The content of `release.json`: when the release was published and which files are part of it
+/// (`doc/release-format.md` section 2). A value of this type has always passed every format rule, because
+/// the only way to create it is [`Self::from_bytes`].
 #[derive(Debug, Clone)]
 pub struct ReleaseManifest {
    published_at_utc: String,
@@ -25,11 +25,11 @@ struct ManifestJson {
 impl ReleaseManifest {
    // region: Statics
 
-   /// Membaca byte `release.json` dan memeriksa setiap aturan format: waktu terbit, path (termasuk unik
-   /// tanpa memandang huruf besar/kecil), ukuran, dan hash. Field yang tidak dikenal diabaikan.
+   /// Reads the bytes of `release.json` and checks every format rule: the publish time, paths (including
+   /// case-insensitive uniqueness), sizes, and hashes. Fields that are not known are ignored.
    ///
-   /// Byte yang diterima dari luar harus sudah lolos [`super::ReleaseSignature::verify`] lebih dulu
-   /// (`doc/release-format.md` bagian 6).
+   /// Bytes received from outside must already have passed [`super::ReleaseSignature::verify`]
+   /// (`doc/release-format.md` section 6).
    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ReleaseFormatError> {
       let json: ManifestJson = serde_json::from_slice(bytes)
          .map_err(|x| ReleaseFormatError::new(format!("release.json is not valid: {x}")))?;
@@ -74,17 +74,18 @@ impl ReleaseManifest {
 
    // region: Properties
 
-   /// Waktu rilis diterbitkan, persis seperti tertulis (ISO 8601 UTC dengan akhiran `Z`). Hanya informasi.
+   /// The time the release was published, exactly as written (ISO 8601 UTC with the `Z` suffix). For
+   /// information only.
    pub fn published_at_utc(&self) -> &str {
       &self.published_at_utc
    }
 
-   /// Seluruh file rilis, dalam urutan manifest.
+   /// All release files, in manifest order.
    pub fn files(&self) -> &[ReleaseFile] {
       &self.files
    }
 
-   /// Jumlah ukuran seluruh file rilis, dalam byte.
+   /// The total size of all release files, in bytes.
    pub fn total_size(&self) -> u64 {
       self.files.iter().map(|file| file.size).sum()
    }
@@ -93,7 +94,7 @@ impl ReleaseManifest {
 
    // region: Methods
 
-   /// Mencari file berdasarkan path-nya, tanpa memandang huruf besar/kecil. `None` kalau tidak tercantum.
+   /// Finds a file by its path, case-insensitively. `None` when it is not listed.
    pub fn find(&self, path: &str) -> Option<&ReleaseFile> {
       self
          .index

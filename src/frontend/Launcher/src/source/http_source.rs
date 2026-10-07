@@ -22,12 +22,12 @@ const CHUNK_TIMEOUT: Duration = Duration::from_secs(60);
 const CHUNK_SIZE: u64 = 1024 * 1024;
 const RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Folder rilis di CDN, dibaca lewat HTTP(S) dari alamat seperti `https://server/cdn/wpf-release`.
+/// A release folder on a CDN, read over HTTP(S) from an address like `https://server/cdn/wpf-release`.
 ///
-/// File rilis diunduh per potongan dengan header `Range`, jadi unduhan yang terputus bisa dilanjutkan dan
-/// koneksi yang macet ketahuan. Kalau server tidak mendukung `Range` (menjawab 200, bukan 206), file
-/// diunduh utuh dari awal. HTTPS memakai certificate store Windows, sehingga CA internal perusahaan ikut
-/// dipercaya. Proxy sistem Windows tidak dipakai.
+/// Release files are downloaded in chunks with the `Range` header, so an interrupted download can be
+/// resumed and a stalled connection is noticed. When the server does not support `Range` (it answers 200,
+/// not 206), the file is downloaded whole from the start. HTTPS uses the Windows certificate store, so the
+/// company's internal CAs are trusted as well. The Windows system proxy is not used.
 pub struct HttpSource {
    address: String,
    base: String,
@@ -56,8 +56,8 @@ struct ChunkReader {
 }
 
 impl HttpSource {
-   /// Membuat sumber untuk alamat folder rilis `address` (`http://` atau `https://`). Belum ada koneksi yang
-   /// dibuka di sini.
+   /// Creates a source for the release folder address `address` (`http://` or `https://`). No connection is
+   /// opened here yet.
    pub fn new(address: &str) -> Self {
       Self {
          address: address.to_string(),

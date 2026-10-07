@@ -1,4 +1,4 @@
-//! Tempat folder rilis dibaca: CDN lewat HTTP(S) atau folder lokal/jaringan, di balik satu trait
+//! Where a release folder is read from: a CDN over HTTP(S) or a local/network folder, behind one trait
 //! [`ReleaseSource`].
 
 mod folder_source;

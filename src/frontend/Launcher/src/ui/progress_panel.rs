@@ -10,15 +10,15 @@ use super::format_size;
 // Resolution of the progress bar; byte counts do not fit its 32-bit range.
 const BAR_STEPS: u32 = 1000;
 
-/// Tinggi [`ProgressPanel`] dalam piksel 96 DPI.
+/// The height of the [`ProgressPanel`] in 96 DPI pixels.
 pub const PROGRESS_PANEL_HEIGHT: i32 = 92;
 
-/// Kontrol yang menampilkan [`UpdateProgress`]: teks status, bar berdasarkan byte, nama file yang sedang
-/// dikerjakan, lalu jumlah byte, kecepatan, dan perkiraan sisa waktu. Tahap yang ukurannya belum diketahui
-/// (memeriksa rilis, menyelesaikan) memakai bar marquee.
+/// The control that shows [`UpdateProgress`]: the status text, a bar based on bytes, the name of the file
+/// being worked on, then the byte count, the speed, and the estimated time left. A phase whose size is not
+/// known yet (checking the release, finishing) uses a marquee bar.
 ///
-/// Dibuat di jendela induk sebelum jendela itu dibuat, lalu diperbarui dengan [`Self::refresh`] dari timer
-/// jendela, kira-kira setiap 200 ms. Kloningnya menunjuk ke kontrol yang sama.
+/// It is created in the parent window before that window is created, then updated with [`Self::refresh`]
+/// from the window's timer, about every 200 ms. Its clones point to the same controls.
 #[derive(Clone)]
 pub struct ProgressPanel {
    status: gui::Label,
@@ -31,7 +31,7 @@ pub struct ProgressPanel {
 impl ProgressPanel {
    // region: Statics
 
-   /// Membuat kontrolnya di `parent`, mulai dari `position` dengan lebar `width` (piksel 96 DPI).
+   /// Creates its controls in `parent`, starting at `position` with width `width` (96 DPI pixels).
    pub fn new(parent: &(impl GuiParent + 'static), position: (i32, i32), width: i32) -> Self {
       let (x, y) = position;
       let label = |top: i32, style: co::SS| {
@@ -71,7 +71,7 @@ impl ProgressPanel {
 
    // region: Methods
 
-   /// Menampilkan atau menyembunyikan semua kontrolnya.
+   /// Shows or hides all its controls.
    pub fn set_visible(&self, visible: bool) {
       let show = if visible { co::SW::SHOW } else { co::SW::HIDE };
       for hwnd in [
@@ -84,7 +84,7 @@ impl ProgressPanel {
       }
    }
 
-   /// Menampilkan keadaan `progress` saat ini.
+   /// Shows the current state of `progress`.
    pub fn refresh(&self, progress: &UpdateProgress) {
       let phase = progress.phase();
       let total = progress.total_bytes();

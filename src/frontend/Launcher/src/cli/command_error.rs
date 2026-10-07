@@ -6,22 +6,21 @@ use crate::install::UpdateError;
 
 use super::ExitCode;
 
-/// Kegagalan sebuah perintah launcher: pesan untuk user (bahasa Inggris) beserta exit code-nya. Setiap
-/// perintah mengembalikan `Result<(), CommandError>`, lalu `main` yang menampilkan pesannya dan keluar
-/// dengan exit code itu.
+/// The failure of a launcher command: a message for the user together with its exit code. Every command
+/// returns `Result<(), CommandError>`, and `main` shows the message and exits with that exit code.
 #[derive(Debug)]
 pub struct CommandError {
    /// Exit code proses.
    pub code: ExitCode,
 
-   /// Pesan untuk user.
+   /// The message for the user.
    pub message: String,
 }
 
 impl CommandError {
    // region: Statics
 
-   /// Kegagalan dengan `code` dan `message`.
+   /// A failure with `code` and `message`.
    pub fn new(code: ExitCode, message: impl Into<String>) -> Self {
       Self {
          code,
@@ -29,7 +28,7 @@ impl CommandError {
       }
    }
 
-   /// Argumen salah atau permintaan tidak bisa dipenuhi ([`ExitCode::InvalidArguments`]).
+   /// Wrong arguments, or a request that cannot be fulfilled ([`ExitCode::InvalidArguments`]).
    pub fn invalid(message: impl Into<String>) -> Self {
       Self::new(ExitCode::InvalidArguments, message)
    }
@@ -39,8 +38,8 @@ impl CommandError {
       Self::new(ExitCode::Cancelled, message)
    }
 
-   /// Membuat pembungkus kesalahan I/O untuk `map_err` ([`ExitCode::IoFailed`]), dengan keterangan apa yang
-   /// sedang dikerjakan, misalnya `.map_err(CommandError::io("cannot read the configuration"))`.
+   /// Builds an I/O error wrapper for `map_err` ([`ExitCode::IoFailed`]), saying what was being done, for
+   /// example `.map_err(CommandError::io("cannot read the configuration"))`.
    pub fn io(action: &str) -> impl FnOnce(io::Error) -> CommandError {
       let action = action.to_string();
       move |error| CommandError::new(ExitCode::IoFailed, format!("{action}: {error}"))

@@ -3,14 +3,15 @@ use crate::ui::{MaintenanceAction, MaintenanceWindow};
 
 use super::{CommandContext, UninstallCommand, UpdateCommand};
 
-/// Perintah `--maintenance`: jendela Repair / Change source / Uninstall, target **Modify** di Apps & Features.
+/// The `--maintenance` command: the Repair / Change source / Uninstall window, the **Modify** target in
+/// Apps & Features.
 pub struct MaintenanceCommand;
 
 impl MaintenanceCommand {
    // region: Statics
 
-   /// Membuka jendela maintenance. Sumber rilis dan key diubah di jendela itu sendiri; Repair dan Uninstall
-   /// menutup jendelanya lalu dijalankan seperti `--repair` dan `--uninstall`.
+   /// Opens the maintenance window. The release source and the keys are changed in that window itself;
+   /// Repair and Uninstall close the window and then run like `--repair` and `--uninstall`.
    pub fn run(context: &CommandContext) -> Result<(), CommandError> {
       if context.quiet {
          return Err(CommandError::invalid(

@@ -1,14 +1,14 @@
-/// Nama-nama tetap di dalam sebuah folder rilis (`doc/release-format.md` bagian 1). Pasangan
-/// `ReleaseLayout` di C#; kalau kode ini dan dokumen itu berbeda, dokumennya yang benar.
+/// The fixed names inside a release folder (`doc/release-format.md` section 1). The counterpart of
+/// `ReleaseLayout` in C#; when this code and that document differ, the document is right.
 pub struct ReleaseLayout;
 
 impl ReleaseLayout {
-   /// Subfolder berisi file client, persis seperti di folder instalasi.
+   /// The subfolder holding the client files, exactly as in the install folder.
    pub const BINARIES_FOLDER: &str = "binaries";
 
-   /// Nama file manifest: daftar file di [`Self::BINARIES_FOLDER`] beserta ukuran dan hash-nya.
+   /// The manifest file name: the list of files in [`Self::BINARIES_FOLDER`] with their sizes and hashes.
    pub const MANIFEST_FILE_NAME: &str = "release.json";
 
-   /// Nama file tanda tangan atas byte manifest.
+   /// The name of the signature file over the manifest bytes.
    pub const SIGNATURE_FILE_NAME: &str = "release.json.sig";
 }

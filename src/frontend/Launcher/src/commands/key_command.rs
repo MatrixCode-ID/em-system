@@ -8,15 +8,15 @@ use crate::ui::Prompts;
 
 use super::CommandContext;
 
-/// Perintah pengelolaan public key tepercaya: `--import`, `--list-keys`, dan `--remove-key`. Ketiganya tidak
-/// membutuhkan instalasi, jadi key bisa disiapkan sebelum install.
+/// The commands that manage trusted public keys: `--import`, `--list-keys`, and `--remove-key`. None of
+/// the three needs an installation, so keys can be prepared before install.
 pub struct KeyCommand;
 
 impl KeyCommand {
    // region: Statics
 
-   /// Membaca public key dari file `.pem`. File berisi private key ditolak dengan peringatan, karena private
-   /// key penanda tangan rilis tidak boleh sampai ke mesin client.
+   /// Reads a public key from a `.pem` file. A file that holds a private key is rejected with a warning,
+   /// because a release signer's private key must never reach a client machine.
    pub fn read_file(file: &Path) -> Result<ReleasePublicKey, CommandError> {
       let text = fs::read_to_string(file)
          .map_err(|error| CommandError::invalid(format!("cannot read {}: {error}", file.display())))?;
@@ -32,8 +32,8 @@ impl KeyCommand {
       })
    }
 
-   /// `--import <file>`: mempercayai public key di `file` sebagai key milik user. Tidak senyap: user diminta
-   /// mengonfirmasi `keyId`-nya dulu.
+   /// `--import <file>`: trust the public key in `file` as a user-owned key. Not silent: the user is asked to
+   /// confirm its `keyId` first.
    pub fn import(context: &CommandContext, file: &Path) -> Result<(), CommandError> {
       let key = Self::read_file(file)?;
       if !context.quiet && !Prompts::confirm_import(key.key_id()) {
@@ -49,7 +49,7 @@ impl KeyCommand {
       Ok(())
    }
 
-   /// `--list-keys`: menulis daftar key tepercaya beserta asalnya ke console.
+   /// `--list-keys`: writes the list of trusted keys and where they come from to the console.
    pub fn list(context: &CommandContext) -> Result<(), CommandError> {
       let config = context.load_config()?;
       let keys = TrustedKeys::list(&context.location).map_err(CommandError::io("cannot read the trusted keys"))?;
@@ -67,8 +67,8 @@ impl KeyCommand {
       Ok(())
    }
 
-   /// `--remove-key <keyId>`: berhenti mempercayai key milik user. Key dari kebijakan IT tidak bisa dihapus
-   /// dari launcher.
+   /// `--remove-key <keyId>`: stop trusting a user-owned key. A key from the IT policy cannot be removed
+   /// from the launcher.
    pub fn remove(context: &CommandContext, key_id: &str) -> Result<(), CommandError> {
       let removed =
          TrustedKeys::remove(&context.location, key_id).map_err(CommandError::io("cannot remove the key"))?;

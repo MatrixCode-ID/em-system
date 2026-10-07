@@ -14,90 +14,94 @@ const VERSION_PREFIX: &str = "app-";
 const STAGING_PREFIX: &str = ".staging-";
 const RELEASE_ID_LENGTH: usize = 12;
 
-/// Susunan folder instalasi: di mana launcher root, `current.json`, log, dan folder setiap versi berada.
+/// The layout of the install folder: where the root launcher, `current.json`, the log, and the folder of
+/// each version are.
 ///
 /// ```text
 /// <install>\
-/// ├── launcher.exe       launcher root: target shortcut, pin, dan entri Uninstall
-/// ├── current.json       versi aktif
-/// ├── launcher.log       log launcher
-/// ├── app-<id>\          isi binaries/ + release.json + release.json.sig
-/// └── .staging-<id>\     versi yang sedang disiapkan
+/// ├── launcher.exe       root launcher: the target of shortcuts, pins, and the Uninstall entry
+/// ├── current.json       the active version
+/// ├── launcher.log       the launcher log
+/// ├── app-<id>\          the content of binaries/ + release.json + release.json.sig
+/// └── .staging-<id>\     a version that is being prepared
 /// ```
 ///
-/// `<id>` adalah 12 karakter hex pertama SHA-256 byte `release.json` (lihat [`Self::release_id`]), jadi
-/// rilis yang sama selalu jatuh ke folder yang sama tanpa perlu nomor versi.
+/// `<id>` is the first 12 hex characters of the SHA-256 of the `release.json` bytes (see
+/// [`Self::release_id`]), so the same release always lands in the same folder without needing a version
+/// number.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstallLayout {
    root: PathBuf,
 }
 
-/// Isi `current.json`: versi mana yang sedang aktif.
+/// The content of `current.json`: which version is active.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CurrentVersion {
-   /// `<id>` versi aktif, sekaligus akhiran nama foldernya (`app-<id>`).
+   /// The `<id>` of the active version, which is also the suffix of its folder name (`app-<id>`).
    pub version: String,
 
-   /// `publishedAtUtc` rilis versi aktif, untuk ditampilkan (mis. `DisplayVersion` di Apps & Features).
+   /// The `publishedAtUtc` of the active version's release, for display (e.g. `DisplayVersion` in Apps &
+   /// Features).
    #[serde(rename = "publishedAtUtc")]
    pub published_at_utc: String,
 }
 
-/// Versi yang sedang aktif beserta manifest yang tersimpan di foldernya.
+/// The active version together with the manifest stored in its folder.
 #[derive(Debug, Clone)]
 pub struct ActiveVersion {
-   /// Isi `current.json`.
+   /// The content of `current.json`.
    pub current: CurrentVersion,
 
-   /// `release.json` di folder versi itu, atau `None` kalau file-nya hilang atau rusak (instalasinya perlu
-   /// Repair). Manifest ini sudah diverifikasi saat dipasang, jadi di sini hanya di-parse.
+   /// The `release.json` in that version's folder, or `None` when the file is missing or broken (the
+   /// installation needs a Repair). This manifest was verified when it was installed, so here it is only
+   /// parsed.
    pub manifest: Option<ReleaseManifest>,
 }
 
-/// Satu folder versi (`app-<id>`) atau folder staging (`.staging-<id>`) di folder instalasi.
+/// One version folder (`app-<id>`) or staging folder (`.staging-<id>`) in the install folder.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionFolder {
    /// Path lengkap foldernya.
    pub path: PathBuf,
 
-   /// `<id>` di nama foldernya.
+   /// The `<id>` in its folder name.
    pub id: String,
 
-   /// `true` untuk folder `.staging-<id>`, `false` untuk `app-<id>`.
+   /// `true` for a `.staging-<id>` folder, `false` for `app-<id>`.
    pub is_staging: bool,
 }
 
 impl InstallLayout {
    // region: Statics
 
-   /// Nama file launcher, di root folder instalasi maupun di dalam rilis.
+   /// The launcher file name, both at the root of the install folder and inside a release.
    pub const LAUNCHER_FILE_NAME: &str = "launcher.exe";
 
-   /// Nama launcher root lama setelah digantikan launcher dari rilis baru. Exe yang sedang berjalan tidak
-   /// bisa dihapus, hanya di-rename, jadi file ini baru dihapus di run berikutnya.
+   /// The name of the old root launcher after it is replaced by the launcher from a new release. A running
+   /// exe cannot be deleted, only renamed, so this file is only deleted on the next run.
    pub const OLD_LAUNCHER_FILE_NAME: &str = "launcher.old.exe";
 
-   /// Nama file penunjuk versi aktif.
+   /// The name of the file that points to the active version.
    pub const CURRENT_FILE_NAME: &str = "current.json";
 
-   /// Nama file log launcher.
+   /// The name of the launcher log file.
    pub const LOG_FILE_NAME: &str = "launcher.log";
 
-   /// Membuat susunan untuk folder instalasi `root`. Folder-nya tidak disentuh.
+   /// Creates a layout for install folder `root`. The folder itself is not touched.
    pub fn new(root: impl Into<PathBuf>) -> Self {
       Self { root: root.into() }
    }
 
-   /// `<id>` sebuah rilis: 12 karakter hex pertama SHA-256 byte `release.json`.
+   /// The `<id>` of a release: the first 12 hex characters of the SHA-256 of the `release.json` bytes.
    pub fn release_id(manifest_bytes: &[u8]) -> String {
       let mut id = ReleaseHash::sha256_hex(manifest_bytes);
       id.truncate(RELEASE_ID_LENGTH);
       id
    }
 
-   /// `true` kalau `a` dan `b` menunjuk path yang sama menurut aturan Windows: tanpa memandang huruf
-   /// besar/kecil, `/` sama dengan `\`, dan nama pendek 8.3 (misalnya `C:\Users\USER~1.EXT`) sama dengan nama
-   /// panjangnya, selama bagian path itu ada di disk. `..` dan symlink tidak diurai.
+   /// `true` when `a` and `b` point to the same path by Windows rules: case-insensitive, `/` equals `\`, and
+   /// a short 8.3 name (for example `C:\Users\USER~1.EXT`) equals its long name, as long as that part of the
+   /// path exists on disk. `..` and symlinks are not resolved.
    pub fn same_path(a: &Path, b: &Path) -> bool {
       path_key(a) == path_key(b)
    }
@@ -106,7 +110,7 @@ impl InstallLayout {
 
    // region: Properties
 
-   /// Folder instalasi.
+   /// The install folder.
    pub fn root(&self) -> &Path {
       &self.root
    }
@@ -116,7 +120,7 @@ impl InstallLayout {
       self.root.join(Self::LAUNCHER_FILE_NAME)
    }
 
-   /// Path launcher root lama, `<install>\launcher.old.exe`.
+   /// The path of the old root launcher, `<install>\launcher.old.exe`.
    pub fn old_launcher_path(&self) -> PathBuf {
       self.root.join(Self::OLD_LAUNCHER_FILE_NAME)
    }
@@ -140,20 +144,20 @@ impl InstallLayout {
       self.root.join(format!("{VERSION_PREFIX}{id}"))
    }
 
-   /// Folder tempat versi `id` disiapkan, `<install>\.staging-<id>`.
+   /// The folder where version `id` is prepared, `<install>\.staging-<id>`.
    pub fn staging_folder(&self, id: &str) -> PathBuf {
       self.root.join(format!("{STAGING_PREFIX}{id}"))
    }
 
-   /// Path sebuah file rilis (`path` dipisah `/`) di dalam `folder`.
+   /// The path of a release file (`path` separated by `/`) inside `folder`.
    pub fn file_in(folder: &Path, path: &str) -> PathBuf {
       let mut full = folder.to_path_buf();
       full.extend(path.split('/'));
       full
    }
 
-   /// `true` kalau `path` berada di dalam folder instalasi (tanpa memandang huruf besar/kecil), misalnya exe
-   /// proses yang sedang berjalan.
+   /// `true` when `path` is inside the install folder (case-insensitive), for example the exe of a running
+   /// process.
    pub fn contains(&self, path: &Path) -> bool {
       let mut root = path_key(&self.root);
       if !root.ends_with('\\') {
@@ -162,8 +166,8 @@ impl InstallLayout {
       path_key(path).starts_with(&root)
    }
 
-   /// Membaca `current.json`. `Ok(None)` kalau file-nya tidak ada; isi yang rusak juga dianggap tidak ada,
-   /// karena akibatnya sama: instalasi perlu Repair.
+   /// Reads `current.json`. `Ok(None)` when the file does not exist; broken content is also treated as
+   /// missing, because the consequence is the same: the installation needs a Repair.
    pub fn read_current(&self) -> io::Result<Option<CurrentVersion>> {
       match fs::read(self.current_path()) {
          Ok(bytes) => Ok(serde_json::from_slice(&bytes).ok()),
@@ -172,8 +176,8 @@ impl InstallLayout {
       }
    }
 
-   /// Menulis `current.json` secara atomik: ke file sementara dulu, lalu di-rename menimpa yang lama, jadi
-   /// pembaca tidak pernah mendapati file setengah jadi.
+   /// Writes `current.json` atomically: to a temporary file first, then renamed over the old one, so a reader
+   /// never finds a half-finished file.
    pub fn write_current(&self, current: &CurrentVersion) -> io::Result<()> {
       let bytes = serde_json::to_vec_pretty(current).map_err(io::Error::other)?;
       let temporary = self.root.join(format!("{}.tmp", Self::CURRENT_FILE_NAME));
@@ -181,7 +185,7 @@ impl InstallLayout {
       fs::rename(&temporary, self.current_path())
    }
 
-   /// Versi aktif, atau `None` kalau `current.json` tidak ada atau rusak.
+   /// The active version, or `None` when `current.json` is missing or broken.
    pub fn active_version(&self) -> Option<ActiveVersion> {
       let current = self.read_current().ok()??;
       let manifest_path = self
@@ -193,7 +197,7 @@ impl InstallLayout {
       Some(ActiveVersion { current, manifest })
    }
 
-   /// Folder versi (`app-*`) dan folder staging (`.staging-*`) yang ada di folder instalasi.
+   /// The version folders (`app-*`) and staging folders (`.staging-*`) that exist in the install folder.
    pub fn version_folders(&self) -> io::Result<Vec<VersionFolder>> {
       let mut folders = Vec::new();
       let entries = match fs::read_dir(&self.root) {

@@ -7,8 +7,8 @@ thread_local! {
    static HEADING_FONT: OnceCell<Option<DeleteObjectGuard<w::HFONT>>> = const { OnceCell::new() };
 }
 
-/// Tampilan bersama semua jendela launcher: ikon produk, ukuran dalam piksel 96 DPI yang disesuaikan dengan DPI
-/// layar, font sistem (Segoe UI), dan judul halaman yang lebih besar.
+/// The look shared by all launcher windows: the product icon, sizes in 96 DPI pixels adjusted to the
+/// screen DPI, the system font (Segoe UI), and a larger page title.
 pub struct WindowStyle;
 
 impl WindowStyle {
@@ -17,8 +17,8 @@ impl WindowStyle {
 
    // region: Statics
 
-   /// Opsi jendela utama berjudul `title` dengan area isi `size` (piksel 96 DPI): ikon produk, bisa
-   /// di-minimize, tidak bisa diubah ukurannya, di tengah layar.
+   /// The options of a main window titled `title` with a content area of `size` (96 DPI pixels): the product
+   /// icon, can be minimized, cannot be resized, centered on the screen.
    pub fn main_opts(title: &str, size: (i32, i32)) -> gui::WindowMainOpts<'_> {
       gui::WindowMainOpts {
          title,
@@ -34,8 +34,8 @@ impl WindowStyle {
       }
    }
 
-   /// Label teks di `parent` pada `position` dengan ukuran `size` (piksel 96 DPI). Teks yang terlalu panjang
-   /// dibungkus ke baris berikutnya, dan `&` ditampilkan apa adanya.
+   /// A text label in `parent` at `position` with size `size` (96 DPI pixels). Text that is too long is
+   /// wrapped to the next line, and `&` is displayed as it is.
    pub fn label(parent: &(impl GuiParent + 'static), text: &str, position: (i32, i32), size: (i32, i32)) -> gui::Label {
       gui::Label::new(
          parent,
@@ -49,7 +49,7 @@ impl WindowStyle {
       )
    }
 
-   /// Label satu baris untuk path: bagian tengah path yang tidak muat diganti `...`.
+   /// A single-line label for a path: the middle part of a path that does not fit is replaced with `...`.
    pub fn path_label(parent: &(impl GuiParent + 'static), text: &str, position: (i32, i32), width: i32) -> gui::Label {
       gui::Label::new(
          parent,
@@ -63,8 +63,8 @@ impl WindowStyle {
       )
    }
 
-   /// Tombol selebar 88 piksel. `ctrl_id` 0 = id otomatis; `IDOK` menjadikannya tombol Enter, `IDCANCEL`
-   /// tombol Esc.
+   /// A button 88 pixels wide. `ctrl_id` 0 = an automatic id; `IDOK` makes it the Enter button, `IDCANCEL`
+   /// the Esc button.
    pub fn button(parent: &(impl GuiParent + 'static), text: &str, position: (i32, i32), ctrl_id: u16) -> gui::Button {
       let default = ctrl_id == co::DLGID::OK.raw();
       gui::Button::new(
@@ -83,7 +83,7 @@ impl WindowStyle {
       )
    }
 
-   /// Isian teks satu baris selebar `width`.
+   /// A single-line text field of width `width`.
    pub fn edit(parent: &(impl GuiParent + 'static), text: &str, position: (i32, i32), width: i32) -> gui::Edit {
       gui::Edit::new(
          parent,
@@ -116,7 +116,7 @@ impl WindowStyle {
       )
    }
 
-   /// Memberi `label` font judul halaman. Dipanggil setelah jendela induknya dibuat (di `wm_create`).
+   /// Gives `label` the page title font. Called after its parent window has been created (in `wm_create`).
    pub fn apply_heading(label: &gui::Label) {
       HEADING_FONT.with(|font| {
          if let Some(font) = font.get_or_init(create_heading_font) {
@@ -130,26 +130,26 @@ impl WindowStyle {
       });
    }
 
-   /// Menampilkan atau menyembunyikan `window`.
+   /// Shows or hides `window`.
    pub fn set_visible(window: &impl GuiWindow, visible: bool) {
       window
          .hwnd()
          .ShowWindow(if visible { co::SW::SHOW } else { co::SW::HIDE });
    }
 
-   /// Mengaktifkan atau menonaktifkan `window`.
+   /// Enables or disables `window`.
    pub fn set_enabled(window: &impl GuiWindow, enabled: bool) {
       window.hwnd().EnableWindow(enabled);
    }
 
-   /// Menjadikan isian `edit` hanya-baca (tetap bisa dipilih dan disalin).
+   /// Makes the field `edit` read-only (it can still be selected and copied).
    pub fn set_read_only(edit: &gui::Edit, read_only: bool) {
       unsafe {
          let _ = edit.hwnd().SendMessage(msg::EmSetReadOnly { read_only });
       }
    }
 
-   /// Mengganti teks `window` (label, tombol, isian).
+   /// Replaces the text of `window` (a label, button, or field).
    pub fn set_text(window: &impl GuiWindow, text: &str) {
       let _ = window.hwnd().SetWindowText(text);
    }

@@ -10,25 +10,26 @@ use crate::product;
 
 use super::InstallLayout;
 
-/// Menjalankan app versi aktif sesuai kontrak launcher → app, dan menunggu proses lain selesai.
+/// Runs the app of the active version according to the launcher → app contract, and waits for another
+/// process to finish.
 ///
-/// Kontraknya: app dijalankan dari `app-<id>\` sebagai working directory, dengan environment variable
-/// [`Self::PATH_VARIABLE`] (path launcher root) dan [`Self::APP_ID_VARIABLE`] (AppUserModelID produk).
-/// Dari keduanya app tahu bahwa ia dijalankan launcher, jadi ia tidak mengalihkan dirinya lagi ke launcher,
-/// dan jendelanya bisa di-pin ke taskbar atas nama launcher.
+/// The contract: the app is run with `app-<id>\` as its working directory, with the environment variables
+/// [`Self::PATH_VARIABLE`] (the path of the root launcher) and [`Self::APP_ID_VARIABLE`] (the product's
+/// AppUserModelID). From these two the app knows it was run by the launcher, so it does not redirect
+/// itself to the launcher again, and its window can be pinned to the taskbar on behalf of the launcher.
 pub struct AppProcess;
 
 impl AppProcess {
    // region: Statics
 
-   /// Nama environment variable berisi path lengkap `<install>\launcher.exe`.
+   /// The name of the environment variable holding the full path `<install>\launcher.exe`.
    pub const PATH_VARIABLE: &str = "LAUNCHER_PATH";
 
-   /// Nama environment variable berisi AppUserModelID produk.
+   /// The name of the environment variable holding the product's AppUserModelID.
    pub const APP_ID_VARIABLE: &str = "LAUNCHER_APP_ID";
 
-   /// Menyiapkan perintah untuk menjalankan app versi aktif dengan argumen `args` (diteruskan apa adanya),
-   /// tanpa menjalankannya. Gagal kalau belum ada versi aktif atau exe app-nya tidak ada.
+   /// Prepares the command that runs the app of the active version with arguments `args` (passed on as they
+   /// are), without running it. Fails when there is no active version yet or the app's exe is missing.
    pub fn command<I, S>(layout: &InstallLayout, args: I) -> io::Result<Command>
    where
       I: IntoIterator<Item = S>,
@@ -55,8 +56,8 @@ impl AppProcess {
       Ok(command)
    }
 
-   /// Menjalankan app versi aktif (lihat [`Self::command`]) tanpa menunggunya, lalu mengembalikan PID-nya.
-   /// Launcher boleh langsung keluar setelah ini.
+   /// Runs the app of the active version (see [`Self::command`]) without waiting for it, then returns its
+   /// PID. The launcher may exit right after this.
    pub fn start<I, S>(layout: &InstallLayout, args: I) -> io::Result<u32>
    where
       I: IntoIterator<Item = S>,
@@ -72,9 +73,9 @@ impl AppProcess {
       Ok(child.id())
    }
 
-   /// Menunggu proses `pid` selesai, paling lama `timeout` (`None` = tanpa batas). `Ok(true)` kalau prosesnya
-   /// sudah selesai atau memang tidak ada, `Ok(false)` kalau waktunya habis. Dipakai `--apply --pid`, yang
-   /// menunggu app menutup diri sebelum memasang update.
+   /// Waits for process `pid` to finish, at most `timeout` (`None` = no limit). `Ok(true)` when the process
+   /// has finished or did not exist, `Ok(false)` when the time ran out. Used by `--apply --pid`, which waits
+   /// for the app to close itself before installing an update.
    pub fn wait_for_exit(pid: u32, timeout: Option<Duration>) -> io::Result<bool> {
       let process = match w::HPROCESS::OpenProcess(co::PROCESS::SYNCHRONIZE, false, pid) {
          Ok(process) => process,

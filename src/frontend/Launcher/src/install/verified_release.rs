@@ -3,9 +3,9 @@ use crate::source::ReleaseSource;
 
 use super::{InstallLayout, UpdateError};
 
-/// Rilis di sumber yang tanda tangan dan manifest-nya sudah lolos pemeriksaan, siap dipasang. Satu-satunya
-/// cara membuatnya adalah [`Self::fetch`], yang mengikuti urutan wajib `doc/release-format.md` bagian 6
-/// langkah 1–4, jadi manifest yang belum diverifikasi tidak mungkin sampai ke updater.
+/// A release in the source whose signature and manifest have passed the checks, ready to install. The only
+/// way to create it is [`Self::fetch`], which follows the mandatory order of `doc/release-format.md`
+/// section 6 steps 1–4, so an unverified manifest can never reach the updater.
 #[derive(Debug, Clone)]
 pub struct VerifiedRelease {
    id: String,
@@ -17,8 +17,8 @@ pub struct VerifiedRelease {
 impl VerifiedRelease {
    // region: Statics
 
-   /// Mengambil `release.json.sig` dan `release.json` dari `source`, memilih key lewat `keyId`,
-   /// memverifikasi tanda tangan atas byte manifest apa adanya, dan baru setelah itu mem-parse manifest-nya.
+   /// Fetches `release.json.sig` and `release.json` from `source`, chooses the key by `keyId`, verifies the
+   /// signature over the manifest bytes as they are, and only after that parses the manifest.
    pub fn fetch(source: &dyn ReleaseSource, trusted_keys: &[ReleasePublicKey]) -> Result<Self, UpdateError> {
       let signature_bytes = source.read_file(ReleaseLayout::SIGNATURE_FILE_NAME)?;
       let manifest_bytes = source.read_file(ReleaseLayout::MANIFEST_FILE_NAME)?;
@@ -39,22 +39,22 @@ impl VerifiedRelease {
 
    // region: Properties
 
-   /// `<id>` rilis ini (lihat [`InstallLayout::release_id`]).
+   /// The `<id>` of this release (see [`InstallLayout::release_id`]).
    pub fn id(&self) -> &str {
       &self.id
    }
 
-   /// Manifest rilis ini.
+   /// The manifest of this release.
    pub fn manifest(&self) -> &ReleaseManifest {
       &self.manifest
    }
 
-   /// Byte `release.json` persis seperti diunduh; disalin apa adanya ke folder versi.
+   /// The `release.json` bytes exactly as downloaded; copied as they are into the version folder.
    pub fn manifest_bytes(&self) -> &[u8] {
       &self.manifest_bytes
    }
 
-   /// Byte `release.json.sig` persis seperti diunduh.
+   /// The `release.json.sig` bytes exactly as downloaded.
    pub fn signature_bytes(&self) -> &[u8] {
       &self.signature_bytes
    }

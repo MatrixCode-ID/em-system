@@ -2,12 +2,12 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering};
 use std::time::Instant;
 
-/// Kemajuan pekerjaan updater yang dibaca thread lain (jendela progres, CLI) sambil pekerjaannya berjalan,
-/// sekaligus saluran untuk membatalkannya.
+/// The progress of the updater's work that other threads (the progress window, the CLI) read while it is
+/// running, and also the channel to cancel it.
 ///
-/// Dibagikan lewat `Arc<UpdateProgress>`: thread pekerja menulis, thread UI membaca kira-kira setiap
-/// 200 ms. Angka-angkanya atomik, jadi membacanya tidak pernah menunggu pekerja; hanya nama file yang
-/// memakai `Mutex`, karena `String` tidak bisa diganti secara atomik.
+/// It is shared through `Arc<UpdateProgress>`: the worker thread writes, the UI thread reads about every
+/// 200 ms. The numbers are atomic, so reading them never waits for the worker; only the file name uses a
+/// `Mutex`, because a `String` cannot be replaced atomically.
 #[derive(Debug, Default)]
 pub struct UpdateProgress {
    phase: AtomicU8,
@@ -19,27 +19,28 @@ pub struct UpdateProgress {
    cancelled: AtomicBool,
 }
 
-/// Tahap pekerjaan updater. [`UpdateProgress::total_bytes`] dan [`UpdateProgress::done_bytes`] berlaku
-/// untuk tahap yang sedang berjalan.
+/// The phase of the updater's work. [`UpdateProgress::total_bytes`] and [`UpdateProgress::done_bytes`]
+/// apply to the phase that is running.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum UpdatePhase {
-   /// Belum mulai.
+   /// Not started yet.
    Idle = 0,
-   /// Mengambil dan memverifikasi `release.json`. Ukurannya belum diketahui (tampilkan marquee).
+   /// Fetching and verifying `release.json`. The size is not known yet (show a marquee).
    Checking,
-   /// Memeriksa ukuran dan hash file yang sudah terpasang (Repair).
+   /// Checking the size and hash of the files that are already installed (Repair).
    Verifying,
-   /// Menyiapkan file versi baru: menyalin yang sama dari versi aktif, mengunduh sisanya.
+   /// Preparing the files of the new version: copying the identical ones from the active version, downloading
+   /// the rest.
    Preparing,
-   /// Memindahkan versi baru ke tempatnya dan membersihkan sisa lama. Ukurannya tidak diketahui.
+   /// Moving the new version into place and cleaning up old leftovers. The size is not known.
    Finishing,
 }
 
 impl UpdateProgress {
    // region: Statics
 
-   /// Kemajuan baru di tahap [`UpdatePhase::Idle`].
+   /// New progress in phase [`UpdatePhase::Idle`].
    pub fn new() -> Self {
       Self::default()
    }
@@ -48,7 +49,7 @@ impl UpdateProgress {
 
    // region: Properties
 
-   /// Tahap yang sedang berjalan.
+   /// The phase that is running.
    pub fn phase(&self) -> UpdatePhase {
       match self.phase.load(Ordering::Relaxed) {
          1 => UpdatePhase::Checking,
@@ -59,27 +60,27 @@ impl UpdateProgress {
       }
    }
 
-   /// Jumlah byte yang dikerjakan di tahap ini, atau `0` kalau belum diketahui.
+   /// The number of bytes to be worked in this phase, or `0` when not known yet.
    pub fn total_bytes(&self) -> u64 {
       self.total_bytes.load(Ordering::Relaxed)
    }
 
-   /// Jumlah byte yang sudah selesai di tahap ini (disalin, diunduh, atau di-hash).
+   /// The number of bytes already done in this phase (copied, downloaded, or hashed).
    pub fn done_bytes(&self) -> u64 {
       self.done_bytes.load(Ordering::Relaxed)
    }
 
-   /// Jumlah byte yang benar-benar diterima dari sumber sejak pekerjaan dimulai, tanpa salinan lokal.
+   /// The number of bytes actually received from the source since the work started, without local copies.
    pub fn transferred_bytes(&self) -> u64 {
       self.transferred_bytes.load(Ordering::Relaxed)
    }
 
-   /// Path file rilis yang sedang dikerjakan, atau kosong.
+   /// The path of the release file being worked on, or empty.
    pub fn current_file(&self) -> String {
       self.current_file.lock().map(|file| file.clone()).unwrap_or_default()
    }
 
-   /// Rata-rata kecepatan unduhan sejak pekerjaan dimulai, dalam byte per detik.
+   /// The average download speed since the work started, in bytes per second.
    pub fn bytes_per_second(&self) -> u64 {
       let Some(started) = self.started.lock().ok().and_then(|started| *started) else {
          return 0;
@@ -91,7 +92,7 @@ impl UpdateProgress {
       (self.transferred_bytes() as f64 / seconds) as u64
    }
 
-   /// `true` kalau pembatalan sudah diminta.
+   /// `true` when cancellation has been requested.
    pub fn is_cancelled(&self) -> bool {
       self.cancelled.load(Ordering::Relaxed)
    }
@@ -100,8 +101,8 @@ impl UpdateProgress {
 
    // region: Methods
 
-   /// Meminta pekerjaan berhenti secepatnya. Updater memeriksanya di antara potongan data, lalu berhenti
-   /// dengan kesalahan "dibatalkan"; file yang sudah diunduh tetap disimpan untuk dilanjutkan nanti.
+   /// Asks the work to stop as soon as possible. The updater checks it between chunks of data, then stops
+   /// with a "cancelled" error; files that were already downloaded are kept to be resumed later.
    pub fn cancel(&self) {
       self.cancelled.store(true, Ordering::Relaxed);
    }

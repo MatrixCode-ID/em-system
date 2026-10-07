@@ -11,38 +11,39 @@ use super::ReleaseSignature;
 const PUBLIC_KEY_LABEL: &str = "PUBLIC KEY";
 const PEM_LINE_LENGTH: usize = 64;
 
-/// Public key ECDSA P-256 yang dipercaya untuk memverifikasi rilis, beserta `keyId`-nya
-/// (`doc/release-format.md` bagian 5). Nilai bertipe ini selalu berisi key P-256 yang sah, karena hanya
-/// bisa dibuat lewat [`Self::from_pem`] atau [`Self::from_spki_der`].
+/// The ECDSA P-256 public key trusted to verify releases, together with its `keyId`
+/// (`doc/release-format.md` section 5). A value of this type always holds a valid P-256 key, because it
+/// can only be created through [`Self::from_pem`] or [`Self::from_spki_der`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReleasePublicKey {
    key_id: String,
    spki_der: Vec<u8>,
 }
 
-/// Alasan teks PEM atau DER tidak bisa dipakai sebagai public key rilis.
+/// The reason a PEM or DER text cannot be used as a release public key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReleaseKeyError {
-   /// Teksnya berisi private key. Private key tidak boleh disebar ke mesin client, jadi file seperti ini
-   /// selalu ditolak dan user diberi peringatan.
+   /// The text holds a private key. A private key must not be spread to client machines, so a file like this
+   /// is always rejected and the user gets a warning.
    PrivateKey,
 
-   /// Tidak ada blok `-----BEGIN PUBLIC KEY-----` ... `-----END PUBLIC KEY-----` di teksnya.
+   /// There is no `-----BEGIN PUBLIC KEY-----` ... `-----END PUBLIC KEY-----` block in the text.
    NoPublicKey,
 
-   /// Bloknya ada, tetapi isinya bukan base64 yang sah atau bukan SubjectPublicKeyInfo.
+   /// The block is there, but its content is not valid base64 or is not a SubjectPublicKeyInfo.
    Malformed,
 
-   /// Isinya public key yang sah, tetapi bukan ECDSA P-256.
+   /// The content is a valid public key, but not ECDSA P-256.
    NotP256,
 }
 
 impl ReleasePublicKey {
    // region: Statics
 
-   /// Membaca public key dari teks PEM SubjectPublicKeyInfo. Teks di luar baris `BEGIN`/`END` diabaikan
-   /// (RFC 7468), jadi file `.pem` dari Release Manager yang diawali baris `keyId: ...` bisa dibaca apa
-   /// adanya. `keyId` selalu dihitung ulang dari isi key, tidak pernah diambil dari teks di luar blok.
+   /// Reads a public key from SubjectPublicKeyInfo PEM text. Text outside the `BEGIN`/`END` lines is ignored
+   /// (RFC 7468), so a `.pem` file from Release Manager that starts with a `keyId: ...` line can be read as
+   /// it is. The `keyId` is always recalculated from the key's content, never taken from text outside the
+   /// block.
    pub fn from_pem(text: &str) -> Result<Self, ReleaseKeyError> {
       let mut body: Option<String> = None;
       let mut inside = false;
@@ -69,7 +70,7 @@ impl ReleasePublicKey {
       Self::from_spki_der(&der)
    }
 
-   /// Membuat public key dari DER SubjectPublicKeyInfo.
+   /// Creates a public key from a DER SubjectPublicKeyInfo.
    pub fn from_spki_der(der: &[u8]) -> Result<Self, ReleaseKeyError> {
       if let Err(error) = VerifyingKey::from_public_key_der(der) {
          // A well-formed SubjectPublicKeyInfo of another algorithm or curve fails on its OID.
@@ -91,12 +92,12 @@ impl ReleasePublicKey {
 
    // region: Properties
 
-   /// 16 karakter hex huruf kecil yang menunjuk key ini di `release.json.sig`.
+   /// 16 lowercase hex characters that point to this key in `release.json.sig`.
    pub fn key_id(&self) -> &str {
       &self.key_id
    }
 
-   /// DER SubjectPublicKeyInfo key ini.
+   /// The DER SubjectPublicKeyInfo of this key.
    pub fn spki_der(&self) -> &[u8] {
       &self.spki_der
    }
@@ -105,8 +106,8 @@ impl ReleasePublicKey {
 
    // region: Methods
 
-   /// Bentuk PEM (`-----BEGIN PUBLIC KEY-----`) key ini, baris 64 karakter dengan akhir baris `\n`. Bentuk
-   /// inilah yang disimpan launcher di registry.
+   /// The PEM form (`-----BEGIN PUBLIC KEY-----`) of this key, 64-character lines with `\n` line endings.
+   /// This is the form the launcher stores in the registry.
    pub fn to_pem(&self) -> String {
       let encoded = STANDARD.encode(&self.spki_der);
       let mut pem = format!("-----BEGIN {PUBLIC_KEY_LABEL}-----\n");
@@ -119,7 +120,8 @@ impl ReleasePublicKey {
       pem
    }
 
-   /// Key yang siap dipakai memverifikasi. Selalu berhasil, karena isinya sudah diperiksa saat dibuat.
+   /// A key that is ready to verify with. It always succeeds, because its content was checked when it was
+   /// created.
    pub(crate) fn verifying_key(&self) -> Option<VerifyingKey> {
       VerifyingKey::from_public_key_der(&self.spki_der).ok()
    }

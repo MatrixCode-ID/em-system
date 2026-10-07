@@ -1,5 +1,5 @@
-//! Folder instalasi dan semua yang mengubahnya: susunan foldernya, verifikasi rilis dari sumber, install,
-//! update, repair, dan uninstall, serta menjalankan app versi aktif.
+//! The install folder and everything that changes it: its layout, verifying releases from the source,
+//! install, update, repair, and uninstall, as well as running the app of the active version.
 
 mod app_process;
 mod install_layout;

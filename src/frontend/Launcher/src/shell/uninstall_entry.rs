@@ -8,12 +8,13 @@ use crate::product;
 
 const UNINSTALL_ROOT: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall";
 
-/// Entri produk di **Settings → Apps → Installed apps** (Apps & Features), di
+/// The product's entry in **Settings → Apps → Installed apps** (Apps & Features), at
 /// `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<APP_ID>`.
 ///
-/// Entri ini yang membuat Windows menampilkan nama, ikon, penerbit, versi, dan ukuran app, serta tombol
-/// **Modify** (membuka jendela maintenance launcher) dan **Uninstall**. Tombol **Repair** bawaan Windows
-/// hanya untuk MSI, jadi dimatikan lewat `NoRepair`; Repair ada di jendela maintenance.
+/// This entry is what makes Windows show the app's name, icon, publisher, version, and size, as well as
+/// the **Modify** button (which opens the launcher's maintenance window) and **Uninstall**. Windows' own
+/// **Repair** button is only for MSI, so it is turned off through `NoRepair`; Repair is in the maintenance
+/// window.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UninstallEntry {
    key: String,
@@ -22,19 +23,19 @@ pub struct UninstallEntry {
 impl UninstallEntry {
    // region: Statics
 
-   /// Entri milik produk ini.
+   /// The entry belonging to this product.
    pub fn for_product() -> Self {
       Self::new(format!(r"{UNINSTALL_ROOT}\{}", product::APP_ID))
    }
 
-   /// Entri di `key` (path di bawah `HKEY_CURRENT_USER`). Hanya untuk test; produk memakai
+   /// The entry at `key` (a path under `HKEY_CURRENT_USER`). Only for tests; the product uses
    /// [`Self::for_product`].
    pub fn new(key: impl Into<String>) -> Self {
       Self { key: key.into() }
    }
 
-   /// `DisplayVersion` dari `publishedAtUtc`: `yyyy.M.d.HHmm`, misalnya `2026-09-07T08:05:00Z` menjadi
-   /// `2026.9.7.0805`. `None` kalau teksnya bukan waktu dengan format itu.
+   /// `DisplayVersion` from `publishedAtUtc`: `yyyy.M.d.HHmm`, for example `2026-09-07T08:05:00Z` becomes
+   /// `2026.9.7.0805`. `None` when the text is not a time in that format.
    pub fn display_version(published_at_utc: &str) -> Option<String> {
       let number = |range: std::ops::Range<usize>| published_at_utc.get(range)?.parse::<u32>().ok();
       if published_at_utc.as_bytes().get(10) != Some(&b'T') {
@@ -52,12 +53,12 @@ impl UninstallEntry {
 
    // region: Properties
 
-   /// Path key entri ini di bawah `HKEY_CURRENT_USER`.
+   /// The path of this entry's key under `HKEY_CURRENT_USER`.
    pub fn key(&self) -> &str {
       &self.key
    }
 
-   /// `true` kalau entri ini ada di registry.
+   /// `true` when this entry is in the registry.
    pub fn exists(&self) -> io::Result<bool> {
       Ok(RegistryHive::CurrentUser
          .read_string(&self.key, "DisplayName")?
@@ -68,9 +69,9 @@ impl UninstallEntry {
 
    // region: Methods
 
-   /// Menulis atau memperbarui entri untuk instalasi `layout` dengan versi aktif `current`. Dipanggil setelah
-   /// install, update, dan Repair, supaya versi dan ukurannya selalu yang terbaru. `InstallDate` hanya ditulis
-   /// sekali, saat entri belum punya tanggal.
+   /// Writes or updates the entry for installation `layout` with the active version `current`. Called after
+   /// install, update, and Repair, so the version and size are always the latest. `InstallDate` is only
+   /// written once, when the entry has no date yet.
    pub fn write(&self, layout: &InstallLayout, current: &CurrentVersion) -> io::Result<()> {
       let hive = RegistryHive::CurrentUser;
       let key = self.key.as_str();
@@ -101,7 +102,7 @@ impl UninstallEntry {
       hive.write_dword(key, "NoRepair", 1)
    }
 
-   /// Menghapus entri ini. Entri yang tidak ada tidak dianggap kesalahan.
+   /// Deletes this entry. An entry that does not exist is not an error.
    pub fn remove(&self) -> io::Result<()> {
       RegistryHive::CurrentUser.delete_tree(&self.key)
    }

@@ -1,5 +1,5 @@
-//! Integrasi dengan Windows di luar folder instalasi: shortcut (dengan AppUserModelID) dan entri Apps &
-//! Features.
+//! Integration with Windows outside the install folder: shortcuts (with the AppUserModelID) and the Apps
+//! & Features entry.
 
 mod shell_integration;
 mod shortcut;

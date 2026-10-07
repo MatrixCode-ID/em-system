@@ -7,15 +7,16 @@ use crate::product;
 
 use super::{Shortcut, UninstallEntry};
 
-/// Semua jejak instalasi di Windows di luar folder instalasi: shortcut Start menu, shortcut desktop, dan
-/// entri Apps & Features. Dipasang saat install dan Repair, entrinya diperbarui setiap update, dan semuanya
-/// dicabut saat uninstall.
+/// All traces of the installation in Windows outside the install folder: the Start menu shortcut, the
+/// desktop shortcut, and the Apps & Features entry. They are installed on install and Repair, the entry is
+/// refreshed on every update, and all of them are removed on uninstall.
 ///
-/// Semua letaknya berupa field, supaya test bisa mengarahkannya ke folder dan key sementara. Untuk produk
-/// sebenarnya pakai [`Self::for_product`].
+/// All the locations are fields, so tests can point them at a temporary folder and key. For the real
+/// product use [`Self::for_product`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ShellIntegration {
-   /// Path shortcut Start menu; shortcut ini yang membawa AppUserModelID produk.
+   /// The path of the Start menu shortcut; this shortcut is the one that carries the product's
+   /// AppUserModelID.
    pub start_menu: PathBuf,
 
    /// Path shortcut desktop.
@@ -28,7 +29,7 @@ pub struct ShellIntegration {
 impl ShellIntegration {
    // region: Statics
 
-   /// Letak shortcut dan entri milik produk ini untuk user yang sedang login.
+   /// The locations of this product's shortcuts and entry for the signed-in user.
    pub fn for_product() -> io::Result<Self> {
       Ok(Self {
          start_menu: Shortcut::start_menu_path()?,
@@ -41,9 +42,9 @@ impl ShellIntegration {
 
    // region: Methods
 
-   /// Memasang jejak instalasi `layout`: shortcut yang dipilih user dibuat ulang (menunjuk ke launcher root),
-   /// shortcut yang tidak dipilih dicabut kalau milik instalasi ini, lalu entri Apps & Features ditulis.
-   /// Dipakai install dan Repair.
+   /// Installs the traces of installation `layout`: the shortcuts the user chose are created again (pointing
+   /// to the root launcher), shortcuts that were not chosen are removed if they belong to this installation,
+   /// then the Apps & Features entry is written. Used by install and Repair.
    pub fn apply(&self, layout: &InstallLayout, start_menu: bool, desktop: bool) -> io::Result<()> {
       let launcher = layout.launcher_path();
       if start_menu {
@@ -59,8 +60,8 @@ impl ShellIntegration {
       self.refresh_entry(layout)
    }
 
-   /// Memperbarui entri Apps & Features dengan versi aktif `layout` (versi dan ukuran). Tidak melakukan apa-apa
-   /// kalau belum ada versi aktif.
+   /// Refreshes the Apps & Features entry with the active version of `layout` (version and size). Does
+   /// nothing when there is no active version yet.
    pub fn refresh_entry(&self, layout: &InstallLayout) -> io::Result<()> {
       match layout.read_current()? {
          Some(current) => self.entry.write(layout, &current),
@@ -68,9 +69,9 @@ impl ShellIntegration {
       }
    }
 
-   /// Mencabut semua jejak instalasi `layout`. Shortcut hanya dihapus kalau target-nya launcher instalasi ini.
-   /// Kegagalan per bagian dicatat di log dan pekerjaan dilanjutkan; yang dikembalikan adalah kesalahan
-   /// pertama.
+   /// Removes all traces of installation `layout`. A shortcut is only deleted when its target is this
+   /// installation's launcher. A failure in one part is recorded in the log and the work continues; the
+   /// first error is what is returned.
    pub fn remove(&self, layout: &InstallLayout) -> io::Result<()> {
       let launcher = layout.launcher_path();
       let results = [

@@ -1,7 +1,8 @@
 use winsafe::{co, gui, prelude::*};
 
-/// Daftar public key tepercaya di form setup dan jendela maintenance: `keyId` dan asal key-nya, satu baris per
-/// key. Isinya diganti seluruhnya dengan [`Self::fill`]; baris dikenali lewat urutannya.
+/// The list of trusted public keys in the setup form and the maintenance window: the `keyId` and where
+/// the key comes from, one row per key. Its content is replaced entirely with [`Self::fill`]; rows are
+/// identified by their order.
 #[derive(Clone)]
 pub struct KeyListView {
    view: gui::ListView,
@@ -10,7 +11,7 @@ pub struct KeyListView {
 impl KeyListView {
    // region: Statics
 
-   /// Membuat daftarnya di `parent` pada `position` dengan ukuran `size` (piksel 96 DPI).
+   /// Creates the list in `parent` at `position` with size `size` (96 DPI pixels).
    pub fn new(parent: &(impl GuiParent + 'static), position: (i32, i32), size: (i32, i32)) -> Self {
       let key_width = 150;
       let view = gui::ListView::new(
@@ -35,12 +36,12 @@ impl KeyListView {
 
    // region: Properties
 
-   /// Kontrol ListView-nya, untuk mengaktifkan/menyembunyikan atau memasang event.
+   /// The ListView control itself, to enable/hide it or attach an event.
    pub fn view(&self) -> &gui::ListView {
       &self.view
    }
 
-   /// Urutan baris yang dipilih, atau `None`.
+   /// The order of the selected row, or `None`.
    pub fn selected_index(&self) -> Option<usize> {
       self
          .view
@@ -54,7 +55,7 @@ impl KeyListView {
 
    // region: Methods
 
-   /// Mengganti isi daftar dengan `rows` (`keyId`, asal key).
+   /// Replaces the content of the list with `rows` (`keyId`, where the key comes from).
    pub fn fill(&self, rows: &[(String, String)]) {
       let items = self.view.items();
       let _ = items.delete_all();

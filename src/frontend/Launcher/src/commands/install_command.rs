@@ -12,34 +12,34 @@ use crate::ui::{SetupOutcome, SetupWindow, format_published};
 
 use super::{CommandContext, KeyCommand, UpdateCommand};
 
-/// Perintah `--install`: memasang produk dari sumber rilis ke folder instalasi, lalu mendaftarkan shortcut
-/// dan entri Apps & Features.
+/// The `--install` command: installs the product from a release source into the install folder, then
+/// registers the shortcuts and the Apps & Features entry.
 pub struct InstallCommand;
 
-/// Apa yang diminta user untuk dipasang, dari argumen `--install` atau dari form setup.
+/// What the user asked to install, from the `--install` arguments or from the setup form.
 #[derive(Debug, Clone)]
 pub struct InstallRequest {
-   /// Alamat folder rilis, atau `None` untuk memakai sumber yang sudah dikonfigurasi.
+   /// The address of the release folder, or `None` to use the source that is already configured.
    pub source: Option<String>,
 
-   /// Folder instalasi (path absolut).
+   /// The install folder (an absolute path).
    pub target: PathBuf,
 
-   /// Public key baru yang dipercayai user, disimpan sebagai key milik user setelah install berhasil.
+   /// A new public key trusted by the user, saved as a user-owned key after the install succeeds.
    pub imported: Vec<ReleasePublicKey>,
 
-   /// Buat shortcut Start menu.
+   /// Create a Start menu shortcut.
    pub start_menu: bool,
 
-   /// Buat shortcut desktop.
+   /// Create a desktop shortcut.
    pub desktop: bool,
 
-   /// Jalankan app setelah install.
+   /// Run the app after install.
    pub run: bool,
 }
 
-/// Install yang sudah lolos semua pemeriksaan lokal ([`InstallCommand::prepare`]) dan tinggal dijalankan
-/// dengan [`Self::execute`]. Semua datanya milik sendiri, jadi bisa dipindah ke thread pekerja.
+/// An install that has passed all local checks ([`InstallCommand::prepare`]) and only needs to be run with
+/// [`Self::execute`]. All its data is owned, so it can be moved to a worker thread.
 #[derive(Debug, Clone)]
 pub struct InstallJob {
    config: LauncherConfig,
@@ -51,8 +51,8 @@ pub struct InstallJob {
 impl InstallCommand {
    // region: Statics
 
-   /// Menjalankan `--install` dengan `options`. Senyap: langsung memasang. Tidak senyap: form setup yang sudah
-   /// terisi `options`.
+   /// Runs `--install` with `options`. Silent: installs right away. Not silent: the setup form, already
+   /// filled in with `options`.
    pub fn run(context: &CommandContext, options: &InstallOptions) -> Result<(), CommandError> {
       if !context.quiet {
          // Held while the form is open, so a second setup cannot start next to this one.
@@ -75,8 +75,9 @@ impl InstallCommand {
       Ok(())
    }
 
-   /// Memeriksa `request` tanpa menulis apa pun: produk belum terpasang di folder lain, folder instalasi boleh
-   /// dipakai, dan ada key tepercaya yang bisa dipakai. Hasilnya dijalankan dengan [`InstallJob::execute`].
+   /// Checks `request` without writing anything: the product is not yet installed in another folder, the
+   /// install folder may be used, and there is a trusted key that can be used. The result is run with
+   /// [`InstallJob::execute`].
    pub fn prepare(context: &CommandContext, request: &InstallRequest) -> Result<InstallJob, CommandError> {
       let mut config = context.load_config()?;
       let target = &request.target;
@@ -145,8 +146,8 @@ impl InstallCommand {
 impl InstallRequest {
    // region: Statics
 
-   /// Permintaan dari argumen `--install`: file `--import` dibaca, dan folder instalasi bawaan dipakai kalau
-   /// `--target` tidak diberikan.
+   /// The request from the `--install` arguments: the `--import` files are read, and the default install
+   /// folder is used when `--target` is not given.
    pub fn from_options(options: &InstallOptions) -> Result<Self, CommandError> {
       let target = match &options.target {
          Some(target) => Self::absolute_target(target)?,
@@ -167,7 +168,7 @@ impl InstallRequest {
       })
    }
 
-   /// `target` sebagai path absolut (relatif terhadap working directory).
+   /// `target` as an absolute path (relative to the working directory).
    pub fn absolute_target(target: &Path) -> Result<PathBuf, CommandError> {
       std::path::absolute(target)
          .map_err(|error| CommandError::invalid(format!("invalid target folder {}: {error}", target.display())))
@@ -179,7 +180,7 @@ impl InstallRequest {
 impl InstallJob {
    // region: Properties
 
-   /// Susunan folder instalasi yang akan dipasang.
+   /// The layout of the install folder that will be installed.
    pub fn layout(&self) -> InstallLayout {
       InstallLayout::new(&self.target)
    }
@@ -188,13 +189,13 @@ impl InstallJob {
 
    // region: Methods
 
-   /// Memasang rilis, lalu menulis konfigurasi, key yang diimpor, shortcut, dan entri Apps & Features.
-   /// Mengembalikan ringkasan hasilnya untuk user. Pemanggil harus memegang kunci launcher.
+   /// Installs the release, then writes the configuration, the imported keys, the shortcuts, and the Apps &
+   /// Features entry. Returns a summary of the result for the user. The caller must hold the launcher lock.
    ///
-   /// Urutannya menjaga supaya kegagalan tidak meninggalkan apa pun: sumber dan tanda tangan rilis diperiksa
-   /// lebih dulu (tahap [`crate::install::UpdatePhase::Checking`] di `progress`), dan baru setelah lolos folder
-   /// instalasi, konfigurasi, key, shortcut, dan entri ditulis. Pembatalan lewat `progress` hanya meninggalkan
-   /// folder staging yang dilanjutkan pada percobaan berikutnya.
+   /// The order makes sure a failure leaves nothing behind: the source and the signature of the release are
+   /// checked first (the [`crate::install::UpdatePhase::Checking`] phase in `progress`), and only after they
+   /// pass are the install folder, the configuration, the keys, the shortcuts, and the entry written.
+   /// Cancelling through `progress` only leaves a staging folder that is resumed on the next attempt.
    pub fn execute(&self, context: &CommandContext, progress: Arc<UpdateProgress>) -> Result<String, CommandError> {
       let source = context.source(&self.config)?;
       let layout = self.layout();

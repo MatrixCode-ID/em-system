@@ -11,46 +11,46 @@ const START_MENU_VALUE: &str = "StartMenu";
 const DESKTOP_VALUE: &str = "Desktop";
 const ALLOW_USER_KEYS_VALUE: &str = "AllowUserKeys";
 
-/// Letak konfigurasi launcher di registry: key milik user dan key kebijakan milik IT.
+/// The location of the launcher configuration in the registry: the user's key and the IT policy key.
 ///
-/// Untuk produk sebenarnya pakai [`Self::for_product`]. Letak lain hanya untuk test, supaya pengaturan user
-/// di mesin developer tidak tersentuh.
+/// For the real product use [`Self::for_product`]. Other locations are only for tests, so the user's
+/// settings on the developer's machine are not touched.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConfigLocation {
-   /// Path key milik user di bawah `HKEY_CURRENT_USER`.
+   /// The path of the user's key under `HKEY_CURRENT_USER`.
    pub user_key: String,
 
-   /// Hive tempat key kebijakan berada; untuk produk selalu [`RegistryHive::LocalMachine`].
+   /// The hive where the policy key lives; for the product it is always [`RegistryHive::LocalMachine`].
    pub policy_hive: RegistryHive,
 
-   /// Path key kebijakan di dalam [`Self::policy_hive`].
+   /// The path of the policy key inside [`Self::policy_hive`].
    pub policy_key: String,
 }
 
-/// Konfigurasi launcher: sumber rilis, folder instalasi, dan pilihan shortcut user, digabung dengan
-/// kebijakan IT.
+/// The launcher configuration: the release source, the install folder, and the user's shortcut choices,
+/// merged with the IT policy.
 ///
 /// ```text
 /// HKCU\<ApplicationName>\Launcher
 ///    Source, InstallFolder (REG_SZ), StartMenu, Desktop (REG_DWORD), TrustedKeys\<keyId>
 /// HKLM\Software\Policies\<ApplicationName>\Launcher
-///    Source (menimpa HKCU), AllowUserKeys (REG_DWORD, 0 = key milik user diabaikan), TrustedKeys\<keyId>
+///    Source (overrides HKCU), AllowUserKeys (REG_DWORD, 0 = user-owned keys are ignored), TrustedKeys\<keyId>
 /// ```
 ///
-/// Key tepercaya dikelola [`super::TrustedKeys`].
+/// Trusted keys are managed by [`super::TrustedKeys`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherConfig {
-   /// Alamat folder rilis milik user (URL CDN atau path folder). Yang benar-benar dipakai adalah
-   /// [`Self::effective_source`], karena kebijakan IT bisa menimpanya.
+   /// The user's release folder address (a CDN URL or a folder path). What is really used is
+   /// [`Self::effective_source`], because the IT policy may override it.
    pub source: String,
 
-   /// Folder instalasi, atau kosong kalau belum pernah dipasang.
+   /// The install folder, or empty when it has never been installed.
    pub install_folder: String,
 
-   /// Pilihan user untuk shortcut Start menu; dipakai lagi oleh Repair.
+   /// The user's choice for the Start menu shortcut; used again by Repair.
    pub start_menu: bool,
 
-   /// Pilihan user untuk shortcut desktop; dipakai lagi oleh Repair.
+   /// The user's choice for the desktop shortcut; used again by Repair.
    pub desktop: bool,
 
    policy_source: Option<String>,
@@ -58,7 +58,7 @@ pub struct LauncherConfig {
 }
 
 impl ConfigLocation {
-   /// Letak konfigurasi produk ini: `HKCU\<APP_NAME>\Launcher` dan
+   /// The location of this product's configuration: `HKCU\<APP_NAME>\Launcher` and
    /// `HKLM\Software\Policies\<APP_NAME>\Launcher`.
    pub fn for_product() -> Self {
       Self {
@@ -85,9 +85,9 @@ impl Default for LauncherConfig {
 impl LauncherConfig {
    // region: Statics
 
-   /// Membaca konfigurasi dari `location`. Value yang tidak ada memakai nilai bawaan (kosong, dan kedua
-   /// shortcut dicentang), jadi mesin yang belum pernah dipasang menghasilkan konfigurasi kosong, bukan
-   /// kesalahan.
+   /// Reads the configuration from `location`. A value that does not exist takes its default (empty, and both
+   /// shortcuts ticked), so a machine that has never been installed yields an empty configuration, not an
+   /// error.
    pub fn load(location: &ConfigLocation) -> io::Result<Self> {
       let user = RegistryHive::CurrentUser;
       let policy = location.policy_hive;
@@ -116,22 +116,23 @@ impl LauncherConfig {
 
    // region: Properties
 
-   /// Alamat folder rilis yang dipakai: milik kebijakan IT kalau ada, selain itu milik user.
+   /// The release folder address that is used: the IT policy's when there is one, otherwise the user's.
    pub fn effective_source(&self) -> &str {
       self.policy_source.as_deref().unwrap_or(&self.source)
    }
 
-   /// `true` kalau sumber rilis ditentukan kebijakan IT, sehingga isian sumber di form harus read-only.
+   /// `true` when the release source is decided by the IT policy, so the source field in the form must be
+   /// read-only.
    pub fn is_source_locked(&self) -> bool {
       self.policy_source.is_some()
    }
 
-   /// `false` kalau kebijakan IT melarang key tepercaya milik user (`AllowUserKeys = 0`).
+   /// `false` when the IT policy forbids user-owned trusted keys (`AllowUserKeys = 0`).
    pub fn allow_user_keys(&self) -> bool {
       self.allow_user_keys
    }
 
-   /// Susunan folder instalasi, atau `None` kalau launcher belum pernah dipasang.
+   /// The layout of the install folder, or `None` when the launcher has never been installed.
    pub fn install_layout(&self) -> Option<InstallLayout> {
       let folder = self.install_folder.trim();
       (!folder.is_empty()).then(|| InstallLayout::new(folder))
@@ -141,7 +142,7 @@ impl LauncherConfig {
 
    // region: Methods
 
-   /// Menyimpan bagian milik user ke `location`. Kebijakan IT tidak pernah ditulis launcher.
+   /// Saves the user's part to `location`. The launcher never writes the IT policy.
    pub fn save(&self, location: &ConfigLocation) -> io::Result<()> {
       let user = RegistryHive::CurrentUser;
       user.write_string(&location.user_key, SOURCE_VALUE, &self.source)?;

@@ -1,32 +1,33 @@
 use crate::install::UpdateError;
 
-/// Exit code launcher, supaya script IT (instalasi senyap, deployment) bisa membedakan penyebab kegagalan.
+/// The launcher's exit codes, so IT scripts (silent install, deployment) can tell the causes of failure
+/// apart.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ExitCode {
-   /// Berhasil.
+   /// Success.
    Success = 0,
 
-   /// Argumen salah, atau permintaan tidak bisa dipenuhi dengan keadaan sekarang (mis. belum terpasang).
+   /// Wrong arguments, or a request that cannot be fulfilled in the current state (e.g. not installed yet).
    InvalidArguments = 1,
 
-   /// Sumber rilis tidak bisa dibaca, atau rilisnya tidak sah (tanda tangan, format, file tidak cocok).
+   /// The release source cannot be read, or the release is not valid (signature, format, mismatched files).
    SourceFailed = 2,
 
-   /// Gagal membaca atau menulis di disk atau registry.
+   /// Failed to read or write on disk or in the registry.
    IoFailed = 3,
 
    /// Dibatalkan user.
    Cancelled = 4,
 
-   /// App masih berjalan dari folder instalasi, sehingga pekerjaan tidak bisa dilakukan.
+   /// The app is still running from the install folder, so the work cannot be done.
    AppRunning = 5,
 }
 
 impl ExitCode {
    // region: Statics
 
-   /// Exit code untuk kegagalan install, update, atau repair.
+   /// The exit code for an install, update, or repair failure.
    pub fn of_update_error(error: &UpdateError) -> Self {
       match error {
          UpdateError::Source(_)

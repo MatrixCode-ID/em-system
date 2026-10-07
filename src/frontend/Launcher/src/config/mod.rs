@@ -1,5 +1,5 @@
-//! Konfigurasi launcher di registry: sumber rilis, folder instalasi, pilihan shortcut, kebijakan IT, dan
-//! public key tepercaya.
+//! The launcher configuration in the registry: the release source, the install folder, the shortcut
+//! choices, the IT policy, and the trusted public keys.
 
 mod launcher_config;
 mod registry_hive;

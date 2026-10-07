@@ -1,5 +1,5 @@
-//! Sisi pembaca kontrak format rilis (`doc/release-format.md`): model `release.json` dan
-//! `release.json.sig`, aturan path dan hash, verifikasi tanda tangan, serta public key tepercaya.
+//! The reading side of the release format contract (`doc/release-format.md`): the `release.json` and
+//! `release.json.sig` models, the path and hash rules, signature verification, and trusted public keys.
 
 mod release_file;
 mod release_format_error;

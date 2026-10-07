@@ -4,18 +4,18 @@ use winsafe::{self as w, co, prelude::*};
 
 use crate::launcher_log::LauncherLog;
 
-/// Dialog Windows untuk memilih folder dan file public key.
+/// Windows dialogs for choosing a folder and a public key file.
 pub struct FileDialogs;
 
 impl FileDialogs {
    // region: Statics
 
-   /// Meminta user memilih folder, dimulai dari `start` kalau folder itu ada. `None` kalau dibatalkan.
+   /// Asks the user to choose a folder, starting from `start` when that folder exists. `None` when cancelled.
    pub fn pick_folder(owner: &w::HWND, title: &str, start: &str) -> Option<PathBuf> {
       show(owner, title, start, co::FOS::PICKFOLDERS, &[])
    }
 
-   /// Meminta user memilih file `.pem` berisi public key. `None` kalau dibatalkan.
+   /// Asks the user to choose a `.pem` file holding a public key. `None` when cancelled.
    pub fn pick_key_file(owner: &w::HWND, start: &str) -> Option<PathBuf> {
       show(
          owner,
