@@ -1,5 +1,29 @@
 # CLAUDE.md
 
+## Push hanya atas permintaan eksplisit pengguna
+
+Keputusan pengguna 2026-10-07; berlaku untuk Codex dan Claude Code, juga repo
+turunan. Push dilakukan **manual oleh pengguna**, kecuali pengguna secara
+eksplisit meminta agent melakukan push. Berlaku untuk semua remote, branch,
+dan tag, termasuk push lewat skrip atau tool lain. Permintaan mengerjakan
+perubahan, membuat commit, menyiapkan repo, atau menyiapkan workflow bukan
+izin untuk push. Setelah pekerjaan lokal selesai, laporkan hasilnya dan
+biarkan pengguna melakukan push; jangan mencoba atau mengulang push tanpa
+permintaan eksplisit. Aturan ini mengesampingkan asumsi izin push dari alur
+kerja atau plan sebelumnya.
+
+## Penegasan lokasi uji dan skrip pengguna
+
+Keputusan pengguna 2026-10-07; berlaku untuk Codex dan Claude Code, juga repo
+turunan. `scripts/` hanya untuk skrip yang digunakan pengguna dan resource
+pendukungnya. Smoke test, harness render, fixture, log, dan hasil sementara
+wajib disimpan di artefak pada root drive yang sama, di luar repo:
+`../.artefacts/<nama-repo>/scripts/<nama>-smoke/` atau `<nama>-render/`.
+Gunakan referensi repo dan perintah relatif dari lokasi tersebut; jangan
+menulis path absolut mesin. Test yang dirawat dan dijalankan CI berada di
+`tests/`, bukan `scripts/`. Penegasan ini melengkapi aturan artefak dan struktur
+skrip di bawah; pertahankan catatan historis yang sudah ada.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Tindakan terblokir policy — skrip PowerShell manual
