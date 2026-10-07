@@ -180,5 +180,80 @@ per seksi; review menyeluruh dan pengujian lengkap di seksi 11.
 
 ## Laporan eksekusi
 
-_(diisi saat eksekusi: ringkasan per seksi, komentar yang dihapus karena mengulang kode, teks lama yang ternyata
-tidak cocok dengan kode, poin perubahan terlihat untuk release note berikutnya, verifikasi tertunda.)_
+Dieksekusi 2026-10-07 oleh Claude Code di branch `work-bench`; satu commit per seksi (pesan commit berbahasa
+Indonesia), tidak ada push dan tidak ada release note baru.
+
+### Ringkasan per seksi
+
+| Seksi | Commit | Isi |
+|---|---|---|
+| 1-2 | `fdece49` dan commit terkait sebelum `2279ace` | `GenerateDocumentationFile` aktif untuk lima library, catatan build dipindah ke `doc/engine/build.md` |
+| 3 | `2279ace` | Em.Libs |
+| 4 | `56b1d42` | Em.Api.Core |
+| 5 | `83ec169` | Em.Ui.Core |
+| 6 | `85da082` | Em.Ui.Wpf.Core (kode, XAML, doc enum dan record Publish/Release) |
+| 7 | `b3652e1` | Em.Ui.Maui.Core (kode dan XAML) |
+| 8 | `5085ea7` | host (`Em.Api`, `Em.Ui.Wpf`, `Em.Ui.Maui`), module `Em.Test`, dan `tests/` |
+| 9 | `62023e3` | Launcher Rust (58 berkas: `//`, `///`, `//!`, string `build.rs`) |
+| 10 | `8ecb92f` | `scripts/**` (ps1, cmd, py), komentar `doc/sqlscript/**`, `.gitignore`, `emapi-config.example.json` |
+| 11 | commit pemindaian akhir | sisa teks Indonesia yang lolos dari detektor per-seksi (28 baris), dokumentasi, penutupan plan |
+
+### Hasil verifikasi
+
+- `dotnet build` ketiga solution (`Em.Api.slnx`, `Em.Ui.Wpf.slnx`, `Em.Ui.Maui.slnx`) dengan `--no-incremental`:
+  0 error; nol CS1591, CS157x, CS0419, CS1570 untuk lima library paket. Satu-satunya warning solution WPF adalah
+  CS8604 (nullable) di `Em.Test.Wpf/TestService.cs`, yang sudah ada sebelum plan ini dan tidak diubah.
+- Test lulus semua bila dijalankan langsung dari executable-nya: `Em.Libs.Tests` 4, `Em.Api.Core.Tests` 71,
+  `Em.Api.Core.IntegrationTests` 28 (SQL Server lokal), `Em.Ui.Core.Tests` 10, `Em.Ui.Wpf.Core.Tests` 44.
+- `cargo test` Launcher (dengan environment MSVC dari `vcvars64.bat`): 72 test lulus; `cargo fmt --check` bersih.
+- `dotnet pack` kelima library: setiap `.nupkg` memuat `lib/<tfm>/<Assembly>.xml` (net10.0, net10.0-windows7.0,
+  net10.0-android36.0).
+- Parser PowerShell (`Parser::ParseFile`) 0 error untuk semua `.ps1`; `python -m py_compile` lulus untuk kedua
+  skrip `_py`.
+- Render tema terang/gelap dengan harness di `..\.artefacts\em-system\scripts\`: `container-manager-render`
+  (tab, selection, narrow, disabled), `publish-render` (42 layar tab Publish NuGet dan Container, termasuk narrow),
+  `deploy-render` (kartu DEPLOY dan dialog), `role-manager-render`. Teks Inggris yang lebih panjang tidak terpotong
+  pada gambar yang diperiksa (Container Manager terang, Publish Container narrow gelap, form Target terang).
+
+### Temuan dan catatan
+
+- `dotnet test src/backend/Em.Api.slnx` dan `dotnet test src/frontend/Em.Ui.Wpf.slnx` pada sesi ini melaporkan
+  "Zero tests ran" (exit code 5) untuk setiap project, padahal executable test yang sama menjalankan semua test dan
+  lulus. Ini masalah runner `dotnet test`/MTP di mesin ini, bukan hasil perubahan komentar (perubahan tidak menyentuh
+  logika); perlu diperiksa terpisah. Verifikasi dilakukan lewat executable langsung.
+- Detektor blok komentar (`//`, `///`, XAML) per seksi melewatkan sebagian teks: ringkasan satu baris di class
+  extension module, `#region`, komentar blok `/* */` di `Program.cs`, pesan di skrip PowerShell yang tidak memuat
+  kata-kata umum, `<summary>` pendek ("Judul dialog."), dan string exception ("Prepare ulang"). Semuanya ditemukan
+  oleh pemindaian akhir berbasis daftar kata Indonesia pada komentar dan string, lalu diterjemahkan.
+- Pesan exception `Publisher.Push` kini "Source/build settings changed; Prepare again." (sebelumnya "...Prepare
+  ulang."); kutipannya di `doc/engine/engine-registry-guide.md` dan `.id.md` ikut diperbarui.
+- Komentar di `.gitignore`, header SQL, dan komentar `emapi-config.example.json` ikut diterjemahkan. DDL SQL dan nilai konfigurasi tidak diubah. Prompt `Push ke ... ? [y/N]` menjadi
+  `Push to ... ? [y/N]`; logika parsing jawaban `y`/`yes` tidak berubah.
+- Komentar lama `registry-http-test.py` yang menyebut "garbage collection (tahap 2)" diperbarui menjadi "until
+  garbage collection runs", karena GC manual sudah ada.
+- Skrip harness `deploy-render` menulis PNG ke folder `out/` di root repo (path relatif). Folder itu dihapus
+  setelah render; harness di luar repo itu perlu diubah supaya keluarannya masuk folder artefak.
+- Tidak diubah (sengaja, di luar cakupan plan): `doc/ReleaseNote/**`, `plan/`, `doc/ideas/`, `doc/report/`,
+  `CLAUDE.md`, `AGENTS.md`, README Indonesia, `doc/release-format.md`, `doc/panduan-trusted-publishing-nuget.md`,
+  `doc/wiki/` (basis pengetahuan berbahasa Indonesia), dan `doc/engine/*.id.md`.
+
+### Komentar yang dihapus karena mengulang kode
+
+Komentar yang hanya menyatakan ulang nama member atau statement (mis. ringkasan "Konstruktor" dan "Mengambil/menyetel
+nilai X" tanpa informasi tambahan) tidak diterjemahkan, melainkan dihapus atau diganti `<inheritdoc />` pada
+implementasi service client yang interface-nya sudah berdoc. Tidak ada daftar per baris; lihat diff per commit.
+
+### Poin untuk release note berikutnya (bahasa Inggris)
+
+- Package users now get IntelliSense documentation: every `EmSys.*` package ships its XML documentation file.
+- User-visible strings (UI captions, error messages, validation messages) are English in all packages; callers that
+  match on old Indonesian exception text must update.
+- The `Publisher.Push` stale-profile message is now "Source/build settings changed; Prepare again."
+
+### Verifikasi tertunda
+
+- Render layar yang tidak punya harness: Login, User Manager tab Users, Approval Manager, dan hub MY TASKS; teks
+  Inggris di layar itu belum diperiksa terhadap pemotongan.
+- Interaksi mouse, dialog dengan server nyata, MAUI di emulator/perangkat (hanya build dan pack yang diperiksa).
+- `dotnet test` melalui runner solution (lihat temuan di atas).
+- Tidak ada tindakan terblokir policy, jadi tidak ada skrip manual di `plan/xml-comment-bahasa-inggris-manual/`.

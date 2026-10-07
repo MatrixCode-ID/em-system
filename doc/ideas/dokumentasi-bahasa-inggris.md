@@ -21,7 +21,7 @@ dicocokkan dengan kode, diberi indeks `doc/engine/README.md`, dan diberi screens
   `doc/panduan-trusted-publishing-nuget.md`, `doc/ReleaseNote/README.md`. Release note yang sudah terbit tidak boleh
   diubah. (`README.md` root, `tests/README.md`, dan konvensi penamaan sudah diterjemahkan 2026-10-06; folder `doc/konvensi/` diganti `doc/convention/`
   dengan berkas `dahlia-convention.md`, `container-naming.md`, `nuget-naming.md`, semua rujukan sudah diperbarui.)
-- Prompt konfirmasi `upload-nuget.ps1` (`Push ke ... ? [y/N]`) dan pesan skrip lain masih berbahasa Indonesia.
+- ~~Prompt konfirmasi `upload-nuget.ps1` (`Push ke ... ? [y/N]`) dan pesan skrip lain masih berbahasa Indonesia.~~ Selesai 2026-10-07: prompt dan pesan skrip kini berbahasa Inggris (plan [plan/executed/xml-comment-bahasa-inggris.md](../../plan/executed/xml-comment-bahasa-inggris.md)).
 - `doc/ideas/`, `doc/report/`, dan `plan/` adalah catatan kerja internal; tetap berbahasa Indonesia atau tidak?
 - Apakah `claude.md` (instruksi agent) tetap berbahasa Indonesia?
 - Fitur engine yang belum punya panduan: konfigurasi `EmApiConfig`/debug token, action dispatcher dan konvensi
