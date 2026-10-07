@@ -61,10 +61,15 @@ namespace Em.Ui.Wpf.Controls
 
          _widths = Fit(desired, availableSize.Width, MinItemWidth);
 
-         // Measured again at the width each tab is actually given, so a shrunk tab trims its title
-         // instead of being cut off at its edge.
-         for (var i = 0; i < count; i++)
-            InternalChildren[i].Measure(new Size(_widths[i], availableSize.Height));
+         // A shrunk tab is measured again at the width it is given, so it trims its title instead of
+         // being cut off at its edge. A tab that keeps its natural width stays measured without a width
+         // limit: WPF re-measures a changed child with its last constraint, so a tab pinned to its own
+         // old width would trim a title that grows (a selected tab turns SemiBold, a title is renamed)
+         // without ever telling this panel it needs more room.
+         for (var i = 0; i < count; i++) {
+            if (_widths[i] < desired[i])
+               InternalChildren[i].Measure(new Size(_widths[i], availableSize.Height));
+         }
 
          var total = _widths.Sum();
          var viewportWidth = double.IsInfinity(availableSize.Width) ? total : availableSize.Width;
