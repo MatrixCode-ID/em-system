@@ -18,8 +18,9 @@
                     WindowStartupLocation="CenterOwner">
 
    <!--
-      Debug only: pick the account the developer acts as. A banner, the search with its refresh
-      button, a grid of account cards coloured by kind, and the actions under it.
+      Debug only: pick the account the developer acts as. A banner, the debugger strip with the way
+      back, the search with its refresh button, a grid of account cards coloured by kind, and the
+      actions under it.
    -->
 
    <windows:EmWindow.Resources>
@@ -180,6 +181,7 @@
       <Grid.RowDefinitions>
          <RowDefinition Height="Auto" />
          <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
          <RowDefinition Height="*" />
          <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
@@ -226,8 +228,60 @@
          </Grid>
       </Border>
 
+      <!-- ==== debugger ==== -->
+      <!-- The debugger is not a card: it has this strip of its own. While another account acts, the strip
+           turns warning and offers the way back in one click; on the debugger itself it only says so. -->
+      <Border Grid.Row="1"
+              Margin="0,12,0,0"
+              Padding="14,10"
+              CornerRadius="10"
+              BorderThickness="1"
+              Background="{StaticResource infoChipBrush}"
+              BorderBrush="{StaticResource infoBrush}"
+              Visibility="{Binding IsOnDebugger, Converter={StaticResource boolToVisibility}}">
+         <StackPanel Orientation="Horizontal" TextElement.Foreground="{StaticResource infoBrush}">
+            <fa:FontAwesome Icon="Solid_UserSecret" FontSize="13" VerticalAlignment="Center" />
+            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap">
+               <Run Text="You are acting as" />
+               <Run Text="SYSTEM DEBUGGER" FontWeight="SemiBold" /><Run Text=", with full rights." />
+            </TextBlock>
+         </StackPanel>
+      </Border>
+      <Border Grid.Row="1"
+              Margin="0,12,0,0"
+              Padding="14,8,8,8"
+              CornerRadius="10"
+              BorderThickness="1"
+              Background="{StaticResource warningChipBrush}"
+              BorderBrush="{StaticResource warningBrush}"
+              Visibility="{Binding IsActingAsOther, Converter={StaticResource boolToVisibility}}">
+         <Grid>
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="Auto" />
+               <ColumnDefinition Width="*" />
+               <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <fa:FontAwesome Icon="Solid_TriangleExclamation" FontSize="13" VerticalAlignment="Center"
+                            Foreground="{StaticResource warningBrush}" />
+            <TextBlock Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{StaticResource warningBrush}">
+               <Run Text="Acting as" />
+               <Run Text="{Binding CurrentAccount, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=", not as the debugger." />
+            </TextBlock>
+            <Button Grid.Column="2"
+                    Style="{StaticResource filledButtonStyle}"
+                    Command="{Binding Commands[BackToDebuggerCommand]}"
+                    AutomationProperties.Name="Back to the debugger">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_UserSecret" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Back to debugger" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+         </Grid>
+      </Border>
+
       <!-- ==== search ==== -->
-      <Grid Grid.Row="1" Margin="0,16,0,0">
+      <Grid Grid.Row="2" Margin="0,16,0,0">
          <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
@@ -262,13 +316,13 @@
       </Grid>
 
       <!-- ==== list ==== -->
-      <Grid Grid.Row="2" Margin="0,12,0,0">
+      <Grid Grid.Row="3" Margin="0,12,0,0">
          <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
          </Grid.RowDefinitions>
 
-         <!-- A row of its own above the cards: the two system accounts are still listed. -->
+         <!-- A row of its own above the cards, so the way back to the debugger above stays in reach. -->
          <Grid Grid.Row="0" Margin="2,0,0,8"
                Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}">
             <Grid.ColumnDefinitions>
@@ -357,7 +411,7 @@
       </Grid>
 
       <!-- ==== actions ==== -->
-      <StackPanel Grid.Row="3"
+      <StackPanel Grid.Row="4"
                   Margin="0,18,0,0"
                   Orientation="Horizontal"
                   HorizontalAlignment="Right">

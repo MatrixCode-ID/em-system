@@ -157,6 +157,12 @@ namespace Em.Api.Core.Models
       /// <summary>Changes the built-in administrator password; <paramref name="oldPassword"/> must be correct.</summary>
       Task PostMeta_ChangeAdminPassword(string oldPassword, string newPassword);
 
+      /// <summary>
+      /// Whether the built-in administrator account is switched on. Answered only to a debug token caller;
+      /// any other caller is told the action does not exist, so the switch cannot be probed from outside.
+      /// </summary>
+      Task<bool> GetMeta_AdminAccountEnabled();
+
       /// <summary>Every claim action declared on the server.</summary>
       Task<ClaimAction[]> GetMeta_AllClaimActions();
 

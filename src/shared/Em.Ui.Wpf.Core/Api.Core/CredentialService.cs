@@ -240,6 +240,10 @@ namespace Em.Api.Core
          PostAsync(nameof(PostMeta_ChangeAdminPassword), oldPassword, newPassword);
 
       /// <inheritdoc />
+      public Task<bool> GetMeta_AdminAccountEnabled() =>
+         GetAsync<bool>(nameof(GetMeta_AdminAccountEnabled));
+
+      /// <inheritdoc />
       public Task<ClaimAction[]> GetMeta_AllClaimActions() =>
          GetAsync<ClaimAction[]>(nameof(GetMeta_AllClaimActions));
 

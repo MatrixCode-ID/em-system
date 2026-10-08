@@ -8,8 +8,9 @@ using Em.Ui.Wpf.Windows;
 namespace Em.Ui.Wpf.Dialogs
 {
    /// <summary>
-   /// Debug only: the dialog behind Tools > Switch User. Lists the debugger account, the built-in
-   /// administrator and every stored user, and makes the one picked the active user without its password.
+   /// Debug only: the dialog behind Tools > Switch User. Lists the built-in administrator (only when the server
+   /// confirms it is switched on) and every stored user, and makes the one picked the active user without its
+   /// password. The debugger has a strip of its own with a one-click way back.
    /// </summary>
    public partial class SwitchUserDialog : EmWindow
    {
@@ -42,6 +43,7 @@ namespace Em.Ui.Wpf.Dialogs
       public SwitchUserDialogVm() {
          RegisterCommand(nameof(SwitchCommand), SwitchCommand, SwitchCommandAllowed);
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
+         RegisterCommand(nameof(BackToDebuggerCommand), BackToDebuggerCommand, BackToDebuggerCommandAllowed);
       }
 
       /// <summary>Asks the dialog to close after a successful switch.</summary>
@@ -93,8 +95,18 @@ namespace Em.Ui.Wpf.Dialogs
       public bool IsEmpty => !IsLoading && !HasError && VisibleRows.Count == 0;
 
       /// <summary>
-      /// Loads every account. The two system accounts are always there, even when the server cannot be
-      /// reached; stored users follow once the server answers.
+      /// <c>true</c> while another account than the debugger is acting, so the strip under the banner offers
+      /// the way back to the debugger.
+      /// </summary>
+      public bool IsActingAsOther => EmApp?.ActiveUser?.cUserId is { } id && id != Defaults.DebuggerUserId;
+
+      /// <summary><c>true</c> while the debugger itself is acting; the strip then only says so.</summary>
+      public bool IsOnDebugger => EmApp?.ActiveUser?.cUserId == Defaults.DebuggerUserId;
+
+      /// <summary>
+      /// Loads every account. The built-in administrator is listed only when the server confirms its switch is
+      /// on; when that cannot be confirmed it stays hidden. Stored users follow once the server answers. The
+      /// debugger is not in the list: it has the strip under the banner.
       /// </summary>
       public async Task LoadAsync() {
          if (EmApp is not { } app) return;
@@ -102,22 +114,29 @@ namespace Em.Ui.Wpf.Dialogs
          var epoch = ++_loadEpoch;
          Error = null;
          IsLoading = true;
-         var system = new[] {
-            new SwitchUserRowVm(EmApp.CreateDebuggerUser(app), isSystem: true, app.ActiveUser),
-            new SwitchUserRowVm(EmApp.CreateAdminUser(app), isSystem: true, app.ActiveUser)
-         };
 
          try {
             if (app.ActiveConnection is not { } connection) {
-               _rows = system;
+               _rows = [];
                Error = "Pick a debug connection first.";
                return;
             }
 
             _client?.Dispose();
             _client = connection.CreateApiClient();
-            var users = await _client.GetAsync<vi_User[]>(
+            var adminTask = IsAdminEnabledAsync(_client);
+            var usersTask = _client.GetAsync<vi_User[]>(
                Defaults.CredentialModuleName, nameof(ICredentialServices.GetVi_Users));
+
+            // The administrator check never throws, so it is awaited first and survives a failed user list.
+            var adminEnabled = await adminTask;
+            if (epoch != _loadEpoch) return;
+            SwitchUserRowVm[] system = adminEnabled
+               ? [new SwitchUserRowVm(EmApp.CreateAdminUser(app), isSystem: true, app.ActiveUser)]
+               : [];
+            _rows = system;
+
+            var users = await usersTask;
             if (epoch != _loadEpoch) return;
 
             _rows = [
@@ -130,7 +149,6 @@ namespace Em.Ui.Wpf.Dialogs
          }
          catch (Exception x) {
             if (epoch != _loadEpoch) return;
-            _rows = system;
             Error = $"The users could not be loaded: {x.Message}";
          }
          finally {
@@ -138,7 +156,23 @@ namespace Em.Ui.Wpf.Dialogs
                IsLoading = false;
                RefreshRows();
                NotifyChanged(nameof(CurrentAccount));
+               NotifyChanged(nameof(IsActingAsOther));
+               NotifyChanged(nameof(IsOnDebugger));
+               RaiseCommands();
             }
+         }
+      }
+
+      // Whether the server says the built-in administrator is switched on. Anything short of a clear yes -
+      // the server unreachable, an older server without the action, any error - counts as no, so the card
+      // is only offered when acting as it can actually work.
+      private static async Task<bool> IsAdminEnabledAsync(ApiClient client) {
+         try {
+            return await client.GetAsync<bool>(
+               Defaults.CredentialModuleName, nameof(ICredentialServices.GetMeta_AdminAccountEnabled));
+         }
+         catch (Exception) {
+            return false;
          }
       }
 
@@ -152,13 +186,27 @@ namespace Em.Ui.Wpf.Dialogs
       /// Acts as the picked account. Closes the dialog when the switch happened, stays open without a word when
       /// a screen with unsaved changes refused to close, and shows the server's refusal otherwise.
       /// </summary>
-      public async Task SwitchCommand() {
-         if (EmApp is not { } app || SelectedRow is not { IsSelectable: true, IsCurrent: false } row) return;
+      public Task SwitchCommand() =>
+         SelectedRow is { IsSelectable: true, IsCurrent: false } row ? SwitchToAsync(row.User) : Task.CompletedTask;
+
+      /// <summary>May run for a selectable account that is not the current one.</summary>
+      public bool SwitchCommandAllowed() =>
+         IsNotBusy && !IsLoading && SelectedRow is { IsSelectable: true, IsCurrent: false };
+
+      /// <summary>Goes back to the debugger account in one step, from the strip under the banner.</summary>
+      public Task BackToDebuggerCommand() =>
+         EmApp is { } app ? SwitchToAsync(EmApp.CreateDebuggerUser(app)) : Task.CompletedTask;
+
+      /// <summary>May run while another account is acting and nothing is switching.</summary>
+      public bool BackToDebuggerCommandAllowed() => IsNotBusy && IsActingAsOther;
+
+      private async Task SwitchToAsync(User user) {
+         if (EmApp is not { } app) return;
 
          try {
             IsBusy = true;
             RaiseCommands();
-            if (await app.SwitchDebugUserAsync(row.User)) CloseRequested?.Invoke();
+            if (await app.SwitchDebugUserAsync(user)) CloseRequested?.Invoke();
          }
          catch (Exception x) {
             AlertError(x);
@@ -170,10 +218,6 @@ namespace Em.Ui.Wpf.Dialogs
             RaiseCommands();
          }
       }
-
-      /// <summary>May run for a selectable account that is not the current one.</summary>
-      public bool SwitchCommandAllowed() =>
-         IsNotBusy && !IsLoading && SelectedRow is { IsSelectable: true, IsCurrent: false };
 
       /// <summary>Releases the private API client.</summary>
       public void Release() {
@@ -192,6 +236,7 @@ namespace Em.Ui.Wpf.Dialogs
       private void RaiseCommands() {
          Commands[nameof(SwitchCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(RefreshCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(BackToDebuggerCommand)]?.RaiseCanExecuteChanged();
       }
    }
 

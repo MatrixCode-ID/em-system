@@ -847,6 +847,18 @@ namespace Em.Api.Core
 
       /// <inheritdoc />
       [GetAction]
+      public async Task<bool> GetMeta_AdminAccountEnabled() {
+         // Same answer as a route that does not exist: the login screen hides whether the account is
+         // switched off, and this action must not become the way around that.
+         if (!Request.IsDebugRequest) {
+            throw new ActionException($"Action '{Request.RouteLabel}' was not found.", 404);
+         }
+
+         return await AdminAccount.IsEnabledAsync(ctx);
+      }
+
+      /// <inheritdoc />
+      [GetAction]
       public Task<ClaimAction[]> GetMeta_AllClaimActions() {
          Request.RequireUserId();
          return Task.FromResult(App.AllClaims.ToArray());

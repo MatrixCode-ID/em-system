@@ -22,9 +22,11 @@ feature should check `IsDebugActive`. `DebugStateChanged` is raised whenever Sim
 
 ## Switch User
 
-**Tools > Switch User** (only while debug is active) lists the debugger account, the built-in
-administrator and every stored user, with a search box. Picking an account and pressing **Switch** (or
-double-clicking it):
+**Tools > Switch User** (only while debug is active) lists the built-in administrator and every stored
+user as cards, with a search box. The built-in administrator card appears only when the server confirms
+the account is switched on (`GetMeta_AdminAccountEnabled`, answered only to debug token callers and 404
+to everyone else); when that cannot be confirmed - server unreachable, error, older server - the card is
+hidden. Picking an account and pressing **Switch** (or double-clicking it):
 
 1. asks every open screen to close, the same way closing the window does - one refusal cancels the switch;
 2. closes every tab and window;
@@ -37,12 +39,16 @@ is off, so menus, `NavigateTo`, approval and task screens behave as they would f
 button's tooltip reads *Debug: acting as &lt;account&gt;*.
 
 Suspended, pending and deleted accounts are shown dimmed and cannot be picked; the server refuses them
-anyway. If the server refuses the account (for example a disabled built-in administrator), the debugger
+anyway. If the server refuses the account (for example an administrator switched off after the list
+loaded), the debugger
 account is restored and the error is shown. The list itself is read through a separate client without
 the identity header, so it loads even while the active account may not read users.
 
-The choice is not remembered: every start of a debug build begins as SYSTEM DEBUGGER. Pick SYSTEM DEBUGGER
-in the same dialog to go back.
+The debugger is not a card: it has a strip of its own under the dialog's banner. While another account is
+active the strip turns warning (*Acting as &lt;account&gt;, not as the debugger.*) with a **Back to
+debugger** button that switches back in one click; on the debugger itself it only says so.
+
+The choice is not remembered: every start of a debug build begins as SYSTEM DEBUGGER.
 
 ## Simulate Login
 
