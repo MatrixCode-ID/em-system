@@ -34,6 +34,7 @@
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Buttons.xaml" />
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Chips.xaml" />
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Progress.xaml" />
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/ScrollBars.xaml" />
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Inputs.xaml" />
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Collections.xaml" />
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Menus.xaml" />

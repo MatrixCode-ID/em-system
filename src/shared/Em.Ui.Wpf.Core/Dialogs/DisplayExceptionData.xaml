@@ -187,6 +187,8 @@
               ============================================================ -->
          <Style x:Key="detailTabItemStyle" TargetType="TabItem">
             <Setter Property="FontSize" Value="13" />
+            <!-- The stock TabItem style paints an unselected caption black, whatever the theme. -->
+            <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                <Setter.Value>

@@ -520,6 +520,11 @@ namespace Em.Ui.Wpf.Core
             // application as long as such a window still exists.
             ShutdownMode = ShutdownMode.OnMainWindowClose
          };
+         // Themed scroll bars for every screen, including those that merge no engine style: the stock
+         // ones are painted from system colours and stay light on the dark theme.
+         App.Resources.MergedDictionaries.Add(new ResourceDictionary {
+            Source = new Uri("pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/ScrollBars.xaml")
+         });
          // Before the main window exists, so it is created against the right tokens already; the
          // MainWindow?.OnThemeChanged() inside is a no-op at this point.
          ApplyTheme();

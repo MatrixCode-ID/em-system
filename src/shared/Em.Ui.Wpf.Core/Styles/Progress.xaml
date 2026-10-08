@@ -13,6 +13,8 @@
 
    <ResourceDictionary.MergedDictionaries>
       <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+      <!-- materialVerticalScrollBarStyle used to live here; screens that merge only this file still find it. -->
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/ScrollBars.xaml" />
    </ResourceDictionary.MergedDictionaries>
 
    <Style x:Key="hairlineProgressStyle" TargetType="ProgressBar">
@@ -75,46 +77,6 @@
       <Setter Property="Height" Value="8" />
       <Setter Property="IsHitTestVisible" Value="False" />
       <Setter Property="Fill" Value="{DynamicResource themeAccentBrush}" />
-   </Style>
-
-   <Style x:Key="materialVerticalScrollBarStyle" TargetType="ScrollBar">
-      <Setter Property="Width" Value="10" />
-      <Setter Property="MinWidth" Value="0" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Template">
-         <Setter.Value>
-            <ControlTemplate TargetType="ScrollBar">
-               <Track x:Name="PART_Track" IsDirectionReversed="True">
-                  <Track.DecreaseRepeatButton>
-                     <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False">
-                        <RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent" /></ControlTemplate></RepeatButton.Template>
-                     </RepeatButton>
-                  </Track.DecreaseRepeatButton>
-                  <Track.Thumb>
-                     <Thumb MinHeight="18">
-                        <Thumb.Template>
-                           <ControlTemplate TargetType="Thumb">
-                              <Border x:Name="thumb" Margin="2" CornerRadius="3" Background="{StaticResource outlineStrongBrush}" />
-                              <ControlTemplate.Triggers>
-                                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="thumb" Property="Background" Value="{StaticResource outlineBrush}" /></Trigger>
-                                 <Trigger Property="IsDragging" Value="True"><Setter TargetName="thumb" Property="Background" Value="{StaticResource outlineStrongBrush}" /></Trigger>
-                              </ControlTemplate.Triggers>
-                           </ControlTemplate>
-                        </Thumb.Template>
-                     </Thumb>
-                  </Track.Thumb>
-                  <Track.IncreaseRepeatButton>
-                     <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False">
-                        <RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent" /></ControlTemplate></RepeatButton.Template>
-                     </RepeatButton>
-                  </Track.IncreaseRepeatButton>
-               </Track>
-               <ControlTemplate.Triggers>
-                  <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
-               </ControlTemplate.Triggers>
-            </ControlTemplate>
-         </Setter.Value>
-      </Setter>
    </Style>
 
 </ResourceDictionary>

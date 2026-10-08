@@ -1,0 +1,98 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+   <!--
+      A scroll bar is a thin rounded thumb on a transparent track, with no arrow buttons. The thumb
+      is the translucent outline grey, so it reads on the light and the dark theme alike.
+
+      The stock WPF scroll bar paints its track and arrows from system colours, which stay light
+      whatever the theme, so the engine carries its own. The implicit style at the bottom is merged
+      at application level by EmApp.Run, and again wherever this file is merged, so it reaches the
+      scroll bars inside every ScrollViewer template.
+   -->
+
+   <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+
+   <ControlTemplate x:Key="materialScrollThumbTemplate" TargetType="Thumb">
+      <Border x:Name="thumb" Margin="2" CornerRadius="3" Background="{StaticResource outlineStrongBrush}" />
+      <ControlTemplate.Triggers>
+         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="thumb" Property="Background" Value="{StaticResource outlineBrush}" /></Trigger>
+         <Trigger Property="IsDragging" Value="True"><Setter TargetName="thumb" Property="Background" Value="{StaticResource outlineStrongBrush}" /></Trigger>
+      </ControlTemplate.Triggers>
+   </ControlTemplate>
+
+   <!-- The page areas either side of the thumb: clickable, never painted. -->
+   <ControlTemplate x:Key="materialScrollPageTemplate" TargetType="RepeatButton">
+      <Border Background="Transparent" />
+   </ControlTemplate>
+
+   <Style x:Key="materialVerticalScrollBarStyle" TargetType="ScrollBar">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ScrollBar">
+               <Track x:Name="PART_Track" IsDirectionReversed="True">
+                  <Track.DecreaseRepeatButton>
+                     <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False"
+                                   Template="{StaticResource materialScrollPageTemplate}" />
+                  </Track.DecreaseRepeatButton>
+                  <Track.Thumb>
+                     <Thumb MinHeight="18" Template="{StaticResource materialScrollThumbTemplate}" />
+                  </Track.Thumb>
+                  <Track.IncreaseRepeatButton>
+                     <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False"
+                                   Template="{StaticResource materialScrollPageTemplate}" />
+                  </Track.IncreaseRepeatButton>
+               </Track>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <ControlTemplate x:Key="materialHorizontalScrollBarTemplate" TargetType="ScrollBar">
+      <Track x:Name="PART_Track">
+         <Track.DecreaseRepeatButton>
+            <RepeatButton Command="ScrollBar.PageLeftCommand" Focusable="False"
+                          Template="{StaticResource materialScrollPageTemplate}" />
+         </Track.DecreaseRepeatButton>
+         <Track.Thumb>
+            <Thumb MinWidth="18" Template="{StaticResource materialScrollThumbTemplate}" />
+         </Track.Thumb>
+         <Track.IncreaseRepeatButton>
+            <RepeatButton Command="ScrollBar.PageRightCommand" Focusable="False"
+                          Template="{StaticResource materialScrollPageTemplate}" />
+         </Track.IncreaseRepeatButton>
+      </Track>
+      <ControlTemplate.Triggers>
+         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+      </ControlTemplate.Triggers>
+   </ControlTemplate>
+
+   <Style x:Key="materialHorizontalScrollBarStyle" TargetType="ScrollBar">
+      <Setter Property="Height" Value="10" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Template" Value="{StaticResource materialHorizontalScrollBarTemplate}" />
+   </Style>
+
+   <!-- Every scroll bar without a style of its own; the orientation picks the shape. -->
+   <Style TargetType="ScrollBar" BasedOn="{StaticResource materialVerticalScrollBarStyle}">
+      <Style.Triggers>
+         <Trigger Property="Orientation" Value="Horizontal">
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Height" Value="10" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Template" Value="{StaticResource materialHorizontalScrollBarTemplate}" />
+         </Trigger>
+      </Style.Triggers>
+   </Style>
+
+</ResourceDictionary>
