@@ -421,4 +421,68 @@
       </Setter>
    </Style>
 
+   <!-- ============================================================
+        EM STATUS BAR
+        A thin strip along the bottom of a window: the message, the
+        left items after it, and the right items against the edge.
+        It sits on the window surface, so it inherits the window's
+        foreground and needs no colour of its own in either theme.
+        ============================================================ -->
+   <Style x:Key="emStatusBarItemsStyle" TargetType="ItemsControl">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="IsTabStop" Value="False" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="ItemsPanel">
+         <Setter.Value>
+            <ItemsPanelTemplate>
+               <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+         </Setter.Value>
+      </Setter>
+      <Setter Property="ItemContainerStyle">
+         <Setter.Value>
+            <Style TargetType="FrameworkElement">
+               <Setter Property="Margin" Value="14,0,0,0" />
+               <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <Style TargetType="{x:Type controls:EmStatusBar}">
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Padding" Value="16,0,16,4" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="IsTabStop" Value="False" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="{x:Type controls:EmStatusBar}">
+               <Border Background="{TemplateBinding Background}"
+                       Padding="{TemplateBinding Padding}">
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <DockPanel LastChildFill="False" ClipToBounds="True">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Text="{TemplateBinding Text}"
+                                   Opacity="0.75"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                        <ItemsControl DockPanel.Dock="Left"
+                                      ItemsSource="{TemplateBinding LeftItems}"
+                                      Style="{StaticResource emStatusBarItemsStyle}" />
+                     </DockPanel>
+                     <ItemsControl Grid.Column="1"
+                                   ItemsSource="{TemplateBinding RightItems}"
+                                   Style="{StaticResource emStatusBarItemsStyle}" />
+                  </Grid>
+               </Border>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
 </ResourceDictionary>

@@ -660,6 +660,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="40" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- ==== title bar ==== -->
@@ -1169,5 +1170,25 @@
                            Visibility="{Binding IsEmptyHintVisible, Converter={StaticResource boolToVisibility}}" />
             </Grid>
         </Border>
+
+        <!-- ==== status bar ==== -->
+        <!-- Main window only: a torn-off window holds tabs and nothing else. -->
+        <controls:EmStatusBar Grid.Row="2"
+                              Text="{Binding StatusBar.Text}"
+                              LeftItems="{Binding StatusBar.LeftItems}"
+                              RightItems="{Binding StatusBar.RightItems}">
+            <controls:EmStatusBar.Style>
+                <Style TargetType="controls:EmStatusBar">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding StatusBar.IsVisible}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ClosesWhenEmpty}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </controls:EmStatusBar.Style>
+        </controls:EmStatusBar>
     </Grid>
 </Window>

@@ -494,6 +494,12 @@ namespace Em.Ui.Wpf.Windows
       /// </summary>
       public bool IsDebugMode => EmApp?.IsDebugActive ?? false;
 
+      /// <summary>
+      /// What the status bar at the bottom of this window shows. Only the main window draws it; a window
+      /// torn off from a tab keeps its own, unused instance.
+      /// </summary>
+      public MainStatusBarVm StatusBar { get; } = new();
+
       /// <summary>Visibility of the row of tabs and the tab list button: only in the multi-tab layout's tab mode.</summary>
       public Visibility TabStripVisibility =>
          !IsSpaLayout && IsSignedIn ? Visibility.Visible : Visibility.Collapsed;
