@@ -1467,10 +1467,13 @@
                                  <Run Text="Account" />
                                  <Run Text="*" Foreground="{DynamicResource themeAccentBrush}" />
                               </TextBlock>
+                              <!-- Typed and pasted text is turned into lower case; a value already
+                                   stored is shown as it is until it is retyped. -->
                               <TextBox Style="{StaticResource fieldBoxStyle}"
                                        Tag="Sign-in name"
+                                       CharacterCasing="Lower"
                                        Text="{Binding Data.cUserAccount, UpdateSourceTrigger=PropertyChanged}" />
-                              <TextBlock Text="Used to sign in. Letters, digits and dots; it has to be unique."
+                              <TextBlock Text="Used to sign in. Lower-case letters, digits and dots; it has to be unique."
                                          Style="{StaticResource fieldHelpStyle}" />
                            </StackPanel>
 
@@ -2119,7 +2122,10 @@
                     when", which is the question a record like this gets
                     asked most often after something goes wrong.
                     ===================================================== -->
-               <TabItem Header="Activity">
+               <!-- Hidden until it is built: the entries below are a static design mock-up with
+                    made-up data, not the account's history. Disabled as well, so keyboard
+                    navigation between tabs cannot land on it. -->
+               <TabItem Header="Activity" Visibility="Collapsed" IsEnabled="False">
                   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                      <StackPanel Margin="24,0,24,26">
 

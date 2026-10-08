@@ -1,7 +1,8 @@
 # User Manager: roles of a user
 
-The user editor of User Manager (`Navigations/UserEditor.xaml`, WPF) has three tabs: **Profile**,
-**Roles** and **Activity**. This guide covers the Roles tab. Roles themselves (their names and the claims
+The user editor of User Manager (`Navigations/UserEditor.xaml`, WPF) has two tabs: **Profile** and
+**Roles**. This guide covers the Roles tab. An **Activity** tab (the account's history) is planned and
+stays hidden until it is built. Roles themselves (their names and the claims
 they carry) are managed in Role Manager.
 
 ## Roles tab
