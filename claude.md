@@ -48,6 +48,19 @@ menulis path absolut mesin. Test yang dirawat dan dijalankan CI berada di
 `tests/`, bukan `scripts/`. Penegasan ini melengkapi aturan artefak dan struktur
 skrip di bawah; pertahankan catatan historis yang sudah ada.
 
+Penegasan 2026-10-08 (keputusan pengguna): **harness tidak boleh membuat berkas
+apa pun di repo**, termasuk saat dijalankan dari root repo. Output bawaan
+harness adalah folder `out` miliknya sendiri, dihitung dari lokasi source
+harness, bukan dari folder kerja: harness C# memakai
+`..\.artefacts\<repo>\scripts\_shared\HarnessPaths.cs` (di-link dari csproj:
+`<Compile Include="..\_shared\HarnessPaths.cs" Link="HarnessPaths.cs" />`;
+`HarnessPaths.Output()`, `HarnessPaths.Repo("em-system")`, `HarnessPaths.Dir()`),
+yang menolak folder output di dalam repo git. Skrip PowerShell/Python memakai
+`$PSScriptRoot`/`__file__`. Hasil yang memang dibutuhkan repo (mis. screenshot
+`doc/engine/images`, diagram `doc/diagram`) disalin manual dari `out`.
+Menjalankan harness GUI/render (termasuk menjalankan ulang harness lama untuk
+verifikasi) **selalu menunggu konfirmasi pengguna**; membangunnya saja boleh.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Tindakan terblokir policy — skrip PowerShell manual

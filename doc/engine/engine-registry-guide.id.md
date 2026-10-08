@@ -391,6 +391,7 @@ hapus entri itu secara manual untuk membatalkannya.
 
 Screenshot dirender offline dari kontrol aslinya dengan data contoh oleh harness yang disimpan di luar
 repository. Jalankan dari root repo:
-`dotnet run --project ..\.artefacts\em-system\scripts\registry-guide-render -- doc/engine/images/registry-guide`.
-Harness menulis PNG beranotasi ke folder tersebut. Path publisher disimpan di memori dengan folder sementara,
+`dotnet run --project ..\.artefacts\em-system\scripts\registry-guide-render`.
+Harness menulis PNG beranotasi ke folder `out` miliknya sendiri (folder di dalam repository ditolak); periksa
+hasilnya, lalu salin manual ke `doc/engine/images/registry-guide`. Path publisher disimpan di memori dengan folder sementara,
 jadi profil, log, dan registry key yang asli tidak pernah tersentuh.

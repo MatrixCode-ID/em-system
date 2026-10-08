@@ -389,6 +389,7 @@ it to apply, then run Check again. Nothing is removed automatically; delete the 
 
 The screenshots are rendered offline from the real controls with sample data by a harness kept outside the
 repository. Run from the repo root:
-`dotnet run --project ..\.artefacts\em-system\scripts\registry-guide-render -- doc/engine/images/registry-guide`.
-It writes the annotated PNGs into that folder. Publisher paths are kept in memory under a temporary folder, so
+`dotnet run --project ..\.artefacts\em-system\scripts\registry-guide-render`.
+It writes the annotated PNGs into its own `out` folder (it refuses any folder inside a repository); review
+them, then copy them into `doc/engine/images/registry-guide` by hand. Publisher paths are kept in memory under a temporary folder, so
 it never touches the real profiles, logs or registry keys.
