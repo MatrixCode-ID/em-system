@@ -424,7 +424,8 @@
    <!-- ============================================================
         EM STATUS BAR
         A thin strip along the bottom of a window: the message, the
-        left items after it, and the right items against the edge.
+        left items after it, the right items, and the engine's system
+        slots against the edge.
         It sits on the window surface, so it inherits the window's
         foreground and needs no colour of its own in either theme.
         ============================================================ -->
@@ -460,9 +461,27 @@
             <ControlTemplate TargetType="{x:Type controls:EmStatusBar}">
                <Border Background="{TemplateBinding Background}"
                        Padding="{TemplateBinding Padding}">
+                  <Border.Resources>
+                     <!-- Product version slot: v1.3.0-alpha.1 or dev; right-click copies the full version. -->
+                     <DataTemplate DataType="{x:Type windows:StatusVersionItem}">
+                        <TextBlock Text="{Binding Text}"
+                                   ToolTip="{Binding ToolTip}"
+                                   AutomationProperties.Name="{Binding ToolTip}"
+                                   Opacity="0.75"
+                                   Background="Transparent"
+                                   VerticalAlignment="Center">
+                           <TextBlock.ContextMenu>
+                              <ContextMenu>
+                                 <MenuItem Header="Copy version" Command="{Binding CopyCommand}" />
+                              </ContextMenu>
+                           </TextBlock.ContextMenu>
+                        </TextBlock>
+                     </DataTemplate>
+                  </Border.Resources>
                   <Grid>
                      <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                      </Grid.ColumnDefinitions>
                      <DockPanel LastChildFill="False" ClipToBounds="True">
@@ -477,6 +496,9 @@
                      </DockPanel>
                      <ItemsControl Grid.Column="1"
                                    ItemsSource="{TemplateBinding RightItems}"
+                                   Style="{StaticResource emStatusBarItemsStyle}" />
+                     <ItemsControl Grid.Column="2"
+                                   ItemsSource="{TemplateBinding SystemItems}"
                                    Style="{StaticResource emStatusBarItemsStyle}" />
                   </Grid>
                </Border>

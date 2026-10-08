@@ -1176,7 +1176,8 @@
         <controls:EmStatusBar Grid.Row="2"
                               Text="{Binding StatusBar.Text}"
                               LeftItems="{Binding StatusBar.LeftItems}"
-                              RightItems="{Binding StatusBar.RightItems}">
+                              RightItems="{Binding StatusBar.RightItems}"
+                              SystemItems="{Binding StatusBar.SystemItems}">
             <controls:EmStatusBar.Style>
                 <Style TargetType="controls:EmStatusBar">
                     <Style.Triggers>

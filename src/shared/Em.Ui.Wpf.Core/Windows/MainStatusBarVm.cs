@@ -28,7 +28,21 @@ namespace Em.Ui.Wpf.Windows
       /// <summary>Items drawn right after <see cref="Text"/>.</summary>
       public ObservableCollection<object> LeftItems { get; } = [];
 
-      /// <summary>Items drawn against the right edge of the bar.</summary>
+      /// <summary>Items drawn on the right, just before <see cref="SystemItems"/>.</summary>
       public ObservableCollection<object> RightItems { get; } = [];
+
+      /// <summary>
+      /// The fixed slots the engine owns, against the right edge of the bar: currently the product version
+      /// (<see cref="Version"/>). Read-only to modules, so the slots never move.
+      /// </summary>
+      public ReadOnlyObservableCollection<object> SystemItems { get; }
+
+      /// <summary>The product version slot.</summary>
+      public StatusVersionItem Version { get; } = new();
+
+      /// <summary>Creates the bar content with the engine's system slots.</summary>
+      public MainStatusBarVm() {
+         SystemItems = new([Version]);
+      }
    }
 }

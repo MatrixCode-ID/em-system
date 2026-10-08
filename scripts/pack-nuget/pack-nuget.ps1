@@ -36,7 +36,7 @@ function Get-ReleaseNotesFile([string]$packageId) {
 foreach ($project in $projects) {
     $projectPath = Join-Path $repoRoot $project
     $packageId = [System.IO.Path]::GetFileNameWithoutExtension($projectPath) -replace '^Em\.', 'EmSys.'
-    $packArgs = @($projectPath, '--configuration', 'Release', '--output', $outputDir, "-p:PackageVersion=$Version")
+    $packArgs = @($projectPath, '--configuration', 'Release', '--output', $outputDir, "-p:PackageVersion=$Version", "-p:Version=$Version")
     $notesFile = Get-ReleaseNotesFile $packageId
     if ($notesFile) { $packArgs += "-p:EmReleaseNotesFile=$notesFile" }
     & dotnet pack @packArgs

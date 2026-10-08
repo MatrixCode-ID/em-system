@@ -198,13 +198,16 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   var t=p.Container!.Template;
   var information=await new ProjectReader(_process).Read(p.Resolve(t.Project),t.Configuration,t.Framework,ct);
   if(!information.IsHost)throw new InvalidDataException("Select an executable/Web project for Template publish. "+information.Reason);
-  var key=p.Resolve(t.Project)+"|"+t.Configuration+"|"+t.PublishSource+"|"+t.PublishProfile+"|"+t.Runtime+"|"+t.Framework+"|"+t.SelfContained;
+  var hasVersion=Em.Shared.AppVersion.TryFromTag(p.Container.Target.VersionTag,out var version);
+  var key=p.Resolve(t.Project)+"|"+t.Configuration+"|"+t.PublishSource+"|"+t.PublishProfile+"|"+t.Runtime+"|"+t.Framework+"|"+t.SelfContained+"|"+version;
   if(share&&prepared.PublishOutputs.TryGetValue(key,out var cached))return cached;
   var folder=work.PathFor("publish-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(folder);
   var args=new List<string> {"publish",p.Resolve(t.Project),"-c",t.Configuration};
   if(t.PublishSource==PublishSource.PublishProfile) {if(t.PublishProfile.Length==0)throw new InvalidDataException("Select a publish profile.");args.Add("-p:PublishProfile="+(File.Exists(p.Resolve(t.PublishProfile))?p.Resolve(t.PublishProfile):t.PublishProfile));log.Line("PublishDir from the publish profile is overridden by the run workspace.");}
   else {if(t.Runtime.Length>0)args.AddRange(["-r",t.Runtime]);if(t.Framework.Length>0)args.AddRange(["-f",t.Framework]);args.Add("--self-contained");args.Add(t.SelfContained?"true":"false");}
   args.Add("-p:PublishDir="+folder+Path.DirectorySeparatorChar);
+  // The version tag becomes the product version of the app; see doc/engine/build.md#product-version.
+  if(hasVersion)args.Add("-p:Version="+version);
   await _process.RequireAsync("dotnet",args,p.Workspace,log,ct);
   // Persist prepared output so a deferred App can reuse one publish after the Prepare workspace is removed.
   var stored=PublishPaths.Inside(log.Directory,"publish/"+Guid.NewGuid().ToString("N"));TemplateBuilder.Stage(folder,stored,new() {ExcludeDebugSymbols=false},[]);
@@ -218,6 +221,25 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   if(artifact==null)throw new InvalidDataException("No successful Base publish log with a digest.");return Repository(artifact.Target)+"@"+artifact.Digest;
  }
  private static string Repository(string target)=>target[..target.LastIndexOf(':')];
+ /// <summary>The build argument that carries the version tag into a Dockerfile; see doc/engine/build.md#product-version.</summary>
+ public const string AppVersionBuildArg="APP_VERSION";
+ /// <summary>
+ /// Adds <see cref="AppVersionBuildArg"/> from a version tag to the build arguments, unless the tag is not a
+ /// version (such as <c>latest</c>) or the profile already sets the argument itself.
+ /// </summary>
+ public static List<BuildProperty> WithAppVersion(IEnumerable<BuildProperty> buildArgs,string versionTag) {
+  var list=buildArgs.ToList();
+  if(Em.Shared.AppVersion.TryFromTag(versionTag,out var version)&&!list.Any(a=>a.Key.Equals(AppVersionBuildArg,StringComparison.Ordinal)))list.Add(new() {Key=AppVersionBuildArg,Value=version});
+  return list;
+ }
+ /// <summary>
+ /// The <c>docker compose build</c> arguments after <c>build</c>, one call per version: services that share a
+ /// version tag build together with <see cref="AppVersionBuildArg"/>; services whose tag is not a version
+ /// build without it.
+ /// </summary>
+ public static List<List<string>> ComposeBuilds(IEnumerable<ComposeService> services)=>
+  services.GroupBy(s=>Em.Shared.AppVersion.TryFromTag(s.VersionTag,out var v)?v:"")
+   .Select(g=>(g.Key.Length>0?new List<string> {"--build-arg",AppVersionBuildArg+"="+g.Key}:[]).Concat(g.Select(s=>s.Service)).ToList()).ToList();
  private async Task Build(PublishProfile p,PreparedPublish prepared,PublishLog log,RunWorkspace work,IReadOnlyList<NamedFileList> lists,string? currentBase,CancellationToken ct,bool share=true) {
   var c=p.Container!;DockerEnvironment(c.UseMyDockerLogin);var target=await ContainerTarget(p,ct);log.Run.Target=target;
   if(!c.UseMyDockerLogin&&_process.DefaultEnvironment.ContainsKey("DOCKER_CONFIG")) {
@@ -238,7 +260,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    using var json=JsonDocument.Parse(config);var services=json.RootElement.GetProperty("services");
    if(c.Compose.Services.Count==0)throw new InvalidDataException("Select Compose build services and targets.");
    foreach(var mapping in c.Compose.Services)if(!services.TryGetProperty(mapping.Service,out var svc)||!svc.TryGetProperty("build",out _))throw new InvalidDataException("Compose service has no build: "+mapping.Service);
-   await _process.RequireAsync("docker",[..prefix,"build",..c.Compose.Services.Select(s=>s.Service)],p.Workspace,log,ct);
+   foreach(var group in ComposeBuilds(c.Compose.Services))await _process.RequireAsync("docker",[..prefix,"build",..group],p.Workspace,log,ct);
    foreach(var mapping in c.Compose.Services) {
     var service=services.GetProperty(mapping.Service);var local=service.TryGetProperty("image",out var named)?named.GetString()!:json.RootElement.GetProperty("name").GetString()+"-"+mapping.Service;
     PublishTargets.ValidateTag(mapping.VersionTag);var repo=mapping.Repository;if(string.IsNullOrWhiteSpace(repo))throw new InvalidDataException("Compose target repository is required.");
@@ -258,7 +280,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    } else {context=p.Resolve(docker.Context);file=p.Resolve(docker.File);}
    var args=new List<string>{"build","-t",image,"-f",file};
    if(docker.Target.Length>0)args.AddRange(["--target",docker.Target]);if(docker.Platform.Length>0)args.AddRange(["--platform",docker.Platform]);
-   foreach(var arg in docker.BuildArgs)args.AddRange(["--build-arg",arg.Key+"="+arg.Value]);
+   foreach(var arg in WithAppVersion(docker.BuildArgs,c.Mode==ContainerMode.Template?"":c.Target.VersionTag))args.AddRange(["--build-arg",arg.Key+"="+arg.Value]);
    foreach(var named in docker.NamedContexts)args.AddRange(["--build-context",named.Key+"="+p.Resolve(named.Value)]);
    var env=new Dictionary<string,string>{{"DOCKER_BUILDKIT","1"}};
    foreach(var secret in docker.Secrets) {

@@ -5,8 +5,8 @@ using Control = System.Windows.Controls.Control;
 namespace Em.Ui.Wpf.Controls
 {
    /// <summary>
-   /// A thin bar along the bottom edge of a window: one message on the left, then two rows of items, one
-   /// next to the message and one pushed to the right edge.
+   /// A thin bar along the bottom edge of a window: one message on the left, then three rows of items: one
+   /// next to the message, one pushed to the right, and the system items at the right edge.
    /// </summary>
    /// <remarks>
    /// This control is lookless: its look comes from the default style in <c>Themes/Generic.xaml</c>. An
@@ -16,7 +16,8 @@ namespace Em.Ui.Wpf.Controls
    /// <code>
    /// &lt;controls:EmStatusBar Text="{Binding StatusBar.Text}"
    ///                       LeftItems="{Binding StatusBar.LeftItems}"
-   ///                       RightItems="{Binding StatusBar.RightItems}" /&gt;
+   ///                       RightItems="{Binding StatusBar.RightItems}"
+   ///                       SystemItems="{Binding StatusBar.SystemItems}" /&gt;
    /// </code>
    /// </remarks>
    public class EmStatusBar : Control
@@ -41,6 +42,11 @@ namespace Em.Ui.Wpf.Controls
          DependencyProperty.Register(nameof(RightItems), typeof(IEnumerable), typeof(EmStatusBar),
             new FrameworkPropertyMetadata(null));
 
+      /// <summary>Identifies the <see cref="SystemItems"/> property.</summary>
+      public static readonly DependencyProperty SystemItemsProperty =
+         DependencyProperty.Register(nameof(SystemItems), typeof(IEnumerable), typeof(EmStatusBar),
+            new FrameworkPropertyMetadata(null));
+
       /// <summary>
       /// The message at the left edge of the bar, cut with an ellipsis when it does not fit. Empty or
       /// <c>null</c> leaves the place blank.
@@ -56,10 +62,19 @@ namespace Em.Ui.Wpf.Controls
          set => SetValue(LeftItemsProperty, value);
       }
 
-      /// <summary>Items drawn against the right edge of the bar, in order.</summary>
+      /// <summary>Items drawn on the right, just before <see cref="SystemItems"/>, in order.</summary>
       public IEnumerable? RightItems {
          get => (IEnumerable?)GetValue(RightItemsProperty);
          set => SetValue(RightItemsProperty, value);
+      }
+
+      /// <summary>
+      /// Items drawn against the right edge of the bar, in order. Meant for the fixed slots the engine owns
+      /// (such as the product version), so they keep their place whatever the other rows hold.
+      /// </summary>
+      public IEnumerable? SystemItems {
+         get => (IEnumerable?)GetValue(SystemItemsProperty);
+         set => SetValue(SystemItemsProperty, value);
       }
    }
 }

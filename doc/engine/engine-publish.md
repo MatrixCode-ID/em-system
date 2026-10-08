@@ -146,6 +146,9 @@ Credentials always get new IDs, so an import never touches another profile's rem
   build number, Manual = one box for a free tag. The floating tags follow the channel and are pushed after the
   version tag: a prerelease moves its channel tag, release moves `release`, `latest`, `A.B` and `A`, a manual tag
   moves none (doc/convention/container-naming.md). Compose sets a tag per service in the form.
+- A version tag (`MAJOR.MINOR.PATCH[-prerelease]`) also becomes the product version inside the image: the
+  build argument `APP_VERSION` for Dockerfile and Compose builds, `-p:Version` for Template builds. See
+  *Product version* in build.md.
 - Work cleanup validates ownership and containment; user source and output folders are never removed.
   Prepared packages and shared publish output stay with their run so a later Push can use the snapshot.
 - Logs contain masked output, stage exit codes, effective destinations, artifacts, separate verification

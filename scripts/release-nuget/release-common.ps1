@@ -77,3 +77,24 @@ function Get-NoteVersions([string]$repoRoot, [string[]]$packageIds) {
         ForEach-Object { Get-ChildItem -LiteralPath $_.FullName -Filter '*.md' -File } |
         ForEach-Object BaseName | Sort-Object -Unique)
 }
+
+# The newest release note version (the engine version builds carry), or $null when there is none.
+function Get-LatestNoteVersion([string]$repoRoot) {
+    $latest = Get-Highest @(Get-NoteVersions $repoRoot (Get-PackageIds $repoRoot) | ForEach-Object { ConvertTo-SemVer $_ })
+    if ($latest) { return $latest.Text }
+    return $null
+}
+
+# Resolves the build version for CI: the newest release note version, written to GITHUB_ENV as EM_VERSION.
+# Warns when Directory.Build.props still carries another version for local builds.
+function Set-CiVersion([string]$repoRoot) {
+    $version = Get-LatestNoteVersion $repoRoot
+    if (-not $version) { throw 'No release note version found under doc/ReleaseNote.' }
+    $props = Get-Content -LiteralPath (Join-Path $repoRoot 'Directory.Build.props') -Raw
+    if ($props -match '<Version>([^<]+)</Version>' -and $Matches[1] -ne $version) {
+        Write-Host "::warning::Directory.Build.props has Version $($Matches[1]); the newest release note is $version. Update it so local builds match."
+    }
+    Write-Host "Build version: $version"
+    if ($env:GITHUB_ENV) { "EM_VERSION=$version" >> $env:GITHUB_ENV }
+    return $version
+}

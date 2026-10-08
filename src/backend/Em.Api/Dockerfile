@@ -13,6 +13,9 @@ FROM base AS build
 # apk downloads the .NET SDK during image build; it stays out of the final image.
 RUN apk add --no-cache dotnet10-sdk
 ARG BUILD_CONFIGURATION=Release
+# Optional version override (the publisher passes the container version tag); empty keeps the version
+# from Directory.Build.props. See doc/engine/build.md#product-version.
+ARG APP_VERSION=
 WORKDIR /src
 COPY Directory.Build.props ./
 COPY src/shared/Em.Libs/ src/shared/Em.Libs/
@@ -22,7 +25,7 @@ COPY src/modules/Em.Test/Em.Test.Api/ src/modules/Em.Test/Em.Test.Api/
 COPY src/backend/Em.Api/ src/backend/Em.Api/
 RUN dotnet publish src/backend/Em.Api/Em.Api.csproj \
     --configuration "$BUILD_CONFIGURATION" --output /publish \
-    /p:UseAppHost=false
+    /p:UseAppHost=false ${APP_VERSION:+"/p:Version=$APP_VERSION"}
 
 FROM base AS final
 RUN addgroup -S -g 1654 em && adduser -S -D -u 1654 -G em em \

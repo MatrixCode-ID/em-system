@@ -60,6 +60,43 @@ installed; the `publish` job installs it before packing.
   `doc/ReleaseNote/<PackageId>/<version>.md` (plus a link) to a file passed as `EmReleaseNotesFile`, which
   becomes `PackageReleaseNotes`.
 
+## Product version {#product-version}
+
+A host shows the version baked into its entry assembly (`AssemblyInformationalVersion`). The version is
+set in MSBuild, by hand, and release automation overrides it with `-p:Version`:
+
+- **em-system** keeps the engine version in `Directory.Build.props` (`<Version>`), equal to the newest
+  `doc/ReleaseNote` version, so every engine assembly and both hosts carry it. Raise it in the same change
+  that adds a new release note. `ci.yml` passes the newest release note version to every build
+  (`Set-CiVersion` in `scripts/release-nuget/release-common.ps1`, which warns when `Directory.Build.props`
+  lags behind), and `pack-nuget.ps1` packs with `-p:Version` as well as `-p:PackageVersion`.
+- **A product** sets `<Version>` in its own host projects or `Directory.Build.props`, and its release
+  pipeline passes the release version. Without `<Version>` the SDK default `1.0.0` is shown.
+  `0.0.0-dev` is shown as `dev`.
+- **The WPF publisher** passes a container version tag itself: in **Dockerfile** mode it adds the build
+  argument `APP_VERSION=<version tag>` (unless the profile already sets `APP_VERSION`), in **Compose**
+  mode it passes the same argument per version tag, and in **Template** mode it adds `-p:Version` to
+  `dotnet publish`. Floating or free tags that are not `MAJOR.MINOR.PATCH[-prerelease]` (such as
+  `latest`) pass nothing. A Dockerfile that builds inside the image takes the argument as an optional
+  override, so a build without it keeps the project version:
+
+  ```dockerfile
+  ARG APP_VERSION=
+  RUN dotnet publish ... ${APP_VERSION:+"/p:Version=$APP_VERSION"}
+  ```
+
+  `src/backend/Em.Api/Dockerfile` is the reference.
+- At run time `Em.Shared.AppVersion` reads the informational version of the entry assembly.
+  `AppVersion.Display` gives `v1.3.0-alpha.1`, or `dev` for `0.0.0-dev`; build metadata (`+commit`) is
+  stripped for display. The WPF main window shows it in the status bar.
+
+### Status bar version slot
+
+`TabbedMainWindow` draws the status bar from `EmApp.MainWindow.Vm.StatusBar` (`MainStatusBarVm`). Its
+`SystemItems` hold the engine's fixed slots against the right edge; modules cannot change them and add their
+own items to `LeftItems`/`RightItems`. The first system slot is the product version (`StatusBar.Version`): the
+short text in the bar, the full informational version in the tooltip, and **Copy version** on right-click.
+
 ## XML documentation {#xml-docs}
 
 The five packaged libraries set `GenerateDocumentationFile`, so each package ships

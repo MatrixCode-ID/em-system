@@ -2,6 +2,7 @@ name: CI
 
 # Pushes run only when something that affects the build or tests changes; doc-only pushes are skipped.
 # The path filter does not apply to workflow_dispatch or workflow_call (publish-nuget.yml always runs CI).
+# Builds carry the newest doc/ReleaseNote version (doc/engine/build.md#product-version).
 on:
   push:
     branches: [main, ci-sandbox]
@@ -25,11 +26,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          . ./scripts/release-nuget/release-common.ps1
+          Set-CiVersion (Get-Location).Path | Out-Null
+
       - name: Restore
         run: dotnet restore src/backend/Em.Api.slnx
 
       - name: Build
-        run: dotnet build src/backend/Em.Api.slnx --configuration Release --no-restore
+        run: dotnet build src/backend/Em.Api.slnx --configuration Release --no-restore "-p:Version=${{ env.EM_VERSION }}"
 
       - name: Test
         run: dotnet test src/backend/Em.Api.slnx --configuration Release --no-build
@@ -43,11 +50,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          . ./scripts/release-nuget/release-common.ps1
+          Set-CiVersion (Get-Location).Path | Out-Null
+
       - name: Restore
         run: dotnet restore src/frontend/Em.Ui.Wpf.slnx
 
       - name: Build
-        run: dotnet build src/frontend/Em.Ui.Wpf.slnx --configuration Release --no-restore
+        run: dotnet build src/frontend/Em.Ui.Wpf.slnx --configuration Release --no-restore "-p:Version=${{ env.EM_VERSION }}"
 
       - name: Test
         run: dotnet test src/frontend/Em.Ui.Wpf.slnx --configuration Release --no-build
@@ -65,9 +78,15 @@ jobs:
       - name: Install MAUI Android workload
         run: dotnet workload install maui-android
 
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          . ./scripts/release-nuget/release-common.ps1
+          Set-CiVersion (Get-Location).Path | Out-Null
+
       - name: Restore
         run: dotnet restore src/frontend/Em.Ui.Maui.slnx
 
       - name: Build
-        run: dotnet build src/frontend/Em.Ui.Maui.slnx --configuration Release --no-restore
+        run: dotnet build src/frontend/Em.Ui.Maui.slnx --configuration Release --no-restore "-p:Version=${{ env.EM_VERSION }}"
 

@@ -5,6 +5,9 @@
     <ArtefactsPath>$([MSBuild]::EnsureTrailingSlash('$(ArtefactsPath)'))</ArtefactsPath>
   </PropertyGroup>
   <PropertyGroup>
+    <!-- Engine version: the newest doc/ReleaseNote version. CI and the release pass it with -p:Version;
+         see doc/engine/build.md#product-version -->
+    <Version>0.1.0-alpha.6</Version>
     <Authors>Matrix Code</Authors>
     <Company>Matrix Code</Company>
     <!-- See doc/engine/build.md#package-id -->
