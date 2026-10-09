@@ -15,6 +15,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [NuGet server (NuPak)](engine-nupak.md) | NuGet V3 feeds, prefixes, recycle bin, NuGet Manager |
 | [NuPak multi-feed upgrade](engine-nupak-multifeed-upgrade.md) | Runbook for older single-feed installations |
 | [Storage settings](engine-storage-settings.md) | Managing CDN, registry and NuGet stores from the UI |
+| [SMTP](engine-smtp.md) | Shared email service, SMTP settings and SMTP Manager |
 | [Robot identities](engine-robots.md) | Robot accounts, tokens, owners and grant providers in User Manager |
 | [Module protocol endpoints](engine-public-endpoints.md) | `AddPublicEndpoint`, module infrastructure, robot authentication |
 

@@ -11,6 +11,7 @@ var app = EmApp.BuildApp(args, builder => {
    var config = Em.Api.Helper.ApplyConfig(builder);
    builder.AddManagedStorageSettings();
    builder.AddNuPak();
+   builder.AddSmtp();
 
    builder.AddLocalBinaryStorage(config.Storage.BinaryPath);
    if (config.IsModuleEnabled("test")) {

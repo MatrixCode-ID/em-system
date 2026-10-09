@@ -112,6 +112,7 @@ namespace Em.Ui.Maui.Core
          app.Services.AddSingleton<INavigationHost>(app);
          app.Services.AddSingleton<IContactServices, ContactService>();
          app.Services.AddSingleton<ICredentialServices, CredentialService>();
+         app.Services.AddSingleton<ISmtpService>(provider => new Em.Ui.Core.SmtpClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ISessionStorage, SecureStorageSessionStorage>();

@@ -12,6 +12,20 @@ biarkan pengguna melakukan push; jangan mencoba atau mengulang push tanpa
 permintaan eksplisit. Aturan ini mengesampingkan asumsi izin push dari alur
 kerja atau plan sebelumnya.
 
+## Guide wajib setelah membuat modul
+
+Keputusan pengguna 2026-10-09; berlaku untuk Codex dan Claude Code.
+
+- Setiap selesai membuat modul, tulis guide pemakaiannya sebagai bagian dari
+  pekerjaan tersebut sebelum melaporkan modul selesai.
+- Guide engine disimpan di `doc/engine/` dalam bahasa Inggris sesuai aturan
+  dokumentasi yang sudah berlaku, dan ditautkan dari `doc/engine/README.md`.
+- Jelaskan tujuan modul, cara mengaktifkan dan mengonfigurasi, cara memakai
+  API/service serta UI bila tersedia, dan contoh penggunaan. Cantumkan hak
+  akses, dependensi, migrasi, dan batasan yang relevan dengan implementasi.
+- Cocokkan guide dengan kode yang selesai dibuat dan sertakan tautannya
+  dalam laporan akhir. Jika modul diperbarui, perbarui guide yang terkait.
+
 ## Uji visual (GUI) hanya atas konfirmasi; uji console langsung jalan
 
 Keputusan pengguna 2026-10-08; berlaku untuk Codex dan Claude Code, juga repo
@@ -197,3 +211,5 @@ Pembaruan 2026-10-07 (registry deploy): deploy container registry ke server Dock
 Pembaruan 2026-10-08 (bot update engine produk, keputusan pengguna: dua pemicu): setelah rilis NuGet sukses, job `notify-products` di `.github/workflows/publish-nuget.yml` memanggil `release.yml` repo produk (`MatrixCode-ID/EmPorium-House`) dengan `emsys_version`; repo produk lain ditambahkan ke `matrix.repository` job itu. Butuh secret repo `PRODUCT_DISPATCH_TOKEN` (token fine-grained, "Actions: Read and write" pada repo produk); job ini `continue-on-error`, jadi tanpa secret atau bila gagal rilis NuGet tetap sukses. Cadangannya ada di repo produk: `release.yml` berjalan sekali sehari dan menaikkan `EmSysVersion` bila nuget.org punya versi EmSys yang lebih tinggi. Detail: [doc/ReleaseNote/README.md](doc/ReleaseNote/README.md).
 
 Pembaruan 2026-10-08 (versi produk, keputusan pengguna): versi tampil dari `AssemblyInformationalVersion` entry assembly lewat `Em.Shared.AppVersion` (`Display` = `v1.3.0-alpha.1`, atau `dev` untuk `0.0.0-dev`) di area `SystemItems` status bar WPF (slot milik engine, posisi tetap). Versi **diset manual** di MSBuild dan otomatisasi rilis menimpanya dengan `-p:Version`. em-system: `<Version>` di `Directory.Build.props` = versi release note terbaru, **naikkan bersama release note baru**; `ci.yml` mengirim versi release note terbaru (`Set-CiVersion` di `scripts/release-nuget/release-common.ps1`, memberi warning bila props tertinggal) dan `pack-nuget.ps1` pack dengan `-p:Version`. Produk mengatur `<Version>` sendiri. Publisher WPF meneruskan version tag container (build-arg `APP_VERSION` untuk Dockerfile/Compose, `-p:Version` untuk Template; tag non-semver tidak diteruskan); Dockerfile memakai `ARG APP_VERSION=` sebagai override opsional `${APP_VERSION:+"/p:Version=$APP_VERSION"}`. Panduan: `doc/engine/build.md#product-version`; diskusi: `doc/ideas/status-bar.md`.
+
+Pembaruan 2026-10-09 (SMTP engine): `ISmtpService` di `Em.Libs`, backend `SmtpService` di `Em.Api.Core` memakai MailKit 4.17.0, proxy bersama `SmtpClientService` di `Em.Ui.Core` didaftarkan otomatis oleh WPF dan MAUI. Host menyalakan lewat `builder.AddSmtp()` (sudah di host contoh `Em.Api`). SMTP Manager WPF (`admin.smtp`, claim `SMTP Manager Access`) memakai toolbar, input, card, side sheet Test email, dan wait overlay dari `MaterialDesign.xaml`. Pengiriman aplikasi lewat HTTP memakai claim terpisah `SMTP Send`; `SendAsync` juga bisa dipakai langsung dari scope API tanpa inisialisasi HTTP. Satu konfigurasi per database di `ta_Meta`, password AES-GCM dan key disimpan terpisah, revision diperiksa dalam transaksi; perubahan langsung berlaku dan tidak memerlukan migrasi. SMTP mati secara bawaan. Mendukung STARTTLS wajib/TLS on connect, To/Cc/Bcc, text/HTML dan lampiran. Panduan: [doc/engine/engine-smtp.md](doc/engine/engine-smtp.md). Verifikasi: build backend/WPF/MAUI dan 220 test console (141 backend, 79 UI, termasuk SMTP loopback, SQL Server, proxy HTTP tiruan, dan load XAML tanpa render) lulus; render terang/gelap, interaksi GUI dan pengiriman melalui server SMTP eksternal belum dijalankan. Tidak ada harness atau artefak render baru.

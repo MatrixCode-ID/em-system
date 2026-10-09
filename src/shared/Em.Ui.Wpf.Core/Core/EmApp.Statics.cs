@@ -86,6 +86,7 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<ICtnServices, CtnService>();
          app.Services.AddSingleton<INuPakServices, NuPakService>();
          app.Services.AddSingleton<IRobotServices, RobotService>();
+         app.Services.AddSingleton<ISmtpService>(provider => new Em.Ui.Core.SmtpClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ApprovalAccessCatalog>();
@@ -241,6 +242,7 @@ namespace Em.Ui.Wpf.Core
          app.AddInternalClaim(ContainerManagerClaim);
          app.AddInternalClaim("Administrative Tools:" + INuPakServices.ManagerClaim);
          app.AddInternalClaim("Administrative Tools:" + INuPakServices.SettingsClaim);
+         app.AddInternalClaim("Administrative Tools:" + ISmtpService.ManagerClaim);
       }
 
       // Binds a built-in navigation to one of the claims above, the same way the claim overload of
@@ -275,6 +277,13 @@ namespace Em.Ui.Wpf.Core
       }
 
       private static void InitInternalNavigation(EmApp app, EmAppBuilder pars) {
+         app.AddNavigation(RequireClaim(new Navigation {
+            Name = "admin.smtp", Title = "SMTP Manager", Subtitle = "Configure outgoing email", OrderIndex = -1,
+            Description = "Configure the SMTP server, check its connection and send a test email.",
+            BodyType = BodyType.Of<SmtpManager>(), Kind = NavigationKind.Manager, EmApp = app,
+            RequireParameter = false, IsMenuVisible = false,
+            NavigationIcon = EFontAwesomeIcon.Solid_Envelope.CreateImageSource(System.Windows.Media.Brushes.Gray)
+         }, "Administrative Tools:" + ISmtpService.ManagerClaim));
          app.AddNavigation(new Navigation {
             Name = ApprovalManagerNavigationPayload.NavigationName,
             Title = "Approval Manager",
