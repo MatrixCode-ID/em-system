@@ -978,6 +978,71 @@
       </Setter>
    </Style>
 
+   <!-- Framed date field: the same frame, height and states as fieldBoxStyle, so a date sits
+        level with the text fields of a form instead of needing a Border of its own. -->
+   <Style x:Key="fieldDatePickerStyle" TargetType="DatePicker" BasedOn="{StaticResource inlineDatePickerStyle}">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Padding" Value="14,0,8,0" />
+      <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="DatePicker">
+               <Border x:Name="shape"
+                       CornerRadius="10"
+                       Padding="{TemplateBinding Padding}"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <Grid x:Name="PART_Root">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <DatePickerTextBox x:Name="PART_TextBox"
+                                        Grid.Column="0"
+                                        Style="{StaticResource inlineDatePickerTextBoxStyle}"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        FontSize="{TemplateBinding FontSize}" />
+                     <Button x:Name="PART_Button"
+                             Grid.Column="1"
+                             Margin="6,0,0,0"
+                             Width="26"
+                             Height="26"
+                             FontSize="12"
+                             Focusable="False"
+                             ToolTip="Show calendar"
+                             Style="{StaticResource flatIconButtonStyle}">
+                        <fa:FontAwesome Icon="Regular_CalendarDays" Opacity="0.7" />
+                     </Button>
+                     <Popup x:Name="PART_Popup"
+                            Placement="Bottom"
+                            VerticalOffset="6"
+                            AllowsTransparency="True"
+                            StaysOpen="False"
+                            PlacementTarget="{Binding ElementName=shape}" />
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource outlineStrongBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
    <!-- ============================================================
         SEGMENTED CONTROL
         RadioButtons in one group: the group keeps exactly one facet
