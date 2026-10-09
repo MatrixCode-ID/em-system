@@ -87,6 +87,7 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<INuPakServices, NuPakService>();
          app.Services.AddSingleton<IRobotServices, RobotService>();
          app.Services.AddSingleton<ISmtpService>(provider => new Em.Ui.Core.SmtpClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ISmtpProfileService>(provider => new Em.Ui.Core.SmtpProfileClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ApprovalAccessCatalog>();

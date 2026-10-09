@@ -21,7 +21,6 @@ internal static class SmtpValidation
       if (!string.IsNullOrEmpty(settings.FromAddress)) Address(settings.FromAddress);
       if (!settings.Enabled && !requireConfigured) return;
       if (string.IsNullOrWhiteSpace(settings.Host)) throw Bad("SMTP host is required.");
-      Address(settings.FromAddress);
       if (settings.Authenticate) {
          if (string.IsNullOrWhiteSpace(settings.Username) || !hasPassword) throw Bad("SMTP username and password are required for authentication.");
          if (settings.Security == SmtpSecurity.None) throw Bad("SMTP authentication requires STARTTLS or TLS on connect.");
@@ -39,7 +38,11 @@ internal static class SmtpValidation
       if (string.IsNullOrEmpty(input.TextBody) && string.IsNullOrEmpty(input.HtmlBody)) throw Bad("Email body is required.");
       if (input.Attachments.Length > 20) throw Bad("Email allows at most 20 attachments.");
       var message = new MimeMessage { Subject = input.Subject, MessageId = MimeUtils.GenerateMessageId() };
-      message.From.Add(new MailboxAddress(settings.FromName, Address(settings.FromAddress).Address));
+      var sender = input.FromAddress ?? settings.FromAddress;
+      if (string.IsNullOrWhiteSpace(sender)) throw Bad("Sender email address is required on the message.");
+      var senderName = input.FromName ?? (input.FromAddress is null ? settings.FromName : "");
+      Header(senderName, "Sender name", 255);
+      message.From.Add(new MailboxAddress(senderName, Address(sender).Address));
       foreach (var recipient in input.To) message.To.Add(Address(recipient));
       foreach (var recipient in input.Cc) message.Cc.Add(Address(recipient));
       foreach (var recipient in input.Bcc) message.Bcc.Add(Address(recipient));

@@ -444,6 +444,65 @@
       </Setter>
    </Style>
 
+   <!-- Editable variant retains the shared field surface and popup while exposing the text editor. -->
+   <Style x:Key="fieldEditableComboStyle" TargetType="ComboBox" BasedOn="{StaticResource fieldComboStyle}">
+      <Setter Property="IsEditable" Value="True" />
+      <Setter Property="IsTextSearchEnabled" Value="False" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="ComboBox">
+               <Grid>
+                  <!-- ClickMode Press opens the list on the way down, the way a native drop down
+                       does. -->
+                  <ToggleButton Style="{StaticResource fieldComboToggleStyle}"
+                                ClickMode="Press"
+                                IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                  <TextBox x:Name="PART_EditableTextBox"
+                           Style="{StaticResource fieldBoxStyle}" Margin="14,0,32,0"
+                           Height="Auto" Padding="0" Background="Transparent" BorderThickness="0"
+                           MaxLength="320" VerticalContentAlignment="Center"
+                           IsReadOnly="{TemplateBinding IsReadOnly}" />
+                  <TextBlock x:Name="watermark"
+                             Margin="14,0,32,0"
+                             Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                             Opacity="0.45"
+                             Visibility="Collapsed"
+                             IsHitTestVisible="False"
+                             VerticalAlignment="Center" />
+                  <Popup x:Name="PART_Popup"
+                         Placement="Bottom"
+                         VerticalOffset="4"
+                         AllowsTransparency="True"
+                         Focusable="False"
+                         PopupAnimation="Fade"
+                         IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                     <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                             Style="{StaticResource fieldPopupBorderStyle}">
+                        <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                           <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                        </ScrollViewer>
+                     </Border>
+                  </Popup>
+               </Grid>
+               <ControlTemplate.Triggers>
+                  <MultiTrigger>
+                     <MultiTrigger.Conditions>
+                        <Condition Property="Text" Value="" />
+                        <Condition Property="IsKeyboardFocusWithin" Value="False" />
+                     </MultiTrigger.Conditions>
+                     <Setter TargetName="watermark" Property="Visibility" Value="Visible" />
+                  </MultiTrigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
    <!-- ============================================================
         INLINE FIELDS
         Editors with no frame of their own, for a screen that already

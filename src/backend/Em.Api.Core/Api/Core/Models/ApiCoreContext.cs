@@ -8,6 +8,8 @@ namespace Em.Api.Core.Models
    {
       /// <summary>Rows of table <c>ta_Meta</c>.</summary>
       public DbSet<ta_Meta> ta_Metas => Set<ta_Meta>();
+      /// <summary>Named SMTP configurations; raw credential rows stay on the server.</summary>
+      public DbSet<ta_Smtp> ta_Smtps => Set<ta_Smtp>();
       /// <summary>Rows of table <c>ta_Contact</c>.</summary>
       public DbSet<ta_Contact> ta_Contacts => Set<ta_Contact>();
       /// <summary>Rows of table <c>ta_Address</c>.</summary>
@@ -66,6 +68,18 @@ namespace Em.Api.Core.Models
       protected override void OnModelCreating(ModelBuilder modelBuilder) {
          base.OnModelCreating(modelBuilder);
          modelBuilder.Entity<ta_SystemSession>();
+         var smtp = modelBuilder.Entity<ta_Smtp>();
+         smtp.HasIndex(x => x.cSmtpName).IsUnique();
+         if (Database.IsSqlServer()) {
+            smtp.Property(x => x.cSmtpId).HasColumnType("char(26)");
+            smtp.Property(x => x.cSmtpName).IsUnicode(false).UseCollation("SQL_Latin1_General_CP1_CI_AS");
+            smtp.Property(x => x.cSmtpHost).IsUnicode(false);
+            smtp.Property(x => x.cSmtpNote).IsUnicode(false);
+            smtp.Property(x => x.cSmtpFromAddress).IsUnicode(false);
+            smtp.Property(x => x.ustamp).HasColumnType("datetime");
+            smtp.Property(x => x.datestamp).HasColumnType("datetime");
+            smtp.HasIndex(x => x.cSmtpDefault).IsUnique().HasFilter("[cSmtpDefault] = 1");
+         }
 
          // JSON_VALUE exists for sorting the approval list on a summary column; it is a built-in
          // function, so nothing is created in the database.

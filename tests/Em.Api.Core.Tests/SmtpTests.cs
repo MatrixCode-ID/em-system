@@ -36,6 +36,30 @@ public class SmtpTests
    }
 
    [Fact]
+   public void SenderIsRequiredOnlyWhenSendingAndCallerCanOverrideLegacyFallback() {
+      var settings = Config(); settings.FromAddress = "";
+      SmtpValidation.Settings(settings, false);
+      SmtpValidation.Settings(settings, false, true);
+      var input = Email();
+      Assert.Contains("Sender", Assert.Throws<ActionException>(() => SmtpValidation.Message(settings, input)).Message);
+      input.FromAddress = "module@example.com"; input.FromName = "Module";
+      using (var mime = SmtpValidation.Message(settings, input)) {
+         Assert.Equal("module@example.com", mime.From.Mailboxes.Single().Address);
+         Assert.Equal("Module", mime.From.Mailboxes.Single().Name);
+      }
+      settings.FromAddress = "legacy@example.com"; settings.FromName = "Legacy";
+      input.FromName = null;
+      using (var mime = SmtpValidation.Message(settings, input)) {
+         Assert.Equal("module@example.com", mime.From.Mailboxes.Single().Address);
+         Assert.Equal("", mime.From.Mailboxes.Single().Name);
+      }
+      input.FromAddress = "bad\r\nBcc: leak@example.com";
+      Assert.Throws<ActionException>(() => SmtpValidation.Message(settings, input));
+      input.FromAddress = "module@example.com"; input.FromName = "bad\r\nHeader";
+      Assert.Throws<ActionException>(() => SmtpValidation.Message(settings, input));
+   }
+
+   [Fact]
    public void RejectsInjectionAndContentLimits() {
       var settings = Config();
       var email = Email(); email.Subject = "Subject\r\nBcc: leak@example.com";
@@ -105,7 +129,8 @@ public class SmtpTests
       var builder = new EmAppBuilder { Services = new ServiceCollection() };
       builder.AddSmtp();
       Assert.Throws<InvalidOperationException>(() => builder.AddSmtp());
-      Assert.Equal(5, builder.ActionDefinitions.Count);
+      Assert.Equal(13, builder.ActionDefinitions.Count);
+      Assert.Equal(5, builder.ActionDefinitions.Count(action => action.MethodInfo.DeclaringType == typeof(SmtpService)));
       Assert.DoesNotContain(builder.ActionDefinitions, action => action.MethodInfo.Name == nameof(ISmtpService.SendAsync));
       Assert.Contains(builder.ClaimActions, claim => claim.Name == ISmtpService.ManagerClaim);
       Assert.Contains(builder.ClaimActions, claim => claim.Name == ISmtpService.SendClaim);

@@ -7,11 +7,12 @@ namespace Em.Api.Shared;
 public partial class EmAppBuilder
 {
    private bool _smtpAdded;
-   /// <summary>Enables database-managed SMTP and its manager/send actions. Requires only the core ta_Meta table.</summary>
+   /// <summary>Enables SMTP and named profiles. Requires ta_Meta and ta_Smtp; legacy settings migrate on first use.</summary>
    public void AddSmtp() {
       if (_smtpAdded) throw new InvalidOperationException("SMTP is already registered.");
       _smtpAdded = true;
       AddService<ISmtpService, SmtpService>();
+      AddService<ISmtpProfileService, SmtpProfileService>();
       AddClaims(ClaimAction.Create<SmtpService>(ISmtpService.ManagerClaim), ClaimAction.Create<SmtpService>(ISmtpService.SendClaim));
    }
 }

@@ -1,141 +1,243 @@
-<UserControl x:Class="Em.Ui.Wpf.Navigations.SmtpManager"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
-             xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
-             xmlns:fa="http://schemas.fontawesome.com/icons/fonts">
-   <UserControl.DataContext><local:SmtpManagerVm /></UserControl.DataContext>
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations" xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls" xmlns:fa="http://schemas.fontawesome.com/icons/fonts" x:Class="Em.Ui.Wpf.Navigations.SmtpManager" x:Name="smtpRoot">
+   <UserControl.DataContext>
+      <local:SmtpManagerVm/>
+   </UserControl.DataContext>
    <UserControl.Resources>
       <ResourceDictionary>
          <ResourceDictionary.MergedDictionaries>
-            <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+            <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
          </ResourceDictionary.MergedDictionaries>
+         <BooleanToVisibilityConverter x:Key="boolVisibility"/>
+         <Style x:Key="smtpRowStyle" TargetType="ListBoxItem" BasedOn="{StaticResource listRowStyle}">
+            <EventSetter Event="MouseDoubleClick" Handler="OnRowDoubleClick"/>
+         </Style>
       </ResourceDictionary>
    </UserControl.Resources>
    <Grid ClipToBounds="True" PreviewKeyDown="OnPreviewKeyDown">
       <Grid>
-         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+         </Grid.RowDefinitions>
          <ScrollViewer Margin="22,12,22,10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <StackPanel Orientation="Horizontal">
-               <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveCommand]}" ToolTip="Save SMTP settings">
-                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}" /><TextBlock Text="Save" VerticalAlignment="Center" /></StackPanel>
+               <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewCommand]}" Margin="0,0,0,0">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                     <TextBlock Text="New SMTP" VerticalAlignment="Center"/>
+                  </StackPanel>
                </Button>
-               <Border Width="1" Height="22" Margin="14,0" VerticalAlignment="Center" Background="{StaticResource outlineBrush}" />
-               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[TestConnectionCommand]}" ToolTip="Test the saved SMTP connection">
-                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plug" Style="{StaticResource buttonIconStyle}" /><TextBlock Text="Test connection" VerticalAlignment="Center" /></StackPanel>
+               <Border Width="1" Height="22" Margin="14,0" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[EditCommand]}" Margin="8,0,0,0">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Pen" Style="{StaticResource buttonIconStyle}"/>
+                     <TextBlock Text="Edit" VerticalAlignment="Center"/>
+                  </StackPanel>
                </Button>
-               <ToggleButton x:Name="testToggle" Style="{StaticResource sheetToggleStyle}" Height="38" Margin="8,0,0,0"
-                             IsChecked="{Binding IsTestOpen, Mode=TwoWay}" IsEnabled="{Binding CanEdit}" ToolTip="Send a test email">
-                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_PaperPlane" Style="{StaticResource buttonIconStyle}" /><TextBlock Text="Test email" VerticalAlignment="Center" /></StackPanel>
-               </ToggleButton>
+               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SetDefaultCommand]}" Margin="8,0,0,0">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Star" Style="{StaticResource buttonIconStyle}"/>
+                     <TextBlock Text="Set default" VerticalAlignment="Center"/>
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[TestConnectionCommand]}" Margin="8,0,0,0">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Plug" Style="{StaticResource buttonIconStyle}"/>
+                     <TextBlock Text="Test connection" VerticalAlignment="Center"/>
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[DeleteCommand]}" Margin="8,0,0,0">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/>
+                     <TextBlock Text="Delete" VerticalAlignment="Center"/>
+                  </StackPanel>
+               </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ClearDefaultCommand]}" Margin="8,0,0,0">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Star" Style="{StaticResource buttonIconStyle}"/>
+                     <TextBlock Text="Clear default" VerticalAlignment="Center"/>
+                  </StackPanel>
+               </Button>
             </StackPanel>
          </ScrollViewer>
-         <ScrollViewer Grid.Row="1" Margin="22,0,22,16" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <StackPanel MaxWidth="840" MinWidth="420" HorizontalAlignment="Left">
+         <StackPanel Grid.Row="1" Margin="22,0,22,12">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+               <StackPanel Orientation="Horizontal" IsEnabled="{Binding CanBrowse}">
+                  <TextBlock Text="SMTP" Style="{StaticResource fieldLabelStyle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox x:Name="testSmtp" Width="180" Height="38" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Profiles}" SelectedItem="{Binding TestProfile, Mode=TwoWay}" ToolTip="SMTP profile for the test email" AutomationProperties.Name="Test SMTP">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="From" Style="{StaticResource fieldLabelStyle}" VerticalAlignment="Center" Margin="14,0,8,0"/>
+                  <ComboBox x:Name="testSender" Width="230" Height="38" Style="{StaticResource fieldEditableComboStyle}" ItemsSource="{Binding FromHistory}" Text="{Binding TestSender, UpdateSourceTrigger=PropertyChanged}" Tag="sender@example.com" AutomationProperties.Name="Test sender"/>
+                  <TextBlock Text="To" Style="{StaticResource fieldLabelStyle}" VerticalAlignment="Center" Margin="14,0,8,0"/>
+                  <ComboBox x:Name="testRecipient" Width="230" Height="38" Style="{StaticResource fieldEditableComboStyle}" ItemsSource="{Binding ToHistory}" Text="{Binding TestRecipient, UpdateSourceTrigger=PropertyChanged}" Tag="recipient@example.com" AutomationProperties.Name="Test recipient"/>
+                  <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SendTestCommand]}" Margin="14,0,0,0" ToolTip="Send a test email using the selected saved SMTP">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PaperPlane" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="Send" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ClearHistoryCommand]}" Margin="8,0,0,0" ToolTip="Clear saved From and To address history">
+                     <TextBlock Text="Clear history"/>
+                  </Button>
+               </StackPanel>
+            </ScrollViewer>
+            <TextBlock Text="{Binding TestStatus}" Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+         </StackPanel>
+         <Border Grid.Row="2" Margin="22,0,22,0" Style="{StaticResource cardStyle}" Padding="0">
+            <Grid>
+               <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+               </Grid.RowDefinitions>
+               <Grid Margin="22,12">
+                  <TextBlock Text="SMTP CONFIGURATIONS" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
+                  <Button Style="{StaticResource rowActionButtonStyle}" HorizontalAlignment="Right" Command="{Binding Commands[RefreshCommand]}" ToolTip="Reload all SMTP configurations" AutomationProperties.Name="Reload all SMTP configurations">
+                     <fa:FontAwesome Icon="Solid_ArrowsRotate" FontSize="13"/>
+                  </Button>
+               </Grid>
+               <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                  <Grid MinWidth="759">
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <Grid Margin="24,10,20,10">
+                        <Grid.ColumnDefinitions>
+                           <ColumnDefinition Width="160"/>
+                           <ColumnDefinition Width="210"/>
+                           <ColumnDefinition Width="65"/>
+                           <ColumnDefinition Width="115"/>
+                           <ColumnDefinition Width="85"/>
+                           <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="NAME" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Grid.Column="1" Text="HOST" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Grid.Column="2" Text="PORT" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Grid.Column="3" Text="SECURITY" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Grid.Column="4" Text="ENABLED" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Grid.Column="5" Text="DEFAULT" Style="{StaticResource sectionCaptionStyle}"/>
+                     </Grid>
+                     <ListBox Grid.Row="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource smtpRowStyle}" BorderThickness="0" IsEnabled="{Binding CanBrowse}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid>
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="160"/>
+                                    <ColumnDefinition Width="210"/>
+                                    <ColumnDefinition Width="65"/>
+                                    <ColumnDefinition Width="115"/>
+                                    <ColumnDefinition Width="85"/>
+                                    <ColumnDefinition Width="80"/>
+                                 </Grid.ColumnDefinitions>
+                                 <TextBlock Grid.Column="0" Text="{Binding Name}" Margin="0,0,12,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                                 <TextBlock Grid.Column="1" Text="{Binding Settings.Host}" Margin="0,0,12,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Settings.Host}"/>
+                                 <TextBlock Grid.Column="2" Text="{Binding Settings.Port}" Margin="0,0,12,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Settings.Port}"/>
+                                 <TextBlock Grid.Column="3" Text="{Binding Settings.Security}" Margin="0,0,12,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Settings.Security}"/>
+                                 <CheckBox Grid.Column="4" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding Settings.Enabled, Mode=OneWay}" IsHitTestVisible="False" Focusable="False" AutomationProperties.Name="Enabled"/>
+                                 <CheckBox Grid.Column="5" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding IsDefault, Mode=OneWay}" IsHitTestVisible="False" Focusable="False" AutomationProperties.Name="Default"/>
+                              </Grid>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </ScrollViewer>
+            </Grid>
+         </Border>
+         <TextBlock Grid.Row="3" Text="{Binding DefaultStatus}" Margin="22,10,22,0" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap"/>
+         <TextBlock Grid.Row="4" Text="{Binding Status}" Margin="22,6,22,16" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+      </Grid>
+      <Border Background="{StaticResource surfaceStrongBrush}" Visibility="{Binding IsEditorOpen, Converter={StaticResource boolVisibility}}"/>
+      <Border Width="520" MaxWidth="{Binding ActualWidth, ElementName=smtpRoot}" HorizontalAlignment="Right" Background="{DynamicResource themeWindowBackgroundBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1,0,0,0" Visibility="{Binding IsEditorOpen, Converter={StaticResource boolVisibility}}">
+         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+            <StackPanel>
                <Border Style="{StaticResource cardStyle}" Padding="22,16">
                   <Grid>
-                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                     </Grid.RowDefinitions>
                      <Grid>
-                        <TextBlock Text="OUTGOING EMAIL" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center" />
-                        <Button Style="{StaticResource rowActionButtonStyle}" HorizontalAlignment="Right" Command="{Binding Commands[RefreshCommand]}"
-                                ToolTip="Reload SMTP settings" AutomationProperties.Name="Reload SMTP settings">
-                           <fa:FontAwesome Icon="Solid_ArrowsRotate" FontSize="13" />
-                        </Button>
+                        <TextBlock Text="SMTP PROFILE" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
                      </Grid>
                      <StackPanel Grid.Row="1" Margin="0,10,0,0" IsEnabled="{Binding CanEdit}">
-                        <CheckBox Content="Enable SMTP sending" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding Settings.Enabled}" />
-                        <TextBlock Text="Changes apply immediately after Save. Connection and email tests use saved settings." Style="{StaticResource fieldHelpStyle}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}"/>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+                        <TextBlock Text="Unique name used by applications to select this SMTP." Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,12" TextWrapping="Wrap"/>
+                        <CheckBox Content="Enable SMTP sending" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding Settings.Enabled}"/>
+                        <TextBlock Text="Changes apply immediately after Save. Connection and email tests use saved settings." Style="{StaticResource fieldHelpStyle}" Margin="0,8,0,0" TextWrapping="Wrap"/>
                         <Grid Margin="0,16,0,0">
-                           <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="110" /></Grid.ColumnDefinitions>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="110"/>
+                           </Grid.ColumnDefinitions>
                            <StackPanel Margin="0,0,8,0">
-                              <TextBlock Text="SMTP host" Style="{StaticResource fieldLabelStyle}" />
-                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Settings.Host, UpdateSourceTrigger=PropertyChanged}" Tag="smtp.example.com" />
+                              <TextBlock Text="SMTP host" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Settings.Host, UpdateSourceTrigger=PropertyChanged}" Tag="smtp.example.com"/>
                            </StackPanel>
                            <StackPanel Grid.Column="1">
-                              <TextBlock Text="Port" Style="{StaticResource fieldLabelStyle}" />
-                              <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="1" Maximum="65535" Value="{Binding Settings.Port}" />
+                              <TextBlock Text="Port" Style="{StaticResource fieldLabelStyle}"/>
+                              <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="1" Maximum="65535" Value="{Binding Settings.Port}"/>
                            </StackPanel>
                         </Grid>
                         <Grid Margin="0,14,0,0">
-                           <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="180"/>
+                           </Grid.ColumnDefinitions>
                            <StackPanel Margin="0,0,8,0">
-                              <TextBlock Text="Connection security" Style="{StaticResource fieldLabelStyle}" />
-                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding SecurityModes}" DisplayMemberPath="Caption" SelectedValuePath="Value" SelectedValue="{Binding Settings.Security}" />
+                              <TextBlock Text="Connection security" Style="{StaticResource fieldLabelStyle}"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding SecurityModes}" DisplayMemberPath="Caption" SelectedValuePath="Value" SelectedValue="{Binding Settings.Security}"/>
                            </StackPanel>
                            <StackPanel Grid.Column="1">
-                              <TextBlock Text="Timeout (seconds)" Style="{StaticResource fieldLabelStyle}" />
-                              <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="5" Maximum="120" Value="{Binding Settings.TimeoutSeconds}" />
+                              <TextBlock Text="Timeout (seconds)" Style="{StaticResource fieldLabelStyle}"/>
+                              <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="5" Maximum="120" Value="{Binding Settings.TimeoutSeconds}"/>
                            </StackPanel>
                         </Grid>
-                        <CheckBox Content="Authenticate with username and password" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding Authenticate}" Margin="0,16,0,0" />
+                        <CheckBox Content="Authenticate with username and password" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding Authenticate}" Margin="0,16,0,0"/>
                         <Grid Margin="0,10,0,0" IsEnabled="{Binding Authenticate}">
-                           <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="*"/>
+                           </Grid.ColumnDefinitions>
                            <StackPanel Margin="0,0,8,0">
-                              <TextBlock Text="Username" Style="{StaticResource fieldLabelStyle}" />
-                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Settings.Username, UpdateSourceTrigger=PropertyChanged}" />
+                              <TextBlock Text="Username" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Settings.Username, UpdateSourceTrigger=PropertyChanged}"/>
                            </StackPanel>
                            <StackPanel Grid.Column="1">
-                              <TextBlock Text="New password / app password" Style="{StaticResource fieldLabelStyle}" />
-                              <PasswordBox x:Name="passwordBox" Style="{StaticResource fieldPasswordStyle}" PasswordChanged="OnPasswordChanged" />
+                              <TextBlock Text="New password / app password" Style="{StaticResource fieldLabelStyle}"/>
+                              <PasswordBox x:Name="passwordBox" Style="{StaticResource fieldPasswordStyle}" PasswordChanged="OnPasswordChanged"/>
                            </StackPanel>
                         </Grid>
-                        <TextBlock Text="{Binding PasswordHint}" Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap" />
-                        <CheckBox Content="Clear stored password on Save" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding ClearPassword}" Margin="0,8,0,0" />
-                        <Grid Margin="0,16,0,0">
-                           <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                           <StackPanel Margin="0,0,8,0">
-                              <TextBlock Text="Sender email address" Style="{StaticResource fieldLabelStyle}" />
-                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Settings.FromAddress, UpdateSourceTrigger=PropertyChanged}" Tag="sender@example.com" />
-                           </StackPanel>
-                           <StackPanel Grid.Column="1">
-                              <TextBlock Text="Sender name" Style="{StaticResource fieldLabelStyle}" />
-                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Settings.FromName, UpdateSourceTrigger=PropertyChanged}" />
-                           </StackPanel>
-                        </Grid>
+                        <TextBlock Text="{Binding PasswordHint}" Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                        <CheckBox Content="Clear stored password on Save" Style="{StaticResource checkBoxStyle}" IsChecked="{Binding ClearPassword}" Margin="0,8,0,0"/>
+                        <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,16,0,4"/>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding ProfileNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                           <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                              <StackPanel Orientation="Horizontal">
+                                 <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/>
+                                 <TextBlock Text="Save" VerticalAlignment="Center"/>
+                              </StackPanel>
+                           </Button>
+                           <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[CancelCommand]}" Margin="8,0,0,0">
+                              <TextBlock Text="Cancel"/>
+                           </Button>
+                        </StackPanel>
                      </StackPanel>
                   </Grid>
                </Border>
-               <TextBlock Text="{Binding Status}" Margin="0,12,0,0" TextWrapping="Wrap" Style="{StaticResource fieldHelpStyle}" AutomationProperties.LiveSetting="Polite" />
+               <TextBlock Text="{Binding Status}" Margin="22,10,22,16" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap"/>
             </StackPanel>
          </ScrollViewer>
-      </Grid>
-      <ToggleButton Style="{StaticResource sheetScrimStyle}" IsChecked="{Binding IsTestOpen, Mode=TwoWay}" />
-      <Border Width="360" HorizontalAlignment="Right" Background="{DynamicResource themeWindowBackgroundBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1,0,0,0">
-         <Border.RenderTransform><TranslateTransform X="380" /></Border.RenderTransform>
-         <Border.Style>
-            <Style TargetType="Border">
-               <Setter Property="IsHitTestVisible" Value="False" />
-               <Setter Property="Visibility" Value="Hidden" />
-               <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsTestOpen}" Value="True">
-                     <Setter Property="IsHitTestVisible" Value="True" /><Setter Property="Visibility" Value="Visible" />
-                     <DataTrigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="0" Duration="0:0:0.22"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation></Storyboard></BeginStoryboard></DataTrigger.EnterActions>
-                     <DataTrigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="380" Duration="0:0:0.18" /></Storyboard></BeginStoryboard></DataTrigger.ExitActions>
-                  </DataTrigger>
-               </Style.Triggers>
-            </Style>
-         </Border.Style>
-         <Grid Margin="22,16">
-            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-            <Grid>
-               <TextBlock Text="TEST EMAIL" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center" />
-               <ToggleButton Style="{StaticResource sheetCloseToggleStyle}" IsChecked="{Binding IsTestOpen, Mode=TwoWay}" HorizontalAlignment="Right"
-                             ToolTip="Close test email" AutomationProperties.Name="Close test email"><fa:FontAwesome Icon="Solid_Xmark" FontSize="13" /></ToggleButton>
-            </Grid>
-            <ScrollViewer Grid.Row="1" Margin="0,18,0,16" VerticalScrollBarVisibility="Auto">
-               <StackPanel IsEnabled="{Binding CanEdit}">
-                  <TextBlock Text="Send a short test message through the saved SMTP server." Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" />
-                  <TextBlock Text="Recipient email address" Style="{StaticResource fieldLabelStyle}" Margin="0,16,0,4" />
-                  <TextBox x:Name="testRecipient" Style="{StaticResource fieldBoxStyle}" Text="{Binding TestRecipient, UpdateSourceTrigger=PropertyChanged}" Tag="recipient@example.com" />
-                  <TextBlock Text="Save your settings first and enable SMTP sending. A successful test confirms server acceptance; inbox delivery depends on the mail server." Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding TestStatus}" Style="{StaticResource fieldHelpStyle}" Margin="0,16,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-               </StackPanel>
-            </ScrollViewer>
-            <Button Grid.Row="2" HorizontalAlignment="Left" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SendTestCommand]}">
-               <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_PaperPlane" Style="{StaticResource buttonIconStyle}" /><TextBlock Text="Send test email" VerticalAlignment="Center" /></StackPanel>
-            </Button>
-         </Grid>
       </Border>
-      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}" />
+      <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
    </Grid>
 </UserControl>

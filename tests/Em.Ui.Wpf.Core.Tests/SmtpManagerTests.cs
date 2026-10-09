@@ -9,11 +9,26 @@ public class SmtpManagerTests
 {
    // Loads XAML resources only: no window, layout render, screenshot or live application.
    [WpfFact]
-   public void ManagerXamlLoadsSharedStylesWithoutRendering() {
+   public async Task ManagerXamlLoadsSharedStylesWithoutRendering() {
       var app = (EmApp)RuntimeHelpers.GetUninitializedObject(typeof(EmApp));
       var view = new SmtpManager(app);
       Assert.IsType<System.Windows.Style>(view.Resources["fieldPasswordStyle"]);
       Assert.IsType<System.Windows.Controls.PasswordBox>(view.FindName("passwordBox"));
+      foreach (var name in new[] { "testSender", "testRecipient" }) {
+         var combo = Assert.IsType<System.Windows.Controls.ComboBox>(view.FindName(name));
+         Assert.True(combo.IsEditable); combo.ApplyTemplate();
+         Assert.IsType<System.Windows.Controls.TextBox>(combo.Template.FindName("PART_EditableTextBox", combo));
+      }
+      var smtp = Assert.IsType<System.Windows.Controls.ComboBox>(view.FindName("testSmtp"));
+      var profile = new SmtpProfileDetail { Id = "profile-id", Name = "Primary relay" };
+      view.Vm.Profiles.Add(profile); smtp.SelectedItem = profile; smtp.ApplyTemplate();
+      Assert.Same(profile, view.Vm.TestProfile);
+      Assert.Same(smtp.ItemTemplate, smtp.SelectionBoxItemTemplate);
+      var caption = Assert.IsType<System.Windows.Controls.TextBlock>(smtp.ItemTemplate.LoadContent());
+      caption.DataContext = profile;
+      await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.DataBind);
+      caption.GetBindingExpression(System.Windows.Controls.TextBlock.TextProperty)!.UpdateTarget();
+      Assert.Equal("Primary relay", caption.Text);
       Assert.False(view.Vm.CanEdit);
    }
 

@@ -49,6 +49,15 @@ public sealed class SmtpService : ServicesBase, ISmtpService
 
    private async Task<SmtpSendResult> SendCoreAsync(SmtpMessage message, CancellationToken ct) {
       var (settings, password) = await _store.CredentialsAsync(ct);
+      return await SendSavedAsync(settings, password, message, ct);
+   }
+
+   internal async Task<SmtpConnectionResult> TestSavedAsync(SmtpSettings settings, string? password, CancellationToken ct) {
+      SmtpValidation.Settings(settings, !string.IsNullOrEmpty(password), true);
+      return new() { CheckedAtUtc = DateTime.UtcNow, IsSecure = await ExecuteAsync(settings, password, null, ct) };
+   }
+
+   internal async Task<SmtpSendResult> SendSavedAsync(SmtpSettings settings, string? password, SmtpMessage message, CancellationToken ct) {
       if (!settings.Enabled) throw new ActionException("SMTP sending is disabled. Enable it in SMTP Manager.", 409);
       SmtpValidation.Settings(settings, !string.IsNullOrEmpty(password), true);
       using var mime = SmtpValidation.Message(settings, message);

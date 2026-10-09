@@ -21,8 +21,8 @@ public class SmtpSettingsTests(SqlServerDatabase database)
       var settings = new SmtpSettings { Enabled = true, Host = "smtp.example.com", Username = "user", FromAddress = "sender@example.com" };
       var saved = await store.SaveAsync(new() { Settings = settings, Password = "private-test-password" }, ct);
       Assert.True(saved.HasPassword); Assert.Equal(1, saved.Revision);
-      var json = await db.ta_Metas.AsNoTracking().Where(m => m.cMetaKey == SmtpSettingsStore.SettingsKey).Select(m => m.cMetaValue).SingleAsync(ct);
-      Assert.DoesNotContain("private-test-password", json);
+      var encrypted = await db.ta_Smtps.AsNoTracking().Select(m => m.cSmtpPassword).SingleAsync(ct);
+      Assert.DoesNotContain("private-test-password", System.Text.Encoding.UTF8.GetString(encrypted!));
       Assert.DoesNotContain("private-test-password", JsonSerializer.Serialize(saved));
       Assert.Equal("private-test-password", (await store.CredentialsAsync(ct)).Password);
       var conflict = await Assert.ThrowsAsync<ActionException>(() => store.SaveAsync(new() { Settings = settings, ExpectedRevision = 0, Password = "overwritten" }, ct));

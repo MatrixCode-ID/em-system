@@ -26,9 +26,9 @@ public sealed class SmtpSettings
    public bool Authenticate { get; set; } = true;
    /// <summary>Authentication username.</summary>
    public string Username { get; set; } = "";
-   /// <summary>Sender email address. Callers cannot override it.</summary>
+   /// <summary>Optional legacy sender fallback. New callers supply the sender on each message.</summary>
    public string FromAddress { get; set; } = "";
-   /// <summary>Sender display name.</summary>
+   /// <summary>Optional legacy sender display name.</summary>
    public string FromName { get; set; } = "";
    /// <summary>Total time limit for one connection or send, in seconds (5–120).</summary>
    public int TimeoutSeconds { get; set; } = 30;
@@ -58,9 +58,13 @@ public sealed class SmtpSettingsSave
    public bool ClearPassword { get; set; }
 }
 
-/// <summary>Email submitted to the server; the sender comes from managed settings.</summary>
+/// <summary>Email submitted to the server, including its sender.</summary>
 public sealed class SmtpMessage
 {
+   /// <summary>Sender email address. Null uses the legacy saved sender, if present.</summary>
+   public string? FromAddress { get; set; }
+   /// <summary>Sender display name. Null uses the legacy name only when the legacy address is used.</summary>
+   public string? FromName { get; set; }
    /// <summary>Primary recipients, one plain email address per entry.</summary>
    public string[] To { get; set; } = [];
    /// <summary>Carbon copy recipients.</summary>
