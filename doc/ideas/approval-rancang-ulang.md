@@ -139,10 +139,7 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
        `ApprovalManagerNavigationPayload`, parameter navigasi hub) perlu membawa jenis juga.
      - Filtered unique index "satu request pending per (jenis dokumen, key, versi)" ditambah kolom jenis.
        Kolom `cApprovalRequestKind` sudah ada.
-     - **Nama claim bisa bertabrakan.** Claim pembaca `View {nama}` dan claim step (nama step = nama claim)
-       didaftarkan pada `TServices` modul. Bila Data `Quotation` dan Document `Quotation` memakai service yang
-       sama, nama claim-nya sama. Pola nama claim perlu memasukkan jenis (mis. `View Data Quotation`), atau
-       harus dipastikan beda service. Ini perlu diputuskan.
+     - ~~Nama claim bisa bertabrakan~~ → selesai dengan keputusan "engine tidak membuat claim" di bawah.
      - Hub sudah memisahkan sumber per jenis (`approval.data`/`approval.document`). Kelompoknya cukup
        ditambah jenis pada kunci.
    - Nama wajib unik. **Nama ganda membuat API gagal start**; aplikasi tidak boleh jalan dengan nama ganda.
@@ -228,6 +225,41 @@ penggantinya) mengembalikan info definisi: nama, jenis dari interface yang diimp
 kelompok bila ada. Dengan begitu UI bisa mengelompokkan per jenis atau per modul tanpa tabel master. Request
 yang jenisnya tidak lagi terdaftar tidak muncul (lihat konsekuensi nomor 1 di bagian FK).
 
+## Claim dan hak akses milik modul (pengguna 2026-10-16)
+
+**Lingkup:** keputusan ini dibahas untuk **Data Approval**. System Approval belum dibahas (pengguna
+2026-10-16); penerapannya ke System Approval diputuskan saat jenis itu dibahas.
+
+**Keputusan:**
+
+1. **Engine tidak membuat claim khusus approval.** Tidak ada lagi claim yang didaftarkan otomatis (claim
+   pembaca `View {nama}`, claim per step dari nama step). Modul yang memakai approval yang memegang claim-nya.
+   Contoh pada modul data master: action save modul itu yang dipanggil layar, backend modul itu yang
+   menjalankan engine approval, dan claim (mis. "boleh mengusulkan", "boleh approve") didefinisikan dan
+   didaftarkan oleh modul sendiri.
+2. **UI engine cukup bertanya ke API: user yang login boleh melakukan apa.** Approval Manager terbuka sesuai
+   kemampuan user itu (approval mana yang bisa dilihat, request mana yang menunggu keputusannya), tanpa
+   mengenal nama claim.
+
+**Konsekuensi (analisa agent, untuk plan):**
+
+- Interface definisi approval perlu menyediakan **pemeriksaan hak** yang diisi modul, misalnya
+  `CanView(caller)`, `CanDecide(caller, request/step)`, dan `CanWithdraw(caller, request)`. Modul
+  mengisinya dengan claim miliknya. Engine memanggil pemeriksaan ini di server untuk setiap action (list,
+  detail, keputusan, withdraw, comment, hub). Jadi pemeriksaan tetap di server, tetapi aturannya milik
+  modul.
+- Action engine baru (atau perluasan `GetMeta_ApprovalDocumentTypes`) mengembalikan "kemampuan" caller per
+  definisi, misalnya `{ jenis, nama, judul, canView, canDecide, jumlahMenunggu }`. Approval Manager dan hub
+  dibangun dari jawaban itu.
+- Hilang dari engine: `ApprovalAccess.HoldsClaim` terhadap claim step, `EmAppBuilder.ApprovalViewClaimName`,
+  dan registrasi claim otomatis di builder, untuk Data Approval. Aturan yang tetap di engine: akun sistem
+  tidak bisa mengusulkan atau memutuskan.
+- **Keputusan pengguna 2026-10-16:** user nyata dengan **switch administrator selalu lolos**. Engine
+  memberlakukannya secara umum sebelum memanggil pemeriksaan hak dari definisi modul, jadi modul tidak perlu
+  dan tidak bisa menolaknya. **Akun admin bawaan dan debugger tidak boleh berpartisipasi**: tidak bisa
+  mengusulkan, memutuskan, atau menarik. Aturan ini tetap di engine, sama seperti sekarang
+  (`RequireRealUserAsync`, FK ke tabel user).
+
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
 **Keputusan:** tahap pertama fokus pada **Data Approval** dan **System Approval**. **Document Approval** hanya
@@ -235,9 +267,6 @@ berupa **stub**: interface dan nilai enum jenisnya sudah ada supaya bentuk API l
 pemakaiannya melempar `NotImplementedException`. Viewer file, flow dinamis, dan progres dokumen ditunda.
 Pertanyaan terbuka nomor 4–6 (flow dinamis, progres dokumen, viewer) karenanya tidak memblokir plan tahap
 pertama.
-
-Catatan: tabrakan nama claim (lihat konsekuensi "nama unik per jenis") tetap relevan untuk Data dan System
-yang bernama sama.
 
 Pemakai pertama di produk turunan (2026-10-16): satu modul data master untuk Data Approval dan satu modul
 dokumen transaksi penjualan untuk System Approval. Jadi plan engine cukup membuktikan kedua jenis pada dua
@@ -254,8 +283,16 @@ pemakai itu, ditambah module uji `Em.Test`.
    - **Tempat data request** (header, step, item, comment): tetap di tabel engine dengan kunci subjek opaque,
      atau ikut di database modul?
    - Bagaimana Approval Manager dan hub menampilkan request lintas modul bila definisinya tersebar di modul.
-2. **Flow Data Approval.** Selalu satu keputusan berbasis claim, atau boleh multi-step?
-3. **"Mudah diimplementasi" untuk Data Approval.** Untuk tabel berkolom standar, engine bisa generik lewat
+2. ~~**Flow Data Approval.** Selalu satu keputusan berbasis claim, atau boleh multi-step?~~ **Diputuskan
+   pengguna 2026-10-16:** Data Approval **tanpa multi-step**. Cukup satu keputusan, dan definisi modul hanya
+   menentukan **siapa yang boleh approve** (`CanDecide`). Kebutuhan berlapis masuk System Approval.
+3. **Arah dari pengguna 2026-10-16:** modul pemakai Data Approval tidak boleh butuh banyak berkas pembantu.
+   Produk turunan menetapkan aturan modul "satu service class + satu helper statis + satu file definisi
+   approval". Konsekuensinya, engine perlu menyediakan helper Data Approval untuk bagian load/apply yang
+   berulang: peta kolom dengan normalisasi teks per tipe, baca/tulis kolom ke entity ORM, cari baris
+   berdasarkan key record, 409 bila baris hilang, dan penanganan operasi Update/Delete/Reinstate standar.
+   Modul hanya menulis bagian khas (pembuatan key baru, soft delete khusus, validasi relasi).
+   **"Mudah diimplementasi" untuk Data Approval.** Untuk tabel berkolom standar, engine bisa generik lewat
    metadata ORM, sedangkan tabel tanpa kolom standar atau dengan composite key tetap butuh handler dari modul.
    Apakah dua jalur ini diterima? Apakah nilai tetap string per kolom?
 4. **"Dinamis" di Document Approval.** Siapa yang menyusun step: admin lewat template per proyek atau kategori,
