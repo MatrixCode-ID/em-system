@@ -2,6 +2,18 @@
  <ResourceDictionary.MergedDictionaries>
   <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/Palette.xaml"/>
  </ResourceDictionary.MergedDictionaries>
+ <Style x:Key="materialListViewStyle" TargetType="ListView">
+  <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+  <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+  <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListView">
+   <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+    <ScrollViewer Padding="{TemplateBinding Padding}" Focusable="False"
+     Style="{DynamicResource {x:Static GridView.GridViewScrollViewerStyleKey}}">
+     <ItemsPresenter/>
+    </ScrollViewer>
+   </Border>
+  </ControlTemplate></Setter.Value></Setter>
+ </Style>
  <Style x:Key="materialListViewItemStyle" TargetType="ListViewItem">
   <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
   <Setter Property="Padding" Value="8,12"/>

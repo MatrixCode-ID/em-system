@@ -81,7 +81,7 @@
     <Border Style="{StaticResource cardStyle}" Visibility="{Binding ShowList, Converter={StaticResource boolToVisibility}}">
      <Grid>
       <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-      <ListView x:Name="RequestsList" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" BorderThickness="0" Background="Transparent"
+      <ListView x:Name="RequestsList" Style="{StaticResource materialListViewStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" BorderThickness="0" Background="Transparent"
        IsEnabled="{Binding IsReady}" Foreground="{DynamicResource themeWindowForegroundBrush}" ItemContainerStyle="{StaticResource materialListViewItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
       <TextBlock Text="No approval requests" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.55">
        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Rows.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
