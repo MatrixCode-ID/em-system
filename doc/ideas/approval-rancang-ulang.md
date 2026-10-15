@@ -124,23 +124,41 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
    dua modul mendeklarasikan nama yang sama (sekarang `ToDictionary` hanya melempar `ArgumentException`
    generik), dan validasi panjang nama sesuai kolom (`varchar(25)`).
    **Keputusan pengguna 2026-10-16:**
-   - Nama approval diberi awalan jenisnya, contoh `data.quotation` (pola `<jenis>.<nama>`; awalan untuk
-     jenis lain, misalnya `system.`/`document.`, mengikuti bentuk yang sama, menunggu rancangan jenis itu).
+   - ~~Nama approval diberi awalan jenisnya, contoh `data.quotation`.~~ **Direvisi pengguna 2026-10-16:**
+     `data.quotation` hanya contoh. Nama bisa polos, misalnya `Quotation`, tanpa awalan. **Jenis approval
+     diambil dari enum** (`ApprovalKind`; sekarang `Data`/`Document`, nanti ditambah `System` dan disesuaikan
+     dengan tiga jenis), bukan dari teks nama.
      Nama didefinisikan di sisi aplikasi (host dan modulnya), bukan di engine.
+   - **Keputusan pengguna 2026-10-16: nama unik per jenis.** `Quotation` boleh ada sebagai Data dan sebagai
+     Document sekaligus. Yang wajib unik adalah pasangan **(jenis, nama)**; pengecekan ganda saat kompilasi
+     dan startup memakai pasangan itu.
+   - Konsekuensi (analisa agent, untuk plan):
+     - Kunci registry menjadi (jenis, nama). `ApprovalRegistry.Get(docType)` dan semua pencarian ikut
+       membawa jenis.
+     - API yang sekarang hanya membawa nama (`GetMeta_ApprovalRequestsByDoc`, filter list, payload
+       `ApprovalManagerNavigationPayload`, parameter navigasi hub) perlu membawa jenis juga.
+     - Filtered unique index "satu request pending per (jenis dokumen, key, versi)" ditambah kolom jenis.
+       Kolom `cApprovalRequestKind` sudah ada.
+     - **Nama claim bisa bertabrakan.** Claim pembaca `View {nama}` dan claim step (nama step = nama claim)
+       didaftarkan pada `TServices` modul. Bila Data `Quotation` dan Document `Quotation` memakai service yang
+       sama, nama claim-nya sama. Pola nama claim perlu memasukkan jenis (mis. `View Data Quotation`), atau
+       harus dipastikan beda service. Ini perlu diputuskan.
+     - Hub sudah memisahkan sumber per jenis (`approval.data`/`approval.document`). Kelompoknya cukup
+       ditambah jenis pada kunci.
    - Nama wajib unik. **Nama ganda membuat API gagal start**; aplikasi tidak boleh jalan dengan nama ganda.
    - Temuan kode: registry dibangun saat startup (`EmApp.cs`, `new ApprovalRegistry(builder.ApprovalFlows)`
      sebelum app jalan), dan `ToDictionary` sudah melempar exception pada nama ganda. Jadi API memang sudah
      gagal start, tetapi pesannya generik (`ArgumentException`, "An item with the same key…"). Yang perlu
      dibuat: pengecekan eksplisit di builder yang menyebut nama ganda beserta kedua modul pendeklarasinya,
-     plus validasi format nama (awalan jenis, karakter yang boleh) dan panjang kolom (`varchar(25)`: cukup
-     untuk `data.quotation`, tetapi bisa sempit untuk nama lain, jadi panjang kolom juga perlu dipertimbangkan).
+     plus validasi format nama (karakter yang boleh) dan panjang kolom (`varchar(25)`; panjang kolom juga perlu
+     dipertimbangkan).
    - **Keputusan pengguna 2026-10-16: validasi saat kompilasi.** Nama ganda membuat **build host API gagal**,
      bukan hanya startup. Pengecekan saat startup tetap ada sebagai lapis kedua.
    - Catatan teknis (analisa agent, belum keputusan): nama approval sekarang hanya argumen string pada
      pemanggilan `AddDataApproval(...)` di assembly modul yang sudah dikompilasi. Saat host dikompilasi,
      argumen itu tidak bisa dibaca dari metadata. Supaya bisa dicek saat kompilasi, nama harus terlihat di
      **metadata**. Usulan: modul mendeklarasikan nama lewat attribute, misalnya
-     `[assembly: ApprovalName("data.quotation")]` atau attribute pada class/konstanta deklarasinya. Builder di
+     `[assembly: ApprovalName("Quotation")]` atau attribute pada class/konstanta deklarasinya. Builder di
      runtime mencocokkan deklarasi dengan attribute itu, supaya tidak ada nama yang lolos tanpa attribute.
      Pemeriksanya ada dua pilihan:
      1. **Roslyn analyzer** yang dikirim bersama `Em.Api.Core`. Analyzer berjalan saat host dikompilasi,
@@ -157,7 +175,7 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
      `AddDataApproval(docType, claim, flow => …)`.
    - Sketsa (analisa agent, nama belum diputuskan):
      ```csharp
-     [Approval("data.quotation")]                       // nama di metadata, bisa dibaca saat kompilasi
+     [Approval("Quotation")]                            // nama di metadata, bisa dibaca saat kompilasi
      public sealed class QuotationApproval : IDataApprovalDefinition<QuotationServices>
      {
         public string ApproveClaim => "Approve Update";
@@ -170,7 +188,7 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
      Nama ditaruh di attribute, bukan property, karena nilai property tidak terbaca dari metadata saat
      kompilasi, sedangkan attribute dan konstanta bisa. Implementasi interface juga terlihat sebagai tipe di
      metadata. Analyzer di host (dikirim bersama `Em.Api.Core`) bisa memeriksa:
-     (a) setiap implementor interface punya attribute nama, (b) format nama (awalan jenis), dan (c) tidak ada
+     (a) setiap implementor interface punya attribute nama, (b) format nama, dan (c) tidak ada
      nama ganda di semua assembly yang direferensikan. Saat startup, builder memeriksa ulang ketiganya dengan
      pesan yang menyebut nama dan class-nya.
    - **Keputusan pengguna 2026-10-16: registrasi eksplisit.** Modul mendaftarkan setiap class approval lewat
@@ -184,8 +202,9 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
      `IDocumentApprovalDefinition<…>` (nama masih sketsa). Masing-masing punya builder flow sendiri.
    - Analisa agent (belum keputusan): ketiganya bisa diturunkan dari satu interface penanda kosong (mis.
      `IApprovalDefinition`). Dengan penanda itu, registry, analyzer, dan pengecekan nama ganda cukup melihat
-     satu tipe. Awalan nama (`data.`/`system.`/`document.`) dapat dicek terhadap interface yang
-     diimplementasikan, mis. class `IDataApprovalDefinition` wajib bernama `data.*`. Apakah
+     satu tipe. Nilai enum jenis (`ApprovalKind`) bisa diturunkan otomatis dari interface yang
+     diimplementasikan (`IDataApprovalDefinition` → `Data`), jadi developer tidak menulisnya dua kali dan
+     keduanya tidak mungkin berbeda. Apakah
      `builder.AddApproval<T>()` dibuat satu method generik untuk semua jenis, atau satu method per jenis,
      diputuskan saat plan.
 3. **Deskripsi/judul jenis.** Engine tidak memakai `cDocDesc`/`cDocAbv`. Bila tampilan butuh judul yang ramah,
@@ -195,6 +214,34 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
    dipakai produk turunan untuk keperluannya sendiri.
 5. **Dokumen yang ikut diperbarui:** bagian "Tables" di [engine-approval.md](../engine/engine-approval.md)
    ("The document type must already be registered…") dan keterangan seed jenis dokumen.
+
+## Pengelompokan di Approval Manager dari definisi API (pengguna 2026-10-16)
+
+**Keputusan:** daftar dan pengelompokan approval di Approval Manager (dan hub) diambil dari **definisi yang
+terdaftar di API**, bukan dari database.
+
+**Temuan kode (2026-10-16):** sebagian sudah begitu. `ApprovalManager.xaml.cs` mengisi pilihan jenis dari
+`GetMeta_ApprovalDocumentTypes`, yang membaca `ApprovalRegistry` (deklarasi), bukan tabel. Hak lihat,
+filter list, dan hub juga memakai registry. Yang kurang: action itu hanya mengembalikan `string[]` nama, tanpa
+jenis (data/system/document), judul tampilan, atau kelompok. Dalam rancangan baru, action ini (atau
+penggantinya) mengembalikan info definisi: nama, jenis dari interface yang diimplementasikan, judul, dan
+kelompok bila ada. Dengan begitu UI bisa mengelompokkan per jenis atau per modul tanpa tabel master. Request
+yang jenisnya tidak lagi terdaftar tidak muncul (lihat konsekuensi nomor 1 di bagian FK).
+
+## Cakupan tahap pertama (pengguna 2026-10-16)
+
+**Keputusan:** tahap pertama fokus pada **Data Approval** dan **System Approval**. **Document Approval** hanya
+berupa **stub**: interface dan nilai enum jenisnya sudah ada supaya bentuk API lengkap, tetapi registrasi atau
+pemakaiannya melempar `NotImplementedException`. Viewer file, flow dinamis, dan progres dokumen ditunda.
+Pertanyaan terbuka nomor 4–6 (flow dinamis, progres dokumen, viewer) karenanya tidak memblokir plan tahap
+pertama.
+
+Catatan: tabrakan nama claim (lihat konsekuensi "nama unik per jenis") tetap relevan untuk Data dan System
+yang bernama sama.
+
+Pemakai pertama di produk turunan (2026-10-16): satu modul data master untuk Data Approval dan satu modul
+dokumen transaksi penjualan untuk System Approval. Jadi plan engine cukup membuktikan kedua jenis pada dua
+pemakai itu, ditambah module uji `Em.Test`.
 
 ## Pertanyaan terbuka
 
