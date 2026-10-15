@@ -96,11 +96,117 @@ sama.
 
 - (2026-10-16) Ada tiga jenis approval: Data, Document, System, dengan arti seperti di "Gagasan pengguna".
 - (2026-10-16) Engine tidak boleh memiliki konsep dokumen. Daftar dan arti dokumen adalah milik implementor.
+- (2026-10-16) **Inti approval dibuat oleh service yang memakainya.** Contoh: sebuah modul data master yang
+  memakai Data Approval menyiapkan sendiri **settings** approval-nya dan **handler**-nya. Engine hanya
+  menyediakan mekanisme (runtime flow, keputusan, audit) yang dijalankan atas settings dan handler dari modul,
+  tanpa registry jenis dokumen milik engine. Ini menjawab sebagian pertanyaan 1: mekanismenya boleh bersama,
+  tetapi definisi tiap approval milik modul.
+
+## Usulan: lepas FK ke tabel jenis dokumen (pengguna 2026-10-16)
+
+Usulan pengguna: FK dari kolom jenis dokumen pada request ke `ta_Doc` dimatikan. Nama jenis hanya ada di
+deklarasi developer (`AddDataApproval`/`AddDocumentApproval`), dan engine mencarinya dari situ. Ini langkah
+pertama menuju "engine tanpa konsep dokumen" dan bisa dikerjakan terpisah dari rancang ulang besar.
+
+**Temuan kode (2026-10-16):** kode C# engine tidak pernah membaca `ta_Doc`. Satu-satunya keterkaitannya adalah
+`FK_ta_ApprovalRequest_ta_Doc` di `020-approval.sql`. Engine sudah mencari jenis lewat `ApprovalRegistry`
+yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklarasikan dengan 404, dan
+`GetMeta_ApprovalDocumentTypes` membaca dari registry. Jadi melepas FK tidak membutuhkan perubahan kode.
+
+**Konsekuensi dan hal yang perlu diatur:**
+
+1. **Nama jenis menjadi kontrak permanen.** Request lama menyimpan nama jenis sebagai teks. Kalau jenis
+   di-rename atau dihapus dari kode, request lama tidak punya flow lagi: tidak terbaca di Approval Manager
+   (hak lihat dihitung dari flow) dan tidak bisa diputuskan. Aturannya: nama yang sudah dipakai tidak diubah;
+   rename harus disertai migrasi data request.
+2. **Validasi bergeser ke startup.** Tanpa FK, salah ketik nama tidak lagi ditolak database, tetapi tetap
+   tertahan karena submit memakai flow dari registry. Yang perlu ditambahkan di builder: pesan yang jelas bila
+   dua modul mendeklarasikan nama yang sama (sekarang `ToDictionary` hanya melempar `ArgumentException`
+   generik), dan validasi panjang nama sesuai kolom (`varchar(25)`).
+   **Keputusan pengguna 2026-10-16:**
+   - Nama approval diberi awalan jenisnya, contoh `data.quotation` (pola `<jenis>.<nama>`; awalan untuk
+     jenis lain, misalnya `system.`/`document.`, mengikuti bentuk yang sama, menunggu rancangan jenis itu).
+     Nama didefinisikan di sisi aplikasi (host dan modulnya), bukan di engine.
+   - Nama wajib unik. **Nama ganda membuat API gagal start**; aplikasi tidak boleh jalan dengan nama ganda.
+   - Temuan kode: registry dibangun saat startup (`EmApp.cs`, `new ApprovalRegistry(builder.ApprovalFlows)`
+     sebelum app jalan), dan `ToDictionary` sudah melempar exception pada nama ganda. Jadi API memang sudah
+     gagal start, tetapi pesannya generik (`ArgumentException`, "An item with the same key…"). Yang perlu
+     dibuat: pengecekan eksplisit di builder yang menyebut nama ganda beserta kedua modul pendeklarasinya,
+     plus validasi format nama (awalan jenis, karakter yang boleh) dan panjang kolom (`varchar(25)`: cukup
+     untuk `data.quotation`, tetapi bisa sempit untuk nama lain, jadi panjang kolom juga perlu dipertimbangkan).
+   - **Keputusan pengguna 2026-10-16: validasi saat kompilasi.** Nama ganda membuat **build host API gagal**,
+     bukan hanya startup. Pengecekan saat startup tetap ada sebagai lapis kedua.
+   - Catatan teknis (analisa agent, belum keputusan): nama approval sekarang hanya argumen string pada
+     pemanggilan `AddDataApproval(...)` di assembly modul yang sudah dikompilasi. Saat host dikompilasi,
+     argumen itu tidak bisa dibaca dari metadata. Supaya bisa dicek saat kompilasi, nama harus terlihat di
+     **metadata**. Usulan: modul mendeklarasikan nama lewat attribute, misalnya
+     `[assembly: ApprovalName("data.quotation")]` atau attribute pada class/konstanta deklarasinya. Builder di
+     runtime mencocokkan deklarasi dengan attribute itu, supaya tidak ada nama yang lolos tanpa attribute.
+     Pemeriksanya ada dua pilihan:
+     1. **Roslyn analyzer** yang dikirim bersama `Em.Api.Core`. Analyzer berjalan saat host dikompilasi,
+        membaca attribute di semua assembly yang direferensikan, dan melaporkan nama ganda sebagai error
+        (juga tampil di IDE).
+     2. **MSBuild task/target** setelah compile host, yang memindai assembly di output (mis. lewat
+        `MetadataLoadContext`) lalu menggagalkan build.
+     Batasnya: kompilasi hanya mengenal modul yang direferensikan host. Modul yang dimuat dinamis, atau nama
+     yang dibentuk saat runtime, hanya tertangkap saat startup.
+   - **Keputusan pengguna 2026-10-16: definisi approval lewat interface engine.** Engine menyediakan interface
+     untuk membangun approval. Developer mengimplementasikannya di modul, satu class per approval (mis. di
+     modul data master atau modul penawaran). Saat build dan saat run, engine memeriksa semua registrasi
+     approval dan menolak nama yang sama. Ini menggantikan deklarasi lewat lambda di
+     `AddDataApproval(docType, claim, flow => …)`.
+   - Sketsa (analisa agent, nama belum diputuskan):
+     ```csharp
+     [Approval("data.quotation")]                       // nama di metadata, bisa dibaca saat kompilasi
+     public sealed class QuotationApproval : IDataApprovalDefinition<QuotationServices>
+     {
+        public string ApproveClaim => "Approve Update";
+        public void Build(ApprovalDataFlowBuilder<QuotationServices> flow) =>
+           flow.Entity<QuotationKey>("Quotation", LoadAsync, ApplyAsync, order: 0).Summary(SummarizeAsync);
+        // handler load/apply/summary sebagai method class ini atau service modul
+     }
+     // registrasi: builder.AddApproval<QuotationApproval>()  (atau scan assembly modul)
+     ```
+     Nama ditaruh di attribute, bukan property, karena nilai property tidak terbaca dari metadata saat
+     kompilasi, sedangkan attribute dan konstanta bisa. Implementasi interface juga terlihat sebagai tipe di
+     metadata. Analyzer di host (dikirim bersama `Em.Api.Core`) bisa memeriksa:
+     (a) setiap implementor interface punya attribute nama, (b) format nama (awalan jenis), dan (c) tidak ada
+     nama ganda di semua assembly yang direferensikan. Saat startup, builder memeriksa ulang ketiganya dengan
+     pesan yang menyebut nama dan class-nya.
+   - **Keputusan pengguna 2026-10-16: registrasi eksplisit.** Modul mendaftarkan setiap class approval lewat
+     builder, misalnya `builder.AddApproval<QuotationApproval>()` di `Add<Modul>()`. Tidak ada scan assembly.
+     Hanya approval yang didaftarkan yang aktif. Konsekuensi (analisa agent): class yang mengimplementasikan
+     interface tetapi lupa didaftarkan tidak aktif dan tidak terdeteksi saat startup. Analyzer saat kompilasi
+     tetap memeriksa nama ganda pada semua implementor, terdaftar atau tidak, supaya sebuah nama tidak bisa
+     bertabrakan begitu class itu didaftarkan.
+   - **Keputusan pengguna 2026-10-16: satu interface per jenis.** Flow setiap jenis berbeda, jadi interface-nya
+     dipisah: `IDataApprovalDefinition<TServices>`, `ISystemApprovalDefinition<…>`, dan
+     `IDocumentApprovalDefinition<…>` (nama masih sketsa). Masing-masing punya builder flow sendiri.
+   - Analisa agent (belum keputusan): ketiganya bisa diturunkan dari satu interface penanda kosong (mis.
+     `IApprovalDefinition`). Dengan penanda itu, registry, analyzer, dan pengecekan nama ganda cukup melihat
+     satu tipe. Awalan nama (`data.`/`system.`/`document.`) dapat dicek terhadap interface yang
+     diimplementasikan, mis. class `IDataApprovalDefinition` wajib bernama `data.*`. Apakah
+     `builder.AddApproval<T>()` dibuat satu method generik untuk semua jenis, atau satu method per jenis,
+     diputuskan saat plan.
+3. **Deskripsi/judul jenis.** Engine tidak memakai `cDocDesc`/`cDocAbv`. Bila tampilan butuh judul yang ramah,
+   tambahkan sebagai parameter deklarasi, bukan tabel.
+4. **Tabel `ta_Doc` keluar dari skrip engine.** `020-approval.sql` tidak lagi membuat `ta_Doc` dan FK-nya.
+   Database lama butuh skrip di `updates/` yang hanya men-drop FK, tidak men-drop tabel, karena tabel itu bisa
+   dipakai produk turunan untuk keperluannya sendiri.
+5. **Dokumen yang ikut diperbarui:** bagian "Tables" di [engine-approval.md](../engine/engine-approval.md)
+   ("The document type must already be registered…") dan keterangan seed jenis dokumen.
 
 ## Pertanyaan terbuka
 
 1. **Inti bersama.** Apakah ketiga jenis berbagi satu runtime flow (step, signer, keputusan, audit, comment,
-   hub), atau masing-masing berdiri sendiri?
+   hub), atau masing-masing berdiri sendiri? Sebagian terjawab 2026-10-16 (definisi milik modul; lihat
+   keputusan). Yang masih terbuka:
+   - **Bentuk "settings":** deklarasi di kode saat startup seperti `AddDataApproval` sekarang, atau data
+     konfigurasi yang bisa diubah saat runtime? Kalau data, disimpan di database modul atau di tabel engine
+     dengan kunci milik modul?
+   - **Tempat data request** (header, step, item, comment): tetap di tabel engine dengan kunci subjek opaque,
+     atau ikut di database modul?
+   - Bagaimana Approval Manager dan hub menampilkan request lintas modul bila definisinya tersebar di modul.
 2. **Flow Data Approval.** Selalu satu keputusan berbasis claim, atau boleh multi-step?
 3. **"Mudah diimplementasi" untuk Data Approval.** Untuk tabel berkolom standar, engine bisa generik lewat
    metadata ORM, sedangkan tabel tanpa kolom standar atau dengan composite key tetap butuh handler dari modul.
