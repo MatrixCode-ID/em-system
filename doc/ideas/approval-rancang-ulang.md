@@ -280,11 +280,149 @@ pilihan akhirnya belum diputuskan.
 4. **Satu request boleh berisi beberapa tabel.** Action modul (mis. "pelanggan baru") mengirim payload
    berisi beberapa entity. Engine memecahnya per tabel memakai definisi masing-masing, dan semuanya tetap
    satu request yang di-approve atau di-reject sekaligus.
-5. **Relasi ke induk dideklarasikan di definisi anak** lewat `ForeignKeyTable` (`Type?`) dan
+5. ~~**Relasi ke induk dideklarasikan di definisi anak** lewat `ForeignKeyTable` (`Type?`) dan
    `ForeignKeyColumns`. Untuk tabel induk, `ForeignKeyTable` **boleh `null`** dan `ForeignKeyColumns`
-   **boleh kosong**.
+   **boleh kosong**.~~ Diganti keputusan nomor 7.
+6. **Foreign key dicocokkan dengan key induk berdasarkan urutan** (pengguna 2026-10-16). Kolom ke-n di
+   `ForeignKeyColumns` anak berpasangan dengan kolom ke-n di `KeyColumns` induk. Startup memeriksa jumlah dan
+   tipenya. Bila nama kolom anak berbeda dari pasangannya di induk, startup memberi **peringatan**, bukan
+   error, karena dua kolom bertipe sama yang tertukar urutannya tidak tertangkap oleh pemeriksaan tipe.
+7. **Satu induk per tabel, dipastikan lewat tipe** (pengguna 2026-10-16). Tabel anak memakai interface
+   sendiri yang membawa tipe induknya sebagai parameter generic: `IEmApprovalDataChild<TEntity, TParent>`.
+   Tabel induk memakai `IEmApprovalData<TEntity>`. Property `ForeignKeyTable` (`Type?`) dihapus. Induk
+   diketahui saat kompilasi, sehingga kombinasi "induk null + kolom terisi" tidak bisa ditulis lagi.
+8. **Satu request adalah satu pohon dengan satu induk, dan hak hanya diperiksa di induk** (pengguna
+   2026-10-16). Nama dan judul request diambil dari definisi induk. Pemeriksaan hak
+   (`CanView`/`CanDecide`/`CanWithdraw`) hanya ada di definisi induk. Definisi anak hanya mengatur struktur dan
+   mewarisi hak induknya, jadi approver tidak perlu lolos pemeriksaan di setiap tabel. Ini menggantikan usulan
+   lama "approver harus lolos di semua definisi".
+9. **Nama interface memakai prefix `IEm`** (pengguna 2026-10-16): `IEmApproval` (base), `IEmApprovalData<T>`,
+   `IEmApprovalDataChild<T, TParent>`, nanti `IEmApprovalSystem…`, dan stub `IEmApprovalDocument…`. Nama kerja
+   `IEmSysApproval…` tidak dipakai, karena "EmSys" adalah nama paket NuGet lama.
+10. **Definisi dan perilaku dalam satu class di modul backend** (pengguna 2026-10-16, pilihan "A2"). Class
+    definisi berisi deklarasi (`KeyColumns`, `TrackedColumns`, dan sebagainya) sekaligus hook yang butuh
+    database (pembuatan key baru, validasi). Hook ditulis sebagai *default interface method*, sehingga class
+    yang tidak membutuhkannya tidak menulis apa pun. Tidak ada class handler terpisah; registrasi tetap
+    `builder.AddApproval<T>()`. Akibatnya:
+    - Kontrak approval (interface definisi, `KeyPart`, parsing key) **tetap di `Em.Api.Core`**. Rencana
+      memindahkannya ke `Em.Libs` dibatalkan.
+    - Hook menerima akses ke context database modul yang ikut transaksi approval, jadi penguncian baris
+      (mis. penomoran dengan lock) berjalan di transaksi yang sama.
+    - Client tidak membaca definisi. Yang dibutuhkan UI (hak user; nanti kolom yang butuh approval atau khusus
+      approver) diambil dari action "kemampuan" di API. Konstanta nama approval dan key record yang dipakai
+      client boleh tetap di library kontrak produk.
+    - Analyzer nama ganda tetap berjalan, karena host API mereferensikan assembly modul.
+11. **Create disimpan sebagai JSON baris penuh, lalu di-insert saat apply** (pengguna 2026-10-16). Saat
+    submit, engine menyerialisasi seluruh `TEntity` ke JSON di item request; tabel tujuan tidak disentuh.
+    Item anak menunjuk item induknya **di dalam request**, bukan nilai key induk. Saat approve, dalam satu
+    transaksi engine: deserialisasi JSON → `CreateKeyAsync` induk (hook di definisi, default: key harus sudah
+    terisi) → insert induk → salin key induk ke `ForeignKeyColumns` anak → `CreateKeyAsync` anak → insert
+    anak. Akibatnya:
+    - **Tidak ada key sementara.** Modul tidak lagi membuat key palsu untuk baris baru atau mengganti key anak
+      sendiri. Nomor key tidak berlubang bila request ditolak, tetapi nilai key baru baru diketahui setelah
+      approve.
+    - Semua kolom ikut di JSON, bukan hanya `TrackedColumns`; insert generik lewat context modul.
+    - Analisa agent (untuk plan): saat apply, engine menolak JSON yang tidak cocok lagi dengan `TEntity`
+      (property hilang/berganti tipe) dengan pesan jelas; nilai tanggal/desimal diserialisasi invarian;
+      validasi modul dipanggil saat submit dan saat apply.
+    - **Penyimpanan JSON (pengguna 2026-10-16):** JSON disimpan di kolom standar `json_object` pada item
+      request (usulan agent memakai kolom khusus tidak dipakai). Setelah **approve**, engine
+      **me-null-kan** `json_object` item itu, karena barisnya sudah ada di tabel tujuan. Untuk request yang
+      **ditolak atau dibatalkan**, JSON **tetap disimpan**, karena tidak ada baris di tabel tujuan dan JSON
+      adalah satu-satunya catatan isi pengajuan. Aturan null-kan ini **hanya untuk Create**.
+    - Akibat (analisa agent): request Create yang sudah approved tidak lagi menyimpan isi yang diajukan; detailnya
+      di Approval Manager hanya menunjukkan bahwa baris dibuat beserta key-nya. Usulan agent untuk menulis
+      `TrackedColumns` ke baris field sebelum JSON di-null-kan tidak diambil.
+    - Arti khusus `json_object` pada item Create dicatat di panduan engine.
+12. **Request Create tidak bisa diedit** (pengguna 2026-10-16). Selama menunggu, pilihannya hanya **dibatalkan**
+    oleh pengaju (withdraw) atau **ditolak** oleh approver. Untuk mengubah isinya, pengaju membatalkan lalu
+    mengajukan ulang. Alasannya: datanya baru, jadi tidak perlu alur revisi yang rumit. Ini sejalan dengan
+    engine sekarang, yang memang tidak punya edit untuk request yang menunggu.
+13. **Update tetap old/new per kolom dengan pembandingan tiga nilai** (pengguna 2026-10-16). Penyimpanan
+    (satu baris field per kolom: old, new, dan nilai sekarang saat diputuskan) serta aturan pembandingan
+    (sekarang = new → dilewati; sekarang = old → diterapkan; lain → konflik, bisa di-override dengan alasan;
+    baris hilang → konflik final) dipertahankan seperti engine sekarang. Yang berubah: **daftar kolom dihitung
+    engine** dari dua objek yang dikirim layar, yaitu objek asli saat dimuat dan objek hasil edit
+    (mis. `DataChange.Update(original, modified)`), hanya pada `TrackedColumns`. Modul tidak lagi menyusun
+    daftar kolom, dan load/apply Update dikerjakan engine secara generik lewat `KeyColumns`.
+14. **Delete dideklarasikan di definisi** (pengguna 2026-10-16). `DeleteMode` bernilai `None` (default; request
+    Delete ditolak saat submit), `Hard` (engine menghapus baris), atau `Soft`. Untuk `Soft`, definisi
+    menyebut `DeleteStateColumn` (wajib) dan `DeleteStampColumn` (opsional, diisi waktu saat Delete) lewat
+    `nameof`. Kolom state `bool` diisi `true`. Kolom state enum/angka memakai nilai yang **dideklarasikan di
+    definisi** (mis. `DeletedStateValue`); engine tidak menebak dan tidak memakai nilai bawaan. Hook khusus
+    (mis. `OnDelete(row)`) hanya cadangan bila pola deklaratif tidak cukup.
+15. **Delete induk tidak menyentuh anak** (pengguna 2026-10-16). Engine hanya menghapus/menandai baris yang
+    diajukan; baris anak tidak ikut ditandai. Hard delete induk yang masih punya anak gagal oleh FK database.
+16. **Data Approval tidak punya reinstate** (pengguna 2026-10-16). Reinstate (membuka ulang request yang sudah
+    selesai) hanya ada di System Approval dan Document Approval, karena di sana banyak orang menandatangani;
+    request yang di-reinstate **harus ditandatangani ulang dari awal**. Data Approval cukup satu keputusan,
+    jadi perubahan setelah approve diajukan sebagai request baru.
+17. **Pemulihan baris soft delete lewat operasi item `Restore`** (pengguna 2026-10-16). Operasi item
+    `Reinstate` diganti nama menjadi `Restore`, supaya tidak tertukar dengan reinstate request. `Restore`
+    adalah request baru dengan satu keputusan, kebalikan dari Delete: kolom state dikembalikan ke nilai aktif
+    (`false` untuk `bool`; untuk enum/angka, nilai aktif dideklarasikan di definisi, mis. `ActiveStateValue`)
+    dan `DeleteStampColumn` dikosongkan. Hanya tersedia untuk `DeleteMode = Soft`; pada mode lain request
+    `Restore` ditolak saat submit.
+18. **Kolom khusus approver hanya ditegakkan di UI** (pengguna 2026-10-16). Definisi boleh mengumumkan
+    `ApproverOnlyColumns`; engine meneruskan daftar itu lewat action "kemampuan" supaya layar mengunci
+    field-nya (read-only) untuk user yang bukan approver. **Server tidak menolak** request yang menyentuh kolom
+    itu. Alasannya: request dari non-approver tetap harus di-approve sebelum data berubah, jadi pengecekan server
+    tidak melindungi data; sesuai aturan produk turunan "backend tanpa whitelist kolom". (Klaim agent
+    sebelumnya bahwa tanpa cek server kolom bisa diubah lewat API langsung keliru.)
+19. **Tidak ada aturan khusus kolom berpasangan di engine** (pengguna 2026-10-16). Usulan agent `ColumnGroups`
+    (bila satu kolom grup berubah, semua kolom grup ikut diajukan) ditolak. Kolom yang berpasangan diatur oleh
+    UI: layar selalu mengganti pasangannya bersama. Engine juga tidak memvalidasi pasangan.
+    Catatan agent untuk plan: karena selisih dihitung engine (keputusan 13), kolom pasangan yang nilainya
+    kebetulan tidak berubah tidak ikut di request. Akibatnya, bila approver meng-override konflik, kombinasi
+    pasangan bisa tidak konsisten. Approver tetap melihat konflik pada kolom yang diajukan sebelum memutuskan.
 
-### Bentuk
+Akibat keputusan 7 dan 8 (analisa agent, untuk plan):
+
+- Hanya definisi induk yang punya nama approval, dan nama itu wajib unik per (jenis, nama). Definisi anak
+  tidak butuh nama; registry mengenalinya dari `TEntity`. Analyzer dan startup juga memeriksa bahwa satu
+  `TEntity` hanya punya satu definisi.
+- Payload yang memuat tabel dari dua pohon berbeda, atau tabel anak tanpa definisi induknya terdaftar,
+  ditolak.
+- Sisi base: `IEmApprovalData<T>` membawa nama, judul, dan pemeriksaan hak. Interface anak tidak menurunkan
+  bagian itu. Bentuk turunannya (anak menurunkan base yang sama atau base struktural terpisah) diputuskan
+  saat plan.
+
+### Bentuk (revisi 2026-10-16, mengikuti keputusan 6–9)
+
+```csharp
+public interface IEmApproval { }                              // penanda untuk registry/analyzer
+
+public interface IEmApprovalData<TEntity> : IEmApproval where TEntity : class
+{
+   string[] KeyColumns { get; }          // seluruh kolom primary key baris
+   string[] TrackedColumns { get; }      // kolom yang boleh diusulkan berubah
+   // judul dan CanView/CanDecide/CanWithdraw: hanya di induk
+}
+
+public interface IEmApprovalDataChild<TEntity, TParent> : IEmApproval
+   where TEntity : class where TParent : class
+{
+   string[] KeyColumns { get; }
+   string[] TrackedColumns { get; }
+   string[] ForeignKeyColumns { get; }   // berurutan, berpasangan dengan KeyColumns induk
+}
+
+[Approval("Customer")]
+public class CustomerApproval : IEmApprovalData<ta_Customer>
+{
+   public string[] KeyColumns => [nameof(ta_Customer.cCustomerId)];
+   public string[] TrackedColumns => [nameof(ta_Customer.cCustomerName), nameof(ta_Customer.cTaxNumber)];
+}
+
+public class CustomerAddressApproval : IEmApprovalDataChild<ta_CustomerAddress, ta_Customer>
+{
+   public string[] KeyColumns => [nameof(ta_CustomerAddress.cCustomerId), nameof(ta_CustomerAddress.cAddressNo)];
+   public string[] TrackedColumns => [nameof(ta_CustomerAddress.cDescription)];
+   public string[] ForeignKeyColumns => [nameof(ta_CustomerAddress.cCustomerId)];
+}
+```
+
+### Bentuk (versi awal, diganti revisi di atas)
 
 ```csharp
 public interface IEmSysApproval { /* judul, CanView, CanWithdraw: lihat bagian claim */ }
@@ -322,10 +460,9 @@ induk.
 
 - **Startup:** memeriksa bahwa setiap nama adalah property `TEntity` dengan tipe yang didukung; mengambil tipe
   dan panjang kolom dari metadata EF (pengganti peta kolom manual di modul); memeriksa bahwa `TEntity`
-  terdaftar di salah satu context yang ikut transaksi. Untuk foreign key: `ForeignKeyTable` harus punya
-  definisi Data Approval, dan `ForeignKeyColumns` harus sama jumlah dan tipenya dengan `KeyColumns` induk.
-  Kombinasi `null` + kolom terisi, atau tabel terisi + kolom kosong atau jumlahnya beda, ditolak. API gagal
-  start.
+  terdaftar di salah satu context yang ikut transaksi. Untuk foreign key: `TParent` harus punya definisi Data
+  Approval yang terdaftar, dan `ForeignKeyColumns` harus sama jumlah dan tipenya dengan `KeyColumns` induk
+  (dipasangkan berdasarkan urutan, dengan peringatan bila namanya berbeda). Bila tidak cocok, API gagal start.
 - **Load/compare/apply Update:** generik. Baris dicari dari `KeyColumns`; normalisasi teks per tipe disediakan
   engine; pembandingan tiga nilai seperti sekarang.
 - **Urutan apply** diturunkan dari relasi foreign key (induk lebih dulu), jadi `order` tidak perlu ditulis.
@@ -335,25 +472,29 @@ induk.
 
 ### Pertanyaan terbuka
 
-1. **Pencocokan foreign key dengan key induk:** berdasarkan **urutan** (usulan agent, paling sederhana) atau
-   pasangan nama eksplisit?
-2. **Nilai key baru saat Create** (nomor tertinggi + 1 per induk, nomor dengan format khusus, waktu input
-   unik): hook opsional di definisi (mis. `CreateKeyAsync`), pola bawaan engine, atau keduanya?
-3. **Delete:** soft delete lewat property opsional (mis. `DeleteStateColumn`, beserta kolom waktunya), hard
+1. ~~**Pencocokan foreign key dengan key induk**~~ → keputusan 6 (berdasarkan urutan).
+2. ~~**Nilai key baru saat Create**~~ → keputusan 11 (`CreateKeyAsync` di definisi, dipanggil saat apply;
+   tanpa pola bawaan engine di tahap pertama).
+3. ~~**Delete**~~ → keputusan 14–17 (pemulihan lewat `Restore`). Teks pertanyaan awal: soft delete lewat property opsional (mis. `DeleteStateColumn`, beserta kolom waktunya), hard
    delete, atau tidak didukung bila tidak dideklarasikan?
-4. **Request gabungan:** request tampil atas nama approval yang mana? Siapa yang boleh approve? Usulan agent:
-   tabel pertama di payload menjadi induk dan namanya dipakai untuk request; approver harus lolos `CanApprove`
-   di **semua** definisi tabel yang ada di request.
-5. **Payload Update harus membawa nilai lama dari layar** supaya konflik terdeteksi: `DataChange.Update(original,
+4. ~~**Request gabungan**~~ → keputusan 8 (satu pohon, nama dan hak dari induk).
+5. ~~**Payload Update harus membawa nilai lama dari layar**~~ → keputusan 13 (dua objek, selisih dihitung
+   engine, tetap old/new per kolom). Teks pertanyaan awal: supaya konflik terdeteksi: `DataChange.Update(original,
    modified)` dengan dua objek, atau daftar kolom old/new seperti sekarang? Membaca ulang nilai lama dari tabel
    saat submit mematikan deteksi konflik.
-6. **Satu induk per tabel** cukup untuk tahap pertama?
+6. ~~**Satu induk per tabel**~~ → keputusan 7 (dipastikan lewat `IEmApprovalDataChild<T, TParent>`).
 7. **Tabel yang tidak cocok dengan pola kolom** (mis. tabel metadata key/value): jalur handler manual sebagai
-   cadangan, atau dikeluarkan dari Data Approval?
-8. Hak per tabel (`CanView`/`CanApprove`/`CanWithdraw`) ditulis di setiap definisi tabel, atau hanya di induk?
-   Lalu judul (`Title`) dan aturan per kolom (mis. "hanya pemegang hak approve yang boleh mengubah kolom ini"):
-   apakah perlu daftar kedua seperti `ApproverOnlyColumns`?
-9. Nama interface final: `IEmSysApproval…` atau `IEmApproval…`.
+   cadangan, atau dikeluarkan dari Data Approval? **Status 2026-10-16:** pemakai pertama di produk turunan
+   memutuskan tabel key/value-nya disimpan langsung tanpa approval. Jadi tahap pertama **tidak membangun jalur
+   cadangan**; Data Approval hanya untuk tabel berpola kolom. Pertanyaan ini dibuka lagi bila ada pemakai yang
+   membutuhkannya.
+8. ~~Hak per tabel atau hanya di induk~~ → keputusan 8 (hanya di induk, begitu juga judul). Yang masih
+   terbuka: aturan per kolom (mis. "hanya pemegang hak approve yang boleh mengubah kolom ini"); apakah perlu
+   daftar kedua seperti `ApproverOnlyColumns`? → keputusan 18 (hanya UI). Kolom berpasangan → keputusan 19.
+9. ~~Nama interface final~~ → keputusan 9 (`IEmApproval…`).
+10. ~~**Pemisahan definisi dan perilaku**~~ → keputusan 10 (satu class di modul backend, hook sebagai
+    default interface method). Pilihan yang ditolak: definisi deklaratif di library kontrak ditambah handler
+    terpisah di modul (`AddApproval<TDef, THandler>()`).
 
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
