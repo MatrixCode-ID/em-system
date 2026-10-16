@@ -283,6 +283,14 @@ Sumber teknis: [MAUI media picker](https://learn.microsoft.com/en-us/dotnet/maui
 
 Sumber teknis: [WPF RichTextBox](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/controls/richtextbox), [MAUI Label dan formatted text](https://learn.microsoft.com/en-us/dotnet/maui/user-interface/controls/label?view=net-maui-10.0), [MAUI Editor](https://learn.microsoft.com/en-us/dotnet/maui/user-interface/controls/editor?view=net-maui-10.0).
 
+## Pembaruan 2026-10-16 — dipakai untuk System Approval
+
+Pembahasan rancang ulang approval memakai catatan ini sebagai acuan tampilan System Approval. Keputusan
+pengguna di sana: modul hanya membuat **area utama** editor, sedangkan toolbar, signee card dan tombol
+keputusan, komentar, attachment, serta Document preview milik engine; Sign/Reject divalidasi modul sebelum
+engine melanjutkan flow. Rinciannya di bagian "Keputusan System Approval" pada
+[approval-rancang-ulang.md](approval-rancang-ulang.md).
+
 ## Referensi
 
 - [Panduan approval](../engine/engine-approval.md)

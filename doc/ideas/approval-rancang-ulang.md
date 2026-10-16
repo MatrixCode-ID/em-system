@@ -523,6 +523,84 @@ Agenda, dari yang paling mendasar:
 Setelah itu: pertanyaan umum engine (istilah netral pengganti `docType`/`docKey`/`docVersion`, tempat data
 request, migrasi data request yang ada, GET per field untuk action approval).
 
+### Keputusan System Approval (pengguna 2026-10-16)
+
+Prinsip dari pengguna: di System Approval **hampir semua dimainkan di UI**. Yang tahu kebenaran isi dan aturan
+adalah modul; engine menyimpan state dan melanjutkan flow.
+
+1. **Flow adalah data per request, disusun UI.** Saat approval dimulai, UI menyusun flow (step, urutan,
+   penanda tangan) lalu **menyimpannya langsung ke engine approval**. Engine mengembalikan id request ULID
+   (contoh `u1`). Flow tidak dideklarasikan di kode backend. Ini menjawab agenda 2.
+2. **Tautan dibalik: pemakai yang menyimpan id request.** Modul pemakai approval ("ApprovalClient") menyimpan
+   `u1` di tabelnya sendiri, mis. kolom pada baris dokumen transaksi. Engine **tidak menyimpan** jenis/key/
+   versi subjek untuk System Approval; hanya pemakai yang tahu `u1` milik baris mana.
+3. **ApprovalEditor membaca state.** Membuka ApprovalEditor untuk `u1` membuat engine mengembalikan state
+   request; handler UI yang didaftarkan modul membaca state itu dan menampilkan isinya.
+4. **Dua interface di sisi client**, diimplementasikan modul dan didaftarkan lewat builder: satu untuk
+   **flow** (menyusun flow dari subjek) dan satu untuk **Editor UI**.
+5. **Modul hanya membuat area utama editor.** Selebihnya milik engine: toolbar, signee card beserta tombol
+   keputusan, komentar, attachment, Document preview (lihat mockup di
+   [approval-display-modul.md](approval-display-modul.md)). Ini menjawab agenda 7.
+6. **Sign dan Reject divalidasi modul lebih dulu.** Saat Sign atau Reject diklik, engine memanggil validasi di
+   implementasi editor modul. Engine hanya mengirim keputusan dan melanjutkan flow bila jawabannya OK; bila
+   tidak, pesan dari modul ditampilkan dan tidak ada yang dikirim.
+7. **Pemeriksaan server cukup identitas penanda tangan.** Engine API hanya memastikan user yang memutuskan
+   tercantum di step aktif `u1` dan bukan akun sistem (admin bawaan, debugger). Isi dan aturan bisnis tidak
+   diperiksa server. Ini menjawab agenda 1 dalam bentuk: penanda tangan ada di flow yang disimpan.
+8. **Data bisnis disimpan modul, catatan keputusan disimpan engine.** Isian step yang merupakan data bisnis
+   (mis. PIC yang dipakai lagi oleh dokumen) disimpan modul ke tabelnya sendiri, tidak lewat payload engine.
+   Catatan keputusan (alasan reject, keterangan saat approve) disimpan engine bersama tanda tangan.
+
+Sketsa kontrak client (analisa agent, nama dan bentuk belum final; kontrak di `Em.Ui.Core` tanpa tipe
+WPF/MAUI, view per platform):
+
+```csharp
+public interface IEmApprovalSystemFlow<TSubject>
+{
+   Task<ApprovalFlow> BuildAsync(TSubject subject, CancellationToken ct);
+}
+
+public interface IEmApprovalSystemEditor
+{
+   Task LoadAsync(IEmApprovalSystemContext context, CancellationToken ct);
+   Task<ApprovalDecisionCheck> ValidateSignAsync(ApprovalStepState step, CancellationToken ct);
+   Task<ApprovalDecisionCheck> ValidateRejectAsync(ApprovalStepState step, CancellationToken ct);
+}
+
+public record ApprovalDecisionCheck(bool Ok, string? Message = null);
+
+// context dari engine: id request, state (step, penanda tangan, status), kemampuan user dari API,
+// Refresh, buka preview. Keputusan dikirim oleh signee card engine, bukan oleh modul.
+```
+
+Konsekuensi (analisa agent, untuk plan):
+
+- Backend modul pemakai System Approval **tidak butuh class definisi approval**; berbeda dari Data Approval
+  (keputusan 10), karena flow System Approval berupa data, bukan aturan.
+- Hub/MY TASKS bisa mendaftar task per user langsung dari penanda tangan step yang tersimpan di request.
+- Isi flow ditentukan client, jadi pengaju secara teknis bisa menyusun flow yang tidak semestinya. Risiko ini
+  sejalan dengan prinsip "UI yang menentukan"; engine hanya menjamin poin 7.
+- Request perlu menyimpan nama approval supaya ApprovalEditor bisa memilih handler UI yang terdaftar.
+- Modul menyimpan data bisnis step sendiri, terpisah dari keputusan yang dikirim engine; urutan simpan dan
+  penanganan bila salah satu gagal perlu dirumuskan.
+
+Pertanyaan yang masih terbuka:
+
+1. **Request yatim.** UI membuat `u1` lalu menyimpannya ke tabel pemakai; bila langkah kedua gagal, `u1` tanpa
+   pemilik. Usulan agent: `u1` dibuat sebagai **draft** yang tidak tampil di hub, diaktifkan setelah pemakai
+   menyimpan `u1`; draft yang tidak diaktifkan dibersihkan engine setelah batas waktu.
+2. **Isi state** yang disimpan engine: step berurutan/paralel, penanda tangan per step (user id saja atau juga
+   claim), catatan keputusan, komentar; ada yang lain?
+3. **Flow setelah dimulai:** tetap, atau boleh diubah saat berjalan (tambah step, ganti penanda tangan)?
+   Termasuk penanda tangan yang menjadi tidak aktif.
+4. **Switch administrator:** boleh menandatangani step mana pun?
+5. **Sinyal selesai/ditolak ke pemakai:** pemakai membaca state `u1` saat dibutuhkan, atau engine memberi tahu?
+6. **Reinstate:** `u1` di-reset dari awal, atau request baru `u2` dan `u1` menjadi histori?
+7. **Flow dan editor:** dua class terpisah atau boleh satu class; interface baru atau perluasan
+   `IApprovalPanel`/`IApprovalPanelHost`.
+8. **Toolbar:** modul boleh menambah tombol di toolbar engine?
+9. Agenda 3–6 di atas (bentuk step, fitur lama, penguncian subjek, stempel PDF) belum dibahas.
+
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
 **Keputusan:** tahap pertama fokus pada **Data Approval** dan **System Approval**. **Document Approval** hanya
