@@ -170,7 +170,8 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
      modul data master atau modul penawaran). Saat build dan saat run, engine memeriksa semua registrasi
      approval dan menolak nama yang sama. Ini menggantikan deklarasi lewat lambda di
      `AddDataApproval(docType, claim, flow => …)`.
-   - Sketsa (analisa agent, nama belum diputuskan):
+   - Sketsa (analisa agent, nama belum diputuskan). **Untuk Data Approval, sketsa `Build(...)` di bawah
+     digantikan** oleh bagian "Rancangan interface Data Approval".
      ```csharp
      [Approval("Quotation")]                            // nama di metadata, bisa dibaca saat kompilasi
      public sealed class QuotationApproval : IDataApprovalDefinition<QuotationServices>
@@ -259,6 +260,100 @@ yang jenisnya tidak lagi terdaftar tidak muncul (lihat konsekuensi nomor 1 di ba
   dan tidak bisa menolaknya. **Akun admin bawaan dan debugger tidak boleh berpartisipasi**: tidak bisa
   mengusulkan, memutuskan, atau menarik. Aturan ini tetap di engine, sama seperti sekarang
   (`RequireRealUserAsync`, FK ke tabel user).
+
+## Rancangan interface Data Approval (pengguna 2026-10-16)
+
+Diskusi lanjutan. Usulan builder (`Build`/`Track`/`OnCreate`) dinilai pengguna **terlalu kompleks**, lalu
+diganti bentuk deklaratif. Nama interface yang dipakai pengguna adalah `IEmSysApproval…`, sebagai nama kerja.
+Agent sempat mengusulkan `IEmApproval…` karena engine memakai prefix `IEm` (`IEmApp`, `IEmApiCoreServices`);
+pilihan akhirnya belum diputuskan.
+
+### Keputusan
+
+1. **Ada base interface** `IEmSysApproval`, dengan turunan per jenis: `IEmSysApprovalData<TEntity>`, nanti
+   `IEmSysApprovalSystem…`, dan stub Document. Registry, pengecekan nama ganda, `AddApproval<T>()`, Approval
+   Manager, hub, dan analyzer bekerja melalui base.
+2. **Satu class definisi untuk satu tabel** yang di-track. Tabelnya diikat lewat parameter generic interface
+   (`: IEmSysApprovalData<ta_Customer>`), bukan class generic. `class X<ta_Customer>` justru membuat
+   parameter generic baru yang menutupi tipe aslinya.
+3. **Kolom ditulis sebagai nama property lewat `nameof`.** Dengan begitu kolom tervalidasi saat kompilasi.
+4. **Satu request boleh berisi beberapa tabel.** Action modul (mis. "pelanggan baru") mengirim payload
+   berisi beberapa entity. Engine memecahnya per tabel memakai definisi masing-masing, dan semuanya tetap
+   satu request yang di-approve atau di-reject sekaligus.
+5. **Relasi ke induk dideklarasikan di definisi anak** lewat `ForeignKeyTable` (`Type?`) dan
+   `ForeignKeyColumns`. Untuk tabel induk, `ForeignKeyTable` **boleh `null`** dan `ForeignKeyColumns`
+   **boleh kosong**.
+
+### Bentuk
+
+```csharp
+public interface IEmSysApproval { /* judul, CanView, CanWithdraw: lihat bagian claim */ }
+
+public interface IEmSysApprovalData<TEntity> : IEmSysApproval where TEntity : class
+{
+   string[] KeyColumns { get; }          // seluruh kolom primary key baris
+   string[] TrackedColumns { get; }      // kolom yang boleh diusulkan berubah
+   Type? ForeignKeyTable => null;        // tabel induk; null untuk tabel induk sendiri
+   string[] ForeignKeyColumns => [];     // kolom anak yang merujuk KeyColumns induk
+}
+
+// Contoh tabel induk
+public class CustomerApproval : IEmSysApprovalData<ta_Customer>
+{
+   public string[] KeyColumns => [nameof(ta_Customer.cCustomerId)];
+   public string[] TrackedColumns => [nameof(ta_Customer.cCustomerName), nameof(ta_Customer.cTaxNumber)];
+}
+
+// Contoh tabel anak dengan composite key
+public class CustomerAddressApproval : IEmSysApprovalData<ta_CustomerAddress>
+{
+   public string[] KeyColumns => [nameof(ta_CustomerAddress.cCustomerId), nameof(ta_CustomerAddress.cAddressNo)];
+   public string[] TrackedColumns => [nameof(ta_CustomerAddress.cDescription)];
+   public Type? ForeignKeyTable => typeof(ta_Customer);
+   public string[] ForeignKeyColumns => [nameof(ta_CustomerAddress.cCustomerId)];
+}
+```
+
+Catatan untuk contoh: `KeyColumns` harus berisi **seluruh** kolom primary key. Nomor baris anak
+(`cAddressNo`) termasuk key, bukan kolom yang di-track. `ForeignKeyColumns` berisi kolom anak yang merujuk ke
+induk.
+
+### Yang dikerjakan engine dari deklarasi ini (analisa agent)
+
+- **Startup:** memeriksa bahwa setiap nama adalah property `TEntity` dengan tipe yang didukung; mengambil tipe
+  dan panjang kolom dari metadata EF (pengganti peta kolom manual di modul); memeriksa bahwa `TEntity`
+  terdaftar di salah satu context yang ikut transaksi. Untuk foreign key: `ForeignKeyTable` harus punya
+  definisi Data Approval, dan `ForeignKeyColumns` harus sama jumlah dan tipenya dengan `KeyColumns` induk.
+  Kombinasi `null` + kolom terisi, atau tabel terisi + kolom kosong atau jumlahnya beda, ditolak. API gagal
+  start.
+- **Load/compare/apply Update:** generik. Baris dicari dari `KeyColumns`; normalisasi teks per tipe disediakan
+  engine; pembandingan tiga nilai seperti sekarang.
+- **Urutan apply** diturunkan dari relasi foreign key (induk lebih dulu), jadi `order` tidak perlu ditulis.
+- **Create anak dengan induk baru:** setelah induk diterapkan, engine menyalin key asli induk ke
+  `ForeignKeyColumns` anak (pengganti mekanisme key sementara yang dikelola modul). Create anak untuk induk
+  yang sudah ada: engine memeriksa bahwa baris induk masih ada.
+
+### Pertanyaan terbuka
+
+1. **Pencocokan foreign key dengan key induk:** berdasarkan **urutan** (usulan agent, paling sederhana) atau
+   pasangan nama eksplisit?
+2. **Nilai key baru saat Create** (nomor tertinggi + 1 per induk, nomor dengan format khusus, waktu input
+   unik): hook opsional di definisi (mis. `CreateKeyAsync`), pola bawaan engine, atau keduanya?
+3. **Delete:** soft delete lewat property opsional (mis. `DeleteStateColumn`, beserta kolom waktunya), hard
+   delete, atau tidak didukung bila tidak dideklarasikan?
+4. **Request gabungan:** request tampil atas nama approval yang mana? Siapa yang boleh approve? Usulan agent:
+   tabel pertama di payload menjadi induk dan namanya dipakai untuk request; approver harus lolos `CanApprove`
+   di **semua** definisi tabel yang ada di request.
+5. **Payload Update harus membawa nilai lama dari layar** supaya konflik terdeteksi: `DataChange.Update(original,
+   modified)` dengan dua objek, atau daftar kolom old/new seperti sekarang? Membaca ulang nilai lama dari tabel
+   saat submit mematikan deteksi konflik.
+6. **Satu induk per tabel** cukup untuk tahap pertama?
+7. **Tabel yang tidak cocok dengan pola kolom** (mis. tabel metadata key/value): jalur handler manual sebagai
+   cadangan, atau dikeluarkan dari Data Approval?
+8. Hak per tabel (`CanView`/`CanApprove`/`CanWithdraw`) ditulis di setiap definisi tabel, atau hanya di induk?
+   Lalu judul (`Title`) dan aturan per kolom (mis. "hanya pemegang hak approve yang boleh mengubah kolom ini"):
+   apakah perlu daftar kedua seperti `ApproverOnlyColumns`?
+9. Nama interface final: `IEmSysApproval…` atau `IEmApproval…`.
 
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
