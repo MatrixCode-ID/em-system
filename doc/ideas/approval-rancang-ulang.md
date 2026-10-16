@@ -533,7 +533,9 @@ adalah modul; engine menyimpan state dan melanjutkan flow.
    (contoh `u1`). Flow tidak dideklarasikan di kode backend. Ini menjawab agenda 2.
 2. **Tautan dibalik: pemakai yang menyimpan id request.** Modul pemakai approval ("ApprovalClient") menyimpan
    `u1` di tabelnya sendiri, mis. kolom pada baris dokumen transaksi. Engine **tidak menyimpan** jenis/key/
-   versi subjek untuk System Approval; hanya pemakai yang tahu `u1` milik baris mana.
+   versi subjek untuk System Approval; hanya pemakai yang tahu `u1` milik baris mana. **Direvisi keputusan
+   9:** engine ikut menyimpan nama approval dan key subjek sebagai data opaque; kolom `u1` di tabel pemakai
+   tetap wajib.
 3. **ApprovalEditor membaca state.** Membuka ApprovalEditor untuk `u1` membuat engine mengembalikan state
    request; handler UI yang didaftarkan modul membaca state itu dan menampilkan isinya.
 4. **Dua interface di sisi client**, diimplementasikan modul dan didaftarkan lewat builder: satu untuk
@@ -550,8 +552,151 @@ adalah modul; engine menyimpan state dan melanjutkan flow.
 8. **Data bisnis disimpan modul, catatan keputusan disimpan engine.** Isian step yang merupakan data bisnis
    (mis. PIC yang dipakai lagi oleh dokumen) disimpan modul ke tabelnya sendiri, tidak lewat payload engine.
    Catatan keputusan (alasan reject, keterangan saat approve) disimpan engine bersama tanda tangan.
+9. **Request dibuat dari key subjek** (revisi keputusan 2). UI memanggil engine dengan class flow yang
+   didaftarkan modul dan key subjeknya; engine client menyusun flow lewat class itu, mengirim flow beserta
+   nama approval dan key ke server, lalu mengembalikan id request yang dibuat server:
 
-Sketsa kontrak client (analisa agent, nama dan bentuk belum final; kontrak di `Em.Ui.Core` tanpa tipe
+   ```csharp
+   var id = await Engine.RequestApprovalAsync<SalesOrderFlow>(so1Key);                               // key ULID
+   var id = await Engine.RequestApprovalAsync<SalesOrderFlow>(new { Key1 = "key1", Key2 = "key2" }); // composite
+   ```
+
+   Key disimpan sebagai **satu string deskriptif** yang tidak diartikan engine, tanpa FK. Key string (mis.
+   ULID dokumen) disimpan apa adanya; key objek (composite key legacy) diubah engine menjadi JSON dengan
+   urutan property mengikuti deklarasi. Key bukan id request: id request selalu dibuat engine.
+10. **Kolom id request di tabel pemakai tetap wajib.** Pencarian request per nama approval + key di engine
+    hanya jalur pemulihan, mis. bila penyimpanan `u1` ke tabel pemakai gagal setelah request dibuat (ini
+    menjawab pertanyaan request yatim; status draft dan pembersihan tidak diperlukan). Karena key bisa
+    berupa objek, action pencarian itu POST.
+11. **Satu key hanya boleh di-request sekali.** `RequestApprovalAsync` untuk nama approval + key yang sudah
+    punya request yang belum void ditolak; siklus approval baru untuk key yang sama hanya lewat **reinstate**.
+12. **Reinstate membuat request baru.** Reinstate `u1` membuat request baru `u2` dengan nama approval dan key
+    yang sama, lalu state `u1` dibuat **negatif (void)**, mengikuti konvensi nilai negatif = tidak dipakai.
+    Tanda tangan dan catatan keputusan `u1` tidak diubah dan menjadi histori; `u2` ditandatangani dari awal
+    (sejalan dengan keputusan 16 Data Approval). Pemakai mengganti id request di tabelnya menjadi `u2`; bila
+    penyimpanan itu gagal, pemulihan lewat pencarian per key (keputusan 10) menemukan request yang tidak void.
+    Sempat diputuskan lalu dibatalkan pengguna di hari yang sama: reset `u1` dengan tanda tangan lama dipindah
+    ke histori.
+13. **Flow `u2` disusun ulang.** Saat reinstate, engine client memanggil lagi class flow modul
+    (`BuildAsync`) dengan key yang sama; hasilnya menjadi flow `u2`. Penanda tangan yang tidak aktif lagi atau
+    aturan modul yang berubah ikut terbarui. Flow `u1` tetap tersimpan utuh sebagai histori. Pilihan yang
+    ditolak: menyalin flow `u1`.
+14. **Flow tetap selama request berjalan; tidak ada edit flow saat runtime.** Perubahan aturan flow (mis.
+    keputusan manajemen mengganti urutan atau penanda tangan) adalah pekerjaan developer: class flow modul diubah
+    lalu modul di-compile dan dirilis ulang. Request yang sedang berjalan tetap memakai flow yang tersimpan;
+    request baru dan reinstate (keputusan 13) memakai aturan baru. Engine tidak menyediakan action untuk
+    mengubah flow request yang sudah dimulai. Usulan agent yang ditolak: mengubah step yang belum
+    ditandatangani lewat action engine dengan alasan wajib.
+15. **"Flow" = susunan step; penanda tangan diatur terpisah di engine** (memperjelas keputusan 1 dan 14).
+    Susunan step milik modul dan ada di kode, mis. Sales Order: Create, Check By PIC, Check By GAM, Approve By
+    NSM, Acknowledge by STR. Mengubah susunan step berarti mengubah dan meng-compile ulang modul. **Siapa** yang
+    menandatangani tiap step diatur saat runtime lewat **manager/editor milik engine**, tanpa rilis modul.
+16. **Penanda tangan di-snapshot ke request.** Perubahan pengaturan penanda tangan di editor engine berlaku
+    untuk request baru dan baru aktif di request yang sedang berjalan setelah **reinstate**. Mengganti penanda
+    tangan request yang sedang berjalan tanpa reinstate hanya boleh oleh pemegang **IsAdmin** (switch
+    administrator) atau lewat **four-eyes** (perubahan disetujui orang kedua). Four-eyes: satu orang
+    mengajukan penggantian dengan alasan, orang kedua yang berbeda menyetujui; keduanya pemegang claim "ubah
+    penanda tangan" yang dideklarasikan modul; penanda tangan yang diganti tidak boleh menjadi salah satu dari
+    keduanya; hanya step yang belum ditandatangani. IsAdmin cukup satu orang.
+
+    Praktik di produk turunan (pengguna 2026-10-16): calon penanda tangan berurutan, "bila A tidak ada maka
+    B, bila tidak ada maka C"; bila A, B, dan C tidak ada, IsAdmin menjadi fallback terakhir (mengganti
+    penanda tangan step seperti di atas). **Keputusan:** engine **tidak** menegakkan urutan itu, karena
+    menambah kompleksitas. Calon A, B, dan C sama-sama boleh menandatangani kapan saja (keputusan 17); urutan
+    hanya prioritas tampilan (A utama, B dan C cadangan). Aturan "tanda tangani menggantikan A hanya bila A
+    tidak masuk atau berhalangan" menjadi **policy lapangan**, bukan aturan sistem. Engine tidak perlu tahu
+    apakah A "ada" (cuti, dinas, nonaktif).
+17. **Tiga jenis step, ditandai modul di deklarasi step.**
+    - **Pengaju** (mis. Create/Prepare By): penanda tangannya pembuat request; tanda tangannya tercatat
+      **otomatis** saat request dibuat, tanpa klik Sign.
+    - **Dari dokumen** (mis. Check By PIC): penanda tangan diisi modul dari data dokumen saat request dibuat.
+    - **Diatur** (mis. Check By GAM, Approve By NSM, Acknowledge by STR): penanda tangan dipilih di editor
+      engine.
+
+    Satu step boleh punya **beberapa calon penanda tangan; cukup satu yang menandatangani**. Editor penanda
+    tangan engine membaca daftar dan urutan step dari deklarasi modul, menampilkan step Pengaju dan Dari
+    dokumen terkunci, dan hanya mengizinkan pengisian user pada step Diatur. Usulan sebelumnya (pilihan
+    "(Active User)" di editor) tidak dipakai, digantikan jenis Pengaju.
+
+    ```text
+    Approval: Sales Order                                         [Save]
+     1  Create              Pengaju request                   (terkunci)
+     2  Check By PIC        Diisi modul dari dokumen          (terkunci)
+     3  Check By GAM        [Budi x] [Sari x]  + Tambah user
+     4  Approve By NSM      [Andi x]           + Tambah user
+     5  Acknowledge by STR  [Rina x]           + Tambah user
+    Perubahan berlaku untuk request baru; request berjalan setelah reinstate.
+    ```
+18. **Status dibaca modul lewat join, seperti sistem lama.** Tabel/view modul men-join id request yang
+    disimpannya (keputusan 10) ke status request di engine, sehingga daftar dokumen bisa menampilkan status
+    approval tanpa memanggil engine per baris. Konsekuensi (analisa agent): engine perlu objek baca yang
+    stabil untuk di-join (id request, nama approval, key, status, step aktif), termasuk dari database modul
+    lain di server yang sama. Notifikasi dan handler: keputusan 20.
+19. **IsAdmin boleh menandatangani step mana pun secara langsung**, termasuk semua step dokumen yang ia buat
+    sendiri. Ini pengecualian keputusan 7 (penanda tangan harus tercantum di step aktif) bagi user nyata
+    pemegang switch IsAdmin; akun sistem (admin bawaan, debugger) tetap ditolak. Dalam praktik dokumen
+    selalu berpindah ke departemen lain, jadi penyalahgunaannya ditangani **policy lapangan**, bukan sistem.
+    Tanda tangan tetap mencatat user yang sebenarnya menandatangani.
+20. **Notifikasi hub wajib dari engine; tindakan lain lewat handler opsional modul.** Engine selalu
+    memberi notifikasi di hub (MY TASKS) kepada penanda tangan step berikutnya. Engine tidak mengirim email
+    sendiri untuk System Approval. Modul boleh mendaftarkan handler untuk request **ditolak** dan **selesai**;
+    bila handler terdaftar, engine memanggilnya. Isi handler bebas, mis. kirim email, pesan WhatsApp, atau
+    mengubah data modul. Handler dijalankan **setelah** keputusan tersimpan; kegagalannya hanya dicatat di
+    log dan tidak mempengaruhi keputusan (dikonfirmasi pengguna).
+21. **Definisi System Approval di library bersama, flow disusun server** (revisi keputusan 9). Class
+    definisi (nama approval, tipe key, daftar step beserta jenisnya) diletakkan di **library kontrak bersama**
+    yang direferensikan UI dan backend, supaya keduanya memakai definisi yang sama; UI memanggil dengan tipe,
+    mis. `RequestApprovalAsync<SalesOrderApproval>(key)`. Flow disusun **server** dari definisi itu:
+    step, penanda tangan "Dari dokumen", penanda tangan "Diatur" dari pengaturan engine, dan step Pengaju.
+    Pengaju tidak bisa mengirim flow sendiri. Editor penanda tangan dan Approval Manager membaca daftar step
+    dari definisi yang sama. Perbedaan dengan Data Approval (keputusan 10, definisi dan perilaku di satu
+    class modul backend) disengaja. Pembagian perilaku yang butuh database (penentuan penanda tangan "Dari
+    dokumen", handler keputusan 20) masih dibahas.
+22. **Registrasi di kedua sisi.** Definisi di library bersama mengimplementasikan interface
+    `IEmApprovalSystem<TKey>`. Server: `AddSystemApproval<TDef, THandler>()`, handler backend hanya bila
+    diperlukan (wajib bila ada step "Dari dokumen" untuk menentukan penanda tangannya; handler keputusan 20
+    opsional). Frontend: `AddSystemApproval<TDef, TEditor>()`; editor memuat view area utama dan validasi
+    Sign/Reject, ditambah member opsional **preview dokumen** (PDF; tombol Document preview disembunyikan bila
+    kosong) dan **buka dokumen sumber** (pengganti `AddApprovalDocumentOpener`).
+
+    - **Ringkasan request** (teks di hub, notifikasi, daftar Approval Manager, mis. "SO-2026-0012 · PT Abc ·
+      Rp 120 jt") dikirim **UI sebagai teks** saat `RequestApprovalAsync` (juga saat reinstate). Handler
+      backend tetap opsional; tidak diwajibkan hanya untuk ringkasan.
+    - **Claim melihat request dibuat otomatis** dari nama approval (mis. `View Sales Order`), tanpa ditulis
+      modul. Pemegangnya boleh membuka request dan memberi komentar walaupun bukan pengaju, penanda tangan,
+      atau IsAdmin (mis. supervisor yang memantau progres).
+23. **Modul boleh menambah tombol di toolbar editor.** Contoh: modul dokumen penjualan menambah tombol
+    "Print". Tombol milik modul; aksinya memeriksa hak user yang login (mis. apakah boleh melihat data
+    sensitif) lalu menavigasikan ke datanya. Engine hanya menyediakan slot dan menjalankan perintahnya; hak
+    dan isi aksi sepenuhnya urusan modul. Tombol engine (Document preview, buka dokumen sumber) tetap ada.
+    Bentuk kontrak slot (mis. daftar item toolbar dari editor) dirumuskan di plan.
+24. **Aturan flow standar: level berurutan, step paralel dalam level.** Tiap step punya nomor level; level
+    berikutnya baru terbuka setelah semua step di level sebelumnya ditandatangani, dan step dalam satu level
+    boleh ditandatangani dalam urutan apa pun (mis. tiga step check di level 2 sebelum Approve di level 3).
+    Satu step per level = berurutan biasa. Tidak ada bahasa aturan flow lain di engine; aturan yang bergantung
+    pada isi dokumen (mis. nilai dokumen di atas batas tertentu) ditangani validasi Sign milik modul
+    (keputusan 6). Kuorum bisa ditambah nanti sebagai opsi per level.
+    **Tidak ada penyaringan step per dokumen** (pengganti `when:` lama tidak dibuat): step yang hanya berlaku
+    untuk sebagian dokumen (mis. Director hanya untuk nilai besar) diatur **policy lapangan**, mis. "bila
+    kondisi xx, yang menandatangani B, bukan A" (calon cadangan, keputusan 16), atau penanda tangan diganti
+    lewat **four-eyes** (keputusan 16). Validasi Sign
+    modul dipakai untuk aturan pada step yang memang berlaku, mis. "AR Manager tidak bisa Sign bila
+    outstanding customer > 60 jt"; setelah kondisinya berubah, Sign bisa dicoba lagi.
+25. **Fitur lama engine untuk System Approval:**
+    - `when:` tidak dibuat (keputusan 24).
+    - `guard` + override claim diganti validasi Sign modul (`OnSign`); tanpa override. Bila aturan harus
+      dilanggar: IsAdmin menandatangani (keputusan 19) atau penanda tangan diganti lewat four-eyes.
+    - `input` per step diganti keputusan 8 (data bisnis disimpan modul di area utama editor).
+    - `distinctFrom` tidak dibuat di tahap pertama; menjadi policy lapangan, atau ditolak modul di `OnSign`
+      karena state request memuat siapa yang sudah menandatangani.
+    - On behalf tidak dibuat; fungsinya tertutup calon cadangan (keputusan 16).
+    - **Penguncian subjek urusan modul**: modul mengetahui status lewat join (keputusan 18) dan mengunci
+      dokumennya sendiri selama approval belum selesai/ditolak.
+    - **Stempel PDF dibuang**, bukan sekadar ditunda. Bila dokumen perlu menampilkan tanda tangan, modul
+      mengaturnya sendiri, mis. saat Print, di `OnSign`, atau di handler selesai (keputusan 20).
+
+**Usang sejak keputusan 21–23** (flow kini disusun server dari definisi di library bersama); sketsa dan
+konsekuensi di bawah dipertahankan sebagai riwayat. Sketsa kontrak client (analisa agent, nama dan bentuk belum final; kontrak di `Em.Ui.Core` tanpa tipe
 WPF/MAUI, view per platform):
 
 ```csharp
@@ -586,20 +731,27 @@ Konsekuensi (analisa agent, untuk plan):
 
 Pertanyaan yang masih terbuka:
 
-1. **Request yatim.** UI membuat `u1` lalu menyimpannya ke tabel pemakai; bila langkah kedua gagal, `u1` tanpa
-   pemilik. Usulan agent: `u1` dibuat sebagai **draft** yang tidak tampil di hub, diaktifkan setelah pemakai
-   menyimpan `u1`; draft yang tidak diaktifkan dibersihkan engine setelah batas waktu.
+1. ~~**Request yatim.**~~ → keputusan 9–11 (key subjek disimpan engine, pemulihan lewat pencarian per key).
+   Teks pertanyaan awal: UI membuat `u1` lalu menyimpannya ke tabel pemakai; bila langkah kedua gagal, `u1`
+   tanpa pemilik. Usulan agent yang ditolak: `u1` dibuat sebagai **draft** yang tidak tampil di hub,
+   diaktifkan setelah pemakai menyimpan `u1`; draft yang tidak diaktifkan dibersihkan engine setelah batas
+   waktu.
 2. **Isi state** yang disimpan engine: step berurutan/paralel, penanda tangan per step (user id saja atau juga
    claim), catatan keputusan, komentar; ada yang lain?
-3. **Flow setelah dimulai:** tetap, atau boleh diubah saat berjalan (tambah step, ganti penanda tangan)?
-   Termasuk penanda tangan yang menjadi tidak aktif.
-4. **Switch administrator:** boleh menandatangani step mana pun?
-5. **Sinyal selesai/ditolak ke pemakai:** pemakai membaca state `u1` saat dibutuhkan, atau engine memberi tahu?
-6. **Reinstate:** `u1` di-reset dari awal, atau request baru `u2` dan `u1` menjadi histori?
-7. **Flow dan editor:** dua class terpisah atau boleh satu class; interface baru atau perluasan
-   `IApprovalPanel`/`IApprovalPanelHost`.
-8. **Toolbar:** modul boleh menambah tombol di toolbar engine?
-9. Agenda 3–6 di atas (bentuk step, fitur lama, penguncian subjek, stempel PDF) belum dibahas.
+3. ~~**Flow setelah dimulai:** tetap, atau boleh diubah saat berjalan (tambah step, ganti penanda tangan)?~~
+   → keputusan 13–14 (tetap; perubahan aturan lewat rilis modul, dipakai request baru dan reinstate).
+   Penanda tangan yang menjadi tidak aktif atau cuti masih terbuka, masuk pembahasan delegasi (pertanyaan umum 12).
+4. ~~**Switch administrator:** boleh menandatangani step mana pun?~~ → keputusan 19 (boleh; policy lapangan).
+5. ~~**Sinyal selesai/ditolak ke pemakai:** pemakai membaca state `u1` saat dibutuhkan, atau engine memberi tahu?~~
+   → keputusan 18 (status lewat join) dan 20 (hub + handler opsional modul).
+6. ~~**Reinstate:** `u1` di-reset dari awal, atau request baru `u2` dan `u1` menjadi histori?~~ → keputusan 12
+   (request baru `u2`, `u1` void).
+7. ~~**Flow dan editor:** dua class terpisah atau boleh satu class; interface baru atau perluasan
+   `IApprovalPanel`/`IApprovalPanelHost`.~~ → keputusan 21–22 (definisi di library bersama, handler backend
+   opsional, editor frontend; kontrak baru).
+8. ~~**Toolbar:** modul boleh menambah tombol di toolbar engine?~~ → keputusan 22–23 (boleh).
+9. ~~Agenda 3–6 di atas (bentuk step, fitur lama, penguncian subjek, stempel PDF) belum dibahas.~~ → keputusan
+   24–25.
 
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
@@ -643,14 +795,15 @@ pemakai itu, ditambah module uji `Em.Test`.
 6. **Viewer.** PDF mudah. docx/xlsx biasanya dikonversi ke PDF. dwg butuh converter atau viewer khusus yang
    mungkin berlisensi, sehingga harus mengikuti aturan lib berlisensi. Format mana yang wajib di tahap awal?
    Apakah comment bisa berupa markup di halaman, atau teks saja?
-7. **System Approval.** Flow tetap dideklarasikan di kode oleh developer, atau juga bisa dikonfigurasi saat
-   runtime? Berapa banyak UI yang disediakan engine (komponen keputusan, timeline) dibanding UI developer?
+7. ~~**System Approval.** Flow tetap dideklarasikan di kode oleh developer, atau juga bisa dikonfigurasi saat
+   runtime? Berapa banyak UI yang disediakan engine (komponen keputusan, timeline) dibanding UI developer?~~
+   → keputusan System Approval 5, 15–17, 21–23.
 8. **Stempel PDF.** Masih dibutuhkan? Kalau ya, apakah menjadi lapisan opsional dan dipakai oleh jenis yang
-   mana?
+   mana? **System Approval:** dibuang (keputusan System Approval 25); Document Approval belum dibahas.
 9. **Istilah netral** pengganti `Doc` (`docType`/`docKey`/`docVersion`) di skema dan API. Tanyakan ke pengguna
    sebelum memilih.
 10. **Kunci subjek.** Apakah engine tetap menyediakan penguncian subjek saat approval berjalan, atau sepenuhnya
-    urusan implementor?
+    urusan implementor? **System Approval:** urusan modul (keputusan System Approval 25).
 11. **Migrasi.** Apa yang dipertahankan dari tabel dan perilaku sekarang (reinstate `-2`/`-3`, verifikasi kode,
     FK ke user, transaksi lintas database), dan bagaimana data request yang sudah ada dipindahkan?
 12. **Hal lama yang ikut dibahas.** Notifikasi, delegasi/cuti, eskalasi, any-of/kuorum, hub per item, UI MAUI,

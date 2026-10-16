@@ -291,6 +291,16 @@ keputusan, komentar, attachment, serta Document preview milik engine; Sign/Rejec
 engine melanjutkan flow. Rinciannya di bagian "Keputusan System Approval" pada
 [approval-rancang-ulang.md](approval-rancang-ulang.md).
 
+Jawaban atas pertanyaan mockup dari keputusan di sana:
+- **Message after action** = catatan keputusan (alasan reject, keterangan saat Sign), disimpan engine bersama
+  tanda tangan (keputusan 8).
+- **Toolbar** menyediakan slot untuk tombol modul, mis. Print (keputusan 23), selain Document preview dan buka
+  dokumen sumber (keputusan 22).
+- Hak berkomentar: pengaju, penanda tangan, IsAdmin, dan pemegang claim lihat yang dibuat otomatis (keputusan
+  22).
+- Apakah signee card mewakili step atau user masih terbuka; usulan agent: satu card per step, menampilkan calon
+  penanda tangan (utama dan cadangan) lalu siapa yang menandatangani.
+
 ## Referensi
 
 - [Panduan approval](../engine/engine-approval.md)
