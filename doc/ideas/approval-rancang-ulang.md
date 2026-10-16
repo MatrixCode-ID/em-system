@@ -147,8 +147,13 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
      sebelum app jalan), dan `ToDictionary` sudah melempar exception pada nama ganda. Jadi API memang sudah
      gagal start, tetapi pesannya generik (`ArgumentException`, "An item with the same key…"). Yang perlu
      dibuat: pengecekan eksplisit di builder yang menyebut nama ganda beserta kedua modul pendeklarasinya,
-     plus validasi format nama (karakter yang boleh) dan panjang kolom (`varchar(25)`; panjang kolom juga perlu
-     dipertimbangkan).
+     plus validasi format nama (karakter yang boleh) dan panjang kolom.
+   - **Keputusan pengguna 2026-10-16: nama approval maksimal 50 karakter.** Kolom nama approval di skema baru
+     `varchar(50)` (lama `varchar(25)`); data request dimulai bersih (pertanyaan terbuka 11), jadi tanpa
+     migrasi.
+   - **Keputusan pengguna 2026-10-16: format nama** diawali huruf, berisi huruf, angka, dan spasi tunggal
+     (mis. `Sales Order`, `Customer 2`); tanpa spasi di awal/akhir dan tanpa karakter lain. Analyzer dan
+     startup memeriksa format ini.
    - **Keputusan pengguna 2026-10-16: validasi saat kompilasi.** Nama ganda membuat **build host API gagal**,
      bukan hanya startup. Pengecekan saat startup tetap ada sebagai lapis kedua.
    - Catatan teknis (analisa agent, belum keputusan): nama approval sekarang hanya argumen string pada
@@ -163,6 +168,8 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
         (juga tampil di IDE).
      2. **MSBuild task/target** setelah compile host, yang memindai assembly di output (mis. lewat
         `MetadataLoadContext`) lalu menggagalkan build.
+     **Keputusan pengguna 2026-10-16: pilihan 1, Roslyn analyzer**, dikirim bersama `Em.Api.Core`; error
+     tampil di IDE dan menggagalkan build. MSBuild task tidak dibuat.
      Batasnya: kompilasi hanya mengenal modul yang direferensikan host. Modul yang dimuat dinamis, atau nama
      yang dibentuk saat runtime, hanya tertangkap saat startup.
    - **Keputusan pengguna 2026-10-16: definisi approval lewat interface engine.** Engine menyediakan interface
@@ -202,9 +209,11 @@ yang dibangun dari deklarasi: `Get(docType)` menolak jenis yang tidak dideklaras
      `IApprovalDefinition`). Dengan penanda itu, registry, analyzer, dan pengecekan nama ganda cukup melihat
      satu tipe. Nilai enum jenis (`ApprovalKind`) bisa diturunkan otomatis dari interface yang
      diimplementasikan (`IDataApprovalDefinition` → `Data`), jadi developer tidak menulisnya dua kali dan
-     keduanya tidak mungkin berbeda. Apakah
-     `builder.AddApproval<T>()` dibuat satu method generik untuk semua jenis, atau satu method per jenis,
-     diputuskan saat plan.
+     keduanya tidak mungkin berbeda.
+   - **Keputusan pengguna 2026-10-16: satu method registrasi per jenis.** `builder.AddDataApproval<T>()`,
+     `builder.AddSystemApproval<TDef, THandler>()` (keputusan System Approval 22), dan nanti
+     `AddDocumentApproval…`. Penyebutan `AddApproval<T>()` di bagian lain catatan ini dibaca sebagai
+     `AddDataApproval<T>()`.
 3. **Deskripsi/judul jenis.** Engine tidak memakai `cDocDesc`/`cDocAbv`. Bila tampilan butuh judul yang ramah,
    tambahkan sebagai parameter deklarasi, bukan tabel.
 4. **Tabel `ta_Doc` keluar dari skrip engine.** `020-approval.sql` tidak lagi membuat `ta_Doc` dan FK-nya.
@@ -384,8 +393,10 @@ Akibat keputusan 7 dan 8 (analisa agent, untuk plan):
 - Payload yang memuat tabel dari dua pohon berbeda, atau tabel anak tanpa definisi induknya terdaftar,
   ditolak.
 - Sisi base: `IEmApprovalData<T>` membawa nama, judul, dan pemeriksaan hak. Interface anak tidak menurunkan
-  bagian itu. Bentuk turunannya (anak menurunkan base yang sama atau base struktural terpisah) diputuskan
-  saat plan.
+  bagian itu. **Keputusan pengguna 2026-10-16: base struktur bersama.** Satu base struktural (nama kerja
+  `IEmApprovalDataTable<T>`, turunan `IEmApproval`) memuat `KeyColumns`, `TrackedColumns`, pengaturan Delete/
+  Restore, `CreateKeyAsync`, validasi, dan `ApproverOnlyColumns`. `IEmApprovalData<T>` = base + nama, judul,
+  dan pemeriksaan hak; `IEmApprovalDataChild<T, TParent>` = base + `ForeignKeyColumns`.
 
 ### Bentuk (revisi 2026-10-16, mengikuti keputusan 6–9)
 
@@ -664,7 +675,10 @@ adalah modul; engine menyimpan state dan melanjutkan flow.
       backend tetap opsional; tidak diwajibkan hanya untuk ringkasan.
     - **Claim melihat request dibuat otomatis** dari nama approval (mis. `View Sales Order`), tanpa ditulis
       modul. Pemegangnya boleh membuka request dan memberi komentar walaupun bukan pengaju, penanda tangan,
-      atau IsAdmin (mis. supervisor yang memantau progres).
+      atau IsAdmin (mis. supervisor yang memantau progres). **Perbedaan dengan Data Approval disengaja**
+      (dikonfirmasi pengguna 2026-10-16): Data Approval tidak punya claim otomatis dan memakai `CanView` di
+      class definisi modul, karena definisinya ada di backend modul; definisi System Approval ada di library
+      bersama tanpa akses database, sehingga claim lihat disediakan engine.
 23. **Modul boleh menambah tombol di toolbar editor.** Contoh: modul dokumen penjualan menambah tombol
     "Print". Tombol milik modul; aksinya memeriksa hak user yang login (mis. apakah boleh melihat data
     sensitif) lalu menavigasikan ke datanya. Engine hanya menyediakan slot dan menjalankan perintahnya; hak
@@ -694,6 +708,21 @@ adalah modul; engine menyimpan state dan melanjutkan flow.
       dokumennya sendiri selama approval belum selesai/ditolak.
     - **Stempel PDF dibuang**, bukan sekadar ditunda. Bila dokumen perlu menampilkan tanda tangan, modul
       mengaturnya sendiri, mis. saat Print, di `OnSign`, atau di handler selesai (keputusan 20).
+26. **Isi state request** (pengguna 2026-10-16, menjawab pertanyaan terbuka 2):
+    - **Header:** id ULID, jenis, nama approval, key string, ringkasan teks dari UI (keputusan 22), status
+      (negatif = void), pembuat dan waktu, serta tautan reinstate (`u2` mencatat asalnya, `u1`).
+    - **Step:** level, urutan, nama, jenis step (Pengaju/Dari dokumen/Diatur), dan snapshot calon penanda
+      tangan berupa **user id saja**, tanpa claim.
+    - **Tanda tangan:** step, user, waktu, keputusan, catatan keputusan (keputusan 8). Tanda tangan IsAdmin
+      yang bukan calon step itu (keputusan 19) **diberi tanda khusus** supaya timeline dan audit bisa
+      membedakannya.
+    - **Komentar** dan **attachment**. Attachment disimpan **engine lewat object storage**, terikat ke request
+      atau komentar; modul tidak mengurusnya.
+    - **Audit penggantian penanda tangan** (keputusan 16): pengusul, penyetuju four-eyes atau IsAdmin, alasan,
+      calon lama dan baru.
+27. **Penanda tangan nonaktif atau cuti tidak butuh aturan engine** (pengguna 2026-10-16). Kasus ini sudah
+    tercakup oleh calon cadangan, four-eyes, dan IsAdmin (keputusan 16 dan 19). Editor penanda tangan engine
+    cukup menandai user yang sudah nonaktif.
 
 **Usang sejak keputusan 21–23** (flow kini disusun server dari definisi di library bersama); sketsa dan
 konsekuensi di bawah dipertahankan sebagai riwayat. Sketsa kontrak client (analisa agent, nama dan bentuk belum final; kontrak di `Em.Ui.Core` tanpa tipe
@@ -736,11 +765,11 @@ Pertanyaan yang masih terbuka:
    tanpa pemilik. Usulan agent yang ditolak: `u1` dibuat sebagai **draft** yang tidak tampil di hub,
    diaktifkan setelah pemakai menyimpan `u1`; draft yang tidak diaktifkan dibersihkan engine setelah batas
    waktu.
-2. **Isi state** yang disimpan engine: step berurutan/paralel, penanda tangan per step (user id saja atau juga
-   claim), catatan keputusan, komentar; ada yang lain?
+2. ~~**Isi state** yang disimpan engine: step berurutan/paralel, penanda tangan per step (user id saja atau juga
+   claim), catatan keputusan, komentar; ada yang lain?~~ → keputusan 26.
 3. ~~**Flow setelah dimulai:** tetap, atau boleh diubah saat berjalan (tambah step, ganti penanda tangan)?~~
    → keputusan 13–14 (tetap; perubahan aturan lewat rilis modul, dipakai request baru dan reinstate).
-   Penanda tangan yang menjadi tidak aktif atau cuti masih terbuka, masuk pembahasan delegasi (pertanyaan umum 12).
+   Penanda tangan nonaktif atau cuti → keputusan 27.
 4. ~~**Switch administrator:** boleh menandatangani step mana pun?~~ → keputusan 19 (boleh; policy lapangan).
 5. ~~**Sinyal selesai/ditolak ke pemakai:** pemakai membaca state `u1` saat dibutuhkan, atau engine memberi tahu?~~
    → keputusan 18 (status lewat join) dan 20 (hub + handler opsional modul).
@@ -753,6 +782,8 @@ Pertanyaan yang masih terbuka:
 9. ~~Agenda 3–6 di atas (bentuk step, fitur lama, penguncian subjek, stempel PDF) belum dibahas.~~ → keputusan
    24–25.
 
+**Status 2026-10-16:** semua pertanyaan System Approval sudah terjawab (keputusan 1–27).
+
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
 **Keputusan:** tahap pertama fokus pada **Data Approval** dan **System Approval**. **Document Approval** hanya
@@ -761,13 +792,26 @@ pemakaiannya melempar `NotImplementedException`. Viewer file, flow dinamis, dan 
 Pertanyaan terbuka nomor 4–6 (flow dinamis, progres dokumen, viewer) karenanya tidak memblokir plan tahap
 pertama.
 
+**Document Approval sebagai jenis tersendiri, ditunda** (pengguna 2026-10-16). Document Approval dibuat sebagai
+satu jenis lagi, terpisah dari Data Approval dan System Approval, dan bukan varian System Approval. Sifatnya
+**viewer**: dokumen menjadi pusat layar approval. Dokumennya mungkin tersusun sebagai **tree dokumen**. Jenis
+ini tidak dikerjakan sekarang, mungkin nanti. Pertanyaan terbuka 4–6 dan 8 (flow dinamis, progres, viewer,
+stempel PDF untuk Document Approval) dibahas ulang saat jenis ini dibuka.
+
 Pemakai pertama di produk turunan (2026-10-16): satu modul data master untuk Data Approval dan satu modul
 dokumen transaksi penjualan untuk System Approval. Jadi plan engine cukup membuktikan kedua jenis pada dua
 pemakai itu, ditambah module uji `Em.Test`.
 
 ## Pertanyaan terbuka
 
-1. **Inti bersama.** Apakah ketiga jenis berbagi satu runtime flow (step, signer, keputusan, audit, comment,
+**Status 2026-10-16:** semua pertanyaan untuk tahap pertama (Data dan System Approval) sudah terjawab. Yang
+tersisa (4–6 dan 8) milik Document Approval dan ditunda bersama jenis itu.
+
+1. ~~**Inti bersama.**~~ **Ditutup pengguna 2026-10-16.** Settings berupa kode (Data Approval: class modul,
+   keputusan 10; System Approval: definisi di library bersama, keputusan 21, dengan penanda tangan diatur saat
+   runtime di engine, keputusan 15); data request tetap di tabel engine dengan key opaque (keputusan System
+   Approval 9 dan 26, keputusan Data Approval 11); tampilan lintas modul dari definisi terdaftar di API
+   (bagian "Pengelompokan di Approval Manager"). Teks awal: Apakah ketiga jenis berbagi satu runtime flow (step, signer, keputusan, audit, comment,
    hub), atau masing-masing berdiri sendiri? Sebagian terjawab 2026-10-16 (definisi milik modul; lihat
    keputusan). Yang masih terbuka:
    - **Bentuk "settings":** deklarasi di kode saat startup seperti `AddDataApproval` sekarang, atau data
@@ -779,7 +823,10 @@ pemakai itu, ditambah module uji `Em.Test`.
 2. ~~**Flow Data Approval.** Selalu satu keputusan berbasis claim, atau boleh multi-step?~~ **Diputuskan
    pengguna 2026-10-16:** Data Approval **tanpa multi-step**. Cukup satu keputusan, dan definisi modul hanya
    menentukan **siapa yang boleh approve** (`CanDecide`). Kebutuhan berlapis masuk System Approval.
-3. **Arah dari pengguna 2026-10-16:** modul pemakai Data Approval tidak boleh butuh banyak berkas pembantu.
+3. ~~Helper Data Approval, dua jalur, string per kolom~~ → **ditutup pengguna 2026-10-16**: keputusan Data
+   Approval 10–13 (load/apply generik dari deklarasi, Update tetap old/new per kolom) dan pertanyaan rancangan
+   interface 7 (tanpa jalur handler cadangan di tahap pertama). Teks awal:
+   **Arah dari pengguna 2026-10-16:** modul pemakai Data Approval tidak boleh butuh banyak berkas pembantu.
    Produk turunan menetapkan aturan modul "satu service class + satu helper statis + satu file definisi
    approval". Konsekuensinya, engine perlu menyediakan helper Data Approval untuk bagian load/apply yang
    berulang: peta kolom dengan normalisasi teks per tipe, baca/tulis kolom ke entity ORM, cari baris
@@ -788,6 +835,9 @@ pemakai itu, ditambah module uji `Em.Test`.
    **"Mudah diimplementasi" untuk Data Approval.** Untuk tabel berkolom standar, engine bisa generik lewat
    metadata ORM, sedangkan tabel tanpa kolom standar atau dengan composite key tetap butuh handler dari modul.
    Apakah dua jalur ini diterima? Apakah nilai tetap string per kolom?
+> Pertanyaan 4–6 ditunda bersama Document Approval (lihat "Cakupan tahap pertama"): jenis tersendiri,
+> bersifat viewer, kemungkinan tree dokumen.
+
 4. **"Dinamis" di Document Approval.** Siapa yang menyusun step: admin lewat template per proyek atau kategori,
    atau pengaju per dokumen? Apakah step bisa diubah saat request berjalan?
 5. **Progres dokumen.** Apakah berupa revisi beserta status/kode review, persentase step, atau keduanya?
@@ -800,11 +850,47 @@ pemakai itu, ditambah module uji `Em.Test`.
    → keputusan System Approval 5, 15–17, 21–23.
 8. **Stempel PDF.** Masih dibutuhkan? Kalau ya, apakah menjadi lapisan opsional dan dipakai oleh jenis yang
    mana? **System Approval:** dibuang (keputusan System Approval 25); Document Approval belum dibahas.
-9. **Istilah netral** pengganti `Doc` (`docType`/`docKey`/`docVersion`) di skema dan API. Tanyakan ke pengguna
-   sebelum memilih.
-10. **Kunci subjek.** Apakah engine tetap menyediakan penguncian subjek saat approval berjalan, atau sepenuhnya
-    urusan implementor? **System Approval:** urusan modul (keputusan System Approval 25).
-11. **Migrasi.** Apa yang dipertahankan dari tabel dan perilaku sekarang (reinstate `-2`/`-3`, verifikasi kode,
-    FK ke user, transaksi lintas database), dan bagaimana data request yang sudah ada dipindahkan?
-12. **Hal lama yang ikut dibahas.** Notifikasi, delegasi/cuti, eskalasi, any-of/kuorum, hub per item, UI MAUI,
-    dan GET per field untuk action approval.
+9. ~~**Istilah netral** pengganti `Doc` (`docType`/`docKey`/`docVersion`) di skema dan API.~~ **Diputuskan
+   pengguna 2026-10-16:** `docType` → **`ApprovalName`** (kolom mis. `cApprovalName`), `docKey` →
+   **`SubjectKey`** (kolom `cSubjectKey`), dan `docVersion` **dihapus**. Riwayat versi dibentuk rantai reinstate
+   (keputusan System Approval 12 dan 26); revisi yang dibutuhkan modul menjadi bagian key subjek.
+   Konsekuensi (analisa agent, untuk plan): filtered unique index "satu request pending" menjadi (jenis,
+   `ApprovalName`, `SubjectKey`); `GetMeta_ApprovalRequestsByDoc` dan parameter `docType`/`docKey`/`docVersion`
+   di API ikut berganti nama.
+10. ~~**Kunci subjek.** Apakah engine tetap menyediakan penguncian subjek saat approval berjalan, atau sepenuhnya
+    urusan implementor?~~ **System Approval:** urusan modul (keputusan System Approval 25).
+    **Data Approval (pengguna 2026-10-16): baris tidak dikunci**, mengikuti pola engine lama. Beberapa request
+    untuk baris yang sama boleh pending bersamaan; **request yang lebih dulu di-approve yang lebih dulu
+    tersimpan**. Contoh: A mengajukan nama + email, B mengajukan alamat + email untuk baris yang sama. Bila
+    request A di-approve lebih dulu, nama dan email A tersimpan. Saat request B diputuskan, alamat B
+    diterapkan biasa, sedangkan email B menjadi konflik karena nilai sekarang bukan lagi nilai lama B. Approver
+    melihat konflik itu dan bisa meng-override dengan alasan (keputusan Data Approval 13).
+    Konsekuensi (analisa agent, untuk plan): filtered unique index "satu request pending per key" tidak berlaku
+    untuk Data Approval; simpan langsung oleh approver selama ada request pending juga tidak ditahan, dan
+    tertangkap pembandingan tiga nilai yang sama.
+11. ~~**Migrasi.** Apa yang dipertahankan dari tabel dan perilaku sekarang (reinstate `-2`/`-3`, verifikasi kode,
+    FK ke user, transaksi lintas database), dan bagaimana data request yang sudah ada dipindahkan?~~
+    **Diputuskan pengguna 2026-10-16:**
+    - **Mulai bersih.** Data request lama tidak dimigrasi ke struktur baru; skrip `updates/` membangun struktur
+      baru tanpa konversi data request.
+    - **Status void tetap `-2`/`-3`.** Reinstate System Approval (keputusan 12) membuat request lama `-2` bila
+      masih pending dan `-3` bila sudah selesai, mengikuti engine sekarang; tautan `u2` → `u1` seperti
+      `ReinstateOf`.
+    - **Kode verifikasi per tanda tangan dipertahankan** walaupun stempel PDF dibuang. Engine membuat kode dan
+      mengeksposnya di state request; modul boleh mencetaknya atau menjadikannya QR (mis. saat Print). Dasar
+      untuk [approval-qr-verifikasi.md](approval-qr-verifikasi.md) tetap ada.
+    - **FK ke tabel user dan transaksi lintas database tanpa MSDTC dipertahankan.** FK menjaga aturan akun
+      sistem tidak bisa berpartisipasi; transaksi dibutuhkan untuk apply Data Approval ke database modul.
+    - Analisa agent (untuk plan): nasib tabel request lama (di-drop, di-rename sebagai arsip, atau dibiarkan)
+      dan urutan skrip `updates/` dirumuskan di plan.
+12. ~~**Hal lama yang ikut dibahas.** Notifikasi, delegasi/cuti, eskalasi, any-of/kuorum, hub per item, UI MAUI,
+    dan GET per field untuk action approval.~~ **Diputuskan pengguna 2026-10-16:**
+    - **Hub tetap per jenis**: MY TASKS menampilkan jumlah request yang menunggu user per jenis approval; klik
+      membuka Approval Manager yang terfilter. Hub per item tidak dibuat. Notifikasi hub keputusan System
+      Approval 20 berbentuk pertambahan jumlah ini.
+    - **GET per field diperbaiki sekalian** di rancang ulang: action list/filter approval dibuat ulang dengan
+      parameter per field atau POST, dan jalur JSON lama di `EmApp.TryConvert` untuk action approval dihapus.
+    - **Ditunda (bukan tahap pertama):** eskalasi/batas waktu, kuorum per level, UI approval di MAUI, dan email
+      dari engine (engine hanya notifikasi hub; email lewat handler modul bila dibutuhkan).
+    - Delegasi/cuti → keputusan System Approval 27. Any-of tercakup calon penanda tangan ganda dalam satu
+      step (keputusan System Approval 17).
