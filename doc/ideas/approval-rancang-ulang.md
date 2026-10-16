@@ -496,6 +496,33 @@ induk.
     default interface method). Pilihan yang ditolak: definisi deklaratif di library kontrak ditambah handler
     terpisah di modul (`AddApproval<TDef, THandler>()`).
 
+**Status 2026-10-16:** semua pertanyaan rancangan interface Data Approval sudah terjawab (keputusan 6–19).
+
+## System Approval: agenda pembahasan (dibuka 2026-10-16)
+
+Belum ada keputusan selain yang sudah tercatat: UI dibangun developer per entity, banyak penanda tangan,
+reinstate hanya di System/Document dan wajib tanda tangan ulang dari awal (keputusan 16). Padanannya di engine
+sekarang adalah `ApprovalKind.Document` (flow di kode, level berurutan, step paralel, nama step = nama claim,
+`signers:`, on behalf, `distinctFrom`, `when:`, `guard`, `input` per step, stempel PDF).
+
+Agenda, dari yang paling mendasar:
+
+1. **Penentuan penanda tangan.** Usulan agent: ikuti Data Approval. Step tidak terikat claim; class definisi di
+   modul punya hook (mis. `CanSign(user, step)` / `ResolveSignersAsync(step)`) yang menjawab siapa boleh
+   menandatangani. Approval Manager dan hub mengetahui task user dengan bertanya ke definisi. **Pertanyaan
+   pertama untuk sesi berikutnya.**
+2. **Bentuk flow:** dideklarasikan di kode (class definisi di modul, seperti keputusan 10) atau bisa
+   dikonfigurasi saat runtime?
+3. **Bentuk step:** level berurutan + step paralel cukup, atau perlu any-of/kuorum?
+4. **Fitur lama yang dipertahankan:** `when:`, `guard` + override, `input` per step, `distinctFrom`, on behalf.
+5. **Penguncian subjek** selama approval: oleh engine atau urusan modul?
+6. **Stempel PDF:** dipertahankan sebagai lapisan opsional?
+7. **UI dari engine:** komponen yang disediakan engine (panel keputusan, timeline) dibanding yang dibangun
+   developer.
+
+Setelah itu: pertanyaan umum engine (istilah netral pengganti `docType`/`docKey`/`docVersion`, tempat data
+request, migrasi data request yang ada, GET per field untuk action approval).
+
 ## Cakupan tahap pertama (pengguna 2026-10-16)
 
 **Keputusan:** tahap pertama fokus pada **Data Approval** dan **System Approval**. **Document Approval** hanya
