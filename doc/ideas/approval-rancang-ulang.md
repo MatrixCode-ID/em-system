@@ -1,8 +1,8 @@
 # Rancang ulang engine approval: tiga jenis approval, engine tanpa konsep dokumen
 
 - **Tanggal:** 2026-10-16
-- **Status:** diskusi
-- **Plan turunan:** belum ada
+- **Status:** jadi plan (2026-10-17)
+- **Plan turunan:** [plan/unexecuted/approval-rancang-ulang.codex.md](../../plan/unexecuted/approval-rancang-ulang.codex.md)
 - **Catatan terkait:** [approval-display-modul.md](approval-display-modul.md),
   [approval-qr-verifikasi.md](approval-qr-verifikasi.md), [approval-user-lookup.md](approval-user-lookup.md),
   [get-parameter-per-field.md](get-parameter-per-field.md), [object-storage.md](object-storage.md);
@@ -723,6 +723,29 @@ adalah modul; engine menyimpan state dan melanjutkan flow.
 27. **Penanda tangan nonaktif atau cuti tidak butuh aturan engine** (pengguna 2026-10-16). Kasus ini sudah
     tercakup oleh calon cadangan, four-eyes, dan IsAdmin (keputusan 16 dan 19). Editor penanda tangan engine
     cukup menandai user yang sudah nonaktif.
+28. **Four-eyes = cadangan yang diatur di editor penanda tangan** (revisi pengguna 2026-10-17, menggantikan alur
+    four-eyes di keputusan 16 beserta audit penggantiannya di keputusan 26). Tidak ada alur "usulkan penggantian
+    lalu disetujui orang kedua" dan tidak ada claim "ubah penanda tangan". Di editor penanda tangan engine, setiap
+    step Diatur berisi satu **penanda tangan** dan nol atau lebih **cadangan four-eyes**. Cadangan yang login
+    **langsung boleh menandatangani** step itu tanpa persetujuan orang lain. Kartu penanda tangan menampilkan
+    penanda tangan dan cadangannya, menandai user yang login bila ia cadangan four-eyes, dan tanda tangan oleh
+    cadangan diberi tanda khusus seperti tanda tangan IsAdmin. Mengganti penanda tangan request berjalan cukup
+    lewat reinstate (memakai pengaturan baru) atau IsAdmin yang langsung menandatangani. Alasan pengguna: alur
+    usulan terlalu kompleks dan membuat UI jelek, sedangkan tempat menyiapkan penanda tangan sudah ada di editor.
+29. **Dynamic Signer sebagai objek yang di-drop di editor penanda tangan** (pengguna 2026-10-17, menggantikan
+    tiga jenis step di keputusan 17). Semua step diatur dengan pola yang sama di editor: panel kanan **User Pool**
+    (drag and drop, gaya User Editor) berisi user dan satu item statis **DS · Dynamic Signer** ("Signer will be
+    determined by the system when the approval is created"), selalu di atas dan tidak ikut filter. Setiap step
+    punya **tepat satu penanda tangan** (user atau DS) ditambah cadangan four-eyes (keputusan 28). DS bisa di-drop
+    ke step mana pun, sehingga modul approval baru bisa langsung memakai penanda tangan dinamis tanpa deklarasi
+    sumber. Siapa user di balik DS ditentukan **handler modul saat request dibuat** (mis. Prepared by = pembuat
+    request yang langsung ditandatangani, Checked by = pemrakarsa dokumen); step Pengaju yang terkunci tidak ada
+    lagi. Men-drop DS menjadikannya penanda tangan dan user penanda tangan sebelumnya turun menjadi cadangan;
+    "Make signer" pada user mengganti DS. **Guard (pengguna 2026-10-17):** saat request dibuat, engine menolak
+    dengan pesan jelas (menyebut nama approval dan step) bila sebuah step berisi DS tetapi modul tidak mengisi
+    user-nya (handler tidak terdaftar, tidak menangani step itu, atau tidak menghasilkan user aktif), supaya
+    developer yang lupa mengisi DS langsung ketahuan. Alasan pengguna: semuanya bisa disiapkan di UI dengan pola
+    yang sama.
 
 **Usang sejak keputusan 21–23** (flow kini disusun server dari definisi di library bersama); sketsa dan
 konsekuensi di bawah dipertahankan sebagai riwayat. Sketsa kontrak client (analisa agent, nama dan bentuk belum final; kontrak di `Em.Ui.Core` tanpa tipe
