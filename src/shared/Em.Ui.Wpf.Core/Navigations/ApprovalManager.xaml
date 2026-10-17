@@ -7,16 +7,66 @@
  <UserControl.Resources><ResourceDictionary>
   <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/></ResourceDictionary.MergedDictionaries>
   <BooleanToVisibilityConverter x:Key="visible"/>
+  <Style x:Key="approvalCellStyle" TargetType="TextBlock">
+   <Setter Property="VerticalAlignment" Value="Center"/>
+   <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+   <Setter Property="Margin" Value="0,0,12,0"/>
+  </Style>
+  <Style x:Key="approvalSubCellStyle" TargetType="TextBlock" BasedOn="{StaticResource approvalCellStyle}">
+   <Setter Property="Opacity" Value="0.65"/>
+   <Setter Property="FontSize" Value="12"/>
+   <Setter Property="Margin" Value="0,2,12,0"/>
+   <Style.Triggers>
+    <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger>
+    <Trigger Property="Text" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed"/></Trigger>
+   </Style.Triggers>
+  </Style>
+  <Style x:Key="approvalRowStyle" TargetType="ListBoxItem">
+   <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+   <Setter Property="Padding" Value="0"/>
+   <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+   <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}"/>
+   <Setter Property="ContextMenu">
+    <Setter.Value>
+     <ContextMenu Style="{StaticResource cascadeContextMenuStyle}" DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+      <MenuItem Header="Open" Command="{Binding Commands[OpenRequestCommand]}" CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+     </ContextMenu>
+    </Setter.Value>
+   </Setter>
+   <Setter Property="Template">
+    <Setter.Value>
+     <ControlTemplate TargetType="ListBoxItem">
+      <Grid>
+       <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+       <Border x:Name="stateLayer" Background="Transparent" MinHeight="52">
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3"/><ColumnDefinition/></Grid.ColumnDefinitions>
+         <Border x:Name="selectionBar" Width="3" Margin="0,8" CornerRadius="2" Visibility="Hidden" Background="{DynamicResource themeAccentBrush}"/>
+         <ContentPresenter Grid.Column="1" Margin="21,0,20,0" VerticalAlignment="Center"/>
+        </Grid>
+       </Border>
+       <Border Grid.Row="1" Height="1" Background="{StaticResource dividerBrush}"/>
+      </Grid>
+      <ControlTemplate.Triggers>
+       <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="stateLayer" Property="Background" Value="{StaticResource stateHoverBrush}"/></Trigger>
+       <Trigger Property="IsSelected" Value="True"><Setter TargetName="stateLayer" Property="Background" Value="{StaticResource statePressedBrush}"/><Setter TargetName="selectionBar" Property="Visibility" Value="Visible"/></Trigger>
+       <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="selectionBar" Property="Visibility" Value="Visible"/></Trigger>
+       <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+      </ControlTemplate.Triggers>
+     </ControlTemplate>
+    </Setter.Value>
+   </Setter>
+  </Style>
  </ResourceDictionary></UserControl.Resources>
  <Grid Margin="22,12,22,16">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Visibility="{Binding ShowManagerToolbar, Converter={StaticResource visible}}">
    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-    <Button Style="{StaticResource outlinedButtonStyle}" Content="Refresh" Command="{Binding Commands[RefreshCommand]}"/>
+    <Button Style="{StaticResource filledButtonStyle}" Content="Refresh" Command="{Binding Commands[RefreshCommand]}"/>
+    <TextBlock Text="{Binding RefreshedText}" FontSize="11.5" Opacity="0.65" VerticalAlignment="Center" Margin="10,0,12,0"/>
     <StackPanel Orientation="Horizontal" Visibility="{Binding ShowFilters, Converter={StaticResource visible}}">
      <Border Style="{StaticResource toolbarSeparatorStyle}"/>
-     <ComboBox Width="190" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Definitions}" SelectedItem="{Binding SelectedDefinition}">
-      <ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Kind}" Opacity="0.55" Margin="0,0,6,0"/><TextBlock Text="{Binding Title}"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+     <ComboBox x:Name="DefinitionFilter" Width="190" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Definitions}" SelectedItem="{Binding SelectedDefinition}" IsEnabled="{Binding IsNotBusy}">
+      <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
      </ComboBox>
      <TextBox Width="160" Margin="0,0,8,0" Style="{StaticResource fieldBoxStyle}" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search approval names and summaries, then refresh."/>
      <ComboBox Width="120" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Stages}" SelectedItem="{Binding Stage}"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
@@ -26,25 +76,54 @@
   </ScrollViewer>
   <TextBlock Grid.Row="1" Text="{Binding Error}" TextWrapping="Wrap" Foreground="#E05656" Margin="0,0,0,8"/>
   <Grid Grid.Row="2">
-   <Grid.ColumnDefinitions><ColumnDefinition Width="{Binding ListWidth}"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-   <DockPanel Margin="0,0,16,0" Visibility="{Binding ShowFilters, Converter={StaticResource visible}}">
-    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
-     <Button Style="{StaticResource textButtonStyle}" Content="Previous" Command="{Binding Commands[PreviousCommand]}"/>
-     <TextBlock Text="{Binding PageLabel}" VerticalAlignment="Center" Margin="8,0"/>
-     <Button Style="{StaticResource textButtonStyle}" Content="Next" Command="{Binding Commands[NextCommand]}"/>
-    </StackPanel>
-    <StackPanel DockPanel.Dock="Top"><TextBlock Text="APPROVAL / SUMMARY / STATUS" Style="{StaticResource columnHeaderStyle}" Margin="8,0,0,8"/></StackPanel>
-    <ListBox Style="{StaticResource surfaceListBoxStyle}" Background="Transparent" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" IsEnabled="{Binding IsNotBusy}">
-     <ListBox.InputBindings><MouseBinding MouseAction="LeftDoubleClick" Command="{Binding Commands[OpenSystemCommand]}"/></ListBox.InputBindings>
-     <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="6,8">
-      <TextBlock Text="{Binding cApprovalName}" FontWeight="SemiBold"/><TextBlock Text="{Binding cSummary}" TextWrapping="Wrap" Margin="0,4"/>
-      <TextBlock Text="{Binding cApprovalRequestStage}" Opacity="0.6"/>
-     </StackPanel></DataTemplate></ListBox.ItemTemplate>
-    </ListBox>
-   </DockPanel>
-   <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+   <Border x:Name="RequestTable" CornerRadius="14" Background="{StaticResource surfaceBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1" Visibility="{Binding ShowFilters, Converter={StaticResource visible}}">
+    <Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <ScrollViewer x:Name="ApprovalTableScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+      <Grid MinWidth="1030" Width="{Binding ViewportWidth, ElementName=ApprovalTableScroll}">
+       <Grid.RowDefinitions><RowDefinition Height="38"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+       <Border Background="{StaticResource surfaceStrongBrush}" CornerRadius="13,13,0,0" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,0,0,1">
+        <Grid Margin="24,0,20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/><ColumnDefinition Width="130"/><ColumnDefinition Width="70"/><ColumnDefinition Width="160"/></Grid.ColumnDefinitions>
+         <TextBlock Text="TYPE" Style="{StaticResource columnHeaderStyle}"/>
+         <TextBlock Grid.Column="1" Text="APPROVAL" Style="{StaticResource columnHeaderStyle}"/>
+         <TextBlock Grid.Column="2" Text="SUMMARY" Style="{StaticResource columnHeaderStyle}"/>
+         <TextBlock Grid.Column="3" Text="STATUS" Style="{StaticResource columnHeaderStyle}" TextAlignment="Center"/>
+         <TextBlock Grid.Column="4" Text="STEP" Style="{StaticResource columnHeaderStyle}" TextAlignment="Center"/>
+         <TextBlock Grid.Column="5" Text="REQUESTED" Style="{StaticResource columnHeaderStyle}" TextAlignment="Center"/>
+        </Grid>
+       </Border>
+       <ListBox x:Name="RequestList" Grid.Row="1" Style="{StaticResource surfaceListBoxStyle}" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource approvalRowStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" IsEnabled="{Binding IsNotBusy}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+        <ListBox.ItemTemplate><DataTemplate>
+         <Grid Background="Transparent" MinHeight="52">
+          <Grid.InputBindings><MouseBinding MouseAction="LeftDoubleClick" Command="{Binding DataContext.Commands[OpenRequestCommand], RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}"/></Grid.InputBindings>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/><ColumnDefinition Width="130"/><ColumnDefinition Width="70"/><ColumnDefinition Width="160"/></Grid.ColumnDefinitions>
+          <TextBlock Text="{Binding cApprovalRequestKind}" Style="{StaticResource approvalCellStyle}"/>
+          <TextBlock Grid.Column="1" Text="{Binding cApprovalName}" Style="{StaticResource approvalCellStyle}" FontWeight="SemiBold"/>
+          <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,6">
+           <TextBlock Text="{Binding cSummary}" ToolTip="{Binding cSummary}" Style="{StaticResource approvalCellStyle}"/>
+           <TextBlock Text="{Binding cSubSummary}" ToolTip="{Binding cSubSummary}" Style="{StaticResource approvalSubCellStyle}"/>
+          </StackPanel>
+          <TextBlock Grid.Column="3" Text="{Binding cApprovalRequestStage}" Style="{StaticResource approvalCellStyle}" Margin="0" TextAlignment="Center"/>
+          <TextBlock Grid.Column="4" Text="{Binding cApprovalRequestLevel}" Style="{StaticResource approvalCellStyle}" Margin="0" TextAlignment="Center"/>
+          <TextBlock Grid.Column="5" Text="{Binding datestamp, StringFormat={}{0:dd-MMM-yyyy HH:mm}}" Style="{StaticResource approvalCellStyle}" Margin="0" TextAlignment="Center"/>
+         </Grid>
+        </DataTemplate></ListBox.ItemTemplate>
+       </ListBox>
+       <TextBlock Grid.Row="1" Text="No approval requests match the current filters." HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6" IsHitTestVisible="False">
+        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Rows.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+       </TextBlock>
+      </Grid>
+     </ScrollViewer>
+     <Border Grid.Row="1" BorderBrush="{StaticResource dividerBrush}" BorderThickness="0,1,0,0" Padding="20,10">
+      <DockPanel>
+       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Style="{StaticResource textButtonStyle}" Content="Previous" Command="{Binding Commands[PreviousCommand]}"/><TextBlock Text="{Binding PageLabel}" VerticalAlignment="Center" Margin="8,0"/><Button Style="{StaticResource textButtonStyle}" Content="Next" Command="{Binding Commands[NextCommand]}"/></StackPanel>
+       <TextBlock Text="Double-click a request or right-click and choose Open" VerticalAlignment="Center" Opacity="0.65"/>
+      </DockPanel>
+     </Border>
+    </Grid>
+   </Border>
+   <Grid x:Name="RequestDetails" Visibility="{Binding ShowDetails, Converter={StaticResource visible}}"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
     <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" Margin="0,0,0,12" Visibility="{Binding IsCompact, Converter={StaticResource visible}}"><ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding cSummary}"/><TextBlock Text="{Binding cApprovalRequestStage}" Margin="8,0,0,0"/></StackPanel></DataTemplate></ComboBox.ItemTemplate></ComboBox>
-    <StackPanel Grid.Row="1" Margin="0,0,0,12"><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"/><Border Style="{StaticResource chipMutedStyle}" Margin="12,0,0,0" VerticalAlignment="Center"><TextBlock Text="{Binding RequestStatus}" FontSize="11.5" FontWeight="SemiBold"/></Border></StackPanel><TextBlock Text="{Binding Summary}" Opacity="0.65" Margin="0,4,0,0" TextWrapping="Wrap"/></StackPanel>
+    <StackPanel Grid.Row="1" Margin="0,0,0,12"><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"/><Border Style="{StaticResource chipMutedStyle}" Margin="12,0,0,0" VerticalAlignment="Center"><TextBlock Text="{Binding RequestStatus}" FontSize="11.5" FontWeight="SemiBold"/></Border></StackPanel><TextBlock Text="{Binding Summary}" Opacity="0.65" Margin="0,4,0,0" TextWrapping="Wrap"/><TextBlock Text="{Binding SubSummary}" Opacity="0.65" Margin="0,2,0,0" TextWrapping="Wrap" Visibility="{Binding HasSubSummary, Converter={StaticResource visible}}"/></StackPanel>
     <StackPanel Grid.Row="2" Visibility="{Binding IsData, Converter={StaticResource visible}}" ToolTip="A reason is required for rejection and withdrawal."><TextBlock Text="Decision note / reason" Style="{StaticResource fieldLabelStyle}"/><TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12"/></StackPanel>
     <ScrollViewer Grid.Row="3" Visibility="{Binding IsData, Converter={StaticResource visible}}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel>
      <StackPanel Visibility="{Binding IsData, Converter={StaticResource visible}}">

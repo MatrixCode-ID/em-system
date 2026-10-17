@@ -21,7 +21,7 @@ public class ApprovalService(EmApp app) : ServiceWpfBase(app), IApprovalServices
    /// <inheritdoc />
    public Task PostMeta_ApprovalWithdraw(string requestId, string reason) => PostAsync(nameof(PostMeta_ApprovalWithdraw), requestId, reason);
    /// <inheritdoc />
-   public Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary) => PostAsync<string>(nameof(PostGetMeta_ApprovalSystemRequest), name, subjectKey, summary);
+   public Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary, string? subSummary) => PostAsync<string>(nameof(PostGetMeta_ApprovalSystemRequest), name, subjectKey, summary, subSummary!);
    /// <inheritdoc />
    public Task<string> PostGetMeta_ApprovalSystemReinstate(string requestId, string summary, string reason) => PostAsync<string>(nameof(PostGetMeta_ApprovalSystemReinstate), requestId, summary, reason);
    /// <inheritdoc />

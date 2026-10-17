@@ -18,9 +18,9 @@ public interface IApprovalServices : IServices {
    Task<ApprovalDecisionResult> PostGetMeta_ApprovalDecide(ApprovalDecision decision);
    /// <summary>PostMeta_ApprovalWithdraw approval operation.</summary>
    Task PostMeta_ApprovalWithdraw(string requestId, string reason);
-   /// <summary>PostGetMeta_ApprovalSystemRequest approval operation.</summary>
-   Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary);
-   /// <summary>PostGetMeta_ApprovalSystemReinstate approval operation.</summary>
+   /// <summary>Requests a System flow; the summary needs at least 10 characters, the sub-summary is optional.</summary>
+   Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary, string? subSummary);
+   /// <summary>Voids a System request and rebuilds it; the new request keeps the old sub-summary.</summary>
    Task<string> PostGetMeta_ApprovalSystemReinstate(string requestId, string summary, string reason);
    /// <summary>PostMeta_ApprovalSystemVoid approval operation.</summary>
    Task PostMeta_ApprovalSystemVoid(string requestId, string reason);

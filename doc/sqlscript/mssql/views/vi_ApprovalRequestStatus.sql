@@ -3,7 +3,7 @@ DROP VIEW IF EXISTS dbo.vi_ApprovalRequestStatus;
 GO
 CREATE VIEW dbo.vi_ApprovalRequestStatus AS
 SELECT r.cApprovalRequestId, r.cApprovalRequestKind, r.cApprovalName, r.cSubjectKey,
-       r.cSummary, r.cApprovalRequestStage, r.cApprovalRequestLevel,
+       r.cSummary, r.cSubSummary, r.cApprovalRequestStage, r.cApprovalRequestLevel,
        r.cApprovalRequestCompletedDate,
        (SELECT STRING_AGG(s.cApprovalRequestStepName, N', ')
         FROM dbo.ta_ApprovalRequestStep s

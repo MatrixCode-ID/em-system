@@ -8,11 +8,14 @@ using Microsoft.Extensions.Logging;
 namespace Em.Api.Core.Approval;
 
 internal sealed partial class ApprovalEngine {
-   public async Task<string> RequestAsync(string name, string subjectKey, string summary, CancellationToken ct = default) {
+   private const int MinimumSystemSummary = 10;
+   public Task<string> RequestAsync(string name, string subjectKey, string summary, CancellationToken ct = default) =>
+      RequestAsync(name, subjectKey, summary, null, ct);
+   public async Task<string> RequestAsync(string name, string subjectKey, string summary, string? subSummary, CancellationToken ct = default) {
       var user = await RealUserAsync(ct); registry.System(name);
       await using var transaction = await db.Database.BeginTransactionAsync(ct);
       try {
-         var request = await BuildSystemAsync(name, subjectKey, summary, user, ct);
+         var request = await BuildSystemAsync(name, subjectKey, summary, subSummary, user, ct);
          await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct);
          await NotifySystemFinishedAsync(request, ct);
          return request.cApprovalRequestId;
@@ -25,9 +28,14 @@ internal sealed partial class ApprovalEngine {
          await transaction.RollbackAsync(CancellationToken.None); db.ChangeTracker.Clear(); throw;
       }
    }
-   private async Task<ta_ApprovalRequest> BuildSystemAsync(string name, string subjectKey, string summary, string user, CancellationToken ct) {
+   private async Task<ta_ApprovalRequest> BuildSystemAsync(string name, string subjectKey, string summary, string? subSummary, string user, CancellationToken ct) {
       var registration = registry.System(name);
       RequireText(subjectKey, "Subject key", 400);
+      summary = summary?.Trim() ?? string.Empty;
+      if (summary.Length is < MinimumSystemSummary or > 400)
+         throw new ActionException($"Summary must contain {MinimumSystemSummary} to 400 characters.", 400);
+      subSummary = string.IsNullOrWhiteSpace(subSummary) ? null : subSummary.Trim();
+      OptionalText(subSummary, "Sub-summary", 400);
       if (await db.ta_ApprovalRequests.AnyAsync(x => x.cApprovalRequestKind == ApprovalKind.System &&
           x.cApprovalName == name && x.cSubjectKey == subjectKey && x.cApprovalRequestStage >= ApprovalStage.Rejected, ct))
          throw new ActionException("This subject already has a System approval request. Open it or reinstate it.", 409);
@@ -36,6 +44,7 @@ internal sealed partial class ApprovalEngine {
       var backups = await db.ta_ApprovalSignerSettingBackups.Where(x => settingIds.Contains(x.cApprovalSignerSettingId))
          .OrderBy(x => x.cApprovalSignerSettingBackupOrder).ToArrayAsync(ct);
       var request = NewRequest(ApprovalKind.System, name, subjectKey, summary, user);
+      request.cSubSummary = subSummary;
       var steps = new List<ta_ApprovalRequestStep>();
       var firstLevel = registration.Definition.Steps.Min(x => x.Level);
       foreach (var declaration in registration.Definition.Steps.OrderBy(x => x.Level)) {
@@ -130,7 +139,7 @@ internal sealed partial class ApprovalEngine {
          if (old.cApprovalRequestKind != ApprovalKind.System) throw new ActionException("Only System approvals support reinstate.", 400);
          Void(old, user, reason);
          await db.SaveChangesAsync(ct);
-         replacement = await BuildSystemAsync(old.cApprovalName, old.cSubjectKey!, summary, user, ct);
+         replacement = await BuildSystemAsync(old.cApprovalName, old.cSubjectKey!, summary, old.cSubSummary, user, ct);
          replacement.cReinstateOf = old.cApprovalRequestId;
          await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct);
       }

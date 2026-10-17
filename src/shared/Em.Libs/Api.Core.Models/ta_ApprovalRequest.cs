@@ -23,6 +23,9 @@ public class ta_ApprovalRequest
    /// <summary>Stored cSummary value.</summary>
    [Column(TypeName = "nvarchar(400)")]
    public string cSummary { get; set; } = string.Empty;
+   /// <summary>Optional second summary line; null shows the summary on one line.</summary>
+   [Column(TypeName = "nvarchar(400)")]
+   public string? cSubSummary { get; set; }
    /// <summary>Stored cApprovalRequestRequesterId value.</summary>
    [Column(TypeName = "char(26)")]
    public string cApprovalRequestRequesterId { get; set; } = string.Empty;

@@ -97,7 +97,11 @@ internal sealed partial class ApprovalEngine(ApiCoreContext db, ApprovalRegistry
       });
    }
    internal async Task CommentAsync(string requestId, string text, CancellationToken ct) {
-      var user = await RealUserAsync(ct); await RequireViewAsync(requestId, ct);
+      var user = caller.RequireUserId();
+      var systemComment = caller.IsAdmin && (user == Defaults.AdminUserId ||
+         (user == Defaults.DebuggerUserId && caller.IsDebugRequest));
+      if (!systemComment) user = await RealUserAsync(ct);
+      await RequireViewAsync(requestId, ct);
       AddComment(requestId, user, text); await db.SaveChangesAsync(ct);
    }
    internal async Task<ApprovalDecisionResult> DecideAsync(ApprovalDecision decision, CancellationToken ct) {

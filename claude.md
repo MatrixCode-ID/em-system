@@ -318,6 +318,28 @@ Pembaruan 2026-10-15 (managed bucket object storage, eksekusi plan `plan/execute
 
 ## Rancang ulang approval — selesai (2026-10-17)
 
+Keputusan pengguna 2026-10-17: menu **Approval Manager** harus tersedia untuk
+SYSTEM DEBUGGER dalam mode debug aktif dan untuk administrator, tanpa menunggu
+katalog capabilities approval. Switch User dan Simulate Login tetap mengikuti
+hak akun yang aktif. Regresi pembentukan menu diperiksa di `DebugStateTests`.
+Saat manager dibuka tanpa filter eksplisit, debugger/admin melihat seluruh request
+yang diizinkan server (`Needs my action` awalnya tidak dicentang). Filter eksplisit
+dari MY TASKS atau modul tetap dipertahankan; akun biasa tetap mulai dari tugasnya.
+Keputusan UI lanjutan 2026-10-17: Approval Manager memakai tabel daftar selebar
+area kerja dengan paging. Detail dibuka sebagai editor terpisah melalui double-click
+baris atau context menu **Open**; memilih baris tidak memuat detail. Mode compact
+yang disematkan modul tetap menampilkan detail. Judul tab editor unik per request.
+Filter jenis approval selalu menyediakan **All approvals** untuk kembali melihat
+Data dan System bersama, termasuk setelah memilih jenis tertentu atau Refresh.
+Pilihan semua tidak mengaktifkan lagi filter awal dari payload navigasi; filter
+subject pada tampilan compact/editor tetap mengikuti payload modul.
+Keputusan pengguna 2026-10-17: akun bawaan SYSTEM DEBUGGER dan SYSTEM ADMIN boleh
+menulis komentar approval yang bisa dilihatnya. Debugger tetap harus terautentikasi
+dengan debug token; identitas penulis dicatat dan ditampilkan apa adanya. Ini khusus
+komentar, bukan pelonggaran aturan submit/decide/withdraw/sign atau lampiran. Akun
+sistem tidak dibuatkan row user. Database lama memakai update ApprovalSystemComments
+yang melepaskan FK penulis komentar ke user, tanpa menghapus data atau FK ke request.
+
 Plan `plan/executed/approval-rancang-ulang.codex.md` mengganti kontrak lama dengan
 Data/System, registrasi eksplisit dan analyzer. Guide `doc/engine/engine-approval.md`;
 laporan `plan/executed/approval-rancang-ulang-report.md`. SQL upgrade v2 membuang

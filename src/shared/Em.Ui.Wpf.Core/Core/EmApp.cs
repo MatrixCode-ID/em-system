@@ -314,6 +314,11 @@ namespace Em.Ui.Wpf.Core
                Subtitle = approval.Subtitle, Description = approval.Description, Navigation = approval,
                Icon = EFontAwesomeIcon.Solid_Check.CreateImageSource(System.Windows.Media.Brushes.Gray) });
          }
+         if (Navigations.FirstOrDefault(n => n.Name == "em.approval.signers") is { } signers && CanOpen(signers)) {
+            tools.Add(new StaticTool { Name = signers.Name, Title = signers.Title,
+               Subtitle = signers.Subtitle, Description = signers.Description, Navigation = signers,
+               Icon = EFontAwesomeIcon.Solid_UserCheck.CreateImageSource(System.Windows.Media.Brushes.Gray) });
+         }
          if (tools.Count > groupEnd) tools[groupEnd].StartsGroup = true;
 
          return tools;

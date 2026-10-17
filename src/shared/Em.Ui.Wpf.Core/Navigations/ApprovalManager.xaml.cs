@@ -107,6 +107,12 @@ public sealed record ApprovalCommentVm(string Author, DateTime When, string Text
    /// <summary>Formatted timestamp of a comment or decision.</summary>
    public string TimeText => When.ToString("g");
 }
+/// <summary>A selectable approval definition, or all definitions when kind and name are absent.</summary>
+public sealed record ApprovalDefinitionFilter(
+   ApprovalKind? Kind, string? Name, string Title) {
+   /// <summary>Readable selection text, including the kind for a specific approval.</summary>
+   public string Caption => Kind is { } kind ? $"{kind} {Title}" : Title;
+}
 /// <summary>Shared approval state; commands consume only server-returned capabilities.</summary>
 public sealed class ApprovalManagerVm : MvvmModelBase {
    private ApprovalManagerNavigationPayload _payload = new();
@@ -145,11 +151,19 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    public Task NextCommand() => NextAsync();
    /// <summary>Runs the previous action using the current authorized state.</summary>
    public Task PreviousCommand() => PreviousAsync();
-   /// <summary>Opens the selected System request in its dedicated viewer.</summary>
-   public Task OpenSystemCommand() => EmApp!.NavigateTo("em.approval.editor", new ApprovalManagerNavigationPayload {
-      Kind = ApprovalKind.System, Name = SelectedRequest!.cApprovalName, ApprovalRequestId = SelectedRequest.cApprovalRequestId,
-      WaitingForMeOnly = false, SystemViewer = true
-   });
+   /// <summary>Opens the supplied request in a separate editor tab.</summary>
+   public Task OpenRequestCommand(ta_ApprovalRequest? request) {
+      if (!OpenRequestCommandAllowed(request) || request is null) return Task.CompletedTask;
+      return NavigateToRequestAsync(request);
+   }
+   private Task NavigateToRequestAsync(ta_ApprovalRequest request) {
+      var payload = new ApprovalManagerNavigationPayload {
+         Kind = request.cApprovalRequestKind, Name = request.cApprovalName, ApprovalRequestId = request.cApprovalRequestId,
+         WaitingForMeOnly = false, SystemViewer = true
+      };
+      return NavigationEntry?.NavigateTo("em.approval.editor", payload)
+         ?? EmApp!.NavigateTo("em.approval.editor", payload);
+   }
    /// <summary>Shows the note recorded with a signature.</summary>
    public void SignatureNoteCommand(ApprovalStepCardVm step) => DialogOwner?.ShowMboxInfo(step.DecisionNote, step.Step.cApprovalRequestStepName);
    /// <summary>Opens a permitted PDF attachment in the shared viewer.</summary>
@@ -158,7 +172,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
 
    /// <summary>Creates the request commands.</summary>
    public ApprovalManagerVm() {
-      RegisterCommand(nameof(OpenSystemCommand), OpenSystemCommand, OpenSystemCommandAllowed);
+      RegisterCommand<ta_ApprovalRequest?>(nameof(OpenRequestCommand), OpenRequestCommand, OpenRequestCommandAllowed);
       RegisterCommand<ApprovalStepCardVm>(nameof(SignatureNoteCommand), SignatureNoteCommand, SignatureNoteCommandAllowed);
       RegisterCommand<ta_ApprovalRequestAttachment>(nameof(PreviewAttachmentCommand), PreviewAttachmentCommand, PreviewAttachmentCommandAllowed);
       RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
@@ -178,7 +192,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       RegisterCommand(nameof(PreviousCommand), PreviousCommand, PreviousCommandAllowed);
    }
    /// <summary>Whether the current state permits this action.</summary>
-   public bool OpenSystemCommandAllowed() => !IsBusy && SelectedRequest?.cApprovalRequestKind == ApprovalKind.System;
+   public bool OpenRequestCommandAllowed(ta_ApprovalRequest? request) => !IsBusy && request is not null;
    /// <summary>Whether the current state permits this action.</summary>
    public bool SignatureNoteCommandAllowed(ApprovalStepCardVm step) => !IsBusy && step?.HasNote == true;
    /// <summary>Whether the current state permits this action.</summary>
@@ -216,7 +230,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>Whether the host can offer the request manager.</summary>
    public static bool CanOpenManager(EmApp app) => app.ServiceProvider.GetRequiredService<ApprovalAccessCatalog>().CanOpen;
    /// <summary>Bindable definitions for the approval view.</summary>
-   public ObservableCollection<ApprovalCapability> Definitions { get; } = [];
+   public ObservableCollection<ApprovalDefinitionFilter> Definitions { get; } = [];
    /// <summary>Bindable rows for the approval view.</summary>
    public ObservableCollection<ta_ApprovalRequest> Rows { get; } = [];
    /// <summary>Bindable fields for the approval view.</summary>
@@ -234,9 +248,9 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>Additional commands supplied by the owning module.</summary>
    public ObservableCollection<ApprovalToolbarItem> ModuleToolbar { get; } = [];
    /// <summary>Bindable selected definition for the approval view.</summary>
-   public ApprovalCapability? SelectedDefinition { get => Get<ApprovalCapability?>(); set { if (Set(value) && !_loadingRows) { Page = 1; _ = RefreshAsync(); } } }
+   public ApprovalDefinitionFilter? SelectedDefinition { get => Get<ApprovalDefinitionFilter?>(); set { if (Set(value) && !_loadingRows) { Page = 1; _ = RefreshAsync(); } } }
    /// <summary>Bindable selected request for the approval view.</summary>
-   public ta_ApprovalRequest? SelectedRequest { get => Get<ta_ApprovalRequest?>(); set { if (Set(value) && !_loadingRows) _ = RunAsync(LoadDetailAsync); } }
+   public ta_ApprovalRequest? SelectedRequest { get => Get<ta_ApprovalRequest?>(); set { if (Set(value) && !_loadingRows) { if (ShowDetails) _ = RunAsync(LoadDetailAsync); else RaiseState(); } } }
    /// <summary>Bindable detail for the approval view.</summary>
    public ApprovalRequestDetail? Detail { get => Get<ApprovalRequestDetail?>(); private set => Set(value); }
    /// <summary>Bindable module view for the approval view.</summary>
@@ -251,6 +265,8 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    public bool IsCompact => _payload.Compact;
    /// <summary>Bindable show filters for the approval view.</summary>
    public bool ShowFilters => !IsCompact && !_payload.SystemViewer;
+   /// <summary>Whether the current view embeds or opens one request's detail.</summary>
+   public bool ShowDetails => !ShowFilters;
    /// <summary>Whether the full manager toolbar is visible.</summary>
    public bool ShowManagerToolbar => !_payload.SystemViewer;
    /// <summary>Whether the signer card strip is visible.</summary>
@@ -271,8 +287,6 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    public string SourceCaption => _editor?.SourceCaption ?? "Open source";
    /// <summary>Readable state of the selected request.</summary>
    public string RequestStatus => Detail?.Header is { cApprovalRequestKind: ApprovalKind.System, cApprovalRequestStage: ApprovalStage.Approved } ? "Completed" : Detail?.Header.cApprovalRequestStage.ToString() ?? string.Empty;
-   /// <summary>Bindable list width for the approval view.</summary>
-   public GridLength ListWidth => new(ShowFilters ? 340 : 0);
    /// <summary>Bindable is data for the approval view.</summary>
    public bool IsData => Detail?.Header.cApprovalRequestKind == ApprovalKind.Data;
    /// <summary>Bindable is system for the approval view.</summary>
@@ -285,6 +299,10 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    public string Title => Detail is null ? "Select an approval request" : $"{Detail.Header.cApprovalName} · {Detail.Header.cApprovalRequestStage}";
    /// <summary>Module-supplied subject summary.</summary>
    public string Summary => Detail?.Header.cSummary ?? string.Empty;
+   /// <summary>Optional second summary line supplied by the module.</summary>
+   public string SubSummary => Detail?.Header.cSubSummary ?? string.Empty;
+   /// <summary>Whether the second summary line is shown.</summary>
+   public bool HasSubSummary => !string.IsNullOrWhiteSpace(Detail?.Header.cSubSummary);
    /// <summary>Complete proposed objects awaiting insertion.</summary>
    public string CreateSnapshots { get => Get(string.Empty); private set => Set(value); }
    /// <summary>Bindable note for the approval view.</summary>
@@ -308,7 +326,9 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>Applies navigation filters before loading.</summary>
    public void Configure(object? input) {
       _released = false;
-      _payload = input as ApprovalManagerNavigationPayload ?? new();
+      _payload = input as ApprovalManagerNavigationPayload ?? new() {
+         WaitingForMeOnly = !(EmApp?.IsDebugBypass == true || EmApp?.ActiveUser?.cUserIsAdmin == true)
+      };
       if (input is string text && text.IndexOf(':') is var split && split > 0 && Enum.TryParse<ApprovalKind>(text[..split], out var kind)) {
          _payload.Kind = kind; _payload.Name = text[(split+1)..];
       }
@@ -317,7 +337,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>Releases the current module view and invalidates pending loads.</summary>
    public void Release() { _released = true; _version++; ModuleView = null; _editor = null; }
    private void RaiseState() {
-      foreach (var property in new[] { nameof(IsNotBusy), nameof(IsCompact), nameof(ShowFilters), nameof(ListWidth), nameof(IsData), nameof(IsSystem), nameof(Title), nameof(Summary), nameof(PageLabel), nameof(HasPreview), nameof(HasSource), nameof(ShowManagerToolbar), nameof(SideWidth), nameof(SideGap), nameof(SignersToggleText), nameof(SidePanelToggleText), nameof(SourceCaption), nameof(RequestStatus) }) NotifyChanged(property);
+      foreach (var property in new[] { nameof(IsNotBusy), nameof(IsCompact), nameof(ShowFilters), nameof(ShowDetails), nameof(IsData), nameof(IsSystem), nameof(Title), nameof(Summary), nameof(SubSummary), nameof(HasSubSummary),nameof(PageLabel), nameof(HasPreview), nameof(HasSource), nameof(ShowManagerToolbar), nameof(SideWidth), nameof(SideGap), nameof(SignersToggleText), nameof(SidePanelToggleText), nameof(SourceCaption), nameof(RequestStatus) }) NotifyChanged(property);
       foreach (var command in Commands) command.RaiseCanExecuteChanged();
       foreach (var step in Steps) step.RefreshState();
    }
@@ -335,19 +355,23 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       _loadingRows = true;
       try {
          var selected = SelectedDefinition;
-         Definitions.Clear(); foreach (var definition in definitions.Where(x => x.CanView)) Definitions.Add(definition);
-         SelectedDefinition = Definitions.FirstOrDefault(x => x.Kind == (selected?.Kind ?? _payload.Kind) && x.Name == (selected?.Name ?? _payload.Name));
+         var kind = selected is null ? _payload.Kind : selected.Kind;
+         var name = selected is null ? _payload.Name : selected.Name;
+         Definitions.Clear();
+         Definitions.Add(new(null, null, "All approvals"));
+         foreach (var definition in definitions.Where(x => x.CanView)) Definitions.Add(new(definition.Kind, definition.Name, definition.Title));
+         SelectedDefinition = Definitions.FirstOrDefault(x => x.Kind == kind && x.Name == name) ?? Definitions[0];
          var oldId = SelectedRequest?.cApprovalRequestId;
-         var result = await Service.PostGetMeta_ApprovalRequests(new ApprovalQuery(SelectedDefinition?.Kind ?? _payload.Kind,
-            SelectedDefinition?.Name ?? _payload.Name, _payload.SubjectKey, Stage, WaitingForMe, Search, Page, 50));
+         var result = await Service.PostGetMeta_ApprovalRequests(new ApprovalQuery(ShowFilters ? SelectedDefinition.Kind : _payload.Kind,
+            ShowFilters ? SelectedDefinition.Name : _payload.Name, _payload.SubjectKey, Stage, WaitingForMe, Search, Page, 50));
          if (_released || version != _version) return;
          Rows.Clear(); foreach (var row in result.Items) Rows.Add(row); Total = result.Total;
          SelectedRequest = Rows.FirstOrDefault(x => x.cApprovalRequestId == (_payload.ApprovalRequestId ?? oldId)) ?? Rows.FirstOrDefault();
          if (_payload.ApprovalRequestId is { } direct && SelectedRequest?.cApprovalRequestId != direct) {
             var detail = await Service.GetMeta_ApprovalRequest(direct); Rows.Insert(0, detail.Header); SelectedRequest = detail.Header;
          }
-         _payload.ApprovalRequestId = null;
-         await LoadDetailAsync();
+         if (ShowDetails) await LoadDetailAsync();
+         RefreshedText = $"Refreshed {DateTime.Now:dd-MMM-yyyy HH:mm}";
       } finally { _loadingRows = false; RaiseState(); }
    });
    private async Task LoadDetailAsync() {
@@ -406,7 +430,13 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       if (prompt.ShowDialog() != true) return;
       var old = Detail!.Header; var id = await Service.PostGetMeta_ApprovalSystemReinstate(old.cApprovalRequestId, old.cSummary, prompt.Vm.Note);
       if (_editor is not null) await _editor.OnReinstatedAsync(old.cApprovalRequestId, id, old.cSubjectKey!);
-      _loadingRows = true; SelectedRequest = (await Service.GetMeta_ApprovalRequest(id)).Header; _loadingRows = false;
+      var replacement = (await Service.GetMeta_ApprovalRequest(id)).Header;
+      if (_payload.SystemViewer) {
+         await LoadDetailAsync();
+         await NavigateToRequestAsync(replacement);
+         return;
+      }
+      _loadingRows = true; SelectedRequest = replacement; _loadingRows = false;
       await LoadDetailAsync();
    });
    private Task CommentAsync() => RunAsync(async () => { await Service.PostMeta_ApprovalComment(Detail!.Header.cApprovalRequestId, Comment); Comment = string.Empty; await LoadDetailAsync(); });

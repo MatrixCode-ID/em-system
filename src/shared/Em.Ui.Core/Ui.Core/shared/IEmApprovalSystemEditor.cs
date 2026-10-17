@@ -33,9 +33,15 @@ public interface IEmApprovalSystemEditor {
 }
 /// <summary>Typed convenience methods over the server-built System flow.</summary>
 public static class ApprovalSystemClient {
-   /// <summary>Requests the definition's flow for an opaque module key.</summary>
+   /// <summary>Requests the definition's flow for an opaque module key, with a one-line summary.</summary>
    public static Task<string> RequestApprovalAsync<TDefinition>(this IApprovalServices services, object key, string summary)
-      where TDefinition : IEmApprovalSystem => services.PostGetMeta_ApprovalSystemRequest(ApprovalSubjectKey.NameOf(typeof(TDefinition)), ApprovalSubjectKey.Serialize(key), summary);
+      where TDefinition : IEmApprovalSystem => services.RequestApprovalAsync<TDefinition>(key, summary, null);
+   /// <summary>
+   /// Requests the definition's flow for an opaque module key. The summary needs at least 10 characters; an
+   /// empty sub-summary shows the summary on a single line.
+   /// </summary>
+   public static Task<string> RequestApprovalAsync<TDefinition>(this IApprovalServices services, object key, string summary, string? subSummary)
+      where TDefinition : IEmApprovalSystem => services.PostGetMeta_ApprovalSystemRequest(ApprovalSubjectKey.NameOf(typeof(TDefinition)), ApprovalSubjectKey.Serialize(key), summary, subSummary);
    /// <summary>Finds the active or finished request for recovery.</summary>
    public static Task<ta_ApprovalRequest?> FindByKeyAsync<TDefinition>(this IApprovalServices services, object key)
       where TDefinition : IEmApprovalSystem => services.PostGetMeta_ApprovalSystemFindByKey(ApprovalSubjectKey.NameOf(typeof(TDefinition)), ApprovalSubjectKey.Serialize(key));

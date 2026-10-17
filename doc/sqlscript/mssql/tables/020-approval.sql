@@ -17,6 +17,7 @@ CREATE TABLE [dbo].[ta_ApprovalRequest] (
    [cApprovalName] varchar(50) NOT NULL,
    [cSubjectKey] nvarchar(400) NULL,
    [cSummary] nvarchar(400) NOT NULL,
+   [cSubSummary] nvarchar(400) NULL,
    [cApprovalRequestRequesterId] char(26) NOT NULL,
    [cApprovalRequestStage] int NOT NULL,
    [cApprovalRequestLevel] int NOT NULL,
@@ -144,8 +145,7 @@ CREATE TABLE [dbo].[ta_ApprovalRequestComment] (
    [datestamp] datetime2 NOT NULL,
    [json_object] nvarchar(max) NULL,
    CONSTRAINT [PK_ta_ApprovalRequestComment] PRIMARY KEY ([cApprovalRequestCommentId]),
-   CONSTRAINT [FK_ApprovalRequestComment_0] FOREIGN KEY ([cApprovalRequestId]) REFERENCES [dbo].[ta_ApprovalRequest] ([cApprovalRequestId]),
-   CONSTRAINT [FK_ApprovalRequestComment_1] FOREIGN KEY ([cUserId]) REFERENCES [dbo].[ta_User] ([cUserId])
+   CONSTRAINT [FK_ApprovalRequestComment_0] FOREIGN KEY ([cApprovalRequestId]) REFERENCES [dbo].[ta_ApprovalRequest] ([cApprovalRequestId])
 );
 END;
 GO

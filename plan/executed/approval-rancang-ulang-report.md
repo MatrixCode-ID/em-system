@@ -95,3 +95,45 @@ render dan binding tidak menggantikan pemeriksaan tersebut. UI MAUI, physical Do
 Approval, quorum, eskalasi dan email di luar cakupan. PDF renderer eksternal milik host
 tidak diverifikasi melalui engine. Tidak ada data, nama modul bisnis atau secret privat
 yang dimasukkan ke source/report publik ini.
+
+## Pembaruan daftar manager — 2026-10-17
+
+Atas permintaan pengguna, manager menjadi tabel daftar penuh dengan paging. Pemilihan
+baris tidak memuat detail; double-click dan context menu Open membuka request yang
+dituju dalam tab editor terpisah, baik Data maupun System. Identitas tab unik per
+request, refresh editor mempertahankan request tersebut, dan reinstatement membuka
+replacement dalam tab tersendiri. Mode compact yang disematkan modul tetap tersedia.
+
+Debugger/admin mulai tanpa filter Needs my action ketika membuka manager tanpa
+payload filter. Filter eksplisit MY TASKS/modul dipertahankan; akun biasa tetap memakai
+haknya. Ketentuan ini dicatat dalam CLAUDE.md dan guide approval.
+
+Verifikasi console: 144 tes project WPF lulus; 26 tes approval/debugger lulus setelah
+penyesuaian terakhir. Cakupan meliputi paging tanpa pemuatan detail, default filter,
+dua request bernama sama di tab berbeda, pembukaan ulang tab yang sama, mode compact,
+refresh request tertentu, serta binding double-click dan target context menu. Popup
+tidak dibuka pada tes console; ancestor menu disediakan tes untuk mengevaluasi binding.
+Build host pemakai lulus tanpa warning/error. Perubahan lanjutan ini belum diuji render
+atau interaksi GUI. Tidak ada perubahan database, commit, atau push.
+
+## Filter semua dan komentar akun sistem — 2026-10-17
+
+Filter definisi memiliki pilihan All approvals yang dapat dipilih lagi dan bertahan
+setelah Refresh, termasuk ketika navigasi awal memfilter satu definisi. Filter
+payload pada compact/editor tetap berlaku.
+
+Pengguna mengizinkan akun bawaan debugger dan administrator menulis komentar.
+Otorisasi tetap memerlukan hak melihat request; debugger harus memakai debug token.
+Nama akun sistem dikembalikan sebagai identitas penulis tanpa membuat row user.
+Guard real-user pada operasi approval lain tetap berlaku. SQL instalasi baru serta
+upgrade v2 diselaraskan; instalasi v2 yang sudah ada menjalankan
+`doc/sqlscript/mssql/updates/20261017-ApprovalSystemComments.sql`. Skrip hanya
+melepaskan FK penulis komentar ke user, mempertahankan data dan FK request, serta
+idempotent. Migrasi telah diterapkan dan diperiksa pada database development host
+pemakai; produksi belum diubah.
+
+Enam tes integrasi ApprovalRedesignTests lulus tanpa skip, termasuk migrasi dua kali,
+history, atribusi kedua akun sistem, penolakan debugger tanpa debug token, akun
+nonaktif, input terlalu panjang dan tanda tangan sistem yang tetap ditolak.
+Sebanyak 28 tes UI approval/debugger serta build host API/WPF lulus. API pengguna
+yang sedang berjalan belum dimulai ulang; HTTP live dan GUI belum diuji ulang.

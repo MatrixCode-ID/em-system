@@ -41,7 +41,7 @@ public sealed class ApprovalServices(IApprovalEngine engine) : ServicesBase, IAp
    public Task PostMeta_ApprovalWithdraw(string requestId, string reason) => Engine.WithdrawAsync(requestId, reason, AbortToken);
    /// <inheritdoc />
    [PostAction]
-   public Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary) => engine.RequestAsync(name, subjectKey, summary, AbortToken);
+   public Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary, string? subSummary) => engine.RequestAsync(name, subjectKey, summary, subSummary, AbortToken);
    /// <inheritdoc />
    [PostAction]
    public Task<string> PostGetMeta_ApprovalSystemReinstate(string requestId, string summary, string reason) => engine.ReinstateAsync(requestId, summary, reason, AbortToken);

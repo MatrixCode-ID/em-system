@@ -62,7 +62,7 @@ internal sealed partial class ApprovalEngine {
       if (filter.Name is { } name) query = query.Where(x => x.cApprovalName == name);
       if (filter.SubjectKey is { } key) query = query.Where(x => x.cSubjectKey == key);
       if (filter.Stage is { } stage) query = query.Where(x => x.cApprovalRequestStage == stage);
-      if (!string.IsNullOrWhiteSpace(filter.Search)) query = query.Where(x => x.cSummary.Contains(filter.Search) || x.cApprovalName.Contains(filter.Search));
+      if (!string.IsNullOrWhiteSpace(filter.Search)) query = query.Where(x => x.cSummary.Contains(filter.Search) || (x.cSubSummary != null && x.cSubSummary.Contains(filter.Search)) || x.cApprovalName.Contains(filter.Search));
       if (filter.WaitingForMeOnly) query = WaitingQuery(query);
       var total = await query.CountAsync(ct); var page = Math.Max(1, filter.Page); var size = Math.Clamp(filter.PageSize, 1, 200);
       return new ApprovalPage(await query.AsNoTracking().OrderByDescending(x => x.datestamp).ThenByDescending(x => x.cApprovalRequestId).Skip((page-1)*size).Take(size).ToArrayAsync(ct), total, page, size);
@@ -91,18 +91,22 @@ internal sealed partial class ApprovalEngine {
       var pending = request.cApprovalRequestStage == ApprovalStage.Pending;
       var decidable = steps.Where(x => pending && real && x.cApprovalRequestStepLevel == request.cApprovalRequestLevel &&
          x.cApprovalRequestStepStage == ApprovalStepStatus.Waiting && (caller.IsAdmin || candidates.Any(c => c.cApprovalRequestStepId == x.cApprovalRequestStepId && c.cUserId == caller.cUserId))).Select(x => x.cApprovalRequestStepId).ToArray();
+      var comments = await db.ta_ApprovalRequestComments.AsNoTracking().Where(x => x.cApprovalRequestId == id).OrderBy(x => x.datestamp).ToArrayAsync(ct);
+      var users = await db.ta_Users.Where(u => u.cUserId == request.cApprovalRequestRequesterId || candidates.Select(c => c.cUserId).Contains(u.cUserId) ||
+         db.ta_ApprovalRequestSignatures.Any(s => s.cApprovalRequestId == id && s.cUserId == u.cUserId) ||
+         db.ta_ApprovalRequestComments.Any(c => c.cApprovalRequestId == id && c.cUserId == u.cUserId))
+         .Select(u => new ApprovalSignerUser(u.cUserId, u.cUserAccount, u.cUserState == UserState.Active)).ToListAsync(ct);
+      foreach (var (systemId, account) in new[] { (Defaults.DebuggerUserId, Defaults.DebuggerUserAccount), (Defaults.AdminUserId, Defaults.AdminUserAccount) })
+         if (comments.Any(x => x.cUserId == systemId) && users.All(x => x.UserId != systemId)) users.Add(new(systemId, account, true));
       return new ApprovalRequestDetail(request, items, fields, steps, candidates,
          await db.ta_ApprovalRequestSignatures.AsNoTracking().Where(x => x.cApprovalRequestId == id).OrderBy(x => x.datestamp).ToArrayAsync(ct),
-         await db.ta_ApprovalRequestComments.AsNoTracking().Where(x => x.cApprovalRequestId == id).OrderBy(x => x.datestamp).ToArrayAsync(ct),
+         comments,
          await db.ta_ApprovalRequestAttachments.AsNoTracking().Where(x => x.cApprovalRequestId == id).OrderBy(x => x.datestamp).ToArrayAsync(ct),
          real && pending && (request.cApprovalRequestKind == ApprovalKind.Data ? CanDecideData(request) : decidable.Length > 0),
          real && pending && CanWithdraw(request), real && request.cApprovalRequestStage >= ApprovalStage.Rejected && CanVoid(request),
          real && request.cApprovalRequestStage >= ApprovalStage.Rejected && CanVoid(request),
          real && services.GetService<IObjectStore>() is not null, decidable,
-         await db.ta_Users.Where(u => u.cUserId == request.cApprovalRequestRequesterId || candidates.Select(c => c.cUserId).Contains(u.cUserId) ||
-            db.ta_ApprovalRequestSignatures.Any(s => s.cApprovalRequestId == id && s.cUserId == u.cUserId) ||
-            db.ta_ApprovalRequestComments.Any(c => c.cApprovalRequestId == id && c.cUserId == u.cUserId))
-            .Select(u => new ApprovalSignerUser(u.cUserId, u.cUserAccount, u.cUserState == UserState.Active)).ToArrayAsync(ct));
+         users.ToArray());
    }
    internal async Task<ta_ApprovalRequestAttachment> AttachAsync(ApprovalAttachmentUpload upload, Stream content, CancellationToken ct) {
       var user = await RealUserAsync(ct); await RequireViewAsync(upload.RequestId, ct);

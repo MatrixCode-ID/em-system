@@ -24,8 +24,8 @@ The core schema has requests, Data items and fields, System steps and candidate 
 comments, attachments, signer settings and ordered backups. A filtered unique index reserves a System
 subject while its request is pending, approved or rejected. Data subjects may have several pending
 requests. `vi_ApprovalRequestStatus` is a lightweight, stable join target for module databases on the same
-SQL Server; it exposes the request identity, kind, name, opaque key, status, summary, active level/steps
-and completion time.
+SQL Server; it exposes the request identity, kind, name, opaque key, status, summary, sub-summary, active
+level/steps and completion time.
 
 ## Names and registration
 
@@ -162,13 +162,20 @@ public sealed class OrderApproval : IEmApprovalSystem<OrderKey>
 builder.AddSystemApproval<OrderApproval, OrderApprovalHandler>(); // API
 builder.AddSystemApproval<OrderApproval, OrderApprovalEditor>();  // WPF
 
-var id = await services.RequestApprovalAsync<OrderApproval>(key, "Order summary");
+var id = await services.RequestApprovalAsync<OrderApproval>(key, "ORD-0001, Customer A", "12 items, Main Street 1");
 ```
+
+A System request carries two summary lines. The **summary** is required and must contain 10 to 400
+characters after trimming; the **sub-summary** is optional (up to 400 characters). When the sub-summary
+is empty the request shows only one line. Reinstate copies the sub-summary of the voided request.
+Data requests keep their table title as the summary and have no sub-summary. Existing installations
+apply `updates/20261017-ApprovalSubSummary.sql` once, then re-run `views/vi_ApprovalRequestStatus.sql`.
 
 Steps are built on the server. A later level opens only after every step at the preceding active level
 has signed. One signature completes a step. The requester cannot supply or edit the flow.
 
-The **System Approval Editor** uses the `Administrative Tools:Approval Signer Settings` claim. Its
+The **System Approval Editor** uses the `Administrative Tools:Approval Signer Settings` claim and is
+opened from **Tools**, next to Approval Manager, for users who may open it. Its
 three columns show registered approvals, declared steps and a User Pool. Each step needs exactly one
 primary user or **DS · Dynamic Signer**, plus zero or more ordered four-eyes backups. DS stays above the
 pool filter and can be dropped on any step. Dropping DS replaces the primary; the previous primary user
@@ -240,7 +247,7 @@ GET arguments are simple fields. Filters, settings, keys and decisions travel by
 | `PostGetMeta_ApprovalSystemReinstate` | Create a replacement linked to the voided request |
 | `PostMeta_ApprovalSystemVoid` | Void while preserving history |
 | `PostGetMeta_ApprovalSystemFindByKey` | Recover the occupying System request |
-| `PostMeta_ApprovalComment` | Add a comment as a real viewer |
+| `PostMeta_ApprovalComment` | Add a comment as an authorized active viewer or authenticated built-in administrator/debugger |
 | `GetMeta_ApprovalSignerSettings` / `PostMeta_ApprovalSignerSettings` | Administer future signer snapshots |
 | `PostGetMeta_ApprovalAttachment` / `GetMeta_ApprovalAttachment` | Stream request/comment files |
 
@@ -248,6 +255,34 @@ WPF registers System editors through `AddSystemApproval<TDefinition, TEditor>()`
 viewer using navigation `em.approval.editor` and `ApprovalManagerNavigationPayload` with the request ID
 and `SystemViewer = true`. Approval Manager uses `em.approval.manager`. For embedded Data review,
 set `Kind`, `Name`, `SubjectKey`, `Compact = true` and `WaitingForMeOnly = false`.
+
+Open the request list from **Tools > Approval Manager** in the multi-tab layout.
+The active SYSTEM DEBUGGER and administrator accounts can see this tool even before
+approval capabilities load. Switch User and Simulate Login use the active account's
+permissions. When opened without an explicit filter, debugger and administrator
+accounts start with **Needs my action** cleared, showing all requests they can view.
+Ordinary users start with it checked. Explicit navigation filters, including MY TASKS,
+are preserved. Clear the checkbox and refresh to include requests awaiting other
+users, subject to the server's visibility checks.
+
+Built-in SYSTEM ADMIN and SYSTEM DEBUGGER accounts may comment on requests they can
+view. Debugger comments require a debug-token identity; comments retain the actual
+system author ID and display its account name. This exception does not enable signing,
+submitting, withdrawing or uploading attachments as a built-in account. Existing SQL
+Server installations must apply `updates/20261017-ApprovalSystemComments.sql` once.
+The update removes only the comment-author user foreign key, keeps the request foreign
+key and all comment history, and does not create system user records.
+
+The manager shows a full-width paged request table with type, approval name, summary (with the
+sub-summary as a muted second line when present), status, current step and requested date. Selecting a row does not load its detail.
+The definition filter always includes **All approvals**, so users can return to Data
+and System requests together after selecting a specific definition. Refresh preserves
+that selection, including when the manager originally opened with a definition filter.
+Double-click a row or choose **Open** from its context menu to open that exact request
+in a separate editor tab. Data and System requests both use this flow; each request
+has its own tab identity. Compact views embedded by modules continue to show detail.
+Reinstating a request from its editor opens the replacement in its own tab and keeps
+the original request available as history.
 
 MAUI supplies the action client only; approval screens are deferred.
 

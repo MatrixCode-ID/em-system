@@ -172,8 +172,7 @@ CREATE TABLE [dbo].[ta_ApprovalRequestComment] (
    [datestamp] datetime2 NOT NULL,
    [json_object] nvarchar(max) NULL,
    CONSTRAINT [PK_ta_ApprovalRequestComment] PRIMARY KEY ([cApprovalRequestCommentId]),
-   CONSTRAINT [FK_ApprovalRequestComment_0] FOREIGN KEY ([cApprovalRequestId]) REFERENCES [dbo].[ta_ApprovalRequest] ([cApprovalRequestId]),
-   CONSTRAINT [FK_ApprovalRequestComment_1] FOREIGN KEY ([cUserId]) REFERENCES [dbo].[ta_User] ([cUserId])
+   CONSTRAINT [FK_ApprovalRequestComment_0] FOREIGN KEY ([cApprovalRequestId]) REFERENCES [dbo].[ta_ApprovalRequest] ([cApprovalRequestId])
 );
 END;
 GO

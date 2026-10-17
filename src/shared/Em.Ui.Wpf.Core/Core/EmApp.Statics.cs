@@ -307,7 +307,7 @@ namespace Em.Ui.Wpf.Core
             IsMenuVisible = false
          });
          app.AddNavigation(new Navigation {
-            Name = "em.approval.editor", Title = "System Approval", Subtitle = "Review and sign an approval request",
+            Name = "em.approval.editor", Title = "Approval", Subtitle = "Review and decide an approval request",
             BodyType = BodyType.Of<ApprovalManager>(), Kind = NavigationKind.Editor, RequireParameter = true,
             EmApp = app, IsMenuVisible = false, OrderIndex = -1
          });

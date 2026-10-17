@@ -4,8 +4,13 @@ namespace Em.Api.Core.Approval;
 public interface IApprovalEngine {
    /// <summary>Submits one Data tree, or applies it atomically for a caller who may decide it.</summary>
    Task<ApprovalSubmitResult> SubmitDataAsync(DataChange root, string? note = null, CancellationToken ct = default);
-   /// <summary>Requests a System flow from its registered definition and current signer settings.</summary>
+   /// <summary>Requests a System flow with a one-line summary of at least 10 characters.</summary>
    Task<string> RequestAsync(string name, string subjectKey, string summary, CancellationToken ct = default);
+   /// <summary>
+   /// Requests a System flow from its registered definition and current signer settings. The summary needs at
+   /// least 10 characters; an empty sub-summary shows the summary on a single line.
+   /// </summary>
+   Task<string> RequestAsync(string name, string subjectKey, string summary, string? subSummary, CancellationToken ct = default);
    /// <summary>Voids a System request without altering its signature history.</summary>
    Task VoidAsync(string requestId, string reason, CancellationToken ct = default);
    /// <summary>Rebuilds the System flow and links a new request to the voided predecessor.</summary>
