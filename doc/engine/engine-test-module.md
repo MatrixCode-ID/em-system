@@ -12,11 +12,11 @@ approval.
 | Project | Contents |
 | --- | --- |
 | `Em.Test.Models` | Entities, DTOs, enums and the `ITestServices` contract (module name `test`, claim list) |
-| `Em.Test.Api` | `TestServices` (server), its own data context, sample PDF, hub source, two approval flows, `AddTestModule` |
+| `Em.Test.Api` | `TestServices` (server), its own data context, sample PDF, hub source, Data and System approval definitions, `AddTestModule` |
 | `Em.Test.Models.Ui` | UI model `TestItem` (change tracking, undo, new rows) |
-| `Em.Test.Wpf` | `TestService` (client), test screens, approval panels, `AddTestModule` |
+| `Em.Test.Wpf` | `TestService` (client), test screens, a module-owned System approval editor, `AddTestModule` |
 
-It is wired into `Em.Api` (`builder.AddTestModule()`, plus `AddLocalBinaryStorage` for approval PDFs) and
+It is wired into `Em.Api` (`builder.AddTestModule()`, object storage optionally enables approval attachments) and
 into `Em.Ui.Wpf`. To remove it from a real application, delete the two `AddTestModule` lines and their
 `ProjectReference` entries.
 
@@ -42,7 +42,7 @@ and refused for everyone, administrators and debug mode included. With the modul
 
 1. Run `doc/sqlscript/mssql/tables/900-emtest.sql`, then `views/vi_TestItem.sql` and
    `views/vi_TestDoc.sql` on the core database (safe to run again). The scripts create the test tables and
-   views and two approval document types (`EmTestDoc`, `EmTestItem`).
+   views. The module has no document-type seed dependency.
 2. Switch the module on (`"modules": { "test": true }` or `EM_MODULE_TEST=true`, see above).
 3. Start `Em.Api` and `Em.Ui.Wpf`, sign in, and open the **Em Test** menu. Every screen requires the claim
    `test:Run Tests` (administrators and debug mode pass).
@@ -51,7 +51,7 @@ and refused for everyone, administrators and debug mode included. With the modul
 | --- | --- | --- |
 | Em Test Console | `test.home` | Probes, self-test and launcher |
 | Test Items | `test.items` | Lists, paging, UiModel, data approval |
-| Test Documents | `test.docs` | Document approval and PDF stamp |
+| Test Documents | `test.docs` | System approval and module-owned printable PDF |
 | Test Tasks & CDN | `test.tasks` | Business tasks and CDN files |
 | Test UI Lab | `test.ui` | PDF viewer, navigation, dialogs, controls |
 | Test Item Editor | `test.items.editor` | Editor with payload (opened from Test Items) |
@@ -85,8 +85,8 @@ a pass).
 | Table CRUD, views, batch, paging, search with DTO | Test Items |
 | UiModel: dirty tracking, undo, reload, new rows; editor with payload; refuse leaving with unsaved changes | Test Item Editor |
 | Data approval (propose add/change/delete, save directly with the approve claim) | Test Items, Test Item Editor |
-| Document approval: levels, parallel steps, four-eyes, guard + override, step input, PDF stamp, withdraw | Test Documents + Approval Manager |
-| Approval panels: QA step input, info card, Source document button, hub | Approval Manager, MY TASKS hub |
+| System approval: levels, parallel steps, DS, four-eyes backups, module input, void and reinstate | Test Documents + Approval Manager |
+| System editor: QA input, preview, source navigation, extra toolbar command and hub | Approval Manager, MY TASKS hub |
 | Personal/global business tasks, JSON/file results, cancel, failure, 409 conflict, hub | Test Tasks & CDN |
 | CDN: upload, list, archive (business task), delete | Test Tasks & CDN > CDN |
 | PDF viewer: from server, from disk, load failure, same title twice, from drag and drop | Test UI Lab > PDF viewer |
@@ -109,3 +109,29 @@ a pass).
 - System accounts (built-in admin, debugger) cannot submit or sign approvals because the engine requires a
   real user. Test approval flows with a regular user.
 - No MAUI screens, and no test for a second database connection (`AddExtraDbConn`).
+
+## Approval redesign integration
+
+The new contracts are described in [Approval engine](engine-approval.md). `TestDocDataApproval`
+owns the named Data root `EmTestItem`; `TestItemDataApproval` is its child definition. Create through
+`PostGetMeta_TestItemSubmitChange` produces one deferred document/item tree. Independent CRUD items
+created through table actions have no approval parent and cannot use the tree update route until a
+module-owned parent relationship exists. An Update must carry the screen's `Original` item.
+
+`PostGetMeta_TestDocDataChange` also submits explicit Create/Update/Delete/Restore root operations with
+created and edited children. The root demonstrates enum-based Soft deletion and an approver-only amount;
+the child demonstrates a propagated parent link and Hard deletion. Run the updated `900-emtest.sql`
+and recreate `vi_TestItem` after its new nullable parent column is installed.
+
+`TestSystemApproval` names the System flow `EmTestDoc`: Prepared By, QA Check, then Approved By A/B in
+parallel. Configure each step in System Approval Editor. Use DS for Prepared By to demonstrate the
+requester's immediate first signature. QA Check may use a fixed user or DS; its DS handler reads an
+active user ID from the document's `json_object.qaUserId`. Missing DS data fails the request with the
+approval and step name. Completion/rejection hooks log their call and update the sample subject status.
+
+`TestSystemApprovalEditor` loads the module's document, validates QA input, saves it before signing,
+offers preview/source actions and an extra help command, and stores a new approval link after reinstate.
+The link lives in `json_object.approvalRequestId`, outside the engine's request state.
+
+Builds and tests of this redesign are pending until the consuming application code is also complete.
+Historical test results above describe the previous implementation and do not validate this redesign.

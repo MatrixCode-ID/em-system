@@ -35,3 +35,11 @@ sendiri menjadi string, dan server membacanya lewat cabang JSON di `EmApp.TryCon
 - Setelah ketiganya bermigrasi, cabang JSON di `EmApp.TryConvert` bisa dihapus agar parameter objek di GET
   ditolak dengan pesan yang jelas.
 - Perlu cek repo turunan untuk action GET berparameter objek sebelum cabang itu dihapus.
+
+
+## Pembaruan 2026-10-17 — kode rancang ulang approval
+
+Action list approval lama diganti `PostGetMeta_ApprovalRequests(ApprovalQuery)`; riwayat per
+subjek dan pencarian key komposit juga melalui POST. Proxy WPF/MAUI tidak mengirim JSON
+approval melalui query string, dan binder GET menolak `ApprovalQuery`. Build dan tes belum
+dijalankan; menunggu kode plan engine dan produk selesai sesuai keputusan pengguna.

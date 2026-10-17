@@ -9,7 +9,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 
 | Guide | Covers |
 | --- | --- |
-| [Approval engine](engine-approval.md) | Document and data approval, PDF stamps, Approval Manager, MY TASKS hub |
+| [Approval engine](engine-approval.md) | Deferred Data changes, server-built System flows, signer settings, module editors, attachments and MY TASKS |
 | [CDN](engine-cdn-storage.md) | Public `/cdn` downloads, CDN Manager actions, storage size |
 | [Container registry](engine-registry.md) | OCI `/v2` registry, roots and containers, Container Manager, Docker testing |
 | [NuGet server (NuPak)](engine-nupak.md) | NuGet V3 feeds, prefixes, recycle bin, NuGet Manager |

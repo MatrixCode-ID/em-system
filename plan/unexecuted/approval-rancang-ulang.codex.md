@@ -307,3 +307,19 @@ belum dibangun).
 
 Daftar berkas utama, hasil build/tes per jenis (angka lulus/gagal/skip), hasil render, skrip SQL yang dijalankan,
 yang tertunda, dan tautan guide.
+
+
+## Catatan pelaksanaan 2026-10-17
+
+- Kode skema, kontrak, registry/startup check, analyzer, runtime Data/System, API/hub/
+  attachment, client WPF/MAUI, layar WPF dan modul contoh telah ditulis.
+- Mockup editor dan viewer disetujui pengguna dalam sesi eksekusi dan dipakai untuk
+  penyelarasan tiga kolom editor, kartu penanda tangan horizontal, sidebar, toolbar,
+  Revert/draft lintas definisi, double-click pool dan dialog keputusan.
+- Komit lokal dibuat per langkah; tidak ada push. Revisi instruksi urutan kerja disimpan
+  pada `claude.md`.
+- **Belum ada build, tes, render atau eksekusi SQL.** Implementasi belum dinyatakan
+  tervalidasi. Berikutnya: selesaikan kode plan produk, kemudian integrasi dan seluruh
+  pengujian kedua repo, termasuk SQL lokal, HTTP, screenshot dan review.
+- Plan tetap di `unexecuted` sampai eksekusi dan verifikasi selesai; jangan menganggap
+  penulisan kode sebagai penutupan plan.

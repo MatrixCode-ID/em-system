@@ -1,183 +1,264 @@
 # Approval engine
 
-A guide for module authors. It covers only the public surface of the approval engine.
+The engine provides **Data Approval** for deferred row changes and **System Approval** for module-owned
+subjects with a signing flow. **Document Approval** is reserved for physical files; registration throws
+`NotImplementedException`. The engine does not own an application's document-type catalog or render
+signature stamps. A module owns its data, business rules, source screen and printable document.
 
-The engine offers two kinds of approval. Both share one set of request tables, one action service
-(`core.approval`), one **Approval Manager** screen and one **MY TASKS** hub.
+This redesign is a breaking change. Its implementation is being integrated; builds, SQL integration,
+HTTP smoke checks and UI rendering are deliberately deferred until the engine and consuming application
+code are both complete.
 
-| | Document approval | Data approval |
-| --- | --- | --- |
-| Used for | Transaction documents signed by several parties (orders, contracts, …) | Changes to master data (customers, vendors, …) |
-| The document/data | **Already exists**; the request gates its status | **Not changed yet**; the proposal stays in the request until approved |
-| Steps | Several levels, each with parallel steps; every step has its own claim | One decision by a holder of the approve claim |
-| Result | A PDF stamped with the signatures | The change is applied to the module's tables after a three-way comparison |
-| Builder call | `AddDocumentApproval<TServices, TKey>(docType, flow)` | `AddDataApproval<TServices>(docType, approveClaim, flow)` |
+## Database upgrade
 
-Everything is registered on the API builder (`EmAppBuilder`) during startup, never at runtime.
+For a new SQL Server database, run `tables/010-core.sql`, then `tables/020-approval.sql`, followed by
+`views/vi_ApprovalRequestStatus.sql`. Existing installations use
+`updates/20261017-ApprovalRedesign.sql`, then the status view.
 
-## Engine vs. module responsibilities
+The upgrade **discards old approval requests and their children**, removes their document-type foreign
+key, and creates the new schema. It preserves the application's document-type table. Re-running the
+upgrade against the new schema preserves new requests. Back up anything that must be retained before
+the first upgrade. Old clients and modules must be updated before deploying the new API.
 
-The engine **does not know the module's tables**. Keys (including composite keys), loading data,
-applying changes and validation are supplied by the module through the `flow` declaration. This lets
-modules whose data lives in legacy tables (no standard columns, no ULID IDs, composite keys) use it too.
-A document or entity key is a `record` whose parts are marked `[KeyPart(n)]`. The engine converts it to
-its stored form and back, and module handlers receive the record as is.
+The core schema has requests, Data items and fields, System steps and candidate snapshots, signatures,
+comments, attachments, signer settings and ordered backups. A filtered unique index reserves a System
+subject while its request is pending, approved or rejected. Data subjects may have several pending
+requests. `vi_ApprovalRequestStatus` is a lightweight, stable join target for module databases on the same
+SQL Server; it exposes the request identity, kind, name, opaque key, status, summary, active level/steps
+and completion time.
 
-### Document approval
+## Names and registration
 
-```csharp
-builder.AddDocumentApproval<OrderServices, OrderKey>("SalesOrder", flow => {
-   flow.Level(1, l => l.Step("Prepared By", slot));              // the requester signs automatically on submit
-   flow.Level(2, l => l.Step("Checked By", slot, distinctFrom: "Prepared By",
-                             signers: async c => [...]));         // signer user IDs, read from the document
-   flow.Level(3, l => {                                           // steps within one level run in parallel
-         l.Step("Approved By A", slotA);
-         l.Step("Approved By B", slotB, guard: GuardAsync, input: BInput());
-      },
-      onCompleted: c => Task.CompletedTask);                      // called when the whole level is done
-   flow.Pdf(c => c.Services.RenderAsync(c.DocKey))                // Task<Stream>: the base PDF to stamp
-       .PdfLayout((c, pdf) => LocateAsync(pdf))                   // optional: per-document box positions (see PDF)
-       .Summary(c => c.Services.SummarizeAsync(c.DocKey))         // summary for lists and the hub
-       .RequireOpen()                                             // the document must still be open on submit
-       .OnSigning(...).OnSigned(...).OnFinishing(...).OnFinished(...)
-       .OnRejecting(...).OnRejected(...).OnReinstating(...);
-});
+Definitions implement `IEmApproval`. Root Data and System classes declare `[Approval("Name")]`.
+Names start with an ASCII letter, contain letters, digits and single spaces, and have at most 50
+characters. The pair `(kind, name)` is unique, case-insensitively. Child Data definitions have no
+attribute. Each entity has exactly one Data definition. Definitions are registered explicitly; there is
+no assembly scanning at runtime.
+
+The `EmSys.Api.Core` package includes the metadata analyzer under `analyzers/dotnet/cs`. A host consuming
+the engine through project references also adds:
+
+```xml
+<ProjectReference Include="..\Em.Api.Core.Analyzers\Em.Api.Core.Analyzers.csproj"
+                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 
-- **Claims.** Every step claim and the reader claim (`View {docType}`, see
-  `EmAppBuilder.ApprovalViewClaimName`) are registered automatically on module `TServices`. Do not register
-  them again. The step name becomes the claim name.
-- **First step.** The requester signs it on submit, so it cannot ask for input.
-- **`signers:`** fixes the signers on submit (`when:` includes a step only when its condition holds for
-  that document). Other holders of the same claim may sign on their behalf (a reason is required and the
-  stamp shows *on behalf of*), unless the step is `strict`.
-- **`distinctFrom:`** enforces four-eyes: the two steps cannot be signed by the same person. The
-  administrator switch is exempt.
-- **`guard:`** blocks approval of a step with a reason, and may name an *override* claim. Holders of that
-  claim may approve with a reason; the stamp is marked OVERRIDE.
-- **`input:`** defines per-step input (`StepInput<TServices, TKey, TPayload>`). `Check(slot, ...)` and
-  `Text(slot, ...)` define what is drawn on the PDF, `Validate` checks it, and `OnSigned` applies its effect
-  to the document **in the same transaction**. On rejection, acceptable input is still drawn and an
-  unacceptable payload does not fail the rejection. Whether a rejection is allowed is decided by the
-  module's `OnSigning`.
-- **Hooks.** `OnSigning`, `OnSigned`, `OnFinishing`, `OnRejecting` and `OnReinstating` run inside the
-  decision transaction; a failure rolls everything back. `OnFinished` and `OnRejected` run after commit;
-  their failures are only logged.
-- **Reinstate** (withdraw, then submit again): a pending request becomes `-2`, a finished request `-3`. The
-  new submission links to the old one through `ReinstateOf`. `OnReinstating` may refuse.
+Adjust the relative path to your checkout. The analyzer checks source and referenced assemblies:
 
-### Data approval
+| Error | Meaning |
+| --- | --- |
+| EMAPV001 | A named definition lacks its attribute |
+| EMAPV002 | Invalid name format or length |
+| EMAPV003 | Duplicate kind/name pair |
+| EMAPV004 | Multiple Data definitions for one entity |
+| EMAPV005 | A child definition declares a name |
+
+Startup validates registrations again, including EF ownership, keys, columns, supported property types,
+parent relations, deletion policy and System step names/levels. Modules loaded outside the host's
+compilation cannot be checked by the analyzer; runtime registration remains authoritative.
+
+## Data Approval
+
+Definitions live in the module backend, where their optional database hooks can join the apply transaction.
 
 ```csharp
-builder.AddDataApproval<CustomerServices>("Customer", approveClaim: "Approve Update", flow => {
-   // `order` is the apply order: parents before children
-   flow.Entity<CustomerKey>("Customer", (c, key) => c.Services.LoadAsync(key),
-         (c, request) => c.Services.ApplyAsync(request), order: 0)
-      .Entity<ContactKey>("Contact", (c, key) => c.Services.LoadContactAsync(key),
-         (c, request) => c.Services.ApplyContactAsync(request), order: 1)
-      .Summary(c => c.Services.SummarizeAsync(c))
-      .OnFinishing(...).OnFinished(...).OnRejecting(...).OnRejected(...);
-});
+[Approval("Customer")]
+public sealed class CustomerApproval : IEmApprovalData<CustomerRow>
+{
+    public string[] KeyColumns => [nameof(CustomerRow.Id)];
+    public string[] TrackedColumns => [nameof(CustomerRow.Name)];
+    public string[] ApproverOnlyColumns => [];
+    public bool CanView(ActionRequest caller) => HasModuleAccess(caller);
+    public bool CanDecide(ActionRequest caller) => HasApprovalAccess(caller);
+}
+
+public sealed class AddressApproval : IEmApprovalDataChild<AddressRow, CustomerRow>
+{
+    public string[] KeyColumns => [nameof(AddressRow.CustomerId), nameof(AddressRow.Number)];
+    public string[] ForeignKeyColumns => [nameof(AddressRow.CustomerId)];
+    public string[] TrackedColumns => [nameof(AddressRow.Description)];
+}
+
+builder.AddDataApproval<CustomerApproval>();
+builder.AddDataApproval<AddressApproval>();
+
+var result = await approval.SubmitDataAsync(
+    DataChange.Create(customer).With(DataChange.Create(address)), note);
 ```
 
-- A holder of the approve claim **saves directly** without waiting for anyone (the request is recorded as
-  self-approved). Anyone else leaves a request that waits for an approver.
-- **Three-way comparison** per column: *original* (at submit), *current* (table content at approval) and
-  *proposed*. Current = original → applied; current = proposed → skipped; anything else is a **conflict**.
-  All entities are compared before any is applied. A conflict cancels that decision and is recorded so the
-  approver sees the current values. The approver may **apply anyway** (`Override`, reason required, item
-  marked *Overridden*), unless the entity no longer exists, in which case it can only be rejected.
-- New entities: the module returns the real key from `apply`. Other entities in the request that still use
-  the temporary key are updated automatically, so a parent and its children can share one request.
+`KeyColumns` match the complete EF primary key in order. Child foreign-key properties pair with the
+parent's key properties in order and type; differing names produce a warning so the module author can
+check the ordering. An entity must be mapped by exactly one registered context. Views and key/value
+stores do not have a manual load/apply fallback in this version.
 
-## Cross-database transactions
+The root owns `Title`, `CanView`, `CanDecide` and `CanWithdraw`. No Data claim is automatically created.
+Real users with the administrator switch bypass those checks. The requester can withdraw their pending
+request; a root's `CanWithdraw` may additionally allow other users. The built-in administrator and
+debugger identities cannot submit, decide, withdraw or sign. Test by switching to a persisted active user.
 
-One decision uses one connection and one SQL Server transaction that spans the core database and the
-module databases, **without MSDTC** (`ApprovalTransaction`). A module context takes part only when the
-module service requests it through its **constructor**. A context obtained through `GetService`, or through
-another module's service, is **not** enlisted and is not checked at startup. All participating databases
-must be on one server with one login; `ApprovalStartupChecks` rejects the application before the first
-request otherwise.
+### Create
 
-## Tables
+A Create stores the **whole row** in the item's `json_object`; it does not insert module data at submit.
+Child items point to their parent item inside the request. On approval, the engine deserializes and
+checks the snapshot against the current model, calls `CreateKeyAsync`, inserts the parent, copies its
+keys to each child's declared foreign keys, calls the child hook, and inserts the child.
 
-Seven tables in the application's core database: request, step, step signer, item, item key, item column
-and comment. The script is `doc/sqlscript/mssql/tables/020-approval.sql`. It also creates the document type
-table referenced by the foreign keys; the document type rows themselves are inserted by the application or
-module. Two parts of the schema are engine behavior, not optimizations:
+`CreateKeyAsync(entity, context, ct)` and `ValidateAsync(entity, context, ct)` have no-op defaults.
+Hooks use `context.DbContext`, already enlisted in the approval transaction. Assign required new keys in
+the key hook; the engine does not invent module numbering rules. Validation runs on submit and apply.
 
-1. A filtered unique index on (document type, key, version) `WHERE Stage = Pending` guards against two
-   concurrent submissions.
-2. Foreign keys from requester, signer, on-behalf-of and the signer list to the user table. This is what
-   makes **system accounts** (the built-in admin and the debugger) unable to sign. Approval is an exception
-   to "admin can do everything"; a real user with the administrator switch turned on can still sign.
+After approval, each Create item's key is filled and **`json_object` is set to null**. Rejected or
+withdrawn Create snapshots remain intact. Create requests are immutable; withdraw and submit again to
+change them. Do not expect an approved Create to retain a second full copy of the inserted row.
 
-The document type must already be registered in the application's document type list. An unregistered
-type is rejected by the database on the first request.
+### Update, delete and restore
 
-## Actions (`core.approval`)
+`DataChange.Update(original, modified)` compares only `TrackedColumns`. Supply the original loaded by
+the screen; reloading it on the server during submission would lose optimistic conflict detection.
+Keys cannot change. Values are normalized according to type using invariant culture.
 
-All actions are `GetMeta_`/`PostMeta_`/`PostGetMeta_`. Their claims are dynamic (per document type and
-step), so the engine service is registered with `enforceClaims: false` and checks access itself.
+On approval, for every changed field:
+
+- Current equals proposed: no conflict.
+- Current equals original: apply the proposal.
+- Otherwise: show a conflict. Each deliberate override needs its own reason.
+- The row disappeared: return 409; it cannot be recreated by an override.
+
+The engine checks every item before applying any change. An unresolved conflict records current values
+without applying part of the tree. A caller who can decide saves immediately in the same transaction,
+still leaving an approved request and signature; stale direct saves return 409.
+
+`DeleteMode` is `None` by default, `Hard` to remove the submitted row, or `Soft` with a required
+`DeleteStateColumn` and optional nullable `DateTime` stamp. A boolean state uses true/false. Numeric or
+enum state columns require explicit `DeletedStateValue` and `ActiveStateValue`. `DataChange.Restore`
+requires Soft mode, resets the state and clears its deletion stamp. Deleting a parent does not
+implicitly delete children. Data requests have no reinstate operation.
+
+`ApproverOnlyColumns` is a UI hint returned through capabilities, not a server whitelist. The engine has
+no paired-column business rules. Those belong to the module UI.
+
+### Transactions
+
+Data application uses one SQL Server connection and transaction across core and module databases,
+without MSDTC. The declared entity contexts are enlisted. Use the supplied context in hooks; unrelated
+connections do not participate. Participating databases must use the same server and login. The engine
+does not lock a subject for the lifetime of a pending Data request. Concurrent module/external writes
+can still race the value comparison; callers must review conflict results.
+
+## System Approval
+
+The definition belongs to a library referenced by both clients and server:
+
+```csharp
+[Approval("Order")]
+public sealed class OrderApproval : IEmApprovalSystem<OrderKey>
+{
+    public IReadOnlyList<ApprovalSystemStep> Steps =>
+        [new(1, "Prepared By"), new(2, "Checked By"), new(3, "Review A"), new(3, "Review B")];
+}
+
+builder.AddSystemApproval<OrderApproval, OrderApprovalHandler>(); // API
+builder.AddSystemApproval<OrderApproval, OrderApprovalEditor>();  // WPF
+
+var id = await services.RequestApprovalAsync<OrderApproval>(key, "Order summary");
+```
+
+Steps are built on the server. A later level opens only after every step at the preceding active level
+has signed. One signature completes a step. The requester cannot supply or edit the flow.
+
+The **System Approval Editor** uses the `Administrative Tools:Approval Signer Settings` claim. Its
+three columns show registered approvals, declared steps and a User Pool. Each step needs exactly one
+primary user or **DS · Dynamic Signer**, plus zero or more ordered four-eyes backups. DS stays above the
+pool filter and can be dropped on any step. Dropping DS replaces the primary; the previous primary user
+becomes a backup. Other users become backups when a primary exists. Double-click adds to the selected
+step. Save commits draft settings; Revert/Refresh ask before discarding changes. Inactive users remain
+visible and cannot be assigned.
+
+A scoped `IEmApprovalSystemHandler<TDefinition, TKey>` resolves DS through
+`ResolveDynamicSignerAsync(step, key, requester, ct)`. Missing handlers, unhandled DS steps or inactive
+resolved users fail submission with a message naming the approval and step. `ApprovalDynamicSigner`
+may set `SignImmediately` for the requester at the first level. Other DS users sign through the active
+step normally.
+
+Primary users and backups are snapshotted into the request. A backup may sign immediately when its
+step is active, and the signature is marked as four-eyes backup. A real IsAdmin user can sign any
+active step and is marked when outside its candidates. There is no replacement-proposal workflow,
+on-behalf signature, per-step claim, PDF stamping or runtime flow editing.
+
+The engine automatically declares `core.approval:View {Name}` for readers. The requester, candidate
+users and IsAdmin may also view a System request and its comments. Signing still requires an active
+persisted user and an active step.
+
+### Link, void and reinstate
+
+The owning module stores the returned request ID on its own subject. String keys are preserved;
+objects use JSON in property declaration order. The serialized key is opaque to the engine and must
+have at most 400 characters. Keep its representation stable. `FindByKeyAsync<TDefinition>` is the
+recovery route if saving the module link fails after creating a request.
+
+A pending, approved or rejected System request occupies its key. Void makes a pending request `-2`
+and a finished/rejected one `-3`; its signatures remain unchanged. Another request may then use the key.
+Void is allowed to the requester, IsAdmin or a holder of a definition's `VoidClaims`.
+
+Reinstate voids the current request and builds a new one using current settings and handler resolution.
+The new request links to its predecessor. The module editor's
+`OnReinstatedAsync(oldId, newId, key)` updates the module link. Failure to update the module link does not
+undo a committed engine request; recover it through FindByKey.
+
+Optional completion/rejection handlers run **after commit**. Their failures are logged and do not
+undo a decision. The task hub always recomputes waiting counts from the current request state.
+
+### Module editor
+
+Implement `IEmApprovalSystemEditor` in the module's WPF main view. The engine surrounds it with the
+toolbar, horizontally scrolling signer cards, decision dialogs and a collapsible right-hand
+attachment/comment panel. The toolbar offers optional document preview and source navigation,
+module commands, reinstate, void and refresh. Signer and comment panels have independent toggles.
+
+`LoadAsync` receives the server-authorized state and a refresh callback. `ValidateSignAsync` and
+`ValidateRejectAsync` must return `ApprovalDecisionCheck` before the signature is sent. The module
+saves business input through its own actions. The engine does not validate that business input.
+Preview and source buttons are shown only when the editor offers them. `ToolbarItems` supplies extra
+module commands. The module is responsible for their permissions.
+
+## API and client
+
+All approval actions belong to `core.approval`; authorization is performed inside each operation.
+GET arguments are simple fields. Filters, settings, keys and decisions travel by POST.
 
 | Action | Purpose |
 | --- | --- |
-| `GetMeta_ApprovalDocumentTypes` | Document types the caller may view |
-| `GetMeta_ApprovalRequests(query)` | Paged list, limited on the server to types the caller may view |
-| `GetMeta_ApprovalRequestsByDoc(docType, docKey)` | All requests for one document |
-| `GetMeta_ApprovalRequest(id)` | Details: steps, changes, timeline |
-| `GetMeta_ApprovalRequestPdf(id)` | Stamped PDF, generated on demand |
-| `GetMeta_ApprovalGuard(id, step)` | Block status of a step and who may override it |
-| `PostGetMeta_ApprovalDecide(decisions[])` | Approve/reject; one transaction **per decision** |
-| `PostMeta_ApprovalCancel(id, reason)` | Withdraw |
-| `PostMeta_ApprovalComment(id, note)` | Comment |
-| `GetMeta_UserHubTasks` | Task list for the current user (hub) |
-| `GetMeta_ApprovalSlotCalibration(...)` | Calibration PDF: draws every box over the real document |
+| `GetMeta_ApprovalCapabilities` | Registered names, kind, title, caller rights, waiting count and UI hints |
+| `PostGetMeta_ApprovalRequests` | Filtered, paged visible requests |
+| `GetMeta_ApprovalRequest` | Snapshot, current Data values, caller rights and participants |
+| `PostGetMeta_ApprovalRequestsBySubject` | Visible history for one subject |
+| `PostGetMeta_ApprovalDecide` | Decide a Data tree or one active System step |
+| `PostMeta_ApprovalWithdraw` | Withdraw a pending Data request |
+| `PostGetMeta_ApprovalSystemRequest` | Build a System request from server configuration |
+| `PostGetMeta_ApprovalSystemReinstate` | Create a replacement linked to the voided request |
+| `PostMeta_ApprovalSystemVoid` | Void while preserving history |
+| `PostGetMeta_ApprovalSystemFindByKey` | Recover the occupying System request |
+| `PostMeta_ApprovalComment` | Add a comment as a real viewer |
+| `GetMeta_ApprovalSignerSettings` / `PostMeta_ApprovalSignerSettings` | Administer future signer snapshots |
+| `PostGetMeta_ApprovalAttachment` / `GetMeta_ApprovalAttachment` | Stream request/comment files |
 
-**Permission to view** a request means holding any step claim in its flow, the reader claim for that
-document type, or the administrator switch. A failed decision does **not** return the request summary to a
-caller who may not view it.
+WPF registers System editors through `AddSystemApproval<TDefinition, TEditor>()`. Open a full-width
+viewer using navigation `em.approval.editor` and `ApprovalManagerNavigationPayload` with the request ID
+and `SystemViewer = true`. Approval Manager uses `em.approval.manager`. For embedded Data review,
+set `Kind`, `Name`, `SubjectKey`, `Compact = true` and `WaitingForMeOnly = false`.
 
-## PDF and stamps
+MAUI supplies the action client only; approval screens are deferred.
 
-- `flow.Pdf(...)` produces the base PDF on submit. The engine stores it through `IBinaryStorage`
-  (`builder.AddLocalBinaryStorage(path)`: a folder on the server machine without a public address; keys
-  containing `\`, `.`/`..` or an absolute path are rejected).
-- Every step has a **slot** (`ApprovalSlot.At(x, y, w, h, page)`, millimeters from the top left of the
-  page). The list of boxes is **frozen per request on submit**; changing the declaration does not affect
-  existing requests.
-- **`PdfLayout`** maps declared positions to the actual positions in this document (for example a
-  signature table that moves with the number of rows; `null` means the box is not in this document). It is
-  called on submit and by calibration, with an in-memory copy of the PDF.
-- `ApprovalSheet()` adds an approval sheet for steps without a box.
-- Every signature carries a verification code; the latest code is printed in the page margin. A screen for
-  checking the code has not been built yet.
+## Attachments and hub
 
-## WPF UI
+Enable `AddObjectStorage()` and its database schema to use attachments. The engine declares the private
+managed bucket `approval-attachments`. Policy limits and quotas are enforced by object storage while
+streaming. Files are linked to a request and optionally one of its comments, with an exact object version.
+The upload client sends one `ApprovalAttachmentUpload` payload and a raw stream. Download and PDF
+preview check visibility of the owning request. Without object storage, attachment writes return 409
+and the upload controls are hidden.
 
-The **Approval Manager** (`ApprovalManager`, no DevExpress dependency) shows the same data in three
-places: from the Tools menu, from the hub (filtered), and embedded in a document screen (Approval tab, with
-Previous/Next when opened for a document). Modules extend it through the UI builder:
-
-- `AddApprovalStepPanel<TView, TViewModel>(docType, step)`: input panel for one step.
-- `AddApprovalInfoPanel<TView>(docType, steps, input, order)`: additional information panel.
-- `AddApprovalDocumentOpener(docType, navigationName, payloadFactory)`: the *Source document* button,
-  enabled only when the caller may open the target screen.
-
-**Compact mode.** Set `ApprovalManagerNavigationPayload.Compact = true` to embed the screen in a narrow
-space, such as a flyout in a module screen. It shows a single column with the proposed changes and the
-decision. The request list appears only as a picker when there is more than one request; links to other
-screens (Open, Open tab, Source document) and info cards are hidden; the timeline stays collapsed until
-opened. Hosting the flyout is up to the consuming screen (pattern: `sheetScrimStyle` + `sheetToggleStyle`).
-
-The **MY TASKS** hub merges every registered `IHubTaskSource` (`AddHubTaskSource<T>()`); the approval
-source is registered automatically. The list is **computed**, not stored, so a task disappears from
-everyone else's list as soon as one person completes it. The approval controls and hub are not available
-in MAUI yet; the client services are.
-
-## Known limitations
-
-- The conflict comparison reads the values, then the module handler reads the row again without a row
-  lock, leaving a small window between the two.
-- Module hooks that obtain a context through `GetService` are not part of the decision transaction.
-- System accounts (built-in admin, debugger) cannot submit or sign; test with real users.
+MY TASKS groups waiting requests by `(kind, name)`. Data counts use the root's decision check; System
+counts use candidates of active steps. Opening a group filters Approval Manager. Counts disappear when
+the request is decided. Escalation, quorum, email delivery by the engine, MAUI UI and physical-document
+approval are outside this implementation.
