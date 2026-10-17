@@ -33,7 +33,10 @@ internal sealed partial class ApprovalEngine(ApiCoreContext db, ApprovalRegistry
       IQueryable<ta_ApprovalRequest> query = locked
          ? db.ta_ApprovalRequests.FromSqlInterpolated($"SELECT * FROM dbo.ta_ApprovalRequest WITH (UPDLOCK,HOLDLOCK) WHERE cApprovalRequestId = {id}")
          : db.ta_ApprovalRequests;
-      return await query.SingleOrDefaultAsync(x => x.cApprovalRequestId == id, ct) ?? throw new ActionException("Approval request was not found.", 404);
+      var row = await query.AsNoTracking().SingleOrDefaultAsync(x => x.cApprovalRequestId == id, ct) ?? throw new ActionException("Approval request was not found.", 404);
+      var tracked = db.ta_ApprovalRequests.Local.FirstOrDefault(x => x.cApprovalRequestId == id);
+      if (tracked is not null) { if (locked) db.Entry(tracked).CurrentValues.SetValues(row); return tracked; }
+      db.Attach(row); return row;
    }
    private async Task<bool> CanViewAsync(ta_ApprovalRequest request, CancellationToken ct) {
       caller.RequireUserId();

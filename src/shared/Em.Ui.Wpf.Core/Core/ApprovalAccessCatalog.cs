@@ -15,8 +15,8 @@ internal class ApprovalAccessCatalog(EmApp app)
       _userId = userId; _canOpen = false;
       if (userId == null) return;
       try {
-         var types = await app.ServiceProvider.GetRequiredService<IApprovalServices>().GetMeta_ApprovalDocumentTypes();
-         if (app.ActiveUser?.cUserId == userId) _canOpen = types.Length > 0;
+         var types = await app.ServiceProvider.GetRequiredService<IApprovalServices>().GetMeta_ApprovalCapabilities();
+         if (app.ActiveUser?.cUserId == userId) _canOpen = types.Any(x => x.CanView);
       }
       catch { /* An unavailable access catalog keeps the tool hidden for ordinary users. */ }
    }

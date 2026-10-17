@@ -158,7 +158,7 @@ namespace Em.Ui.Wpf.Core
          // Registered here, after the module callbacks have finished, so its content is complete and no longer
          // changes. Always registered - even when there is no panel at all - so the approval screen does not
          // need to know the difference.
-         app.Services.AddSingleton(pars.ApprovalPanels);
+         app.Services.AddSingleton(pars.ApprovalEditors);
 
          pars.Navigations.EachOf(app.AddNavigation);
          InitDebugMode(app, pars);
@@ -306,6 +306,12 @@ namespace Em.Ui.Wpf.Core
             EmApp = app,
             IsMenuVisible = false
          });
+         app.AddNavigation(RequireClaim(new Navigation {
+            Name = "em.approval.signers", Title = "System Approval Editor", Subtitle = "Configure signers and four-eyes backups",
+            Description = "Assign a primary user or Dynamic Signer and backups for future System requests.",
+            OrderIndex = -1, BodyType = BodyType.Of<ApprovalSignerSettings>(), Kind = NavigationKind.Manager,
+            EmApp = app, IsMenuVisible = false, RequireParameter = false
+         }, "Administrative Tools:Approval Signer Settings"));
          // Bound to no module and no claim on purpose: the viewer only shows what its caller hands it, so
          // the right to see a document is checked where the document is fetched - the caller's action.
          app.AddNavigation(new Navigation {

@@ -13,7 +13,7 @@ public sealed record ApprovalRequestDetail(ta_ApprovalRequest Header, ta_Approva
    ta_ApprovalRequestStepCandidate[] Candidates, ta_ApprovalRequestSignature[] Signatures,
    ta_ApprovalRequestComment[] Comments, ta_ApprovalRequestAttachment[] Attachments,
    bool CanDecide, bool CanWithdraw, bool CanVoid, bool CanReinstate, bool CanAttach,
-   string[] DecidableStepIds);
+   string[] DecidableStepIds, ApprovalSignerUser[] Users);
 /// <summary>Outcome of a module's Data submission.</summary>
 public sealed record ApprovalSubmitResult(string ApprovalRequestId, bool AppliedImmediately);
 /// <summary>One explicit conflict override.</summary>

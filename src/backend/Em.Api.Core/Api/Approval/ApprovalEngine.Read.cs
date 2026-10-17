@@ -49,10 +49,10 @@ internal sealed partial class ApprovalEngine {
          var name = ApprovalSubjectKey.NameOf(registration.DefinitionType);
          var canView = caller.IsAdmin || ApprovalAccess.HoldsClaim(caller, ViewClaim(name)) ||
             await visible.AnyAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name, ct);
-         if (!canView) continue;
+         if (!canView && !ApprovalAccess.HoldsClaim(caller, new ClaimAction { ModuleName = "Administrative Tools", Name = "Approval Signer Settings" })) continue;
          var count = real ? await waiting.CountAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name, ct) : 0;
          result.Add(new ApprovalCapability(ApprovalKind.System, name, string.IsNullOrEmpty(registration.Definition.Title) ? name : registration.Definition.Title,
-            true, real && (caller.IsAdmin || count > 0), count, [], registration.Definition.Steps.ToArray()));
+            canView, real && (caller.IsAdmin || count > 0), count, [], registration.Definition.Steps.ToArray()));
       }
       return result.ToArray();
    }
@@ -98,7 +98,11 @@ internal sealed partial class ApprovalEngine {
          real && pending && (request.cApprovalRequestKind == ApprovalKind.Data ? CanDecideData(request) : decidable.Length > 0),
          real && pending && CanWithdraw(request), real && request.cApprovalRequestStage >= ApprovalStage.Rejected && CanVoid(request),
          real && request.cApprovalRequestStage >= ApprovalStage.Rejected && CanVoid(request),
-         real && services.GetService<IObjectStore>() is not null, decidable);
+         real && services.GetService<IObjectStore>() is not null, decidable,
+         await db.ta_Users.Where(u => u.cUserId == request.cApprovalRequestRequesterId || candidates.Select(c => c.cUserId).Contains(u.cUserId) ||
+            db.ta_ApprovalRequestSignatures.Any(s => s.cApprovalRequestId == id && s.cUserId == u.cUserId) ||
+            db.ta_ApprovalRequestComments.Any(c => c.cApprovalRequestId == id && c.cUserId == u.cUserId))
+            .Select(u => new ApprovalSignerUser(u.cUserId, u.cUserAccount, u.cUserState == UserState.Active)).ToArrayAsync(ct));
    }
    internal async Task<ta_ApprovalRequestAttachment> AttachAsync(ApprovalAttachmentUpload upload, Stream content, CancellationToken ct) {
       var user = await RealUserAsync(ct); await RequireViewAsync(upload.RequestId, ct);
