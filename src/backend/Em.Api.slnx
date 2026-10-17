@@ -2,6 +2,7 @@
   <Folder Name="/shared/">
     <Project Path="../shared/Em.Libs/Em.Libs.csproj" />
     <Project Path="Em.Api.Core/Em.Api.Core.csproj" />
+    <Project Path="Em.Api.Core.Analyzers/Em.Api.Core.Analyzers.csproj" />
   </Folder>
   <Folder Name="/modules/Em.Test/">
     <Project Path="../modules/Em.Test/Em.Test.Models/Em.Test.Models.csproj" />

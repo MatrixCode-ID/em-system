@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Em.Api.Core\Em.Api.Core.csproj" />
+    <ProjectReference Include="..\Em.Api.Core.Analyzers\Em.Api.Core.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\modules\Em.Test\Em.Test.Api\Em.Test.Api.csproj" />
   </ItemGroup>
   <!-- emapi-config.json lives outside the repository in $(ArtefactsPath)config\. It is copied to the build
