@@ -37,7 +37,7 @@ namespace Em.Api.Core.Approval
          CancellationToken cancellationToken = default) {
          for (var attempt = 0; attempt < Attempts; attempt++) {
             var code = Create();
-            if (!await ctx.ta_ApprovalRequestSteps.AnyAsync(r => r.cApprovalRequestStepVerificationCode == code,
+            if (!await ctx.ta_ApprovalRequestSignatures.AnyAsync(r => r.cApprovalRequestSignatureCode == code,
                    cancellationToken)) {
                return code;
             }

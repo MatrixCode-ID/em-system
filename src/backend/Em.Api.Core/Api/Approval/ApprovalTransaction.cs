@@ -126,7 +126,7 @@ namespace Em.Api.Core.Approval
    /// Without this, a module hook that writes to its module tables runs on its own connection: a failure
    /// midway leaves the document changed while the request is still waiting, or the request completed
    /// while its change never went in. The contexts that take part are those the module's service asks for
-   /// through its constructor (see <see cref="ApprovalFlowDeclaration.ModuleDbContextTypes"/>); module
+   /// through its constructor (see <see cref="IEmApprovalDataContext.DbContext"/>); module
    /// authors do not deal with connections at all. The limit is SQL Server only, and all databases taking
    /// part must be on one server with one login; <see cref="ApprovalStartupChecks"/> refuses an
    /// application that violates this before it accepts the first request.
@@ -148,13 +148,13 @@ namespace Em.Api.Core.Approval
 
       /// <summary>
       /// Opens a transaction on the core database, then brings in the module contexts of
-      /// <paramref name="flow"/>.
+      /// the supplied context types.
       /// </summary>
       /// <param name="core">The core database context.</param>
-      /// <param name="flow">The flow being worked on; its module contexts are known from it.</param>
+      /// <param name="contextTypes">Context types participating in the Data tree.</param>
       /// <param name="provider">The service provider of this call.</param>
       /// <param name="ct">Cancellation of the work.</param>
-      public static async Task<ApprovalTransaction> BeginAsync(ApiCoreContext core, ApprovalFlowDeclaration flow,
+      public static async Task<ApprovalTransaction> BeginAsync(ApiCoreContext core, IEnumerable<Type> contextTypes,
          IServiceProvider provider, CancellationToken ct = default) {
          var transaction = await core.Database.BeginTransactionAsync(ct);
          var enlisted = new List<DbContext>();
@@ -164,12 +164,12 @@ namespace Em.Api.Core.Approval
                var coreDatabase = CatalogOf(connection.ConnectionString);
                ApprovalDatabaseSwitch.Attach(core, coreDatabase, connection);
 
-               foreach (var type in flow.ModuleDbContextTypes) {
+               foreach (var type in contextTypes) {
                   if (provider.GetRequiredService(type) is not DbContext module || ReferenceEquals(module, core)) continue;
 
                   if (!module.Database.IsSqlServer()) {
                      throw new InvalidOperationException(
-                        $"Context {type.Name} of approval flow '{flow.DocType}' is not on SQL Server, so it cannot share the approval transaction.");
+                        $"Context {type.Name} of approval flow 'Data' is not on SQL Server, so it cannot share the approval transaction.");
                   }
 
                   // Seen before in this request: its connection string is the shared one by now, so the

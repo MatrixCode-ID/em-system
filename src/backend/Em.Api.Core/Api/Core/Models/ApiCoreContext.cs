@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+ï»¿using Microsoft.EntityFrameworkCore;
 using Em.Api.Core.Approval;
 
 namespace Em.Api.Core.Models
@@ -44,20 +44,26 @@ namespace Em.Api.Core.Models
       public DbSet<vi_Role> vi_Roles => Set<vi_Role>();
       /// <summary>Rows of table <c>ta_Emp</c>.</summary>
       public DbSet<ta_Emp> ta_Emps => Set<ta_Emp>();
-      /// <summary>Rows of table <c>ta_ApprovalRequest</c>.</summary>
+      /// <summary>Persistent approval ApprovalRequest rows.</summary>
       public DbSet<ta_ApprovalRequest> ta_ApprovalRequests => Set<ta_ApprovalRequest>();
-      /// <summary>Rows of table <c>ta_ApprovalRequestStep</c>.</summary>
-      public DbSet<ta_ApprovalRequestStep> ta_ApprovalRequestSteps => Set<ta_ApprovalRequestStep>();
-      /// <summary>Rows of table <c>ta_ApprovalRequestStepSigner</c>.</summary>
-      public DbSet<ta_ApprovalRequestStepSigner> ta_ApprovalRequestStepSigners => Set<ta_ApprovalRequestStepSigner>();
-      /// <summary>Rows of table <c>ta_ApprovalRequestItem</c>.</summary>
+      /// <summary>Persistent approval ApprovalRequestItem rows.</summary>
       public DbSet<ta_ApprovalRequestItem> ta_ApprovalRequestItems => Set<ta_ApprovalRequestItem>();
-      /// <summary>Rows of table <c>ta_ApprovalRequestItemKey</c>.</summary>
-      public DbSet<ta_ApprovalRequestItemKey> ta_ApprovalRequestItemKeys => Set<ta_ApprovalRequestItemKey>();
-      /// <summary>Rows of table <c>ta_ApprovalRequestItemField</c>.</summary>
+      /// <summary>Persistent approval ApprovalRequestItemField rows.</summary>
       public DbSet<ta_ApprovalRequestItemField> ta_ApprovalRequestItemFields => Set<ta_ApprovalRequestItemField>();
-      /// <summary>Rows of table <c>ta_ApprovalRequestComment</c>.</summary>
+      /// <summary>Persistent approval ApprovalRequestStep rows.</summary>
+      public DbSet<ta_ApprovalRequestStep> ta_ApprovalRequestSteps => Set<ta_ApprovalRequestStep>();
+      /// <summary>Persistent approval ApprovalRequestStepCandidate rows.</summary>
+      public DbSet<ta_ApprovalRequestStepCandidate> ta_ApprovalRequestStepCandidates => Set<ta_ApprovalRequestStepCandidate>();
+      /// <summary>Persistent approval ApprovalRequestSignature rows.</summary>
+      public DbSet<ta_ApprovalRequestSignature> ta_ApprovalRequestSignatures => Set<ta_ApprovalRequestSignature>();
+      /// <summary>Persistent approval ApprovalRequestComment rows.</summary>
       public DbSet<ta_ApprovalRequestComment> ta_ApprovalRequestComments => Set<ta_ApprovalRequestComment>();
+      /// <summary>Persistent approval ApprovalRequestAttachment rows.</summary>
+      public DbSet<ta_ApprovalRequestAttachment> ta_ApprovalRequestAttachments => Set<ta_ApprovalRequestAttachment>();
+      /// <summary>Persistent approval ApprovalSignerSetting rows.</summary>
+      public DbSet<ta_ApprovalSignerSetting> ta_ApprovalSignerSettings => Set<ta_ApprovalSignerSetting>();
+      /// <summary>Persistent approval ApprovalSignerSettingBackup rows.</summary>
+      public DbSet<ta_ApprovalSignerSettingBackup> ta_ApprovalSignerSettingBackups => Set<ta_ApprovalSignerSettingBackup>();
 
       // Internal because the entity behind it is: its rows never leave the server as they are.
       // EF only discovers entities from public DbSet properties, so this one is named explicitly
@@ -81,23 +87,15 @@ namespace Em.Api.Core.Models
             smtp.HasIndex(x => x.cSmtpDefault).IsUnique().HasFilter("[cSmtpDefault] = 1");
          }
 
-         // JSON_VALUE exists for sorting the approval list on a summary column; it is a built-in
-         // function, so nothing is created in the database.
-         modelBuilder.HasDbFunction(typeof(ApprovalJsonFunctions).GetMethod(nameof(ApprovalJsonFunctions.JsonValue))!)
-            .HasName("JSON_VALUE")
-            .IsBuiltIn();
-         
          modelBuilder.Entity<ta_RoleClaim>().HasKey(k => new { k.cRoleId, k.cClaimName });
          modelBuilder.Entity<ta_UserRole>().HasKey(k => new { k.cUserId, k.cRoleId });
 
-         // The three lean approval tables carry no standard column set of their own, so their key is
-         // the combination that identifies the row - the same shape ta_RoleClaim above has.
-         modelBuilder.Entity<ta_ApprovalRequestStepSigner>()
-            .HasKey(k => new { k.cApprovalRequestId, k.cApprovalRequestStepName, k.cUserId });
-         modelBuilder.Entity<ta_ApprovalRequestItemKey>()
-            .HasKey(k => new { k.cApprovalRequestItemId, k.cApprovalRequestItemKeyName });
-         modelBuilder.Entity<ta_ApprovalRequestItemField>()
-            .HasKey(k => new { k.cApprovalRequestItemId, k.cApprovalRequestItemFieldName });
+         modelBuilder.Entity<ta_ApprovalRequest>().HasIndex(x => new { x.cApprovalRequestKind, x.cApprovalName, x.cSubjectKey }).IsUnique()
+            .HasFilter("[cApprovalRequestKind] = 2 AND [cApprovalRequestStage] >= -1");
+         modelBuilder.Entity<ta_ApprovalRequestStep>().HasIndex(x => new { x.cApprovalRequestId, x.cApprovalRequestStepName }).IsUnique();
+         modelBuilder.Entity<ta_ApprovalRequestSignature>().HasIndex(x => x.cApprovalRequestStepId).IsUnique().HasFilter("[cApprovalRequestStepId] IS NOT NULL");
+         modelBuilder.Entity<ta_ApprovalRequestSignature>().HasIndex(x => x.cApprovalRequestSignatureCode).IsUnique();
+         modelBuilder.Entity<ta_ApprovalSignerSetting>().HasIndex(x => new { x.cApprovalName, x.cApprovalSignerSettingStep }).IsUnique();
       }
    }
 }

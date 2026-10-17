@@ -86,6 +86,7 @@ namespace Em.Api.Core
          app._webApplication = app.Builder.Build();
          app._rootServiceProvider = app._webApplication.Services;
          app._httpContextAccessor = app._rootServiceProvider.GetRequiredService<IHttpContextAccessor>();
+         app._rootServiceProvider.GetRequiredService<ApprovalRegistry>().Initialize(app._rootServiceProvider);
          return app;
       }
 
@@ -157,7 +158,7 @@ namespace Em.Api.Core
 
          // Stateless (its font setup is guarded by a lock), so one instance serves every request. Without it
          // the PDF action returns the base PDF as it was frozen, and the calibration action answers 501.
-         builder.Services.AddSingleton<IApprovalPdfRenderer, Em.Api.Core.Approval.Pdf.ApprovalPdfRenderer>();
+         builder.AddClaimIfMissingForApproval();
       }
 
       /// <summary>
@@ -183,8 +184,8 @@ namespace Em.Api.Core
       /// always be created and answer on their own that there is nothing.
       /// </summary>
       private void ApplyApprovalRegistration(EmAppBuilder builder) {
-         ApprovalStartupChecks.VerifyDatabases(builder.ApprovalFlows, builder);
-         Services.AddSingleton(new ApprovalRegistry(builder.ApprovalFlows));
+         ApprovalStartupChecks.VerifyDatabases(builder);
+         Services.AddSingleton(new ApprovalRegistry(builder.ApprovalData, builder.ApprovalSystems, builder.DbContextConnectionNames.Keys.ToArray()));
       }
 
       /// <summary>

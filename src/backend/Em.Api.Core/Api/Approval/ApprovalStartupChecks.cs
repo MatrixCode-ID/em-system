@@ -17,32 +17,15 @@ namespace Em.Api.Core.Approval
       /// <param name="flows">All the flows that were registered.</param>
       /// <param name="builder">The application builder, the source of connection and context registrations.</param>
       /// <exception cref="InvalidOperationException">Thrown when a module context cannot take part.</exception>
-      public static void VerifyDatabases(IEnumerable<ApprovalFlowDeclaration> flows, EmAppBuilder builder) {
-         foreach (var flow in flows) {
-            foreach (var type in flow.ModuleDbContextTypes) {
-               if (!builder.DbContextConnectionNames.TryGetValue(type, out var connectionName)) {
-                  throw new InvalidOperationException(
-                     $"Approval flow '{flow.DocType}' uses service {flow.ServicesType.Name}, which asks for {type.Name}, " +
-                     $"but {type.Name} was not registered through AddDbContext, so its database cannot join the approval transaction.");
-               }
-
-               var module = builder.DbConnections[connectionName];
-               if (!builder.DbConnections.TryGetValue(EmAppBuilder.DefaultConnectionName, out var core) ||
-                   core.Provider != DatabaseProvider.MicrosoftSqlServer ||
-                   module.Provider != DatabaseProvider.MicrosoftSqlServer) {
-                  throw new InvalidOperationException(
-                     $"Approval flow '{flow.DocType}' needs {type.Name} (connection '{connectionName}') and the core database in one transaction, " +
-                     "which is only available when both are on SQL Server.");
-               }
-
-               var problem = Mismatch(new SqlConnectionStringBuilder(core.ConnectionString),
-                  new SqlConnectionStringBuilder(module.ConnectionString));
-               if (problem is not null) {
-                  throw new InvalidOperationException(
-                     $"Approval flow '{flow.DocType}' needs {type.Name} (connection '{connectionName}') and the core database in one " +
-                     $"transaction on one connection, but {problem}. Put them on one server and one login.");
-               }
-            }
+      public static void VerifyDatabases(EmAppBuilder builder) {
+         if (builder.ApprovalData.Count == 0) return;
+         if (!builder.DbConnections.TryGetValue(EmAppBuilder.DefaultConnectionName, out var core) || core.Provider != DatabaseProvider.MicrosoftSqlServer)
+            throw new InvalidOperationException("Data Approval requires SQL Server.");
+         foreach (var (type, connectionName) in builder.DbContextConnectionNames) {
+            var module = builder.DbConnections[connectionName];
+            if (module.Provider != DatabaseProvider.MicrosoftSqlServer) continue;
+            var problem = Mismatch(new SqlConnectionStringBuilder(core.ConnectionString), new SqlConnectionStringBuilder(module.ConnectionString));
+            if (problem is not null) throw new InvalidOperationException($"Approval context '{type}' cannot share the core transaction: {problem}.");
          }
       }
 
