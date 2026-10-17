@@ -1,11 +1,10 @@
 # Rancang ulang engine approval: Data Approval, System Approval, stub Document Approval
 
 - **Tanggal:** 2026-10-17
-- **Status:** dalam eksekusi; build dan tes menunggu penulisan kode kedua plan selesai.
-- **Eksekusi 2026-10-17:** diotorisasi pengguna; penulisan kode sedang berjalan.
-  Sesuai revisi pengguna, build/tes/render/review menunggu kode plan engine dan produk
-  selesai. Mockup editor dan viewer yang ditunjuk pengguna disetujui sebagai acuan UI;
-  implementasi sementara sedang diselaraskan ke susunan dan interaksi tersebut.
+- **Status:** selesai (2026-10-17); implementasi dan verifikasi tercatat pada
+  [laporan eksekusi](approval-rancang-ulang-report.md).
+- **Eksekusi 2026-10-17:** kode engine lebih dulu, kemudian seluruh kode produk;
+  build/tes/render/review dimulai setelah kedua kode plan selesai, sesuai revisi pengguna.
 - **Asal:** [doc/ideas/approval-rancang-ulang.md](../../doc/ideas/approval-rancang-ulang.md) (semua keputusan di sana
   per 2026-10-16 adalah dasar plan ini; nomor "D-n" = keputusan Data Approval n, "S-n" = keputusan System Approval n,
   "PT-n" = pertanyaan terbuka n yang sudah diputuskan)
@@ -311,15 +310,11 @@ yang tertunda, dan tautan guide.
 
 ## Catatan pelaksanaan 2026-10-17
 
-- Kode skema, kontrak, registry/startup check, analyzer, runtime Data/System, API/hub/
-  attachment, client WPF/MAUI, layar WPF dan modul contoh telah ditulis.
-- Mockup editor dan viewer disetujui pengguna dalam sesi eksekusi dan dipakai untuk
-  penyelarasan tiga kolom editor, kartu penanda tangan horizontal, sidebar, toolbar,
-  Revert/draft lintas definisi, double-click pool dan dialog keputusan.
-- Komit lokal dibuat per langkah; tidak ada push. Revisi instruksi urutan kerja disimpan
-  pada `claude.md`.
-- **Belum ada build, tes, render atau eksekusi SQL.** Implementasi belum dinyatakan
-  tervalidasi. Berikutnya: selesaikan kode plan produk, kemudian integrasi dan seluruh
-  pengujian kedua repo, termasuk SQL lokal, HTTP, screenshot dan review.
-- Plan tetap di `unexecuted` sampai eksekusi dan verifikasi selesai; jangan menganggap
-  penulisan kode sebagai penutupan plan.
+- Seluruh kode skema, kontrak, registry/analyzer, runtime, API/hub/attachment, client,
+  layar dan Em.Test selesai. Kedua mockup yang ditunjuk pengguna menjadi acuan desain.
+- Build API/WPF/MAUI lulus; backend 315 total (307 lulus, 8 skip provider log store),
+  frontend 144 lulus, integrasi approval 5 lulus, HTTP Em.Api+Em.Test 10 pemeriksaan lulus.
+- Render terang/gelap layar engine pada host pemakai lulus tanpa error binding.
+  Interaksi mouse langsung belum diuji. Batas dan temuan review ada di laporan.
+- SQL baru/upgrade diverifikasi pada lingkungan pengujian. Commit lokal di work-bench,
+  tanpa push. Guide dan instruksi diperbarui. Plan dipindahkan ke executed.

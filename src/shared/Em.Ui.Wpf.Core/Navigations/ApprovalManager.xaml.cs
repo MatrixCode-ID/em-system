@@ -14,85 +14,97 @@ namespace Em.Ui.Wpf.Navigations;
 
 /// <summary>Approval request list and an embeddable Data or System detail shell.</summary>
 public partial class ApprovalManager : UserControl, INavigationBody {
-   /// <summary>public ApprovalManager() approval UI member.</summary>
+   /// <summary>Creates an approval request view.</summary>
    public ApprovalManager() { InitializeComponent(); }
-   /// <summary>public ApprovalManager(EmApp app) : this() approval UI member.</summary>
+   /// <summary>Creates an approval request view for the supplied host application.</summary>
    public ApprovalManager(EmApp app) : this() { Vm.EmApp = app; }
-   /// <summary>public ApprovalManagerVm Vm approval UI member.</summary>
+   /// <summary>Bindable state of the approval view.</summary>
    public ApprovalManagerVm Vm => (ApprovalManagerVm)DataContext;
-   /// <summary>public async Task InitializeAsync(EmApp app, ApprovalManagerNavigationPayload payload) approval UI member.</summary>
+   /// <summary>Initializes the embedded view with a filter and loads server-authorized requests.</summary>
    public async Task InitializeAsync(EmApp app, ApprovalManagerNavigationPayload payload) { Vm.EmApp = app; Vm.Configure(payload); await Vm.RefreshAsync(); }
-   /// <summary>public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) approval UI member.</summary>
+   /// <summary>Handles the navigation lifecycle event.</summary>
    public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) { Vm.Configure(args.Data); return Vm.RefreshAsync(); }
-   /// <summary>public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) approval UI member.</summary>
-   private void OnRequestDoubleClick(object sender, MouseButtonEventArgs args) {
-      if (args.ChangedButton == MouseButton.Left && Vm.SelectedRequest?.cApprovalRequestKind == ApprovalKind.System)
-         Vm.Commands[nameof(Vm.OpenSystemCommand)]?.Execute();
-   }
+   /// <summary>Handles the navigation lifecycle event.</summary>
    public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
-   /// <summary>public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) approval UI member.</summary>
+   /// <summary>Handles the navigation lifecycle event.</summary>
    public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Vm.RefreshAsync();
-   /// <summary>public Task OnRelease(INavigation sender) approval UI member.</summary>
+   /// <summary>Handles the navigation lifecycle event.</summary>
    public Task OnRelease(INavigation sender) { Vm.Release(); return Task.CompletedTask; }
 }
 /// <summary>One proposed column and the approver's explicit override reason.</summary>
 public sealed class ApprovalFieldVm(ta_ApprovalRequestItemField row) : MvvmModelBase {
-   /// <summary>public ta_ApprovalRequestItemField Row approval UI member.</summary>
+   /// <summary>Bindable row for the approval view.</summary>
    public ta_ApprovalRequestItemField Row { get; } = row;
-   /// <summary>public string Column approval UI member.</summary>
+   /// <summary>Bindable column for the approval view.</summary>
    public string Column => Row.cApprovalRequestItemFieldName;
-   /// <summary>public string? Original approval UI member.</summary>
+   /// <summary>Bindable original for the approval view.</summary>
    public string? Original => Row.cApprovalRequestItemFieldOld;
-   /// <summary>public string? Current approval UI member.</summary>
+   /// <summary>Bindable current for the approval view.</summary>
    public string? Current => Row.cApprovalRequestItemFieldCurrent;
-   /// <summary>public string? Proposed approval UI member.</summary>
+   /// <summary>Bindable proposed for the approval view.</summary>
    public string? Proposed => Row.cApprovalRequestItemFieldNew;
-   /// <summary>public bool Conflict approval UI member.</summary>
+   /// <summary>Bindable conflict for the approval view.</summary>
    public bool Conflict => Row.cApprovalRequestItemFieldConflict;
-   /// <summary>public string Reason approval UI member.</summary>
-   public string Reason { get => Get(string.Empty); set => Set(value); }
+   /// <summary>Bindable reason for the approval view.</summary>
+   public string Reason { get => Get(Row.cApprovalRequestItemFieldOverrideReason ?? string.Empty); set => Set(value); }
 }
 /// <summary>One snapshotted System step and its signer cards.</summary>
 public sealed class ApprovalStepCardVm(ApprovalManagerVm owner, ta_ApprovalRequestStep step) : MvvmModelBase {
-   /// <summary>public ta_ApprovalRequestStep Step approval UI member.</summary>
+   /// <summary>Bindable step for the approval view.</summary>
    public ta_ApprovalRequestStep Step { get; } = step;
-   /// <summary>public string Heading approval UI member.</summary>
+   /// <summary>Bindable heading for the approval view.</summary>
    public string Heading => $"L{Step.cApprovalRequestStepLevel} · {Step.cApprovalRequestStepName}";
-   /// <summary>public string Status approval UI member.</summary>
-   public string Status => IsSigned ? "Signed" : IsRejected ? "Rejected" : IsActive ? "Your turn" : "Waiting";
+   /// <summary>Bindable status for the approval view.</summary>
+   public string Status => IsSigned ? "Signed" : IsRejected ? "Rejected" : IsMyTurn ? "Your turn" : "Waiting";
+   /// <summary>Level number displayed above the step name.</summary>
    public string LevelCaption => $"LEVEL {Step.cApprovalRequestStepLevel}";
+   /// <summary>Whether an approval signature has completed this step.</summary>
    public bool IsSigned => Step.cApprovalRequestStepStage == ApprovalStepStatus.Approved;
+   /// <summary>Whether this step rejected the request.</summary>
    public bool IsRejected => Step.cApprovalRequestStepStage == ApprovalStepStatus.Rejected;
+   /// <summary>Whether the request is currently waiting at this step level.</summary>
    public bool IsActive => owner.Detail?.Header.cApprovalRequestStage == ApprovalStage.Pending && Step.cApprovalRequestStepLevel == owner.Detail.Header.cApprovalRequestLevel && !IsSigned && !IsRejected;
    private ta_ApprovalRequestSignature? Signature => owner.Detail?.Signatures.FirstOrDefault(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId);
    private ta_ApprovalRequestStepCandidate? Primary => owner.Detail?.Candidates.FirstOrDefault(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId && !x.cApprovalRequestStepCandidateBackup);
+   /// <summary>Primary signer display name.</summary>
    public string SignerName => Primary is null ? "No signer" : owner.UserName(Primary.cUserId);
+   /// <summary>Four-eyes backup names and their role.</summary>
    public string BackupNames => string.Join("\n", owner.Detail!.Candidates.Where(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId && x.cApprovalRequestStepCandidateBackup).Select(x => $"{owner.UserName(x.cUserId)} · four-eyes backup"));
+   /// <summary>Role of the signed-in user in this step.</summary>
    public string ViewerRole => owner.Detail?.Candidates.FirstOrDefault(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId && x.cUserId == owner.EmApp?.ActiveUser?.cUserId) is { } candidate
       ? candidate.cApprovalRequestStepCandidateBackup ? "You are a four-eyes backup" : "You are the signer" : string.Empty;
+   /// <summary>Signer, decision time and administrative or backup markers.</summary>
    public string SignatureText => Signature is { } signature ? $"{owner.UserName(signature.cUserId)} · {signature.datestamp:g}{(signature.cApprovalRequestSignatureAdmin ? " · ADMIN" : "")}{(signature.cApprovalRequestSignatureBackup ? " · FOUR-EYES BACKUP" : "")}" : string.Empty;
+   /// <summary>Public verification code recorded with the signature.</summary>
    public string VerificationCode => Signature?.cApprovalRequestSignatureCode ?? string.Empty;
+   /// <summary>Note recorded with the step decision.</summary>
    public string DecisionNote => Signature?.cApprovalRequestSignatureNote ?? string.Empty;
+   /// <summary>Whether a decision note is available.</summary>
    public bool HasNote => !string.IsNullOrEmpty(DecisionNote);
+   /// <summary>Whether the server permits this caller to decide the step.</summary>
    public bool IsMyTurn => owner.Detail?.DecidableStepIds.Contains(Step.cApprovalRequestStepId) == true;
-   /// <summary>public string Candidates approval UI member.</summary>
-   public string Candidates => string.Join("\n", owner.Detail!.Candidates.Where(x => x.cApprovalRequestStepId == step.cApprovalRequestStepId)
+   /// <summary>Primary signer and ordered four-eyes backups.</summary>
+   public string Candidates => string.Join("\n", owner.Detail!.Candidates.Where(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId)
       .Select(x => $"{owner.UserName(x.cUserId)}{(x.cApprovalRequestStepCandidateBackup ? " · four-eyes backup" : " · signer")}{(x.cUserId == owner.EmApp?.ActiveUser?.cUserId ? " · you" : "")}"));
-   /// <summary>public ApprovalManagerVm Owner approval UI member.</summary>
+   /// <summary>Bindable owner for the approval view.</summary>
    public ApprovalManagerVm Owner => owner;
-   /// <summary>public void RefreshState() approval UI member.</summary>
+   /// <summary>Bindable refresh state for the approval view.</summary>
    public void RefreshState() => NotifyChanged(nameof(CanDecide));
-   /// <summary>public bool CanDecide approval UI member.</summary>
+   /// <summary>Whether the caller can act on this step now.</summary>
    public bool CanDecide => !owner.IsBusy && owner.Detail?.DecidableStepIds.Contains(Step.cApprovalRequestStepId) == true;
 }
 /// <summary>Attachment display without mixing its identity with its caption.</summary>
 public sealed record ApprovalFileVm(ta_ApprovalRequestAttachment Row) {
+   /// <summary>Original attachment file name.</summary>
    public string Name => Row.cApprovalRequestAttachmentName;
+   /// <summary>Attachment size and upload time.</summary>
    public string Meta => $"{Row.cApprovalRequestAttachmentSize:N0} bytes · {Row.datestamp:g}";
+   /// <summary>Whether the file type supports the PDF preview.</summary>
    public bool CanPreview => Path.GetExtension(Name).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
 }
 /// <summary>A chronological comment or recorded decision in the viewer sidebar.</summary>
 public sealed record ApprovalCommentVm(string Author, DateTime When, string Text, string Decision) {
+   /// <summary>Formatted timestamp of a comment or decision.</summary>
    public string TimeText => When.ToString("g");
 }
 /// <summary>Shared approval state; commands consume only server-returned capabilities.</summary>
@@ -103,146 +115,197 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    private int _version;
    private bool _released;
    private IApprovalServices Service => EmApp!.ServiceProvider.GetRequiredService<IApprovalServices>();
-   /// <summary>public Task RefreshCommand() approval UI member.</summary>
+   /// <summary>Runs the refresh action using the current authorized state.</summary>
    public Task RefreshCommand() => RefreshAsync();
-   /// <summary>public Task ApproveCommand() approval UI member.</summary>
+   /// <summary>Runs the approve action using the current authorized state.</summary>
    public Task ApproveCommand() => DecideAsync(true, null);
-   /// <summary>public Task RejectCommand() approval UI member.</summary>
+   /// <summary>Runs the reject action using the current authorized state.</summary>
    public Task RejectCommand() => DecideAsync(false, null);
-   /// <summary>public Task SignStepCommand(ApprovalStepCardVm step) approval UI member.</summary>
+   /// <summary>Runs the sign step action using the current authorized state.</summary>
    public Task SignStepCommand(ApprovalStepCardVm step) => DecideAsync(true, step.Step);
-   /// <summary>public Task RejectStepCommand(ApprovalStepCardVm step) approval UI member.</summary>
+   /// <summary>Runs the reject step action using the current authorized state.</summary>
    public Task RejectStepCommand(ApprovalStepCardVm step) => DecideAsync(false, step.Step);
-   /// <summary>public Task WithdrawCommand() approval UI member.</summary>
+   /// <summary>Runs the withdraw action using the current authorized state.</summary>
    public Task WithdrawCommand() => WithdrawAsync();
-   /// <summary>public Task VoidCommand() approval UI member.</summary>
+   /// <summary>Runs the void action using the current authorized state.</summary>
    public Task VoidCommand() => VoidAsync();
-   /// <summary>public Task ReinstateCommand() approval UI member.</summary>
+   /// <summary>Runs the reinstate action using the current authorized state.</summary>
    public Task ReinstateCommand() => ReinstateAsync();
-   /// <summary>public Task CommentCommand() approval UI member.</summary>
+   /// <summary>Runs the comment action using the current authorized state.</summary>
    public Task CommentCommand() => CommentAsync();
-   /// <summary>public Task AttachCommand() approval UI member.</summary>
+   /// <summary>Runs the attach action using the current authorized state.</summary>
    public Task AttachCommand() => AttachAsync();
-   /// <summary>public Task DownloadCommand(ta_ApprovalRequestAttachment attachment) approval UI member.</summary>
+   /// <summary>Runs the download action using the current authorized state.</summary>
    public Task DownloadCommand(ta_ApprovalRequestAttachment attachment) => DownloadAsync(attachment);
-   /// <summary>public Task PreviewCommand() approval UI member.</summary>
+   /// <summary>Runs the preview action using the current authorized state.</summary>
    public Task PreviewCommand() => PreviewAsync();
-   /// <summary>public Task SourceCommand() approval UI member.</summary>
+   /// <summary>Runs the source action using the current authorized state.</summary>
    public Task SourceCommand() => _editor!.OpenSourceAsync();
-   /// <summary>public Task NextCommand() approval UI member.</summary>
+   /// <summary>Runs the next action using the current authorized state.</summary>
    public Task NextCommand() => NextAsync();
-   /// <summary>public Task PreviousCommand() approval UI member.</summary>
+   /// <summary>Runs the previous action using the current authorized state.</summary>
    public Task PreviousCommand() => PreviousAsync();
+   /// <summary>Opens the selected System request in its dedicated viewer.</summary>
    public Task OpenSystemCommand() => EmApp!.NavigateTo("em.approval.editor", new ApprovalManagerNavigationPayload {
       Kind = ApprovalKind.System, Name = SelectedRequest!.cApprovalName, ApprovalRequestId = SelectedRequest.cApprovalRequestId,
       WaitingForMeOnly = false, SystemViewer = true
    });
+   /// <summary>Shows the note recorded with a signature.</summary>
    public void SignatureNoteCommand(ApprovalStepCardVm step) => DialogOwner?.ShowMboxInfo(step.DecisionNote, step.Step.cApprovalRequestStepName);
+   /// <summary>Opens a permitted PDF attachment in the shared viewer.</summary>
    public Task PreviewAttachmentCommand(ta_ApprovalRequestAttachment row) => EmApp!.NavigateTo(Em.Ui.Wpf.Core.EmApp.PdfViewerNavigationName,
       new PdfViewerNavigationPayload(row.cApprovalRequestAttachmentName, _ => Service.GetMeta_ApprovalAttachment(row.cApprovalRequestAttachmentId)));
 
-   /// <summary>public ApprovalManagerVm() approval UI member.</summary>
+   /// <summary>Creates the request commands.</summary>
    public ApprovalManagerVm() {
-      RegisterCommand(nameof(OpenSystemCommand), OpenSystemCommand, () => !IsBusy && SelectedRequest?.cApprovalRequestKind == ApprovalKind.System);
-      RegisterCommand<ApprovalStepCardVm>(nameof(SignatureNoteCommand), SignatureNoteCommand, step => !IsBusy && step?.HasNote == true);
-      RegisterCommand<ta_ApprovalRequestAttachment>(nameof(PreviewAttachmentCommand), PreviewAttachmentCommand, row => !IsBusy && row is not null && Path.GetExtension(row.cApprovalRequestAttachmentName).Equals(".pdf", StringComparison.OrdinalIgnoreCase));
-      RegisterCommand(nameof(RefreshCommand), RefreshAsync, () => !IsBusy);
-      RegisterCommand(nameof(ApproveCommand), () => DecideAsync(true, null), () => !IsBusy && IsData && Detail?.CanDecide == true);
-      RegisterCommand(nameof(RejectCommand), () => DecideAsync(false, null), () => !IsBusy && IsData && Detail?.CanDecide == true);
-      RegisterCommand<ApprovalStepCardVm>(nameof(SignStepCommand), x => DecideAsync(true, x.Step), x => x?.CanDecide == true);
-      RegisterCommand<ApprovalStepCardVm>(nameof(RejectStepCommand), x => DecideAsync(false, x.Step), x => x?.CanDecide == true);
-      RegisterCommand(nameof(WithdrawCommand), WithdrawAsync, () => !IsBusy && Detail?.CanWithdraw == true);
-      RegisterCommand(nameof(VoidCommand), VoidAsync, () => !IsBusy && Detail?.CanVoid == true);
-      RegisterCommand(nameof(ReinstateCommand), ReinstateAsync, () => !IsBusy && Detail?.CanReinstate == true);
-      RegisterCommand(nameof(CommentCommand), CommentAsync, () => !IsBusy && Detail is not null && !string.IsNullOrWhiteSpace(Comment));
-      RegisterCommand(nameof(AttachCommand), AttachAsync, () => !IsBusy && Detail?.CanAttach == true);
-      RegisterCommand<ta_ApprovalRequestAttachment>(nameof(DownloadCommand), DownloadAsync, x => !IsBusy && x is not null);
-      RegisterCommand(nameof(PreviewCommand), PreviewAsync, () => !IsBusy && _editor?.HasPreview == true);
-      RegisterCommand(nameof(SourceCommand), () => _editor!.OpenSourceAsync(), () => !IsBusy && _editor?.HasSource == true);
-      RegisterCommand(nameof(NextCommand), NextAsync, () => !IsBusy && Page*50 < Total);
-      RegisterCommand(nameof(PreviousCommand), PreviousAsync, () => !IsBusy && Page > 1);
+      RegisterCommand(nameof(OpenSystemCommand), OpenSystemCommand, OpenSystemCommandAllowed);
+      RegisterCommand<ApprovalStepCardVm>(nameof(SignatureNoteCommand), SignatureNoteCommand, SignatureNoteCommandAllowed);
+      RegisterCommand<ta_ApprovalRequestAttachment>(nameof(PreviewAttachmentCommand), PreviewAttachmentCommand, PreviewAttachmentCommandAllowed);
+      RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
+      RegisterCommand(nameof(ApproveCommand), ApproveCommand, ApproveCommandAllowed);
+      RegisterCommand(nameof(RejectCommand), RejectCommand, RejectCommandAllowed);
+      RegisterCommand<ApprovalStepCardVm>(nameof(SignStepCommand), SignStepCommand, SignStepCommandAllowed);
+      RegisterCommand<ApprovalStepCardVm>(nameof(RejectStepCommand), RejectStepCommand, RejectStepCommandAllowed);
+      RegisterCommand(nameof(WithdrawCommand), WithdrawCommand, WithdrawCommandAllowed);
+      RegisterCommand(nameof(VoidCommand), VoidCommand, VoidCommandAllowed);
+      RegisterCommand(nameof(ReinstateCommand), ReinstateCommand, ReinstateCommandAllowed);
+      RegisterCommand(nameof(CommentCommand), CommentCommand, CommentCommandAllowed);
+      RegisterCommand(nameof(AttachCommand), AttachCommand, AttachCommandAllowed);
+      RegisterCommand<ta_ApprovalRequestAttachment>(nameof(DownloadCommand), DownloadCommand, DownloadCommandAllowed);
+      RegisterCommand(nameof(PreviewCommand), PreviewCommand, PreviewCommandAllowed);
+      RegisterCommand(nameof(SourceCommand), SourceCommand, SourceCommandAllowed);
+      RegisterCommand(nameof(NextCommand), NextCommand, NextCommandAllowed);
+      RegisterCommand(nameof(PreviousCommand), PreviousCommand, PreviousCommandAllowed);
    }
-   /// <summary>public static bool CanOpenManager(EmApp app) approval UI member.</summary>
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool OpenSystemCommandAllowed() => !IsBusy && SelectedRequest?.cApprovalRequestKind == ApprovalKind.System;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool SignatureNoteCommandAllowed(ApprovalStepCardVm step) => !IsBusy && step?.HasNote == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool PreviewAttachmentCommandAllowed(ta_ApprovalRequestAttachment row) => !IsBusy && row is not null && Path.GetExtension(row.cApprovalRequestAttachmentName).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool RefreshCommandAllowed() => !IsBusy;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool ApproveCommandAllowed() => !IsBusy && IsData && Detail?.CanDecide == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool RejectCommandAllowed() => !IsBusy && IsData && Detail?.CanDecide == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool SignStepCommandAllowed(ApprovalStepCardVm step) => step?.CanDecide == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool RejectStepCommandAllowed(ApprovalStepCardVm step) => step?.CanDecide == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool WithdrawCommandAllowed() => !IsBusy && Detail?.CanWithdraw == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool VoidCommandAllowed() => !IsBusy && Detail?.CanVoid == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool ReinstateCommandAllowed() => !IsBusy && Detail?.CanReinstate == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool CommentCommandAllowed() => !IsBusy && Detail is not null && !string.IsNullOrWhiteSpace(Comment);
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool AttachCommandAllowed() => !IsBusy && Detail?.CanAttach == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool DownloadCommandAllowed(ta_ApprovalRequestAttachment row) => !IsBusy && row is not null;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool PreviewCommandAllowed() => !IsBusy && _editor?.HasPreview == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool SourceCommandAllowed() => !IsBusy && _editor?.HasSource == true;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool NextCommandAllowed() => !IsBusy && Page*50 < Total;
+   /// <summary>Whether the current state permits this action.</summary>
+   public bool PreviousCommandAllowed() => !IsBusy && Page > 1;
+   /// <summary>Whether the host can offer the request manager.</summary>
    public static bool CanOpenManager(EmApp app) => app.ServiceProvider.GetRequiredService<ApprovalAccessCatalog>().CanOpen;
-   /// <summary>public ObservableCollection&lt;ApprovalCapability&gt; Definitions approval UI member.</summary>
+   /// <summary>Bindable definitions for the approval view.</summary>
    public ObservableCollection<ApprovalCapability> Definitions { get; } = [];
-   /// <summary>public ObservableCollection&lt;ta_ApprovalRequest&gt; Rows approval UI member.</summary>
+   /// <summary>Bindable rows for the approval view.</summary>
    public ObservableCollection<ta_ApprovalRequest> Rows { get; } = [];
-   /// <summary>public ObservableCollection&lt;ApprovalFieldVm&gt; Fields approval UI member.</summary>
+   /// <summary>Bindable fields for the approval view.</summary>
    public ObservableCollection<ApprovalFieldVm> Fields { get; } = [];
-   /// <summary>public ObservableCollection&lt;ApprovalStepCardVm&gt; Steps approval UI member.</summary>
+   /// <summary>Bindable steps for the approval view.</summary>
    public ObservableCollection<ApprovalStepCardVm> Steps { get; } = [];
-   /// <summary>public ObservableCollection&lt;string&gt; Timeline approval UI member.</summary>
+   /// <summary>Bindable timeline for the approval view.</summary>
    public ObservableCollection<string> Timeline { get; } = [];
-   /// <summary>public ObservableCollection&lt;ta_ApprovalRequestAttachment&gt; Attachments approval UI member.</summary>
+   /// <summary>Bindable attachments for the approval view.</summary>
    public ObservableCollection<ta_ApprovalRequestAttachment> Attachments { get; } = [];
-   /// <summary>public ObservableCollection&lt;ApprovalToolbarItem&gt; ModuleToolbar approval UI member.</summary>
+   /// <summary>Bindable module toolbar for the approval view.</summary>
    public ObservableCollection<ApprovalFileVm> Files { get; } = [];
+   /// <summary>Chronological comments and signature decisions.</summary>
    public ObservableCollection<ApprovalCommentVm> Comments { get; } = [];
+   /// <summary>Additional commands supplied by the owning module.</summary>
    public ObservableCollection<ApprovalToolbarItem> ModuleToolbar { get; } = [];
-   /// <summary>public ApprovalCapability? SelectedDefinition approval UI member.</summary>
+   /// <summary>Bindable selected definition for the approval view.</summary>
    public ApprovalCapability? SelectedDefinition { get => Get<ApprovalCapability?>(); set { if (Set(value) && !_loadingRows) { Page = 1; _ = RefreshAsync(); } } }
-   /// <summary>public ta_ApprovalRequest? SelectedRequest approval UI member.</summary>
+   /// <summary>Bindable selected request for the approval view.</summary>
    public ta_ApprovalRequest? SelectedRequest { get => Get<ta_ApprovalRequest?>(); set { if (Set(value) && !_loadingRows) _ = RunAsync(LoadDetailAsync); } }
-   /// <summary>public ApprovalRequestDetail? Detail approval UI member.</summary>
+   /// <summary>Bindable detail for the approval view.</summary>
    public ApprovalRequestDetail? Detail { get => Get<ApprovalRequestDetail?>(); private set => Set(value); }
-   /// <summary>public object? ModuleView approval UI member.</summary>
+   /// <summary>Bindable module view for the approval view.</summary>
    public object? ModuleView { get => Get<object?>(); private set => Set(value); }
-   /// <summary>public string Error approval UI member.</summary>
+   /// <summary>Bindable error for the approval view.</summary>
    public string Error { get => Get(string.Empty); private set => Set(value); }
-   /// <summary>public bool IsBusy approval UI member.</summary>
-   public bool IsBusy { get => Get(false); private set { Set(value); RaiseState(); } }
-   /// <summary>public bool IsNotBusy approval UI member.</summary>
-   public bool IsNotBusy => !IsBusy;
-   /// <summary>public bool IsCompact approval UI member.</summary>
+   /// <summary>Bindable is busy for the approval view.</summary>
+   public new bool IsBusy { get => Get(false); private set { Set(value); RaiseState(); } }
+   /// <summary>Bindable is not busy for the approval view.</summary>
+   public new bool IsNotBusy => !IsBusy;
+   /// <summary>Bindable is compact for the approval view.</summary>
    public bool IsCompact => _payload.Compact;
-   /// <summary>public bool ShowFilters approval UI member.</summary>
+   /// <summary>Bindable show filters for the approval view.</summary>
    public bool ShowFilters => !IsCompact && !_payload.SystemViewer;
+   /// <summary>Whether the full manager toolbar is visible.</summary>
    public bool ShowManagerToolbar => !_payload.SystemViewer;
+   /// <summary>Whether the signer card strip is visible.</summary>
    public bool IsSignersOpen { get => Get(true); set { Set(value); NotifyChanged(nameof(SignersToggleText)); } }
+   /// <summary>Whether comments and attachments are visible.</summary>
    public bool IsSidePanelOpen { get => Get(true); set { Set(value); RaiseState(); } }
+   /// <summary>Width reserved for the visible sidebar.</summary>
    public GridLength SideWidth => new(IsSidePanelOpen ? 340 : 0);
+   /// <summary>Space separating the module view and sidebar.</summary>
    public GridLength SideGap => new(IsSidePanelOpen ? 14 : 0);
+   /// <summary>Signer visibility caption including hidden progress.</summary>
    public string SignersToggleText => IsSignersOpen ? "Signers" : $"Signers · {Steps.Count(x => x.IsSigned)}/{Steps.Count}{(Steps.Any(x => x.IsMyTurn) ? " · your turn" : "")}";
+   /// <summary>Sidebar visibility caption including comment count.</summary>
    public string SidePanelToggleText => IsSidePanelOpen ? "Comments" : $"Comments · {Comments.Count}";
+   /// <summary>Time of the latest successful refresh.</summary>
    public string RefreshedText { get => Get(string.Empty); private set => Set(value); }
+   /// <summary>Caption supplied by the module for source navigation.</summary>
    public string SourceCaption => _editor?.SourceCaption ?? "Open source";
-   public string RequestStatus => Detail?.Header.cApprovalRequestStage == ApprovalStage.Approved ? "Completed" : Detail?.Header.cApprovalRequestStage.ToString() ?? string.Empty;
-   /// <summary>public GridLength ListWidth approval UI member.</summary>
+   /// <summary>Readable state of the selected request.</summary>
+   public string RequestStatus => Detail?.Header is { cApprovalRequestKind: ApprovalKind.System, cApprovalRequestStage: ApprovalStage.Approved } ? "Completed" : Detail?.Header.cApprovalRequestStage.ToString() ?? string.Empty;
+   /// <summary>Bindable list width for the approval view.</summary>
    public GridLength ListWidth => new(ShowFilters ? 340 : 0);
-   /// <summary>public bool IsData approval UI member.</summary>
+   /// <summary>Bindable is data for the approval view.</summary>
    public bool IsData => Detail?.Header.cApprovalRequestKind == ApprovalKind.Data;
-   /// <summary>public bool IsSystem approval UI member.</summary>
+   /// <summary>Bindable is system for the approval view.</summary>
    public bool IsSystem => Detail?.Header.cApprovalRequestKind == ApprovalKind.System;
-   /// <summary>public bool HasPreview approval UI member.</summary>
+   /// <summary>Bindable has preview for the approval view.</summary>
    public bool HasPreview => _editor?.HasPreview == true;
-   /// <summary>public bool HasSource approval UI member.</summary>
+   /// <summary>Bindable has source for the approval view.</summary>
    public bool HasSource => _editor?.HasSource == true;
-   /// <summary>public string Title approval UI member.</summary>
+   /// <summary>Selected approval and its current status.</summary>
    public string Title => Detail is null ? "Select an approval request" : $"{Detail.Header.cApprovalName} · {Detail.Header.cApprovalRequestStage}";
-   /// <summary>public string Summary approval UI member.</summary>
+   /// <summary>Module-supplied subject summary.</summary>
    public string Summary => Detail?.Header.cSummary ?? string.Empty;
-   /// <summary>public string CreateSnapshots approval UI member.</summary>
+   /// <summary>Complete proposed objects awaiting insertion.</summary>
    public string CreateSnapshots { get => Get(string.Empty); private set => Set(value); }
-   /// <summary>public string Note approval UI member.</summary>
+   /// <summary>Bindable note for the approval view.</summary>
    public string Note { get => Get(string.Empty); set => Set(value); }
-   /// <summary>public string Comment approval UI member.</summary>
+   /// <summary>Bindable comment for the approval view.</summary>
    public string Comment { get => Get(string.Empty); set { Set(value); RaiseState(); } }
-   /// <summary>public string Search approval UI member.</summary>
+   /// <summary>Bindable search for the approval view.</summary>
    public string Search { get => Get(string.Empty); set => Set(value); }
-   /// <summary>public bool WaitingForMe approval UI member.</summary>
+   /// <summary>Bindable waiting for me for the approval view.</summary>
    public bool WaitingForMe { get => Get(true); set => Set(value); }
-   /// <summary>public ApprovalStage? Stage approval UI member.</summary>
+   /// <summary>Bindable stage for the approval view.</summary>
    public ApprovalStage? Stage { get => Get<ApprovalStage?>(); set => Set(value); }
-   /// <summary>public ApprovalStage?[] Stages approval UI member.</summary>
+   /// <summary>Bindable stages for the approval view.</summary>
    public ApprovalStage?[] Stages { get; } = [null, .. Enum.GetValues<ApprovalStage>()];
-   /// <summary>public int Page approval UI member.</summary>
+   /// <summary>Bindable page for the approval view.</summary>
    public int Page { get => Get(1); private set => Set(value); }
-   /// <summary>public int Total approval UI member.</summary>
+   /// <summary>Bindable total for the approval view.</summary>
    public int Total { get => Get(0); private set => Set(value); }
-   /// <summary>public string PageLabel approval UI member.</summary>
+   /// <summary>Bindable page label for the approval view.</summary>
    public string PageLabel => $"Page {Page} · {Total} requests";
-   /// <summary>public void Configure(object? input) approval UI member.</summary>
+   /// <summary>Applies navigation filters before loading.</summary>
    public void Configure(object? input) {
       _released = false;
       _payload = input as ApprovalManagerNavigationPayload ?? new();
@@ -251,7 +314,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       }
       WaitingForMe = _payload.WaitingForMeOnly; Page = 1; RaiseState();
    }
-   /// <summary>public void Release() approval UI member.</summary>
+   /// <summary>Releases the current module view and invalidates pending loads.</summary>
    public void Release() { _released = true; _version++; ModuleView = null; _editor = null; }
    private void RaiseState() {
       foreach (var property in new[] { nameof(IsNotBusy), nameof(IsCompact), nameof(ShowFilters), nameof(ListWidth), nameof(IsData), nameof(IsSystem), nameof(Title), nameof(Summary), nameof(PageLabel), nameof(HasPreview), nameof(HasSource), nameof(ShowManagerToolbar), nameof(SideWidth), nameof(SideGap), nameof(SignersToggleText), nameof(SidePanelToggleText), nameof(SourceCaption), nameof(RequestStatus) }) NotifyChanged(property);
@@ -264,7 +327,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       try { await work(); } catch (Exception exception) { Error = exception.Message; }
       finally { IsBusy = false; }
    }
-   /// <summary>public Task RefreshAsync() approval UI member.</summary>
+   /// <summary>Bindable refresh async for the approval view.</summary>
    public Task RefreshAsync() => RunAsync(async () => {
       var version = ++_version;
       var definitions = await Service.GetMeta_ApprovalCapabilities();
@@ -316,7 +379,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       }
       RaiseState();
    }
-   /// <summary>public string UserName(string id) approval UI member.</summary>
+   /// <summary>Bindable user name for the approval view.</summary>
    public string UserName(string id) => Detail?.Users.FirstOrDefault(x => x.UserId == id)?.Name ?? id;
    private Task DecideAsync(bool approve, ta_ApprovalRequestStep? step) => RunAsync(async () => {
       if (Detail is null) return;

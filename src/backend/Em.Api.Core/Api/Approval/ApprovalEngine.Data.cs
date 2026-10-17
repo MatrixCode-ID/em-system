@@ -132,9 +132,9 @@ internal sealed partial class ApprovalEngine {
       catch (JsonException exception) { throw new ActionException($"The stored Create snapshot no longer matches '{table.Registration.EntityName}': {exception.Message}", 409); }
    }
    private async Task<bool> ApplyDataAsync(ta_ApprovalRequest request, ApprovalFieldOverride[] overrides, CancellationToken ct) {
-      var items = await db.ta_ApprovalRequestItems.Where(x => x.cApprovalRequestId == request.cApprovalRequestId).OrderBy(x => x.cApprovalRequestItemOrder).ToArrayAsync(ct);
+      var items = await db.ta_ApprovalRequestItems.AsTracking().Where(x => x.cApprovalRequestId == request.cApprovalRequestId).OrderBy(x => x.cApprovalRequestItemOrder).ToArrayAsync(ct);
       var ids = items.Select(x => x.cApprovalRequestItemId).ToArray();
-      var fields = await db.ta_ApprovalRequestItemFields.Where(x => ids.Contains(x.cApprovalRequestItemId)).ToArrayAsync(ct);
+      var fields = await db.ta_ApprovalRequestItemFields.AsTracking().Where(x => ids.Contains(x.cApprovalRequestItemId)).ToArrayAsync(ct);
       var rows = new Dictionary<string, object>(); var tables = new Dictionary<string, DataTable>();
       var blocked = false;
       foreach (var item in items) {

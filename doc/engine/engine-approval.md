@@ -262,3 +262,11 @@ MY TASKS groups waiting requests by `(kind, name)`. Data counts use the root's d
 counts use candidates of active steps. Opening a group filters Approval Manager. Counts disappear when
 the request is decided. Escalation, quorum, email delivery by the engine, MAUI UI and physical-document
 approval are outside this implementation.
+
+## Verification
+
+The redesign was verified on 2026-10-17 with SQL Server integration tests, the backend/frontend
+test suites, API/WPF/MAUI builds, and HTTP calls to the actual Em.Api host with Em.Test enabled.
+The generic WPF screens were also rendered in light and dark themes within an integrated host.
+Direct mouse interaction and external PDF rendering remain unverified. See the
+[execution report](../../plan/executed/approval-rancang-ulang-report.md) for results and limits.

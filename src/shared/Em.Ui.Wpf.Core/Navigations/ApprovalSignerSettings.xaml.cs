@@ -54,6 +54,8 @@ public partial class ApprovalSignerSettings : UserControl, INavigationBody {
 public sealed record ApprovalPoolItem(string? UserId, string Name, bool Active, bool Dynamic = false) {
    /// <summary>Explicit display text, also marking inactive users.</summary>
    public string Caption => Name + (Active ? string.Empty : " · inactive");
+   /// <summary>Short avatar text derived from the display name.</summary>
+   public string Initials => Dynamic ? "DS" : string.Concat(Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(x => x[0])).ToUpperInvariant();
 }
 /// <summary>A selected signer keeps its owning step so its commands are unambiguous.</summary>
 public sealed record ApprovalAssignedSigner(ApprovalSignerStepVm Step, ApprovalPoolItem User) {
@@ -101,14 +103,28 @@ public sealed class ApprovalSignerSettingsVm : MvvmModelBase {
    private IApprovalServices Service => EmApp!.ServiceProvider.GetRequiredService<IApprovalServices>();
    /// <summary>Creates the editor's commands.</summary>
    public ApprovalSignerSettingsVm() {
-      RegisterCommand(nameof(RefreshCommand), RefreshCommand, () => !IsBusy);
-      RegisterCommand(nameof(RevertCommand), RevertCommand, () => !IsBusy && IsDirty);
-      RegisterCommand(nameof(SaveCommand), SaveCommand, () => !IsBusy && IsDirty);
-      RegisterCommand<ApprovalSignerDrop>(nameof(DropSignerCommand), DropSignerCommand, x => !IsBusy && x?.User.Active == true);
-      RegisterCommand<ApprovalPoolItem>(nameof(AddToSelectedStepCommand), AddToSelectedStepCommand, x => !IsBusy && SelectedStep is not null && x?.Active == true);
-      RegisterCommand<ApprovalAssignedSigner>(nameof(MakeSignerCommand), MakeSignerCommand, x => !IsBusy && x?.User.Active == true && !x.IsPrimary);
-      RegisterCommand<ApprovalAssignedSigner>(nameof(RemoveCommand), RemoveCommand, x => !IsBusy && x is not null);
+      RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
+      RegisterCommand(nameof(RevertCommand), RevertCommand, RevertCommandAllowed);
+      RegisterCommand(nameof(SaveCommand), SaveCommand, SaveCommandAllowed);
+      RegisterCommand<ApprovalSignerDrop>(nameof(DropSignerCommand), DropSignerCommand, DropSignerCommandAllowed);
+      RegisterCommand<ApprovalPoolItem>(nameof(AddToSelectedStepCommand), AddToSelectedStepCommand, AddToSelectedStepCommandAllowed);
+      RegisterCommand<ApprovalAssignedSigner>(nameof(MakeSignerCommand), MakeSignerCommand, MakeSignerCommandAllowed);
+      RegisterCommand<ApprovalAssignedSigner>(nameof(RemoveCommand), RemoveCommand, RemoveCommandAllowed);
    }
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool RefreshCommandAllowed() => !IsBusy;
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool RevertCommandAllowed() => !IsBusy && IsDirty;
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool SaveCommandAllowed() => !IsBusy && IsDirty;
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool DropSignerCommandAllowed(ApprovalSignerDrop input) => !IsBusy && input?.User.Active == true;
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool AddToSelectedStepCommandAllowed(ApprovalPoolItem user) => !IsBusy && SelectedStep is not null && user?.Active == true;
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool MakeSignerCommandAllowed(ApprovalAssignedSigner input) => !IsBusy && input?.User.Active == true && !input.IsPrimary;
+   /// <summary>Whether the current draft permits this action.</summary>
+   public bool RemoveCommandAllowed(ApprovalAssignedSigner input) => !IsBusy && input is not null;
    /// <summary>System definitions shown in the left rail.</summary>
    public ObservableCollection<ApprovalCapability> Definitions { get; } = [];
    /// <summary>Current definition's step table.</summary>
@@ -124,7 +140,7 @@ public sealed class ApprovalSignerSettingsVm : MvvmModelBase {
    /// <summary>User filter.</summary>
    public string Search { get => Get(string.Empty); set { Set(value); Filter(); } }
    /// <summary>Whether a service operation is running.</summary>
-   public bool IsBusy { get => Get(false); private set { Set(value); RaiseCommands(); } }
+   public new bool IsBusy { get => Get(false); private set { Set(value); RaiseCommands(); } }
    /// <summary>Whether any definition has unsaved changes.</summary>
    public bool IsDirty => _dirty.Count > 0;
    /// <summary>Last successful server refresh.</summary>

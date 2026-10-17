@@ -7,6 +7,8 @@ namespace Em.Api.Core;
 [Module(Defaults.ApprovalModuleName)]
 public class ApprovalService(EmApp app) : ServiceWpfBase(app), IApprovalServices {
    /// <inheritdoc />
+   public Task<HubTaskInfo[]> GetMeta_UserHubTasks() => GetAsync<HubTaskInfo[]>(nameof(GetMeta_UserHubTasks));
+   /// <inheritdoc />
    public Task<ApprovalCapability[]> GetMeta_ApprovalCapabilities() => GetAsync<ApprovalCapability[]>(nameof(GetMeta_ApprovalCapabilities));
    /// <inheritdoc />
    public Task<ApprovalPage> PostGetMeta_ApprovalRequests(ApprovalQuery filter) => PostAsync<ApprovalPage>(nameof(PostGetMeta_ApprovalRequests), (object)filter);

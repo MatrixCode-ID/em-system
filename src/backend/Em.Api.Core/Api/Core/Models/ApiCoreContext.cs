@@ -1,4 +1,4 @@
-ï»¿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Em.Api.Core.Approval;
 
 namespace Em.Api.Core.Models
@@ -97,6 +97,18 @@ namespace Em.Api.Core.Models
          modelBuilder.Entity<ta_ApprovalRequestSignature>().HasIndex(x => x.cApprovalRequestStepId).IsUnique().HasFilter("[cApprovalRequestStepId] IS NOT NULL");
          modelBuilder.Entity<ta_ApprovalRequestSignature>().HasIndex(x => x.cApprovalRequestSignatureCode).IsUnique();
          modelBuilder.Entity<ta_ApprovalSignerSetting>().HasIndex(x => new { x.cApprovalName, x.cApprovalSignerSettingStep }).IsUnique();
+         modelBuilder.Entity<ta_ApprovalRequest>().HasOne<ta_ApprovalRequest>().WithMany().HasForeignKey(x => x.cReinstateOf).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestItem>().HasOne<ta_ApprovalRequest>().WithMany().HasForeignKey(x => x.cApprovalRequestId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestItem>().HasOne<ta_ApprovalRequestItem>().WithMany().HasForeignKey(x => x.cParentItem).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestItemField>().HasOne<ta_ApprovalRequestItem>().WithMany().HasForeignKey(x => x.cApprovalRequestItemId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestStep>().HasOne<ta_ApprovalRequest>().WithMany().HasForeignKey(x => x.cApprovalRequestId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestStepCandidate>().HasOne<ta_ApprovalRequestStep>().WithMany().HasForeignKey(x => x.cApprovalRequestStepId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestSignature>().HasOne<ta_ApprovalRequest>().WithMany().HasForeignKey(x => x.cApprovalRequestId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestSignature>().HasOne<ta_ApprovalRequestStep>().WithMany().HasForeignKey(x => x.cApprovalRequestStepId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestComment>().HasOne<ta_ApprovalRequest>().WithMany().HasForeignKey(x => x.cApprovalRequestId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestAttachment>().HasOne<ta_ApprovalRequest>().WithMany().HasForeignKey(x => x.cApprovalRequestId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalRequestAttachment>().HasOne<ta_ApprovalRequestComment>().WithMany().HasForeignKey(x => x.cApprovalRequestCommentId).OnDelete(DeleteBehavior.NoAction);
+         modelBuilder.Entity<ta_ApprovalSignerSettingBackup>().HasOne<ta_ApprovalSignerSetting>().WithMany().HasForeignKey(x => x.cApprovalSignerSettingId).OnDelete(DeleteBehavior.NoAction);
       }
    }
 }

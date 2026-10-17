@@ -21,6 +21,9 @@ internal sealed partial class ApprovalEngine {
          await transaction.RollbackAsync(CancellationToken.None); db.ChangeTracker.Clear();
          throw new ActionException("This subject already has a System approval request. Open it or reinstate it.", 409);
       }
+      catch {
+         await transaction.RollbackAsync(CancellationToken.None); db.ChangeTracker.Clear(); throw;
+      }
    }
    private async Task<ta_ApprovalRequest> BuildSystemAsync(string name, string subjectKey, string summary, string user, CancellationToken ct) {
       var registration = registry.System(name);
@@ -83,7 +86,7 @@ internal sealed partial class ApprovalEngine {
       await using (var transaction = await db.Database.BeginTransactionAsync(ct)) {
          request = await LoadAsync(decision.RequestId, true, ct);
          if (request.cApprovalRequestStage != ApprovalStage.Pending) throw new ActionException("This request is no longer pending.", 409);
-         var steps = await db.ta_ApprovalRequestSteps.Where(x => x.cApprovalRequestId == request.cApprovalRequestId).ToArrayAsync(ct);
+         var steps = await db.ta_ApprovalRequestSteps.AsTracking().Where(x => x.cApprovalRequestId == request.cApprovalRequestId).ToArrayAsync(ct);
          var step = steps.SingleOrDefault(x => x.cApprovalRequestStepId == decision.StepId) ?? throw new ActionException("Choose a step of this request.", 400);
          if (step.cApprovalRequestStepLevel != request.cApprovalRequestLevel || step.cApprovalRequestStepStage != ApprovalStepStatus.Waiting)
             throw new ActionException("The selected step is not active.", 409);

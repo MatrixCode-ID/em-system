@@ -133,5 +133,11 @@ approval and step name. Completion/rejection hooks log their call and update the
 offers preview/source actions and an extra help command, and stores a new approval link after reinstate.
 The link lives in `json_object.approvalRequestId`, outside the engine's request state.
 
-Builds and tests of this redesign are pending until the consuming application code is also complete.
-Historical test results above describe the previous implementation and do not validate this redesign.
+HTTP verification on 2026-10-17 exercised the actual Em.Api host with Em.Test enabled:
+deferred Data tree/application, System submit/link, QA persistence, parallel completion,
+reinstate/link, rejection handlers and hub aggregation (10 checks passed). Module write
+queries opt into tracking because EmDbContext reads are untracked by default. The local
+fixture and logs are retained outside the repository under `scripts/approval-smoke/out`
+in the engine artifacts directory. Direct mouse interaction remains unverified.
+
+The redesign verification above supersedes the earlier implementation's historical results.

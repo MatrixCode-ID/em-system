@@ -1,8 +1,8 @@
 # Rancang ulang engine approval: tiga jenis approval, engine tanpa konsep dokumen
 
 - **Tanggal:** 2026-10-16
-- **Status:** jadi plan (2026-10-17)
-- **Plan turunan:** [plan/unexecuted/approval-rancang-ulang.codex.md](../../plan/unexecuted/approval-rancang-ulang.codex.md)
+- **Status:** jadi plan (2026-10-17); eksekusi selesai (2026-10-17)
+- **Plan turunan:** [plan/executed/approval-rancang-ulang.codex.md](../../plan/executed/approval-rancang-ulang.codex.md)
 - **Catatan terkait:** [approval-display-modul.md](approval-display-modul.md),
   [approval-qr-verifikasi.md](approval-qr-verifikasi.md), [approval-user-lookup.md](approval-user-lookup.md),
   [get-parameter-per-field.md](get-parameter-per-field.md), [object-storage.md](object-storage.md);

@@ -4,6 +4,8 @@ namespace Em.Api.Core.Models;
 /// <summary>Server-authorized approval actions. Filters and composite keys use POST bodies.</summary>
 public interface IApprovalServices : IServices {
    #region Meta's
+   /// <summary>Collects the active user's work from every registered task source.</summary>
+   Task<HubTaskInfo[]> GetMeta_UserHubTasks();
    /// <summary>GetMeta_ApprovalCapabilities approval operation.</summary>
    Task<ApprovalCapability[]> GetMeta_ApprovalCapabilities();
    /// <summary>PostGetMeta_ApprovalRequests approval operation.</summary>

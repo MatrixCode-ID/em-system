@@ -1,11 +1,26 @@
 using Em.Api.Core.Models;
 using Em.Shared;
+using Em.Api.Core.Hub;
+using Microsoft.Extensions.Logging;
 namespace Em.Api.Core.Approval;
 /// <summary>Approval actions; each operation authorizes the caller against its registered definition.</summary>
 [Module(Defaults.ApprovalModuleName)]
 public sealed class ApprovalServices(IApprovalEngine engine) : ServicesBase, IApprovalServices {
    private ApprovalEngine Engine => (ApprovalEngine)engine;
    #region Meta's
+   /// <inheritdoc />
+   [GetAction]
+   public async Task<HubTaskInfo[]> GetMeta_UserHubTasks() {
+      Request.RequireUserId();
+      var tasks = new List<HubTaskInfo>();
+      foreach (var source in GetService<IEnumerable<IHubTaskSource>>() ?? []) {
+         try { tasks.AddRange(await source.GetTasksAsync(AbortToken)); }
+         catch (Exception ex) when (ex is not OperationCanceledException || !AbortToken.IsCancellationRequested) {
+            Logger.LogError(ex, "Hub task source {Source} failed and was left out of the list.", source.GetType().Name);
+         }
+      }
+      return [.. tasks];
+   }
    /// <inheritdoc />
    [GetAction]
    public Task<ApprovalCapability[]> GetMeta_ApprovalCapabilities() => Engine.CapabilitiesAsync(AbortToken);

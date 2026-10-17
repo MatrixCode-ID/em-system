@@ -314,7 +314,7 @@ namespace Em.Ui.Wpf.Core
          app.AddNavigation(RequireClaim(new Navigation {
             Name = "em.approval.signers", Title = "System Approval Editor", Subtitle = "Configure signers and four-eyes backups",
             Description = "Assign a primary user or Dynamic Signer and backups for future System requests.",
-            OrderIndex = -1, BodyType = BodyType.Of<ApprovalSignerSettings>(), Kind = NavigationKind.Manager,
+            OrderIndex = -1, BodyType = BodyType.Of<Em.Ui.Wpf.Navigations.ApprovalSignerSettings>(), Kind = NavigationKind.Manager,
             EmApp = app, IsMenuVisible = false, RequireParameter = false
          }, "Administrative Tools:Approval Signer Settings"));
          // Bound to no module and no claim on purpose: the viewer only shows what its caller hands it, so

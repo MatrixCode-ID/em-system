@@ -34,7 +34,8 @@
      <Button Style="{StaticResource textButtonStyle}" Content="Next" Command="{Binding Commands[NextCommand]}"/>
     </StackPanel>
     <StackPanel DockPanel.Dock="Top"><TextBlock Text="APPROVAL / SUMMARY / STATUS" Style="{StaticResource columnHeaderStyle}" Margin="8,0,0,8"/></StackPanel>
-    <ListBox Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" IsEnabled="{Binding IsNotBusy}" MouseDoubleClick="OnRequestDoubleClick">
+    <ListBox Style="{StaticResource surfaceListBoxStyle}" Background="Transparent" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" IsEnabled="{Binding IsNotBusy}">
+     <ListBox.InputBindings><MouseBinding MouseAction="LeftDoubleClick" Command="{Binding Commands[OpenSystemCommand]}"/></ListBox.InputBindings>
      <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="6,8">
       <TextBlock Text="{Binding cApprovalName}" FontWeight="SemiBold"/><TextBlock Text="{Binding cSummary}" TextWrapping="Wrap" Margin="0,4"/>
       <TextBlock Text="{Binding cApprovalRequestStage}" Opacity="0.6"/>

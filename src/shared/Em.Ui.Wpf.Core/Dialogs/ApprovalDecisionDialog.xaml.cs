@@ -19,7 +19,7 @@ public sealed class ApprovalDecisionDialogVm : MvvmModelBase {
    /// <summary>Creates the dialog state and confirmation command.</summary>
    public ApprovalDecisionDialogVm(string action, string subtitle, bool reasonRequired) {
       Action = action; Subtitle = subtitle; _reasonRequired = reasonRequired;
-      RegisterCommand(nameof(ConfirmCommand), ConfirmCommand, () => !_reasonRequired || !string.IsNullOrWhiteSpace(Note));
+      RegisterCommand(nameof(ConfirmCommand), ConfirmCommand, ConfirmCommandAllowed);
    }
    /// <summary>Raised when valid input is confirmed.</summary>
    public event System.Action? Confirmed;
@@ -36,5 +36,7 @@ public sealed class ApprovalDecisionDialogVm : MvvmModelBase {
    /// <summary>Unmodified TwoWay input.</summary>
    public string Note { get => Get(string.Empty); set { Set(value); Commands[nameof(ConfirmCommand)]?.RaiseCanExecuteChanged(); } }
    /// <summary>Confirms the local input; the caller performs the server action afterward.</summary>
-   public void ConfirmCommand() => Confirmed?.Invoke();
+   public void ConfirmCommand() { if (ConfirmCommandAllowed()) Confirmed?.Invoke(); }
+   /// <summary>Whether the optional or required reason is ready for confirmation.</summary>
+   public bool ConfirmCommandAllowed() => !_reasonRequired || !string.IsNullOrWhiteSpace(Note);
 }

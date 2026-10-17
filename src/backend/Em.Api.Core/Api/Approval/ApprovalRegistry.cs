@@ -74,7 +74,9 @@ internal sealed class DataTable<TDefinition, TEntity>(DataRegistration registrat
       var values = JsonSerializer.Deserialize<JsonElement[]>(key) ?? throw new ActionException("Invalid Data subject key.", 409);
       if (values.Length != Keys.Length) throw new ActionException("The stored key no longer matches the Data definition.", 409);
       var parts = values.Select((v, i) => v.Deserialize(Property(Keys[i]).PropertyType, Defaults.ResponseJsonOptions)).ToArray();
-      return await Context.FindAsync(typeof(TEntity), parts, ct);
+      var row = await Context.FindAsync(typeof(TEntity), parts, ct);
+      if (row is not null && Context.Entry(row).State == EntityState.Detached) Context.Attach(row);
+      return row;
    }
 }
 

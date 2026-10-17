@@ -316,17 +316,16 @@ Pembaruan 2026-10-12 (log engine, eksekusi plan `plan/executed/penyimpanan-log.m
 Pembaruan 2026-10-15 (managed bucket object storage, eksekusi plan `plan/executed/object-storage-managed-bucket.md`): modul bisa mendeklarasikan bucket miliknya lewat `builder.AddManagedBucket(name, owner, description, o => ...)` (deskripsi wajib 10–500 karakter, ditulis untuk admin, bahasa Inggris). Saat startup `ManagedBucketProvisioner` (dipanggil `ObjectStorageBackground`) membuat bucket + policy khusus `<bucket> (managed)` di volume default `managed-default` (`AddObjectStorage(o => o.DefaultVolumePath = ...)`, bawaan `data/objectstore` relatif content root, id di `ta_Meta` `ObjectStore.DefaultVolume`), mengadopsi bucket biasa bernama sama (policy bersama disalin), menyamakan owner/deskripsi, dan memaksa akses deklarasi; nilai policy lain hanya dipakai saat dibuat. Action manajemen menolak 409 untuk upload/delete/restore/purge isi, pindah policy, hapus bucket/policy, dan ubah akses policy managed; browse/info/versions/download tetap boleh; `IObjectStore`, retensi, GC, replikasi, repair tidak berubah. Bucket yang tidak lagi dideklarasikan tetap terkunci (chip NOT DECLARED) sampai admin menjalankan `PostMeta_StoreBucketRelease`. Sesuai Dahlia Convention (kolom tambahan masuk `json_object`), owner/deskripsi disimpan di `ta_StoreBucket.json_object` (`owner`, `description`), **tanpa perubahan tabel**, `ObjectStoreSchemaVersion` tetap 1; `views/vi_StoreBucket.sql` mendapat `cvStoreBucketOwner`/`cvStoreBucketDescription` (sudah diterapkan ke semua target di catatan privat, dua lokal dan dua remote). Kontrak `Em.Libs`: `StoreBucketInfo.Owner/Description/IsDeclared`, `StorePolicyInfo.ManagedBucket` (parameter opsional), action baru di `IObjectStorageServices`. UI WPF: chip MANAGED/NOT DECLARED, deskripsi read-only, policy terkunci, isi read-only, More › Release, Access policy managed nonaktif. Module uji `Em.Test` mendeklarasikan `emtest-files`. Status uji: build backend/WPF/MAUI, 284 test backend (8 skip PostgreSQL/MySQL log store; termasuk 9 test integrasi SQL Server managed bucket), 140 test UI, smoke HTTP 31 cek (`..\.artefacts\em-system\scripts\managed-bucket-smoke`), dan render terang/gelap 24 PNG (`..\.artefacts\em-system\scripts\managed-bucket-render`) lulus; interaksi mouse di window sungguhan (menu More, tooltip, drag-drop yang ditolak) belum dicoba. Panduan: bagian "Managed buckets" di [doc/engine/engine-object-storage.md](doc/engine/engine-object-storage.md) (dan `.id.md`).
 
 
-## Rancang ulang approval — kode dalam integrasi (2026-10-17)
+## Rancang ulang approval — selesai (2026-10-17)
 
-Plan `plan/unexecuted/approval-rancang-ulang.codex.md` mengganti deklarasi approval lama
-dengan interface Data/System, registrasi eksplisit dan analyzer metadata. Panduan saat ini:
-`doc/engine/engine-approval.md`. SQL upgrade `20261017-ApprovalRedesign.sql` membuang data
-request lama pada pemasangan pertama, mempertahankan tabel jenis dokumen aplikasi, dan
-mempertahankan request baru bila dijalankan ulang. Belum diterapkan dalam eksekusi ini.
+Plan `plan/executed/approval-rancang-ulang.codex.md` mengganti kontrak lama dengan
+Data/System, registrasi eksplisit dan analyzer. Guide `doc/engine/engine-approval.md`;
+laporan `plan/executed/approval-rancang-ulang-report.md`. SQL upgrade v2 membuang
+request lama pada pemasangan pertama dan mempertahankan request baru saat diulang;
+katalog jenis dokumen aplikasi dipertahankan. Schema/runtime diuji di SQL Server lokal.
 
-Layar System mengikuti desain yang disetujui pada sesi ini: editor tiga kolom, viewer
-dengan area modul/kartu penanda tangan/sidebar dan dialog keputusan. Kode baru belum
-dibangun atau diuji. Sesuai arahan pengguna, selesaikan kode produk terlebih dahulu.
-Skrip pembentukan kode sementara ada di `../.artefacts/em-system/scripts/approval-implementation/`;
-skrip tersebut merupakan catatan pengerjaan dan **jangan dijalankan ulang** karena kode
-hasilnya sudah diselaraskan lewat perubahan lanjutan. Tidak ada push.
+Build API/WPF/MAUI, suite backend/frontend, HTTP Em.Api+Em.Test dan render pada host
+pemakai lulus. Batas tes mouse dan provider log store yang tidak dikonfigurasi dicatat
+pada laporan. Tidak ada push. Source generator awal di
+`../.artefacts/em-system/scripts/approval-implementation/` jangan dijalankan ulang.
+Harness HTTP/fixture lokal di `../.artefacts/em-system/scripts/approval-smoke/`.

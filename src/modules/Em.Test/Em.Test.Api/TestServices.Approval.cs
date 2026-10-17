@@ -12,7 +12,7 @@ public partial class TestServices {
    #region Meta's
    [PostAction]
    public async Task<string> PostGetMeta_TestDocSubmit(string cTestDocId, string? note) {
-      var row = await ctx.ta_TestDocs.SingleOrDefaultAsync(x => x.cTestDocId == cTestDocId) ?? throw new ActionException("Document was not found.", 404);
+      var row = await ctx.ta_TestDocs.AsTracking().SingleOrDefaultAsync(x => x.cTestDocId == cTestDocId) ?? throw new ActionException("Document was not found.", 404);
       var id = await Engine.RequestAsync(ITestServices.DocType, cTestDocId, $"{row.cTestDocNo} · {row.cTestDocTitle} · {row.cTestDocAmount:N2}");
       var json = JsonNode.Parse(row.json_object ?? "{}")!.AsObject(); json["approvalRequestId"] = id;
       row.json_object = json.ToJsonString(); row.cTestDocStatus = TestDocStatus.InApproval; await ctx.SaveChangesAsync(); return id;
@@ -51,12 +51,12 @@ public partial class TestServices {
    }
    [PostAction]
    public async Task PostMeta_TestDocQa(string id, bool passed, string? remarks) {
-      var row = await ctx.ta_TestDocs.SingleOrDefaultAsync(x => x.cTestDocId == id) ?? throw new ActionException("Document was not found.", 404);
+      var row = await ctx.ta_TestDocs.AsTracking().SingleOrDefaultAsync(x => x.cTestDocId == id) ?? throw new ActionException("Document was not found.", 404);
       row.cTestDocQaPassed = passed; row.cTestDocQaRemarks = remarks; await ctx.SaveChangesAsync();
    }
    [PostAction]
    public async Task PostMeta_TestDocApprovalLink(string id, string requestId) {
-      var row = await ctx.ta_TestDocs.SingleOrDefaultAsync(x => x.cTestDocId == id) ?? throw new ActionException("Document was not found.", 404);
+      var row = await ctx.ta_TestDocs.AsTracking().SingleOrDefaultAsync(x => x.cTestDocId == id) ?? throw new ActionException("Document was not found.", 404);
       var json = JsonNode.Parse(row.json_object ?? "{}")!.AsObject(); json["approvalRequestId"] = requestId;
       row.json_object = json.ToJsonString(); row.cTestDocStatus = TestDocStatus.InApproval;
       await ctx.SaveChangesAsync();

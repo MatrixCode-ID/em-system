@@ -1,6 +1,13 @@
 -- Destructive upgrade from approval v1 to v2: old test requests are discarded.
 -- The application's document-type table is preserved. Re-running v2 preserves requests.
 SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
 BEGIN TRANSACTION;
 IF OBJECT_ID(N'dbo.ta_ApprovalRequest', N'U') IS NOT NULL
    AND COL_LENGTH(N'dbo.ta_ApprovalRequest', N'cApprovalName') IS NULL

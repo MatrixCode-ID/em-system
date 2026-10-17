@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Em.Test.Models
 {
-   /// <summary>A test document: a transaction document submitted through document approval and stamped onto a PDF.</summary>
+   /// <summary>A sample document used by Data and System approval and a separate PDF preview.</summary>
    [Table("ta_TestDoc")]
    public class ta_TestDoc
    {

@@ -47,7 +47,7 @@
   <Grid Grid.Row="3"><Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="340"/></Grid.ColumnDefinitions>
    <Border Style="{StaticResource approvalCard}"><DockPanel>
     <Border DockPanel.Dock="Top" Style="{StaticResource approvalHeader}"><TextBlock Text="SYSTEM APPROVALS" Style="{StaticResource columnHeaderStyle}"/></Border>
-    <ListBox ItemsSource="{Binding Definitions}" SelectedItem="{Binding Selected}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource listRowStyle}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+    <ListBox ItemsSource="{Binding Definitions}" SelectedItem="{Binding Selected}" Style="{StaticResource surfaceListBoxStyle}" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource listRowStyle}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
      <ListBox.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{Binding Title}" FontWeight="SemiBold"/><TextBlock Text="{Binding Name}" Opacity="0.65" FontSize="11.5" Margin="0,3,0,0"/><TextBlock Text="{Binding Steps.Length, StringFormat={}{0} steps}" Opacity="0.65" FontSize="11.5"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
     </ListBox>
    </DockPanel></Border>
@@ -55,7 +55,7 @@
     <Border DockPanel.Dock="Top" Style="{StaticResource approvalHeader}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="60"/><ColumnDefinition Width="170"/><ColumnDefinition Width="100"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
      <TextBlock Text="LEVEL" Style="{StaticResource columnHeaderStyle}"/><TextBlock Grid.Column="1" Text="STEP" Style="{StaticResource columnHeaderStyle}"/><TextBlock Grid.Column="2" Text="KIND" Style="{StaticResource columnHeaderStyle}"/><TextBlock Grid.Column="3" Text="SIGNER, THEN FOUR-EYES BACKUPS" Style="{StaticResource columnHeaderStyle}"/>
     </Grid></Border>
-    <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource listRowStyle}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+    <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}" Style="{StaticResource surfaceListBoxStyle}" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource listRowStyle}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
      <ListBox.ItemTemplate><DataTemplate><Grid AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" Background="Transparent" MinHeight="44">
       <Grid.ColumnDefinitions><ColumnDefinition Width="60"/><ColumnDefinition Width="170"/><ColumnDefinition Width="100"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <TextBlock Text="{Binding Step.Level}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -80,7 +80,7 @@
      <Border Margin="16,0,16,10" Height="38" CornerRadius="19" Background="{StaticResource surfaceStrongBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1"><Grid Margin="16,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="13" Opacity="0.6" VerticalAlignment="Center"/><TextBox Grid.Column="1" Margin="12,0,0,0" Style="{StaticResource searchBoxStyle}" Tag="Search users" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"/></Grid></Border>
     </StackPanel>
     <TextBlock DockPanel.Dock="Bottom" Text="{Binding PoolCaption}" FontSize="11.5" Opacity="0.65" Margin="20,10"/>
-    <ListBox ItemsSource="{Binding Pool}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource listRowCompactStyle}" HorizontalContentAlignment="Stretch" Margin="8,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><Grid Background="Transparent" PreviewMouseLeftButtonDown="OnDragStart" MouseLeftButtonDown="OnPoolDoubleClick" MouseMove="OnPoolMove">
+    <ListBox ItemsSource="{Binding Pool}" Style="{StaticResource surfaceListBoxStyle}" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource listRowCompactStyle}" HorizontalContentAlignment="Stretch" Margin="8,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><Grid Background="Transparent" PreviewMouseLeftButtonDown="OnDragStart" MouseLeftButtonDown="OnPoolDoubleClick" MouseMove="OnPoolMove">
      <Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
      <Grid Width="34" Height="34"><Ellipse Fill="{StaticResource surfaceStrongBrush}" Stroke="{StaticResource outlineBrush}"/><TextBlock Text="{Binding Initials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
      <TextBlock Grid.Column="1" Text="{Binding Caption}" VerticalAlignment="Center" Margin="12,0" TextWrapping="Wrap"/><fa:FontAwesome Grid.Column="2" Icon="Solid_GripVertical" Opacity="0.35" VerticalAlignment="Center"/>

@@ -1,5 +1,12 @@
 -- Approval schema v2. Requires 010-core.sql. No document-type catalog is owned by the engine.
 SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
 GO
 
 IF OBJECT_ID(N'dbo.ta_ApprovalRequest', N'U') IS NULL

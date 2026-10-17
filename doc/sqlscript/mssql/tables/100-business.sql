@@ -1,9 +1,9 @@
 /*
     100 - Business objects: products, product transactions, business partners, currencies, units, and employees.
 
-    Run on the target database (USE [DatabaseName]) after tables/010-core.sql (ta_Contact)
-    and tables/020-approval.sql (ta_Doc). Meant for a new database (CREATE TABLE without
-    checks).
+    Run on the target database (USE [DatabaseName]) after tables/010-core.sql (ta_Contact).
+    The optional document catalog belongs to the application; its foreign key is added only
+    when that catalog already exists. Meant for a new database (CREATE TABLE without checks).
 
     Contents: ta_Product, ta_ProductType, ta_ProductTran, ta_ProductTranData, ta_ShoeHelper,
     ta_BusinessPartner, ta_Currency, ta_Unit, ta_Emp with their uniques, indexes, primary keys,
@@ -268,7 +268,8 @@ GO
 ALTER TABLE [dbo].[ta_ProductTran] ADD CONSTRAINT [FK_ta_ProductTran_ta_ProductTran] FOREIGN KEY ([cProductTranSelRef_cProductTranId]) REFERENCES [dbo].[ta_ProductTran] ([cProductTranId]) ON DELETE NO ACTION ON UPDATE NO ACTION
 GO
 
-ALTER TABLE [dbo].[ta_ProductTran] ADD CONSTRAINT [FK_ta_ProductTran_ta_Doc] FOREIGN KEY ([cDocName]) REFERENCES [dbo].[ta_Doc] ([cDocName]) ON DELETE CASCADE ON UPDATE CASCADE
+IF OBJECT_ID(N'dbo.ta_Doc', N'U') IS NOT NULL
+   ALTER TABLE [dbo].[ta_ProductTran] ADD CONSTRAINT [FK_ta_ProductTran_ta_Doc] FOREIGN KEY ([cDocName]) REFERENCES [dbo].[ta_Doc] ([cDocName]) ON DELETE CASCADE ON UPDATE CASCADE
 GO
 
 ALTER TABLE [dbo].[ta_ProductTran] ADD CONSTRAINT [FK_ta_ProductTran_ta_Emp] FOREIGN KEY ([cProductTranEmpRef_cEmpId]) REFERENCES [dbo].[ta_Emp] ([cEmpId]) ON DELETE NO ACTION ON UPDATE NO ACTION
