@@ -76,6 +76,13 @@ namespace Em.Ui.Wpf.Navigations
       private readonly HashSet<string> _baselineClaims = new(StringComparer.OrdinalIgnoreCase);
       private readonly Dictionary<string, ta_UserRole> _baselineMembers = [];
 
+      // Every claim key the catalog holds. A role may still carry a claim the server no longer declares -
+      // a module that is switched off, or a claim that was renamed - and such a claim has no switch on
+      // this screen, so it can never be part of the desired state by itself. It is carried over from the
+      // baseline instead: otherwise merely opening the role would read as revoking it, and saving anything
+      // else would silently take it away.
+      private readonly HashSet<string> _catalogueKeys = new(StringComparer.OrdinalIgnoreCase);
+
       // The difference between baseline and desired, recomputed every time either changes. The number in the
       // action bar is read from here, so there is no second counter that could drift from it.
       private RoleSet? _pending;
@@ -130,6 +137,13 @@ namespace Em.Ui.Wpf.Navigations
 
          MemberRows.CollectionChanged += (_, _) => NotifyChanged(nameof(MemberDetailCaption));
          ClaimGroups.CollectionChanged += (_, _) => NotifyChanged(nameof(CatalogueSummaryCaption));
+
+         // A view rather than a second list: the Permissions tab draws its cards in a WrapPanel, which keeps a
+         // slot for a collapsed card, so a module that does not match has to leave the list it draws - while
+         // the captions and the empty state keep reading the whole of GrantedGroups.
+         VisibleGrantedGroups = new System.Windows.Data.ListCollectionView(GrantedGroups) {
+            Filter = item => item is ClaimGroupVm { IsPermissionMatch: true }
+         };
       }
 
       #region Data
@@ -151,6 +165,12 @@ namespace Em.Ui.Wpf.Navigations
       /// Permissions tab draws: a module the role has no business with need not take up room there.
       /// </summary>
       public ObservableCollection<ClaimGroupVm> GrantedGroups { get; } = [];
+
+      /// <summary>
+      /// The part of <see cref="GrantedGroups"/> that matches <see cref="PermissionSearchText"/> - what the
+      /// Permissions tab actually draws.
+      /// </summary>
+      public ICollectionView VisibleGrantedGroups { get; }
 
       /// <summary>The members of the open role - the desired state, not the stored one.</summary>
       public ObservableCollection<MemberRowVm> MemberRows { get; } = [];
@@ -313,6 +333,39 @@ namespace Em.Ui.Wpf.Navigations
 
       /// <summary>Whether there is a drop notice that still needs to be shown.</summary>
       public bool HasDropFeedback => !string.IsNullOrEmpty(DropFeedbackCaption);
+
+      #endregion
+
+      #region Search
+
+      /// <summary>
+      /// What the catalog sheet is narrowed to. A module whose name matches keeps all its claims; otherwise
+      /// only the claims whose name or key match are left, and a module with none of them left is hidden.
+      /// </summary>
+      public string CatalogueSearchText {
+         get => Get(string.Empty);
+         set => Set(value, _ => ApplyCatalogueSearch());
+      }
+
+      /// <summary>
+      /// What the Permissions tab is narrowed to, by the same rule as <see cref="CatalogueSearchText"/> but
+      /// over the claims the open role carries.
+      /// </summary>
+      public string PermissionSearchText {
+         get => Get(string.Empty);
+         set => Set(value, _ => ApplyPermissionSearch());
+      }
+
+      private void ApplyCatalogueSearch() {
+         var text = CatalogueSearchText.Trim();
+         foreach (var group in ClaimGroups) group.ApplyCatalogueSearch(text);
+      }
+
+      private void ApplyPermissionSearch() {
+         var text = PermissionSearchText.Trim();
+         foreach (var group in ClaimGroups) group.ApplyPermissionSearch(text);
+         VisibleGrantedGroups.Refresh();
+      }
 
       #endregion
 
@@ -765,6 +818,7 @@ namespace Em.Ui.Wpf.Navigations
 
          ClaimGroups.Clear();
          GrantedGroups.Clear();
+         _catalogueKeys.Clear();
 
          var groups = EmApp.AllClaims
             .GroupBy(c => c.ModuleName, StringComparer.OrdinalIgnoreCase)
@@ -773,7 +827,11 @@ namespace Em.Ui.Wpf.Navigations
          foreach (var group in groups) {
             var item = new ClaimGroupVm(group.Key, group.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase), usage, OnClaimChanged);
             ClaimGroups.Add(item);
+            foreach (var claim in item.Claims) _catalogueKeys.Add(claim.Key);
          }
+
+         ApplyCatalogueSearch();
+         ApplyPermissionSearch();
       }
 
       #endregion
@@ -1096,6 +1154,10 @@ namespace Em.Ui.Wpf.Navigations
             if (i < GrantedGroups.Count && ReferenceEquals(GrantedGroups[i], wanted[i])) continue;
             GrantedGroups.Insert(i, wanted[i]);
          }
+
+         // A module that stays in the list may still start or stop matching as its granted claims change; with
+         // no search on, every module matches and the view follows the list by itself.
+         if (!string.IsNullOrWhiteSpace(PermissionSearchText)) VisibleGrantedGroups.Refresh();
       }
 
       private void RefreshPendingState() {
@@ -1116,6 +1178,10 @@ namespace Em.Ui.Wpf.Navigations
             .Where(c => c.IsGranted)
             .Select(c => c.Key)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+         foreach (var key in _baselineClaims) {
+            if (!_catalogueKeys.Contains(key)) desired.Add(key);
+         }
 
          var granted = desired
             .Where(key => !_baselineClaims.Contains(key))
@@ -1295,6 +1361,29 @@ namespace Em.Ui.Wpf.Navigations
          set => Set(value);
       }
 
+      /// <summary>Whether this module still has a claim left on the catalog sheet under its search.</summary>
+      public bool IsCatalogueMatch => Claims.Any(c => c.IsCatalogueMatch);
+
+      /// <summary>Whether this module still has a granted claim left on the Permissions tab under its search.</summary>
+      public bool IsPermissionMatch => Granted.Any(c => c.IsPermissionMatch);
+
+      // The flag is kept on every claim, granted or not, so a claim granted while a search is on lands on the
+      // Permissions tab already knowing whether it is meant to be seen.
+      internal void ApplyCatalogueSearch(string text) {
+         var whole = Matches(ModuleName, text);
+         foreach (var claim in Claims) claim.IsCatalogueMatch = whole || claim.Matches(text);
+         NotifyChanged(nameof(IsCatalogueMatch));
+      }
+
+      internal void ApplyPermissionSearch(string text) {
+         var whole = Matches(ModuleName, text);
+         foreach (var claim in Claims) claim.IsPermissionMatch = whole || claim.Matches(text);
+         NotifyChanged(nameof(IsPermissionMatch));
+      }
+
+      internal static bool Matches(string value, string text) =>
+         text.Length == 0 || value.Contains(text, StringComparison.OrdinalIgnoreCase);
+
       private void OnClaimChanged(ClaimItemVm claim) {
          RefreshGranted();
          _onClaimChanged(claim);
@@ -1315,6 +1404,7 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(GrantedCount));
          NotifyChanged(nameof(GrantedCaption));
          NotifyChanged(nameof(CatalogueCaption));
+         NotifyChanged(nameof(IsPermissionMatch));
       }
    }
 
@@ -1355,6 +1445,20 @@ namespace Em.Ui.Wpf.Navigations
          get => Get<bool>();
          set => Set(value, _ => _onChanged(this));
       }
+
+      /// <summary>Whether this claim is left on the catalog sheet under its search.</summary>
+      public bool IsCatalogueMatch {
+         get => Get(true);
+         set => Set(value);
+      }
+
+      /// <summary>Whether this claim is left on the Permissions tab under its search.</summary>
+      public bool IsPermissionMatch {
+         get => Get(true);
+         set => Set(value);
+      }
+
+      internal bool Matches(string text) => ClaimGroupVm.Matches(Name, text) || ClaimGroupVm.Matches(Key, text);
    }
 
    /// <summary>State of one role assignment against the server time when the screen was loaded.</summary>

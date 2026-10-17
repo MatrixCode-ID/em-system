@@ -830,7 +830,8 @@
                                           <TextBox Grid.Column="1"
                                                    Margin="11,0,0,0"
                                                    Tag="Search claim"
-                                                   Style="{StaticResource searchBoxStyle}" />
+                                                   Style="{StaticResource searchBoxStyle}"
+                                                   Text="{Binding PermissionSearchText, UpdateSourceTrigger=PropertyChanged}" />
                                        </Grid>
                                     </Border>
 
@@ -869,7 +870,7 @@
                                       Each body is folded away by its own header: the header is a
                                       ToggleButton bound to the group's own state, and the body reads it
                                       back through the plain boolean-to-visibility converter. -->
-                                 <ItemsControl ItemsSource="{Binding GrantedGroups}" Margin="0,0,0,8">
+                                 <ItemsControl ItemsSource="{Binding VisibleGrantedGroups}" Margin="0,0,0,8">
                                     <ItemsControl.ItemsPanel>
                                        <ItemsPanelTemplate>
                                           <WrapPanel ItemWidth="236" />
@@ -937,7 +938,8 @@
                                                                                    Converter={StaticResource boolToVisibility}}">
                                                    <ItemsControl.ItemTemplate>
                                                       <DataTemplate>
-                                                         <StackPanel>
+                                                         <StackPanel Visibility="{Binding IsPermissionMatch,
+                                                                                          Converter={StaticResource boolToVisibility}}">
                                                             <Border Style="{StaticResource listRowDividerStyle}" />
                                                             <Grid Height="44" Margin="16,0">
                                                                <Grid.ColumnDefinitions>
@@ -1566,8 +1568,8 @@
             <!-- ==== what to look at ====
                  A catalogue is read for two different reasons - to find one claim, or to see
                  what this role is missing - so it carries both a search box and the facet that
-                 splits the list against the role that is open behind the sheet. Neither is
-                 bound yet; they arrive with the picker that grants a claim. -->
+                 splits the list against the role that is open behind the sheet. The search
+                 is bound; the facet is not yet. -->
             <StackPanel Grid.Row="1" Margin="22,16,22,12">
                <Border Style="{StaticResource searchFieldStyle}">
                   <Grid Margin="14,0">
@@ -1585,7 +1587,8 @@
                      <TextBox Grid.Column="1"
                               Margin="11,0,0,0"
                               Tag="Search claim or module"
-                              Style="{StaticResource searchBoxStyle}" />
+                              Style="{StaticResource searchBoxStyle}"
+                              Text="{Binding CatalogueSearchText, UpdateSourceTrigger=PropertyChanged}" />
                   </Grid>
                </Border>
 
@@ -1671,7 +1674,8 @@
                              bubbling - and a claim row inside still wins over the card, because
                              its own payload is deeper in. -->
                         <Border Style="{StaticResource innerCardStyle}" Margin="0,0,0,12"
-                                shared:DragSource.Payload="{Binding}">
+                                shared:DragSource.Payload="{Binding}"
+                                Visibility="{Binding IsCatalogueMatch, Converter={StaticResource boolToVisibility}}">
                            <StackPanel>
                               <!-- The header is the one part of the card the claim rows do not
                                    cover, so it is where the whole module is taken hold of. It
@@ -1726,7 +1730,8 @@
                                                                  Converter={StaticResource boolToVisibility}}">
                                  <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                       <StackPanel>
+                                       <StackPanel Visibility="{Binding IsCatalogueMatch,
+                                                                        Converter={StaticResource boolToVisibility}}">
                                           <Border Style="{StaticResource listRowDividerStyle}" />
                                           <!-- A row of its own carries a claim of its own: dragging
                                                it grants that one claim. The background has to be
