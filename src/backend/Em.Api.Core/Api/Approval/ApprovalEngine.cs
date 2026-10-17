@@ -43,7 +43,7 @@ internal sealed partial class ApprovalEngine(ApiCoreContext db, ApprovalRegistry
          return registry.DataRoot(request.cApprovalName).Resolve(services).CanView(caller);
       registry.System(request.cApprovalName);
       if (request.cApprovalRequestRequesterId == caller.cUserId ||
-          ApprovalAccess.HoldsClaim(caller, ClaimAction.Create<IApprovalServices>($"View {request.cApprovalName}"))) return true;
+          ApprovalAccess.HoldsClaim(caller, ViewClaim(request.cApprovalName))) return true;
       return await (from step in db.ta_ApprovalRequestSteps
                     join candidate in db.ta_ApprovalRequestStepCandidates on step.cApprovalRequestStepId equals candidate.cApprovalRequestStepId
                     where step.cApprovalRequestId == request.cApprovalRequestId && candidate.cUserId == caller.cUserId

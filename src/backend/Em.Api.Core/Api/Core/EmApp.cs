@@ -1378,7 +1378,7 @@ namespace Em.Api.Core
             // A parameter that is a record or class (a query object, say) travels as JSON in the query
             // string, the same JSON the client writes for it. Anything convertible - numbers, dates -
             // still goes through Convert below, so only what could not be bound at all lands here.
-            if (!typeof(IConvertible).IsAssignableFrom(actualType)) {
+            if (!typeof(IConvertible).IsAssignableFrom(actualType) && actualType != typeof(ApprovalQuery)) {
                value = JsonSerializer.Deserialize(rawValue, actualType, Defaults.ResponseJsonOptions);
                error = null;
                return true;

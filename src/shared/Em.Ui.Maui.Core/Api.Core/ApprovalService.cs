@@ -33,7 +33,7 @@ public class ApprovalService(EmApp app) : ServiceMauiBase(app), IApprovalService
    /// <inheritdoc />
    public Task PostMeta_ApprovalSignerSettings(string name, ApprovalSignerSetting[] settings) => PostAsync(nameof(PostMeta_ApprovalSignerSettings), name, settings);
    /// <inheritdoc />
-   public Task<ta_ApprovalRequestAttachment> PostGetMeta_ApprovalAttachment(string requestId, string? commentId, string name, Stream content) => PostAsync<ta_ApprovalRequestAttachment>(nameof(PostGetMeta_ApprovalAttachment), requestId, commentId, name, content);
+   public Task<ta_ApprovalRequestAttachment> PostGetMeta_ApprovalAttachment(ApprovalAttachmentUpload upload, Stream content) => PostStreamAsync<ta_ApprovalRequestAttachment>(nameof(PostGetMeta_ApprovalAttachment), content, upload);
    /// <inheritdoc />
    public Task<Stream> GetMeta_ApprovalAttachment(string attachmentId) => GetStreamAsync(nameof(GetMeta_ApprovalAttachment), attachmentId);
 }

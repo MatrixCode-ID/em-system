@@ -38,7 +38,7 @@ public partial class EmAppBuilder {
       if (ApprovalSystems.Any(x => string.Equals(ApprovalSubjectKey.NameOf(x.DefinitionType), name, StringComparison.OrdinalIgnoreCase)))
          throw new InvalidOperationException($"System approval '{name}' is registered more than once.");
       ApprovalSystems.Add(new SystemRegistration(typeof(T), new T(), handler));
-      AddClaimIfMissing(ClaimAction.Create<IApprovalServices>($"View {name}"));
+      AddClaimIfMissing(new ClaimAction { ModuleName = Defaults.ApprovalModuleName, Name = $"View {name}" });
    }
    /// <summary>Physical-document approval is reserved for a later implementation.</summary>
    public void AddDocumentApproval<T>() where T : IEmApprovalDocument =>

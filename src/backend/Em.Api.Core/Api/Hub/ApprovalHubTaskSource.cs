@@ -14,7 +14,7 @@ namespace Em.Api.Core.Hub
    internal sealed class ApprovalHubTaskSource(IApprovalHubQuery query) : IHubTaskSource
    {
       /// <summary>Source for the document approval rows.</summary>
-      public const string DocumentSource = "approval.document";
+      public const string DocumentSource = "approval.system";
 
       /// <summary>Source for the data approval rows.</summary>
       public const string DataSource = "approval.data";
@@ -40,7 +40,7 @@ namespace Em.Api.Core.Hub
             OldestAge = now > group.OldestRequestDate ? now - group.OldestRequestDate : TimeSpan.Zero,
             ActionName = OpenAction,
             NavigationTarget = ApprovalManagerNavigation,
-            NavigationParameter = group.DocType
+            NavigationParameter = $"{group.Kind}:{group.DocType}"
          })];
       }
    }

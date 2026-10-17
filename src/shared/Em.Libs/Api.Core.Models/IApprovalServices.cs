@@ -31,7 +31,7 @@ public interface IApprovalServices : IServices {
    /// <summary>PostMeta_ApprovalSignerSettings approval operation.</summary>
    Task PostMeta_ApprovalSignerSettings(string name, ApprovalSignerSetting[] settings);
    /// <summary>PostGetMeta_ApprovalAttachment approval operation.</summary>
-   Task<ta_ApprovalRequestAttachment> PostGetMeta_ApprovalAttachment(string requestId, string? commentId, string name, Stream content);
+   Task<ta_ApprovalRequestAttachment> PostGetMeta_ApprovalAttachment(ApprovalAttachmentUpload upload, Stream content);
    /// <summary>GetMeta_ApprovalAttachment approval operation.</summary>
    Task<Stream> GetMeta_ApprovalAttachment(string attachmentId);
    #endregion

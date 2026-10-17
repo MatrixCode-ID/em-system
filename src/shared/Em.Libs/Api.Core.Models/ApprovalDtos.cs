@@ -25,6 +25,8 @@ public sealed record ApprovalDecision(string RequestId, bool Approve, string? St
 public sealed record ApprovalDecisionResult(bool Applied, string? Message = null);
 /// <summary>Configured primary signer and ordered four-eyes backups for one step.</summary>
 public sealed record ApprovalSignerSetting(string StepName, bool Dynamic, string? UserId, string[] Backups);
+/// <summary>Metadata accompanying a raw streamed attachment upload.</summary>
+public sealed record ApprovalAttachmentUpload(string RequestId, string? CommentId, string Name);
 /// <summary>User offered in the signer pool; inactive users remain visible but cannot be assigned.</summary>
 public sealed record ApprovalSignerUser(string UserId, string Name, bool Active);
 /// <summary>Settings snapshot and available users for one System definition.</summary>
