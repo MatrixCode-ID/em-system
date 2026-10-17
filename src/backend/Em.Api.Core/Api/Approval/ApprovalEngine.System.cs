@@ -143,7 +143,7 @@ internal sealed partial class ApprovalEngine {
    }
    private void RequireSignerSettings() {
       caller.RequireUserId();
-      if (!ApprovalAccess.HoldsClaim(caller, new ClaimAction { ModuleName = "Administrative Tools", Name = "Approval Signer Settings" }))
+      if (!caller.IsDebugRequest && !ApprovalAccess.HoldsClaim(caller, new ClaimAction { ModuleName = "Administrative Tools", Name = "Approval Signer Settings" }))
          throw new ActionException("Approval Signer Settings is required.", 403);
    }
    internal async Task<ApprovalSignerSettings> SignerSettingsAsync(string name, CancellationToken ct) {
@@ -156,7 +156,7 @@ internal sealed partial class ApprovalEngine {
          x.cApprovalSignerSettingDynamic, x.cUserId, backups.Where(b => b.cApprovalSignerSettingId == x.cApprovalSignerSettingId).Select(b => b.cUserId).ToArray())).ToArray(), users);
    }
    internal async Task SaveSignerSettingsAsync(string name, ApprovalSignerSetting[] settings, CancellationToken ct) {
-      RequireSignerSettings(); await RealUserAsync(ct); var definition = registry.System(name).Definition;
+      RequireSignerSettings(); var definition = registry.System(name).Definition;
       if (settings.Length != definition.Steps.Count || !settings.Select(x => x.StepName).Order().SequenceEqual(definition.Steps.Select(x => x.Name).Order()))
          throw new ActionException("Provide exactly one setting for every declared step.", 400);
       foreach (var setting in settings) {

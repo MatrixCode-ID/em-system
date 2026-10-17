@@ -8,6 +8,13 @@ setelah kode kedua plan selesai; jangan menjalankan tes di antara kedua plan.
 Ketentuan ini menggantikan prasyarat build/tes engine sebelum penulisan kode produk
 untuk eksekusi lintas repo tersebut.
 
+Persetujuan desain pengguna 2026-10-17: UI System Approval mengikuti mockup
+editor dan viewer yang sudah ditunjuk pengguna. Editor pengaturan memakai
+tiga kolom (daftar approval, tabel step/penanda tangan, User Pool), sedangkan
+viewer memakai area modul, kartu penanda tangan serta panel komentar/lampiran
+yang bisa ditutup. Pertahankan toolbar dan interaksi keputusan mockup;
+implementasi engine tetap generik dan ditulis tanpa menyalin kode produk privat.
+
 ## Control tab strip bersama (2026-10-10)
 
 `EmTabStrip` di `Em.Ui.Wpf.Controls` tersedia untuk tab panel dalam satu layar: close/middle-click, reorder,

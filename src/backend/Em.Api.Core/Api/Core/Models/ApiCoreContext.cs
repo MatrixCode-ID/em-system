@@ -92,6 +92,7 @@ namespace Em.Api.Core.Models
 
          modelBuilder.Entity<ta_ApprovalRequest>().HasIndex(x => new { x.cApprovalRequestKind, x.cApprovalName, x.cSubjectKey }).IsUnique()
             .HasFilter("[cApprovalRequestKind] = 2 AND [cApprovalRequestStage] >= -1");
+         modelBuilder.Entity<ta_ApprovalRequest>().Property(x => x.cApprovalRequestKind).HasConversion<byte>();
          modelBuilder.Entity<ta_ApprovalRequestStep>().HasIndex(x => new { x.cApprovalRequestId, x.cApprovalRequestStepName }).IsUnique();
          modelBuilder.Entity<ta_ApprovalRequestSignature>().HasIndex(x => x.cApprovalRequestStepId).IsUnique().HasFilter("[cApprovalRequestStepId] IS NOT NULL");
          modelBuilder.Entity<ta_ApprovalRequestSignature>().HasIndex(x => x.cApprovalRequestSignatureCode).IsUnique();

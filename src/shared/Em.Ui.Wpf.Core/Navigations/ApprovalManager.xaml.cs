@@ -6,6 +6,8 @@ using Em.Api.Core.Models;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
 using Em.Ui.Wpf.Shared;
+using Em.Ui.Wpf.Dialogs;
+using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 namespace Em.Ui.Wpf.Navigations;
@@ -23,6 +25,10 @@ public partial class ApprovalManager : UserControl, INavigationBody {
    /// <summary>public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) approval UI member.</summary>
    public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) { Vm.Configure(args.Data); return Vm.RefreshAsync(); }
    /// <summary>public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) approval UI member.</summary>
+   private void OnRequestDoubleClick(object sender, MouseButtonEventArgs args) {
+      if (args.ChangedButton == MouseButton.Left && Vm.SelectedRequest?.cApprovalRequestKind == ApprovalKind.System)
+         Vm.Commands[nameof(Vm.OpenSystemCommand)]?.Execute();
+   }
    public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
    /// <summary>public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) approval UI member.</summary>
    public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Vm.RefreshAsync();
@@ -51,18 +57,43 @@ public sealed class ApprovalStepCardVm(ApprovalManagerVm owner, ta_ApprovalReque
    /// <summary>public ta_ApprovalRequestStep Step approval UI member.</summary>
    public ta_ApprovalRequestStep Step { get; } = step;
    /// <summary>public string Heading approval UI member.</summary>
-   public string Heading => $"L{Step.cApprovalRequestStepLevel} Â· {Step.cApprovalRequestStepName}";
+   public string Heading => $"L{Step.cApprovalRequestStepLevel} · {Step.cApprovalRequestStepName}";
    /// <summary>public string Status approval UI member.</summary>
-   public string Status => Step.cApprovalRequestStepStage.ToString();
+   public string Status => IsSigned ? "Signed" : IsRejected ? "Rejected" : IsActive ? "Your turn" : "Waiting";
+   public string LevelCaption => $"LEVEL {Step.cApprovalRequestStepLevel}";
+   public bool IsSigned => Step.cApprovalRequestStepStage == ApprovalStepStatus.Approved;
+   public bool IsRejected => Step.cApprovalRequestStepStage == ApprovalStepStatus.Rejected;
+   public bool IsActive => owner.Detail?.Header.cApprovalRequestStage == ApprovalStage.Pending && Step.cApprovalRequestStepLevel == owner.Detail.Header.cApprovalRequestLevel && !IsSigned && !IsRejected;
+   private ta_ApprovalRequestSignature? Signature => owner.Detail?.Signatures.FirstOrDefault(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId);
+   private ta_ApprovalRequestStepCandidate? Primary => owner.Detail?.Candidates.FirstOrDefault(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId && !x.cApprovalRequestStepCandidateBackup);
+   public string SignerName => Primary is null ? "No signer" : owner.UserName(Primary.cUserId);
+   public string BackupNames => string.Join("\n", owner.Detail!.Candidates.Where(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId && x.cApprovalRequestStepCandidateBackup).Select(x => $"{owner.UserName(x.cUserId)} · four-eyes backup"));
+   public string ViewerRole => owner.Detail?.Candidates.FirstOrDefault(x => x.cApprovalRequestStepId == Step.cApprovalRequestStepId && x.cUserId == owner.EmApp?.ActiveUser?.cUserId) is { } candidate
+      ? candidate.cApprovalRequestStepCandidateBackup ? "You are a four-eyes backup" : "You are the signer" : string.Empty;
+   public string SignatureText => Signature is { } signature ? $"{owner.UserName(signature.cUserId)} · {signature.datestamp:g}{(signature.cApprovalRequestSignatureAdmin ? " · ADMIN" : "")}{(signature.cApprovalRequestSignatureBackup ? " · FOUR-EYES BACKUP" : "")}" : string.Empty;
+   public string VerificationCode => Signature?.cApprovalRequestSignatureCode ?? string.Empty;
+   public string DecisionNote => Signature?.cApprovalRequestSignatureNote ?? string.Empty;
+   public bool HasNote => !string.IsNullOrEmpty(DecisionNote);
+   public bool IsMyTurn => owner.Detail?.DecidableStepIds.Contains(Step.cApprovalRequestStepId) == true;
    /// <summary>public string Candidates approval UI member.</summary>
    public string Candidates => string.Join("\n", owner.Detail!.Candidates.Where(x => x.cApprovalRequestStepId == step.cApprovalRequestStepId)
-      .Select(x => $"{owner.UserName(x.cUserId)}{(x.cApprovalRequestStepCandidateBackup ? " Â· four-eyes backup" : " Â· signer")}{(x.cUserId == owner.EmApp?.ActiveUser?.cUserId ? " Â· you" : "")}"));
+      .Select(x => $"{owner.UserName(x.cUserId)}{(x.cApprovalRequestStepCandidateBackup ? " · four-eyes backup" : " · signer")}{(x.cUserId == owner.EmApp?.ActiveUser?.cUserId ? " · you" : "")}"));
    /// <summary>public ApprovalManagerVm Owner approval UI member.</summary>
    public ApprovalManagerVm Owner => owner;
    /// <summary>public void RefreshState() approval UI member.</summary>
    public void RefreshState() => NotifyChanged(nameof(CanDecide));
    /// <summary>public bool CanDecide approval UI member.</summary>
    public bool CanDecide => !owner.IsBusy && owner.Detail?.DecidableStepIds.Contains(Step.cApprovalRequestStepId) == true;
+}
+/// <summary>Attachment display without mixing its identity with its caption.</summary>
+public sealed record ApprovalFileVm(ta_ApprovalRequestAttachment Row) {
+   public string Name => Row.cApprovalRequestAttachmentName;
+   public string Meta => $"{Row.cApprovalRequestAttachmentSize:N0} bytes · {Row.datestamp:g}";
+   public bool CanPreview => Path.GetExtension(Name).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+}
+/// <summary>A chronological comment or recorded decision in the viewer sidebar.</summary>
+public sealed record ApprovalCommentVm(string Author, DateTime When, string Text, string Decision) {
+   public string TimeText => When.ToString("g");
 }
 /// <summary>Shared approval state; commands consume only server-returned capabilities.</summary>
 public sealed class ApprovalManagerVm : MvvmModelBase {
@@ -102,8 +133,19 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    public Task NextCommand() => NextAsync();
    /// <summary>public Task PreviousCommand() approval UI member.</summary>
    public Task PreviousCommand() => PreviousAsync();
+   public Task OpenSystemCommand() => EmApp!.NavigateTo("em.approval.editor", new ApprovalManagerNavigationPayload {
+      Kind = ApprovalKind.System, Name = SelectedRequest!.cApprovalName, ApprovalRequestId = SelectedRequest.cApprovalRequestId,
+      WaitingForMeOnly = false, SystemViewer = true
+   });
+   public void SignatureNoteCommand(ApprovalStepCardVm step) => DialogOwner?.ShowMboxInfo(step.DecisionNote, step.Step.cApprovalRequestStepName);
+   public Task PreviewAttachmentCommand(ta_ApprovalRequestAttachment row) => EmApp!.NavigateTo(Em.Ui.Wpf.Core.EmApp.PdfViewerNavigationName,
+      new PdfViewerNavigationPayload(row.cApprovalRequestAttachmentName, _ => Service.GetMeta_ApprovalAttachment(row.cApprovalRequestAttachmentId)));
+
    /// <summary>public ApprovalManagerVm() approval UI member.</summary>
    public ApprovalManagerVm() {
+      RegisterCommand(nameof(OpenSystemCommand), OpenSystemCommand, () => !IsBusy && SelectedRequest?.cApprovalRequestKind == ApprovalKind.System);
+      RegisterCommand<ApprovalStepCardVm>(nameof(SignatureNoteCommand), SignatureNoteCommand, step => !IsBusy && step?.HasNote == true);
+      RegisterCommand<ta_ApprovalRequestAttachment>(nameof(PreviewAttachmentCommand), PreviewAttachmentCommand, row => !IsBusy && row is not null && Path.GetExtension(row.cApprovalRequestAttachmentName).Equals(".pdf", StringComparison.OrdinalIgnoreCase));
       RegisterCommand(nameof(RefreshCommand), RefreshAsync, () => !IsBusy);
       RegisterCommand(nameof(ApproveCommand), () => DecideAsync(true, null), () => !IsBusy && IsData && Detail?.CanDecide == true);
       RegisterCommand(nameof(RejectCommand), () => DecideAsync(false, null), () => !IsBusy && IsData && Detail?.CanDecide == true);
@@ -135,6 +177,8 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>public ObservableCollection&lt;ta_ApprovalRequestAttachment&gt; Attachments approval UI member.</summary>
    public ObservableCollection<ta_ApprovalRequestAttachment> Attachments { get; } = [];
    /// <summary>public ObservableCollection&lt;ApprovalToolbarItem&gt; ModuleToolbar approval UI member.</summary>
+   public ObservableCollection<ApprovalFileVm> Files { get; } = [];
+   public ObservableCollection<ApprovalCommentVm> Comments { get; } = [];
    public ObservableCollection<ApprovalToolbarItem> ModuleToolbar { get; } = [];
    /// <summary>public ApprovalCapability? SelectedDefinition approval UI member.</summary>
    public ApprovalCapability? SelectedDefinition { get => Get<ApprovalCapability?>(); set { if (Set(value) && !_loadingRows) { Page = 1; _ = RefreshAsync(); } } }
@@ -153,9 +197,19 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>public bool IsCompact approval UI member.</summary>
    public bool IsCompact => _payload.Compact;
    /// <summary>public bool ShowFilters approval UI member.</summary>
-   public bool ShowFilters => !IsCompact;
+   public bool ShowFilters => !IsCompact && !_payload.SystemViewer;
+   public bool ShowManagerToolbar => !_payload.SystemViewer;
+   public bool IsSignersOpen { get => Get(true); set { Set(value); NotifyChanged(nameof(SignersToggleText)); } }
+   public bool IsSidePanelOpen { get => Get(true); set { Set(value); RaiseState(); } }
+   public GridLength SideWidth => new(IsSidePanelOpen ? 340 : 0);
+   public GridLength SideGap => new(IsSidePanelOpen ? 14 : 0);
+   public string SignersToggleText => IsSignersOpen ? "Signers" : $"Signers · {Steps.Count(x => x.IsSigned)}/{Steps.Count}{(Steps.Any(x => x.IsMyTurn) ? " · your turn" : "")}";
+   public string SidePanelToggleText => IsSidePanelOpen ? "Comments" : $"Comments · {Comments.Count}";
+   public string RefreshedText { get => Get(string.Empty); private set => Set(value); }
+   public string SourceCaption => _editor?.SourceCaption ?? "Open source";
+   public string RequestStatus => Detail?.Header.cApprovalRequestStage == ApprovalStage.Approved ? "Completed" : Detail?.Header.cApprovalRequestStage.ToString() ?? string.Empty;
    /// <summary>public GridLength ListWidth approval UI member.</summary>
-   public GridLength ListWidth => new(IsCompact ? 0 : 340);
+   public GridLength ListWidth => new(ShowFilters ? 340 : 0);
    /// <summary>public bool IsData approval UI member.</summary>
    public bool IsData => Detail?.Header.cApprovalRequestKind == ApprovalKind.Data;
    /// <summary>public bool IsSystem approval UI member.</summary>
@@ -165,7 +219,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>public bool HasSource approval UI member.</summary>
    public bool HasSource => _editor?.HasSource == true;
    /// <summary>public string Title approval UI member.</summary>
-   public string Title => Detail is null ? "Select an approval request" : $"{Detail.Header.cApprovalName} Â· {Detail.Header.cApprovalRequestStage}";
+   public string Title => Detail is null ? "Select an approval request" : $"{Detail.Header.cApprovalName} · {Detail.Header.cApprovalRequestStage}";
    /// <summary>public string Summary approval UI member.</summary>
    public string Summary => Detail?.Header.cSummary ?? string.Empty;
    /// <summary>public string CreateSnapshots approval UI member.</summary>
@@ -187,7 +241,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>public int Total approval UI member.</summary>
    public int Total { get => Get(0); private set => Set(value); }
    /// <summary>public string PageLabel approval UI member.</summary>
-   public string PageLabel => $"Page {Page} Â· {Total} requests";
+   public string PageLabel => $"Page {Page} · {Total} requests";
    /// <summary>public void Configure(object? input) approval UI member.</summary>
    public void Configure(object? input) {
       _released = false;
@@ -200,7 +254,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    /// <summary>public void Release() approval UI member.</summary>
    public void Release() { _released = true; _version++; ModuleView = null; _editor = null; }
    private void RaiseState() {
-      foreach (var property in new[] { nameof(IsNotBusy), nameof(IsCompact), nameof(ShowFilters), nameof(ListWidth), nameof(IsData), nameof(IsSystem), nameof(Title), nameof(Summary), nameof(PageLabel), nameof(HasPreview), nameof(HasSource) }) NotifyChanged(property);
+      foreach (var property in new[] { nameof(IsNotBusy), nameof(IsCompact), nameof(ShowFilters), nameof(ListWidth), nameof(IsData), nameof(IsSystem), nameof(Title), nameof(Summary), nameof(PageLabel), nameof(HasPreview), nameof(HasSource), nameof(ShowManagerToolbar), nameof(SideWidth), nameof(SideGap), nameof(SignersToggleText), nameof(SidePanelToggleText), nameof(SourceCaption), nameof(RequestStatus) }) NotifyChanged(property);
       foreach (var command in Commands) command.RaiseCanExecuteChanged();
       foreach (var step in Steps) step.RefreshState();
    }
@@ -235,16 +289,21 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    });
    private async Task LoadDetailAsync() {
       var id = SelectedRequest?.cApprovalRequestId; var version = ++_version;
-      Detail = null; ModuleView = null; _editor = null; Fields.Clear(); Steps.Clear(); Timeline.Clear(); Attachments.Clear(); ModuleToolbar.Clear(); CreateSnapshots = string.Empty;
+      Detail = null; ModuleView = null; _editor = null; Fields.Clear(); Steps.Clear(); Timeline.Clear(); Attachments.Clear(); Files.Clear(); Comments.Clear(); ModuleToolbar.Clear(); CreateSnapshots = string.Empty;
       if (id is null) { RaiseState(); return; }
       var detail = await Service.GetMeta_ApprovalRequest(id);
       if (_released || version != _version || SelectedRequest?.cApprovalRequestId != id) return;
       Detail = detail;
       foreach (var field in detail.Fields) Fields.Add(new ApprovalFieldVm(field));
-      CreateSnapshots = string.Join("\n\n", detail.Items.Where(x => x.cApprovalRequestItemOperation != ApprovalItemOperation.Update).Select(x => $"{x.cApprovalRequestItemOperation} Â· {x.cSubjectKey ?? "Key assigned on approval"}\n{x.json_object}"));
-      foreach (var signature in detail.Signatures) Timeline.Add($"{signature.datestamp:g} Â· {UserName(signature.cUserId)} Â· {(signature.cApprovalRequestSignatureApproved ? "Signed" : "Rejected")} Â· {signature.cApprovalRequestSignatureCode}{(signature.cApprovalRequestSignatureAdmin ? " Â· ADMIN" : "")}{(signature.cApprovalRequestSignatureBackup ? " Â· FOUR-EYES BACKUP" : "")}\n{signature.cApprovalRequestSignatureNote}");
-      foreach (var comment in detail.Comments) Timeline.Add($"{comment.datestamp:g} Â· {UserName(comment.cUserId)}\n{comment.cApprovalRequestCommentText}");
-      foreach (var attachment in detail.Attachments) Attachments.Add(attachment);
+      CreateSnapshots = string.Join("\n\n", detail.Items.Where(x => x.cApprovalRequestItemOperation != ApprovalItemOperation.Update).Select(x => $"{x.cApprovalRequestItemOperation} · {x.cSubjectKey ?? "Key assigned on approval"}\n{x.json_object}"));
+      foreach (var signature in detail.Signatures) Timeline.Add($"{signature.datestamp:g} · {UserName(signature.cUserId)} · {(signature.cApprovalRequestSignatureApproved ? "Signed" : "Rejected")} · {signature.cApprovalRequestSignatureCode}{(signature.cApprovalRequestSignatureAdmin ? " · ADMIN" : "")}{(signature.cApprovalRequestSignatureBackup ? " · FOUR-EYES BACKUP" : "")}\n{signature.cApprovalRequestSignatureNote}");
+      foreach (var comment in detail.Comments) Timeline.Add($"{comment.datestamp:g} · {UserName(comment.cUserId)}\n{comment.cApprovalRequestCommentText}");
+      foreach (var attachment in detail.Attachments) { Attachments.Add(attachment); Files.Add(new ApprovalFileVm(attachment)); }
+      var comments = detail.Comments.Select(x => new ApprovalCommentVm(UserName(x.cUserId), x.datestamp, x.cApprovalRequestCommentText, string.Empty))
+         .Concat(detail.Signatures.Select(x => new ApprovalCommentVm(UserName(x.cUserId), x.datestamp, x.cApprovalRequestSignatureNote ?? string.Empty,
+            (x.cApprovalRequestSignatureApproved ? "Signed" : "Rejected") + (x.cApprovalRequestSignatureBackup ? " · four-eyes backup" : x.cApprovalRequestSignatureAdmin ? " · administrator" : string.Empty))));
+      foreach (var comment in comments.OrderBy(x => x.When)) Comments.Add(comment);
+      RefreshedText = $"Refreshed {DateTime.Now:HH:mm:ss}";
       if (detail.Header.cApprovalRequestKind == ApprovalKind.System) {
          var editorType = EmApp!.ServiceProvider.GetRequiredService<ApprovalEditorRegistry>().Find(detail.Header.cApprovalName);
          if (editorType is not null) {
@@ -262,6 +321,9 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    private Task DecideAsync(bool approve, ta_ApprovalRequestStep? step) => RunAsync(async () => {
       if (Detail is null) return;
       if (step is not null) {
+         var prompt = new ApprovalDecisionDialog(approve ? "Sign" : "Reject", step.cApprovalRequestStepName, !approve) { Owner = DialogOwner };
+         if (prompt.ShowDialog() != true) return;
+         Note = prompt.Vm.Note;
          if (_editor is null) { Error = "Install the module's approval editor before signing."; return; }
          var check = approve ? await _editor.ValidateSignAsync(step) : await _editor.ValidateRejectAsync(step);
          if (!check.Ok) { Error = check.Message ?? "The module did not allow this decision."; return; }
@@ -271,9 +333,15 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
       Error = result.Message ?? string.Empty; await LoadDetailAsync();
    });
    private Task WithdrawAsync() => RunAsync(async () => { await Service.PostMeta_ApprovalWithdraw(Detail!.Header.cApprovalRequestId, Note); await LoadDetailAsync(); });
-   private Task VoidAsync() => RunAsync(async () => { await Service.PostMeta_ApprovalSystemVoid(Detail!.Header.cApprovalRequestId, Note); await LoadDetailAsync(); });
+   private Task VoidAsync() => RunAsync(async () => {
+      var prompt = new ApprovalDecisionDialog("Void", "The request becomes void and keeps its signatures as history. A new approval must be requested afterward.", true) { Owner = DialogOwner };
+      if (prompt.ShowDialog() != true) return;
+      await Service.PostMeta_ApprovalSystemVoid(Detail!.Header.cApprovalRequestId, prompt.Vm.Note); await LoadDetailAsync();
+   });
    private Task ReinstateAsync() => RunAsync(async () => {
-      var old = Detail!.Header; var id = await Service.PostGetMeta_ApprovalSystemReinstate(old.cApprovalRequestId, old.cSummary, Note);
+      var prompt = new ApprovalDecisionDialog("Reinstate", "Creates a new request from current settings. Every step is signed again; the current signatures remain as history.", true) { Owner = DialogOwner };
+      if (prompt.ShowDialog() != true) return;
+      var old = Detail!.Header; var id = await Service.PostGetMeta_ApprovalSystemReinstate(old.cApprovalRequestId, old.cSummary, prompt.Vm.Note);
       if (_editor is not null) await _editor.OnReinstatedAsync(old.cApprovalRequestId, id, old.cSubjectKey!);
       _loadingRows = true; SelectedRequest = (await Service.GetMeta_ApprovalRequest(id)).Header; _loadingRows = false;
       await LoadDetailAsync();
@@ -293,7 +361,7 @@ public sealed class ApprovalManagerVm : MvvmModelBase {
    });
    private async Task PreviewAsync() {
       var editor = _editor!;
-      await EmApp!.NavigateTo(EmApp.PdfViewerNavigationName, new PdfViewerNavigationPayload(Title,
+      await EmApp!.NavigateTo(Em.Ui.Wpf.Core.EmApp.PdfViewerNavigationName, new PdfViewerNavigationPayload(Title,
          async ct => await editor.GetPreviewAsync(ct) ?? throw new InvalidOperationException("The module returned no preview.")));
    }
    private async Task NextAsync() { Page++; await RefreshAsync(); }

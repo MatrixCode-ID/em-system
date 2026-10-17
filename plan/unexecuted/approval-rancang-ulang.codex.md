@@ -1,14 +1,19 @@
 # Rancang ulang engine approval: Data Approval, System Approval, stub Document Approval
 
 - **Tanggal:** 2026-10-17
-- **Status:** belum dieksekusi; menunggu persetujuan eksekusi pengguna
+- **Status:** dalam eksekusi; build dan tes menunggu penulisan kode kedua plan selesai.
+- **Eksekusi 2026-10-17:** diotorisasi pengguna; penulisan kode sedang berjalan.
+  Sesuai revisi pengguna, build/tes/render/review menunggu kode plan engine dan produk
+  selesai. Mockup editor dan viewer yang ditunjuk pengguna disetujui sebagai acuan UI;
+  implementasi sementara sedang diselaraskan ke susunan dan interaksi tersebut.
 - **Asal:** [doc/ideas/approval-rancang-ulang.md](../../doc/ideas/approval-rancang-ulang.md) (semua keputusan di sana
   per 2026-10-16 adalah dasar plan ini; nomor "D-n" = keputusan Data Approval n, "S-n" = keputusan System Approval n,
   "PT-n" = pertanyaan terbuka n yang sudah diputuskan)
 - **Bagian produk turunan:** pemakai pertama (satu modul data master untuk Data Approval, satu modul dokumen
   penjualan untuk System Approval) punya plan sendiri dengan nama berkas yang sama di repo produk itu (privat). Plan
   ini **tidak** menyebut produk, modul bisnis, server, atau database produk tersebut (repo ini publik).
-- **Urutan antar repo:** plan ini dieksekusi lebih dulu sampai build dan tes lulus; plan produk dieksekusi sesudahnya.
+- **Urutan antar repo (revisi pengguna 2026-10-17):** kode engine lebih dulu, kemudian kode produk;
+  build/tes/render/review kedua repo dilakukan setelah keduanya selesai ditulis.
 
 ## 1. Bacaan wajib sebelum mulai
 

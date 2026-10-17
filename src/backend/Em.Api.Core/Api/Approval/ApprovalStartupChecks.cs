@@ -14,16 +14,18 @@ namespace Em.Api.Core.Approval
       /// Makes sure every module database that uses approval can take part in one transaction with the core
       /// database: SQL Server, one server, one login.
       /// </summary>
-      /// <param name="flows">All the flows that were registered.</param>
+      /// <param name="contextTypes">Only contexts owning registered approval entities.</param>
       /// <param name="builder">The application builder, the source of connection and context registrations.</param>
       /// <exception cref="InvalidOperationException">Thrown when a module context cannot take part.</exception>
-      public static void VerifyDatabases(EmAppBuilder builder) {
-         if (builder.ApprovalData.Count == 0) return;
+      public static void VerifyDatabases(EmAppBuilder builder, Type[] contextTypes) {
+         if (contextTypes.Length == 0) return;
          if (!builder.DbConnections.TryGetValue(EmAppBuilder.DefaultConnectionName, out var core) || core.Provider != DatabaseProvider.MicrosoftSqlServer)
             throw new InvalidOperationException("Data Approval requires SQL Server.");
-         foreach (var (type, connectionName) in builder.DbContextConnectionNames) {
+         foreach (var type in contextTypes) {
+            var connectionName = builder.DbContextConnectionNames[type];
             var module = builder.DbConnections[connectionName];
-            if (module.Provider != DatabaseProvider.MicrosoftSqlServer) continue;
+            if (module.Provider != DatabaseProvider.MicrosoftSqlServer)
+               throw new InvalidOperationException($"Approval context '{type}' must use SQL Server.");
             var problem = Mismatch(new SqlConnectionStringBuilder(core.ConnectionString), new SqlConnectionStringBuilder(module.ConnectionString));
             if (problem is not null) throw new InvalidOperationException($"Approval context '{type}' cannot share the core transaction: {problem}.");
          }

@@ -49,7 +49,7 @@ internal sealed partial class ApprovalEngine {
          var name = ApprovalSubjectKey.NameOf(registration.DefinitionType);
          var canView = caller.IsAdmin || ApprovalAccess.HoldsClaim(caller, ViewClaim(name)) ||
             await visible.AnyAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name, ct);
-         if (!canView && !ApprovalAccess.HoldsClaim(caller, new ClaimAction { ModuleName = "Administrative Tools", Name = "Approval Signer Settings" })) continue;
+         if (!canView && !caller.IsDebugRequest && !ApprovalAccess.HoldsClaim(caller, new ClaimAction { ModuleName = "Administrative Tools", Name = "Approval Signer Settings" })) continue;
          var count = real ? await waiting.CountAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name, ct) : 0;
          result.Add(new ApprovalCapability(ApprovalKind.System, name, string.IsNullOrEmpty(registration.Definition.Title) ? name : registration.Definition.Title,
             canView, real && (caller.IsAdmin || count > 0), count, [], registration.Definition.Steps.ToArray()));

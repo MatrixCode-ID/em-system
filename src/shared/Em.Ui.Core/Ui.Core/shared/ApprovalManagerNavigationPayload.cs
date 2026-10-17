@@ -18,6 +18,8 @@ public sealed class ApprovalManagerNavigationPayload : NavigationPayloadBase {
    public bool WaitingForMeOnly { get; set; } = true;
    /// <summary>Embeds one subject in a narrow module-owned flyout.</summary>
    public bool Compact { get; set; }
+   /// <summary>Opens a System request in the full-width viewer without the manager's list.</summary>
+   public bool SystemViewer { get; set; }
    /// <summary>Navigation title includes the approval identity.</summary>
    public override string? Title => Name is null ? null : $"Approval - {Name}";
 }

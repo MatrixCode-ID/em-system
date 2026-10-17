@@ -306,6 +306,11 @@ namespace Em.Ui.Wpf.Core
             EmApp = app,
             IsMenuVisible = false
          });
+         app.AddNavigation(new Navigation {
+            Name = "em.approval.editor", Title = "System Approval", Subtitle = "Review and sign an approval request",
+            BodyType = BodyType.Of<ApprovalManager>(), Kind = NavigationKind.Editor, RequireParameter = true,
+            EmApp = app, IsMenuVisible = false, OrderIndex = -1
+         });
          app.AddNavigation(RequireClaim(new Navigation {
             Name = "em.approval.signers", Title = "System Approval Editor", Subtitle = "Configure signers and four-eyes backups",
             Description = "Assign a primary user or Dynamic Signer and backups for future System requests.",

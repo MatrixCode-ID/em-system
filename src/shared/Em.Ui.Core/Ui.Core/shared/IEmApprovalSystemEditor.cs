@@ -22,6 +22,8 @@ public interface IEmApprovalSystemEditor {
    bool HasPreview => false;
    /// <summary>Whether a source navigation is offered.</summary>
    bool HasSource => false;
+   /// <summary>Caption of the module-owned source navigation.</summary>
+   string SourceCaption => "Open source";
    /// <summary>Opens the module-owned source screen.</summary>
    Task OpenSourceAsync() => Task.CompletedTask;
    /// <summary>Extra module toolbar commands.</summary>

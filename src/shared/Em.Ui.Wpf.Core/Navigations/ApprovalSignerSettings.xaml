@@ -2,47 +2,90 @@
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations"
+ xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
  Foreground="{DynamicResource themeWindowForegroundBrush}">
  <UserControl.DataContext><local:ApprovalSignerSettingsVm/></UserControl.DataContext>
  <UserControl.Resources><ResourceDictionary>
   <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/></ResourceDictionary.MergedDictionaries>
-  <DataTemplate x:Key="assignment"><StackPanel Orientation="Horizontal" Margin="0,4">
-   <TextBlock Text="{Binding User.Caption}" Width="190" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-   <Button Style="{StaticResource textButtonStyle}" Content="Make signer" Command="{Binding Step.Owner.Commands[MakeSignerCommand]}" CommandParameter="{Binding}"/>
-   <Button Style="{StaticResource textButtonStyle}" Content="Remove" Command="{Binding Step.Owner.Commands[RemoveCommand]}" CommandParameter="{Binding}"/>
-  </StackPanel></DataTemplate>
- </ResourceDictionary></UserControl.Resources>
- <Grid Margin="22,12,22,16">
-  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-   <Button Content="Save" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveCommand]}"/>
-   <Button Content="Refresh" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}" Margin="8,0,0,0"/>
-   <Border Style="{StaticResource toolbarSeparatorStyle}"/>
-   <ComboBox Width="250" ItemsSource="{Binding Definitions}" SelectedItem="{Binding Selected}" Style="{StaticResource fieldComboStyle}"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Title}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
-  </StackPanel></ScrollViewer>
-  <TextBlock Grid.Row="1" Text="{Binding Message}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-  <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="290"/></Grid.ColumnDefinitions>
-   <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding Steps}"><ItemsControl.ItemTemplate><DataTemplate>
-    <Border AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" Background="{StaticResource surfaceBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,12">
-     <StackPanel><TextBlock Text="{Binding Heading}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
-      <TextBlock Text="SIGNER · USER OR DS" Style="{StaticResource sectionCaptionStyle}"/>
-      <ContentControl Content="{Binding Primary}" ContentTemplate="{StaticResource assignment}"/>
-      <TextBlock Text="Drop a user or DS here" Opacity="0.5" FontSize="11" Margin="0,4,0,12"/>
-      <TextBlock Text="FOUR-EYES BACKUPS" Style="{StaticResource sectionCaptionStyle}"/>
-      <ItemsControl ItemsSource="{Binding Backups}" ItemTemplate="{StaticResource assignment}"/>
-     </StackPanel>
-    </Border>
-   </DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
-   <DockPanel Grid.Column="2">
-    <StackPanel DockPanel.Dock="Top">
-     <TextBlock Text="USER POOL" Style="{StaticResource sectionCaptionStyle}" Margin="0,0,0,12"/>
-     <Border DataContext="{Binding DynamicSigner}" Background="{StaticResource surfaceStrongBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12" PreviewMouseLeftButtonDown="OnDragStart" MouseMove="OnPoolMove" ToolTip="Signer will be determined by the system when the approval is created.">
-      <StackPanel><TextBlock Text="{Binding Caption}" FontWeight="SemiBold"/><TextBlock Text="Determined by the module on request" FontSize="11" Opacity="0.6" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel>
-     </Border>
-     <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="Filter users. Dynamic Signer is always available above the filter." Margin="0,0,0,8"/>
+  <BooleanToVisibilityConverter x:Key="visible"/>
+  <Style x:Key="approvalCard" TargetType="Border">
+   <Setter Property="CornerRadius" Value="14"/><Setter Property="Background" Value="{StaticResource surfaceBrush}"/>
+   <Setter Property="BorderThickness" Value="1"/><Setter Property="BorderBrush" Value="{StaticResource outlineBrush}"/>
+  </Style>
+  <Style x:Key="approvalHeader" TargetType="Border">
+   <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}"/><Setter Property="CornerRadius" Value="13,13,0,0"/>
+   <Setter Property="Padding" Value="24,8,16,8"/><Setter Property="MinHeight" Value="38"/>
+  </Style>
+  <Style x:Key="primaryChip" TargetType="Border">
+   <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}"/>
+   <Style.Triggers><DataTrigger Binding="{Binding IsPrimary}" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource themeAccentBrush}"/></DataTrigger></Style.Triggers>
+  </Style>
+  <DataTemplate x:Key="assignment">
+   <Border Margin="0,3,8,3" Padding="10,3,4,3" CornerRadius="14" Background="{StaticResource surfaceStrongBrush}" BorderThickness="1" Style="{StaticResource primaryChip}">
+    <StackPanel Orientation="Horizontal">
+     <TextBlock Text="{Binding Marker}" Foreground="{DynamicResource themeAccentBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+     <StackPanel VerticalAlignment="Center"><TextBlock Text="{Binding User.Caption}" FontSize="12" FontWeight="SemiBold"/><TextBlock Text="{Binding Caption}" FontSize="10" Opacity="0.65"/></StackPanel>
+     <Button Style="{StaticResource flatIconButtonStyle}" Width="24" Height="24" Margin="6,0,0,0" ToolTip="Make signer" Command="{Binding Step.Owner.Commands[MakeSignerCommand]}" CommandParameter="{Binding}"><fa:FontAwesome Icon="Solid_ArrowUp" FontSize="10"/></Button>
+     <Button Style="{StaticResource flatIconButtonStyle}" Width="24" Height="24" ToolTip="Remove" Command="{Binding Step.Owner.Commands[RemoveCommand]}" CommandParameter="{Binding}"><fa:FontAwesome Icon="Solid_Xmark" FontSize="10"/></Button>
     </StackPanel>
-    <ListBox Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Pool}"><ListBox.ItemTemplate><DataTemplate><Border Padding="10" PreviewMouseLeftButtonDown="OnDragStart" MouseMove="OnPoolMove" Background="Transparent"><TextBlock Text="{Binding Caption}" TextWrapping="Wrap"/></Border></DataTemplate></ListBox.ItemTemplate></ListBox>
-   </DockPanel>
+   </Border>
+  </DataTemplate>
+ </ResourceDictionary></UserControl.Resources>
+ <Grid Margin="20,16">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <StackPanel Margin="0,0,0,12"><TextBlock Text="System Approval Editor" FontSize="22" FontWeight="SemiBold"/>
+   <TextBlock Text="One signer per step: a user or Dynamic Signer, plus four-eyes backups. Changes apply to new requests and after reinstate." Opacity="0.65" TextWrapping="Wrap" Margin="0,4,0,0"/>
+  </StackPanel>
+  <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+   <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveCommand]}"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save"/></StackPanel></Button>
+   <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RevertCommand]}" Margin="8,0,20,0"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_RotateLeft" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Revert"/></StackPanel></Button>
+   <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}"><StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh"/></StackPanel></Button>
+   <TextBlock Text="{Binding RefreshedText}" VerticalAlignment="Center" Opacity="0.65" Margin="10,0,0,0"/>
+   <Border Style="{StaticResource chipWarningStyle}" Margin="20,0,0,0" VerticalAlignment="Center" Visibility="{Binding IsDirty, Converter={StaticResource visible}}"><TextBlock Text="Unsaved changes" FontSize="11.5" FontWeight="SemiBold"/></Border>
+  </StackPanel></ScrollViewer>
+  <TextBlock Grid.Row="2" Text="{Binding Message}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+  <Grid Grid.Row="3"><Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="340"/></Grid.ColumnDefinitions>
+   <Border Style="{StaticResource approvalCard}"><DockPanel>
+    <Border DockPanel.Dock="Top" Style="{StaticResource approvalHeader}"><TextBlock Text="SYSTEM APPROVALS" Style="{StaticResource columnHeaderStyle}"/></Border>
+    <ListBox ItemsSource="{Binding Definitions}" SelectedItem="{Binding Selected}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource listRowStyle}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+     <ListBox.ItemTemplate><DataTemplate><StackPanel><TextBlock Text="{Binding Title}" FontWeight="SemiBold"/><TextBlock Text="{Binding Name}" Opacity="0.65" FontSize="11.5" Margin="0,3,0,0"/><TextBlock Text="{Binding Steps.Length, StringFormat={}{0} steps}" Opacity="0.65" FontSize="11.5"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+   </DockPanel></Border>
+   <Border Grid.Column="2" Style="{StaticResource approvalCard}"><DockPanel>
+    <Border DockPanel.Dock="Top" Style="{StaticResource approvalHeader}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="60"/><ColumnDefinition Width="170"/><ColumnDefinition Width="100"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+     <TextBlock Text="LEVEL" Style="{StaticResource columnHeaderStyle}"/><TextBlock Grid.Column="1" Text="STEP" Style="{StaticResource columnHeaderStyle}"/><TextBlock Grid.Column="2" Text="KIND" Style="{StaticResource columnHeaderStyle}"/><TextBlock Grid.Column="3" Text="SIGNER, THEN FOUR-EYES BACKUPS" Style="{StaticResource columnHeaderStyle}"/>
+    </Grid></Border>
+    <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource listRowStyle}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+     <ListBox.ItemTemplate><DataTemplate><Grid AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" Background="Transparent" MinHeight="44">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="60"/><ColumnDefinition Width="170"/><ColumnDefinition Width="100"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <TextBlock Text="{Binding Step.Level}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="1" Text="{Binding Step.Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+      <Border Grid.Column="2" Style="{StaticResource chipMutedStyle}" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="{Binding KindText}" FontSize="11" FontWeight="SemiBold"/></Border>
+      <StackPanel Grid.Column="3" VerticalAlignment="Center">
+       <TextBlock Text="No signer yet. Drop a user or a dynamic signer here." TextWrapping="Wrap" Opacity="0.55" Visibility="{Binding IsEmpty, Converter={StaticResource visible}}"/>
+       <ItemsControl ItemsSource="{Binding Candidates}" ItemTemplate="{StaticResource assignment}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+      </StackPanel>
+     </Grid></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+   </DockPanel></Border>
+   <Border Grid.Column="4" Style="{StaticResource approvalCard}"><DockPanel>
+    <StackPanel DockPanel.Dock="Top">
+     <StackPanel Margin="20,18,20,10"><TextBlock Text="USER POOL" Style="{StaticResource sectionCaptionStyle}"/><TextBlock Text="Drag onto a step, or double-click to add to the selected step. A step has one signer; other users become four-eyes backups." FontSize="12" Opacity="0.65" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel>
+     <Border DataContext="{Binding DynamicSigner}" Margin="12,0,12,10" Padding="12,10" CornerRadius="12" Background="{StaticResource surfaceStrongBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1" Cursor="Hand" PreviewMouseLeftButtonDown="OnDragStart" MouseLeftButtonDown="OnPoolDoubleClick" MouseMove="OnPoolMove" ToolTip="Signer will be determined by the system when the approval is created.">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <Grid Width="34" Height="34"><Ellipse Fill="{DynamicResource themeAccentBrush}"/><TextBlock Text="DS" Foreground="{DynamicResource themeOnAccentBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+       <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center"><TextBlock Text="Dynamic Signer" FontWeight="SemiBold"/><TextBlock Text="Determined by the system on request" FontSize="11.5" Opacity="0.65" TextWrapping="Wrap"/></StackPanel><fa:FontAwesome Grid.Column="2" Icon="Solid_GripVertical" Opacity="0.35" VerticalAlignment="Center"/>
+      </Grid>
+     </Border>
+     <Border Margin="16,0,16,10" Height="38" CornerRadius="19" Background="{StaticResource surfaceStrongBrush}" BorderBrush="{StaticResource outlineBrush}" BorderThickness="1"><Grid Margin="16,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="13" Opacity="0.6" VerticalAlignment="Center"/><TextBox Grid.Column="1" Margin="12,0,0,0" Style="{StaticResource searchBoxStyle}" Tag="Search users" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"/></Grid></Border>
+    </StackPanel>
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding PoolCaption}" FontSize="11.5" Opacity="0.65" Margin="20,10"/>
+    <ListBox ItemsSource="{Binding Pool}" Style="{StaticResource surfaceListBoxStyle}" ItemContainerStyle="{StaticResource listRowCompactStyle}" HorizontalContentAlignment="Stretch" Margin="8,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate><Grid Background="Transparent" PreviewMouseLeftButtonDown="OnDragStart" MouseLeftButtonDown="OnPoolDoubleClick" MouseMove="OnPoolMove">
+     <Grid.ColumnDefinitions><ColumnDefinition Width="34"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <Grid Width="34" Height="34"><Ellipse Fill="{StaticResource surfaceStrongBrush}" Stroke="{StaticResource outlineBrush}"/><TextBlock Text="{Binding Initials}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Grid>
+     <TextBlock Grid.Column="1" Text="{Binding Caption}" VerticalAlignment="Center" Margin="12,0" TextWrapping="Wrap"/><fa:FontAwesome Grid.Column="2" Icon="Solid_GripVertical" Opacity="0.35" VerticalAlignment="Center"/>
+    </Grid></DataTemplate></ListBox.ItemTemplate></ListBox>
+   </DockPanel></Border>
   </Grid>
  </Grid>
 </UserControl>

@@ -184,8 +184,8 @@ namespace Em.Api.Core
       /// always be created and answer on their own that there is nothing.
       /// </summary>
       private void ApplyApprovalRegistration(EmAppBuilder builder) {
-         ApprovalStartupChecks.VerifyDatabases(builder);
-         Services.AddSingleton(new ApprovalRegistry(builder.ApprovalData, builder.ApprovalSystems, builder.DbContextConnectionNames.Keys.ToArray()));
+         Services.AddSingleton(new ApprovalRegistry(builder.ApprovalData, builder.ApprovalSystems,
+            builder.DbContextConnectionNames.Keys.ToArray(), types => ApprovalStartupChecks.VerifyDatabases(builder, types)));
       }
 
       /// <summary>

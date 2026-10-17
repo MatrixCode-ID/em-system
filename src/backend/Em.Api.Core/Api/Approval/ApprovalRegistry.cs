@@ -100,7 +100,7 @@ internal sealed class SystemHandlerAdapter<TDefinition, TKey, THandler> : ISyste
 internal sealed record SystemRegistration(Type DefinitionType, IEmApprovalSystem Definition, ISystemHandlerAdapter? Handler);
 
 internal sealed class ApprovalRegistry(IEnumerable<DataRegistration> data, IEnumerable<SystemRegistration> systems,
-   Type[] contextTypes) {
+   Type[] contextTypes, Action<Type[]> verifyDatabases) {
    public DataRegistration[] Data { get; } = data.ToArray();
    public SystemRegistration[] Systems { get; } = systems.ToArray();
    public DataRegistration DataEntity(Type type) => Data.SingleOrDefault(x => x.EntityType == type) ??
@@ -129,6 +129,7 @@ internal sealed class ApprovalRegistry(IEnumerable<DataRegistration> data, IEnum
          if (owners.Length != 1) throw new InvalidOperationException($"Data entity '{registration.EntityType}' must be mapped in exactly one registered context; found {owners.Length}.");
          registration.ContextType = owners[0].Type;
       }
+      verifyDatabases(Data.Select(x => x.ContextType).Distinct().ToArray());
       foreach (var registration in Data) {
          var table = registration.Resolve(services);
          var ef = table.Context.Model.FindEntityType(registration.EntityType)!;

@@ -1159,9 +1159,12 @@ namespace Em.Ui.Wpf.Windows
       public async Task OpenHubTaskCommand(HubTaskRowVm? row) {
          if (!OpenHubTaskCommandAllowed(row)) return;
          try {
-            var payload = new ApprovalManagerNavigationPayload {
-               DocType = row!.Info.NavigationParameter, WaitingForMeOnly = true
-            };
+            var parameter = row!.Info.NavigationParameter ?? string.Empty;
+            var separator = parameter.IndexOf(':');
+            var payload = new ApprovalManagerNavigationPayload { WaitingForMeOnly = true };
+            if (separator > 0 && Enum.TryParse<ApprovalKind>(parameter[..separator], out var kind)) {
+               payload.Kind = kind; payload.Name = parameter[(separator + 1)..];
+            }
             var existing = payload.Title is { } title ? EmApp!.FindEntry(title) : null;
             if (await EmApp!.NavigateTo(row!.Info.NavigationTarget!, payload)) {
                // Reusing a tab does not deliver the new payload through the core router.

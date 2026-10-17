@@ -10,7 +10,7 @@
  </ResourceDictionary></UserControl.Resources>
  <Grid Margin="22,12,22,16">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Visibility="{Binding ShowManagerToolbar, Converter={StaticResource visible}}">
    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
     <Button Style="{StaticResource outlinedButtonStyle}" Content="Refresh" Command="{Binding Commands[RefreshCommand]}"/>
     <StackPanel Orientation="Horizontal" Visibility="{Binding ShowFilters, Converter={StaticResource visible}}">
@@ -34,24 +34,18 @@
      <Button Style="{StaticResource textButtonStyle}" Content="Next" Command="{Binding Commands[NextCommand]}"/>
     </StackPanel>
     <StackPanel DockPanel.Dock="Top"><TextBlock Text="APPROVAL / SUMMARY / STATUS" Style="{StaticResource columnHeaderStyle}" Margin="8,0,0,8"/></StackPanel>
-    <ListBox Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" IsEnabled="{Binding IsNotBusy}">
+    <ListBox Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" IsEnabled="{Binding IsNotBusy}" MouseDoubleClick="OnRequestDoubleClick">
      <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="6,8">
       <TextBlock Text="{Binding cApprovalName}" FontWeight="SemiBold"/><TextBlock Text="{Binding cSummary}" TextWrapping="Wrap" Margin="0,4"/>
       <TextBlock Text="{Binding cApprovalRequestStage}" Opacity="0.6"/>
      </StackPanel></DataTemplate></ListBox.ItemTemplate>
     </ListBox>
    </DockPanel>
-   <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel>
-     <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" Margin="0,0,0,12" Visibility="{Binding IsCompact, Converter={StaticResource visible}}">
-      <ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding cSummary}"/><TextBlock Text="{Binding cApprovalRequestStage}" Margin="8,0,0,0"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
-     </ComboBox>
-     <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold"/>
-     <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Margin="0,4,0,12" Opacity="0.65"/>
-     <StackPanel ToolTip="Required for rejection, withdrawal, void and reinstate. Optional for signing." ToolTipService.ShowOnDisabled="True">
-      <TextBlock Text="Decision note / reason" Style="{StaticResource fieldLabelStyle}"/>
-      <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12"/>
-     </StackPanel>
+   <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRequest}" Margin="0,0,0,12" Visibility="{Binding IsCompact, Converter={StaticResource visible}}"><ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding cSummary}"/><TextBlock Text="{Binding cApprovalRequestStage}" Margin="8,0,0,0"/></StackPanel></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+    <StackPanel Grid.Row="1" Margin="0,0,0,12"><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"/><Border Style="{StaticResource chipMutedStyle}" Margin="12,0,0,0" VerticalAlignment="Center"><TextBlock Text="{Binding RequestStatus}" FontSize="11.5" FontWeight="SemiBold"/></Border></StackPanel><TextBlock Text="{Binding Summary}" Opacity="0.65" Margin="0,4,0,0" TextWrapping="Wrap"/></StackPanel>
+    <StackPanel Grid.Row="2" Visibility="{Binding IsData, Converter={StaticResource visible}}" ToolTip="A reason is required for rejection and withdrawal."><TextBlock Text="Decision note / reason" Style="{StaticResource fieldLabelStyle}"/><TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Margin="0,6,0,12"/></StackPanel>
+    <ScrollViewer Grid.Row="3" Visibility="{Binding IsData, Converter={StaticResource visible}}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel>
      <StackPanel Visibility="{Binding IsData, Converter={StaticResource visible}}">
       <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
        <Button Content="Approve" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[ApproveCommand]}"/>
@@ -73,7 +67,6 @@
       </StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
       <TextBlock Text="{Binding CreateSnapshots}" TextWrapping="Wrap" FontFamily="Consolas" Margin="0,0,0,12"/>
      </StackPanel>
-     <local:ApprovalEditor Visibility="{Binding IsSystem, Converter={StaticResource visible}}"/>
      <Expander Header="Timeline and comments" IsExpanded="False" Style="{StaticResource sectionExpanderStyle}" Margin="0,12,0,0">
       <StackPanel>
        <ItemsControl ItemsSource="{Binding Timeline}"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,8"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
@@ -87,8 +80,9 @@
        <ItemsControl ItemsSource="{Binding Attachments}"><ItemsControl.ItemTemplate><DataTemplate><Button Style="{StaticResource textButtonStyle}" HorizontalAlignment="Left" Content="{Binding cApprovalRequestAttachmentName}" Command="{Binding DataContext.Commands[DownloadCommand], RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
       </StackPanel>
      </Expander>
-    </StackPanel>
-   </ScrollViewer>
+    </StackPanel></ScrollViewer>
+    <local:ApprovalEditor Grid.Row="3" Visibility="{Binding IsSystem, Converter={StaticResource visible}}"/>
+   </Grid>
   </Grid>
  </Grid>
 </UserControl>
