@@ -54,6 +54,30 @@ public sealed class ApprovalContractTests {
       Assert.Contains("complete EF primary key", Assert.Throws<InvalidOperationException>(() => registry.Initialize(provider)).Message);
    }
 
+   [Fact]
+   public void Registry_RequiresDeclaredOwnerWhenSharedEntityIsAmbiguous() {
+      using var provider = SharedRowProvider();
+      var registry = new ApprovalRegistry([new(typeof(RightKey), typeof(Row), null)], [], [typeof(KeyContext), typeof(OtherContext)], _ => { });
+      Assert.Contains("AddDataApproval<TDefinition, TContext>", Assert.Throws<InvalidOperationException>(() => registry.Initialize(provider)).Message);
+   }
+
+   [Fact]
+   public void Registry_UsesDeclaredOwnerForSharedEntity() {
+      using var provider = SharedRowProvider();
+      var registration = new DataRegistration(typeof(RightKey), typeof(Row), null, typeof(OtherContext));
+      new ApprovalRegistry([registration], [], [typeof(KeyContext), typeof(OtherContext)], _ => { }).Initialize(provider);
+      Assert.Equal(typeof(OtherContext), registration.ContextType);
+   }
+
+   private static ServiceProvider SharedRowProvider() {
+      const string unopened = "Server=unopened.invalid;Database=Test;Integrated Security=True;TrustServerCertificate=True";
+      var services = new ServiceCollection().AddLogging();
+      services.AddDbContext<KeyContext>(o => o.UseSqlServer(unopened));
+      services.AddDbContext<OtherContext>(o => o.UseSqlServer(unopened));
+      services.AddScoped<RightKey>();
+      return services.BuildServiceProvider();
+   }
+
    [Approval("Same")]
    public sealed class First : IEmApprovalSystem<string> { public IReadOnlyList<ApprovalSystemStep> Steps => [new(1, "Sign")]; }
    [Approval("same")]
@@ -61,6 +85,14 @@ public sealed class ApprovalContractTests {
    public sealed class Row { public string A { get; set; } = ""; public string B { get; set; } = ""; public string Text { get; set; } = ""; }
    public sealed class KeyContext(DbContextOptions<KeyContext> options) : DbContext(options) {
       protected override void OnModelCreating(ModelBuilder b) => b.Entity<Row>().HasKey(x => new { x.A, x.B });
+   }
+   public sealed class OtherContext(DbContextOptions<OtherContext> options) : DbContext(options) {
+      protected override void OnModelCreating(ModelBuilder b) => b.Entity<Row>().HasKey(x => new { x.A, x.B });
+   }
+   [Approval("Right Key")]
+   public sealed class RightKey : IEmApprovalData<Row> {
+      public string[] KeyColumns => [nameof(Row.A), nameof(Row.B)];
+      public string[] TrackedColumns => [nameof(Row.Text)];
    }
    [Approval("Wrong Key")]
    public sealed class WrongKey : IEmApprovalData<Row> {

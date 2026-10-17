@@ -3,6 +3,7 @@ using Em.Api.Core.Approval;
 using Em.Api.Core.Hub;
 using Em.Api.Core.Models;
 using Em.Shared;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Em.Api.Shared;
@@ -11,16 +12,26 @@ public partial class EmAppBuilder {
    internal List<DataRegistration> ApprovalData { get; } = [];
    internal List<SystemRegistration> ApprovalSystems { get; } = [];
    internal string? BinaryStorageRootPath { get; private set; }
-   /// <summary>Registers one Data root or child definition. Definitions may use scoped dependencies.</summary>
-   public void AddDataApproval<T>() where T : class, IEmApproval {
-      var type = typeof(T);
+   /// <summary>
+   /// Registers one Data root or child definition. Definitions may use scoped dependencies. The owning context is
+   /// the only registered context mapping the entity, or else the one declared in the same assembly as
+   /// <typeparamref name="T"/>; use <see cref="AddDataApproval{T, TContext}"/> when neither identifies it.
+   /// </summary>
+   public void AddDataApproval<T>() where T : class, IEmApproval => RegisterData(typeof(T), null);
+   /// <summary>
+   /// Registers one Data root or child definition whose entity is owned by <typeparamref name="TContext"/>,
+   /// for entities mapped by several registered contexts that the declaring assembly alone cannot tell apart.
+   /// </summary>
+   public void AddDataApproval<T, TContext>() where T : class, IEmApproval where TContext : DbContext =>
+      RegisterData(typeof(T), typeof(TContext));
+   private void RegisterData(Type type, Type? contextType) {
       var roots = type.GetInterfaces().Where(i => i.IsGenericType &&
          (i.GetGenericTypeDefinition() == typeof(IEmApprovalData<>) || i.GetGenericTypeDefinition() == typeof(IEmApprovalDataChild<,>))).ToArray();
       if (roots.Length != 1) throw new InvalidOperationException($"'{type}' must implement exactly one Data root or child interface.");
       var contract = roots[0]; var args = contract.GetGenericArguments();
       if (ApprovalData.Any(x => x.DefinitionType == type)) throw new InvalidOperationException($"Data definition '{type}' is already registered.");
-      Services.TryAddScoped<T>();
-      ApprovalData.Add(new DataRegistration(type, args[0], args.Length == 2 ? args[1] : null));
+      Services.TryAddScoped(type);
+      ApprovalData.Add(new DataRegistration(type, args[0], args.Length == 2 ? args[1] : null, contextType));
    }
    /// <summary>Registers a System definition without server hooks; Dynamic Signers will be rejected.</summary>
    public void AddSystemApproval<TDefinition>() where TDefinition : class, IEmApprovalSystem, new() =>

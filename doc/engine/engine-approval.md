@@ -88,8 +88,10 @@ var result = await approval.SubmitDataAsync(
 
 `KeyColumns` match the complete EF primary key in order. Child foreign-key properties pair with the
 parent's key properties in order and type; differing names produce a warning so the module author can
-check the ordering. An entity must be mapped by exactly one registered context. Views and key/value
-stores do not have a manual load/apply fallback in this version.
+check the ordering. The entity's owning context is the only registered context that maps it; when several
+modules map the same shared table, the owner is the context from the assembly that declares the definition.
+If that still leaves more than one candidate, name the owner with `AddDataApproval<TDefinition, TContext>()`.
+Views and key/value stores do not have a manual load/apply fallback in this version.
 
 The root owns `Title`, `CanView`, `CanDecide` and `CanWithdraw`. No Data claim is automatically created.
 Real users with the administrator switch bypass those checks. The requester can withdraw their pending

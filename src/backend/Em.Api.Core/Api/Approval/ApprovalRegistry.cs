@@ -11,10 +11,12 @@ namespace Em.Api.Core.Approval;
 internal sealed record ApprovalDataContext(DbContext DbContext, ActionRequest Caller,
    ApprovalItemOperation Operation) : IEmApprovalDataContext;
 
-internal sealed class DataRegistration(Type definitionType, Type entityType, Type? parentType) {
+internal sealed class DataRegistration(Type definitionType, Type entityType, Type? parentType, Type? declaredContextType = null) {
    public Type DefinitionType { get; } = definitionType;
    public Type EntityType { get; } = entityType;
    public Type? ParentType { get; } = parentType;
+   /// <summary>The owning context named at registration; null lets the registry pick it.</summary>
+   public Type? DeclaredContextType { get; } = declaredContextType;
    public Type ContextType { get; set; } = null!;
    public string EntityName => EntityType.FullName!;
    public DataTable Resolve(IServiceProvider services) => (DataTable)Activator.CreateInstance(
@@ -127,9 +129,8 @@ internal sealed class ApprovalRegistry(IEnumerable<DataRegistration> data, IEnum
          else if (attribute is not null) throw new InvalidOperationException($"Child '{registration.DefinitionType}' must not have [Approval].");
          if (Data.Count(x => x.EntityType == registration.EntityType) != 1)
             throw new InvalidOperationException($"Multiple Data definitions own '{registration.EntityType}'.");
-         var owners = contexts.Where(c => c.Context.Model.FindEntityType(registration.EntityType) is not null).ToArray();
-         if (owners.Length != 1) throw new InvalidOperationException($"Data entity '{registration.EntityType}' must be mapped in exactly one registered context; found {owners.Length}.");
-         registration.ContextType = owners[0].Type;
+         var mapped = contexts.Where(c => c.Context.Model.FindEntityType(registration.EntityType) is not null).Select(c => c.Type).ToArray();
+         registration.ContextType = ResolveOwner(registration, mapped);
       }
       verifyDatabases(Data.Select(x => x.ContextType).Distinct().ToArray());
       foreach (var registration in Data) {
@@ -182,5 +183,24 @@ internal sealed class ApprovalRegistry(IEnumerable<DataRegistration> data, IEnum
          var key = (kind, name.ToUpperInvariant());
          if (!names.TryAdd(key, type)) throw new InvalidOperationException($"Duplicate {kind} approval '{name}': '{names[key]}' and '{type}'.");
       }
+   }
+
+   /// <summary>
+   /// Picks the context that owns a Data entity. Several modules may map the same shared table, so the owner
+   /// is the context named at registration, the only context mapping the entity, or the one context among
+   /// them that lives in the assembly declaring the definition.
+   /// </summary>
+   private static Type ResolveOwner(DataRegistration registration, Type[] mapped) {
+      var entity = registration.EntityType;
+      if (registration.DeclaredContextType is { } declared)
+         return mapped.Contains(declared) ? declared : throw new InvalidOperationException(
+            $"Data entity '{entity}' is not mapped by its declared context '{declared}', or that context is not registered.");
+      if (mapped.Length == 0) throw new InvalidOperationException($"Data entity '{entity}' is not mapped by any registered context.");
+      if (mapped.Length == 1) return mapped[0];
+      var own = mapped.Where(t => t.Assembly == registration.DefinitionType.Assembly).ToArray();
+      if (own.Length == 1) return own[0];
+      throw new InvalidOperationException($"Data entity '{entity}' is mapped by {mapped.Length} registered contexts and " +
+         $"{own.Length} of them belong to the assembly declaring '{registration.DefinitionType}'; register it with " +
+         "AddDataApproval<TDefinition, TContext>() to name the owning context.");
    }
 }
