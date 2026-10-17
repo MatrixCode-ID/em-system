@@ -17,8 +17,19 @@ namespace Em.Api.Core
       /// <summary>The application host. Filled by the engine before the action is called.</summary>
       public EmApp App { get; internal set; } = null!;
 
-      /// <summary>The HTTP context of the request being handled. Filled by the engine before the action is called.</summary>
-      public HttpContext HttpContext { get; internal set; } = null!;
+      /// <summary>
+      /// The HTTP context of the request being handled. Filled by the engine before the action is called; a
+      /// service obtained through DI while a request runs reads the same request's context.
+      /// </summary>
+      public HttpContext HttpContext {
+         get => _httpContext ?? _ambient?.HttpContext!;
+         internal set => _httpContext = value;
+      }
+
+      private HttpContext? _httpContext;
+      private ActionRequest? _request;
+      private CancellationToken? _abortToken;
+      private AmbientRequest? _ambient;
 
       /// <summary>
       /// Logger whose category automatically follows the type of the running service
@@ -35,8 +46,20 @@ namespace Em.Api.Core
       /// <remarks>
       /// When its value is <see cref="ActionRequest.None"/>, the code is being called from outside the
       /// request path - that does not mean the gate has a hole.
+      /// <para>
+      /// A service obtained through DI (injected into another service, or resolved from the request's
+      /// provider) reads the caller of the request it runs in, or the starter inside a business task. This is
+      /// what lets one action call another service's action in-process on the caller's behalf: the checks
+      /// written in the called action's body (<c>Request.RequireAdmin()</c> and friends) still apply. The
+      /// gate itself does not run for such a call - claims declared on <c>[GetAction]</c>/<c>[PostAction]</c>,
+      /// the HTTP verb and the rate limit are not checked - so the calling action must hold the right to do
+      /// what it calls.
+      /// </para>
       /// </remarks>
-      public ActionRequest Request { get; internal set; } = ActionRequest.None;
+      public ActionRequest Request {
+         get => _request ?? _ambient?.Request ?? ActionRequest.None;
+         internal set => _request = value;
+      }
 
       /// <summary>
       /// Signals when the work of this action is no longer worth continuing - either because the caller left
@@ -55,14 +78,34 @@ namespace Em.Api.Core
       /// the caller leaves, and the decision of how to react lies entirely with the action's author.
       /// </para>
       /// <para>
-      /// Only the gate fills it, and only on the service that owns the running action. Other classes that also
-      /// derive from <see cref="ServicesBase"/> but are obtained through DI still hold
-      /// <see cref="CancellationToken.None"/> - just like <see cref="Request"/> stays
-      /// <see cref="ActionRequest.None"/> outside the request path. A helper class that really needs to observe
-      /// it can ask for <c>IHttpContextAccessor</c> and read <c>HttpContext.RequestAborted</c> itself.
+      /// The gate fills it on the service that owns the running action. A service obtained through DI while a
+      /// request runs reads that request's <c>RequestAborted</c> instead (so it signals only when the caller
+      /// leaves, not the time limit), and outside a request it is <see cref="CancellationToken.None"/>.
       /// </para>
       /// </remarks>
-      public CancellationToken AbortToken { get; internal set; } = CancellationToken.None;
+      public CancellationToken AbortToken {
+         get => _abortToken ?? _ambient?.HttpContext?.RequestAborted ?? CancellationToken.None;
+         internal set => _abortToken = value;
+      }
+
+      /// <summary>
+      /// Connects a service built by DI to the request or business task it is resolved in, so that
+      /// <see cref="Request"/>, <see cref="HttpContext"/> and <see cref="AbortToken"/> answer for that caller.
+      /// Read on every access, never copied: the service may be resolved before the gate has identified the
+      /// caller, and the gate's own assignments still take precedence.
+      /// </summary>
+      internal void AttachAmbient(IServiceProvider services, Type serviceType) {
+         App = services.GetRequiredService<EmApp>();
+         Logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(serviceType);
+         _ambient = new AmbientRequest(App, services.GetRequiredService<BusinessTaskStarter>(),
+            services.GetRequiredService<IHttpContextAccessor>());
+      }
+
+      private sealed class AmbientRequest(EmApp app, BusinessTaskStarter starter, IHttpContextAccessor accessor)
+      {
+         public ActionRequest? Request => starter.Request ?? app.CurrentRequest;
+         public HttpContext? HttpContext => accessor.HttpContext;
+      }
 
       /// <summary>
       /// The user calling this action, according to the token they carry. Stays <c>null</c> for public actions

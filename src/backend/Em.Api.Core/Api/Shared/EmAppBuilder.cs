@@ -86,7 +86,13 @@ namespace Em.Api.Shared
             return;
          }
 
-         Services.AddScoped(typeof(T1), typeof(T2));
+         // Built through a factory so a service resolved through DI - injected into another service - acts
+         // for the caller of the request it runs in (see ServicesBase.Request).
+         Services.AddScoped(typeof(T1), sp => {
+            var service = ActivatorUtilities.CreateInstance<T2>(sp);
+            service.AttachAmbient(sp, typeof(T1));
+            return service;
+         });
          RegisterActions(typeof(T2), typeof(T1), moduleName, actionableMethods, enforceClaims);
 
          Logger.LogInformation("Service registered: {Interface} -> {Implementation} (Module: {Module})",

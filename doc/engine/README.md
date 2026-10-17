@@ -19,6 +19,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [SMTP](engine-smtp.md) | Named SMTP profiles, default email service, compatibility and tabular SMTP Manager |
 | [Robot identities](engine-robots.md) | Robot accounts, tokens, owners and grant providers in User Manager |
 | [Module protocol endpoints](engine-public-endpoints.md) | `AddPublicEndpoint`, module infrastructure, robot authentication |
+| [In-process calls](engine-in-process-calls.md) | Calling another service's actions from an action on the caller's behalf, and which checks apply |
 | [Log engine](engine-log.md) | Data audit (`IAuditWriter`, `AddAudit`), engine audit `System.*`, telemetry and client logs, log stores, retention, Log Manager |
 
 ## Desktop (WPF) features
