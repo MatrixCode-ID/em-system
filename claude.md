@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+## Urutan eksekusi approval lintas repo (keputusan pengguna 2026-10-17)
+
+Untuk plan `approval-rancang-ulang.codex.md`, selesaikan kode plan engine lebih dulu,
+lalu kode plan produk pemakainya. Build, tes, render, dan review baru dijalankan
+setelah kode kedua plan selesai; jangan menjalankan tes di antara kedua plan.
+Ketentuan ini menggantikan prasyarat build/tes engine sebelum penulisan kode produk
+untuk eksekusi lintas repo tersebut.
+
 ## Control tab strip bersama (2026-10-10)
 
 `EmTabStrip` di `Em.Ui.Wpf.Controls` tersedia untuk tab panel dalam satu layar: close/middle-click, reorder,

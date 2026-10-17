@@ -1,46 +1,39 @@
 using System.IO;
-using System.Text.Json;
 using Em.Api.Core.Models;
 using Em.Shared;
 using Em.Ui.Wpf.Core;
-
 namespace Em.Api.Core;
-
-/// <summary>Client-side implementation of the approval actions.</summary>
+/// <summary>Client proxy for approval actions.</summary>
 [Module(Defaults.ApprovalModuleName)]
-public class ApprovalService(EmApp app) : ServiceWpfBase(app), IApprovalServices
-{
-   #region Meta's
+public class ApprovalService(EmApp app) : ServiceWpfBase(app), IApprovalServices {
    /// <inheritdoc />
-   public Task<string[]> GetMeta_ApprovalDocumentTypes() => GetAsync<string[]>(nameof(GetMeta_ApprovalDocumentTypes));
+   public Task<ApprovalCapability[]> GetMeta_ApprovalCapabilities() => GetAsync<ApprovalCapability[]>(nameof(GetMeta_ApprovalCapabilities));
    /// <inheritdoc />
-   public Task<PagedResult<ApprovalRequestInfo>> GetMeta_ApprovalRequests(ApprovalQuery query) =>
-      GetAsync<PagedResult<ApprovalRequestInfo>>(nameof(GetMeta_ApprovalRequests), JsonSerializer.Serialize(query, Defaults.ResponseJsonOptions));
+   public Task<ApprovalPage> PostGetMeta_ApprovalRequests(ApprovalQuery filter) => PostAsync<ApprovalPage>(nameof(PostGetMeta_ApprovalRequests), (object)filter);
    /// <inheritdoc />
-   public Task<ApprovalRequestInfo[]> GetMeta_ApprovalRequestsByDoc(string docType, string docKey) =>
-      GetAsync<ApprovalRequestInfo[]>(nameof(GetMeta_ApprovalRequestsByDoc), docType, docKey);
+   public Task<ApprovalRequestDetail> GetMeta_ApprovalRequest(string requestId) => GetAsync<ApprovalRequestDetail>(nameof(GetMeta_ApprovalRequest), requestId);
    /// <inheritdoc />
-   public Task<ApprovalRequestDetail?> GetMeta_ApprovalRequest(string approvalRequestId) =>
-      GetAsync<ApprovalRequestDetail?>(nameof(GetMeta_ApprovalRequest), approvalRequestId);
+   public Task<ta_ApprovalRequest[]> PostGetMeta_ApprovalRequestsBySubject(ApprovalKind kind, string name, string subjectKey) => PostAsync<ta_ApprovalRequest[]>(nameof(PostGetMeta_ApprovalRequestsBySubject), kind, name, subjectKey);
    /// <inheritdoc />
-   public Task<Stream> GetMeta_ApprovalRequestPdf(string approvalRequestId) =>
-      GetStreamAsync(nameof(GetMeta_ApprovalRequestPdf), approvalRequestId);
+   public Task<ApprovalDecisionResult> PostGetMeta_ApprovalDecide(ApprovalDecision decision) => PostAsync<ApprovalDecisionResult>(nameof(PostGetMeta_ApprovalDecide), decision);
    /// <inheritdoc />
-   public Task<ApprovalGuardResult> GetMeta_ApprovalGuard(string approvalRequestId, string stepName) =>
-      GetAsync<ApprovalGuardResult>(nameof(GetMeta_ApprovalGuard), approvalRequestId, stepName);
+   public Task PostMeta_ApprovalWithdraw(string requestId, string reason) => PostAsync(nameof(PostMeta_ApprovalWithdraw), requestId, reason);
    /// <inheritdoc />
-   public Task<ApprovalDecisionResult[]> PostGetMeta_ApprovalDecide(ApprovalDecision[] decisions) =>
-      PostAsync<ApprovalDecisionResult[]>(nameof(PostGetMeta_ApprovalDecide), (object)decisions);
+   public Task<string> PostGetMeta_ApprovalSystemRequest(string name, string subjectKey, string summary) => PostAsync<string>(nameof(PostGetMeta_ApprovalSystemRequest), name, subjectKey, summary);
    /// <inheritdoc />
-   public Task PostMeta_ApprovalCancel(string approvalRequestId, string reason) =>
-      PostAsync(nameof(PostMeta_ApprovalCancel), approvalRequestId, reason);
+   public Task<string> PostGetMeta_ApprovalSystemReinstate(string requestId, string summary, string reason) => PostAsync<string>(nameof(PostGetMeta_ApprovalSystemReinstate), requestId, summary, reason);
    /// <inheritdoc />
-   public Task PostMeta_ApprovalComment(string approvalRequestId, string note) =>
-      PostAsync(nameof(PostMeta_ApprovalComment), approvalRequestId, note);
+   public Task PostMeta_ApprovalSystemVoid(string requestId, string reason) => PostAsync(nameof(PostMeta_ApprovalSystemVoid), requestId, reason);
    /// <inheritdoc />
-   public Task<HubTaskInfo[]> GetMeta_UserHubTasks() => GetAsync<HubTaskInfo[]>(nameof(GetMeta_UserHubTasks));
+   public Task<ta_ApprovalRequest?> PostGetMeta_ApprovalSystemFindByKey(string name, string subjectKey) => PostAsync<ta_ApprovalRequest?>(nameof(PostGetMeta_ApprovalSystemFindByKey), name, subjectKey);
    /// <inheritdoc />
-   public Task<Stream> GetMeta_ApprovalSlotCalibration(string docType, string docKey, string docVersion) =>
-      GetStreamAsync(nameof(GetMeta_ApprovalSlotCalibration), docType, docKey, docVersion);
-   #endregion
+   public Task PostMeta_ApprovalComment(string requestId, string text) => PostAsync(nameof(PostMeta_ApprovalComment), requestId, text);
+   /// <inheritdoc />
+   public Task<ApprovalSignerSettings> GetMeta_ApprovalSignerSettings(string name) => GetAsync<ApprovalSignerSettings>(nameof(GetMeta_ApprovalSignerSettings), name);
+   /// <inheritdoc />
+   public Task PostMeta_ApprovalSignerSettings(string name, ApprovalSignerSetting[] settings) => PostAsync(nameof(PostMeta_ApprovalSignerSettings), name, settings);
+   /// <inheritdoc />
+   public Task<ta_ApprovalRequestAttachment> PostGetMeta_ApprovalAttachment(string requestId, string? commentId, string name, Stream content) => PostAsync<ta_ApprovalRequestAttachment>(nameof(PostGetMeta_ApprovalAttachment), requestId, commentId, name, content);
+   /// <inheritdoc />
+   public Task<Stream> GetMeta_ApprovalAttachment(string attachmentId) => GetStreamAsync(nameof(GetMeta_ApprovalAttachment), attachmentId);
 }
