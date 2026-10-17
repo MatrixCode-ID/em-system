@@ -141,6 +141,9 @@ namespace Em.Test.Wpf
       public Task<string> PostGetMeta_TestDocSubmit(string cTestDocId, string? note) =>
          PostAsync<string>(nameof(PostGetMeta_TestDocSubmit), cTestDocId, note!);
 
+      public Task<ApprovalSubmitResult> PostGetMeta_TestDocDataChange(TestDocDataChange request) => PostAsync<ApprovalSubmitResult>(nameof(PostGetMeta_TestDocDataChange), request);
+      public Task PostMeta_TestDocQa(string id, bool passed, string? remarks) => PostAsync(nameof(PostMeta_TestDocQa), id, passed, remarks!);
+      public Task PostMeta_TestDocApprovalLink(string id, string requestId) => PostAsync(nameof(PostMeta_TestDocApprovalLink), id, requestId);
       public Task<Stream> GetMeta_TestDocPdf(string cTestDocId) =>
          GetStreamAsync(nameof(GetMeta_TestDocPdf), cTestDocId);
 

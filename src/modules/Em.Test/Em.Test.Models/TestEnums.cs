@@ -6,7 +6,7 @@ namespace Em.Test.Models
       /// <summary>The item is active and may be used.</summary>
       Active = 0,
 
-      /// <summary>Item dinonaktifkan.</summary>
+      /// <summary>The item is disabled.</summary>
       Disabled = 1
    }
 
@@ -15,6 +15,8 @@ namespace Em.Test.Models
    {
       /// <summary>Draft: it can still be changed and has not been submitted.</summary>
       Draft = 0,
+      /// <summary>Soft-deleted Data root.</summary>
+      Deleted = -1,
 
       /// <summary>Submitted and waiting for a decision.</summary>
       InApproval = 1,

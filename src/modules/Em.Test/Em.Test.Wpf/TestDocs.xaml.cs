@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Windows;
 using Em.Test.Models;
+using Em.Api.Core.Models;
 using Em.Ui.Core.Shared;
 using UserControl = System.Windows.Controls.UserControl;
 
@@ -214,8 +215,8 @@ namespace Em.Test.Wpf
 
          var opened = await NavigationEntry.NavigateTo(ApprovalManagerNavigationPayload.NavigationName,
             new ApprovalManagerNavigationPayload {
-               DocType = ITestServices.DocType,
-               DocKey = JsonSerializer.Serialize(new[] { doc.cTestDocId }),
+               Kind = ApprovalKind.System, Name = ITestServices.DocType,
+               SubjectKey = doc.cTestDocId, SystemViewer = true,
                WaitingForMeOnly = false
             });
          if (!opened) Log("Approval Manager", "It could not be opened (no access, or the current screen refused to leave).", true);
@@ -225,7 +226,7 @@ namespace Em.Test.Wpf
          if (NavigationEntry is null) return;
 
          var opened = await NavigationEntry.NavigateTo(ApprovalManagerNavigationPayload.NavigationName,
-            new ApprovalManagerNavigationPayload { DocType = ITestServices.DocType, WaitingForMeOnly = false });
+            new ApprovalManagerNavigationPayload { Kind = ApprovalKind.System, Name = ITestServices.DocType, WaitingForMeOnly = false });
          if (!opened) Log("Approval Manager", "It could not be opened (no access, or the current screen refused to leave).", true);
       }
 

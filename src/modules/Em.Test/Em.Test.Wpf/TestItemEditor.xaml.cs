@@ -171,6 +171,7 @@ namespace Em.Test.Wpf
             var result = await Service.PostGetMeta_TestItemSubmitChange(new TestItemChange {
                Operation = item.IsBlank ? TestItemOperation.Create : TestItemOperation.Update,
                ItemId = item.IsBlank ? null : item.cTestItemId,
+               Original = item.IsBlank ? null : item.GetApprovalOriginal(),
                Code = item.cTestItemCode,
                Name = item.cTestItemName,
                Qty = item.cTestItemQty,

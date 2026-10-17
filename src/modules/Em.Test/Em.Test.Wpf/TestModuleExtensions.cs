@@ -40,11 +40,7 @@ namespace Em.Test.Wpf
          builder.AddNavigation<TestService>(Editor("test.ui.child", "Test Child", "A navigation lifecycle probe",
             BodyType.Of<TestChild>(), EFontAwesomeIcon.Regular_WindowRestore), ITestServices.RunClaim);
 
-         // Approval Manager extensions: an input panel for one step, an information card, and the way back
-         // to the document from a request.
-         builder.AddApprovalStepPanel<TestQaStepPanel, TestQaStepPanelVm>(ITestServices.DocType, "QA Check");
-         builder.AddApprovalInfoPanel<TestDocInfoPanel>(ITestServices.DocType, input: host => host.Request.DocKey);
-         builder.AddApprovalDocumentOpener(ITestServices.DocType, "test.docs", host => host.Request.DocKey);
+         builder.AddSystemApproval<TestSystemApproval, TestSystemApprovalEditor>();
       }
 
       private static Navigation Manager(string name, string title, string subtitle, int order, BodyType body,

@@ -46,6 +46,9 @@ namespace Em.Test.Models.Ui
       private ITestServices Api() => Api(App);
 
       #region Properties
+      /// <summary>Parent link retained when editing an approval-created item.</summary>
+      public string? cTestDocId { get; private set; }
+
 
       public string cTestItemId {
          get;
@@ -84,10 +87,14 @@ namespace Em.Test.Models.Ui
 
       #endregion
 
+      /// <summary>Clones the screen's original row for approval conflict detection.</summary>
+      public ta_TestItem GetApprovalOriginal() => System.Text.Json.JsonSerializer.Deserialize<ta_TestItem>(System.Text.Json.JsonSerializer.Serialize(Original))!;
+
       #region Contract
 
       protected override void ReadFrom(vi_TestItem source) {
          cTestItemId = source.cTestItemId;
+         cTestDocId = source.cTestDocId;
          cTestItemCode = source.cTestItemCode;
          cTestItemName = source.cTestItemName;
          cTestItemQty = source.cTestItemQty;
@@ -101,6 +108,7 @@ namespace Em.Test.Models.Ui
 
       protected override void WriteTo(vi_TestItem target) {
          target.cTestItemId = cTestItemId;
+         target.cTestDocId = cTestDocId;
          target.cTestItemCode = cTestItemCode;
          target.cTestItemName = cTestItemName;
          target.cTestItemQty = cTestItemQty;

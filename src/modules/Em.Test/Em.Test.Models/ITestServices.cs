@@ -167,6 +167,12 @@ namespace Em.Test.Models
 
       /// <summary>Submits a test document through document approval; returns its request id.</summary>
       Task<string> PostGetMeta_TestDocSubmit(string cTestDocId, string? note);
+      /// <summary>Submits a complete deferred Data tree.</summary>
+      Task<ApprovalSubmitResult> PostGetMeta_TestDocDataChange(TestDocDataChange request);
+      /// <summary>Saves module-owned QA input before signing.</summary>
+      Task PostMeta_TestDocQa(string id, bool passed, string? remarks);
+      /// <summary>Stores the current System request link after creation or reinstate.</summary>
+      Task PostMeta_TestDocApprovalLink(string id, string requestId);
 
       /// <summary>The base PDF of a test document (without stamps), for the Source document button and the viewer.</summary>
       Task<Stream> GetMeta_TestDocPdf(string cTestDocId);

@@ -106,6 +106,8 @@ namespace Em.Test.Models
    /// <summary>An item data change proposal submitted through data approval.</summary>
    public class TestItemChange
    {
+      /// <summary>The screen's original row, required for Update conflict detection.</summary>
+      public ta_TestItem? Original { get; set; }
       public TestItemOperation Operation { get; set; }
 
       /// <summary>The id of the item being changed or deleted; empty for a new item.</summary>

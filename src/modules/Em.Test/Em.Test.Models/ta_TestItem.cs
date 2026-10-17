@@ -10,6 +10,9 @@ namespace Em.Test.Models
       [Key]
       public string cTestItemId { get; set; } = string.Empty;
 
+      /// <summary>Parent of approval-created items; empty for independent CRUD examples.</summary>
+      public string? cTestDocId { get; set; }
+
       public string cTestItemCode { get; set; } = string.Empty;
 
       public string cTestItemName { get; set; } = string.Empty;
