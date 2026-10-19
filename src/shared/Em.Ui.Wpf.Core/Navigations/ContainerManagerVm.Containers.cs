@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using Em.Api.Core.Models;
 using Em.Shared;
 using Em.Ui.Wpf.Shared;
@@ -34,6 +36,19 @@ namespace Em.Ui.Wpf.Navigations
 
       /// <summary>Manifests of the selected container, newest first.</summary>
       public ObservableCollection<CtnManifestItem> Manifests { get; } = [];
+
+      private ICollectionView? _visibleManifests;
+
+      /// <summary>The manifest list displayed in the details, with untagged entries hidden by default.</summary>
+      public ICollectionView VisibleManifests => _visibleManifests ??= new ListCollectionView(Manifests) {
+         Filter = item => ShowUntagged || item is CtnManifestItem { HasTags: true }
+      };
+
+      /// <summary>Includes untagged manifests in the details without changing deploy choices or health checks.</summary>
+      public bool ShowUntagged {
+         get => Get<bool>();
+         set => Set(value, _ => VisibleManifests.Refresh());
+      }
 
       /// <summary>The root selected in the left list.</summary>
       public CtnRootItem? SelectedRoot {

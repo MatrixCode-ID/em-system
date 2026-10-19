@@ -150,6 +150,10 @@ public class BusinessModuleManagerTests
 
       var navigation = app.Navigations.Single(n => n.Name == EmApp.BusinessModuleManagerNavigationName);
       Assert.Equal(expected, app.CanOpen(navigation));
+      var editorNavigation = app.Navigations.Single(n => n.Name == EmApp.EmployeeEditorNavigationName);
+      Assert.Equal(expected, app.CanOpen(editorNavigation));
+      Assert.Equal(NavigationKind.Editor, editorNavigation.Kind); Assert.True(editorNavigation.RequireParameter); Assert.False(editorNavigation.IsMenuVisible);
+      Assert.NotEqual(Em.Ui.Wpf.Shared.EmployeeNavigationPayload.New("T1").Title, Em.Ui.Wpf.Shared.EmployeeNavigationPayload.New("T2").Title);
       var tools = (System.Collections.IEnumerable)typeof(EmApp)
          .GetMethod("GetStaticTools", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(app, null)!;
       var listed = tools.Cast<object>().Count(tool =>

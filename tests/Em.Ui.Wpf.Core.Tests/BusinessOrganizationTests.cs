@@ -9,6 +9,56 @@ namespace Em.Ui.Wpf.Core.Tests;
 public class BusinessOrganizationTests
 {
    [Fact]
+   public async Task EmployeeListOpensReusableNavigationWithoutLoadingInlineEditor() {
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service);
+      Em.Ui.Wpf.Shared.EmployeeNavigationPayload? opened = null;
+      vm.OpenEditor = payload => { opened = payload; return Task.CompletedTask; };
+      vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading;
+      vm.SelectedRow = vm.Rows[0]; Assert.False(vm.IsDirty); Assert.False(vm.ShowPersonDetails);
+      await vm.OpenEmployeeCommand(vm.Rows[1]); Assert.Equal("I", opened!.EmployeeId); Assert.Equal("T", opened.TenantId);
+      await vm.NewEmployeeCommand(); await vm.Loading; Assert.Null(opened!.EmployeeId); Assert.Equal("T", opened.TenantId);
+      Assert.False(vm.IsDraft);
+   }
+   [Fact]
+   public async Task EmployeeEditorGuardsDefaultsAndKeepsAddedEntriesWhenDefaultChanges() {
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
+      vm.TenantChoices.Add(new() { cTenantId = "T" });
+      await vm.LoadEditorAsync(Em.Ui.Wpf.Shared.EmployeeNavigationPayload.New("T"));
+      vm.NewPerson = true; vm.NewPersonType = ContactType.Organization;
+      Assert.False(vm.SaveCommandAllowed()); Assert.NotEmpty(vm.DefaultGuardMessage);
+      vm.EditCommValue = "first@example.test"; vm.EditAddressLocation = "First address";
+      Assert.True(vm.SaveCommandAllowed());
+      var originalComm = vm.DefaultComm; var originalAddress = vm.DefaultAddress;
+      vm.AddCommCommand(); vm.AddAddressCommand();
+      vm.EditCommValue = "second@example.test"; vm.EditAddressLocation = "Second address";
+      Assert.Same(originalComm, vm.DefaultComm); Assert.Same(originalAddress, vm.DefaultAddress);
+      vm.DefaultComm = vm.SelectedComm; vm.DefaultAddress = vm.SelectedAddress;
+      vm.DefaultAddress = null; Assert.False(vm.SaveCommandAllowed());
+      vm.DefaultAddress = vm.SelectedAddress; await vm.SaveCommand();
+      Assert.Equal(2, service.LastSave!.Person!.Comms!.Length); Assert.Equal(2, service.LastSave.Person.Addresses!.Length);
+      Assert.Equal("second@example.test", service.LastSave.Person.Comm!.cCommValue);
+      Assert.Equal(ContactType.Organization, service.LastSave.Person.ContactType);
+   }
+   [WpfFact]
+   public async Task EditorDefaultPickersBindObjectsAndKeepEditingChoiceIndependent() {
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
+      vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading; await vm.NewEmployeeCommand(); vm.NewPerson = true;
+      vm.EditCommValue = "first@example.test"; vm.EditAddressLocation = "First address";
+      var first = vm.DefaultComm; vm.AddCommCommand(); vm.EditCommValue = "second@example.test";
+      var editor = new EmployeeEditor { DataContext = vm };
+      await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+      var entries = Assert.IsType<System.Windows.Controls.ComboBox>(editor.FindName("communicationPicker"));
+      var defaults = Assert.IsType<System.Windows.Controls.ComboBox>(editor.FindName("defaultCommPicker"));
+      Assert.Same(vm.SelectedComm, entries.SelectedItem); Assert.Same(first, defaults.SelectedItem);
+      defaults.SelectedItem = vm.SelectedComm;
+      Assert.Same(vm.SelectedComm, vm.DefaultComm); Assert.True(vm.SaveCommandAllowed());
+      defaults.SelectedItem = null; Assert.False(vm.SaveCommandAllowed());
+   }
+   [WpfFact]
+   public void DedicatedEmployeeEditorXamlLoadsWithoutRendering() {
+      var editor = new EmployeeEditor(); Assert.True(editor.Vm.IsEditorPage);
+   }
+   [Fact]
    public async Task SearchContactPagesOnServerAndKeepsAppliedSearchAndSelectionRules() {
       var requests = new List<(string? Search, int Page)>();
       var filter = new ContactSearchFilter { State = ContactState.Active, ExcludedContactIds = ["excluded"] };
@@ -46,14 +96,14 @@ public class BusinessOrganizationTests
    }
    [Fact]
    public async Task EmployeeEditorLoadsSharedDefaultsAndTracksContactEdits() {
-      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service);
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
       vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading;
       vm.SelectedRow = vm.Rows[0]; await vm.PersonLoading;
       Assert.Equal("P@example.test", vm.EditCommValue); Assert.Equal("P address", vm.EditAddressLocation);
       Assert.False(vm.IsDirty); vm.EditCommValue = "changed@example.test";
       Assert.True(vm.IsDirty); Assert.True(vm.SaveCommandAllowed());
       vm.ConfirmDiscard = () => false; vm.SelectedRow = vm.Rows[1]; Assert.Equal("E", vm.SelectedRow!.cTenantEmpId);
-      vm.ConfirmDiscard = () => true; vm.NewEmployeeCommand();
+      vm.ConfirmDiscard = () => true; await vm.NewEmployeeCommand();
       vm.PickContact = _ => new() { ContactId = "available", FullName = "Available" };
       await vm.SearchPeopleCommand();
       Assert.Equal("available@example.test", vm.EditCommValue);
@@ -66,9 +116,9 @@ public class BusinessOrganizationTests
    }
    [Fact]
    public async Task FailedOrLatePersonLoadCannotSaveOrOverwriteAnotherMode() {
-      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service);
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
       vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading;
-      vm.NewEmployeeCommand();
+      await vm.NewEmployeeCommand();
       service.PersonLoader = _ => Task.FromException<TenantEmpPerson>(new ActionException("Contact unavailable", 404));
       vm.SelectedCandidate = new() { ContactId = "available", FullName = "Available" }; await vm.PersonLoading;
       Assert.False(vm.SaveCommandAllowed()); Assert.Contains("Contact unavailable", vm.Status);
@@ -102,13 +152,13 @@ public class BusinessOrganizationTests
    }
    [Fact]
    public async Task EmployeePersonModesFilteringAndCommandGuards() {
-      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service);
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
       Assert.False(vm.NewEmployeeCommandAllowed());
       vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading;
-      vm.NewEmployeeCommand();
+      await vm.NewEmployeeCommand();
       var pickerFilter = vm.BuildContactPickerFilter();
-      Assert.True(pickerFilter.PeopleOnly); Assert.Equal(ContactState.Active, pickerFilter.State);
-      Assert.Equal(["P", "I"], pickerFilter.ExcludedContactIds);
+      Assert.False(pickerFilter.PeopleOnly); Assert.Null(pickerFilter.State);
+      Assert.Empty(pickerFilter.ExcludedContactIds);
       Assert.NotNull(vm.GetContactSelectionBlockReason(new() { ContactId = "P" }));
       Assert.True(vm.ShowExistingPerson); Assert.False(vm.SaveCommandAllowed());
       vm.SelectedCandidate = new() { ContactId = "taken", TenantEmpId = "E" }; Assert.Null(vm.SelectedCandidate);
@@ -123,7 +173,7 @@ public class BusinessOrganizationTests
    }
    [WpfFact]
    public async Task FilteringDoesNotDiscardAnOpenDirtyEditor() {
-      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service);
+      var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
       vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading;
       var list = new System.Windows.Controls.ListBox { DataContext = vm, ItemsSource = vm.Rows };
       list.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedItemProperty,

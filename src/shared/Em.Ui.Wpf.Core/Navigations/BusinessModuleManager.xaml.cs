@@ -16,13 +16,11 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
       Vm.EmApp = app;
       Vm.ConfirmDiscard = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
          "Discard the unsaved changes of this record?", "Unsaved Changes") == MessageBoxResult.Yes;
-      Vm.Employees.PickContact = tenantId => {
-         var dialog = new ContactPickerDialog(app, filter: Vm.Employees.BuildContactPickerFilter(), selectionBlockReason: Vm.Employees.GetContactSelectionBlockReason) { Owner = Window.GetWindow(this) ?? app.MainWindow };
-         return dialog.ShowDialog() == true ? dialog.Vm.SelectedContact : null;
-      };
-      Vm.Employees.ConfirmHeadChange = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
-         "This department will lose its head. Continue?", "Department Head") == MessageBoxResult.Yes;
+      Vm.Employees.OpenEditor = payload => Vm.NavigationEntry?.NavigateTo(EmApp.EmployeeEditorNavigationName, payload) ?? Task.CompletedTask;
    }
+
+   // Mouse selection is view-owned; the editor action itself remains one bound VM command.
+   private void SelectEmployeeRow(object sender, System.Windows.Input.MouseButtonEventArgs args) => ((System.Windows.Controls.ListBoxItem)sender).IsSelected = true;
 
    /// <summary>Screen view model.</summary>
    public BusinessModuleManagerVm Vm => (BusinessModuleManagerVm)DataContext;

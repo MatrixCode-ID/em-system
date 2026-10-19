@@ -51,7 +51,7 @@ For a rule that should remain visible, pass `selectionBlockReason: contact => ..
 allow selection, or an English explanation to display and prevent selection. This callback runs on the
 current page and does not filter the server results. Use `ContactSearchFilter` to hide unwanted rows.
 
-Employee supplies active-person filters and excludes all contacts already employed in the selected
-tenant, including inactive employees. It also rechecks its current employee list before accepting a
-selection; the employee save operation enforces uniqueness if another client changes the data.
+Employee accepts all contact types and lifecycle states. Contacts already employed in the selected
+tenant, including inactive employees, remain visible with an unavailable marker. It rechecks its current
+employee list before accepting a selection; the employee save operation enforces uniqueness if another client changes the data.
 MAUI exposes the same service proxy but has no picker screen.

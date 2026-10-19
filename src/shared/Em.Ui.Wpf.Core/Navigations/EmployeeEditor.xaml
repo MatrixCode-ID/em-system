@@ -1,0 +1,205 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Em.Ui.Wpf.Navigations" xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls" xmlns:fa="http://schemas.fontawesome.com/icons/fonts" x:Class="Em.Ui.Wpf.Navigations.EmployeeEditor">
+   <UserControl.DataContext>
+      <local:BusinessModuleManagerEmpVm IsEditorPage="True"/>
+   </UserControl.DataContext>
+   <UserControl.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
+         </ResourceDictionary.MergedDictionaries>
+         <BooleanToVisibilityConverter x:Key="boolVisibility"/>
+      </ResourceDictionary>
+   </UserControl.Resources>
+   <Grid>
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="Auto"/>
+         <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <ScrollViewer Margin="22,12,22,10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+         <StackPanel Orientation="Horizontal">
+            <Button Margin="0,0,8,0" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/>
+                  <TextBlock Text="Save" VerticalAlignment="Center"/>
+               </StackPanel>
+            </Button>
+            <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                  <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+               </StackPanel>
+            </Button>
+            <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/>
+                  <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+               </StackPanel>
+            </Button>
+            <StackPanel Margin="14,0,0,0">
+               <TextBlock Text="{Binding SelectedTenant.cTenantName}" FontWeight="SemiBold"/>
+               <TextBlock Text="{Binding SelectedTenant.cTenantCode}" Opacity="0.6"/>
+            </StackPanel>
+         </StackPanel>
+      </ScrollViewer>
+      <StackPanel Grid.Row="1" Margin="22,0,22,10">
+         <TextBlock Text="{Binding Status}" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+         <TextBlock Text="{Binding DefaultGuardMessage}" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap"/>
+      </StackPanel>
+      <ScrollViewer Grid.Row="2" Margin="22,0,22,16" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+         <Grid MinWidth="760">
+            <Grid.ColumnDefinitions>
+               <ColumnDefinition Width="*"/>
+               <ColumnDefinition Width="1.4*"/>
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource cardStyle}" Padding="22,12" Margin="0,0,8,0">
+               <StackPanel>
+                  <TextBlock Text="EMPLOYEE" Style="{StaticResource sectionCaptionStyle}"/>
+                  <TextBlock Text="Select an employee or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                  <StackPanel IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                     <TextBlock Text="CONTACT" Style="{StaticResource sectionCaptionStyle}" Margin="0,16,0,8"/>
+                     <TextBlock Text="{Binding PersonCaption}" TextWrapping="Wrap" Visibility="{Binding IsSaved, Converter={StaticResource boolVisibility}}"/>
+                     <StackPanel Orientation="Horizontal" Visibility="{Binding IsDraft, Converter={StaticResource boolVisibility}}">
+                        <RadioButton Content="Existing contact" IsChecked="{Binding ExistingPerson}" Margin="0,0,14,0"/>
+                        <RadioButton Content="New contact" IsChecked="{Binding NewPerson}"/>
+                     </StackPanel>
+                     <StackPanel Visibility="{Binding ShowExistingPerson, Converter={StaticResource boolVisibility}}" Margin="0,12,0,0">
+                        <Button Style="{StaticResource outlinedButtonStyle}" HorizontalAlignment="Left" Command="{Binding Commands[SearchPeopleCommand]}">
+                           <StackPanel Orientation="Horizontal">
+                              <fa:FontAwesome Icon="Solid_MagnifyingGlass" Style="{StaticResource buttonIconStyle}"/>
+                              <TextBlock Text="Search contact..." VerticalAlignment="Center"/>
+                           </StackPanel>
+                        </Button>
+                        <TextBlock Text="{Binding SelectedContactCaption}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                     </StackPanel>
+                     <StackPanel Visibility="{Binding ShowNewPerson, Converter={StaticResource boolVisibility}}">
+                        <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                           <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding NewPersonName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                           <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}"/>
+                           <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding PersonTypes}" SelectedItem="{Binding NewPersonType}">
+                              <ComboBox.ItemTemplate>
+                                 <DataTemplate>
+                                    <TextBlock Text="{Binding}"/>
+                                 </DataTemplate>
+                              </ComboBox.ItemTemplate>
+                           </ComboBox>
+                        </StackPanel>
+                     </StackPanel>
+                     <StackPanel Margin="0,14,0,0" Visibility="{Binding ExistingPerson, Converter={StaticResource boolVisibility}}" IsEnabled="{Binding CanEditPerson}" ToolTip="Contact type is shared with every account and tenant using this contact.">
+                        <TextBlock Text="Contact type" Style="{StaticResource fieldLabelStyle}"/>
+                        <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding PersonTypes}" SelectedItem="{Binding EditContactType}">
+                           <ComboBox.ItemTemplate>
+                              <DataTemplate>
+                                 <TextBlock Text="{Binding}"/>
+                              </DataTemplate>
+                           </ComboBox.ItemTemplate>
+                        </ComboBox>
+                     </StackPanel>
+                     <TextBlock Text="Loading contact details..." Margin="0,12,0,0" Style="{StaticResource fieldHelpStyle}" Visibility="{Binding IsPersonLoading, Converter={StaticResource boolVisibility}}"/>
+                     <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True" ToolTip="Employee number, unique within this tenant (up to 50 characters).">
+                        <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50"/>
+                     </StackPanel>
+                     <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                        <TextBlock Text="Department" Style="{StaticResource fieldLabelStyle}"/>
+                        <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding DepartmentOptions}" SelectedItem="{Binding EditDepartment, Mode=TwoWay}">
+                           <ComboBox.ItemTemplate>
+                              <DataTemplate>
+                                 <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                              </DataTemplate>
+                           </ComboBox.ItemTemplate>
+                        </ComboBox>
+                     </StackPanel>
+                     <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                        <TextBlock Text="Position" Style="{StaticResource fieldLabelStyle}"/>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditPosition, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+                     </StackPanel>
+                     <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                        <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}"/>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"/>
+                     </StackPanel>
+                     <TextBlock Text="{Binding HeadChangeHint}" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                  </StackPanel>
+               </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource cardStyle}" Padding="22,12" Margin="8,0,0,0">
+               <StackPanel Margin="0,14,0,0" IsEnabled="{Binding CanEditPerson}" Visibility="{Binding ShowPersonDetails, Converter={StaticResource boolVisibility}}">
+                  <DockPanel Margin="0,12,0,8">
+                     <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddCommCommand]}">
+                        <StackPanel Orientation="Horizontal">
+                           <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                           <TextBlock Text="Add comm"/>
+                        </StackPanel>
+                     </Button>
+                     <TextBlock Text="COMMUNICATIONS" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
+                  </DockPanel>
+                  <TextBlock Text="Entry to edit" Style="{StaticResource fieldLabelStyle}"/>
+                  <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="communicationPicker" ItemsSource="{Binding Communications}" SelectedItem="{Binding SelectedComm}">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="Default (required)" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                  <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="defaultCommPicker" ItemsSource="{Binding Communications}" SelectedItem="{Binding DefaultComm}">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
+                  <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding CommTypes}" SelectedValuePath="Value" SelectedValue="{Binding SelectedComm.Type, Mode=TwoWay}" AutomationProperties.Name="Communication type">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <TextBlock Text="{Binding Caption}"/>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="Value" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedComm.Value, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Communication value"/>
+                  <TextBlock Text="Communication note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedComm.Note, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"/>
+                  <DockPanel Margin="0,12,0,8">
+                     <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddAddressCommand]}">
+                        <StackPanel Orientation="Horizontal">
+                           <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                           <TextBlock Text="Add address"/>
+                        </StackPanel>
+                     </Button>
+                     <TextBlock Text="ADDRESSES" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
+                  </DockPanel>
+                  <TextBlock Text="Entry to edit" Style="{StaticResource fieldLabelStyle}"/>
+                  <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="Default (required)" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                  <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="defaultAddressPicker" ItemsSource="{Binding Addresses}" SelectedItem="{Binding DefaultAddress}">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="Label" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Name, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" Tag="Home or office"/>
+                  <TextBlock Text="Address" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Location, UpdateSourceTrigger=PropertyChanged}" MaxLength="1000" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Default address"/>
+                  <TextBlock Text="ZIP" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Zip, UpdateSourceTrigger=PropertyChanged}" MaxLength="10"/>
+                  <TextBlock Text="These entries and defaults belong to the contact and are shared across their accounts and employment in other tenants." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+               </StackPanel>
+            </Border>
+         </Grid>
+      </ScrollViewer>
+      <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+   </Grid>
+</UserControl>

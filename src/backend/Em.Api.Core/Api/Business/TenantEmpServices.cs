@@ -26,7 +26,10 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       var contact = await ctx.ta_Contacts.AsNoTracking().SingleOrDefaultAsync(x => x.cContactId == contactId, AbortToken)
          ?? throw new ActionException("The person was not found.", 404);
       var result = new TenantEmpPerson {
-         ContactId = contact.cContactId, ContactUstamp = contact.ustamp,
+         ContactId = contact.cContactId, ContactUstamp = contact.ustamp, ContactType = contact.cContactType,
+         Comms = await ctx.ta_Comms.AsNoTracking().Where(x => x.cContactId == contactId).OrderBy(x => x.cCommId).ToArrayAsync(AbortToken),
+         Addresses = await ctx.ta_Addresses.AsNoTracking().Where(x => x.cContactId == contactId).OrderBy(x => x.cAddressId).ToArrayAsync(AbortToken),
+         DefaultCommId = contact.cContactDefaultComm_cCommId, DefaultAddressId = contact.cContactDefaultAddress_cAddressId,
          Comm = await ctx.ta_Comms.AsNoTracking().SingleOrDefaultAsync(x => x.cCommId == contact.cContactDefaultComm_cCommId && x.cContactId == contactId, AbortToken),
          Address = await ctx.ta_Addresses.AsNoTracking().SingleOrDefaultAsync(x => x.cAddressId == contact.cContactDefaultAddress_cAddressId && x.cContactId == contactId, AbortToken)
       };
@@ -37,7 +40,7 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
    /// <inheritdoc />
    [GetAction(claim: ITenantServices.ManagerClaim)]
    public async Task<TenantEmpContactCandidate[]> GetMeta_TenantEmpContacts(string tenantId, string? search) {
-      var page = await (contacts ?? new ContactServices(ctx)).PostGetMeta_ContactSearchPage(new() { Search = search, Page = 1, Filter = new() { PeopleOnly = true, ActiveUsersOnly = true } });
+      var page = await (contacts ?? new ContactServices(ctx)).PostGetMeta_ContactSearchPage(new() { Search = search, Page = 1, Filter = new() });
       var ids = page.Rows.Select(x => x.ContactId).ToArray();
       var employees = await ctx.ta_TenantEmps.AsNoTracking().Where(e => ids.Contains(e.cContactId) && e.cTenantId == tenantId).ToArrayAsync(AbortToken);
       return page.Rows.Select(c => new TenantEmpContactCandidate {
@@ -67,15 +70,21 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       var contactId = row.cContactId;
       var newPerson = creating && string.IsNullOrWhiteSpace(contactId);
       if (newPerson) {
-         if (save.NewContactType is not (ContactType.Male or ContactType.Female)) throw new ActionException("Choose a person type.", 400);
+         if (!Enum.IsDefined(save.NewContactType)) throw new ActionException("Choose a contact type.", 400);
          contactId = Ulid.NewUlid().ToString();
          ctx.ta_Contacts.Add(new ta_Contact { cContactId = contactId, cContactFullName = save.NewContactName ?? "", cContactType = save.NewContactType, cContactState = ContactState.Active, ustamp = DateTime.UtcNow, datestamp = DateTime.UtcNow });
          await ctx.SaveChangesAsync(AbortToken);
       }
-      else if (!await ctx.ta_Contacts.AnyAsync(x => x.cContactId == contactId && x.cContactType != ContactType.Organization, AbortToken))
+      else if (!await ctx.ta_Contacts.AnyAsync(x => x.cContactId == contactId, AbortToken))
          throw new ActionException("The person was not found.", 400);
 
       if (newPerson || save.Person is not null) await SavePersonAsync(contactId, save.Person, newPerson);
+      else {
+         var contact = await ctx.ta_Contacts.AsNoTracking().SingleAsync(x => x.cContactId == contactId, AbortToken);
+         if (!await ctx.ta_Comms.AnyAsync(x => x.cContactId == contactId && x.cCommId == contact.cContactDefaultComm_cCommId && x.cCommState != ContactCommunicationState.Inactive && x.cCommValue.Trim() != "", AbortToken) ||
+             !await ctx.ta_Addresses.AnyAsync(x => x.cContactId == contactId && x.cAddressId == contact.cContactDefaultAddress_cAddressId && x.cAddressState != AddressState.Inactive && x.cAddressLocation.Trim() != "", AbortToken))
+            throw new ActionException("Choose a non-empty default communication and address before saving.", 400);
+      }
 
       var cleared = new List<string>();
       if (current is not null && (!TenantOrg.Same(current.cTenantDeptId, department) || row.cTenantEmpState != ta_TenantEmp.StateActive)) {
@@ -130,41 +139,71 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
 
    private async Task SavePersonAsync(string contactId, TenantEmpPerson? input, bool creating) {
       var person = await ctx.ta_Contacts.AsNoTracking().SingleAsync(x => x.cContactId == contactId, AbortToken);
-      var comm = await ctx.ta_Comms.AsNoTracking().SingleOrDefaultAsync(x => x.cCommId == person.cContactDefaultComm_cCommId && x.cContactId == contactId, AbortToken);
-      var address = await ctx.ta_Addresses.AsNoTracking().SingleOrDefaultAsync(x => x.cAddressId == person.cContactDefaultAddress_cAddressId && x.cContactId == contactId, AbortToken);
-      if (!creating) {
-         if (input is null || !TenantOrg.Same(input.ContactId, contactId)) throw new ActionException("The default details must belong to this person.", 400);
-         if (input.ContactUstamp != person.ustamp || !TenantOrg.Same(TenantOrg.Optional(input.Comm?.cCommId), person.cContactDefaultComm_cCommId) ||
-             !TenantOrg.Same(TenantOrg.Optional(input.Address?.cAddressId), person.cContactDefaultAddress_cAddressId) ||
-             (comm is not null && input.Comm?.ustamp != comm.ustamp) || (address is not null && input.Address?.ustamp != address.ustamp))
-            throw new ActionException("The person's default details changed. Refresh before saving.", 409);
-      }
-      else if (input is not null && (!string.IsNullOrEmpty(input.ContactId) || !string.IsNullOrEmpty(input.Comm?.cCommId) || !string.IsNullOrEmpty(input.Address?.cAddressId)))
-         throw new ActionException("A new person cannot reuse another person's default details.", 400);
+      if (input is null) throw new ActionException("Choose a non-empty default communication and address before saving.", 400);
+      if (!creating && !TenantOrg.Same(input.ContactId, contactId)) throw new ActionException("The details must belong to this contact.", 400);
+      if (!creating && input.ContactUstamp != person.ustamp) throw new ActionException("The contact changed. Refresh before saving.", 409);
+      if (creating && !string.IsNullOrEmpty(input.ContactId)) throw new ActionException("A new contact cannot reuse another contact's details.", 400);
+      if (input.ContactType is { } type && !Enum.IsDefined(type)) throw new ActionException("Choose a contact type.", 400);
+
+      var comms = (input.EditCollections ? input.Comms : null) ?? (input.Comm is { } comm ? [comm] : Array.Empty<ta_Comm>());
+      var addresses = (input.EditCollections ? input.Addresses : null) ?? (input.Address is { } address ? [address] : Array.Empty<ta_Address>());
+      // Legacy default-only payloads receive IDs here; collection callers supply stable draft IDs.
+      foreach (var item in comms) if (string.IsNullOrWhiteSpace(item.cCommId)) item.cCommId = Ulid.NewUlid().ToString();
+      foreach (var item in addresses) if (string.IsNullOrWhiteSpace(item.cAddressId)) item.cAddressId = Ulid.NewUlid().ToString();
+      var commId = !input.EditCollections ? input.Comm?.cCommId : input.DefaultCommId;
+      var addressId = !input.EditCollections ? input.Address?.cAddressId : input.DefaultAddressId;
+      if (comms.Select(x => x.cCommId).Distinct(StringComparer.OrdinalIgnoreCase).Count() != comms.Length ||
+          addresses.Select(x => x.cAddressId).Distinct(StringComparer.OrdinalIgnoreCase).Count() != addresses.Length)
+         throw new ActionException("Contact details contain duplicate IDs.", 400);
+      var defaultComm = comms.SingleOrDefault(x => TenantOrg.Same(x.cCommId, commId));
+      var defaultAddress = addresses.SingleOrDefault(x => TenantOrg.Same(x.cAddressId, addressId));
+      if (defaultComm is null || defaultAddress is null || string.IsNullOrWhiteSpace(defaultComm.cCommValue) ||
+          string.IsNullOrWhiteSpace(defaultAddress.cAddressLocation) || defaultComm.cCommState == ContactCommunicationState.Inactive || defaultAddress.cAddressState == AddressState.Inactive)
+         throw new ActionException("Choose a non-empty active default communication and address before saving.", 400);
 
       var now = DateTime.UtcNow;
-      var commInput = input?.Comm;
-      var addressInput = input?.Address;
-      var commId = comm?.cCommId ?? Ulid.NewUlid().ToString();
-      var addressId = address?.cAddressId ?? Ulid.NewUlid().ToString();
-      if (comm is null) ctx.ta_Comms.Add(new ta_Comm {
-         cCommId = commId, cContactId = contactId, cCommType = commInput?.cCommType ?? CommunationType.Email,
-         cCommValue = commInput?.cCommValue ?? "", cCommNote = commInput?.cCommNote,
-         cCommState = ContactCommunicationState.ActiveAsDefault, ustamp = now, datestamp = now
-      });
-      else await ctx.ta_Comms.Where(x => x.cCommId == commId).ExecuteUpdateAsync(s => s
-         .SetProperty(x => x.cCommType, commInput!.cCommType).SetProperty(x => x.cCommValue, commInput!.cCommValue)
-         .SetProperty(x => x.cCommNote, commInput!.cCommNote).SetProperty(x => x.ustamp, TenantOrg.Stamp(comm.ustamp)), AbortToken);
-      if (address is null) ctx.ta_Addresses.Add(new ta_Address {
-         cAddressId = addressId, cContactId = contactId, cAddressName = addressInput?.cAddressName ?? "",
-         cAddressLocation = addressInput?.cAddressLocation ?? "", cAddressZip = addressInput?.cAddressZip ?? "",
-         cAddressState = AddressState.ActiveAsDefault, ustamp = now, datestamp = now
-      });
-      else await ctx.ta_Addresses.Where(x => x.cAddressId == addressId).ExecuteUpdateAsync(s => s
-         .SetProperty(x => x.cAddressName, addressInput!.cAddressName).SetProperty(x => x.cAddressLocation, addressInput!.cAddressLocation)
-         .SetProperty(x => x.cAddressZip, addressInput!.cAddressZip).SetProperty(x => x.ustamp, TenantOrg.Stamp(address.ustamp)), AbortToken);
+      foreach (var item in comms) {
+         var old = await ctx.ta_Comms.AsNoTracking().SingleOrDefaultAsync(x => x.cCommId == item.cCommId, AbortToken);
+         if ((!string.IsNullOrEmpty(item.cContactId) && !TenantOrg.Same(item.cContactId, contactId)) || old is not null && (creating || !TenantOrg.Same(old.cContactId, contactId)))
+            throw new ActionException("The communication must belong to this contact.", 400);
+         if (old is not null && old.ustamp != item.ustamp || old is null && item.ustamp != default)
+            throw new ActionException("A communication changed. Refresh before saving.", 409);
+         var state = TenantOrg.Same(item.cCommId, commId) ? ContactCommunicationState.ActiveAsDefault :
+            item.cCommState == ContactCommunicationState.ActiveAsDefault ? ContactCommunicationState.Active : item.cCommState;
+         if (old is null) ctx.ta_Comms.Add(new ta_Comm {
+            cCommId = item.cCommId, cContactId = contactId, cCommType = item.cCommType, cCommValue = item.cCommValue,
+            cCommNote = item.cCommNote, cCommState = state, json_object = item.json_object, ustamp = now, datestamp = now
+         });
+         else await ctx.ta_Comms.Where(x => x.cCommId == item.cCommId).ExecuteUpdateAsync(s => s
+            .SetProperty(x => x.cCommType, item.cCommType).SetProperty(x => x.cCommValue, item.cCommValue)
+            .SetProperty(x => x.cCommNote, item.cCommNote).SetProperty(x => x.cCommState, state)
+            .SetProperty(x => x.ustamp, TenantOrg.Stamp(old.ustamp)), AbortToken);
+      }
+      foreach (var item in addresses) {
+         var old = await ctx.ta_Addresses.AsNoTracking().SingleOrDefaultAsync(x => x.cAddressId == item.cAddressId, AbortToken);
+         if ((!string.IsNullOrEmpty(item.cContactId) && !TenantOrg.Same(item.cContactId, contactId)) || old is not null && (creating || !TenantOrg.Same(old.cContactId, contactId)))
+            throw new ActionException("The address must belong to this contact.", 400);
+         if (old is not null && old.ustamp != item.ustamp || old is null && item.ustamp != default)
+            throw new ActionException("An address changed. Refresh before saving.", 409);
+         var state = TenantOrg.Same(item.cAddressId, addressId) ? AddressState.ActiveAsDefault :
+            item.cAddressState == AddressState.ActiveAsDefault ? AddressState.Active : item.cAddressState;
+         if (old is null) ctx.ta_Addresses.Add(new ta_Address {
+            cAddressId = item.cAddressId, cContactId = contactId, cAddressName = item.cAddressName, cAddressLocation = item.cAddressLocation,
+            cAddressZip = item.cAddressZip, cAddressState = state, json_object = item.json_object, ustamp = now, datestamp = now
+         });
+         else await ctx.ta_Addresses.Where(x => x.cAddressId == item.cAddressId).ExecuteUpdateAsync(s => s
+            .SetProperty(x => x.cAddressName, item.cAddressName).SetProperty(x => x.cAddressLocation, item.cAddressLocation)
+            .SetProperty(x => x.cAddressZip, item.cAddressZip).SetProperty(x => x.cAddressState, state)
+            .SetProperty(x => x.ustamp, TenantOrg.Stamp(old.ustamp)), AbortToken);
+      }
+      // Demote any previous default omitted by a default-only caller without deleting other details.
+      await ctx.ta_Comms.Where(x => x.cContactId == contactId && x.cCommId != commId && x.cCommState == ContactCommunicationState.ActiveAsDefault)
+         .ExecuteUpdateAsync(s => s.SetProperty(x => x.cCommState, ContactCommunicationState.Active).SetProperty(x => x.ustamp, now), AbortToken);
+      await ctx.ta_Addresses.Where(x => x.cContactId == contactId && x.cAddressId != addressId && x.cAddressState == AddressState.ActiveAsDefault)
+         .ExecuteUpdateAsync(s => s.SetProperty(x => x.cAddressState, AddressState.Active).SetProperty(x => x.ustamp, now), AbortToken);
       await ctx.SaveChangesAsync(AbortToken);
       await ctx.ta_Contacts.Where(x => x.cContactId == contactId).ExecuteUpdateAsync(s => s
+         .SetProperty(x => x.cContactType, input.ContactType ?? person.cContactType)
          .SetProperty(x => x.cContactDefaultComm_cCommId, commId).SetProperty(x => x.cContactDefaultAddress_cAddressId, addressId)
          .SetProperty(x => x.ustamp, TenantOrg.Stamp(person.ustamp)), AbortToken);
    }

@@ -10,9 +10,9 @@ public interface ITenantEmpServices : IServices
    Task<vi_TenantEmp[]> GetVi_TenantEmps(string tenantId);
    #endregion
    #region Meta's
-   /// <summary>Reads a person's default communication and address for the employee editor.</summary>
+   /// <summary>Reads contact type, communication/address entries, defaults and stamps for the employee editor.</summary>
    Task<TenantEmpPerson> GetMeta_TenantEmpPerson(string contactId);
-   /// <summary>Finds up to 50 people by name or active user account, marking existing employees.</summary>
+   /// <summary>Finds up to 50 contacts of all types and states by name or linked account, marking existing employees.</summary>
    Task<TenantEmpContactCandidate[]> GetMeta_TenantEmpContacts(string tenantId, string? search);
    /// <summary>Saves employment, optional new person and shared defaults atomically; clears the old head on transfer or deactivation.</summary>
    Task<vi_TenantEmp> PostGetMeta_TenantEmpSave(TenantEmpSave save);

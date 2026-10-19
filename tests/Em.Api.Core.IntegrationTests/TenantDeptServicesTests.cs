@@ -33,7 +33,7 @@ public abstract class TenantOrgTestsBase(SqlServerDatabase database) : IAsyncLif
    protected TenantEmpServices Emp() => new(Db());
    protected Task<vi_Tenant> Tenant(string code) => new TenantServices(Db()).PostGetTa_Tenant_New(new() { cTenantCode = code, cTenantName = code });
    protected Task<vi_TenantDept> Department(string tenant, string code, string? parent = null) => Dept().PostGetTa_TenantDept_New(new() { cTenantId = tenant, cTenantDeptCode = code, cTenantDeptName = code, cTenantDeptParent_cTenantDeptId = parent });
-   protected Task<vi_TenantEmp> Employee(string tenant, string code, string? dept = null, string? contact = null) => Emp().PostGetMeta_TenantEmpSave(new() { Row = new() { cTenantId = tenant, cTenantEmpCode = code, cTenantDeptId = dept, cContactId = contact ?? "" }, NewContactName = "Person " + code, NewContactType = ContactType.Female });
+   protected Task<vi_TenantEmp> Employee(string tenant, string code, string? dept = null, string? contact = null) => Emp().PostGetMeta_TenantEmpSave(new() { Row = new() { cTenantId = tenant, cTenantEmpCode = code, cTenantDeptId = dept, cContactId = contact ?? "" }, NewContactName = "Person " + code, NewContactType = ContactType.Female, Person = contact is null ? new() { Comm = new() { cCommValue = code + "@example.test" }, Address = new() { cAddressLocation = "Address " + code } } : null });
    protected static T Copy<T>(object row) => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(row))!;
    protected static async Task Status(int expected, Func<Task> work) => Assert.Equal(expected, (await Assert.ThrowsAsync<ActionException>(work)).StatusCode);
    protected async Task<vi_TenantDept> Head(vi_TenantDept department, vi_TenantEmp employee) {

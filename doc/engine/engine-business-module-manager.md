@@ -26,27 +26,28 @@ markers. Create a root or child, edit Code, Name, Abbreviation, Parent, Order an
 department may choose its Head from its own active employees. Parent choices exclude the current node and
 its descendants. Inactive departments can remain parents and retain employees.
 
-**Employees** also starts with a tenant selector. The text filter matches name, employee number and
-department locally. For a new employee, choose **Existing person**, open **Search contact**, search by contact name or linked username, and choose an available person.
-The reusable [Contact picker](engine-contact-picker.md) displays Contact, Username and Contact Status.
-The Employee caller requests active people and excludes contacts already employed in the selected tenant. Results are searched and paged on the server (50 per page);
-Previous/Next navigate the applied search, and a new Search restarts at page one. Contacts without a user
-are included; inactive usernames can also locate their contact. Choosing a contact loads its defaults. Alternatively choose
-**New person**, enter a name and select Male or Female. The existing person's name and accounts are read-only; their default communication and address can be edited here. Set Code,
-Department (optional), Position and Note, then Save. A person can be employed once per tenant and in several
-tenants. Employee numbers are unique within a tenant. User accounts are connected through the person;
-there is no direct employee-to-user column.
+**Employees** starts with a tenant selector. The local text filter matches name, employee number and
+department. User accounts link to employment through the shared contact. Each contact can be employed once
+per tenant and in several tenants; employee numbers are unique within each tenant.
 
-Transferring a head to another department or deactivating the head asks for confirmation. Saving clears
-the old department head automatically. Switching records, tenants or tabs asks before discarding unsaved
-changes. Server errors stay below the toolbar, leaving the draft available for correction.
+Transferring or deactivating a department head asks for confirmation and clears the previous head in the
+same transaction. Unsaved changes in the editor are confirmed before navigation. Errors leave the draft
+available for correction.
 
-The person section includes **Default Comm** (type, value, note) and **Default Address** (label, location,
-ZIP). A new person receives both records and their default links in the same save transaction. Selecting an
-existing person by username loads that contact's existing defaults, without copying them per employee or
-tenant. Changes to these defaults affect the same person across all their accounts and employments. If
-older data lacks a default, saving the edited person details creates and links it. The UI does not invent
-contact values from the username.
+Employee editing opens in a dedicated **Employee Editor** navigation. The Employees tab contains a full-width
+list with New employee and Open actions; double-click, Enter and the row context menu open the same editor.
+Selecting a row does not load an inline editor. Refresh the manager to see changes saved in another tab.
+
+Search contact includes **all types and lifecycle states**, with linked usernames, including inactive users.
+A contact already employed in this tenant remains visible but cannot be selected again. Employee uniqueness
+is also enforced by the server. The editor can create a contact or edit an existing contact's type as
+**Organization**, **Male** or **Female**. Shared contact changes affect all accounts and tenants using it.
+
+The editor loads all communication and address entries, allows adding entries, and independently selects
+the entry being edited and the default entry. A new contact starts with one draft of each kind. Save requires
+an active default communication with a nonblank value and an active default address with a nonblank location.
+Both UI and server enforce these guards. Existing contacts without defaults must be corrected before saving.
+Saving preserves other entries and commits employment, type, entries and defaults in one transaction.
 
 ## Service actions
 
@@ -61,8 +62,8 @@ engine administrator bypass. Inject these interfaces on the server or resolve th
 | | `PostGetTa_TenantDept_New` | Create a department; ignore head until saved |
 | | `PostGetTa_TenantDept_Update` | Update hierarchy, fields and active head |
 | `ITenantEmpServices` | `GetVi_TenantEmps(tenantId)` | All employees, ordered by person name and code |
-| | `GetMeta_TenantEmpContacts(tenantId, search)` | Up to 50 people, active accounts and existing employee marker |
-| | `GetMeta_TenantEmpPerson(contactId)` | Shared person defaults and their update stamps |
+| | `GetMeta_TenantEmpContacts(tenantId, search)` | Up to 50 contacts of all types/states, linked accounts and existing employee marker |
+| | `GetMeta_TenantEmpPerson(contactId)` | Contact type, all communication/address entries, default links and update stamps |
 | | `PostGetMeta_TenantEmpSave(save)` | Save an employee and optionally create a person atomically |
 | | `GetMeta_TenantEmpByUser(tenantId, userId)` | Active employee for an active user, or null |
 | | `GetMeta_TenantEmpUsers(tenantEmpId)` | Active user IDs belonging to the employee's person |
@@ -75,11 +76,17 @@ service and adds its employee marker for compatibility.
 
 `TenantEmpSave.Row` contains employee values and the update stamp. For a create, leave its employee ID
 empty. To create a person in the same transaction, also leave the contact ID empty and provide
-`NewContactName` / `NewContactType`. `TenantEmpSave.Person` contains the edited defaults. Existing person
-saves must send the contact stamp and last-read default IDs/stamps. Stale contact/default changes return
-409; details for a different person return 400. Omitting `Person` preserves existing defaults for earlier
-clients. New people always receive both default records, even when an earlier client omits their values.
-Updating employment cannot change its tenant or person. No database migration is required.
+`NewContactName` / `NewContactType`. `TenantEmpSave.Person` carries the contact snapshot.
+For collection editing, set `EditCollections = true`, provide `Comms` / `Addresses`, and select
+`DefaultCommId` / `DefaultAddressId` from those entries. New entries use fresh ULIDs and a default update
+stamp; existing entries retain their last-read stamps and contact identity. Set `ContactType` to change
+an existing contact's type. Contact and row stamp conflicts return 409; foreign details or missing,
+inactive or blank defaults return 400. Omitted entries are preserved rather than deleted.
+
+Earlier callers can leave `EditCollections` false and edit `Comm` / `Address` as default-only fields.
+Omitting `Person` preserves contact data only when valid defaults already exist. A new contact requires
+nonblank default details. Updating employment cannot change its tenant or contact. No database migration
+is required.
 
 Updates use a serializable transaction and require the last read `ustamp`. A stale stamp or a duplicate
 code/person returns 409; a missing employee or department returns 404. Invalid hierarchy, tenant changes,
@@ -90,6 +97,20 @@ changes and their `System.Settings` audit entries in one transaction. Audit kind
 `tenant.dept.changed`, `tenant.emp.created` and `tenant.emp.changed`.
 
 ## Use from another module
+
+Any WPF screen can open the editor with the existing Business Module Manager claim:
+
+```csharp
+await NavigationEntry.NavigateTo(EmApp.EmployeeEditorNavigationName,
+   EmployeeNavigationPayload.Open(tenantId, employeeId));
+// Or start a new employee in the tenant:
+await NavigationEntry.NavigateTo(EmApp.EmployeeEditorNavigationName,
+   EmployeeNavigationPayload.New(tenantId));
+```
+
+Payload titles contain stable identities so employees with the same contact name can open independently.
+The editor confirms unsaved changes before navigation and keeps server failures available for correction.
+
 
 ```csharp
 public sealed class AssignmentService(ITenantEmpServices employees)
@@ -133,3 +154,12 @@ The shared contact-picker refactor and caller filters passed backend/WPF/MAUI bu
 host builds, 329 backend tests (8 optional-provider skips), 181 frontend tests and 23 live HTTP checks.
 The filter regression covers status, type, user presence, exclusion before paging and retained caller
 filters across navigation. Current logs are `out/contact-*.log` in the smoke harness above.
+
+The dedicated Employee Editor update (2026-10-19) passed 21 tenant/organization SQL Server integration
+tests, all 168 WPF Core tests, and consumer API/WPF builds with no build warnings. A final targeted run
+passed 22 Business view-model/XAML/navigation tests after the asynchronous New action was adjusted.
+Coverage includes organization contacts, shared-contact type updates, adding entries, switching defaults,
+empty/inactive/foreign default rejection, row concurrency, and independent editing/default picker binding.
+Consumer build output is isolated under the existing tenant-org smoke folder at
+`out/employee-editor-host/`. No schema changes or production data changes were made.
+Visual rendering and real-window interaction of the dedicated editor remain unverified.

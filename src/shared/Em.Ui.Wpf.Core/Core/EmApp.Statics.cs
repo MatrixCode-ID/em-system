@@ -52,6 +52,8 @@ namespace Em.Ui.Wpf.Core
 
       /// <summary>Navigation name of the Business Module Manager (tenants); needs the Business Module Manager claim.</summary>
       public const string BusinessModuleManagerNavigationName = "admin.business";
+      /// <summary>Reusable employee editor opened with an EmployeeNavigationPayload.</summary>
+      public const string EmployeeEditorNavigationName = "admin.business.employee";
 
       #endregion
 
@@ -294,6 +296,13 @@ namespace Em.Ui.Wpf.Core
       }
 
       private static void InitInternalNavigation(EmApp app, EmAppBuilder pars) {
+         app.AddNavigation(RequireClaim(new Navigation {
+            Name = EmployeeEditorNavigationName, Title = "Employee Editor", Subtitle = "Employee and shared contact details", OrderIndex = -1,
+            Description = "Edit an employee, contact type, communication entries and addresses.",
+            BodyType = BodyType.Of<EmployeeEditor>(), Kind = NavigationKind.Editor, EmApp = app,
+            RequireParameter = true, IsMenuVisible = false,
+            NavigationIcon = EFontAwesomeIcon.Solid_User.CreateImageSource(System.Windows.Media.Brushes.Gray)
+         }, Defaults.BusinessModuleName + ClaimAction.Separator + ITenantServices.ManagerClaim));
          app.AddNavigation(RequireClaim(new Navigation {
             Name = BusinessModuleManagerNavigationName, Title = "Business Module Manager", Subtitle = "Set up tenants and business documents", OrderIndex = -1,
             Description = "Create, edit, deactivate and arrange the tenants (companies) of the business modules.",

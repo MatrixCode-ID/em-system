@@ -83,7 +83,10 @@ visible only to accounts holding `Administrative Tools:Container Manager Access`
 - **Containers** tab: the list of roots (left), the folder/container tree of the selected root (center) and
   details of the selected item (right). Create, edit and delete roots, folders and containers; move items
   with "Move to..." or drag and drop (within the same root only; the pull name does not change). Container
-  details list manifests (tag, digest, manifest size, push time, pusher) and copy the pull name,
+  details list tagged manifests (tag, digest, manifest size, push time, pusher) by default. Enable
+  **Show untagged** to include manifests without tags, including image-index children and build metadata.
+  Hiding these entries does not delete them or exclude them from deployment choices or storage health checks.
+  An untagged manifest may still be referenced by an index; it is not necessarily unused. Copy the pull name,
   `docker pull` by tag or digest, and `docker tag` + `docker push` (right-click a tag). Right-click a tag
   chip and choose **Delete tag** (the manifest stays and can still be pulled by digest); delete a manifest
   with the trash icon on its row or right-click → **Delete manifest** (its tags go with it; refused with 409

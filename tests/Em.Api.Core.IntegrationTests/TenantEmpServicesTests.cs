@@ -7,6 +7,60 @@ namespace Em.Api.Core.IntegrationTests;
 public sealed class TenantEmpServicesTests(SqlServerDatabase database) : TenantOrgTestsBase(database)
 {
    [Fact]
+   public async Task OrganizationContactCanBeEmployedAndTypeAndDefaultsCanChangeAtomically() {
+      var tenant = await Tenant("organization-editor");
+      var employee = await Emp().PostGetMeta_TenantEmpSave(new() {
+         Row = new() { cTenantId = tenant.cTenantId, cTenantEmpCode = "org" },
+         NewContactName = "Organization employee", NewContactType = ContactType.Organization,
+         Person = new() { Comm = new() { cCommValue = "org@example.test" }, Address = new() { cAddressLocation = "First address" } }
+      });
+      Assert.Equal(ContactType.Organization, employee.cvContactType);
+      var secondTenant = await Tenant("organization-second");
+      var shared = await Emp().PostGetMeta_TenantEmpSave(new() {
+         Row = new() { cTenantId = secondTenant.cTenantId, cTenantEmpCode = "shared-org", cContactId = employee.cContactId },
+         Person = await Emp().GetMeta_TenantEmpPerson(employee.cContactId)
+      });
+      Assert.Equal(employee.cContactId, shared.cContactId); Assert.Equal(ContactType.Organization, shared.cvContactType);
+      var details = await Emp().GetMeta_TenantEmpPerson(employee.cContactId);
+      details.EditCollections = true; details.ContactType = ContactType.Male;
+      var commId = Ulid.NewUlid().ToString(); var addressId = Ulid.NewUlid().ToString();
+      details.Comms = [.. details.Comms!, new() { cCommId = commId, cCommValue = "second@example.test", cCommState = ContactCommunicationState.Active }];
+      details.Addresses = [.. details.Addresses!, new() { cAddressId = addressId, cAddressLocation = "Second address", cAddressState = AddressState.Active }];
+      details.DefaultCommId = commId; details.DefaultAddressId = addressId;
+      employee = await Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details });
+      details = await Emp().GetMeta_TenantEmpPerson(employee.cContactId);
+      Assert.Equal(ContactType.Male, details.ContactType); Assert.Equal(2, details.Comms!.Length); Assert.Equal(2, details.Addresses!.Length);
+      Assert.Equal(commId, details.DefaultCommId); Assert.Equal(addressId, details.DefaultAddressId);
+      Assert.Equal(ContactCommunicationState.Active, details.Comms.Single(x => x.cCommId != commId).cCommState);
+      Assert.Equal(AddressState.Active, details.Addresses.Single(x => x.cAddressId != addressId).cAddressState);
+      details.EditCollections = true; details.ContactType = ContactType.Female;
+      details.DefaultCommId = details.Comms.Single(x => x.cCommId != commId).cCommId;
+      details.DefaultAddressId = details.Addresses.Single(x => x.cAddressId != addressId).cAddressId;
+      employee = await Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details });
+      var read = await Emp().GetMeta_TenantEmpPerson(employee.cContactId);
+      Assert.Equal(ContactType.Female, read.ContactType); Assert.Equal("org@example.test", read.Comm!.cCommValue);
+   }
+   [Fact]
+   public async Task EmptyForeignAndStaleDefaultsAreRejectedWithoutPartialWrites() {
+      var tenant = await Tenant("default-guards"); var employee = await Employee(tenant.cTenantId, "guarded");
+      var other = await Employee(tenant.cTenantId, "foreign");
+      async Task<TenantEmpPerson> Read() { var person = await Emp().GetMeta_TenantEmpPerson(employee.cContactId); person.EditCollections = true; return person; }
+      var details = await Read(); details.DefaultCommId = null;
+      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
+      details = await Read(); details.Addresses![0].cAddressLocation = " "; details.ContactType = ContactType.Organization;
+      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
+      Assert.Equal(ContactType.Female, (await Read()).ContactType);
+      details = await Read(); var foreign = await Emp().GetMeta_TenantEmpPerson(other.cContactId);
+      details.Comms = [foreign.Comm!]; details.DefaultCommId = foreign.Comm!.cCommId;
+      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
+      details = await Read(); details.Comms![0].cCommState = ContactCommunicationState.Inactive;
+      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
+      details = await Read();
+      await Db().ta_Comms.Where(x => x.cCommId == details.DefaultCommId).ExecuteUpdateAsync(s => s.SetProperty(x => x.ustamp, DateTime.UtcNow.AddSeconds(1)), TestContext.Current.CancellationToken);
+      await Status(409, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
+      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = new() { cTenantId = tenant.cTenantId, cTenantEmpCode = "empty" }, NewContactName = "Empty" }));
+   }
+   [Fact]
    public async Task ContactDialogSearchPagesAllResultsAndIncludesStatusAndLinkedUsernames() {
       var t = await Tenant("contact-page"); var db = Db(); var now = DateTime.UtcNow;
       var ids = new List<string>();
@@ -25,7 +79,7 @@ public sealed class TenantEmpServicesTests(SqlServerDatabase database) : TenantO
       Assert.Equal(105, first.Rows.Concat(second.Rows).Concat(last.Rows).Select(x => x.ContactId).Distinct().Count());
       Assert.Equal(ContactState.Inactive, first.Rows[0].ContactState); Assert.Equal(["inactive-linked-user"], first.Rows[0].UserAccounts);
       Assert.Single((await Search("inactive-linked-user")).Rows);
-      Assert.Empty((await Emp().GetMeta_TenantEmpContacts(t.cTenantId, "inactive-linked-user")));
+      Assert.Single(await Emp().GetMeta_TenantEmpContacts(t.cTenantId, "inactive-linked-user"));
       var filtered = await Search(filter: new() { PeopleOnly = true, State = ContactState.Active, ExcludedContactIds = ids.Take(60).ToArray() });
       Assert.Equal(45, filtered.Rows.Length); Assert.False(filtered.HasMore);
       Assert.DoesNotContain(filtered.Rows, x => ids.Take(60).Contains(x.ContactId));
@@ -165,9 +219,9 @@ public sealed class TenantEmpServicesTests(SqlServerDatabase database) : TenantO
       db.ta_Contacts.Add(new() { cContactId = Ulid.NewUlid().ToString(), cContactFullName = "Organization", cContactType = ContactType.Organization, datestamp = now, ustamp = now });
       await db.SaveChangesAsync(TestContext.Current.CancellationToken);
       var candidates = await Emp().GetMeta_TenantEmpContacts(t.cTenantId, "search-account");
-      var person = Assert.Single(candidates); Assert.Equal(e.cTenantEmpId, person.TenantEmpId); Assert.Equal(["search-account"], person.UserAccounts);
+      var person = Assert.Single(candidates); Assert.Equal(e.cTenantEmpId, person.TenantEmpId); Assert.Equal(["inactive", "search-account"], person.UserAccounts);
       Assert.Single(await Emp().GetMeta_TenantEmpContacts(t.cTenantId, "Person employee"));
-      Assert.DoesNotContain(await Emp().GetMeta_TenantEmpContacts(t.cTenantId, ""), x => x.ContactType == ContactType.Organization);
+      Assert.Contains(await Emp().GetMeta_TenantEmpContacts(t.cTenantId, "Organization"), x => x.ContactType == ContactType.Organization);
       Assert.Equal(e.cTenantEmpId, (await Emp().GetMeta_TenantEmpByUser(t.cTenantId, user.cUserId))!.cTenantEmpId);
       Assert.Equal([user.cUserId], await Emp().GetMeta_TenantEmpUsers(e.cTenantEmpId));
       Assert.Null(await Emp().GetMeta_TenantEmpHead(e.cTenantEmpId));

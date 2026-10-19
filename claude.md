@@ -1,5 +1,25 @@
 # CLAUDE.md
 
+## Manifest tanpa tag di Container Manager (keputusan pengguna 2026-10-19)
+
+Daftar manifest Container Manager menyembunyikan manifest tanpa tag secara default.
+Opsi **Show untagged** menampilkannya untuk pemeriksaan lanjutan. Filter hanya
+mengubah tampilan; daftar pilihan deploy dan pemeriksaan kelengkapan storage tetap
+memakai semua manifest. Manifest tanpa tag tidak boleh dianggap otomatis tidak dipakai.
+
+## Employee Editor dan semua Contact (keputusan pengguna 2026-10-19)
+
+Keputusan ini menggantikan batasan orang aktif dan panel editor Employee di BMM.
+Pencarian Employee mencakup semua tipe serta status Contact; duplikat employee
+dalam tenant yang sama tetap dicegah. Employee Editor adalah navigasi Editor
+tersendiri dengan payload tenant/employee yang dapat dibuka dari layar lain.
+BMM menampilkan daftar dan membuka editor melalui New/Open/double-click/context menu.
+Editor dapat mengubah tipe Contact ke Organization, Male, atau Female, menambah
+Comm/Address, serta mengganti default keduanya. Default Comm dan Address wajib
+dipilih, dimiliki Contact tersebut, aktif dan berisi nilai/alamat; guard UI dan
+server menolak simpan bila kosong. Perubahan Contact berlaku bersama lintas tenant
+dan akun; simpan atomik serta pemeriksaan concurrency tetap berlaku.
+
 ## Kepemilikan Contact Picker (keputusan pengguna 2026-10-19)
 
 Service pencarian dan paging Contact harus berasal dari `IContactServices`/ContactServices.

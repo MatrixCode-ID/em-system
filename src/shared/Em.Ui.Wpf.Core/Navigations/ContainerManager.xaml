@@ -1067,11 +1067,16 @@
                                          Margin="0,22,0,10"
                                          Style="{StaticResource sectionCaptionStyle}" />
 
+                              <CheckBox Content="Show untagged"
+                                        IsChecked="{Binding ShowUntagged}"
+                                        Margin="0,0,0,10"
+                                        ToolTip="Include manifests without tags. They may still be required by an image index." />
+
                               <TextBlock Style="{StaticResource secondaryCellStyle}"
                                          Text="Loading..."
                                          Visibility="{Binding IsManifestsLoading, Converter={StaticResource boolToVisibility}}" />
 
-                              <ItemsControl ItemsSource="{Binding Manifests}">
+                              <ItemsControl ItemsSource="{Binding VisibleManifests}">
                                  <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                        <Border Style="{StaticResource innerCardStyle}" Margin="0,0,0,8" Padding="12,10,12,6"
