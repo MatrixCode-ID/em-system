@@ -6,6 +6,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Em.Ui.Wpf.Navigations;
 
+/// <summary>A communication type with a readable caption.</summary>
+/// <param name="Value">Stored communication type.</param>
+/// <param name="Caption">Text displayed in the picker.</param>
+public sealed record EmployeeCommTypeOption(CommunationType Value, string Caption);
+
 /// <summary>Employee editor and tenant-scoped person picker.</summary>
 public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
 {
@@ -14,6 +19,8 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    private vi_TenantEmp[] _rows = [];
    private bool _opening;
    private bool _refreshingRows;
+   private TenantEmpPerson? _person;
+   private int _personGeneration;
    private ITenantEmpServices? Service => _service ?? EmApp?.ServiceProvider.GetRequiredService<ITenantEmpServices>();
    private ITenantDeptServices? DepartmentService => _departments ?? EmApp?.ServiceProvider.GetRequiredService<ITenantDeptServices>();
    /// <summary>Creates navigation state.</summary>
@@ -35,7 +42,7 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
       set {
          if (ReferenceEquals(value, SelectedTenant)) return;
          if (IsBusy || !CanLeave()) { NotifyChanged(); return; }
-         Set(value); Open(null); Rows.Clear(); DepartmentOptions.Clear(); Candidates.Clear(); IsLoaded = false;
+         Set(value); Open(null); Rows.Clear(); DepartmentOptions.Clear(); IsLoaded = false;
          Loading = ReloadAsync(); UpdateState();
       }
    }
@@ -46,7 +53,7 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    /// <summary>Host confirmation before clearing a department head.</summary>
    public Func<bool>? ConfirmHeadChange { get; set; }
    /// <summary>Checks whether the editor can be left.</summary>
-   public bool CanLeave() => !IsDirty || ConfirmDiscard?.Invoke() != false;
+   public bool CanLeave() => !IsPersonLoading && (!IsDirty || ConfirmDiscard?.Invoke() != false);
    /// <summary>Restores the last saved values after discard was confirmed.</summary>
    public void DiscardChanges() { if (IsDirty) Open(IsDraft ? null : SelectedRow); }
    /// <summary>Rows matching the text filter.</summary>
@@ -74,8 +81,43 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    public ObservableCollection<DepartmentOption> DepartmentOptions { get; } = [];
    /// <summary>Selected department.</summary>
    public DepartmentOption? EditDepartment { get => Get<DepartmentOption>(); set => Set(value, _ => UpdateState()); }
+   /// <summary>The selected person's pending detail load, awaitable without rendering.</summary>
+   public Task PersonLoading { get; private set; } = Task.CompletedTask;
+   /// <summary>Whether the shared contact defaults are being loaded.</summary>
+   public bool IsPersonLoading { get => Get<bool>(); private set => Set(value, _ => UpdateState()); }
+   /// <summary>Whether current person details are ready to save.</summary>
+   public bool IsPersonReady => NewPerson || _person is not null;
+   /// <summary>Whether the default contact fields are displayed.</summary>
+   public bool ShowPersonDetails => NewPerson || IsSaved || SelectedCandidate is not null;
+   /// <summary>Whether the person's defaults may be edited.</summary>
+   public bool CanEditPerson => CanEdit && IsPersonReady;
+   /// <summary>Communication types shown by their readable captions.</summary>
+   public EmployeeCommTypeOption[] CommTypes { get; } = [new(CommunationType.Email, "Email"), new(CommunationType.MobilePhone, "Mobile phone"), new(CommunationType.OfficePhone, "Office phone"), new(CommunationType.SocialMedia, "Social media")];
+   /// <summary>Type of the person's default communication.</summary>
+   public EmployeeCommTypeOption? EditCommType { get => Get<EmployeeCommTypeOption>(); set => Set(value, _ => UpdateState()); }
+   /// <summary>Default communication value.</summary>
+   public string EditCommValue { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
+   /// <summary>Optional communication note.</summary>
+   public string EditCommNote { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
+   /// <summary>Default address label.</summary>
+   public string EditAddressName { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
+   /// <summary>Default address location.</summary>
+   public string EditAddressLocation { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
+   /// <summary>Default address postal code.</summary>
+   public string EditAddressZip { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
    /// <summary>Whether to create a person instead of choosing an existing one.</summary>
-   public bool NewPerson { get => Get<bool>(); set { Set(value); UpdateState(); NotifyChanged(nameof(ExistingPerson)); } }
+   public bool NewPerson {
+      get => Get<bool>();
+      set {
+         if (!Set(value)) return;
+         if (!_opening) {
+            if (value) ResetPerson();
+            else if (SelectedCandidate is { } candidate) PersonLoading = LoadPersonAsync(candidate.ContactId);
+            else ResetPerson();
+         }
+         UpdateState(); NotifyChanged(nameof(ExistingPerson));
+      }
+   }
    /// <summary>Whether the existing-person picker is active.</summary>
    public bool ExistingPerson { get => !NewPerson; set => NewPerson = !value; }
    /// <summary>New person's name.</summary>
@@ -84,14 +126,22 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    public ContactType[] PersonTypes { get; } = [ContactType.Male, ContactType.Female];
    /// <summary>New person's type.</summary>
    public ContactType NewPersonType { get => Get<ContactType>(); set => Set(value, _ => UpdateState()); }
-   /// <summary>Person search text, sent on Search.</summary>
-   public string PersonSearch { get => Get<string>() ?? ""; set => Set(value); }
-   /// <summary>Person search results.</summary>
-   public ObservableCollection<TenantEmpContactCandidate> Candidates { get; } = [];
+   /// <summary>Host dialog used to choose an existing contact.</summary>
+   public Func<string, ContactSearchItem?>? PickContact { get; set; }
+   /// <summary>Chosen contact name and linked usernames.</summary>
+   public string SelectedContactCaption => SelectedCandidate is { } person ? person.FullName + (person.UserAccounts.Length > 0 ? "\n" + string.Join(", ", person.UserAccounts) : "") : "No contact selected.";
    /// <summary>Selected available person.</summary>
    public TenantEmpContactCandidate? SelectedCandidate {
       get => Get<TenantEmpContactCandidate>();
-      set { if (value?.TenantEmpId is not null) { NotifyChanged(); return; } Set(value, _ => UpdateState()); }
+      set {
+         if (value?.TenantEmpId is not null) { NotifyChanged(); return; }
+         if (!Set(value)) return;
+         if (!_opening && !NewPerson) {
+            if (value is not null) PersonLoading = LoadPersonAsync(value.ContactId);
+            else ResetPerson();
+         }
+         UpdateState();
+      }
    }
    /// <summary>Name and accounts for the saved person.</summary>
    public string PersonCaption => SelectedRow is { } row ? row.cvContactFullName + "\n" + row.cvTenantEmpUserAccounts : "";
@@ -110,14 +160,19 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    /// <summary>Whether rows can be browsed.</summary>
    public bool CanBrowse => IsLoaded && SelectedTenant is not null && IsNotBusy;
    /// <summary>Whether fields can be edited.</summary>
-   public bool CanEdit => CanBrowse && HasSelection;
+   public bool CanEdit => CanBrowse && HasSelection && !IsPersonLoading;
    /// <summary>Whether the latest tenant load succeeded.</summary>
    public bool IsLoaded { get => Get<bool>(); private set => Set(value); }
    /// <summary>Server response or error.</summary>
    public string Status { get => Get<string>() ?? ""; private set => Set(value); }
    /// <summary>Whether the employee has unsaved changes.</summary>
    public bool IsDirty => SelectedRow is { } row && (IsDraft || EditCode != row.cTenantEmpCode ||
-      (EditPosition ?? "") != (row.cTenantEmpPosition ?? "") || (EditNote ?? "") != (row.cTenantEmpNote ?? "") || EditDepartment?.Id != row.cTenantDeptId);
+      (EditPosition ?? "") != (row.cTenantEmpPosition ?? "") || (EditNote ?? "") != (row.cTenantEmpNote ?? "") || EditDepartment?.Id != row.cTenantDeptId || PersonDirty);
+   private bool PersonDirty => _person is not null && (
+      (EditCommType?.Value ?? CommunationType.Email) != (_person.Comm?.cCommType ?? CommunationType.Email) ||
+      EditCommValue != (_person.Comm?.cCommValue ?? "") || EditCommNote != (_person.Comm?.cCommNote ?? "") ||
+      EditAddressName != (_person.Address?.cAddressName ?? "") || EditAddressLocation != (_person.Address?.cAddressLocation ?? "") ||
+      EditAddressZip != (_person.Address?.cAddressZip ?? ""));
    /// <summary>State action caption.</summary>
    public string ToggleStateCaption => SelectedRow?.cTenantEmpState < 0 ? "Activate" : "Deactivate";
    /// <summary>Explains the effect of transferring a department head.</summary>
@@ -130,7 +185,7 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
       Open(new vi_TenantEmp { cTenantId = SelectedTenant!.cTenantId });
    }
    /// <summary>Whether the employee can be saved.</summary>
-   public bool SaveCommandAllowed() => CanEdit && IsDirty && (!IsDraft || NewPerson || SelectedCandidate is not null);
+   public bool SaveCommandAllowed() => CanEdit && IsDirty && IsPersonReady && (!IsDraft || NewPerson || SelectedCandidate is not null);
    /// <summary>Saves the employee and refreshes the list.</summary>
    public Task SaveCommand() {
       if (!SaveCommandAllowed() || HeadChangeHint.Length > 0 && ConfirmHeadChange?.Invoke() == false) return Task.CompletedTask;
@@ -152,7 +207,7 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
             cTenantDeptId = EditDepartment?.Id, cTenantEmpCode = EditCode, cTenantEmpPosition = EditPosition,
             cTenantEmpNote = EditNote, cTenantEmpState = toggle ? (row.cTenantEmpState == 0 ? -1 : 0) : row.cTenantEmpState,
             json_object = row.json_object, ustamp = row.ustamp
-         }, NewContactName = NewPersonName, NewContactType = NewPersonType
+         }, NewContactName = NewPersonName, NewContactType = NewPersonType, Person = toggle ? null : BuildPerson()
       });
       await Load(saved.cTenantEmpId); Status = "Employee saved.";
    });
@@ -163,20 +218,32 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    /// <summary>Reloads the selected tenant.</summary>
    public Task ReloadAsync() => RunAsync(async () => { await Load(SelectedRow?.cTenantEmpId); Status = ""; });
    /// <summary>Whether candidate search can start.</summary>
-   public bool SearchPeopleCommandAllowed() => CanBrowse && IsDraft && !NewPerson;
-   /// <summary>Finds available people by name or account.</summary>
-   public Task SearchPeopleCommand() => RunAsync(async () => {
-      if (Service is not { } service || SelectedTenant is null) return;
-      Candidates.Clear(); SelectedCandidate = null;
-      foreach (var c in await service.GetMeta_TenantEmpContacts(SelectedTenant.cTenantId, PersonSearch)) Candidates.Add(c);
-   });
+   public bool SearchPeopleCommandAllowed() => CanBrowse && !IsPersonLoading && IsDraft && !NewPerson;
+   /// <summary>Opens Search contact and loads the chosen person's defaults.</summary>
+   public async Task SearchPeopleCommand() {
+      if (!SearchPeopleCommandAllowed() || SelectedTenant is null) return;
+      if (PersonDirty && ConfirmDiscard?.Invoke() == false) return;
+      if (PickContact?.Invoke(SelectedTenant.cTenantId) is { } selected) {
+         if (GetContactSelectionBlockReason(selected) is not null) return;
+         SelectedCandidate = new() { ContactId = selected.ContactId, FullName = selected.FullName, ContactState = selected.ContactState, ContactType = selected.ContactType, UserAccounts = selected.UserAccounts };
+         await PersonLoading;
+      }
+   }
+   /// <summary>Employee-owned filters, applied on the server before the contact picker pages results.</summary>
+   public ContactSearchFilter BuildContactPickerFilter() => new() {
+      PeopleOnly = true, State = ContactState.Active,
+      ExcludedContactIds = _rows.Select(e => e.cContactId).Where(id => !string.IsNullOrEmpty(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
+   };
+   /// <summary>Employee-owned selection rule supplied to the shared contact picker.</summary>
+   public string? GetContactSelectionBlockReason(ContactSearchItem contact) =>
+      _rows.Any(e => string.Equals(e.cContactId, contact.ContactId, StringComparison.OrdinalIgnoreCase)) ? "Already an employee here" : null;
    private async Task Load(string? selectId) {
       if (Service is not { } service || SelectedTenant is null) return;
       var departments = DepartmentService is { } ds ? await ds.GetVi_TenantDepts(SelectedTenant.cTenantId) : [];
       _rows = await service.GetVi_TenantEmps(SelectedTenant.cTenantId);
       DepartmentOptions.Clear(); DepartmentOptions.Add(new(null, "(none)"));
       foreach (var d in departments) DepartmentOptions.Add(new(d.cTenantDeptId, $"{d.cTenantDeptName} ({d.cTenantDeptCode})"));
-      ApplyFilter(); Open(_rows.FirstOrDefault(e => e.cTenantEmpId == selectId)); IsLoaded = true;
+      ApplyFilter(); Open(_rows.FirstOrDefault(e => e.cTenantEmpId == selectId)); await PersonLoading; IsLoaded = true;
    }
    private void ApplyFilter() {
       // Filtering the list must not discard an open editor when WPF clears the list selection.
@@ -190,11 +257,49 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
    private void Open(vi_TenantEmp? row) {
       _opening = true;
       try {
+         ResetPerson();
          SelectedRow = row; EditCode = row?.cTenantEmpCode ?? ""; EditPosition = row?.cTenantEmpPosition; EditNote = row?.cTenantEmpNote;
          EditDepartment = DepartmentOptions.FirstOrDefault(d => d.Id == row?.cTenantDeptId);
-         NewPerson = false; NewPersonName = ""; NewPersonType = ContactType.Male; SelectedCandidate = null; Candidates.Clear();
+         NewPerson = false; NewPersonName = ""; NewPersonType = ContactType.Male; SelectedCandidate = null;
       } finally { _opening = false; UpdateState(); }
+      if (row is { cContactId.Length: > 0 }) PersonLoading = LoadPersonAsync(row.cContactId);
    }
+   private void ResetPerson() {
+      _personGeneration++; _person = null; IsPersonLoading = false;
+      EditCommType = CommTypes[0]; EditCommValue = EditCommNote = "";
+      EditAddressName = EditAddressLocation = EditAddressZip = "";
+      PersonLoading = Task.CompletedTask;
+      UpdateState();
+   }
+   private async Task LoadPersonAsync(string contactId) {
+      ResetPerson(); var generation = _personGeneration;
+      IsPersonLoading = true;
+      try {
+         if (Service is not { } service) return;
+         var person = await service.GetMeta_TenantEmpPerson(contactId);
+         if (generation != _personGeneration) return;
+         _person = person;
+         EditCommType = CommTypes.FirstOrDefault(t => t.Value == person.Comm?.cCommType) ?? CommTypes[0];
+         EditCommValue = person.Comm?.cCommValue ?? ""; EditCommNote = person.Comm?.cCommNote ?? "";
+         EditAddressName = person.Address?.cAddressName ?? ""; EditAddressLocation = person.Address?.cAddressLocation ?? "";
+         EditAddressZip = person.Address?.cAddressZip ?? "";
+      }
+      catch (Exception ex) {
+         if (generation == _personGeneration) Status = ex is ActionException ? ex.Message.Replace("Server Error: ", "") : "Could not load the person's defaults. Refresh and try again.";
+      }
+      finally { if (generation == _personGeneration) { IsPersonLoading = false; UpdateState(); } }
+   }
+   private TenantEmpPerson BuildPerson() => new() {
+      ContactId = NewPerson ? "" : _person!.ContactId, ContactUstamp = _person?.ContactUstamp ?? default,
+      Comm = new() {
+         cCommId = NewPerson ? "" : _person?.Comm?.cCommId ?? "", ustamp = _person?.Comm?.ustamp ?? default,
+         cCommType = EditCommType?.Value ?? CommunationType.Email, cCommValue = EditCommValue, cCommNote = EditCommNote
+      },
+      Address = new() {
+         cAddressId = NewPerson ? "" : _person?.Address?.cAddressId ?? "", ustamp = _person?.Address?.ustamp ?? default,
+         cAddressName = EditAddressName, cAddressLocation = EditAddressLocation, cAddressZip = EditAddressZip
+      }
+   };
    private async Task RunAsync(Func<Task> work) {
       if (IsBusy || Service is null) return;
       try { IsBusy = InWaiting = true; WaiterText = "Loading employees..."; UpdateState(); await work(); }
@@ -203,7 +308,7 @@ public sealed class BusinessModuleManagerEmpVm : MvvmModelBase
       finally { IsBusy = InWaiting = false; UpdateState(); }
    }
    private void UpdateState() {
-      foreach (var name in new[] { nameof(HasSelection), nameof(HasNoSelection), nameof(IsDraft), nameof(IsSaved), nameof(ShowNewPerson), nameof(ShowExistingPerson), nameof(CanBrowse), nameof(CanEdit), nameof(IsDirty), nameof(ToggleStateCaption), nameof(PersonCaption), nameof(HeadChangeHint) }) NotifyChanged(name);
+      foreach (var name in new[] { nameof(SelectedContactCaption), nameof(IsPersonReady), nameof(ShowPersonDetails), nameof(CanEditPerson), nameof(HasSelection), nameof(HasNoSelection), nameof(IsDraft), nameof(IsSaved), nameof(ShowNewPerson), nameof(ShowExistingPerson), nameof(CanBrowse), nameof(CanEdit), nameof(IsDirty), nameof(ToggleStateCaption), nameof(PersonCaption), nameof(HeadChangeHint) }) NotifyChanged(name);
       foreach (var command in Commands) command.RaiseCanExecuteChanged();
    }
 }

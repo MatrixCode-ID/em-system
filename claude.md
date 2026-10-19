@@ -1,5 +1,36 @@
 # CLAUDE.md
 
+## Kepemilikan Contact Picker (keputusan pengguna 2026-10-19)
+
+Service pencarian dan paging Contact harus berasal dari `IContactServices`/ContactServices.
+Dialog Contact Picker adalah komponen bersama tanpa ketergantungan tenant atau Employee;
+modul pemanggil memberikan filter data, aturan pemilihan dan keterangan tambahan miliknya.
+Filter diterapkan di server sebelum paging (tipe/status Contact, keberadaan user, serta
+Contact yang dikecualikan). Untuk Employee, tampilkan orang aktif yang belum menjadi
+employee di tenant terpilih. Employee menentukan penanda sudah menjadi employee;
+aturan ini tidak dimasukkan ke Contact service.
+
+## Search contact pada Employee (keputusan pengguna 2026-10-19)
+
+Pilih Contact dari editor Employee melalui dialog Search contact, bukan daftar pencarian
+inline. Dialog menampilkan nama Contact, status Contact, username yang terhubung bila
+ada, serta penanda sudah menjadi employee pada tenant terpilih. Pencarian dan paging
+dilakukan server agar daftar besar tetap dapat ditelusuri tanpa memuat semua Contact.
+
+## Comm dan Address pada Employee (keputusan pengguna 2026-10-19)
+
+Editor Employee harus menyediakan Comm dan Address milik Contact orang tersebut.
+Pembuatan orang baru dari Employee langsung membuat serta menautkan Comm dan Address,
+kemudian menetapkan keduanya sebagai default Contact dalam transaksi simpan yang sama.
+Pemilihan orang melalui username memakai Contact beserta Comm/Address default yang
+sudah dimilikinya; jangan membuat salinan per employee atau tenant.
+
+## Combo Tenant Business Module Manager (keputusan pengguna 2026-10-19)
+
+Combo Tenant pada kedua tab Departments dan Employees menampilkan dua baris:
+nama tenant sebagai title dan kode tenant sebagai subtitle. Berlaku untuk item
+terpilih maupun dropdown, dengan identitas pilihan tetap berupa objek tenant.
+
 ## Urutan eksekusi approval lintas repo (keputusan pengguna 2026-10-17)
 
 Untuk plan `approval-rancang-ulang.codex.md`, selesaikan kode plan engine lebih dulu,

@@ -1,6 +1,7 @@
 using System.Windows;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
+using Em.Ui.Wpf.Dialogs;
 using Em.Ui.Wpf.Shared;
 using UserControl = System.Windows.Controls.UserControl;
 
@@ -15,6 +16,10 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
       Vm.EmApp = app;
       Vm.ConfirmDiscard = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
          "Discard the unsaved changes of this record?", "Unsaved Changes") == MessageBoxResult.Yes;
+      Vm.Employees.PickContact = tenantId => {
+         var dialog = new ContactPickerDialog(app, filter: Vm.Employees.BuildContactPickerFilter(), selectionBlockReason: Vm.Employees.GetContactSelectionBlockReason) { Owner = Window.GetWindow(this) ?? app.MainWindow };
+         return dialog.ShowDialog() == true ? dialog.Vm.SelectedContact : null;
+      };
       Vm.Employees.ConfirmHeadChange = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
          "This department will lose its head. Continue?", "Department Head") == MessageBoxResult.Yes;
    }

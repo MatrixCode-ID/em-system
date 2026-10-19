@@ -27,6 +27,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 
 | Guide | Covers |
 | --- | --- |
+| [Contact picker](engine-contact-picker.md) | Reusable contact search dialog, caller filters and server paging |
 | [Publish](engine-publish.md) ([Indonesia](engine-publish.id.md)) | Publishing NuGet packages and container images from NuGet/Container Manager |
 | [Container registry user guide](engine-registry-guide.md) ([Indonesia](engine-registry-guide.id.md)) | Step by step through Container Manager, Robots and Publish, every option on annotated screenshots |
 | [Release Manager](engine-release-manager.md) | Preparing, signing and verifying desktop client releases |

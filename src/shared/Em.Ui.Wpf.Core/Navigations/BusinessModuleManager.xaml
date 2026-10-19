@@ -8,6 +8,32 @@
             <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
          </ResourceDictionary.MergedDictionaries>
          <BooleanToVisibilityConverter x:Key="boolVisibility"/>
+         <DataTemplate x:Key="tenantChoiceTemplate">
+            <Grid>
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+               </Grid.ColumnDefinitions>
+               <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{Binding cTenantName}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding cTenantName}"/>
+                  <TextBlock Text="{Binding cTenantCode}" FontSize="10" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTip="{Binding cTenantCode}"/>
+               </StackPanel>
+               <Border Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                  <Border.Style>
+                     <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                           <DataTrigger Binding="{Binding cTenantState}" Value="-1">
+                              <Setter Property="Visibility" Value="Visible"/>
+                           </DataTrigger>
+                        </Style.Triggers>
+                     </Style>
+                  </Border.Style>
+                  <TextBlock Text="INACTIVE"/>
+               </Border>
+            </Grid>
+         </DataTemplate>
+
          <!-- Tree rows: the same shape as the Container Manager tree (state layers over a transparent surface). -->
          <Style x:Key="tenantExpanderStyle" TargetType="ToggleButton">
             <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
@@ -230,29 +256,7 @@
             <ScrollViewer Margin="22,12,22,10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                <StackPanel Orientation="Horizontal">
                   <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                  <ComboBox Width="230" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" AutomationProperties.Name="Tenant">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <StackPanel Orientation="Horizontal">
-                              <TextBlock Text="{Binding cTenantName}"/>
-                              <TextBlock Text="{Binding cTenantCode}" Margin="8,0,0,0" Opacity="0.6"/>
-                              <Border Margin="8,0,0,0">
-                                 <Border.Style>
-                                    <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
-                                       <Setter Property="Visibility" Value="Collapsed"/>
-                                       <Style.Triggers>
-                                          <DataTrigger Binding="{Binding cTenantState}" Value="-1">
-                                             <Setter Property="Visibility" Value="Visible"/>
-                                          </DataTrigger>
-                                       </Style.Triggers>
-                                    </Style>
-                                 </Border.Style>
-                                 <TextBlock Text="INACTIVE"/>
-                              </Border>
-                           </StackPanel>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" AutomationProperties.Name="Tenant" ItemTemplate="{StaticResource tenantChoiceTemplate}"/>
                   <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewDepartmentCommand]}" ToolTip="Start a new department at the top of the tree">
                      <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
@@ -410,29 +414,7 @@
             <ScrollViewer Margin="22,12,22,10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                <StackPanel Orientation="Horizontal">
                   <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                  <ComboBox Width="230" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" AutomationProperties.Name="Tenant">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <StackPanel Orientation="Horizontal">
-                              <TextBlock Text="{Binding cTenantName}"/>
-                              <TextBlock Text="{Binding cTenantCode}" Margin="8,0,0,0" Opacity="0.6"/>
-                              <Border Margin="8,0,0,0">
-                                 <Border.Style>
-                                    <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
-                                       <Setter Property="Visibility" Value="Collapsed"/>
-                                       <Style.Triggers>
-                                          <DataTrigger Binding="{Binding cTenantState}" Value="-1">
-                                             <Setter Property="Visibility" Value="Visible"/>
-                                          </DataTrigger>
-                                       </Style.Triggers>
-                                    </Style>
-                                 </Border.Style>
-                                 <TextBlock Text="INACTIVE"/>
-                              </Border>
-                           </StackPanel>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" AutomationProperties.Name="Tenant" ItemTemplate="{StaticResource tenantChoiceTemplate}"/>
                   <Button Margin="0,0,8,0" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewEmployeeCommand]}">
                      <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
@@ -573,74 +555,10 @@
                               <RadioButton Content="New person" IsChecked="{Binding NewPerson}"/>
                            </StackPanel>
                            <StackPanel Visibility="{Binding ShowExistingPerson, Converter={StaticResource boolVisibility}}" Margin="0,12,0,0">
-                              <DockPanel>
-                                 <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SearchPeopleCommand]}"/>
-                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding PersonSearch, UpdateSourceTrigger=PropertyChanged}" Tag="Name or user account"/>
-                              </DockPanel>
-                              <ListBox MaxHeight="180" BorderThickness="0" Padding="0" Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate, Mode=TwoWay}" Margin="0,8,0,0">
-                                 <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                       <Setter Property="IsEnabled" Value="False"/>
-                                       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                       <Setter Property="Padding" Value="0"/>
-                                       <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
-                                       <Setter Property="Template">
-                                          <Setter.Value>
-                                             <ControlTemplate TargetType="ListBoxItem">
-                                                <Grid>
-                                                   <Border x:Name="state" Background="Transparent"/>
-                                                   <Border x:Name="selected" Width="3" HorizontalAlignment="Left" Background="{DynamicResource themeAccentBrush}" Visibility="Collapsed"/>
-                                                   <ContentPresenter/>
-                                                   <Border Height="1" Background="{StaticResource dividerBrush}" VerticalAlignment="Bottom"/>
-                                                </Grid>
-                                                <ControlTemplate.Triggers>
-                                                   <Trigger Property="IsEnabled" Value="False">
-                                                      <Setter Property="Opacity" Value="0.4"/>
-                                                   </Trigger>
-                                                   <Trigger Property="IsMouseOver" Value="True">
-                                                      <Setter TargetName="state" Property="Background" Value="{StaticResource stateHoverBrush}"/>
-                                                   </Trigger>
-                                                   <Trigger Property="IsSelected" Value="True">
-                                                      <Setter TargetName="state" Property="Background" Value="{StaticResource statePressedBrush}"/>
-                                                      <Setter TargetName="selected" Property="Visibility" Value="Visible"/>
-                                                   </Trigger>
-                                                </ControlTemplate.Triggers>
-                                             </ControlTemplate>
-                                          </Setter.Value>
-                                       </Setter>
-                                       <Style.Triggers>
-                                          <DataTrigger Binding="{Binding TenantEmpId}" Value="{x:Null}">
-                                             <Setter Property="IsEnabled" Value="True"/>
-                                          </DataTrigger>
-                                       </Style.Triggers>
-                                    </Style>
-                                 </ListBox.ItemContainerStyle>
-                                 <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                       <StackPanel Margin="4">
-                                          <TextBlock Text="{Binding FullName}"/>
-                                          <ItemsControl ItemsSource="{Binding UserAccounts}">
-                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                   <TextBlock Text="{Binding}" Opacity="0.6"/>
-                                                </DataTemplate>
-                                             </ItemsControl.ItemTemplate>
-                                          </ItemsControl>
-                                          <TextBlock Text="already an employee here">
-                                             <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                   <Style.Triggers>
-                                                      <DataTrigger Binding="{Binding TenantEmpId}" Value="{x:Null}">
-                                                         <Setter Property="Visibility" Value="Collapsed"/>
-                                                      </DataTrigger>
-                                                   </Style.Triggers>
-                                                </Style>
-                                             </TextBlock.Style>
-                                          </TextBlock>
-                                       </StackPanel>
-                                    </DataTemplate>
-                                 </ListBox.ItemTemplate>
-                              </ListBox>
+                              <Button Style="{StaticResource outlinedButtonStyle}" HorizontalAlignment="Left" Command="{Binding Commands[SearchPeopleCommand]}">
+                                 <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_MagnifyingGlass" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Search contact..." VerticalAlignment="Center"/></StackPanel>
+                              </Button>
+                              <TextBlock Text="{Binding SelectedContactCaption}" Margin="0,10,0,0" TextWrapping="Wrap"/>
                            </StackPanel>
                            <StackPanel Visibility="{Binding ShowNewPerson, Converter={StaticResource boolVisibility}}">
                               <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
@@ -657,6 +575,26 @@
                                     </ComboBox.ItemTemplate>
                                  </ComboBox>
                               </StackPanel>
+                           </StackPanel>
+                           <TextBlock Text="Loading contact details..." Margin="0,12,0,0" Style="{StaticResource fieldHelpStyle}" Visibility="{Binding IsPersonLoading, Converter={StaticResource boolVisibility}}"/>
+                           <StackPanel Margin="0,14,0,0" IsEnabled="{Binding CanEditPerson}" Visibility="{Binding ShowPersonDetails, Converter={StaticResource boolVisibility}}">
+                              <TextBlock Text="DEFAULT COMM" Style="{StaticResource sectionCaptionStyle}"/>
+                              <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding CommTypes}" SelectedItem="{Binding EditCommType, Mode=TwoWay}" AutomationProperties.Name="Default communication type">
+                                 <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <TextBlock Text="Value" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCommValue, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Default communication value"/>
+                              <TextBlock Text="Communication note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCommNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"/>
+                              <TextBlock Text="DEFAULT ADDRESS" Style="{StaticResource sectionCaptionStyle}" Margin="0,18,0,0"/>
+                              <TextBlock Text="Label" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditAddressName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" Tag="Home or office"/>
+                              <TextBlock Text="Address" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditAddressLocation, UpdateSourceTrigger=PropertyChanged}" MaxLength="1000" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Default address"/>
+                              <TextBlock Text="ZIP" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditAddressZip, UpdateSourceTrigger=PropertyChanged}" MaxLength="10"/>
+                              <TextBlock Text="These defaults belong to the person and are shared across their accounts and employment in other tenants." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
                            </StackPanel>
                            <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True" ToolTip="Employee number, unique within this tenant (up to 50 characters).">
                               <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>

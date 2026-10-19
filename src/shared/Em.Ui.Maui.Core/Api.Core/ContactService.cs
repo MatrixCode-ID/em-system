@@ -129,5 +129,10 @@ namespace Em.Api.Core
       #endregion
       
       #endregion
+      #region Meta's
+      /// <inheritdoc />
+      public Task<ContactSearchPage> PostGetMeta_ContactSearchPage(ContactSearchQuery query) =>
+         PostAsync<ContactSearchPage>(nameof(PostGetMeta_ContactSearchPage), query);
+      #endregion
    }
 }

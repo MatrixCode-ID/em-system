@@ -451,5 +451,29 @@ namespace Em.Api.Core
       #endregion
 
       #endregion
+      #region Meta's
+      /// <inheritdoc />
+      [PostAction]
+      public async Task<ContactSearchPage> PostGetMeta_ContactSearchPage(ContactSearchQuery request) {
+         var page = request.Page; var search = request.Search; var filter = request.Filter ?? new();
+         var activeUsersOnly = filter.ActiveUsersOnly;
+         if (page < 1 || page > int.MaxValue / 50) throw new ActionException("The contact page must be a positive supported page number.", 400);
+         var query = ctx.ta_Contacts.AsNoTracking().AsQueryable();
+         if (filter.PeopleOnly) query = query.Where(x => x.cContactType != ContactType.Organization);
+         if (filter.Type is { } type) query = query.Where(x => x.cContactType == type);
+         if (filter.State is { } state) query = query.Where(x => x.cContactState == state);
+         if (filter.ExcludedContactIds is { Length: > 0 } excluded) query = query.Where(x => !excluded.Contains(x.cContactId));
+         if (filter.HasUser is { } hasUser) query = query.Where(x => ctx.ta_Users.Any(u => u.cContactId == x.cContactId && (!activeUsersOnly || u.cUserState == UserState.Active)) == hasUser);
+         if (!string.IsNullOrEmpty(search)) query = query.Where(x => x.cContactFullName.Contains(search) || ctx.ta_Users.Any(u => u.cContactId == x.cContactId && (!activeUsersOnly || u.cUserState == UserState.Active) && u.cUserAccount.Contains(search)));
+         var people = await query.OrderBy(x => x.cContactFullName).ThenBy(x => x.cContactId).Skip((page - 1) * 50).Take(51).ToArrayAsync(AbortToken);
+         var hasMore = people.Length > 50; people = people.Take(50).ToArray();
+         var ids = people.Select(x => x.cContactId).ToArray();
+         var users = await ctx.ta_Users.AsNoTracking().Where(u => ids.Contains(u.cContactId) && (!activeUsersOnly || u.cUserState == UserState.Active)).OrderBy(u => u.cUserAccount).ToArrayAsync(AbortToken);
+         return new ContactSearchPage { HasMore = hasMore, Rows = people.Select(c => new ContactSearchItem {
+            ContactId = c.cContactId, FullName = c.cContactFullName, ContactType = c.cContactType, ContactState = c.cContactState,
+            UserAccounts = users.Where(u => string.Equals(u.cContactId, c.cContactId, StringComparison.OrdinalIgnoreCase)).Select(u => u.cUserAccount).ToArray()
+         }).ToArray() };
+      }
+      #endregion
    }
 }

@@ -27,9 +27,12 @@ department may choose its Head from its own active employees. Parent choices exc
 its descendants. Inactive departments can remain parents and retain employees.
 
 **Employees** also starts with a tenant selector. The text filter matches name, employee number and
-department locally. For a new employee, choose **Existing person**, search by name or active user account,
-and select an available person; already-employed people are marked and disabled. Alternatively choose
-**New person**, enter a name and select Male or Female. Existing person details are read-only. Set Code,
+department locally. For a new employee, choose **Existing person**, open **Search contact**, search by contact name or linked username, and choose an available person.
+The reusable [Contact picker](engine-contact-picker.md) displays Contact, Username and Contact Status.
+The Employee caller requests active people and excludes contacts already employed in the selected tenant. Results are searched and paged on the server (50 per page);
+Previous/Next navigate the applied search, and a new Search restarts at page one. Contacts without a user
+are included; inactive usernames can also locate their contact. Choosing a contact loads its defaults. Alternatively choose
+**New person**, enter a name and select Male or Female. The existing person's name and accounts are read-only; their default communication and address can be edited here. Set Code,
 Department (optional), Position and Note, then Save. A person can be employed once per tenant and in several
 tenants. Employee numbers are unique within a tenant. User accounts are connected through the person;
 there is no direct employee-to-user column.
@@ -38,9 +41,16 @@ Transferring a head to another department or deactivating the head asks for conf
 the old department head automatically. Switching records, tenants or tabs asks before discarding unsaved
 changes. Server errors stay below the toolbar, leaving the draft available for correction.
 
+The person section includes **Default Comm** (type, value, note) and **Default Address** (label, location,
+ZIP). A new person receives both records and their default links in the same save transaction. Selecting an
+existing person by username loads that contact's existing defaults, without copying them per employee or
+tenant. Changes to these defaults affect the same person across all their accounts and employments. If
+older data lacks a default, saving the edited person details creates and links it. The UI does not invent
+contact values from the username.
+
 ## Service actions
 
-All actions belong to `core.business` and require the same manager claim over HTTP. Administrators use the
+The tenant, department and employee actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
 engine administrator bypass. Inject these interfaces on the server or resolve the shared client proxies.
 
 | Interface | Action | Behavior |
@@ -52,14 +62,24 @@ engine administrator bypass. Inject these interfaces on the server or resolve th
 | | `PostGetTa_TenantDept_Update` | Update hierarchy, fields and active head |
 | `ITenantEmpServices` | `GetVi_TenantEmps(tenantId)` | All employees, ordered by person name and code |
 | | `GetMeta_TenantEmpContacts(tenantId, search)` | Up to 50 people, active accounts and existing employee marker |
+| | `GetMeta_TenantEmpPerson(contactId)` | Shared person defaults and their update stamps |
 | | `PostGetMeta_TenantEmpSave(save)` | Save an employee and optionally create a person atomically |
 | | `GetMeta_TenantEmpByUser(tenantId, userId)` | Active employee for an active user, or null |
 | | `GetMeta_TenantEmpUsers(tenantEmpId)` | Active user IDs belonging to the employee's person |
 | | `GetMeta_TenantEmpHead(tenantEmpId)` | Active head of this department, or null; never searches parents |
 
+The contact dialog calls `IContactServices.PostGetMeta_ContactSearchPage` in `core.contact`, which is
+available to authenticated callers without the business manager claim. Employee supplies the filters; the
+contact service owns the shared search and paging. The older Employee candidate action delegates to that
+service and adds its employee marker for compatibility.
+
 `TenantEmpSave.Row` contains employee values and the update stamp. For a create, leave its employee ID
 empty. To create a person in the same transaction, also leave the contact ID empty and provide
-`NewContactName` / `NewContactType`. Updating employment cannot change its tenant or person.
+`NewContactName` / `NewContactType`. `TenantEmpSave.Person` contains the edited defaults. Existing person
+saves must send the contact stamp and last-read default IDs/stamps. Stale contact/default changes return
+409; details for a different person return 400. Omitting `Person` preserves existing defaults for earlier
+clients. New people always receive both default records, even when an earlier client omits their values.
+Updating employment cannot change its tenant or person. No database migration is required.
 
 Updates use a serializable transaction and require the last read `ustamp`. A stale stamp or a duplicate
 code/person returns 409; a missing employee or department returns 404. Invalid hierarchy, tenant changes,
@@ -91,7 +111,7 @@ connect the lookups to approval or transactions.
 ## Limits
 
 This directory does not select a session's active tenant, scope claims by tenant, or maintain user tenant
-membership. Each employee has one optional department. Hiring/leaving dates, personal data, department
+membership. Each employee has one optional department. Hiring/leaving dates, additional personal data, department
 history, multiple appointments, custom employment policy, bulk import and legacy mappings belong to a
 consumer's personnel module. There is no department object browser or MAUI screen.
 
@@ -102,3 +122,14 @@ transfers/deactivation, rollback and contact/account lookups. WPF tests load XAM
 exercise editor choices and guards. Local HTTP smoke lives in
 `../.artefacts/em-system/scripts/tenant-org-smoke/`; offline light/dark rendering lives in
 `../.artefacts/em-system/scripts/business-manager-render/`. Real-window mouse interaction is separate.
+
+The contact-default and Search contact update was verified with SQL Server integration tests, WPF
+view-model/XAML tests (including status text without rendering), and live HTTP calls through the shared
+client proxy. Logs for this update are `person-*.log` under the smoke harness above. Consumer host builds
+used isolated output while a desktop client was running. No schema migration was needed. Rendering and
+real-window interaction of the new contact dialog remain unverified.
+
+The shared contact-picker refactor and caller filters passed backend/WPF/MAUI builds, consumer API/WPF
+host builds, 329 backend tests (8 optional-provider skips), 181 frontend tests and 23 live HTTP checks.
+The filter regression covers status, type, user presence, exclusion before paging and retained caller
+filters across navigation. Current logs are `out/contact-*.log` in the smoke harness above.

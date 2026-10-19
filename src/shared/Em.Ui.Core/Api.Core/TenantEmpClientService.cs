@@ -6,6 +6,8 @@ namespace Em.Ui.Core;
 [Module(Defaults.BusinessModuleName)]
 public sealed class TenantEmpClientService(IEmApp app, Func<ApiClient?> activeClient) : ServiceUiBase(app), ITenantEmpServices
 {
+   /// <inheritdoc />
+   public Task<TenantEmpPerson> GetMeta_TenantEmpPerson(string contactId) { Prepare(); return GetAsync<TenantEmpPerson>(nameof(GetMeta_TenantEmpPerson), contactId); }
    private void Prepare() => ApiClient = activeClient();
    /// <inheritdoc />
    public Task<vi_TenantEmp[]> GetVi_TenantEmps(string tenantId) { Prepare(); return GetAsync<vi_TenantEmp[]>(nameof(GetVi_TenantEmps), tenantId); }

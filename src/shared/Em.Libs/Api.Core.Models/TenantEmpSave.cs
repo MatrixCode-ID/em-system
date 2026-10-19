@@ -7,6 +7,8 @@ public sealed class TenantEmpSave
    public ta_TenantEmp Row { get; set; } = new();
    /// <summary>Name of a new person when the contact ID is empty.</summary>
    public string? NewContactName { get; set; }
+   /// <summary>Edited defaults of the shared person. Null preserves an existing person's details.</summary>
+   public TenantEmpPerson? Person { get; set; }
    /// <summary>Type of the new person.</summary>
    public ContactType NewContactType { get; set; } = ContactType.Male;
 }

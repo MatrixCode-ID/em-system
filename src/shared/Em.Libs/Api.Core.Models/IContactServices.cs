@@ -129,5 +129,10 @@ namespace Em.Api.Core.Models
       #endregion
 
       #endregion
+
+      #region Meta's
+      /// <summary>Searches contact names and usernames, applying caller filters before paging fifty results.</summary>
+      Task<ContactSearchPage> PostGetMeta_ContactSearchPage(ContactSearchQuery query);
+      #endregion
    }
 }
