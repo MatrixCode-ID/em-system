@@ -50,6 +50,9 @@ namespace Em.Ui.Wpf.Core
       /// </summary>
       public const string ObjectStorageBucketNavigationName = "admin.objectstorage.bucket";
 
+      /// <summary>Navigation name of the Business Module Manager (tenants); needs the Business Module Manager claim.</summary>
+      public const string BusinessModuleManagerNavigationName = "admin.business";
+
       #endregion
 
        /// <summary>
@@ -98,6 +101,7 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<IRobotServices, RobotService>();
          app.Services.AddSingleton<ISmtpService>(provider => new Em.Ui.Core.SmtpClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ISmtpProfileService>(provider => new Em.Ui.Core.SmtpProfileClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantServices>(provider => new Em.Ui.Core.TenantClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ApprovalAccessCatalog>();
@@ -288,6 +292,13 @@ namespace Em.Ui.Wpf.Core
       }
 
       private static void InitInternalNavigation(EmApp app, EmAppBuilder pars) {
+         app.AddNavigation(RequireClaim(new Navigation {
+            Name = BusinessModuleManagerNavigationName, Title = "Business Module Manager", Subtitle = "Set up tenants and business documents", OrderIndex = -1,
+            Description = "Create, edit, deactivate and arrange the tenants (companies) of the business modules.",
+            BodyType = BodyType.Of<BusinessModuleManager>(), Kind = NavigationKind.Manager, EmApp = app,
+            RequireParameter = false, IsMenuVisible = false,
+            NavigationIcon = EFontAwesomeIcon.Solid_Building.CreateImageSource(System.Windows.Media.Brushes.Gray)
+         }, Defaults.BusinessModuleName + ClaimAction.Separator + ITenantServices.ManagerClaim));
          app.AddNavigation(RequireClaim(new Navigation {
             Name = "admin.smtp", Title = "SMTP Manager", Subtitle = "Configure outgoing email", OrderIndex = -1,
             Description = "Configure the SMTP server, check its connection and send a test email.",

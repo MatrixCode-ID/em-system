@@ -85,6 +85,13 @@ namespace Em
       /// </summary>
       public const string AuditModuleName = "core.audit";
 
+      /// <summary>
+      /// Name of the module holding the Business Module Manager actions (tenants). Its single claim is
+      /// <c>ITenantServices.ManagerClaim</c>, so the claim key a role holds is this name, the separator, then
+      /// that claim.
+      /// </summary>
+      public const string BusinessModuleName = "core.business";
+
       /// <summary>User ID of the debugger account.</summary>
       public const string DebuggerUserId = "99999999999999999999999999";
 

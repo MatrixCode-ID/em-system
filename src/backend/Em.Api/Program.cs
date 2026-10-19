@@ -23,6 +23,12 @@ var app = EmApp.BuildApp(args, builder => {
       builder.AddLogServer();
    }
 
+   // Business Module Manager (tenants); needs tables/080-tenant.sql and views/vi_Tenant.sql.
+   // Turn off with "modules": { "business": false } or EM_MODULE_BUSINESS=false.
+   if (config.IsModuleEnabled("business", true)) {
+      builder.AddBusinessModuleManager();
+   }
+
    builder.AddLocalBinaryStorage(config.Storage.BinaryPath);
    if (config.IsModuleEnabled("test")) {
       builder.AddTestModule();

@@ -64,6 +64,8 @@ internal static class SystemAuditCatalog
          .Entry("access.set", "Changed robot access"));
       yield return Group(Settings, "Settings", [LogClaims + ILogServices.SettingsClaim, LogClaims + ILogServices.AuditReadClaim], g => g
          .Entry("smtp.changed", "Changed SMTP settings")
+         .Entry("tenant.created", "Created a tenant")
+         .Entry("tenant.changed", "Changed a tenant")
          .Entry("storage.changed", "Changed storage settings")
          .Entry("logstore.changed", "Changed log stores")
          .Entry("logstore.prepared", "Prepared a log store")

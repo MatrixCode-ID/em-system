@@ -10,6 +10,10 @@ namespace Em.Api.Core.Models
       public DbSet<ta_Meta> ta_Metas => Set<ta_Meta>();
       /// <summary>Named SMTP configurations; raw credential rows stay on the server.</summary>
       public DbSet<ta_Smtp> ta_Smtps => Set<ta_Smtp>();
+      /// <summary>Tenants of the business module manager.</summary>
+      public DbSet<ta_Tenant> ta_Tenants => Set<ta_Tenant>();
+      /// <summary>Tenants with their parent name and child count.</summary>
+      public DbSet<vi_Tenant> vi_Tenants => Set<vi_Tenant>();
       /// <summary>Rows of table <c>ta_Contact</c>.</summary>
       public DbSet<ta_Contact> ta_Contacts => Set<ta_Contact>();
       /// <summary>Rows of table <c>ta_Address</c>.</summary>
@@ -85,6 +89,15 @@ namespace Em.Api.Core.Models
             smtp.HasIndex(x => x.cSmtpDefault).IsUnique().HasFilter("[cSmtpDefault] = 1");
          }
 
+         // datetime, not datetime2: the stale check compares ustamp in SQL, and a datetime2 parameter
+         // may not equal a datetime value because of its 1/300 s rounding.
+         if (Database.IsSqlServer()) foreach (var tenant in new[] { modelBuilder.Entity<ta_Tenant>().Metadata, modelBuilder.Entity<vi_Tenant>().Metadata }) {
+            tenant.FindProperty(nameof(ta_Tenant.ustamp))!.SetColumnType("datetime");
+            tenant.FindProperty(nameof(ta_Tenant.datestamp))!.SetColumnType("datetime");
+            tenant.FindProperty(nameof(ta_Tenant.cTenantId))!.SetColumnType("char(26)");
+            tenant.FindProperty(nameof(ta_Tenant.cTenantParent_cTenantId))!.SetColumnType("char(26)");
+         }
+         modelBuilder.Entity<ta_Tenant>().HasIndex(x => x.cTenantCode).IsUnique();
          modelBuilder.Entity<ta_RoleClaim>().HasKey(k => new { k.cRoleId, k.cClaimName });
          modelBuilder.Entity<ta_UserRole>().HasKey(k => new { k.cUserId, k.cRoleId });
 

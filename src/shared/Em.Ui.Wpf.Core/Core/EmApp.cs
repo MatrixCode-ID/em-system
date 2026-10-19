@@ -294,7 +294,7 @@ namespace Em.Ui.Wpf.Core
 
          var groupEnd = tools.Count;
 
-         foreach (var name in (string[])["admin.users", "admin.roles", "admin.cdn", "admin.tasks", "admin.release", "admin.container", "admin.nupak", "admin.objectstorage", "admin.smtp", LogManagerNavigationName]) {
+         foreach (var name in (string[])["admin.users", "admin.roles", "admin.cdn", "admin.tasks", "admin.release", "admin.container", "admin.nupak", "admin.objectstorage", "admin.smtp", BusinessModuleManagerNavigationName, LogManagerNavigationName]) {
             var nav = Navigations.Single(r => r.Name == name);
             if (!CanOpen(nav)) continue;
 
