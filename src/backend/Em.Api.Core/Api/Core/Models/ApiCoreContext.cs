@@ -42,8 +42,6 @@ namespace Em.Api.Core.Models
       public DbSet<ta_RoleClaim> ta_RoleClaims => Set<ta_RoleClaim>();
       /// <summary>Rows of view <c>vi_Role</c>.</summary>
       public DbSet<vi_Role> vi_Roles => Set<vi_Role>();
-      /// <summary>Rows of table <c>ta_Emp</c>.</summary>
-      public DbSet<ta_Emp> ta_Emps => Set<ta_Emp>();
       /// <summary>Persistent approval ApprovalRequest rows.</summary>
       public DbSet<ta_ApprovalRequest> ta_ApprovalRequests => Set<ta_ApprovalRequest>();
       /// <summary>Persistent approval ApprovalRequestItem rows.</summary>
