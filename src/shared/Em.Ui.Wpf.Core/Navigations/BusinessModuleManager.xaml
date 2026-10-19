@@ -129,9 +129,9 @@
 
             <Grid Grid.Row="2" Margin="22,0,22,16">
                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="340" MinWidth="220"/>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
                   <ColumnDefinition Width="14"/>
-                  <ColumnDefinition Width="*" MinWidth="320"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
                </Grid.ColumnDefinitions>
 
                <!-- Tenant tree -->
@@ -143,7 +143,7 @@
                      </Grid.RowDefinitions>
                      <TextBlock Text="TENANTS" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
                      <TreeView x:Name="tenantTree" Grid.Row="1" Style="{StaticResource surfaceTreeViewStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="Transparent" BorderThickness="0" Padding="12,0,12,8"
-                               ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" AutomationProperties.Name="Tenants">
+                               ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Tenants">
                         <TreeView.Resources>
                            <HierarchicalDataTemplate DataType="{x:Type local:TenantNode}" ItemsSource="{Binding Children}">
                               <Grid MinHeight="32" Background="Transparent">
@@ -153,10 +153,10 @@
                                     <ColumnDefinition Width="Auto"/>
                                  </Grid.ColumnDefinitions>
                                  <fa:FontAwesome Icon="Solid_Building" Width="20" FontSize="13" Opacity="0.7" VerticalAlignment="Center"/>
-                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="6,0,8,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
-                                    <TextBlock Text="{Binding DisplayCode}" Margin="8,0,0,0" Opacity="0.6" TextTrimming="CharacterEllipsis"/>
-                                 </StackPanel>
+                                 <DockPanel Grid.Column="1" Margin="6,0,8,0" VerticalAlignment="Center" LastChildFill="True">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                    <TextBlock Text="{Binding DisplayCode}" Margin="8,0,0,0" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayCode}"/>
+                                 </DockPanel>
                                  <Border Grid.Column="2" Style="{StaticResource chipMutedStyle}" Padding="8,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding IsInactive, Converter={StaticResource boolVisibility}}" ToolTip="This tenant is deactivated. It can still be a parent and can be activated again.">
                                     <TextBlock Text="INACTIVE"/>
                                  </Border>
@@ -178,8 +178,8 @@
                         <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
                            <Grid>
                               <Grid.ColumnDefinitions>
-                                 <ColumnDefinition Width="200"/>
-                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="2*" MaxWidth="260"/>
+                                 <ColumnDefinition Width="3*"/>
                               </Grid.ColumnDefinitions>
                               <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True"
                                           ToolTip="Stable short key of the tenant, unique across all tenants (up to 100 characters). Saving fails when another tenant already uses it.">
