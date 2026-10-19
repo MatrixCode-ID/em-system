@@ -9,6 +9,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 
 | Guide | Covers |
 | --- | --- |
+| [Business Module Manager](engine-business-module-manager.md) | Tenant directory, department hierarchy, employees and contact-based lookups |
 | [Approval engine](engine-approval.md) | Deferred Data changes, server-built System flows, signer settings, module editors, attachments and MY TASKS |
 | [CDN](engine-cdn-storage.md) | Public `/cdn` downloads, CDN Manager actions, storage size |
 | [Container registry](engine-registry.md) | OCI `/v2` registry, roots and containers, Container Manager, Docker testing |

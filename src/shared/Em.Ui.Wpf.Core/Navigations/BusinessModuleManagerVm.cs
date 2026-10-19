@@ -67,7 +67,7 @@ public sealed class TenantNode : MvvmModelBase
 }
 
 /// <summary>State and commands of the Business Module Manager; the first tab manages tenants.</summary>
-public sealed class BusinessModuleManagerVm : MvvmModelBase
+public sealed partial class BusinessModuleManagerVm : MvvmModelBase
 {
    /// <summary>Key of the Tenants tab.</summary>
    public const string TenantsTab = "tenants";
@@ -85,6 +85,8 @@ public sealed class BusinessModuleManagerVm : MvvmModelBase
    private ITenantServices? Service => _service ?? EmApp?.ServiceProvider.GetRequiredService<ITenantServices>();
 
    private void RegisterCommands() {
+      Departments.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
+      Employees.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
       RegisterCommand(nameof(NewTenantCommand), NewTenantCommand, NewTenantCommandAllowed);
       RegisterCommand(nameof(NewChildCommand), NewChildCommand, NewChildCommandAllowed);
       RegisterCommand(nameof(SaveCommand), SaveCommand, SaveCommandAllowed);
@@ -94,13 +96,22 @@ public sealed class BusinessModuleManagerVm : MvvmModelBase
 
    #region Tabs
 
-   /// <summary>Tabs of the screen. Further tabs (documents, departments) come in later stages.</summary>
-   public ObservableCollection<BusinessTab> Tabs { get; } = [new(TenantsTab, "Tenants")];
+   /// <summary>Tabs of the screen. Tenants, departments and employees.</summary>
+   public ObservableCollection<BusinessTab> Tabs { get; } = [new(TenantsTab, "Tenants"), new("departments", "Departments"), new("employees", "Employees")];
 
    /// <summary>The tab being shown.</summary>
    public BusinessTab ActiveTab {
       get => Get<BusinessTab>() ?? Tabs[0];
-      set { Set(value); NotifyChanged(nameof(IsTenantsTab)); }
+      set {
+         if (ReferenceEquals(value, ActiveTab)) return;
+         if (!CanSwitchTabs || !CanLeave()) { NotifyChanged(); return; }
+         if (IsDirty) {
+            if (SelectedNode is { IsDraft: false } node) Open(node);
+            else { RemoveDraft(); SelectedNode = null; ClearEditor(); }
+         }
+         Departments.DiscardChanges(); Employees.DiscardChanges();
+         Set(value); NotifyChanged(nameof(IsTenantsTab)); NotifyChanged(nameof(IsDepartmentsTab)); NotifyChanged(nameof(IsEmployeesTab));
+      }
    }
 
    /// <summary>Whether the Tenants tab is shown.</summary>
@@ -252,6 +263,8 @@ public sealed class BusinessModuleManagerVm : MvvmModelBase
 
    /// <summary>Reads the tenants again, asking first when the editor holds unsaved changes.</summary>
    public Task RefreshCommand() {
+      if (IsDepartmentsTab) return Departments.RefreshCommand();
+      if (IsEmployeesTab) return Employees.RefreshCommand();
       if (IsDirty && ConfirmDiscard?.Invoke() == false) return Task.CompletedTask;
       return ReloadAsync();
    }
@@ -263,6 +276,10 @@ public sealed class BusinessModuleManagerVm : MvvmModelBase
       if (Service is not { } service) return;
       _draft = null;
       ApplyList(await service.GetVi_Tenants(), SelectedNode is { IsDraft: false } node ? node.Tenant.cTenantId : null);
+      Departments.EmApp = Employees.EmApp = EmApp;
+      Departments.ConfirmDiscard = Employees.ConfirmDiscard = ConfirmDiscard;
+      Departments.TenantChoices.Clear(); Employees.TenantChoices.Clear();
+      foreach (var tenant in Tenants) { Departments.TenantChoices.Add(tenant); Employees.TenantChoices.Add(tenant); }
       Status = "";
    });
 
@@ -360,7 +377,7 @@ public sealed class BusinessModuleManagerVm : MvvmModelBase
    }
 
    private void UpdateState() {
-      foreach (var name in (string[])[nameof(HasSelection), nameof(HasNoSelection), nameof(IsDraftSelected), nameof(IsDirty), nameof(ToggleStateCaption), nameof(CanBrowse), nameof(CanEdit)])
+      foreach (var name in (string[])[nameof(HasSelection), nameof(HasNoSelection), nameof(IsDraftSelected), nameof(IsDirty), nameof(ToggleStateCaption), nameof(CanBrowse), nameof(CanEdit), nameof(CanSwitchTabs)])
          NotifyChanged(name);
       foreach (var command in Commands) command.RaiseCanExecuteChanged();
    }

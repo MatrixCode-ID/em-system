@@ -8,7 +8,6 @@
             <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
          </ResourceDictionary.MergedDictionaries>
          <BooleanToVisibilityConverter x:Key="boolVisibility"/>
-
          <!-- Tree rows: the same shape as the Container Manager tree (state layers over a transparent surface). -->
          <Style x:Key="tenantExpanderStyle" TargetType="ToggleButton">
             <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
@@ -81,8 +80,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
          </Grid.RowDefinitions>
-         <controls:EmTabStrip Margin="22,8,22,0" ItemsSource="{Binding Tabs}" SelectedItem="{Binding ActiveTab, Mode=TwoWay}" TitlePath="Title" CanReorder="False" IsEnabled="{Binding CanBrowse}"/>
-
+         <controls:EmTabStrip Margin="22,8,22,0" ItemsSource="{Binding Tabs}" SelectedItem="{Binding ActiveTab, Mode=TwoWay}" TitlePath="Title" CanReorder="False" IsEnabled="{Binding CanSwitchTabs}"/>
          <!-- Tenants -->
          <Grid Grid.Row="1" Visibility="{Binding IsTenantsTab, Converter={StaticResource boolVisibility}}">
             <Grid.RowDefinitions>
@@ -126,14 +124,12 @@
                </StackPanel>
             </ScrollViewer>
             <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
-
             <Grid Grid.Row="2" Margin="22,0,22,16">
                <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
                   <ColumnDefinition Width="14"/>
                   <ColumnDefinition Width="3*" MinWidth="320"/>
                </Grid.ColumnDefinitions>
-
                <!-- Tenant tree -->
                <Border Style="{StaticResource cardStyle}" Padding="0">
                   <Grid>
@@ -142,8 +138,7 @@
                         <RowDefinition Height="*"/>
                      </Grid.RowDefinitions>
                      <TextBlock Text="TENANTS" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
-                     <TreeView x:Name="tenantTree" Grid.Row="1" Style="{StaticResource surfaceTreeViewStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="Transparent" BorderThickness="0" Padding="12,0,12,8"
-                               ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Tenants">
+                     <TreeView x:Name="tenantTree" Grid.Row="1" Style="{StaticResource surfaceTreeViewStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="Transparent" BorderThickness="0" Padding="12,0,12,8" ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Tenants">
                         <TreeView.Resources>
                            <HierarchicalDataTemplate DataType="{x:Type local:TenantNode}" ItemsSource="{Binding Children}">
                               <Grid MinHeight="32" Background="Transparent">
@@ -166,9 +161,7 @@
                      </TreeView>
                   </Grid>
                </Border>
-
                <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
-
                <!-- Tenant editor -->
                <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
                   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -181,8 +174,7 @@
                                  <ColumnDefinition Width="2*" MaxWidth="260"/>
                                  <ColumnDefinition Width="3*"/>
                               </Grid.ColumnDefinitions>
-                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True"
-                                          ToolTip="Stable short key of the tenant, unique across all tenants (up to 100 characters). Saving fails when another tenant already uses it.">
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Stable short key of the tenant, unique across all tenants (up to 100 characters). Saving fails when another tenant already uses it.">
                                  <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
                                     <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
@@ -199,8 +191,7 @@
                                  <ColumnDefinition Width="*"/>
                                  <ColumnDefinition Width="140"/>
                               </Grid.ColumnDefinitions>
-                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True"
-                                          ToolTip="Optional. A tenant without a parent is shown at the top of the tree. The tenant itself and its own descendants cannot be chosen.">
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Optional. A tenant without a parent is shown at the top of the tree. The tenant itself and its own descendants cannot be chosen.">
                                  <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Parent" Style="{StaticResource fieldLabelStyle}"/>
                                     <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
@@ -213,8 +204,7 @@
                                     </ComboBox.ItemTemplate>
                                  </ComboBox>
                               </StackPanel>
-                              <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True"
-                                          ToolTip="Display order among tenants with the same parent: lower comes first, equal values are ordered by name.">
+                              <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Display order among tenants with the same parent: lower comes first, equal values are ordered by name.">
                                  <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Order" Style="{StaticResource fieldLabelStyle}"/>
                                     <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
@@ -230,6 +220,473 @@
                   </ScrollViewer>
                </Border>
             </Grid>
+         </Grid>
+         <Grid Grid.Row="1" DataContext="{Binding Departments}" Visibility="{Binding DataContext.IsDepartmentsTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer Margin="22,12,22,10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+               <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" AutomationProperties.Name="Tenant">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding cTenantName}"/>
+                              <TextBlock Text="{Binding cTenantCode}" Margin="8,0,0,0" Opacity="0.6"/>
+                              <Border Margin="8,0,0,0">
+                                 <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+                                       <Setter Property="Visibility" Value="Collapsed"/>
+                                       <Style.Triggers>
+                                          <DataTrigger Binding="{Binding cTenantState}" Value="-1">
+                                             <Setter Property="Visibility" Value="Visible"/>
+                                          </DataTrigger>
+                                       </Style.Triggers>
+                                    </Style>
+                                 </Border.Style>
+                                 <TextBlock Text="INACTIVE"/>
+                              </Border>
+                           </StackPanel>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewDepartmentCommand]}" ToolTip="Start a new department at the top of the tree">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="New department" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[NewChildCommand]}" Margin="8,0,0,0" ToolTip="Start a new department under the selected department">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_Sitemap" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="New child" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}" Margin="8,0,0,0">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="Save" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}" Margin="8,0,0,0" ToolTip="Deactivate or activate the selected department. Its child departments keep their own state." ToolTipService.ShowOnDisabled="True">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="14,0" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+               </StackPanel>
+            </ScrollViewer>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <!-- Department tree -->
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="DEPARTMENTS" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
+                     <TreeView x:Name="departmentTree" Grid.Row="1" Style="{StaticResource surfaceTreeViewStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="Transparent" BorderThickness="0" Padding="12,0,12,8" ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Departments">
+                        <TreeView.Resources>
+                           <HierarchicalDataTemplate DataType="{x:Type local:DepartmentNode}" ItemsSource="{Binding Children}">
+                              <Grid MinHeight="32" Background="Transparent">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <fa:FontAwesome Icon="Solid_Building" Width="20" FontSize="13" Opacity="0.7" VerticalAlignment="Center"/>
+                                 <DockPanel Grid.Column="1" Margin="6,0,8,0" VerticalAlignment="Center" LastChildFill="True">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                    <TextBlock Text="{Binding EmployeeCount}" Margin="6,0,0,0" Opacity="0.6"/>
+                                    <TextBlock Text="{Binding DisplayCode}" Margin="8,0,0,0" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayCode}"/>
+                                 </DockPanel>
+                                 <Border Grid.Column="2" Style="{StaticResource chipMutedStyle}" Padding="8,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding IsInactive, Converter={StaticResource boolVisibility}}" ToolTip="This department is deactivated. It can still be a parent and can be activated again.">
+                                    <TextBlock Text="INACTIVE"/>
+                                 </Border>
+                              </Grid>
+                           </HierarchicalDataTemplate>
+                        </TreeView.Resources>
+                     </TreeView>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <!-- Department editor -->
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="DEPARTMENT" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select a department in the tree, or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="2*" MaxWidth="260"/>
+                                 <ColumnDefinition Width="3*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Stable short key of the department, unique within the selected tenant (up to 50 characters). Saving fails when another department already uses it.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50" Tag="acme.example" AutomationProperties.Name="Code"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1">
+                                 <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Name"/>
+                              </StackPanel>
+                           </Grid>
+                           <Grid Margin="0,14,0,0">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="140"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Optional. A department without a parent is shown at the top of the tree. The department itself and its own descendants cannot be chosen.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Parent" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding ParentOptions}" SelectedItem="{Binding EditParent, Mode=TwoWay}" AutomationProperties.Name="Parent">
+                                    <ComboBox.ItemTemplate>
+                                       <DataTemplate>
+                                          <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Caption}"/>
+                                       </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                 </ComboBox>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Display order among departments with the same parent: lower comes first, equal values are ordered by name.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Order" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="-1000000" Maximum="1000000" Value="{Binding EditOrder}" AutomationProperties.Name="Order"/>
+                              </StackPanel>
+                           </Grid>
+                           <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                              <TextBlock Text="Abbreviation" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditAbbreviation, UpdateSourceTrigger=PropertyChanged}" MaxLength="10"/>
+                           </StackPanel>
+                           <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True" ToolTip="Choose an active employee of this department. Save a new department before choosing a head.">
+                              <TextBlock Text="Head" Style="{StaticResource fieldLabelStyle}"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding HeadOptions}" SelectedItem="{Binding EditHead, Mode=TwoWay}" IsEnabled="{Binding CanChooseHead}" AutomationProperties.Name="Head">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                           </StackPanel>
+                           <TextBlock Text="Save the department before assigning its head." Style="{StaticResource fieldHelpStyle}" Visibility="{Binding IsDraftSelected, Converter={StaticResource boolVisibility}}"/>
+                           <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,14,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Note"/>
+                           <TextBlock Text="A new department is saved as active. Use Deactivate on the toolbar to stop using a department; departments are never deleted." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
+         <Grid Grid.Row="1" DataContext="{Binding Employees}" Visibility="{Binding DataContext.IsEmployeesTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer Margin="22,12,22,10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+               <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" AutomationProperties.Name="Tenant">
+                     <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                           <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding cTenantName}"/>
+                              <TextBlock Text="{Binding cTenantCode}" Margin="8,0,0,0" Opacity="0.6"/>
+                              <Border Margin="8,0,0,0">
+                                 <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+                                       <Setter Property="Visibility" Value="Collapsed"/>
+                                       <Style.Triggers>
+                                          <DataTrigger Binding="{Binding cTenantState}" Value="-1">
+                                             <Setter Property="Visibility" Value="Visible"/>
+                                          </DataTrigger>
+                                       </Style.Triggers>
+                                    </Style>
+                                 </Border.Style>
+                                 <TextBlock Text="INACTIVE"/>
+                              </Border>
+                           </StackPanel>
+                        </DataTemplate>
+                     </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Margin="0,0,8,0" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewEmployeeCommand]}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="New employee" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="Save" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="14,0" Background="{StaticResource outlineBrush}"/>
+                  <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+                  <TextBox Width="180" Style="{StaticResource fieldBoxStyle}" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" Tag="Filter employees" IsEnabled="{Binding CanBrowse}"/>
+               </StackPanel>
+            </ScrollViewer>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="3*" MinWidth="280"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="2*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                     <Grid MinWidth="600">
+                        <Grid.RowDefinitions>
+                           <RowDefinition Height="Auto"/>
+                           <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid Margin="18,12">
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="2*"/>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="100"/>
+                           </Grid.ColumnDefinitions>
+                           <TextBlock Text="NAME" Style="{StaticResource sectionCaptionStyle}"/>
+                           <TextBlock Grid.Column="1" Text="CODE" Style="{StaticResource sectionCaptionStyle}"/>
+                           <TextBlock Grid.Column="2" Text="DEPARTMENT" Style="{StaticResource sectionCaptionStyle}"/>
+                           <TextBlock Grid.Column="3" Text="POSITION" Style="{StaticResource sectionCaptionStyle}"/>
+                        </Grid>
+                        <ListBox Grid.Row="1" x:Name="employeeList" Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}" IsEnabled="{Binding CanBrowse}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                           <ListBox.ItemContainerStyle>
+                              <Style TargetType="ListBoxItem">
+                                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                 <Setter Property="Padding" Value="0"/>
+                                 <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
+                                 <Setter Property="Template">
+                                    <Setter.Value>
+                                       <ControlTemplate TargetType="ListBoxItem">
+                                          <Grid>
+                                             <Border x:Name="state" Background="Transparent"/>
+                                             <Border x:Name="selected" Width="3" HorizontalAlignment="Left" Background="{DynamicResource themeAccentBrush}" Visibility="Collapsed"/>
+                                             <ContentPresenter/>
+                                             <Border Height="1" Background="{StaticResource dividerBrush}" VerticalAlignment="Bottom"/>
+                                          </Grid>
+                                          <ControlTemplate.Triggers>
+                                             <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.4"/>
+                                             </Trigger>
+                                             <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="state" Property="Background" Value="{StaticResource stateHoverBrush}"/>
+                                             </Trigger>
+                                             <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="state" Property="Background" Value="{StaticResource statePressedBrush}"/>
+                                                <Setter TargetName="selected" Property="Visibility" Value="Visible"/>
+                                             </Trigger>
+                                          </ControlTemplate.Triggers>
+                                       </ControlTemplate>
+                                    </Setter.Value>
+                                 </Setter>
+                              </Style>
+                           </ListBox.ItemContainerStyle>
+                           <ListBox.ItemTemplate>
+                              <DataTemplate>
+                                 <Grid Margin="18,12">
+                                    <Grid.ColumnDefinitions>
+                                       <ColumnDefinition Width="2*"/>
+                                       <ColumnDefinition Width="*"/>
+                                       <ColumnDefinition Width="*"/>
+                                       <ColumnDefinition Width="*"/>
+                                       <ColumnDefinition Width="100"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding cvContactFullName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding cTenantEmpCode}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding cvTenantDeptName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding cTenantEmpPosition}" TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal">
+                                       <Border Style="{StaticResource chipMutedStyle}" Visibility="{Binding ccTenantEmpIsDeptHead, Converter={StaticResource boolVisibility}}">
+                                          <TextBlock Text="HEAD"/>
+                                       </Border>
+                                       <Border Margin="4,0,0,0">
+                                          <Border.Style>
+                                             <Style TargetType="Border" BasedOn="{StaticResource chipMutedStyle}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                   <DataTrigger Binding="{Binding cTenantEmpState}" Value="-1">
+                                                      <Setter Property="Visibility" Value="Visible"/>
+                                                   </DataTrigger>
+                                                </Style.Triggers>
+                                             </Style>
+                                          </Border.Style>
+                                          <TextBlock Text="INACTIVE"/>
+                                       </Border>
+                                    </StackPanel>
+                                 </Grid>
+                              </DataTemplate>
+                           </ListBox.ItemTemplate>
+                        </ListBox>
+                     </Grid>
+                  </ScrollViewer>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="EMPLOYEE" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select an employee or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <TextBlock Text="PERSON" Style="{StaticResource sectionCaptionStyle}" Margin="0,16,0,8"/>
+                           <TextBlock Text="{Binding PersonCaption}" TextWrapping="Wrap" Visibility="{Binding IsSaved, Converter={StaticResource boolVisibility}}"/>
+                           <StackPanel Orientation="Horizontal" Visibility="{Binding IsDraft, Converter={StaticResource boolVisibility}}">
+                              <RadioButton Content="Existing person" IsChecked="{Binding ExistingPerson}" Margin="0,0,14,0"/>
+                              <RadioButton Content="New person" IsChecked="{Binding NewPerson}"/>
+                           </StackPanel>
+                           <StackPanel Visibility="{Binding ShowExistingPerson, Converter={StaticResource boolVisibility}}" Margin="0,12,0,0">
+                              <DockPanel>
+                                 <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SearchPeopleCommand]}"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding PersonSearch, UpdateSourceTrigger=PropertyChanged}" Tag="Name or user account"/>
+                              </DockPanel>
+                              <ListBox MaxHeight="180" BorderThickness="0" Padding="0" Style="{StaticResource surfaceListBoxStyle}" ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate, Mode=TwoWay}" Margin="0,8,0,0">
+                                 <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                       <Setter Property="IsEnabled" Value="False"/>
+                                       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                       <Setter Property="Padding" Value="0"/>
+                                       <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
+                                       <Setter Property="Template">
+                                          <Setter.Value>
+                                             <ControlTemplate TargetType="ListBoxItem">
+                                                <Grid>
+                                                   <Border x:Name="state" Background="Transparent"/>
+                                                   <Border x:Name="selected" Width="3" HorizontalAlignment="Left" Background="{DynamicResource themeAccentBrush}" Visibility="Collapsed"/>
+                                                   <ContentPresenter/>
+                                                   <Border Height="1" Background="{StaticResource dividerBrush}" VerticalAlignment="Bottom"/>
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                   <Trigger Property="IsEnabled" Value="False">
+                                                      <Setter Property="Opacity" Value="0.4"/>
+                                                   </Trigger>
+                                                   <Trigger Property="IsMouseOver" Value="True">
+                                                      <Setter TargetName="state" Property="Background" Value="{StaticResource stateHoverBrush}"/>
+                                                   </Trigger>
+                                                   <Trigger Property="IsSelected" Value="True">
+                                                      <Setter TargetName="state" Property="Background" Value="{StaticResource statePressedBrush}"/>
+                                                      <Setter TargetName="selected" Property="Visibility" Value="Visible"/>
+                                                   </Trigger>
+                                                </ControlTemplate.Triggers>
+                                             </ControlTemplate>
+                                          </Setter.Value>
+                                       </Setter>
+                                       <Style.Triggers>
+                                          <DataTrigger Binding="{Binding TenantEmpId}" Value="{x:Null}">
+                                             <Setter Property="IsEnabled" Value="True"/>
+                                          </DataTrigger>
+                                       </Style.Triggers>
+                                    </Style>
+                                 </ListBox.ItemContainerStyle>
+                                 <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <StackPanel Margin="4">
+                                          <TextBlock Text="{Binding FullName}"/>
+                                          <ItemsControl ItemsSource="{Binding UserAccounts}">
+                                             <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                   <TextBlock Text="{Binding}" Opacity="0.6"/>
+                                                </DataTemplate>
+                                             </ItemsControl.ItemTemplate>
+                                          </ItemsControl>
+                                          <TextBlock Text="already an employee here">
+                                             <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                   <Style.Triggers>
+                                                      <DataTrigger Binding="{Binding TenantEmpId}" Value="{x:Null}">
+                                                         <Setter Property="Visibility" Value="Collapsed"/>
+                                                      </DataTrigger>
+                                                   </Style.Triggers>
+                                                </Style>
+                                             </TextBlock.Style>
+                                          </TextBlock>
+                                       </StackPanel>
+                                    </DataTemplate>
+                                 </ListBox.ItemTemplate>
+                              </ListBox>
+                           </StackPanel>
+                           <StackPanel Visibility="{Binding ShowNewPerson, Converter={StaticResource boolVisibility}}">
+                              <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                                 <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding NewPersonName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+                              </StackPanel>
+                              <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                                 <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}"/>
+                                 <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding PersonTypes}" SelectedItem="{Binding NewPersonType}">
+                                    <ComboBox.ItemTemplate>
+                                       <DataTemplate>
+                                          <TextBlock Text="{Binding}"/>
+                                       </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                 </ComboBox>
+                              </StackPanel>
+                           </StackPanel>
+                           <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True" ToolTip="Employee number, unique within this tenant (up to 50 characters).">
+                              <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50"/>
+                           </StackPanel>
+                           <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                              <TextBlock Text="Department" Style="{StaticResource fieldLabelStyle}"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding DepartmentOptions}" SelectedItem="{Binding EditDepartment, Mode=TwoWay}">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                           </StackPanel>
+                           <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                              <TextBlock Text="Position" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditPosition, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+                           </StackPanel>
+                           <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
+                              <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto"/>
+                           </StackPanel>
+                           <TextBlock Text="{Binding HeadChangeHint}" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
          </Grid>
       </Grid>
       <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>

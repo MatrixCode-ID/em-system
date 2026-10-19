@@ -14,6 +14,15 @@ namespace Em.Api.Core.Models
       public DbSet<ta_Tenant> ta_Tenants => Set<ta_Tenant>();
       /// <summary>Tenants with their parent name and child count.</summary>
       public DbSet<vi_Tenant> vi_Tenants => Set<vi_Tenant>();
+      /// <summary>Tenant organization records.</summary>
+      public DbSet<ta_TenantDept> ta_TenantDepts => Set<ta_TenantDept>();
+      /// <summary>Tenant organization records.</summary>
+      public DbSet<vi_TenantDept> vi_TenantDepts => Set<vi_TenantDept>();
+      /// <summary>Tenant organization records.</summary>
+      public DbSet<ta_TenantEmp> ta_TenantEmps => Set<ta_TenantEmp>();
+      /// <summary>Tenant organization records.</summary>
+      public DbSet<vi_TenantEmp> vi_TenantEmps => Set<vi_TenantEmp>();
+
       /// <summary>Rows of table <c>ta_Contact</c>.</summary>
       public DbSet<ta_Contact> ta_Contacts => Set<ta_Contact>();
       /// <summary>Rows of table <c>ta_Address</c>.</summary>
@@ -98,6 +107,15 @@ namespace Em.Api.Core.Models
             tenant.FindProperty(nameof(ta_Tenant.cTenantParent_cTenantId))!.SetColumnType("char(26)");
          }
          modelBuilder.Entity<ta_Tenant>().HasIndex(x => x.cTenantCode).IsUnique();
+         if (Database.IsSqlServer()) foreach (var entity in new[] {
+            modelBuilder.Entity<ta_TenantDept>().Metadata, modelBuilder.Entity<vi_TenantDept>().Metadata,
+            modelBuilder.Entity<ta_TenantEmp>().Metadata, modelBuilder.Entity<vi_TenantEmp>().Metadata }) {
+            entity.FindProperty("ustamp")!.SetColumnType("datetime");
+            entity.FindProperty("datestamp")!.SetColumnType("datetime");
+            foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && p.Name.EndsWith("Id")))
+               property.SetColumnType("char(26)");
+         }
+
          modelBuilder.Entity<ta_RoleClaim>().HasKey(k => new { k.cRoleId, k.cClaimName });
          modelBuilder.Entity<ta_UserRole>().HasKey(k => new { k.cUserId, k.cRoleId });
 

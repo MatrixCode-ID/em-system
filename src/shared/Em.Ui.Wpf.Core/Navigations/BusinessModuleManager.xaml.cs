@@ -14,7 +14,9 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
       InitializeComponent();
       Vm.EmApp = app;
       Vm.ConfirmDiscard = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
-         "Discard the unsaved changes of this tenant?", "Unsaved Changes") == MessageBoxResult.Yes;
+         "Discard the unsaved changes of this record?", "Unsaved Changes") == MessageBoxResult.Yes;
+      Vm.Employees.ConfirmHeadChange = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
+         "This department will lose its head. Continue?", "Department Head") == MessageBoxResult.Yes;
    }
 
    /// <summary>Screen view model.</summary>
@@ -24,10 +26,10 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
    public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Vm.IsLoaded ? Task.CompletedTask : Vm.ReloadAsync();
 
    /// <inheritdoc />
-   public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
+   public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) { args.Cancel = !Vm.CanSwitchTabs || !Vm.CanLeave(); return Task.CompletedTask; }
 
    /// <inheritdoc />
-   public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Vm.ReloadAsync();
+   public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Vm.RefreshCommand();
 
    /// <inheritdoc />
    public Task OnRelease(INavigation sender) => Task.CompletedTask;

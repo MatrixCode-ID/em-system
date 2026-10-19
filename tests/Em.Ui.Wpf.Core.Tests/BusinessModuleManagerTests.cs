@@ -18,7 +18,7 @@ public class BusinessModuleManagerTests
       Assert.IsType<System.Windows.Style>(view.Resources["tenantTreeItemStyle"]);
       Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("tenantTree"));
       Assert.True(view.Vm.IsTenantsTab);
-      Assert.Equal(["Tenants"], view.Vm.Tabs.Select(t => t.Title));
+      Assert.Equal(["Tenants", "Departments", "Employees"], view.Vm.Tabs.Select(t => t.Title));
       Assert.False(view.Vm.CanBrowse);
    }
 

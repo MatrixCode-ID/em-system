@@ -102,6 +102,8 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<ISmtpService>(provider => new Em.Ui.Core.SmtpClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ISmtpProfileService>(provider => new Em.Ui.Core.SmtpProfileClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ITenantServices>(provider => new Em.Ui.Core.TenantClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantDeptServices>(provider => new Em.Ui.Core.TenantDeptClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantEmpServices>(provider => new Em.Ui.Core.TenantEmpClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ApprovalAccessCatalog>();
