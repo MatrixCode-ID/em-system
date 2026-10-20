@@ -118,6 +118,9 @@ namespace Em.Api.Core.Models
 
          modelBuilder.Entity<ta_RoleClaim>().HasKey(k => new { k.cRoleId, k.cClaimName });
          modelBuilder.Entity<ta_UserRole>().HasKey(k => new { k.cUserId, k.cRoleId });
+         // Declared so EF knows to delete a role's assignments before the role itself within one SaveChanges;
+         // without it the batch order is arbitrary and SQL Server rejects the role delete on the foreign key.
+         modelBuilder.Entity<ta_UserRole>().HasOne<ta_Role>().WithMany().HasForeignKey(x => x.cRoleId).OnDelete(DeleteBehavior.NoAction);
 
          modelBuilder.Entity<ta_ApprovalRequest>().HasIndex(x => new { x.cApprovalRequestKind, x.cApprovalName, x.cSubjectKey }).IsUnique()
             .HasFilter("[cApprovalRequestKind] = 2 AND [cApprovalRequestStage] >= -1");
