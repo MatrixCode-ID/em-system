@@ -89,6 +89,36 @@ namespace Em.Ui.Wpf.Core.Tests
       }
 
       [WpfTheory]
+      [InlineData(false, false)]
+      [InlineData(false, true)]
+      [InlineData(true, false)]
+      [InlineData(true, true)]
+      public void ContainerManagerHostSwitchAppliesToMenuAndDirectNavigation(bool enabled, bool debug) {
+         var app = (EmApp)Activator.CreateInstance(typeof(EmApp),
+            BindingFlags.Instance | BindingFlags.NonPublic, null, [Array.Empty<string>()], null)!;
+         SetPrivate(app, nameof(EmApp.IsDebugMode), debug);
+         SetPrivate(app, nameof(EmApp.ActiveUser), NewUser(app, debug ? Defaults.DebuggerUserId : Defaults.AdminUserId));
+         typeof(EmApp).GetField("_containerManagerEnabled", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(app, enabled);
+         var catalogType = typeof(EmApp).Assembly.GetType("Em.Ui.Wpf.Core.ApprovalAccessCatalog")!;
+         using var services = new ServiceCollection()
+            .AddSingleton(catalogType, Activator.CreateInstance(catalogType, app)!)
+            .BuildServiceProvider();
+         typeof(EmApp).GetField("_serviceProvider", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(app, services);
+         typeof(EmApp).GetMethod("InitInternalNavigation", BindingFlags.Static | BindingFlags.NonPublic)!
+            .Invoke(null, [app, null]);
+
+         var navigation = app.Navigations.Single(n => n.Name == "admin.container");
+         Assert.Equal(enabled, app.CanOpen(navigation));
+         var tools = (System.Collections.IEnumerable)typeof(EmApp)
+            .GetMethod("GetStaticTools", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(app, null)!;
+         Assert.Equal(enabled, tools.Cast<object>().Any(tool =>
+            (tool.GetType().GetProperty("Navigation")!.GetValue(tool) as Navigation)?.Name == "admin.container"));
+         Assert.True(app.CanOpen(app.Navigations.Single(n => n.Name == "admin.users")));
+      }
+
+      [WpfTheory]
       [InlineData(true, false, Defaults.DebuggerUserId, true, true)]
       [InlineData(true, false, Defaults.DebuggerUserId, false, true)]
       [InlineData(false, false, Defaults.AdminUserId, true, true)]

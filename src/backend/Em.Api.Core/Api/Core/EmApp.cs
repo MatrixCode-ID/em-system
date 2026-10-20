@@ -54,6 +54,7 @@ namespace Em.Api.Core
          builder.RegisterDbConnection();
          builder.RegisterDbCommand();
          appBuilder(builder);
+         InitContainerManager(builder);
          app.ApplyProxyHeaderRegistration(builder);
          app.ApplyDbContextRegistrations(builder);
          app.ApplyLogRegistration(builder);
@@ -88,6 +89,11 @@ namespace Em.Api.Core
          app._httpContextAccessor = app._rootServiceProvider.GetRequiredService<IHttpContextAccessor>();
          app._rootServiceProvider.GetRequiredService<ApprovalRegistry>().Initialize(app._rootServiceProvider);
          return app;
+      }
+
+      internal static void InitContainerManager(EmAppBuilder builder) {
+         if (builder.EnableContainerManager)
+            builder.AddService<ICtnServices, CtnServices>(enforceClaims: false);
       }
 
       /// <summary>
@@ -131,9 +137,7 @@ namespace Em.Api.Core
          // the "any claim in this module" default, which would add nothing on top of that.
          builder.AddService<ICdnServices, CdnServices>(enforceClaims: false);
 
-         // enforceClaims: false for the same reason as the CDN: every action names its claim explicitly
-         // (one claim, Container Manager Access). The service answers 404 itself while the registry is off.
-         builder.AddService<ICtnServices, CtnServices>(enforceClaims: false);
+         // Container management is registered after the host callback so the host can disable it.
          // Robot management belongs to User Manager and works without container registry.
          builder.AddService<IRobotServices, RobotServices>(enforceClaims: false);
 

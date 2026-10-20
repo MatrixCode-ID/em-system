@@ -25,6 +25,12 @@ the WPF **Container Manager**, and testing. For a step-by-step walkthrough of ev
    naming the script. Managed storage settings require the registry tables even when the registry is
    disabled.
 
+Hosts can set `builder.EnableContainerManager = false` in the API configuration to
+omit the container management service and its actions. The WPF builder has
+the same option: it hides Container Manager and refuses direct navigation even in
+debug mode. Both default to `true`. Registry protocol hosting is independent; omit
+`AddContainerRegistry` (and any managed registry enablement) to disable `/v2` too.
+
 ## Model
 
 - Pull names are **`host/root/name`, exactly two segments** (`localhost:5132/acme/api:v1`). Three or more

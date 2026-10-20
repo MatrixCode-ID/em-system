@@ -125,6 +125,7 @@ namespace Em.Ui.Wpf.Core
          InitInternalNavigation(app, pars);
          InitInternalClaims(app);
          builder(pars);
+         app._containerManagerEnabled = pars.EnableContainerManager;
          app.ApplicationLayout = pars.AppLayout;
          app.NavigationTransitionTime = pars.EnableAnimation && app.ApplicationLayout == ApplicationLayout.SinglePage
             ? pars.TransitionTime

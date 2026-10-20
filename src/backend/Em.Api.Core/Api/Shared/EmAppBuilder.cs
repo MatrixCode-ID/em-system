@@ -24,6 +24,9 @@ namespace Em.Api.Shared
       private static readonly ILogger Logger = BootstrapLoggerFactory.CreateLogger<EmAppBuilder>();
 
       internal IServiceCollection Services { get; init; } = null!;
+
+      /// <summary>Whether to register container management actions. Defaults to true; registry protocol hosting is configured separately.</summary>
+      public bool EnableContainerManager { get; set; } = true;
       internal List<ActionDefinition> ActionDefinitions { get; } = [];
       internal List<Action<IServiceCollection, IReadOnlyDictionary<string, DbConnectionInfo>>> DbContextRegistrations { get; } = [];
 

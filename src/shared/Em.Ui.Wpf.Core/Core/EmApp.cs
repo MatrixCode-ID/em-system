@@ -231,11 +231,13 @@ namespace Em.Ui.Wpf.Core
       /// </summary>
       /// <param name="navigation">The navigation about to be opened.</param>
       public bool CanOpen(Navigation navigation) =>
+         (_containerManagerEnabled || !string.Equals(navigation.Name, "admin.container", StringComparison.OrdinalIgnoreCase)) &&
          (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
          (IsDebugBypass || NavigationAccess.CanOpen(navigation, ActiveUser));
 
       // Until a server has been asked, module presence is unknown and must not hide anything.
       private bool _serverClaimsLoaded;
+      private bool _containerManagerEnabled = true;
 
       // The application's built-in tools, in the order every surface lists them: the home screen of
       // the single-page layout and the Tools menu of the multi-tab window. A tool that is a

@@ -20,6 +20,9 @@ namespace Em.Ui.Wpf.Shared
       /// </summary>
       public string? ApplicationName { get; set; }
 
+      /// <summary>Whether this client may open Container Manager, including in debug mode. Defaults to true.</summary>
+      public bool EnableContainerManager { get; set; } = true;
+
       /// <summary>
       /// The brand display settings currently in force (logo, login screen texts, and themes). Filled through
       /// <see cref="ApplyBranding"/>; if the application never calls it, it stays an empty
