@@ -78,9 +78,7 @@ Paths are on the API server's filesystem, relative to `ContentRootPath`; they ar
   test file, then removes it; a cleanup failure is reported. Saving an enabled store creates the needed
   directory. A disabled store may have an empty path; a non-empty path is still checked. Save never
   copies, moves or deletes payload.
-- Paths may not pass through symlinks or reparse points. The CDN tree is also checked for links to other
-  storage or configuration, and for known secret files (`emapi-config.json`, `em.local.json`,
-  `secrets.local.json`, `.env*`, `.git`).
+- Paths may not pass through symlinks or reparse points. CDN dot/hidden/system files are public; the operator is responsible for excluding secrets.
 - Ambiguous Windows paths are rejected: trailing dot or space, device or reserved names, alternate data
   streams, short-name aliases.
 - Stores may not overlap each other (ancestor/descendant), including the roots still active until restart,
@@ -111,3 +109,11 @@ Harnesses kept outside the repo, run from the repo root:
   public dispatcher and mappings, not the production `Program.cs`, and is not a Docker CLI test.
 - `dotnet run --project ..\.artefacts\em-system\scripts\storage-settings-render\StorageSettingsRender.csproj`
   renders the settings card enabled, disabled and busy in both themes without showing a window.
+
+## CDN parent directory
+
+The CDN Directory is a parent, not the public tree. The API creates files/, temp/, recycle/ and settings/;
+only files/ is served. There is no automatic migration or deletion of older content beside these four
+folders. One parent belongs to one API instance. MaxUploadMb applies to ordinary CDN Manager uploads;
+managed release folders bypass the per-file limit and enforce their own optional byte quota.
+See [managed CDN](engine-cdn-storage.md).

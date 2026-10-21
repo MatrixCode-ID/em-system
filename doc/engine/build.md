@@ -110,3 +110,21 @@ member needs an English XML comment.
 (error MAUIR0001, `MissingMethodException` on `SKImageFilter.CreateMatrixConvolution` and similar). Resizetizer
 is a build-time tool only, so pinning it apart from `$(MauiVersion)` is safe. Remove the pin once a fixed MAUI
 release is available.
+
+## Host product identity {#host-identity}
+
+A WPF host declares Product (display name), Company, EmAppId (technical app_id), ApplicationIcon (ICO)
+and optional EmAppLogo (PNG) in its csproj. AssemblyName determines the application exe. NuGet consumers
+receive buildTransitive/EmSys.Ui.Wpf.Core.targets automatically. ProjectReference consumers explicitly
+import that file from Em.Ui.Wpf.Core/buildTransitive in the host csproj. It generates AssemblyMetadata
+and embeds branding resources. EmAppBuilder reads the entry assembly after host configuration;
+ApplicationName, AppId and branding code overrides remain available.
+
+With EmAppId, BaseRegKey is HKCU/Software/<app_id> and client logs/outbox use
+%LocalAppData%/<app_id>/Logs. Legacy hosts without EmAppId retain ApplicationName paths. No data is
+migrated. Use a distinct app_id for each coexisting environment. The host no longer includes a fixed
+launcher.exe Content entry: Release Manager builds and copies the product launcher during Prepare.
+
+The status bar system slots contain Version followed by Updates for launcher-started apps. Hosts may
+change builder.LauncherUpdates.FirstCheckDelay, CheckInterval and Jitter. Defaults are 5 minutes,
+60 minutes and plus/minus 10 minutes. See [launcher updates](engine-launcher.md).

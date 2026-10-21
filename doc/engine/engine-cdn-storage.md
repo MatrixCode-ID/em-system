@@ -1,73 +1,86 @@
-# CDN
+# CDN storage and managed release folders
 
-The API host can serve a folder on the server as a public, read-only CDN under `/cdn/...`. Content is
-managed from the WPF **CDN Manager** screen through `ICdnServices`.
+Enable with `builder.AddManagedStorageSettings()` (default `./data/cdn`, 200 MB ordinary upload limit),
+or use `builder.EnableCdn(path, maxFileSizeMb)` for static configuration. See [Storage settings](engine-storage-settings.md).
 
-## Enabling
+## Filesystem layout
 
-Recommended: call `builder.AddManagedStorageSettings()` in `Program.cs`. The CDN is then enabled by
-default at `./data/cdn` with a 200 MB upload limit, and both values can be changed from the CDN Manager
-Settings card (applied after an API restart). See [Storage settings](engine-storage-settings.md).
+The configured directory is a parent containing four automatically created directories:
 
-Hosts that prefer fixed configuration can call `builder.EnableCdn(rootPath)` or
-`builder.EnableCdn(rootPath, maxFileSizeMb)` instead. The two modes cannot be combined.
+```text
+data/cdn/
+  files/       public /cdn/ root
+  temp/        uploads, archives, extraction and retired open files
+  recycle/     manually retained deleted items
+  settings/    managed.json
+```
 
-## Public download
+Use one API instance per CDN parent. Operations and open downloads are tracked in process memory;
+sharing a parent between processes is unsupported. All directories must remain on the same volume.
+There is no migration: older content outside these directories is neither served, listed nor removed.
+Administrators move or remove it manually.
 
-- `GET`/`HEAD /cdn/<path>` is served by ASP.NET Core static files: Range, `If-Range`, `ETag`, 206 and 416
-  are supported, unknown file types download as `application/octet-stream`, and folders show a directory
-  listing.
-- Names starting with a dot, and hidden or system entries, are never served. This also keeps temporary
-  upload files private.
-- `/cdn` is outside the action dispatcher: no claims, no action timeout and no rate limit (download
-  managers open many parallel Range connections). Anything not found, or everything while the CDN is off,
-  returns a plain 404.
+## Public downloads
 
-## Managing content
+GET/HEAD `/cdn/<path>` supports Range, If-Range, ETag, 206 and 416 through ASP.NET Core static files.
+Unknown file types download as application/octet-stream. Directories show a public listing.
+Dot-prefixed, hidden and system entries are ordinary public files, including `.htaccess`.
+Never place confidential content in `files/`. Symlinks/reparse points and traversal are refused.
+Missing paths and disabled CDN return a plain 404. The other three directories are never public.
 
-All `ICdnServices` actions require the **CDN Manager Access** claim in module `Administrative Tools`, and
-return 404 when the CDN is disabled. Paths are relative to the CDN root and separated by `/`; `null` or an
-empty string is the root. Paths that escape the root, or that name a dot-prefixed entry, are rejected with
-400.
+Public downloads and both CDN management services are exempt from ActionRateLimit. Authentication,
+claims and path validation still apply to actions. Existing downloads keep their tracked read handle
+with FileShare.Delete, so removing/replacing a file does not interrupt that download.
 
-| Action | Purpose |
-| --- | --- |
-| `GetMeta_CdnFolder(path)`, `GetMeta_CdnTree(path)`, `GetMeta_CdnItemCount(path)` | Browse |
-| `PostGetMeta_CdnUpload(request, content)` | Streamed upload |
-| `PostGetMeta_CdnCreateFolder`, `PostGetMeta_CdnMove`, `PostMeta_CdnDelete` | Folder and file operations |
-| `PostGetMeta_CdnArchive`, `GetMeta_CdnArchiveTask`, `PostMeta_CdnArchiveCancel`, `PostMeta_CdnArchiveClear` | Create a zip as a background task |
-| `GetMeta_CdnExtractConflicts`, `PostGetMeta_CdnExtract`, `GetMeta_CdnExtractTasks`, `PostMeta_CdnExtractCancel`, `PostMeta_CdnExtractClear` | Extract a zip as a background task |
-| `GetMeta_CdnStorageSize` | Storage size (see below) |
-| `GetMeta_CdnStatus`, `GetMeta_CdnSettings`, `PostGetMeta_CdnValidateDirectory`, `PostGetMeta_CdnSettingsSave` | Status and settings (settings require **CDN Settings Manage**) |
+## CDN Manager
 
-Archive and extract run as global business tasks: the action returns immediately and the status is
-polled. Every holder of the CDN claim can see, cancel and clear these tasks, including ones started by
-another user. Only one archive may run on the whole server, and one zip file cannot be extracted twice at
-the same time.
+`ICdnServices` requires Administrative Tools:CDN Manager Access. Storage settings use the separate
+CDN Settings Manage claim. Paths use `/` relative to `files/`; empty means its root.
+The main toolbar browses, uploads, moves, creates folders, downloads and creates/extracts zip archives.
+Archive and extraction remain global business tasks with cancellation/status actions.
 
-## Storage size
+**More** opens maintenance:
 
-`GetMeta_CdnStorageSize()` returns `CdnStorageInfo` with `TotalBytes` and `FileCount` (both 64-bit).
+- Recycle bin: list original paths, Restore, Delete permanently, Empty Recycle Bin.
+- Clear Temporary Files: review garbage bytes/count, then remove garbage only. Active operations and
+  open retired downloads are excluded. There is no automatic startup cleanup.
+- Managed folders: owner app_id, usage/quota, optional byte quota, Release by typing the folder name.
 
-- It sums the length of public files in the whole CDN tree. Dot-prefixed names (including temporary
-  upload/archive files), hidden/system entries and symlinks/reparse points are excluded.
-- The size is the file payload according to the filesystem, not physical volume usage, free space or
-  overhead. Identical files or hard links at different paths are counted per path.
-- The scan reads metadata only, but its cost grows with the number of files and folders. The request's
-  cancellation token is honored. An inaccessible folder fails the request instead of returning a partial
-  total. Files changing during the scan can change the result or fail the request; refresh to retry.
+Delete and ordinary overwrite rename the previous payload into `recycle/<id>/<original-name>`;
+`item.json` records original path, UTC deletion time, authenticated user, size and file/folder kind.
+A directory is one item. Retention is manual. Purge skips items still read by a tracked download.
+Restore recreates parents but refuses existing paths and destinations inside/containing managed folders;
+there is no Replace or Keep both. Storage totals include `files/` + `temp/` + `recycle/`, including dot files.
 
-The **CDN Manager** and **Container Manager** cards on the default home screen show the storage size. Each
-card has a small refresh button in its top right corner that reloads only that card, prevents duplicate
-requests, and becomes available again after success or failure. On home reload both sizes load
-independently, and only cards the user may open request data. Failed or disabled states are shown as a
-status, never as zero.
+## Managed release folders
 
-The CDN Manager shows the global total, the file count and a scope note above the toolbar. Refresh, folder
-navigation and reloads after upload/delete/move/archive/extract read the size again. The total always
-covers the whole CDN, even while a subfolder is open.
+`ICdnReleaseServices` requires only Administrative Tools:Release Manager Access, registered by the API.
+Selecting an empty folder in Release Manager adopts it; a missing folder can be created at selection.
+A physically nonempty folder (even an empty child directory or hidden file) cannot be adopted.
+Managed roots cannot be ancestors or descendants of another managed root.
 
-## Maintainer notes
+`settings/managed.json` stores entries such as:
 
-Local smoke test (harness kept outside the repo): `dotnet run --project ..\.artefacts\em-system\scripts\cdn-storage-smoke`
-from the repo root. It uses an isolated fixture, cleans up in `finally` and does not touch the live CDN.
+```json
+{ "path": "inventory-release", "owner": { "kind": "release", "id": "Contoso.Inventory" }, "quotaBytes": null }
+```
+
+Only the owning app_id may write through Release Manager actions. CDN Manager can browse/download,
+but cannot modify, move, archive, extract or delete managed content or its ancestors.
+An admin can Release the root through CDN Manager; the owning product can also release it.
+Release removes ownership, not payload. Release Manager deletions bypass recycle; an open file is
+retired to temp and deleted when its final reader closes, or by a later Clear Temporary Files.
+
+New roots have unlimited quota. CDN administrators can set any nonnegative byte quota, including below
+current usage; no existing content is deleted. Preflight checks the complete final Sync inventory,
+including metadata, before the first write, and every managed upload enforces live usage again.
+A rejected Sync reports both quota and resulting size. Ordinary Max file size does not apply to managed
+uploads. Usage excludes temp/recycle. See [Release Manager](engine-release-manager.md).
+
+## Actions
+
+Browse: GetMeta_CdnFolder / Tree / ItemCount. Ordinary mutations: PostGetMeta_CdnUpload / CreateFolder /
+Move, PostMeta_CdnDelete. Maintenance: GetMeta_CdnRecycle, PostMeta_CdnRestore / RecycleDelete /
+RecycleEmpty, GetMeta_CdnTemporaryGarbage, PostMeta_CdnTemporaryClear, GetMeta_CdnManagedFolders,
+PostMeta_CdnManagedRelease / ManagedQuota. Release actions use the CdnRelease prefix and check ownership.
+GET accepts simple per-field parameters; Sync preflight and streamed upload use POST payloads.

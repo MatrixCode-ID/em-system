@@ -112,7 +112,7 @@ di-merge ke `work-bench` dari sesi lokal. Sesi lokal dan Codex tetap hanya commi
 
 Keputusan pengguna 2026-10-09; berlaku untuk Codex dan Claude Code, juga repo turunan.
 
-- Semua penyimpanan Registry fitur engine WPF wajib menggunakan `EmApp.BaseRegKey` dari instance aplikasi host (termasuk OshaApp), yang mengikuti `ApplicationName` host.
+- Semua penyimpanan Registry fitur engine WPF wajib menggunakan `EmApp.BaseRegKey` dari instance aplikasi host, yang mengikuti `app_id` host (`EmAppId` di csproj): `HKCU\Software\<app_id>`. Bila host lama tidak mempunyai `app_id`, gunakan perilaku lama berdasarkan `ApplicationName`. Tidak ada migrasi registry otomatis (keputusan pengguna 2026-10-21).
 - Jangan membuat root/path Registry sendiri untuk sebuah fitur, jangan hardcode nama aplikasi, dan jangan langsung memakai `Registry.CurrentUser`/`Registry.LocalMachine` dalam penyimpanan fitur runtime.
 - Pengecualian: integrasi operating system (Windows) yang memang mensyaratkan lokasi Registry tertentu boleh memakai lokasi tersebut, misalnya file association atau registrasi protokol. Pengecualian ini tidak berlaku untuk preferensi, history, cache, atau konfigurasi internal aplikasi.
 - Fitur boleh membuat subkey dan value miliknya di bawah `BaseRegKey`, misalnya `SmtpManager` untuk riwayat test email. Clear history hanya menghapus value riwayat fitur tersebut, bukan root aplikasi atau data fitur lain.
