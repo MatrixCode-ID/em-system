@@ -1,0 +1,5 @@
+Parser-only vector; deliberately unsigned. Never install without a valid signature.
+Accept: inventory-installer.exe, 1.0.1-beta.3, 64 lowercase hex inputHash.
+Reject: launcher fileName ../inventory-installer.exe or a missing files entry.
+Reject: launcher inputHash uppercase, non-hex, or not 64 characters.
+Reject: launcher version 1.0 or 1.0.1-beta without a counter.

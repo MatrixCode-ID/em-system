@@ -1,0 +1,11 @@
+{
+  "publishedAtUtc": "2026-10-21T08:00:00Z",
+  "launcher": {
+    "fileName": "inventory-installer.exe",
+    "version": "1.0.1-beta.3",
+    "inputHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  },
+  "files": [
+    { "path": "inventory-installer.exe", "size": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+  ]
+}

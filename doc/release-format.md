@@ -66,7 +66,28 @@ persis.
 | `files[].size` | integer | Ukuran file dalam byte, ≥ 0. |
 | `files[].sha256` | string | SHA-256 isi file (aturan di 2.4). |
 
-Tidak ada nomor versi format, nomor versi aplikasi, maupun nama penerbit.
+Field opsional `launcher` berisi metadata launcher yang ikut ditandatangani:
+
+```json
+"launcher": {
+  "fileName": "inventory-installer.exe",
+  "version": "1.0.1-beta.3",
+  "inputHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+}
+```
+
+`fileName` adalah nama exe tanpa direktori, berakhiran `.exe`, dan harus menunjuk
+file di root `binaries/` yang tercantum dalam `files`. `version` adalah
+`MAJOR.MINOR.PATCH[-(prealpha|alpha|beta|rc).N]`; versi launcher terpisah dari
+versi aplikasi. `inputHash` adalah SHA-256 input build, 64 hex huruf kecil.
+Pembaca lama boleh mengabaikan field ini. Tidak ada nomor versi format baru.
+Nama launcher tidak tetap; shortcut, launcher root, dan aplikasi yang dibuka
+langsung memakai `launcher.fileName`, tanpa mencari exe di folder induk.
+
+Paket Microsoft Cabinet `<app_id>.cab` memakai kompresi LZX dan berisi layout
+folder rilis yang sama (`release.json`, `release.json.sig`, `binaries/...`).
+Cab tidak dienkripsi. Seluruh path dan tanda tangan tetap diverifikasi sebelum
+pemasangan. Cab adalah media installer IT; sumber update PC tetap CDN.
 
 Penulis mengurutkan `files` menurut `path` secara ordinal (byte UTF-16 / code point). Pembaca tidak
 boleh bergantung pada urutan itu.

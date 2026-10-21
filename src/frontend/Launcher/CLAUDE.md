@@ -40,7 +40,35 @@ $env:LAUNCHER_PRODUCT = 'C:\path\to\other-product.toml'
 cargo build --release
 ```
 
-`launcher.exe` itself is a fixed name, not product data.
+## Identitas dan distribusi launcher (keputusan pengguna 2026-10-21)
+
+Bagian ini menggantikan keterangan identitas, layout, registry dan CLI lama di
+bawah bila berbeda. `app_id` adalah kunci teknis; `app_name` hanya tampilan.
+Folder instalasi `%LocalAppData%\<app_id>`, registry
+`HKCU\Software\<app_id>\Launcher`, policy
+`HKLM\Software\Policies\<app_id>\Launcher`. Fingerprint public key tertanam
+dicatat pada instalasi; `app_id` sama dengan fingerprint berbeda ditolak.
+
+Product menambah `launcher_exe`, `launcher_version`, `engine_version`, `logo`,
+`public_key`, `default_source`, `update_behavior` (`automatic` bawaan atau
+`ask`). Nama exe per produk dipakai juga oleh shortcut, uninstall, dan
+`LAUNCHER_PATH`; backup bernama `<nama>.old.exe`. Kunci tertanam melengkapi
+sumber kunci impor, policy dan PEM di samping exe.
+
+Installer membaca atau membuat `settings.ini` di samping exe, hanya
+`[Launcher] Source=...` dengan komentar `;`. Gagal membuatnya di folder baca
+saja adalah error. Source ditulis ke registry saat install, termasuk install
+ulang. Berkas tidak disalin ke instalasi. Runner hanya memakai policy HKLM
+lalu HKCU. `build-dist.ps1` hanya membangun produk bawaan dan uji lokal;
+Release Manager membangun exe tiap produk dari source yang dipilih developer.
+Host tidak lagi menyertakan binary dist sebagai Content otomatis.
+
+CLI tambahan: `--version` menampilkan versi launcher dan engine;
+`--prepare [--quiet]` menyiapkan tanpa mengaktifkan, tanpa GUI, dengan satu
+baris JSON `prepared`/`none`/`failed`; `--download-cab [--source S] [--quiet]`
+membuat cab LZX di samping installer, tanpa mengubah registry. Installer boleh
+memakai cab yang sudah diverifikasi; runner selalu memakai CDN. Detail:
+`plan/unexecuted/release-manager-cdn-launcher.codex.md` dan kontrak rilis.
 
 ## Build
 
