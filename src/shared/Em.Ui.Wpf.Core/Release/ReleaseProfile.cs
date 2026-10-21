@@ -57,7 +57,7 @@ namespace Em.Ui.Wpf.Core.Release
       };
 
       /// <summary>The format version.</summary>
-      public int FormatVersion { get; set; } = 1;
+      public int FormatVersion { get; set; } = 2;
       /// <summary>The id.</summary>
       public string Id { get; set; } = Guid.NewGuid().ToString("N");
       /// <summary>The name.</summary>
@@ -75,25 +75,35 @@ namespace Em.Ui.Wpf.Core.Release
       /// <summary>The release folder.</summary>
       public string ReleaseFolder { get; set; } = ReleaseLayout.DefaultReleaseFolder;
       /// <summary>The signing.</summary>
+      [JsonIgnore]
       public ReleaseProfileSigning Signing { get; set; } = new();
+
+      /// <summary>Identity read from the host project and selected by the developer.</summary>
+      public ReleaseProduct Product { get; set; } = new();
+      /// <summary>Public CDN address used by clients; empty derives from the connection.</summary>
+      public string CdnAddress { get; set; } = "";
+      /// <summary>Unencrypted PKCS#8 P-256 private PEM.</summary>
+      public string PrivateKeyPem { get; set; } = "";
+      /// <summary>Product-specific launcher settings.</summary>
+      public ReleaseLauncher Launcher { get; set; } = new();
 
       /// <summary>A deep copy, including the signing settings.</summary>
       public ReleaseProfile Clone() => FromJson(JsonSerializer.Serialize(this, JsonOptions));
 
       /// <summary>Validates the profile, throwing when a value is not acceptable.</summary>
       public void Validate() {
-         if (FormatVersion != 1) throw new InvalidDataException($"Unsupported profile format version {FormatVersion}.");
+         if (FormatVersion != 2) throw new InvalidDataException($"Unsupported profile format version {FormatVersion}.");
          ValidateId(Id);
          Id = Id.ToLowerInvariant();
          Name = Name?.Trim() ?? "";
          if (Name.Length is 0 or > 100) throw new InvalidDataException("Profile name must contain 1 to 100 characters.");
-         if (Signing is null || !Enum.IsDefined(TargetKind) || !Enum.IsDefined(Signing.Source) || !Enum.IsDefined(Signing.PasswordStorage))
+         if (Product is null || Launcher is null || !Enum.IsDefined(TargetKind))
             throw new InvalidDataException("Invalid profile signing settings or target kind.");
          SolutionPath ??= "";
          HostProject ??= "";
          PublishFolder ??= "";
          TargetFolder ??= "";
-         Signing.Thumbprint ??= "";
+         if (PrivateKeyPem.Length > 0) { using var key = ReleasePemKey.Open(PrivateKeyPem); }
          if (string.IsNullOrWhiteSpace(ReleaseFolder)) ReleaseFolder = ReleaseLayout.DefaultReleaseFolder;
          if (Signing.PasswordStorage == ReleasePasswordStorage.Separate) Signing.Password = null;
       }

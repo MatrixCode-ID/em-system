@@ -97,6 +97,7 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<IContactServices, ContactService>();
          app.Services.AddSingleton<ICredentialServices, CredentialService>();
          app.Services.AddSingleton<ICdnServices, CdnService>();
+         app.Services.AddSingleton<ICdnReleaseServices, CdnReleaseService>();
          app.Services.AddSingleton<ICtnServices, CtnService>();
          app.Services.AddSingleton<INuPakServices, NuPakService>();
          app.Services.AddSingleton<IObjectStorageServices, ObjectStorageService>();

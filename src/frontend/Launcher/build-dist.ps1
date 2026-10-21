@@ -12,11 +12,19 @@
    this script and commit its output whenever the launcher source changes.
 #>
 
-$ErrorActionPreference = 'Stop'
+param(
+   [string]$ProductFile,
+   [string]$OutputDirectory,
+   [string]$ExeName = 'launcher.exe',
+   [string]$TargetDirectory
+)
+
+$ErrorActionPreference = 'Stop' 
 
 $projectDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $projectDir '..\..\..')).Path
-$distDir = Join-Path $repoRoot 'dist\launcher'
+$distDir = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $repoRoot 'dist\launcher' }
+if ([IO.Path]::GetFileName($ExeName) -ne $ExeName -or -not $ExeName.EndsWith('.exe')) { throw 'ExeName must be a single .exe filename.' }
 
 # Rust picks the newest Visual Studio on its own, which may have link.exe without the x64 libraries
 # (LNK1104: msvcrt.lib). Only an installation with the x64 tools component will do.
@@ -53,6 +61,8 @@ $rustflags = "target.x86_64-pc-windows-msvc.rustflags=[$($remaps -join ', ')]"
 
 Push-Location $projectDir
 try {
+   if ($ProductFile) { $env:LAUNCHER_PRODUCT = [IO.Path]::GetFullPath($ProductFile) }
+   if ($TargetDirectory) { $env:CARGO_TARGET_DIR = [IO.Path]::GetFullPath($TargetDirectory) }
    & cargo build --release --config $rustflags
    if ($LASTEXITCODE -ne 0) { throw "cargo build failed with exit code $LASTEXITCODE." }
 }
@@ -66,9 +76,10 @@ finally {
    }
 }
 
-$built = Join-Path $projectDir 'target\release\launcher.exe'
+$buildTarget = if ($TargetDirectory) { [IO.Path]::GetFullPath($TargetDirectory) } else { Join-Path $projectDir 'target' }
+$built = Join-Path $buildTarget 'release\launcher.exe'
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null
-$target = Join-Path $distDir 'launcher.exe'
+$target = Join-Path $distDir $ExeName
 Copy-Item -Path $built -Destination $target -Force
 
 $file = Get-Item $target

@@ -15,7 +15,9 @@ namespace Em.Ui.Wpf.Core.Release
    /// </summary>
    public sealed class CdnReleaseTarget : ReleaseTarget
    {
-      private readonly ICdnServices _service;
+      private readonly ICdnReleaseServices _service;
+      private readonly string _appId;
+      private readonly string? _publicAddress;
       private readonly string _host;
       private readonly HttpClient _client;
       private readonly string _root;
@@ -30,7 +32,11 @@ namespace Em.Ui.Wpf.Core.Release
       /// <param name="service">The CDN service of the connection that is currently active.</param>
       /// <param name="connection">The active connection; its address and certificate choice are used for <c>/cdn</c>.</param>
       /// <param name="releaseFolder">The path of the release folder inside the CDN, e.g. <c>wpf-release</c>.</param>
-      public CdnReleaseTarget(ICdnServices service, ApiConnection connection, string releaseFolder) {
+      /// <param name="appId">Owning product identity.</param>
+      /// <param name="publicAddress">Optional client-facing release URL.</param>
+      public CdnReleaseTarget(ICdnReleaseServices service, ApiConnection connection, string releaseFolder, string appId, string? publicAddress = null) {
+         _appId = appId;
+         _publicAddress = string.IsNullOrWhiteSpace(publicAddress) ? null : publicAddress.TrimEnd('/') + "/";
          _service = service;
          _host = connection.Host.TrimEnd('/');
          _client = PublicClients.Get(connection.IgnoreSslErrors);
@@ -38,7 +44,7 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       /// <inheritdoc />
-      public override string Description => $"{_host}/cdn/{_root}/";
+      public override string Description => _publicAddress ?? $"{_host}/cdn/{_root}/";
 
       /// <inheritdoc />
       public override async Task<byte[]?> ReadFileAsync(string path, CancellationToken token) {
@@ -63,7 +69,7 @@ namespace Em.Ui.Wpf.Core.Release
          var folder = Full(ReleaseLayout.BinariesFolder);
          CdnEntry[] tree;
          try {
-            tree = await _service.GetMeta_CdnTree(folder).ConfigureAwait(false);
+            tree = await _service.GetMeta_CdnReleaseTree(folder, _appId).ConfigureAwait(false);
          }
          catch (ActionException x) when (x.StatusCode == 404) {
             return [];
@@ -76,13 +82,13 @@ namespace Em.Ui.Wpf.Core.Release
 
       /// <inheritdoc />
       public override async Task EnsureFolderAsync(string folder, CancellationToken token) {
-         string? parent = null;
-         foreach (var segment in Full(folder).Split('/')) {
+         string? parent = _root;
+         foreach (var segment in folder.Split('/', StringSplitOptions.RemoveEmptyEntries)) {
             token.ThrowIfCancellationRequested();
             var path = parent is null ? segment : $"{parent}/{segment}";
             if (_knownFolders.Add(path)) {
                try {
-                  await _service.PostGetMeta_CdnCreateFolder(parent, segment).ConfigureAwait(false);
+                  await _service.PostGetMeta_CdnReleaseCreateFolder(parent, segment, _appId).ConfigureAwait(false);
                }
                catch (ActionException x) when (x.StatusCode == 409) {
                   // Already there.
@@ -105,11 +111,11 @@ namespace Em.Ui.Wpf.Core.Release
          var full = Full(path);
          await using var body = new ProgressReadStream(content, progress, token);
          try {
-            await _service.PostGetMeta_CdnUpload(new CdnUploadRequest {
+            await _service.PostGetMeta_CdnReleaseUpload(new CdnReleaseUploadRequest { AppId = _appId, Upload = new CdnUploadRequest {
                Path = ParentOf(full),
                FileName = full[(full.LastIndexOf('/') + 1)..],
                Overwrite = true
-            }, body).ConfigureAwait(false);
+            } }, body).ConfigureAwait(false);
          }
          catch (Exception) when (token.IsCancellationRequested) {
             throw new OperationCanceledException(token);
@@ -120,7 +126,7 @@ namespace Em.Ui.Wpf.Core.Release
       public override async Task DeleteAsync(string path, bool isFolder, CancellationToken token) {
          token.ThrowIfCancellationRequested();
          try {
-            await _service.PostMeta_CdnDelete(Full(path)).ConfigureAwait(false);
+            await _service.PostMeta_CdnReleaseDelete(Full(path), _appId).ConfigureAwait(false);
          }
          catch (ActionException x) when (x.StatusCode == 404) {
             // Already gone.
@@ -129,20 +135,20 @@ namespace Em.Ui.Wpf.Core.Release
 
       /// <inheritdoc />
       public override async Task<long?> GetMaxFileSizeAsync(CancellationToken token) {
-         try {
-            return (await _service.GetMeta_CdnFolder(null).ConfigureAwait(false)).MaxFileSize;
-         }
-         catch (ActionException x) when (x.StatusCode == 404) {
-            throw new InvalidOperationException("The CDN is not enabled on this server.", x);
-         }
+         await _service.PostGetMeta_CdnReleaseManage(_root, _appId).ConfigureAwait(false);
+         return null;
       }
+
+      /// <inheritdoc />
+      public override Task PreflightAsync(IReadOnlyList<CdnSyncFile> files, CancellationToken token) =>
+         _service.PostMeta_CdnReleasePreflight(new CdnSyncPlan { Path = _root, AppId = _appId, Files = files.ToArray() });
 
       private string Full(string path) => $"{_root}/{path}";
 
       // Null for 404; any other failure is thrown. no-cache keeps a proxy from answering with an old
       // release.json, which would defeat the check made right before a Sync.
       private async Task<HttpResponseMessage?> GetAsync(string path, CancellationToken token) {
-         var url = $"{_host}/cdn/{string.Join('/', Full(path).Split('/').Select(Uri.EscapeDataString))}";
+         var url = Description + string.Join('/', path.Split('/').Select(Uri.EscapeDataString));
          var request = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
          request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
 

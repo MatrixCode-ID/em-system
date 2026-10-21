@@ -23,5 +23,7 @@ namespace Em.Ui.Wpf.Core.Release
       }
 
       private Dictionary<string, ReleaseFile>? _index;
+      /// <summary>Signed launcher identity, version and input hash.</summary>
+      public ReleaseLauncherMetadata? Launcher { get; init; }
    }
 }

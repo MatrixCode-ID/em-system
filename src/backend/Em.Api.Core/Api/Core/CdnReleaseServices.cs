@@ -32,8 +32,8 @@ public sealed class CdnReleaseServices : ServicesBase, ICdnReleaseServices {
    public Task<CdnEntry> PostGetMeta_CdnReleaseCreateFolder(string? path, string name, string appId) => Task.FromResult(Store.CreateFolder(path, name, appId));
    /// <inheritdoc />
    [PostAction(claim: ICdnReleaseServices.ReleaseClaim)]
-   public Task<CdnEntry> PostGetMeta_CdnReleaseUpload(CdnUploadRequest request, string appId, Stream content) =>
-      Store.UploadAsync(request.Path, request.FileName, content, request.Overwrite, AbortToken, appId);
+   public Task<CdnEntry> PostGetMeta_CdnReleaseUpload(CdnReleaseUploadRequest request, Stream content) =>
+      Store.UploadAsync(request.Upload.Path, request.Upload.FileName, content, request.Upload.Overwrite, AbortToken, request.AppId);
    /// <inheritdoc />
    [PostAction(claim: ICdnReleaseServices.ReleaseClaim)]
    public Task PostMeta_CdnReleaseDelete(string path, string appId) { Store.Delete(path, appId); return Task.CompletedTask; }

@@ -19,7 +19,15 @@ public interface ICdnReleaseServices : IServices {
    /// <summary>Creates a folder within the owned root.</summary>
    Task<CdnEntry> PostGetMeta_CdnReleaseCreateFolder(string? path, string name, string appId);
    /// <summary>Uploads within the owned root without the ordinary per-file limit.</summary>
-   Task<CdnEntry> PostGetMeta_CdnReleaseUpload(CdnUploadRequest request, string appId, Stream content);
+   Task<CdnEntry> PostGetMeta_CdnReleaseUpload(CdnReleaseUploadRequest request, Stream content);
    /// <summary>Deletes owned content without retaining it in the recycle bin.</summary>
    Task PostMeta_CdnReleaseDelete(string path, string appId);
+}
+
+/// <summary>Product ownership and target of one streamed release upload.</summary>
+public sealed class CdnReleaseUploadRequest {
+   /// <summary>Target file details.</summary>
+   public CdnUploadRequest Upload { get; set; } = new();
+   /// <summary>Owning product app_id.</summary>
+   public string AppId { get; set; } = "";
 }

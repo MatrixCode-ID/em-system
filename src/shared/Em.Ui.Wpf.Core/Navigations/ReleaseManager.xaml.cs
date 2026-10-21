@@ -240,10 +240,8 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>The profiles folder.</summary>
       public string ProfilesFolder => _store?.Root ?? "";
       /// <summary>The signing note.</summary>
-      public string SigningNote => !HasProfile ? "" : Profile!.Signing.Source == ReleaseSigningSource.Store
-         ? SigningKey?.ExportableCaption ?? ""
-         : "Key file in profile · " + (Profile.Signing.PasswordStorage == ReleasePasswordStorage.Plaintext ? "password in profile.json"
-            : _secrets.IsRemembered(Profile.Id) ? "remembered on this PC" : "asked per session");
+      public string SigningNote => HasProfile ? "Unencrypted P-256 PEM in the product JSON" : "";
+
       private string CurrentServerKey => ReleaseManagerPreferences.ServerKey(EmApp?.ActiveConnection);
       private IReadOnlyList<ReleaseProfile> OtherProfiles => _store?.List().Where(entry => entry.Profile is not null).Select(entry => entry.Profile!).ToArray() ?? [];
 
@@ -325,7 +323,7 @@ namespace Em.Ui.Wpf.Navigations
          : SolutionPath.Length == 0 || !File.Exists(SolutionPath) ? "Set the .slnx file in Settings to enable Prepare."
          : HostProject.Length == 0 || !File.Exists(HostProjectPath) ? "Set the host project in Settings to enable Prepare."
          : PublishFolder.Length == 0 ? "Set the local publish folder in Settings."
-         : null;
+         : Profile is { } profile ? LauncherBuild.BlockedReason(_preferences?.LauncherSourceFolder ?? "", LauncherOutput, profile) : null;
 
       /// <summary>The content of the Source summary: the local publish folder, or a note when it is not filled in.</summary>
       public string SourceCaption => !HasProfile ? "No profile" : PublishFolder.Length > 0 ? PublishFolder : "No local publish folder";
@@ -346,11 +344,7 @@ namespace Em.Ui.Wpf.Navigations
       public bool IsTargetBlocked => HasProfile && TargetBlockedReason is not null;
 
       /// <summary>The content of the Signing key summary.</summary>
-      public string SigningCaption => !HasProfile ? "No profile"
-         : Profile!.Signing.Source == ReleaseSigningSource.ProfileFile && !_store!.HasKeyFile(Profile.Id) ? "Key file missing - create or import one in Settings."
-         : SigningKey is { } key
-         ? $"{key.KeyId} · expires {key.ExpiresCaption}"
-         : Profile?.Signing.Source == ReleaseSigningSource.ProfileFile ? "Key file missing - create or import one in Settings." : "No signing key - choose or import one in Settings to publish.";
+      public string SigningCaption => !HasProfile ? "No profile" : SigningKey is { } key ? key.KeyId : "Create or import a product PEM key in Settings.";
 
       /// <summary><c>true</c> when a signing key is chosen.</summary>
       public bool HasSigningKey => SigningKey is not null;
@@ -360,7 +354,7 @@ namespace Em.Ui.Wpf.Navigations
 
       private string? TargetBlockedReason =>
          TargetKind == ReleaseTargetKind.Cdn
-            ? !CanUseCdn ? "You need CDN Manager access to publish to the server CDN. Choose Folder in Settings."
+            ? !CanUseCdn ? "You need Release Manager access to publish to the server CDN. Choose Folder in Settings."
             : EmApp?.ActiveConnection is null ? "No server connection."
             : null
             : TargetFolder.Length == 0 ? "Set the target folder in Settings."
@@ -483,9 +477,7 @@ namespace Em.Ui.Wpf.Navigations
          if (EmApp is not { } app || Profile is null || _store is null) return;
 
          var dialog = new ReleaseSettingsDialog(app, _store, Profile, _profileLastWriteUtc, OtherProfiles, _secrets, SdkVersion, IsSdkChecked, CanUseCdn) { Owner = DialogOwner };
-         dialog.Vm.Logged += Log;
          var saved = dialog.ShowDialog() == true;
-         dialog.Vm.Logged -= Log;
          if (!saved) {
             // A key imported or created in the dialog stays installed even when the dialog is canceled, but
             // the selection does not change; the key in use is read again only in case it has gone.
@@ -540,12 +532,17 @@ namespace Em.Ui.Wpf.Navigations
 
             ShowProgress(new ReleaseProgress("Publishing", 0, 0, null, 0, 0));
             var exitCode = await ReleaseBuilder.PublishAsync(SolutionPath, HostProject, folder,
-               new Progress<string>(Log), token);
+               new Progress<string>(Log), token, Profile);
             RefreshPublishContent();
             if (exitCode != 0)
                throw new InvalidOperationException($"dotnet publish failed with exit code {exitCode}. See the log for details.");
 
-            Log("Publish finished.");
+            var target = CreateTarget();
+            var remote = target is null ? null : LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
+            await LauncherBuild.PrepareAsync(_preferences!.LauncherSourceFolder, LauncherOutput, Profile!, DefaultReleaseSource, remote, new Progress<string>(Log), token);
+            _profileLastWriteUtc = _store!.Save(Profile!).LastWriteUtc;
+            RefreshPublishContent();
+            Log("Application and product launcher prepared.");
             if (TargetBlockedReason is null) {
                RunningOperation = "Compare";
                await CompareCoreAsync(token);
@@ -581,18 +578,14 @@ namespace Em.Ui.Wpf.Navigations
                 "Sync") != MessageBoxResult.Yes)
             return;
 
-         X509Certificate2? certificate;
-         try {
-            certificate = AcquireSigningCertificate();
-         }
-         catch (Exception x) { owner.ShowMboxError(x.Message, "Sync"); return; }
-         if (certificate is null) return;
-         using (certificate) {
-            using var signingKey = certificate.GetECDsaPrivateKey();
-            if (signingKey is null) { owner.ShowMboxError("The signing key has no usable private key.", "Sync"); return; }
+         using var signingKey = ReleasePemKey.Open(Profile!.PrivateKeyPem);
+         {
             await RunAsync("Sync", async token => {
                try {
-                  var manifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token);
+                  var recorded = LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
+                  if (LauncherBuild.SelectVersion(Profile!.Launcher, Profile.Launcher.InputHash, recorded) != Profile.Launcher.Version)
+                     throw new ReleaseConflictException("The target launcher version changed. Prepare again before Sync.");
+                  var manifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token, new ReleaseLauncherMetadata { FileName = Profile!.Launcher.FileName, Version = Profile.Launcher.Version, InputHash = Profile.Launcher.InputHash });
                   Log($"Sync finished: {manifest.Files.Count:N0} files published to {target.Description}.");
                   ResetVerify();
                }
@@ -615,7 +608,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public bool SyncCommandAllowed() =>
          !IsRunning && HasProfile && Comparison is not null && _comparedTarget is not null && SigningKey is not null &&
-         TargetBlockedReason is null && (Profile!.Signing.Source == ReleaseSigningSource.Store || _store!.HasKeyFile(Profile.Id));
+         TargetBlockedReason is null && Profile!.PrivateKeyPem.Length > 0 && Profile.Launcher.InputHash.Length > 0;
 
       /// <summary>
       /// Checks the release at the target: the signature (with the public key of the chosen signing key),
@@ -624,10 +617,7 @@ namespace Em.Ui.Wpf.Navigations
       public Task VerifyCommand() => RunAsync("Verify", async token => {
          var target = CreateTarget()!;
          IReadOnlyList<ReadOnlyMemory<byte>> keys = [];
-         if (SigningKey is { } key && (Profile?.Signing.Source == ReleaseSigningSource.ProfileFile
-            ? SigningCertificates.LoadCertificateFile(_store!.CertificateFilePath(Profile.Id)) : SigningCertificates.Find(key.Thumbprint)) is { } certificate) {
-            using (certificate) keys = [SigningCertificates.PublicKeyOf(certificate)];
-         }
+         if (Profile?.PrivateKeyPem.Length > 0) { using var key = ReleasePemKey.Open(Profile.PrivateKeyPem); keys = [key.ExportSubjectPublicKeyInfo()]; }
 
          Log($"Verifying {target.Description}...");
          var result = await ReleaseVerifier.VerifyAsync(target, keys, new Progress<ReleaseProgress>(ShowProgress), token);
@@ -683,8 +673,8 @@ namespace Em.Ui.Wpf.Navigations
 
          // The CDN actions ask for the CDN Manager claim, so the same rule that guards that screen decides
          // whether the CDN can be a target here.
-         CanUseCdn = EmApp is { } app && app.Navigations.FirstOrDefault(r => r.Name == CdnNavigationName) is { } cdn &&
-                     app.CanOpen(cdn);
+         CanUseCdn = EmApp is { } app && app.Navigations.FirstOrDefault(r => r.Name == "admin.release") is { } release &&
+            app.CanOpen(release);
          LoadProfiles(CurrentServerKey == _loadedServerKey ? SelectedProfile?.Id : null);
          if (CompareCommandAllowed()) await CompareCommand();
       }
@@ -744,11 +734,14 @@ namespace Em.Ui.Wpf.Navigations
          if (local.Grouping.DepsFile is null) Log("No deps.json found: every file is listed under Extra libraries.");
       }
 
+      private string LauncherOutput => string.IsNullOrWhiteSpace(_preferences?.LauncherOutputFolder) ? LauncherBuild.DefaultOutput(Profile?.Product.AppId ?? "") : _preferences.LauncherOutputFolder;
+      private string DefaultReleaseSource => Profile?.CdnAddress.Length > 0 ? Profile.CdnAddress : TargetKind == ReleaseTargetKind.Cdn ? $"{EmApp!.ActiveConnection!.Host.TrimEnd('/')}/cdn/{ReleaseFolder}/" : Path.Combine(TargetFolder, ReleaseFolder);
+
       private ReleaseTarget? CreateTarget() {
          if (TargetBlockedReason is not null || EmApp is not { } app) return null;
 
          return TargetKind == ReleaseTargetKind.Cdn
-            ? new CdnReleaseTarget(app.ServiceProvider.GetRequiredService<ICdnServices>(), app.ActiveConnection!, ReleaseFolder)
+            ? new CdnReleaseTarget(app.ServiceProvider.GetRequiredService<ICdnReleaseServices>(), app.ActiveConnection!, ReleaseFolder, Profile!.Product.AppId, Profile.CdnAddress)
             : new FolderReleaseTarget(TargetFolder, ReleaseFolder);
       }
 
@@ -813,26 +806,10 @@ namespace Em.Ui.Wpf.Navigations
 
       private void LoadSigningKey() {
          SigningKey = null;
-         if (Profile is { } profile && _store is not null) {
-            var before = profile.Signing.Thumbprint;
-            if (profile.Signing.Source == ReleaseSigningSource.Store) {
-               SigningKey = ReleaseSigningKey.Find(before);
-               if (SigningKey is null && before.Length > 0) profile.Signing.Thumbprint = "";
-            }
-            else {
-               using var certificate = SigningCertificates.LoadCertificateFile(_store.CertificateFilePath(profile.Id));
-               if (certificate is not null) {
-                  SigningKey = ReleaseSigningKey.FromCertificateFile(certificate);
-                  profile.Signing.Thumbprint = certificate.Thumbprint;
-               }
-            }
-            if (!string.Equals(before, profile.Signing.Thumbprint, StringComparison.OrdinalIgnoreCase)) {
-               try {
-                  _profileLastWriteUtc = _store.Save(profile, _profileLastWriteUtc).LastWriteUtc;
-                  Log("Signing key information updated from its source.");
-               }
-               catch (Exception x) { Log($"Could not save signing key information: {x.Message}"); }
-            }
+         if (Profile?.PrivateKeyPem.Length > 0) {
+            try { using var key = ReleasePemKey.Open(Profile.PrivateKeyPem);
+               SigningKey = new ReleaseSigningKey { Thumbprint = "", Subject = Profile.Product.AppName, KeyId = ReleaseSignature.KeyIdOf(key.ExportSubjectPublicKeyInfo()), NotAfter = DateTime.MaxValue, IsExportable = true };
+            } catch (Exception ex) { Log(ex.Message); }
          }
          RefreshState();
       }
@@ -851,12 +828,6 @@ namespace Em.Ui.Wpf.Navigations
          if (_store is null || _preferences is null) return;
          try {
             var entries = _store.List();
-            if (!entries.Any(entry => entry.Profile is not null) && _preferences.ReadLegacyProfile() is { } legacy) {
-               _store.Save(legacy);
-               _preferences.DeleteLegacySettings();
-               Log("Settings from the previous version were moved to profile 'Default'.");
-               entries = _store.List();
-            }
             _reloadingProfiles = true;
             try {
                Profiles.Clear();
@@ -893,7 +864,7 @@ namespace Em.Ui.Wpf.Navigations
          if (IsRunning || !item.IsValid || _store is null || _preferences is null) return;
          try {
             Profile = _store.Load(item.Id);
-            _profileLastWriteUtc = File.GetLastWriteTimeUtc(Path.Combine(_store.DirectoryOf(item.Id), ReleaseProfileStore.ProfileFileName));
+            _profileLastWriteUtc = File.GetLastWriteTimeUtc(_store.FileOf(item.Id));
             _preferences.SetLastProfile(CurrentServerKey, item.Id);
             _loadedServerKey = CurrentServerKey;
             ResetComparison();
@@ -913,14 +884,6 @@ namespace Em.Ui.Wpf.Navigations
          if (Profile is null) return false;
          var conflicts = ReleaseProfileConflicts.Find(Profile, OtherProfiles, checkTarget, true);
          return conflicts.Count == 0 || DialogOwner?.ShowMboxDecideWarning(string.Join("\n", conflicts) + "\n\nContinue?") == MessageBoxResult.Yes;
-      }
-
-      private X509Certificate2? AcquireSigningCertificate() {
-         if (Profile is null || _store is null) return null;
-         if (Profile.Signing.Source == ReleaseSigningSource.Store) return SigningCertificates.Find(Profile.Signing.Thumbprint)
-            ?? throw new CryptographicException("The signing key is no longer installed on this machine.");
-         var password = ReleaseProfileKeyAccess.AcquirePassword(Profile, _store, _secrets, DialogOwner, "Sign");
-         return password is null ? null : SigningCertificates.LoadPfxForSigning(_store.KeyFilePath(Profile.Id), password);
       }
 
       /// <summary>Runs the new profile command.</summary>
@@ -963,7 +926,7 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Runs the delete profile command.</summary>
       public void DeleteProfileCommand() {
          if (_store is null || Profile is null) return;
-         if (DialogOwner?.ShowMboxDecideWarning($"Delete profile '{Profile.Name}'?\n\nOnly the profile folder is deleted (settings, and its key file if any). The local publish folder, the release at the target and keys in the Windows certificate store are not touched.") != MessageBoxResult.Yes) return;
+         if (DialogOwner?.ShowMboxDecideWarning($"Delete profile '{Profile.Name}'?\n\nOnly the product profile JSON, including its signing PEM, is deleted.") != MessageBoxResult.Yes) return;
          try {
             var name = Profile.Name;
             _store.Delete(Profile.Id);
@@ -977,7 +940,7 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Runs the import profile command.</summary>
       public void ImportProfileCommand() {
          if (_store is null) return;
-         var picker = new OpenFileDialog { Filter = "Release profile (*.zip;*.json)|*.zip;*.json" };
+         var picker = new OpenFileDialog { Filter = "Release profile (*.json)|*.json" };
          if (picker.ShowDialog(DialogOwner) != true) return;
          try {
             ReleaseProfile imported;
@@ -988,8 +951,6 @@ namespace Em.Ui.Wpf.Navigations
             }
             LoadProfiles(imported.Id);
             Log($"Profile '{imported.Name}' imported.");
-            if (imported.Signing.Source == ReleaseSigningSource.ProfileFile && !_store.HasKeyFile(imported.Id))
-               DialogOwner?.ShowMboxInfo("The key file is missing. Import it in Settings before signing releases.");
          }
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
@@ -997,11 +958,10 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Runs the export profile command.</summary>
       public void ExportProfileCommand() {
          if (_store is null || Profile is null || DialogOwner is not { } owner) return;
-         var sensitive = owner.ShowMboxDecideWarning("Include sensitive data?\n\nNo (default): only settings and the public certificate. Yes: also the key file and a plain-text password, if this profile has them.", "Export Profile") == MessageBoxResult.Yes;
          var name = string.Concat(Profile.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-         var picker = new SaveFileDialog { Filter = "Release profile (*.zip)|*.zip", FileName = name + ".zip" };
+         var picker = new SaveFileDialog { Filter = "Release profile (*.json)|*.json", FileName = name + ".json" };
          if (picker.ShowDialog(owner) != true) return;
-         try { _store.Export(Profile.Id, picker.FileName, sensitive); Log($"Profile '{Profile.Name}' exported."); }
+         try { _store.Export(Profile.Id, picker.FileName); Log($"Profile '{Profile.Name}' exported."); }
          catch (Exception x) { owner.ShowMboxError(x.Message); }
       }
 

@@ -1,721 +1,163 @@
-using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows;
-using FontAwesome6;
-using Microsoft.Win32;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Em.Api.Core.Models;
 using Em.Ui.Wpf.Core;
 using Em.Ui.Wpf.Core.Release;
-using Em.Ui.Wpf.Shared;
 using Em.Ui.Wpf.Windows;
-using Clipboard = System.Windows.Clipboard;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 
-namespace Em.Ui.Wpf.Dialogs
-{
-   /// <summary>
-   /// The Release Manager settings dialog: the publish source (<c>.slnx</c>, host project, local publish
-   /// folder), the release target (CDN server or folder), and the signing key together with its management.
-   /// New settings are saved when the Save button is pressed; Cancel discards the changes. The exception is
-   /// signing key operations (import, create, export): those happen directly in the profile folder or the
-   /// Windows certificate store, so Cancel does not undo them - only the choice of key is cancelled.
-   /// </summary>
-   public partial class ReleaseSettingsDialog : EmWindow
-   {
-      /// <summary>
-      /// Creates the Release Manager settings dialog.
-      /// </summary>
-      /// <param name="app">The application that owns the dialog.</param>
-      /// <param name="store">The store of the release profiles.</param>
-      /// <param name="profile">The profile being edited.</param>
-      /// <param name="lastWriteUtc">The last write time of the profile file when it was read, to detect outside changes.</param>
-      /// <param name="others">The other profiles, to warn about collisions.</param>
-      /// <param name="secrets">The store of signing key passwords.</param>
-      /// <param name="sdkVersion">The .NET SDK 10.x version that was found, or <c>null</c>.</param>
-      /// <param name="isSdkChecked"><c>true</c> when the SDK check has finished.</param>
-      /// <param name="canUseCdn"><c>true</c> when the user may use the server CDN as a target.</param>
-      public ReleaseSettingsDialog(EmApp app, ReleaseProfileStore store, ReleaseProfile profile,
-         DateTime lastWriteUtc, IReadOnlyList<ReleaseProfile> others, ReleaseSigningSecrets secrets,
-         string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
-         InitializeComponent();
-         Vm.EmApp = app;
-         Vm.MainWindow = this;
-         Vm.Load(store, profile, lastWriteUtc, others, secrets, sdkVersion, isSdkChecked, canUseCdn);
-         Vm.RequestClose += result => DialogResult = result;
-      }
+namespace Em.Ui.Wpf.Dialogs;
 
-      /// <summary>The view model of this dialog.</summary>
-      public ReleaseSettingsDialogVm Vm => (ReleaseSettingsDialogVm)DataContext;
+/// <summary>Edits the product JSON, PEM and machine-local build preferences.</summary>
+public partial class ReleaseSettingsDialog : EmWindow {
+   private readonly ReleaseProfile _draft;
+   private readonly ReleaseProfileStore _store;
+   private readonly ReleaseManagerPreferences _preferences;
+   private readonly EmApp _app;
+   private readonly DateTime _lastWrite;
+   private readonly IReadOnlyList<ReleaseProfile> _others;
+   private readonly Dictionary<string, TextBox> _fields = [];
+   private readonly ComboBox _hosts = new();
+   private readonly StackPanel _form = new() { Margin = new Thickness(22, 12, 22, 22) };
+   private readonly StackPanel _previews = new();
+   private readonly TextBlock _message = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) };
+   private bool _busy;
+
+   /// <summary>Creates a product profile editor.</summary>
+   public ReleaseSettingsDialog(EmApp app, ReleaseProfileStore store, ReleaseProfile profile, DateTime lastWriteUtc,
+      IReadOnlyList<ReleaseProfile> others, ReleaseSigningSecrets secrets, string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
+      InitializeComponent(); _app = app; _store = store; _draft = profile.Clone(); _lastWrite = lastWriteUtc; _others = others;
+      _preferences = new ReleaseManagerPreferences(app);
+      Title = "Release settings · " + profile.Name; Width = 920; Height = 850; ShowMinimizeButton = false;
+      Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml") });
+      var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
+      Button(toolbar, "Save", Save); Button(toolbar, "Cancel", () => { DialogResult = false; return Task.CompletedTask; }); _form.Children.Add(toolbar);
+      Field("Solution", profile.SolutionPath, "The .slnx containing the host.", async () => {
+         var picker = new OpenFileDialog { Filter = "Solution|*.slnx" }; if (picker.ShowDialog(this) != true) return;
+         _fields["Solution"].Text = picker.FileName; await LoadSolution();
+      });
+      Button(_form, "Load solution / identity", LoadSolution);
+      Row("Host project", _hosts, "Select a host to read its evaluated MSBuild product identity.");
+      _hosts.SelectionChanged += async (_, _) => { if (!_busy) await Run(ReadIdentity); };
+      Field("Publish folder", profile.PublishFolder, "Prepare empties this folder after confirmation.", () => Browse("Publish folder"));
+      Choice("Target", profile.TargetKind.ToString(), new[] { "Cdn", "Folder" }, "CDN writes through the active connection; Folder writes directly.");
+      Field("Target folder", profile.TargetFolder, "Parent directory for a Folder release.", () => Browse("Target folder"));
+      Field("Release folder", profile.ReleaseFolder, "Empty CDN folders become owned by this app_id. Nested managed folders are forbidden.");
+      var cdn = new StackPanel { Orientation = Orientation.Horizontal };
+      Button(cdn, "Browse CDN / select managed folder", SelectManaged);
+      Button(cdn, "Release owned folder", async () => {
+         if (this.ShowMboxDecideWarning("Release this product's managed folder?", Title) == MessageBoxResult.Yes)
+            await Service.PostMeta_CdnReleaseUnmanage(Value("Release folder"), Value("app_id"));
+      }); _form.Children.Add(cdn);
+      Field("CDN address", profile.CdnAddress, "Public release URL for launcher, Compare and Verify. Empty derives from the active host /cdn/<folder>/. Sync uses the active connection.");
+      Field("Product", profile.Product.AppName, "Display name only."); Field("Company", profile.Product.Publisher, "Publisher.");
+      Field("app_id", profile.Product.AppId, "Two or more alphanumeric segments separated by dots. Use a different id per environment. MatrixCode.EmSystem is reserved.");
+      Field("Application exe", profile.Product.AppExe, "AssemblyName plus .exe; no directory.");
+      var assets = new StackPanel { Orientation = Orientation.Horizontal };
+      Button(assets, "Import ICO", () => ImportAsset(false)); Button(assets, "Import PNG logo", () => ImportAsset(true));
+      Button(assets, "Clear logo", () => { _draft.Product.LogoBase64 = ""; Preview(); return Task.CompletedTask; }); _form.Children.Add(assets); _form.Children.Add(_previews);
+      Field("Launcher exe", profile.Launcher.FileName, "Filename shared by installer and root runner; must end in .exe.");
+      Field("Launcher version", profile.Launcher.BaseVersion, "MAJOR.MINOR.PATCH, independent of the app version. Prerelease counter comes from the target manifest.");
+      Choice("Channel", profile.Launcher.Channel, new[] { "prealpha", "alpha", "beta", "rc", "release" }, "Used release versions cannot be reused for changed inputs.");
+      Choice("Update at start", profile.Launcher.UpdateBehavior, new[] { "automatic", "ask" }, "automatic installs verified updates; ask offers Update now / Later.");
+      Field("Launcher source folder", _preferences.LauncherSourceFolder, "Machine-local Rust source with Cargo.toml and build.rs; required only when rebuilding.", () => Browse("Launcher source folder"));
+      Field("Launcher output folder", _preferences.LauncherOutputFolder, "Machine-local build destination or IT share. Empty uses Documents/Em/ReleaseManager/Launchers/<app_id>/.", () => Browse("Launcher output folder"));
+      var keys = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
+      Button(keys, "Create signing PEM", () => {
+         if (_draft.PrivateKeyPem.Length == 0 || this.ShowMboxDecideWarning("Replace the product key? Existing installations reject a different key for the same app_id.", Title) == MessageBoxResult.Yes) _draft.PrivateKeyPem = ReleasePemKey.Create();
+         KeySummary(); return Task.CompletedTask;
+      });
+      Button(keys, "Import private PEM", () => {
+         var picker = new OpenFileDialog { Filter = "Private PEM|*.pem" }; if (picker.ShowDialog(this) == true) { using var key = ReleasePemKey.Open(File.ReadAllText(picker.FileName)); _draft.PrivateKeyPem = key.ExportPkcs8PrivateKeyPem(); KeySummary(); } return Task.CompletedTask;
+      });
+      Button(keys, "Export public PEM", () => {
+         var picker = new SaveFileDialog { Filter = "Public PEM|*.pem" }; if (picker.ShowDialog(this) == true) File.WriteAllText(picker.FileName, ReleasePemKey.Public(_draft.PrivateKeyPem)); return Task.CompletedTask;
+      }); _form.Children.Add(keys); _form.Children.Add(_message); KeySummary(); Preview();
+      Content = new ScrollViewer { Content = _form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+      if (File.Exists(profile.SolutionPath)) { _busy = true; try { _hosts.ItemsSource = ReleaseBuilder.ReadHostProjects(profile.SolutionPath); _hosts.SelectedItem = profile.HostProject; } finally { _busy = false; } }
    }
-
-   /// <summary>One signing key installed on this machine, ready to be shown.</summary>
-   public class ReleaseSigningKey
-   {
-      /// <summary>Thumbprint of its certificate.</summary>
-      public required string Thumbprint { get; init; }
-
-      /// <summary>Subject of its certificate.</summary>
-      public required string Subject { get; init; }
-
-      /// <summary>The <c>keyId</c> of its public key, as in <c>release.json.sig</c>.</summary>
-      public required string KeyId { get; init; }
-
-      /// <summary>Validity limit of its certificate.</summary>
-      public required DateTime NotAfter { get; init; }
-
-      /// <summary><c>true</c> when its private key may be exported from this machine.</summary>
-      public required bool IsExportable { get; init; }
-
-      /// <summary>Tulisan di combobox.</summary>
-      public string Caption => $"{Subject.Replace("CN=", "")} · {KeyId}";
-
-      /// <summary>Tulisan chip exportable.</summary>
-      public string ExportableCaption => IsExportable ? "Exportable" : "Non-exportable";
-
-      /// <summary>The validity limit in a human-friendly form.</summary>
-      public string ExpiresCaption => NotAfter.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-      /// <inheritdoc />
-      /// <remarks>The combobox's selection box shows items through this value, not through DisplayMemberPath.</remarks>
-      public override string ToString() => Caption;
-
-      /// <summary>Every signing key installed in this user's certificate store.</summary>
-      public static IReadOnlyList<ReleaseSigningKey> ListInstalled() {
-         var keys = new List<ReleaseSigningKey>();
-         foreach (var certificate in SigningCertificates.List()) {
-            using (certificate) keys.Add(From(certificate));
-         }
-
-         return keys;
-      }
-
-      /// <summary>The signing key with thumbprint <paramref name="thumbprint"/>, or <c>null</c> when it is not installed.</summary>
-      public static ReleaseSigningKey? Find(string? thumbprint) {
-         using var certificate = SigningCertificates.Find(thumbprint);
-         return certificate is null ? null : From(certificate);
-      }
-
-      /// <summary>The key source that is represented.</summary>
-      public ReleaseSigningSource Source { get; init; }
-
-      /// <summary>Model of the public key from the profile file.</summary>
-      public static ReleaseSigningKey FromCertificateFile(X509Certificate2 certificate) => new() {
-         Thumbprint = certificate.Thumbprint, Subject = certificate.Subject,
-         KeyId = SigningCertificates.KeyIdOf(certificate), NotAfter = certificate.NotAfter,
-         IsExportable = true, Source = ReleaseSigningSource.ProfileFile
-      };
-
-      private static ReleaseSigningKey From(X509Certificate2 certificate) => new() {
-         Thumbprint = certificate.Thumbprint,
-         Subject = certificate.Subject,
-         KeyId = SigningCertificates.KeyIdOf(certificate),
-         NotAfter = certificate.NotAfter,
-         IsExportable = SigningCertificates.IsExportable(certificate)
-      };
+   private ICdnReleaseServices Service => _app.ServiceProvider.GetRequiredService<ICdnReleaseServices>();
+   private string Value(string name) => _fields[name].Text.Trim();
+   private void Row(string label, FrameworkElement input, string help) {
+      var row = new Grid { Margin = new Thickness(0, 8, 0, 0), ToolTip = help }; ToolTipService.SetShowOnDisabled(row, true);
+      row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(185) }); row.ColumnDefinitions.Add(new ColumnDefinition());
+      row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center }); Grid.SetColumn(input, 1); row.Children.Add(input); _form.Children.Add(row);
    }
-
-   /// <summary>
-   /// View model for <see cref="ReleaseSettingsDialog"/>. Holds a copy of the settings being edited; the
-   /// profile file is only written by <see cref="SaveCommand"/>.
-   /// </summary>
-   public class ReleaseSettingsDialogVm : MvvmModelBase
-   {
-      private string? _sdkVersion;
-      private bool _isSdkChecked;
-      private ReleaseProfileStore _store = null!;
-      private ReleaseProfile _profile = null!;
-      private ReleaseSigningSecrets _secrets = null!;
-      private DateTime _lastWriteUtc;
-      private IReadOnlyList<ReleaseProfile> _others = [];
-      /// <summary>The saved profile.</summary>
-      public ReleaseProfile? SavedProfile { get; private set; }
-      /// <summary>The banner title.</summary>
-      public string BannerTitle => $"Release Settings · {_profile?.Name}";
-      /// <summary>Indicates store source.</summary>
-      public bool IsStoreSource {
-         get => Get<bool>();
-         set => Set(value, _ => { if (value) SetSource(ReleaseSigningSource.Store); });
+   private void Field(string name, string text, string help, Func<Task>? browse = null) {
+      var box = new TextBox { Text = text }; box.SetResourceReference(StyleProperty, "fieldBoxStyle"); _fields[name] = box;
+      var panel = new DockPanel(); if (browse is not null) { var buttons = new StackPanel(); Button(buttons, "Browse", browse); DockPanel.SetDock(buttons, Dock.Right); panel.Children.Add(buttons); }
+      panel.Children.Add(box); Row(name, panel, help);
+   }
+   private void Choice(string name, string value, string[] choices, string help) {
+      var box = new TextBox { Text = value }; _fields[name] = box;
+      var combo = new ComboBox { ItemsSource = choices, SelectedItem = value };
+      combo.SelectionChanged += (_, _) => box.Text = combo.SelectedItem as string ?? ""; Row(name, combo, help);
+   }
+   private void Button(Panel panel, string text, Func<Task> action) {
+      var button = new Button { Content = text, Margin = new Thickness(0, 0, 8, 0) }; button.SetResourceReference(StyleProperty, "outlinedButtonStyle");
+      button.Click += async (_, _) => await Run(action); panel.Children.Add(button);
+   }
+   private async Task Run(Func<Task> action) {
+      if (_busy) return; _busy = true; _form.IsEnabled = false;
+      try { await action(); } catch (Exception ex) { _message.Text = ex.Message; } finally { _busy = false; _form.IsEnabled = true; }
+   }
+   private Task Browse(string name) { var dialog = new OpenFolderDialog(); if (dialog.ShowDialog(this) == true) _fields[name].Text = dialog.FolderName; return Task.CompletedTask; }
+   private async Task LoadSolution() { _hosts.ItemsSource = ReleaseBuilder.ReadHostProjects(Value("Solution")); _hosts.SelectedIndex = 0; await ReadIdentity(); }
+   private ReleaseProduct Product() => new() { AppName = Value("Product"), Publisher = Value("Company"), AppId = Value("app_id"), AppExe = Value("Application exe"), IconBase64 = _draft.Product.IconBase64, LogoBase64 = _draft.Product.LogoBase64, IsEmHost = _draft.Product.IsEmHost };
+   private async Task ReadIdentity() {
+      if (_hosts.SelectedItem is not string host) return;
+      var identity = await ReleaseProduct.ReadAsync(Path.GetFullPath(host, Path.GetDirectoryName(Value("Solution"))!), CancellationToken.None);
+      var old = Product();
+      string Hash(string value) => value.Length == 0 ? "(empty)" : Convert.ToHexStringLower(SHA256.HashData(Convert.FromBase64String(value)))[..16];
+      var changes = new[] { ("Product", old.AppName, identity.AppName), ("Company", old.Publisher, identity.Publisher), ("app_id", old.AppId, identity.AppId), ("Application exe", old.AppExe, identity.AppExe), ("Icon hash", Hash(old.IconBase64), Hash(identity.IconBase64)), ("Logo hash", Hash(old.LogoBase64), Hash(identity.LogoBase64)) }
+         .Where(v => v.Item2 != v.Item3).Select(v => $"{v.Item1}: profile '{v.Item2}' → solution '{v.Item3}'").ToArray();
+      if (changes.Length == 0 || old.AppId.Length == 0 || this.ShowMboxDecideWarning(string.Join("\n", changes) + "\n\nUse solution identity? No keeps the profile.", Title) == MessageBoxResult.Yes) {
+         _draft.Product = identity; _fields["Product"].Text = identity.AppName; _fields["Company"].Text = identity.Publisher; _fields["app_id"].Text = identity.AppId; _fields["Application exe"].Text = identity.AppExe;
       }
-      /// <summary>Indicates file source.</summary>
-      public bool IsFileSource {
-         get => Get<bool>();
-         set => Set(value, _ => { if (value) SetSource(ReleaseSigningSource.ProfileFile); });
+      _draft.Product.IsEmHost = identity.IsEmHost; Preview();
+   }
+   private Task ImportAsset(bool logo) {
+      var picker = new OpenFileDialog { Filter = logo ? "PNG|*.png" : "ICO|*.ico" };
+      if (picker.ShowDialog(this) == true) { var data = Convert.ToBase64String(File.ReadAllBytes(picker.FileName)); if (logo) { ReleaseProduct.ReadLogo(data); _draft.Product.LogoBase64 = data; } else _draft.Product.IconBase64 = data; Preview(); } return Task.CompletedTask;
+   }
+   private void Preview() {
+      _previews.Children.Clear(); BitmapSource? image = null;
+      if (_draft.Product.LogoBase64.Length > 0) image = ReleaseProduct.ReadLogo(_draft.Product.LogoBase64);
+      else if (_draft.Product.IconBase64.Length > 0) { using var stream = new MemoryStream(Convert.FromBase64String(_draft.Product.IconBase64)); image = BitmapFrame.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad); }
+      if (image is not null) {
+         foreach (var scale in new[] { 1d, 2d }) { _previews.Children.Add(new TextBlock { Text = $"Logo {scale * 100:0}%" }); _previews.Children.Add(new Image { Source = image, Width = 240 * scale, Height = 48 * scale, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Left }); }
+         var factor = Math.Min(240d / image.PixelWidth, 48d / image.PixelHeight);
+         if (Math.Min(image.PixelWidth, image.PixelHeight) * factor < 24 || factor * 2 > 1) _previews.Children.Add(new TextBlock { Text = "Warning: logo is smaller than 24 px on one side or has insufficient resolution for 200%.", TextWrapping = TextWrapping.Wrap });
       }
-      /// <summary>Indicates separate password.</summary>
-      public bool IsSeparatePassword {
-         get => Get<bool>();
-         set => Set(value, _ => { if (value && _profile is not null) { _profile.Signing.PasswordStorage = ReleasePasswordStorage.Separate; RefreshPassword(); } });
-      }
-      /// <summary>Indicates plaintext password.</summary>
-      public bool IsPlaintextPassword {
-         get => Get<bool>();
-         set => Set(value, _ => {
-            if (!value || _profile is null) return;
-            _profile.Signing.PasswordStorage = ReleasePasswordStorage.Plaintext;
-            _profile.Signing.Password ??= _secrets.Get(_profile.Id, _profile.Signing.Thumbprint);
-            RefreshPassword();
-         });
-      }
-      /// <summary>The password caption.</summary>
-      public string PasswordCaption => IsPlaintextPassword
-         ? _profile.Signing.Password is null ? "Not set" : "Saved in profile.json"
-         : _secrets.IsRemembered(_profile.Id) ? "Remembered on this PC (encrypted for this Windows user)" : "Asked once per session";
-      private void RefreshPassword() {
-         NotifyChanged(nameof(PasswordCaption));
-         RaiseCommandsChanged();
-      }
-      private void SetSource(ReleaseSigningSource source) {
-         if (_profile is null) return;
-         _profile.Signing.Source = source;
-         LoadKeys(_profile.Signing.Thumbprint);
-      }
-
-      /// <summary>Creates a new view model and registers all commands of the dialog.</summary>
-      public ReleaseSettingsDialogVm() {
-         RegisterCommand(nameof(BrowseSolutionCommand), BrowseSolutionCommand);
-         RegisterCommand(nameof(BrowsePublishFolderCommand), BrowsePublishFolderCommand);
-         RegisterCommand(nameof(BrowseTargetFolderCommand), BrowseTargetFolderCommand);
-         RegisterCommand(nameof(ImportKeyCommand), ImportKeyCommand);
-         RegisterCommand(nameof(CreateKeyCommand), CreateKeyCommand);
-         RegisterCommand(nameof(ExportKeyCommand), ExportKeyCommand, ExportKeyCommandAllowed);
-         RegisterCommand(nameof(CopyPublicKeyCommand), CopyPublicKeyCommand, CopyPublicKeyCommandAllowed);
-         RegisterCommand(nameof(ExportPublicKeyCommand), ExportPublicKeyCommand, ExportPublicKeyCommandAllowed);
-         RegisterCommand(nameof(RefreshKeysCommand), RefreshKeysCommand);
-         RegisterCommand(nameof(SaveCommand), SaveCommand);
-         RegisterCommand(nameof(SetPasswordCommand), SetPasswordCommand, () => IsFileSource && IsPlaintextPassword && _store.HasKeyFile(_profile.Id));
-         RegisterCommand(nameof(ForgetPasswordCommand), ForgetPasswordCommand, () => IsFileSource && IsSeparatePassword && _secrets.IsRemembered(_profile.Id));
-         RegisterCommand(nameof(RemoveKeyFileCommand), RemoveKeyFileCommand, () => IsFileSource && (_store.HasKeyFile(_profile.Id) || File.Exists(_store.CertificateFilePath(_profile.Id))));
-      }
-
-      /// <summary>Raised when the dialog is about to close; <c>true</c> when the settings are saved.</summary>
-      public event Action<bool>? RequestClose;
-
-      /// <summary>
-      /// Raised for every event worth entering in the Release Manager log, e.g. a signing key that was just
-      /// imported.
-      /// </summary>
-      public event Action<string>? Logged;
-
-      #region Source
-
-      /// <summary>Path file <c>.slnx</c>.</summary>
-      public string SolutionPath {
-         get => Get<string>() ?? "";
-         private set => Set(value, _ => LoadHostProjects());
-      }
-
-      /// <summary>The application project in the <c>.slnx</c>, as written there.</summary>
-      public ObservableCollection<string> HostProjects { get; } = [];
-
-      /// <summary>The host project that Prepare publishes.</summary>
-      public string? HostProject {
-         get => Get<string?>();
-         set => Set(value);
-      }
-
-      /// <summary>Local publish folder.</summary>
-      public string PublishFolder {
-         get => Get<string>() ?? "";
-         private set => Set(value);
-      }
-
-      /// <summary>Caption of the .NET SDK in the Source card.</summary>
-      public string SdkCaption =>
-         !_isSdkChecked ? "Checking the .NET SDK..."
-         : _sdkVersion is null ? ".NET SDK 10.x was not found on this PC, so Prepare is not available here."
-         : $".NET SDK {_sdkVersion} found.";
-
-      /// <summary><c>true</c> when the SDK is not found.</summary>
-      public bool IsSdkMissing => _isSdkChecked && _sdkVersion is null;
-
-      #endregion
-
-      #region Target
-
-      /// <summary><c>true</c> when the target is the server CDN.</summary>
-      public bool IsCdnTarget {
-         get => Get<bool>();
-         set => Set(value, _ => {
-            if (value) TargetKind = ReleaseTargetKind.Cdn;
-         });
-      }
-
-      /// <summary><c>true</c> when the target is a folder.</summary>
-      public bool IsFolderTarget {
-         get => Get<bool>();
-         set => Set(value, _ => {
-            if (value) TargetKind = ReleaseTargetKind.Folder;
-         });
-      }
-
-      /// <summary>The kind of target that is chosen.</summary>
-      public ReleaseTargetKind TargetKind {
-         get => Get<ReleaseTargetKind>();
-         private set => Set(value, _ => {
-            IsCdnTarget = value == ReleaseTargetKind.Cdn;
-            IsFolderTarget = value == ReleaseTargetKind.Folder;
-            RefreshTargetState();
-         });
-      }
-
-      /// <summary>
-      /// <c>true</c> when the user may use the server CDN as a target: the CDN actions require the CDN
-      /// manager right, which is separate from the Release Manager right.
-      /// </summary>
-      public bool CanUseCdn {
-         get => Get<bool>();
-         private set => Set(value, _ => RefreshTargetState());
-      }
-
-      /// <summary>The target folder for a folder target.</summary>
-      public string TargetFolder {
-         get => Get<string>() ?? "";
-         private set => Set(value, _ => RefreshTargetState());
-      }
-
-      /// <summary>Name of the release folder inside the target.</summary>
-      public string ReleaseFolder {
-         get => Get<string>() ?? "";
-         set => Set(value, _ => RefreshTargetState());
-      }
-
-      /// <summary>Caption of the target: the address of its release folder, or why it cannot be used yet.</summary>
-      public string TargetCaption => TargetBlockedReason ?? $"Release at {TargetLocation}";
-
-      /// <summary><c>true</c> when <see cref="TargetCaption"/> is a warning.</summary>
-      public bool IsTargetBlocked => TargetBlockedReason is not null;
-
-      /// <summary>Caption of the CDN choice.</summary>
-      public string CdnOptionTooltip =>
-         CanUseCdn ? "Publish to the CDN of the connected server" : "You need CDN Manager access to publish to the server CDN";
-
-      private string? TargetBlockedReason =>
-         TargetKind == ReleaseTargetKind.Cdn
-            ? !CanUseCdn ? "You need CDN Manager access to publish to the server CDN. Choose Folder instead."
-            : EmApp?.ActiveConnection is null ? "No server connection."
-            : null
-            : TargetFolder.Length == 0 ? "Choose the target folder."
-            : !Directory.Exists(TargetFolder) ? "The target folder does not exist."
-            : null;
-
-      private string TargetLocation => TargetKind == ReleaseTargetKind.Cdn
-         ? $"{EmApp?.ActiveConnection?.Host.TrimEnd('/')}/cdn/{ReleaseTarget.NormalizeReleaseFolder(ReleaseFolder)}/"
-         : new FolderReleaseTarget(TargetFolder, ReleaseFolder).Description;
-
-      #endregion
-
-      #region Signing
-
-      /// <summary>The signing keys installed on this machine.</summary>
-      public ObservableCollection<ReleaseSigningKey> SigningKeys { get; } = [];
-
-      /// <summary>The signing key used by Sync.</summary>
-      public ReleaseSigningKey? SelectedKey {
-         get => Get<ReleaseSigningKey?>();
-         set => Set(value, _ => {
-            NotifyChanged(nameof(HasSigningKey));
-            NotifyChanged(nameof(SigningCaption));
-            NotifyChanged(nameof(ExportKeyTooltip));
-            RaiseCommandsChanged();
-         });
-      }
-
-      /// <summary><c>true</c> when a signing key is chosen.</summary>
-      public bool HasSigningKey => SelectedKey is not null;
-
-      /// <summary>Caption in the Signing key card.</summary>
-      public string SigningCaption => IsFileSource && !_store.HasKeyFile(_profile.Id)
-         ? "No key file in this profile - create or import one."
-         : SelectedKey is null
-         ? IsFileSource ? "No key file in this profile - create or import one." : "No signing key - import or create one to publish."
-         : $"Thumbprint {SelectedKey.Thumbprint}";
-
-      /// <summary>Tooltip of the Export signing key button.</summary>
-      public string ExportKeyTooltip => SelectedKey is { IsExportable: false }
-         ? "This key was imported as non-exportable"
-         : "Write this key to a password-protected .pfx file";
-
-      #endregion
-
-      #region Commands - source and target
-
-      /// <summary>Chooses the <c>.slnx</c> file.</summary>
-      public void BrowseSolutionCommand() {
-         var dialog = new OpenFileDialog {
-            Title = "Choose the solution",
-            Filter = "Solution (*.slnx)|*.slnx",
-            CheckFileExists = true
-         };
-         if (File.Exists(SolutionPath)) dialog.InitialDirectory = Path.GetDirectoryName(SolutionPath);
-         if (dialog.ShowDialog(DialogOwner) == true) SolutionPath = dialog.FileName;
-      }
-
-      /// <summary>Chooses the local publish folder.</summary>
-      public void BrowsePublishFolderCommand() {
-         var dialog = new OpenFolderDialog { Title = "Choose the local publish folder" };
-         if (Directory.Exists(PublishFolder)) dialog.InitialDirectory = PublishFolder;
-         if (dialog.ShowDialog(DialogOwner) == true) PublishFolder = dialog.FolderName;
-      }
-
-      /// <summary>Chooses the target folder.</summary>
-      public void BrowseTargetFolderCommand() {
-         var dialog = new OpenFolderDialog { Title = "Choose the target folder" };
-         if (Directory.Exists(TargetFolder)) dialog.InitialDirectory = TargetFolder;
-         if (dialog.ShowDialog(DialogOwner) == true) TargetFolder = dialog.FolderName;
-      }
-
-      #endregion
-
-      #region Commands - signing key
-
-      /// <summary>Installs a signing key from a <c>.pfx</c> file, then chooses it.</summary>
-      public void ImportKeyCommand() {
-         var owner = DialogOwner;
-         var destination = new SigningKeyDestinationDialog("Import Signing Key", _profile.Signing.Source) { Owner = owner };
-         if (destination.ShowDialog() != true) return;
-         if (destination.Destination == ReleaseSigningSource.ProfileFile) { ImportFileKey(); return; }
-         var file = new OpenFileDialog {
-            Title = "Import signing key",
-            Filter = "Signing key (*.pfx)|*.pfx|All files|*.*",
-            CheckFileExists = true
-         };
-         if (file.ShowDialog(owner) != true) return;
-
-         var password = new PasswordInputDialog("Import Signing Key",
-            $"Password of '{Path.GetFileName(file.FileName)}'.", showExportable: true, okCaption: "Import",
-            icon: EFontAwesomeIcon.Solid_FileImport) { Owner = owner };
-         if (password.ShowDialog() != true) return;
-
-         try {
-            using var certificate = SigningCertificates.Import(file.FileName, password.Vm.Password, password.Vm.Exportable);
-            IsStoreSource = true;
-            IsFileSource = false;
-            LoadKeys(certificate.Thumbprint);
-            Logged?.Invoke(
-               $"Signing key {SigningCertificates.KeyIdOf(certificate)} imported{(password.Vm.Exportable ? " (exportable)" : "")}.");
-            owner?.ShowMboxInfo(
-               "The signing key is installed on this machine.\n\n" +
-               $"Delete '{file.FileName}' from this machine unless it is where you keep the master copy.",
-               "Import Signing Key");
-         }
-         catch (CryptographicException x) {
-            owner?.ShowMboxError(x.Message, "Import Signing Key");
-         }
-      }
-
-      /// <summary>
-      /// Creates a new signing key: a password-protected <c>.pfx</c> file as the master copy, and a key
-      /// installed without being exportable on this machine. The new key is chosen right away.
-      /// </summary>
-      public void CreateKeyCommand() {
-         if (DialogOwner is not { } owner) return;
-         var destination = new SigningKeyDestinationDialog("Create Signing Key", _profile.Signing.Source) { Owner = owner };
-         if (destination.ShowDialog() != true) return;
-         if (destination.Destination == ReleaseSigningSource.ProfileFile) { CreateFileKey(); return; }
-         if (owner.ShowMboxDecideWarning(
-                "Create a new signing key?\n\n" +
-                "Launchers only accept releases signed by a key they trust, so every launcher must be given the new public key.\n\n" +
-                "The key is saved as a password-protected .pfx file: that file and its password are the master copy - keep both safe.",
-                "Create Signing Key") != MessageBoxResult.Yes)
-            return;
-
-         var password = new PasswordInputDialog("Create Signing Key", "Password that protects the new .pfx file.",
-            requireConfirmation: true, okCaption: "Continue", icon: EFontAwesomeIcon.Solid_Key) { Owner = owner };
-         if (password.ShowDialog() != true) return;
-
-         var file = new SaveFileDialog {
-            Title = "Save the signing key",
-            FileName = "em-release-signing.pfx",
-            Filter = "Signing key (*.pfx)|*.pfx"
-         };
-         if (file.ShowDialog(owner) != true) return;
-
-         try {
-            using var certificate = SigningCertificates.Create(file.FileName, password.Vm.Password);
-            IsStoreSource = true;
-            IsFileSource = false;
-            LoadKeys(certificate.Thumbprint);
-            Logged?.Invoke($"Signing key {SigningCertificates.KeyIdOf(certificate)} created and saved to {file.FileName}.");
-         }
-         catch (Exception x) when (x is CryptographicException or IOException or UnauthorizedAccessException) {
-            owner.ShowMboxError(x.Message, "Create Signing Key");
-         }
-      }
-
-      /// <summary>Rewrites the chosen signing key to a <c>.pfx</c> file with a new password.</summary>
-      public void ExportKeyCommand() {
-         if (SelectedKey is not { } key || DialogOwner is not { } owner) return;
-
-         var sourcePassword = IsFileSource ? AcquireFilePassword() : null;
-         if (IsFileSource && sourcePassword is null) return;
-         var password = new PasswordInputDialog("Export Signing Key", "Password that protects the exported .pfx file.",
-            requireConfirmation: true, okCaption: "Continue", icon: EFontAwesomeIcon.Solid_FileExport) { Owner = owner };
-         if (password.ShowDialog() != true) return;
-
-         var file = new SaveFileDialog {
-            Title = "Export the signing key",
-            FileName = $"em-release-signing-{key.KeyId}.pfx",
-            Filter = "Signing key (*.pfx)|*.pfx"
-         };
-         if (file.ShowDialog(owner) != true) return;
-
-         try {
-            if (IsFileSource) SigningCertificates.ExportPfxFile(_store.KeyFilePath(_profile.Id), sourcePassword!, file.FileName, password.Vm.Password);
-            else {
-               using var certificate = SigningCertificates.Find(key.Thumbprint)
-                                       ?? throw new CryptographicException("The signing key is no longer installed on this machine.");
-               SigningCertificates.Export(certificate, file.FileName, password.Vm.Password);
-            }
-            Logged?.Invoke($"Signing key {key.KeyId} exported to {file.FileName}.");
-         }
-         catch (Exception x) when (x is CryptographicException or IOException or UnauthorizedAccessException) {
-            owner.ShowMboxError(x.Message, "Export Signing Key");
-         }
-      }
-
-      /// <summary>Only for a key that was imported with the exportable option.</summary>
-      public bool ExportKeyCommandAllowed() => SelectedKey is { IsExportable: true } && (!IsFileSource || _store.HasKeyFile(_profile.Id));
-
-      /// <summary>Copies the chosen public key (PEM, with the <c>keyId</c> line) to the clipboard.</summary>
-      public void CopyPublicKeyCommand() {
-         if (PublicKeyPem() is not { } pem) return;
-         try {
-            Clipboard.SetText(pem.Replace("\n", Environment.NewLine));
-            Logged?.Invoke("Public key copied to the clipboard.");
-         }
-         catch (Exception x) {
-            AlertError(x);
-         }
-      }
-
-      /// <summary>Only when a signing key is chosen.</summary>
-      public bool CopyPublicKeyCommandAllowed() => SelectedKey is not null;
-
-      /// <summary>Saves the chosen public key to a <c>.pem</c> file.</summary>
-      public void ExportPublicKeyCommand() {
-         if (SelectedKey is not { } key || PublicKeyPem() is not { } pem) return;
-
-         var file = new SaveFileDialog {
-            Title = "Export the public key",
-            FileName = $"em-release-signing-{key.KeyId}.pem",
-            Filter = "Public key (*.pem)|*.pem"
-         };
-         if (file.ShowDialog(DialogOwner) != true) return;
-
-         try {
-            File.WriteAllText(file.FileName, pem);
-            Logged?.Invoke($"Public key {key.KeyId} saved to {file.FileName}.");
-         }
-         catch (Exception x) {
-            AlertError(x);
-         }
-      }
-
-      /// <summary>Only when a signing key is chosen.</summary>
-      public bool ExportPublicKeyCommandAllowed() => SelectedKey is not null;
-
-      /// <summary>Reads the list of signing keys from the certificate store again.</summary>
-      public void RefreshKeysCommand() => LoadKeys(SelectedKey?.Thumbprint);
-
-      #endregion
-
-      #region Commands - dialog
-
-      /// <summary>Saves all settings to profile.json, then closes the dialog.</summary>
-      public void SaveCommand() {
-         try {
-            var settings = _profile.Clone();
-            settings.SolutionPath = SolutionPath;
-            settings.HostProject = HostProject ?? "";
-            settings.PublishFolder = PublishFolder;
-            settings.TargetKind = TargetKind;
-            settings.TargetFolder = TargetFolder;
-            settings.ReleaseFolder = ReleaseTarget.NormalizeReleaseFolder(ReleaseFolder);
-            settings.Signing.Thumbprint = SelectedKey?.Thumbprint ?? "";
-            var conflicts = ReleaseProfileConflicts.Find(settings, _others, true, true);
-            if (conflicts.Count > 0 && DialogOwner?.ShowMboxDecideWarning(string.Join("\n", conflicts) + "\n\nSave anyway?") != MessageBoxResult.Yes) return;
-            try { _store.Save(settings, _lastWriteUtc); }
-            catch (ReleaseProfileChangedException) {
-               if (DialogOwner?.ShowMboxDecideWarning("profile.json was changed outside Release Manager. Overwrite it?") != MessageBoxResult.Yes) return;
-               _store.Save(settings);
-            }
-            if (IsSeparatePassword && _profile.Signing.Password is { } plaintext) {
-               _secrets.Put(settings.Id, settings.Signing.Thumbprint, plaintext, remember: false);
-               _profile.Signing.Password = null;
-            }
-            SavedProfile = settings;
-            RequestClose?.Invoke(true);
-         }
-         catch (Exception x) { DialogOwner?.ShowMboxError(x.Message, "Release Settings"); }
-      }
-
-      #endregion
-
-      #region Methods
-
-      /// <summary>
-      /// Fills the dialog from the stored settings; called once after <see cref="MvvmModelBase.EmApp"/> is set.
-      /// </summary>
-      /// <param name="store">The store of the release profiles.</param>
-      /// <param name="profile">The profile being edited.</param>
-      /// <param name="lastWriteUtc">The last write time of the profile file when it was read, to detect outside changes.</param>
-      /// <param name="others">The other profiles, to warn about collisions.</param>
-      /// <param name="secrets">The store of signing key passwords.</param>
-      /// <param name="sdkVersion">The .NET SDK 10.x version that was found, or <c>null</c>.</param>
-      /// <param name="isSdkChecked"><c>true</c> when the SDK check has finished.</param>
-      /// <param name="canUseCdn"><c>true</c> when the user may use the server CDN as a target.</param>
-      public void Load(ReleaseProfileStore store, ReleaseProfile profile, DateTime lastWriteUtc,
-         IReadOnlyList<ReleaseProfile> others, ReleaseSigningSecrets secrets,
-         string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
-         _store = store;
-         _profile = profile.Clone();
-         _lastWriteUtc = lastWriteUtc;
-         _others = others;
-         _secrets = secrets;
-         _sdkVersion = sdkVersion;
-         _isSdkChecked = isSdkChecked;
-         var settings = _profile;
-         SolutionPath = settings.SolutionPath;
-         HostProject = HostProjects.FirstOrDefault(r => string.Equals(r, settings.HostProject, StringComparison.OrdinalIgnoreCase))
-                       ?? (settings.HostProject.Length > 0 ? settings.HostProject : null);
-         PublishFolder = settings.PublishFolder;
-         CanUseCdn = canUseCdn;
-         TargetFolder = settings.TargetFolder;
-         ReleaseFolder = settings.ReleaseFolder;
-         // Through the radio properties, which is also what sets TargetKind when it is the default.
-         if (settings.TargetKind == ReleaseTargetKind.Folder) IsFolderTarget = true;
-         else IsCdnTarget = true;
-         IsSeparatePassword = settings.Signing.PasswordStorage == ReleasePasswordStorage.Separate;
-         IsPlaintextPassword = settings.Signing.PasswordStorage == ReleasePasswordStorage.Plaintext;
-         IsStoreSource = settings.Signing.Source == ReleaseSigningSource.Store;
-         IsFileSource = settings.Signing.Source == ReleaseSigningSource.ProfileFile;
-         LoadKeys(settings.Signing.Thumbprint);
-         NotifyChanged(nameof(BannerTitle));
-         NotifyChanged(nameof(SdkCaption));
-         NotifyChanged(nameof(IsSdkMissing));
-      }
-
-      private void LoadKeys(string? select) {
-         SigningKeys.Clear();
-         if (_profile.Signing.Source == ReleaseSigningSource.ProfileFile) {
-            using var certificate = SigningCertificates.LoadCertificateFile(_store.CertificateFilePath(_profile.Id));
-            SelectedKey = certificate is null ? null : ReleaseSigningKey.FromCertificateFile(certificate);
-            if (SelectedKey is not null) _profile.Signing.Thumbprint = SelectedKey.Thumbprint;
-            RefreshPassword();
-            return;
-         }
-         foreach (var key in ReleaseSigningKey.ListInstalled()) SigningKeys.Add(key);
-         SelectedKey = SigningKeys.FirstOrDefault(r => string.Equals(r.Thumbprint, select, StringComparison.OrdinalIgnoreCase));
-      }
-
-      private void LoadHostProjects() {
-         HostProjects.Clear();
-         if (File.Exists(SolutionPath)) {
-            try {
-               foreach (var project in ReleaseBuilder.ReadHostProjects(SolutionPath)) HostProjects.Add(project);
-            }
-            catch (Exception x) when (x is System.Xml.XmlException or IOException) {
-               Logged?.Invoke($"The solution could not be read: {x.Message}");
-            }
-         }
-
-         if (HostProject is not null && !HostProjects.Contains(HostProject, StringComparer.OrdinalIgnoreCase))
-            HostProject = null;
-      }
-
-      private string? PublicKeyPem() {
-         if (SelectedKey is not { } key) return null;
-         using var certificate = IsFileSource ? SigningCertificates.LoadCertificateFile(_store.CertificateFilePath(_profile.Id)) : SigningCertificates.Find(key.Thumbprint);
-         return certificate is null ? null : SigningCertificates.PublicKeyPem(certificate);
-      }
-
-      private bool ConfirmReplaceFile() => !_store.HasKeyFile(_profile.Id) ||
-         DialogOwner?.ShowMboxDecideWarning("Replace the signing key file in this profile?", "Signing Key") == MessageBoxResult.Yes;
-
-      private void AcceptFileKey(X509Certificate2 certificate, PasswordInputDialog password) {
-         _profile.Signing.Thumbprint = certificate.Thumbprint;
-         if (IsPlaintextPassword) _profile.Signing.Password = password.Vm.Password;
-         else _secrets.Put(_profile.Id, certificate.Thumbprint, password.Vm.Password, password.Vm.Remember);
-         IsFileSource = true;
-         IsStoreSource = false;
-         LoadKeys(certificate.Thumbprint);
-         Logged?.Invoke($"Signing key {SigningCertificates.KeyIdOf(certificate)} saved in profile '{_profile.Name}'.");
-      }
-
-      private void ImportFileKey() {
-         var file = new OpenFileDialog { Title = "Import signing key", Filter = "Signing key (*.pfx)|*.pfx" };
-         if (file.ShowDialog(DialogOwner) != true) return;
-         var password = new PasswordInputDialog("Import Signing Key", "Password of the key file.", okCaption: "Import", showRemember: IsSeparatePassword) { Owner = DialogOwner };
-         if (password.ShowDialog() != true) return;
-         try {
-            using var certificate = SigningCertificates.ValidatePfx(file.FileName, password.Vm.Password);
-            if (!ConfirmReplaceFile()) return;
-            var destination = _store.KeyFilePath(_profile.Id);
-            if (!string.Equals(Path.GetFullPath(file.FileName), destination, StringComparison.OrdinalIgnoreCase)) File.Copy(file.FileName, destination, overwrite: true);
-            SigningCertificates.WriteCertificateFile(certificate, _store.CertificateFilePath(_profile.Id));
-            AcceptFileKey(certificate, password);
-         }
-         catch (Exception x) { DialogOwner?.ShowMboxError(x.Message, "Import Signing Key"); }
-      }
-
-      private void CreateFileKey() {
-         if (DialogOwner?.ShowMboxDecideWarning("Create a new signing key? Every launcher must trust the new public key.\n\nThe key is saved in this profile folder, which is its master copy. Use Export to keep a backup.", "Create Signing Key") != MessageBoxResult.Yes || !ConfirmReplaceFile()) return;
-         var password = new PasswordInputDialog("Create Signing Key", "Password that protects the new .pfx file.", requireConfirmation: true, okCaption: "Create", showRemember: IsSeparatePassword) { Owner = DialogOwner };
-         if (password.ShowDialog() != true) return;
-         try {
-            using var certificate = SigningCertificates.CreatePfx(_store.KeyFilePath(_profile.Id), _store.CertificateFilePath(_profile.Id), password.Vm.Password);
-            AcceptFileKey(certificate, password);
-         }
-         catch (Exception x) { DialogOwner?.ShowMboxError(x.Message, "Create Signing Key"); }
-      }
-
-      /// <summary>Removes only the profile's key files and the session/DPAPI password.</summary>
-      public void RemoveKeyFileCommand() {
-         if (DialogOwner?.ShowMboxDecideWarning("Remove signing.pfx and signing.cer from this profile?", "Remove Key File") != MessageBoxResult.Yes) return;
-         try {
-            File.Delete(_store.KeyFilePath(_profile.Id));
-            File.Delete(_store.CertificateFilePath(_profile.Id));
-            _secrets.Forget(_profile.Id);
-            _profile.Signing.Thumbprint = "";
-            _profile.Signing.Password = null;
-            LoadKeys(null);
-            Logged?.Invoke("Signing key files removed from the profile.");
-         }
-         catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
-      }
-
-      /// <summary>Validates the new password before storing it in the profile draft.</summary>
-      public void SetPasswordCommand() {
-         var dialog = new PasswordInputDialog("Signing Key Password", "Password of the key file in this profile.", okCaption: "Set") { Owner = DialogOwner };
+      _previews.Children.Add(new TextBlock { Text = _draft.Product.IsEmHost ? "Em host: full branding and in-app update support." : "Other .NET host: basic launcher support; in-app updates unavailable." });
+   }
+   private void KeySummary() => _message.Text = _draft.PrivateKeyPem.Length > 0 ? "Signing PEM present. Anyone holding this JSON can sign releases." : "Create or import the product's P-256 PKCS#8 private PEM.";
+   private async Task SelectManaged() {
+      var folder = "";
+      while (true) {
+         var content = await Service.GetMeta_CdnReleaseFolder(folder);
+         var dialog = new TextInputDialog("Choose CDN folder", "Folders: " + string.Join(", ", content.Entries.Where(e => e.IsFolder).Select(e => e.Name)) + "\nType a full relative path to browse. Repeat that path to select it; a missing path creates a new folder.", "Folder path", "Browse / select", initialText: folder.Length == 0 ? Value("Release folder") : folder) { Owner = this };
          if (dialog.ShowDialog() != true) return;
-         try {
-            using var certificate = SigningCertificates.ValidatePfx(_store.KeyFilePath(_profile.Id), dialog.Vm.Password);
-            _profile.Signing.Password = dialog.Vm.Password;
-            RefreshPassword();
-         }
-         catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
+         var path = dialog.Vm.Result;
+         if (path == folder || !content.Entries.Any(e => e.IsFolder && e.Path == path)) { await Service.PostGetMeta_CdnReleaseManage(path, Value("app_id")); _fields["Release folder"].Text = path; return; }
+         folder = path;
       }
-
-      /// <summary>Runs the forget password command.</summary>
-      public void ForgetPasswordCommand() {
-         _secrets.Forget(_profile.Id);
-         RefreshPassword();
-      }
-
-      private string? AcquireFilePassword() => ReleaseProfileKeyAccess.AcquirePassword(_profile, _store, _secrets, DialogOwner, "Export");
-
-      private void RefreshTargetState() {
-         NotifyChanged(nameof(TargetCaption));
-         NotifyChanged(nameof(IsTargetBlocked));
-         NotifyChanged(nameof(CdnOptionTooltip));
-      }
-
-      private void RaiseCommandsChanged() {
-         foreach (var command in Commands)
-            command.RaiseCanExecuteChanged();
-      }
-
-      #endregion
+   }
+   private async Task Save() {
+      _draft.Product = Product(); _draft.Product.Validate();
+      _draft.SolutionPath = Value("Solution"); _draft.HostProject = _hosts.SelectedItem as string ?? ""; _draft.PublishFolder = Value("Publish folder");
+      _draft.TargetKind = Enum.Parse<ReleaseTargetKind>(Value("Target")); _draft.TargetFolder = Value("Target folder"); _draft.ReleaseFolder = Value("Release folder"); _draft.CdnAddress = Value("CDN address");
+      if (_draft.CdnAddress.Length > 0 && (!Uri.TryCreate(_draft.CdnAddress, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) throw new InvalidDataException("CDN address must be an absolute HTTP(S) URL.");
+      _draft.Launcher.FileName = Value("Launcher exe"); _draft.Launcher.BaseVersion = Value("Launcher version"); _draft.Launcher.Channel = Value("Channel"); _draft.Launcher.UpdateBehavior = Value("Update at start"); LauncherBuild.ValidateSettings(_draft.Launcher);
+      var conflicts = ReleaseProfileConflicts.Find(_draft, _others, true, true);
+      if (conflicts.Count > 0 && this.ShowMboxDecideWarning(string.Join("\n", conflicts) + "\nContinue?", Title) != MessageBoxResult.Yes) return;
+      if (_draft.TargetKind == ReleaseTargetKind.Cdn) await Service.PostGetMeta_CdnReleaseManage(_draft.ReleaseFolder, _draft.Product.AppId);
+      try { _store.Save(_draft, _lastWrite); } catch (ReleaseProfileChangedException) { if (this.ShowMboxDecideWarning("Profile JSON changed outside this editor. Overwrite it? No keeps editing.", Title) != MessageBoxResult.Yes) return; _store.Save(_draft); }
+      _preferences.LauncherSourceFolder = Value("Launcher source folder"); _preferences.LauncherOutputFolder = Value("Launcher output folder"); DialogResult = true;
    }
 }

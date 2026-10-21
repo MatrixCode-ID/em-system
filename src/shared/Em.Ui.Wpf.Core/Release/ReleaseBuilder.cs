@@ -155,7 +155,7 @@ namespace Em.Ui.Wpf.Core.Release
       /// </summary>
       /// <returns>The <c>dotnet publish</c> exit code; <c>0</c> means success.</returns>
       public static async Task<int> PublishAsync(string solutionPath, string hostProject, string publishFolder,
-         IProgress<string> log, CancellationToken token) {
+         IProgress<string> log, CancellationToken token, ReleaseProfile? profile = null) {
          var solutionFolder = Path.GetDirectoryName(Path.GetFullPath(solutionPath))!;
          var projectPath = Path.GetFullPath(Path.Combine(solutionFolder, hostProject));
          var start = new ProcessStartInfo("dotnet") {
@@ -169,6 +169,18 @@ namespace Em.Ui.Wpf.Core.Release
          };
          foreach (var argument in BuildPublishArguments(projectPath, Path.GetFullPath(publishFolder)))
             start.ArgumentList.Add(argument);
+         if (profile is not null) {
+            profile.Product.Validate();
+            var assets = Path.Combine(Path.GetTempPath(), "EmReleaseAssets", profile.Id);
+            Directory.CreateDirectory(assets);
+            var icon = Path.Combine(assets, "Product.ico"); File.WriteAllBytes(icon, Convert.FromBase64String(profile.Product.IconBase64));
+            foreach (var value in new[] { "Product=" + profile.Product.AppName, "Company=" + profile.Product.Publisher, "EmAppId=" + profile.Product.AppId,
+               "AssemblyName=" + Path.GetFileNameWithoutExtension(profile.Product.AppExe), "ApplicationIcon=" + icon })
+               start.ArgumentList.Add("-p:" + value.Replace("%", "%25").Replace(";", "%3B").Replace(",", "%2C"));
+            var logo = "";
+            if (profile.Product.LogoBase64.Length > 0) { logo = Path.Combine(assets, "Product.png"); File.WriteAllBytes(logo, Convert.FromBase64String(profile.Product.LogoBase64)); }
+            start.ArgumentList.Add("-p:EmAppLogo=" + logo);
+         }
          // MSBuild worker nodes that outlive the build inherit the output pipes, and the wait below would
          // then last until they time out. Turning reuse off changes nothing in what is built.
          start.Environment["MSBUILDDISABLENODEREUSE"] = "1";

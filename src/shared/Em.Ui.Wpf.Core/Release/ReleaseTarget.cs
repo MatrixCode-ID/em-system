@@ -71,6 +71,9 @@ namespace Em.Ui.Wpf.Core.Release
       /// </summary>
       public virtual Task<long?> GetMaxFileSizeAsync(CancellationToken token) => Task.FromResult<long?>(null);
 
+      /// <summary>Validates expected final files before the first write.</summary>
+      public virtual Task PreflightAsync(IReadOnlyList<Em.Api.Core.Models.CdnSyncFile> files, CancellationToken token) => Task.CompletedTask;
+
       /// <summary>The path of a release file inside the release folder: <c>binaries/</c> + <paramref name="path"/>.</summary>
       public static string BinaryPath(string path) => $"{ReleaseLayout.BinariesFolder}/{path}";
 

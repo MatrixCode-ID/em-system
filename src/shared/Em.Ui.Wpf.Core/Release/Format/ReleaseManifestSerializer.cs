@@ -31,12 +31,20 @@ namespace Em.Ui.Wpf.Core.Release
       public static byte[] Serialize(ReleaseManifest manifest) {
          var files = manifest.Files.OrderBy(r => r.Path, StringComparer.Ordinal).ToArray();
          ValidateFiles(files);
+         ValidateLauncher(manifest.Launcher, files);
 
          using var buffer = new MemoryStream();
          using (var writer = new Utf8JsonWriter(buffer, WriterOptions)) {
             writer.WriteStartObject();
             writer.WriteString("publishedAtUtc", ToUtc(manifest.PublishedAtUtc)
                .ToString(TimeFormat, CultureInfo.InvariantCulture));
+            if (manifest.Launcher is { } launcher) {
+               writer.WriteStartObject("launcher");
+               writer.WriteString("fileName", launcher.FileName);
+               writer.WriteString("version", launcher.Version);
+               writer.WriteString("inputHash", launcher.InputHash);
+               writer.WriteEndObject();
+            }
             writer.WriteStartArray("files");
             foreach (var file in files) {
                writer.WriteStartObject();
@@ -91,7 +99,12 @@ namespace Em.Ui.Wpf.Core.Release
             }
 
             ValidateFiles(files);
-            return new ReleaseManifest { PublishedAtUtc = publishedAt, Files = files };
+            ReleaseLauncherMetadata? launcher = null;
+            if (root.TryGetProperty("launcher", out var metadata)) {
+               launcher = new() { FileName = RequireString(metadata, "fileName"), Version = RequireString(metadata, "version"), InputHash = RequireString(metadata, "inputHash") };
+               ValidateLauncher(launcher, files);
+            }
+            return new ReleaseManifest { PublishedAtUtc = publishedAt, Files = files, Launcher = launcher };
          }
          catch (JsonException x) {
             throw new ReleaseFormatException($"release.json is not valid JSON: {x.Message}", x);
@@ -169,6 +182,17 @@ namespace Em.Ui.Wpf.Core.Release
                throw new ReleaseFormatException($"'{file.Path}' has an invalid sha256 '{file.Sha256}'.");
             }
          }
+      }
+
+      private static void ValidateLauncher(ReleaseLauncherMetadata? launcher, IEnumerable<ReleaseFile> files) {
+         if (launcher is null) return;
+         if (CheckPath(launcher.FileName) is not null || launcher.FileName.Contains('/') ||
+             launcher.FileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || !launcher.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+             !files.Any(f => string.Equals(f.Path, launcher.FileName, StringComparison.OrdinalIgnoreCase)))
+            throw new ReleaseFormatException("launcher.fileName must name a listed executable in the binaries root.");
+         if (!IsValidSha256(launcher.InputHash)) throw new ReleaseFormatException("Invalid launcher.inputHash.");
+         if (!System.Text.RegularExpressions.Regex.IsMatch(launcher.Version, @"^\d+\.\d+\.\d+(?:-(?:prealpha|alpha|beta|rc)\.[1-9]\d*)?$"))
+            throw new ReleaseFormatException("Invalid launcher.version.");
       }
 
       private static DateTime ToUtc(DateTime value) => value.Kind switch {

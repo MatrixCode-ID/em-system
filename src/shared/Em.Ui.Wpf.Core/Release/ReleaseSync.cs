@@ -29,10 +29,11 @@ namespace Em.Ui.Wpf.Core.Release
       /// Cancels Sync. One that is cancelled before <c>release.json.sig</c> is written does not write a new
       /// <c>release.json</c>; the same Sync can simply be repeated.
       /// </param>
+      /// <param name="launcher">Signed metadata of the prepared product launcher.</param>
       /// <returns>The manifest that was published.</returns>
       /// <exception cref="ReleaseConflictException">The target or the local publish folder changed since the comparison.</exception>
       public static async Task<ReleaseManifest> SyncAsync(ReleaseTarget target, ReleaseComparison comparison,
-         ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token) {
+         ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token, ReleaseLauncherMetadata? launcher = null) {
          var local = comparison.Local;
          var uploads = comparison.Items.Where(ReleaseComparison.IsUpload).ToArray();
 
@@ -60,10 +61,15 @@ namespace Em.Ui.Wpf.Core.Release
          // Signed before the first upload, so a key that cannot sign fails with nothing touched.
          var manifest = new ReleaseManifest {
             PublishedAtUtc = TruncateToSeconds(DateTime.UtcNow),
-            Files = local.Files
+            Files = local.Files,
+            Launcher = launcher
          };
          var manifestBytes = ReleaseManifestSerializer.Serialize(manifest);
          var signatureBytes = ReleaseManifestSerializer.SerializeSignature(ReleaseSignature.Sign(manifestBytes, signingKey));
+
+         await target.PreflightAsync(local.Files.Select(f => new Em.Api.Core.Models.CdnSyncFile { Path = ReleaseTarget.BinaryPath(f.Path), Size = f.Size })
+            .Concat(new[] { new Em.Api.Core.Models.CdnSyncFile { Path = ReleaseLayout.ManifestFileName, Size = manifestBytes.Length },
+               new Em.Api.Core.Models.CdnSyncFile { Path = ReleaseLayout.SignatureFileName, Size = signatureBytes.Length } }).ToArray(), token).ConfigureAwait(false);
 
          // 1. Folders, parents first.
          var folders = uploads.Select(r => ReleaseTarget.ParentOf(r.Path))

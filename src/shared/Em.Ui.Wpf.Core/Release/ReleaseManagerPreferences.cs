@@ -17,6 +17,12 @@ namespace Em.Ui.Wpf.Core.Release
       public ReleaseManagerPreferences(EmApp app) : this(() => app.BaseRegKey) { }
       /// <summary>Creates a new instance of <see cref="ReleaseManagerPreferences"/>.</summary>
       public ReleaseManagerPreferences(Func<RegistryKey> baseKey) => _baseKey = baseKey;
+      /// <summary>Local source checkout of the Rust launcher.</summary>
+      public string LauncherSourceFolder { get => Local(nameof(LauncherSourceFolder)); set => SaveLocal(nameof(LauncherSourceFolder), value); }
+      /// <summary>Local or IT share folder for built product launchers; empty uses the per-product default.</summary>
+      public string LauncherOutputFolder { get => Local(nameof(LauncherOutputFolder)); set => SaveLocal(nameof(LauncherOutputFolder), value); }
+      private string Local(string name) { using var root = _baseKey(); using var key = root.OpenSubKey(SubKey); return key?.GetValue(name) as string ?? ""; }
+      private void SaveLocal(string name, string value) { using var root = _baseKey(); using var key = root.CreateSubKey(SubKey); key.SetValue(name, value); }
       /// <summary>The default profiles folder.</summary>
       public static string DefaultProfilesFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Em", "ReleaseManager", "Profiles", "Release");
 
