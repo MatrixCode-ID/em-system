@@ -63,6 +63,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  /// <summary>Checks a profile and returns the problems found.</summary>
  public async Task<string[]> Check(PublishProfile profile,CancellationToken ct) {
   profile.Validate();if(!Directory.Exists(profile.Workspace))throw new DirectoryNotFoundException("Select an existing workspace.");
+  CheckSources(profile);
   var tools=await _process.CheckTools(profile,ct);
   if(tools.Any(x=>x.StartsWith("Install ",StringComparison.Ordinal)||x.StartsWith("Start ",StringComparison.Ordinal)))throw new InvalidOperationException(string.Join("\n",tools));
   var target=profile.Kind==PublishKind.NuGet?await Targets.ResolveNuGet(profile,ct):profile.Container!.Mode==ContainerMode.Set?"Set targets checked below":await targets.ResolveContainer(profile,ct);
@@ -76,6 +77,22 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
   }
   var warnings=profile.Container is {} container&&container.Mode!=ContainerMode.Set?await DockerRegistryWarnings(profile,target,ct):[];
   return [..tools,..warnings,"Target: "+target];
+ }
+ /// <summary>
+ /// Checks that the project, Dockerfile, build context, and compose file a container profile builds from exist
+ /// under its workspace, so a wrong workspace fails in Check with the path that was looked for, not later in Build.
+ /// </summary>
+ public static void CheckSources(PublishProfile profile) {
+  if(profile.Container is not {} c)return;
+  void File(string what,string path) {if(!System.IO.File.Exists(profile.Resolve(path)))throw new FileNotFoundException($"{what} not found: {profile.Resolve(path)}. Check the workspace of the profile.");}
+  void Folder(string what,string path) {if(!Directory.Exists(profile.Resolve(path)))throw new DirectoryNotFoundException($"{what} not found: {profile.Resolve(path)}. Check the workspace of the profile.");}
+  switch(c.Mode) {
+   case ContainerMode.Dockerfile:Folder("Build context",c.Dockerfile.Context);File("Dockerfile",c.Dockerfile.File);break;
+   case ContainerMode.Template:
+    if(c.Template.Project.Length==0)throw new InvalidDataException("Select an executable/Web project for Template publish.");
+    File("Project",c.Template.Project);if(c.Template.DockerfileSource==DockerfileSource.ExistingFile)File("Dockerfile",c.Template.ExistingDockerfile);break;
+   case ContainerMode.Compose:File("Compose file",c.Compose.File);Folder("Compose project directory",c.Compose.ProjectDirectory);break;
+  }
  }
  // Docker's daemon, not this application, decides http or https for a push, so Check reads the daemon's registry
  // settings and says up front what would make `docker login`/push fail (a plain-HTTP host that is not insecure, or a

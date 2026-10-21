@@ -129,15 +129,19 @@ public sealed class ProfileStore(string root) {
  public void Delete(ProfileEntry entry) {
   var relative=Path.GetRelativePath(Root,entry.File);File.Delete(PublishPaths.Inside(Root,relative));
  }
- private static PublishProfile MakePortable(PublishProfile profile) {
-  var p=profile.Clone();var workspace=Path.GetFullPath(p.Workspace);
+ // Paths become relative to the workspace, and the workspace relative to the folder of the export file, because
+ // Read resolves a relative workspace against that folder. A workspace on another drive is left empty so the
+ // importer has to choose it instead of building from a wrong folder.
+ private static PublishProfile MakePortable(PublishProfile profile,string file) {
+  var p=profile.Clone();if(p.Workspace.Length==0)return p;var workspace=Path.GetFullPath(p.Workspace);
   string Portable(string value) {
    if(!Path.IsPathFullyQualified(value))return value;
    var rel=Path.GetRelativePath(workspace,value);return rel==".."||rel.StartsWith(".."+Path.DirectorySeparatorChar)?"":rel;
   }
   if(p.NuGet!=null)foreach(var source in p.NuGet.Sources) {source.Path=Portable(source.Path);source.Projects=source.Projects.Select(Portable).ToList();}
   if(p.Container is {} c) {c.Dockerfile.Context=Portable(c.Dockerfile.Context);c.Dockerfile.File=Portable(c.Dockerfile.File);foreach(var ctx in c.Dockerfile.NamedContexts)ctx.Value=Portable(ctx.Value);c.Template.Project=Portable(c.Template.Project);c.Template.ExistingDockerfile=Portable(c.Template.ExistingDockerfile);c.Template.PublishProfile=Portable(c.Template.PublishProfile);c.Compose.File=Portable(c.Compose.File);c.Compose.ProjectDirectory=Portable(c.Compose.ProjectDirectory);}
-  p.Workspace=".";return p;
+  var relative=Path.GetRelativePath(Path.GetDirectoryName(Path.GetFullPath(file))!,workspace);
+  p.Workspace=Path.IsPathFullyQualified(relative)?"":relative.Replace(Path.DirectorySeparatorChar,'/');return p;
  }
  /// <summary>Export without secrets, or with secrets inline as plain text.</summary>
  public void Export(PublishProfile profile,string file,bool sensitive=false)=>Export(profile,file,sensitive?ExportSecrets.PlainText:ExportSecrets.None);
@@ -152,7 +156,7 @@ public sealed class ProfileStore(string root) {
  public int Export(PublishProfile profile,string file,ExportSecrets mode,PublishSecretStore? secrets=null,string? passphrase=null) {
   if(mode==ExportSecrets.Encrypted&&string.IsNullOrEmpty(passphrase))throw new InvalidDataException("A passphrase is required to encrypt the export.");
   var found=profile.Credentials.Select(c=>mode==ExportSecrets.None?null:c.Secret??secrets?.Get(c,c.ScopeHost)).ToList();
-  var p=MakePortable(profile);var missing=0;
+  var p=MakePortable(profile,file);var missing=0;
   for(var i=0;i<p.Credentials.Count;i++) {
    p.Credentials[i].SecretRef=null;p.Credentials[i].Secret=found[i];
    if(mode!=ExportSecrets.None&&found[i]==null)missing++;

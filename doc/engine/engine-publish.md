@@ -21,7 +21,9 @@ rights.
 2. **Set the build options, destination and host-scoped credentials.** Built-in destinations come from the
    active connection; after changing connections, select and check again. Missing feeds, prefixes, roots
    or containers must be created in their manager first.
-3. **Check** validates tools, sources and target. **Prepare** (NuGet) or **Build** (container) produces
+3. **Check** validates tools, sources and target. For containers it also checks that the project and existing
+   Dockerfile (Template), the Dockerfile and build context (Dockerfile) or the compose file and project
+   directory (Compose) exist under the workspace, naming the full path it looked for. **Prepare** (NuGet) or **Build** (container) produces
    artifacts without pushing. NuGet also accepts existing `.nupkg` files through the picker or drag and
    drop.
 4. Select artifacts, enter release notes if required, review the confirmation, and **Push**.
@@ -72,7 +74,10 @@ keeps its history, and history includes deleted profiles. Run logs are kept unti
 ```
 
 One file per profile, format version 1, with a stable GUID ID. Relative source paths resolve from the
-workspace. NuGet profiles support several project or solution sources.
+workspace; a relative workspace resolves from the folder of the profile file. **Export** writes the workspace
+relative to the folder of the exported file (for example `../../src` for a file kept under `doc/profiles/`), so
+the file can be imported from where it is stored. A workspace on another drive is exported empty and must be
+selected after import. NuGet profiles support several project or solution sources.
 
 ### Container modes
 

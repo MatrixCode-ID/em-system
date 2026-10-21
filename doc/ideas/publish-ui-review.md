@@ -1,6 +1,6 @@
 # Review UI Publish: picker target dan pesan status
 
-- Tanggal: 2026-10-06 (ditambah 2026-10-19: temuan 7-9)
+- Tanggal: 2026-10-06 (ditambah 2026-10-19: temuan 7-9; 2026-10-21: butir 7-8 diperbaiki)
 - Status: diskusi
 
 ## Temuan: picker target di Publish profile
@@ -97,6 +97,12 @@ yang berkasnya disimpan di dalam repo produk agar bisa diimport ulang, lalu dipu
   Allow HTTP on the credential for <host>.` Check juga bisa memberi peringatan yang sama lewat probe `GET /v2/`.
 
 ## Pertanyaan terbuka (temuan 7-9)
+
+Pembaruan 2026-10-21 (permintaan pengguna): butir 7 dan 8 sudah diperbaiki. Export menulis `workspace` relatif
+terhadap folder berkas tujuan (beda drive: dikosongkan), selalu otomatis tanpa pilihan di dialog Export. Check
+memeriksa project/Dockerfile (Template), Dockerfile/context (Dockerfile), dan compose file/project directory
+(Compose) dengan pesan `<What> not found: <path>. Check the workspace of the profile.` Uji di
+`ProfileTransferTests`. Butir 9 belum dikerjakan.
 
 - Export yang memakai workspace relatif terhadap berkas: apakah perlu pilihan eksplisit di dialog Export ("simpan
   workspace relatif terhadap berkas ini"), atau cukup selalu dihitung otomatis?

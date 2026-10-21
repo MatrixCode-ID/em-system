@@ -99,6 +99,43 @@ namespace Em.Ui.Wpf.Core.Tests
          Assert.Contains("has no secret in this session", failure.Message);
       }
 
+      [Fact]
+      public void Export_ToAnotherFolder_KeepsWorkspaceAfterImport() {
+         var (source, profile, _) = CreateProfile("source");
+         var workspace = Path.Combine(folder, "repo", "src");
+         Directory.CreateDirectory(Path.Combine(workspace, "app"));
+         profile.Workspace = workspace;
+         profile.Container!.Mode = ContainerMode.Template;
+         profile.Container.Template.Project = Path.Combine(workspace, "app", "App.csproj");
+         var file = Path.Combine(folder, "repo", "doc", "profiles", "export.json");
+         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+
+         source.Export(profile, file, ExportSecrets.None);
+
+         Assert.Contains("\"workspace\": \"../../src\"", File.ReadAllText(file));
+         var imported = new ProfileStore(Path.Combine(folder, "target")).Import(file).Profile!;
+         Assert.Equal(Path.GetFullPath(workspace), Path.GetFullPath(imported.Workspace));
+         Assert.Equal(profile.Container.Template.Project, imported.Resolve(imported.Container!.Template.Project));
+      }
+
+      [Fact]
+      public void CheckSources_NamesTheMissingDockerfileUnderTheWorkspace() {
+         var (_, profile, _) = CreateProfile("source");
+         profile.Container!.Mode = ContainerMode.Template;
+         profile.Container.Template.Project = "App.csproj";
+         profile.Container.Template.DockerfileSource = DockerfileSource.ExistingFile;
+         profile.Container.Template.ExistingDockerfile = "Dockerfile";
+         File.WriteAllText(Path.Combine(folder, "App.csproj"), "<Project />");
+
+         var failure = Assert.Throws<FileNotFoundException>(() => Publisher.CheckSources(profile));
+
+         Assert.Contains(Path.Combine(folder, "Dockerfile"), failure.Message);
+         File.WriteAllText(Path.Combine(folder, "Dockerfile"), "FROM scratch");
+         Publisher.CheckSources(profile);
+         profile.Container.Template.Project = "Missing.csproj";
+         Assert.Contains("Project not found", Assert.Throws<FileNotFoundException>(() => Publisher.CheckSources(profile)).Message);
+      }
+
       private (ProfileStore Store, PublishProfile Profile, PublishSecretStore Secrets) CreateProfile(string name) {
          var store = new ProfileStore(Path.Combine(folder, name));
          var profile = PublishProfile.Create(PublishKind.Container);
