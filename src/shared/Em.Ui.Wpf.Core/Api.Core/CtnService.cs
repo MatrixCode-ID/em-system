@@ -80,6 +80,10 @@ namespace Em.Api.Core
          GetAsync<CtnManifestInfo[]>(nameof(GetMeta_CtnImageManifests), imageId);
 
       /// <inheritdoc />
+      public Task PostMeta_CtnTagAdd(string imageId, string manifestId, string tag) =>
+         PostAsync(nameof(PostMeta_CtnTagAdd), imageId, manifestId, tag);
+
+      /// <inheritdoc />
       public Task PostMeta_CtnTagDelete(string imageId, string tag) =>
          PostAsync(nameof(PostMeta_CtnTagDelete), imageId, tag);
 

@@ -76,10 +76,18 @@ Other actions: `GetMeta_CtnRoots`, `GetMeta_CtnTree(rootId)`, `GetMeta_CtnImageM
 `GetMeta_Robots`, `PostGetMeta_CtnImageMove`, `PostGetMeta_CtnFolderMove`, `PostGetMeta_CtnFolderRename`,
 `PostMeta_CtnImageUpdate`, `PostMeta_CtnImageDelete`, `PostMeta_RobotUpdate`, `PostMeta_RobotDelete`,
 `PostMeta_RobotAccessSet` with an empty access (revoke), `PostMeta_CtnRootUpdate`, `PostMeta_CtnRootDelete`,
-`PostMeta_CtnFolderDelete`, `PostMeta_CtnTagDelete(imageId, tag)`, `PostMeta_CtnManifestDelete(imageId, manifestId)`,
+`PostMeta_CtnFolderDelete`, `PostMeta_CtnTagAdd(imageId, manifestId, tag)`, `PostMeta_CtnTagDelete(imageId, tag)`,
+`PostMeta_CtnManifestDelete(imageId, manifestId)`,
 `GetMeta_CtnGcReview(graceHours)` and `PostGetMeta_CtnGcRun(graceHours)`. Deleting an image, robot, root,
 folder, tag or manifest removes metadata only; layer files stay on disk until Garbage collection runs.
 Deleting a manifest that a manifest list/index of the same container still references is refused with 409.
+
+`PostMeta_CtnTagAdd` points a tag at an existing manifest (an image or an image index) without a push: no
+blob is uploaded and no deploy is started. A tag points at one manifest per container, so a tag that is
+already on another manifest moves to the chosen one (the same as pushing to an existing tag). The tag must be a
+valid OCI tag (`[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}`), otherwise 400. Adding, moving and deleting a tag write
+`tag.added`, `tag.moved` and `tag.deleted` entries to the `System.Registry` audit group (who and when, with
+the digest and, for a move, the previous digest), readable in Log Manager when the log server is on.
 
 ## Container Manager (WPF)
 
@@ -93,7 +101,10 @@ visible only to accounts holding `Administrative Tools:Container Manager Access`
   **Show untagged** to include manifests without tags, including image-index children and build metadata.
   Hiding these entries does not delete them or exclude them from deployment choices or storage health checks.
   An untagged manifest may still be referenced by an index; it is not necessarily unused. Copy the pull name,
-  `docker pull` by tag or digest, and `docker tag` + `docker push` (right-click a tag). Right-click a tag
+  `docker pull` by tag or digest, and `docker tag` + `docker push` (right-click a tag). The tag icon on a
+  manifest row (**Add tag**) gives that manifest one more tag, e.g. `latest` or `1.0.0` for a manifest
+  pushed as `1.0.0-beta.4`, without building or pushing again; when the tag is on another manifest the screen
+  names that manifest and asks before moving it. Adding a tag never deploys. Right-click a tag
   chip and choose **Delete tag** (the manifest stays and can still be pulled by digest); delete a manifest
   with the trash icon on its row or right-click → **Delete manifest** (its tags go with it; refused with 409
   when an index still references it). Both ask for confirmation and remove metadata only. Root, container and

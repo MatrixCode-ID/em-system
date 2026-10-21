@@ -1154,6 +1154,14 @@
                                                            ToolTip="{Binding Digest}" />
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                                                    <Button Style="{StaticResource rowActionButtonStyle}"
+                                                           ToolTip="Add tag (no push, no deploy)"
+                                                           AutomationProperties.Name="Add tag"
+                                                           Command="{Binding DataContext.Commands[AddTagCommand],
+                                                                             RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           CommandParameter="{Binding}">
+                                                      <fa:FontAwesome Icon="Solid_Tag" />
+                                                   </Button>
+                                                   <Button Style="{StaticResource rowActionButtonStyle}"
                                                            ToolTip="Copy digest"
                                                            Command="{Binding DataContext.Commands[CopyDigestCommand],
                                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"

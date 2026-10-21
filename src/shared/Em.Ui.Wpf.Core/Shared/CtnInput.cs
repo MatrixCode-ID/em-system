@@ -39,6 +39,10 @@ namespace Em.Ui.Wpf.Shared
       [GeneratedRegex(@"^[a-z0-9][a-z0-9._-]*$")]
       private static partial Regex RobotNamePattern();
 
+      // An OCI tag: letters, digits, "_", "." and "-", at most 128 characters, not starting with "." or "-".
+      [GeneratedRegex(@"^[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}$")]
+      private static partial Regex TagPattern();
+
       /// <summary>Whether <paramref name="name"/> is a valid root or container name with that maximum length.</summary>
       public static bool IsValidName(string? name, int maxLength) =>
          !string.IsNullOrEmpty(name) && name.Length <= maxLength && NamePattern().IsMatch(name);
@@ -46,6 +50,9 @@ namespace Em.Ui.Wpf.Shared
       /// <summary>Whether <paramref name="name"/> is a valid robot name.</summary>
       public static bool IsValidRobotName(string? name) =>
          !string.IsNullOrEmpty(name) && name.Length <= MaxRobotName && RobotNamePattern().IsMatch(name);
+
+      /// <summary>Whether <paramref name="tag"/> is a valid OCI tag, such as <c>latest</c> or <c>1.0.0-beta.4</c>.</summary>
+      public static bool IsValidTag(string? tag) => !string.IsNullOrEmpty(tag) && TagPattern().IsMatch(tag);
 
       /// <summary>Whether <paramref name="name"/> is a valid folder name (only about length; its shape is free).</summary>
       public static bool IsValidFolderName(string? name) =>

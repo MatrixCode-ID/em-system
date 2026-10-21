@@ -99,6 +99,13 @@ namespace Em.Api.Core.Models
       Task<CtnManifestInfo[]> GetMeta_CtnImageManifests(string imageId);
 
       /// <summary>
+      /// Points <paramref name="tag"/> at a manifest of the container without pushing anything. A tag points at one
+      /// manifest only: when it is already on another manifest it moves here and leaves that one. Does not
+      /// start a deploy. 400 for a tag that is not a valid OCI tag, 404 when the container or manifest is missing.
+      /// </summary>
+      Task PostMeta_CtnTagAdd(string imageId, string manifestId, string tag);
+
+      /// <summary>
       /// Deletes one tag. Its manifest stays and can still be pulled by digest. 404 when the tag does not exist.
       /// </summary>
       Task PostMeta_CtnTagDelete(string imageId, string tag);

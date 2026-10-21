@@ -20,6 +20,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(MoveNodeCommand), MoveNodeCommand, MoveNodeCommandAllowed);
          RegisterCommand(nameof(DeleteNodeCommand), DeleteNodeCommand, DeleteNodeCommandAllowed);
          RegisterCommand<object?>(nameof(DropCommand), DropCommand, DropCommandAllowed);
+         RegisterCommand<CtnManifestItem?>(nameof(AddTagCommand), AddTagCommand, AddTagCommandAllowed);
          RegisterCommand<string?>(nameof(DeleteTagCommand), DeleteTagCommand, DeleteTagCommandAllowed);
          RegisterCommand<CtnManifestItem?>(nameof(DeleteManifestCommand), DeleteManifestCommand, DeleteManifestCommandAllowed);
          RegisterCommand(nameof(GarbageCollectionCommand), GarbageCollectionCommand, GarbageCollectionCommandAllowed);
@@ -244,6 +245,45 @@ namespace Em.Ui.Wpf.Navigations
       #endregion
 
       #region Tag and manifest
+
+      /// <summary>
+      /// Asks for a tag and points it at <paramref name="manifest"/> without a new push. A tag already on another
+      /// manifest is moved after confirmation. Does not start a deploy.
+      /// </summary>
+      public async Task AddTagCommand(CtnManifestItem? manifest) {
+         if (manifest is null || SelectedNode?.Image is not { } image || DialogOwner is not { } owner) return;
+         var node = SelectedNode;
+         var dialog = new TextInputDialog("Add Tag",
+            $"New tag for manifest {manifest.ShortDigest} of '{image.FullName}'. Nothing is pushed or deployed.",
+            "Tag, e.g. latest or 1.0.0", "Add", EFontAwesomeIcon.Solid_Tag) { Owner = owner };
+         if (dialog.ShowDialog() != true) return;
+
+         var tag = dialog.Vm.Result;
+         if (!CtnInput.IsValidTag(tag)) {
+            owner.ShowMboxWarning(
+               $"'{tag}' is not a valid tag.\n\nUse letters, digits, '_', '.' and '-' (at most 128 characters); " +
+               "the first character may not be '.' or '-'.", "Add Tag");
+            return;
+         }
+
+         if (manifest.Tags.Contains(tag, StringComparer.Ordinal)) {
+            owner.ShowMboxInfo($"Manifest {manifest.ShortDigest} already has tag '{tag}'.", "Add Tag");
+            return;
+         }
+
+         if (Manifests.FirstOrDefault(m => m.Tags.Contains(tag, StringComparer.Ordinal)) is { } current &&
+             owner.ShowMboxDecideWarning(
+                $"Tag '{tag}' is on manifest {current.ShortDigest} ({current.Digest}).\n\n" +
+                $"Move it to manifest {manifest.ShortDigest}? It is removed from {current.ShortDigest}.", "Move Tag") !=
+             MessageBoxResult.Yes) return;
+
+         await RunMutationAsync("Adding tag...", "Add Tag",
+            () => Service.PostMeta_CtnTagAdd(node.Id, manifest.Info.Id, tag),
+            () => ReadTreeAsync(node.Id));
+      }
+
+      /// <summary>Whether the add tag command may run now.</summary>
+      public bool AddTagCommandAllowed(CtnManifestItem? manifest) => CanAct && SelectedNode?.Image is not null && manifest is not null;
 
       /// <summary>Deletes one tag of the selected container; its manifest stays.</summary>
       public async Task DeleteTagCommand(string? tag) {

@@ -370,6 +370,25 @@ namespace Em.Api.Core.Registry
 
       /// <inheritdoc />
       [PostAction(claim: ICtnServices.CtnClaim)]
+      public async Task PostMeta_CtnTagAdd(string imageId, string manifestId, string tag) {
+         var db = Db;
+         await RequireImageAsync(db, imageId);
+         // Not cancelled when the caller leaves: a single small write, see AbortToken.
+         var result = await CtnTagAssignment.AssignAsync(db, imageId, manifestId, tag, DateTime.UtcNow, CancellationToken.None);
+         switch (result.Outcome) {
+            case CtnTagAssignment.Outcome.Added:
+               await AuditSystemAsync("System.Registry", imageId, "tag.added", $"Added tag {tag} to {result.Digest}", "image",
+                  new { tag, digest = result.Digest });
+               break;
+            case CtnTagAssignment.Outcome.Moved:
+               await AuditSystemAsync("System.Registry", imageId, "tag.moved", $"Moved tag {tag} to {result.Digest}", "image",
+                  new { tag, digest = result.Digest, previousDigest = result.PreviousDigest });
+               break;
+         }
+      }
+
+      /// <inheritdoc />
+      [PostAction(claim: ICtnServices.CtnClaim)]
       public async Task PostMeta_CtnTagDelete(string imageId, string tag) {
          var db = Db;
          await RequireImageAsync(db, imageId);

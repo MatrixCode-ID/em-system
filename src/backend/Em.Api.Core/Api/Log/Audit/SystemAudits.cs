@@ -76,6 +76,8 @@ internal static class SystemAuditCatalog
          .Entry("retention.changed", "Changed log retention")
          .Entry("retention.run", "Log retention ran"));
       yield return Group(Registry, "Container registry", [Admin + ICtnServices.CtnClaim, LogClaims + ILogServices.AuditReadClaim], g => g
+         .Entry("tag.added", "Added tag")
+         .Entry("tag.moved", "Moved tag")
          .Entry("tag.deleted", "Deleted tag")
          .Entry("manifest.deleted", "Deleted manifest")
          .Entry("gc.run", "Ran garbage collection")
