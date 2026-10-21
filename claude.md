@@ -423,3 +423,7 @@ Visual dan smoke API HTTP penuh tetap tertunda; batas quota live selama Sync
 dicatat dalam laporan. Tidak ada push atau tindakan manual policy.
 Harness/log/paket fixture berada di luar repo pada
 `../.artefacts/em-system/scripts/release-cdn-smoke/`, output di `out/`.
+
+## Image di compose untuk deploy Stack (keputusan pengguna 2026-10-21)
+
+Target deploy mode Stack memilih cara menulis image: **nama image tag + digest** (default target baru), **tag saja**, atau **variabel env** (`${EM_IMAGE_<SERVICE>}`, perilaku lama dan nilai untuk target yang sudah ada). Berlaku sama untuk SSH (compose.yml di host ditulis ulang tiap deploy) dan Portainer; stack Portainer dari Git hanya boleh memakai variabel (Test connection melapor, deploy ditolak). Kolom baru `ta_CtnDeploy.cCtnDeployImageRef`: **database lama wajib menjalankan `doc/sqlscript/mssql/updates/20261021-CtnDeployImageRef.sql` sebelum backend baru**. Panduan: "Image in the compose file" di `doc/engine/engine-registry.md`.
