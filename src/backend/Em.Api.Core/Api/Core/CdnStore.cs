@@ -13,7 +13,7 @@ namespace Em.Api.Core
    /// Registered as a singleton even when the CDN is off, so <see cref="CdnServices"/> always resolves
    /// and answers 404 on its own instead of failing to activate.
    /// </remarks>
-   internal sealed class CdnStore
+   internal sealed partial class CdnStore
    {
       internal const string PublicRequestPath = "/cdn";
 
@@ -39,12 +39,12 @@ namespace Em.Api.Core
       // Mirrors PhysicalFileProvider's ExclusionFilters.Sensitive, so the manager lists exactly what
       // the public side serves.
       private static readonly EnumerationOptions VisibleEntries = new() {
-         AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+         AttributesToSkip = FileAttributes.ReparsePoint,
          IgnoreInaccessible = true
       };
 
       private static readonly EnumerationOptions EverythingRecursive = new() {
-         AttributesToSkip = 0,
+         AttributesToSkip = FileAttributes.ReparsePoint,
          IgnoreInaccessible = true,
          RecurseSubdirectories = true
       };
@@ -67,7 +67,9 @@ namespace Em.Api.Core
             ? configuredPath
             : Path.Combine(contentRootPath, configuredPath));
          Directory.CreateDirectory(fullPath);
-         return new CdnStore(Path.TrimEndingDirectorySeparator(fullPath) + Path.DirectorySeparatorChar, maxFileSize);
+         var store = new CdnStore(Path.Combine(fullPath, "files") + Path.DirectorySeparatorChar, maxFileSize);
+         store.InitializeManagement(fullPath);
+         return store;
       }
 
       public bool IsEnabled { get; }
@@ -109,6 +111,13 @@ namespace Em.Api.Core
             throw new ActionException("The path points outside the CDN folder.", 400);
          }
 
+         for (var current = fullPath; current.Length >= RootPath.TrimEnd(Path.DirectorySeparatorChar).Length;
+              current = Path.GetDirectoryName(current)!) {
+            if ((File.Exists(current) || Directory.Exists(current)) &&
+                (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+               throw new ActionException("Symbolic links are not allowed in CDN paths.", 400);
+            if (current.Length == RootPath.TrimEnd(Path.DirectorySeparatorChar).Length) break;
+         }
          return fullPath;
       }
 
@@ -125,8 +134,8 @@ namespace Em.Api.Core
             throw new ActionException($"A file or folder name must not be longer than {MaxNameLength} characters.", 400);
          }
 
-         if (name.StartsWith('.')) {
-            throw new ActionException($"'{name}' is not allowed: names starting with '.' are reserved.", 400);
+         if (name is "." or "..") {
+            throw new ActionException($"'{name}' is not allowed: relative traversal segments are forbidden.", 400);
          }
 
          if (name.IndexOfAny(InvalidNameChars) >= 0 || name.Contains('/') || name.Contains('\\')) {
@@ -163,8 +172,9 @@ namespace Em.Api.Core
             ? PublicRequestPath.TrimStart('/') + "/"
             : $"{PublicRequestPath.TrimStart('/')}/{string.Join('/', folderRelative.Split('/').Select(Uri.EscapeDataString))}/";
 
-      private static CdnEntry ToEntry(FileSystemInfo info, string relative) => new() {
+      private CdnEntry ToEntry(FileSystemInfo info, string relative) => new() {
          Name = info.Name,
+         ManagedFolder = ManagedAt(relative),
          Path = relative,
          IsFolder = info is DirectoryInfo,
          Size = info is FileInfo file ? file.Length : 0,
@@ -187,24 +197,11 @@ namespace Em.Api.Core
       public CdnStorageInfo StorageSize(CancellationToken ct) {
          EnsureEnabled();
          var result = new CdnStorageInfo();
-         var pending = new Stack<DirectoryInfo>();
-         pending.Push(new DirectoryInfo(RequireFolder(null)));
-         // Do not silently return a partial total for inaccessible directories.
-         var options = new EnumerationOptions {
-            AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint,
-            IgnoreInaccessible = false
-         };
-         while (pending.TryPop(out var folder)) {
+         lock (_gate) foreach (var name in new[] { "files", "temp", "recycle" }) {
             ct.ThrowIfCancellationRequested();
-            foreach (var entry in folder.EnumerateFileSystemInfos("*", options)) {
-               ct.ThrowIfCancellationRequested();
-               if (entry.Name.StartsWith('.')) continue;
-               if (entry is DirectoryInfo sub) pending.Push(sub);
-               else if (entry is FileInfo file) {
-                  result.TotalBytes = checked(result.TotalBytes + file.Length);
-                  result.FileCount = checked(result.FileCount + 1);
-               }
-            }
+            var part = SizeOf(Path.Combine(StoragePath, name));
+            result.TotalBytes = checked(result.TotalBytes + part.TotalBytes);
+            result.FileCount = checked(result.FileCount + part.FileCount);
          }
          return result;
       }
@@ -214,18 +211,17 @@ namespace Em.Api.Core
          var folderRelative = ToRelative(folder.FullName);
 
          var folders = folder.EnumerateDirectories("*", VisibleEntries)
-            .Where(r => !r.Name.StartsWith('.'))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .Select(r => ToEntry(r, ToRelative(r.FullName)));
          var files = folder.EnumerateFiles("*", VisibleEntries)
-            .Where(r => !r.Name.StartsWith('.'))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .Select(r => ToEntry(r, ToRelative(r.FullName)));
 
          return new CdnFolderContent {
             Path = folderRelative,
+            ManagedFolder = ManagedAt(folderRelative),
             Entries = folders.Concat(files).ToArray(),
-            MaxFileSize = MaxFileSize,
+            MaxFileSize = ManagedAt(folderRelative) is null ? MaxFileSize : long.MaxValue,
             PublicPath = ToPublicPath(folderRelative)
          };
       }
@@ -258,21 +254,22 @@ namespace Em.Api.Core
 
          void Walk(DirectoryInfo current) {
             foreach (var sub in current.EnumerateDirectories("*", VisibleEntries)
-                        .Where(r => !r.Name.StartsWith('.'))
-                        .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
+                                    .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                result.Add(ToEntry(sub, ToRelative(sub.FullName)));
                Walk(sub);
             }
 
             foreach (var file in current.EnumerateFiles("*", VisibleEntries)
-                        .Where(r => !r.Name.StartsWith('.'))
-                        .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
+                                    .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                result.Add(ToEntry(file, ToRelative(file.FullName)));
             }
          }
       }
 
       public CdnEntry Move(string relativePath, string? targetFolder, bool overwrite) {
+         lock (_gate) {
+         EnsureWritable(relativePath);
+         EnsureWritable(targetFolder);
          var source = ResolveInside(relativePath);
          if (ToRelative(source).Length == 0) {
             throw new ActionException("The CDN root folder cannot be moved.", 400);
@@ -302,7 +299,7 @@ namespace Em.Api.Core
                throw new ActionException($"'{name}' already exists in the target folder.", 409);
             }
 
-            Directory.Move(source, destination);
+            MovePhysical(source, destination);
             return ToEntry(new DirectoryInfo(destination), ToRelative(destination));
          }
 
@@ -314,8 +311,10 @@ namespace Em.Api.Core
             throw new ActionException($"'{name}' already exists in the target folder.", 409);
          }
 
-         File.Move(source, destination, overwrite: true);
+         Retire(destination);
+         MovePhysical(source, destination);
          return ToEntry(new FileInfo(destination), ToRelative(destination));
+         }
       }
 
       /// <summary>
@@ -324,7 +323,8 @@ namespace Em.Api.Core
       /// limit is counted while copying, since a stream does not say how long it is up front.
       /// </summary>
       public async Task<CdnEntry> UploadAsync(string? relativePath, string fileName, Stream content, bool overwrite,
-         CancellationToken token) {
+         CancellationToken token, string? appId = null) {
+         EnsureWritable(relativePath, appId);
          ValidateName(fileName);
 
          var folder = RequireFolder(relativePath);
@@ -341,7 +341,8 @@ namespace Em.Api.Core
          // Written next to the target and moved into place, so a download already running on the old
          // file never receives a mix of old and new content. The dot prefix keeps it off the public
          // side and out of the manager's listing while it exists.
-         var temp = Path.Combine(folder, $".upload-{Guid.NewGuid():N}.tmp");
+         using var operation = Temporary("upload");
+         var temp = operation.Path;
          try {
             await using (var file = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
                             CopyBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
@@ -350,7 +351,7 @@ namespace Em.Api.Core
                int read;
                while ((read = await content.ReadAsync(buffer, token)) > 0) {
                   written += read;
-                  if (written > MaxFileSize) {
+                  if (appId is null && written > MaxFileSize) {
                      throw new ActionException(
                         $"'{fileName}' is larger than {MaxFileSize:N0} bytes, the most the CDN accepts per file.", 413);
                   }
@@ -359,7 +360,15 @@ namespace Em.Api.Core
                }
             }
 
-            File.Move(temp, target, overwrite: true);
+            lock (_gate) {
+               EnsureWritable(relativePath, appId);
+               if (Directory.Exists(target) || (!overwrite && File.Exists(target)))
+                  throw new ActionException($"'{fileName}' already exists.", 409);
+               if (ManagedAt(relativePath) is { } managed)
+                  CheckQuota(managed, checked(managed.UsedBytes - (File.Exists(target) ? new FileInfo(target).Length : 0) + new FileInfo(temp).Length));
+               Retire(target, appId);
+               File.Move(temp, target);
+            }
          }
          finally {
             if (File.Exists(temp)) {
@@ -370,7 +379,9 @@ namespace Em.Api.Core
          return ToEntry(new FileInfo(target), ToRelative(target));
       }
 
-      public CdnEntry CreateFolder(string? relativePath, string folderName) {
+      public CdnEntry CreateFolder(string? relativePath, string folderName, string? appId = null) {
+         lock (_gate) {
+         EnsureWritable(relativePath, appId);
          ValidateName(folderName);
          var parent = RequireFolder(relativePath);
          var target = Path.Combine(parent, folderName);
@@ -381,26 +392,18 @@ namespace Em.Api.Core
 
          var created = Directory.CreateDirectory(target);
          return ToEntry(created, ToRelative(created.FullName));
+         }
       }
 
-      public void Delete(string relativePath) {
-         var target = ResolveInside(relativePath);
-
-         if (ToRelative(target).Length == 0) {
-            throw new ActionException("The CDN root folder cannot be deleted.", 400);
+      public void Delete(string relativePath, string? appId = null, string deletedBy = "") {
+         lock (_gate) {
+            EnsureWritable(relativePath, appId);
+            var target = ResolveInside(relativePath);
+            if (ToRelative(target).Length == 0 || (appId is not null && ManagedAt(relativePath)?.Path == NormalizePath(relativePath)))
+               throw new ActionException("The storage root cannot be deleted.", 400);
+            if (!File.Exists(target) && !Directory.Exists(target)) throw new ActionException("Item not found.", 404);
+            Retire(target, appId, deletedBy);
          }
-
-         if (File.Exists(target)) {
-            File.Delete(target);
-            return;
-         }
-
-         if (Directory.Exists(target)) {
-            Directory.Delete(target, recursive: true);
-            return;
-         }
-
-         throw new ActionException($"'{relativePath}' was not found.", 404);
       }
 
       #endregion
@@ -427,6 +430,7 @@ namespace Em.Api.Core
       /// </summary>
       public void ValidateArchive(string? folderPath, string[] names, string archiveName, bool overwrite) {
          var folder = RequireFolder(folderPath);
+         EnsureWritable(folderPath);
          ValidateName(archiveName);
 
          if (!archiveName.EndsWith(ZipExtension, StringComparison.OrdinalIgnoreCase)) {
@@ -483,7 +487,8 @@ namespace Em.Api.Core
          var items = CollectArchiveItems(folder, names);
          var totalBytes = items.Sum(r => r.File?.Length ?? 0);
 
-         var temp = Path.Combine(folder, $".archive-{Guid.NewGuid():N}.tmp");
+         using var operation = Temporary("archive");
+         var temp = operation.Path;
          try {
             await using (var output = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
                             CopyBufferSize, FileOptions.Asynchronous)) {
@@ -519,7 +524,11 @@ namespace Em.Api.Core
 
             // Checked again: someone may have taken the name while the archive was being written.
             EnsureArchiveTarget(target, archiveName, overwrite);
-            File.Move(temp, target, overwrite: true);
+            lock (_gate) {
+               EnsureWritable(folderPath);
+               Retire(target);
+               File.Move(temp, target);
+            }
             report(100, "Completed");
          }
          finally {
@@ -552,16 +561,14 @@ namespace Em.Api.Core
 
          void Walk(DirectoryInfo current, string prefix) {
             foreach (var sub in current.EnumerateDirectories("*", VisibleEntries)
-                        .Where(r => !r.Name.StartsWith('.'))
-                        .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
+                                    .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                var entryName = $"{prefix}/{sub.Name}";
                result.Add(new ArchiveItem(entryName, null));
                Walk(sub, entryName);
             }
 
             foreach (var file in current.EnumerateFiles("*", VisibleEntries)
-                        .Where(r => !r.Name.StartsWith('.'))
-                        .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
+                                    .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                result.Add(new ArchiveItem($"{prefix}/{file.Name}", file));
             }
          }
@@ -713,13 +720,15 @@ namespace Em.Api.Core
       /// </summary>
       public async Task ExtractAsync(string relativePath, bool overwrite, Action<double?, string> report,
          CancellationToken token) {
+         EnsureWritable(relativePath);
          var plan = ReadExtractPlan(relativePath);
          if (plan.Conflicts.Length > 0 && !overwrite) {
             throw new ActionException($"{plan.Conflicts.Length:N0} existing file(s) would be overwritten.", 409);
          }
 
          var maxTotal = MaxFileSize * MaxExtractTotalFactor;
-         var temp = Path.Combine(plan.Folder, $".extract-{Guid.NewGuid():N}");
+         using var operation = Temporary("extract");
+         var temp = operation.Path;
          Directory.CreateDirectory(temp);
 
          try {
@@ -770,6 +779,8 @@ namespace Em.Api.Core
                throw new ActionException("Files that would be overwritten have appeared while extracting.", 409);
             }
 
+            lock (_gate) {
+            EnsureWritable(relativePath);
             report(100, "Moving files into place");
             foreach (var relative in plan.Folders) {
                Directory.CreateDirectory(Path.Combine(plan.Folder, relative));
@@ -778,10 +789,12 @@ namespace Em.Api.Core
             foreach (var relative in plan.Files) {
                var target = Path.Combine(plan.Folder, relative);
                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-               File.Move(Path.Combine(temp, relative), target, overwrite: true);
+               Retire(target);
+               File.Move(Path.Combine(temp, relative), target);
             }
 
             report(100, "Completed");
+            }
          }
          finally {
             if (Directory.Exists(temp)) {

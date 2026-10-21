@@ -11,6 +11,9 @@ namespace Em.Api.Core.Models
       /// </summary>
       public string Path { get; set; } = "";
 
+      /// <summary>Owning managed root, when this folder is inside one.</summary>
+      public CdnManagedFolder? ManagedFolder { get; set; }
+
       /// <summary>Folder contents: subfolders first, then files, each sorted by name.</summary>
       public CdnEntry[] Entries { get; set; } = [];
 

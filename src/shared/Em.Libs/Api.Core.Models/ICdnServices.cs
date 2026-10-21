@@ -30,6 +30,25 @@ namespace Em.Api.Core.Models
       /// <summary>Claim name that allows changing the CDN storage settings, written without its module name.</summary>
       const string SettingsClaim = "CDN Settings Manage";
 
+      /// <summary>Lists deleted payloads retained for manual recovery.</summary>
+      Task<CdnRecycleItem[]> GetMeta_CdnRecycle();
+      /// <summary>Restores a deleted item; conflicts and managed destinations are refused.</summary>
+      Task PostMeta_CdnRestore(string id);
+      /// <summary>Permanently deletes one item, skipping open downloads.</summary>
+      Task PostMeta_CdnRecycleDelete(string id);
+      /// <summary>Empties the recycle bin, skipping open downloads.</summary>
+      Task PostMeta_CdnRecycleEmpty();
+      /// <summary>Counts temporary garbage, excluding active operations.</summary>
+      Task<CdnStorageInfo> GetMeta_CdnTemporaryGarbage();
+      /// <summary>Deletes temporary garbage without disturbing active operations.</summary>
+      Task PostMeta_CdnTemporaryClear();
+      /// <summary>Lists managed roots with live usage.</summary>
+      Task<CdnManagedFolder[]> GetMeta_CdnManagedFolders();
+      /// <summary>Releases a managed root after confirming its folder name.</summary>
+      Task PostMeta_CdnManagedRelease(string path, string confirmation);
+      /// <summary>Changes a managed root quota; null means unlimited.</summary>
+      Task PostMeta_CdnManagedQuota(string path, long? quotaBytes);
+
       /// <summary>Whether the CDN is enabled, managed from the UI, and waiting for a restart.</summary>
       Task<StorageFeatureStatus> GetMeta_CdnStatus();
 

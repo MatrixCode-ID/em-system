@@ -9,6 +9,9 @@ namespace Em.Api.Core.Models
       /// <summary>File or folder name, without path.</summary>
       public string Name { get; set; } = "";
 
+      /// <summary>Managed root information when this entry is managed.</summary>
+      public CdnManagedFolder? ManagedFolder { get; set; }
+
       /// <summary>
       /// Full path relative to the CDN root folder, separated by <c>/</c> (e.g. <c>installer/app.msi</c>).
       /// This value is sent back to the server to open or delete the item.

@@ -136,6 +136,7 @@ namespace Em.Api.Core
          // its claim explicitly, and an explicit claim is enforced regardless. What is dropped is only
          // the "any claim in this module" default, which would add nothing on top of that.
          builder.AddService<ICdnServices, CdnServices>(enforceClaims: false);
+         builder.AddService<ICdnReleaseServices, CdnReleaseServices>(enforceClaims: false);
 
          // Container management is registered after the host callback so the host can disable it.
          // Robot management belongs to User Manager and works without container registry.
@@ -339,7 +340,7 @@ namespace Em.Api.Core
          if (_cdn.IsEnabled) {
             // ExclusionFilters.Sensitive (the default) hides dot-prefixed, hidden and system entries,
             // which is also what keeps an upload's temporary file off the public side.
-            var provider = new PhysicalFileProvider(_cdn.RootPath);
+            var provider = new CdnFileProvider(_cdn);
             app.UseStaticFiles(new StaticFileOptions {
                RequestPath = CdnStore.PublicRequestPath,
                FileProvider = provider,
@@ -539,7 +540,11 @@ namespace Em.Api.Core
          // The request quota is checked before the identity gate, and therefore before any query runs: when
          // a flood really arrives, the last thing that should happen is every request in it burdening the
          // database before being refused.
-         if (IsRateLimited(http)) {
+         var cdnAction = _actions.Any(r =>
+            string.Equals(r.Module, module, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(r.ActionName, action, StringComparison.OrdinalIgnoreCase) &&
+            (r.Type == typeof(CdnServices) || r.Type == typeof(CdnReleaseServices)));
+         if (!cdnAction && IsRateLimited(http)) {
             return Reject(BuildErrorActionResult(TooManyRequestsMessage, 429, null, routeLabel));
          }
 

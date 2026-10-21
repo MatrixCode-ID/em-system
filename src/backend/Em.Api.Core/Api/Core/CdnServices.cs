@@ -36,6 +36,34 @@ namespace Em.Api.Core
          }
       }
 
+      /// <inheritdoc />
+      [GetAction(claim: ICdnServices.CdnClaim)]
+      public Task<CdnRecycleItem[]> GetMeta_CdnRecycle() => Task.FromResult(Store.RecycleItems());
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnRestore(string id) { Store.Restore(id); return Task.CompletedTask; }
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnRecycleDelete(string id) { Store.PurgeRecycle(id); return Task.CompletedTask; }
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnRecycleEmpty() { Store.PurgeRecycle(null); return Task.CompletedTask; }
+      /// <inheritdoc />
+      [GetAction(claim: ICdnServices.CdnClaim)]
+      public Task<CdnStorageInfo> GetMeta_CdnTemporaryGarbage() => Task.FromResult(Store.TemporaryGarbage());
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnTemporaryClear() { Store.TemporaryGarbage(true); return Task.CompletedTask; }
+      /// <inheritdoc />
+      [GetAction(claim: ICdnServices.CdnClaim)]
+      public Task<CdnManagedFolder[]> GetMeta_CdnManagedFolders() => Task.FromResult(Store.ManagedFolders());
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnManagedRelease(string path, string confirmation) { Store.Unmanage(path, null, confirmation); return Task.CompletedTask; }
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnManagedQuota(string path, long? quotaBytes) { Store.SetQuota(path, quotaBytes); return Task.CompletedTask; }
+
       #region Meta's
 
       /// <inheritdoc />
@@ -76,7 +104,7 @@ namespace Em.Api.Core
       /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task PostMeta_CdnDelete(string path) {
-         Store.Delete(path);
+         Store.Delete(path, deletedBy: Request.cUserId ?? Request.cUserAccount ?? "");
          return Task.CompletedTask;
       }
 
