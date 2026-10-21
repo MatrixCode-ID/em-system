@@ -217,8 +217,21 @@ impl InstallJob {
       context.check_product_fingerprint(false)?;
       let source = context.source(&self.config)?;
       let layout = self.layout();
-      let updater = Updater::new(source.as_ref(), &layout, progress);
-      let release = updater.check(&self.keys)?;
+      let updater = Updater::new(source.as_ref(), &layout, progress.clone());
+      let remote = updater.check(&self.keys);
+      let release = if context.location == crate::config::ConfigLocation::for_product() {
+         super::CabCommand::choose(
+            context,
+            &super::CabCommand::path()?,
+            self.config.effective_source(),
+            &layout,
+            &self.keys,
+            remote,
+            progress,
+         )?
+      } else {
+         remote?
+      };
 
       fs::create_dir_all(&self.target)
          .map_err(CommandError::io(&format!("cannot create {}", self.target.display())))?;

@@ -19,3 +19,6 @@ pub use update_command::UpdateCommand;
 
 mod prepare_command;
 pub use prepare_command::PrepareCommand;
+
+mod cab_command;
+pub use cab_command::CabCommand;

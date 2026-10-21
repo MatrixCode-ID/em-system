@@ -530,3 +530,37 @@ fn installer_ini_uses_source_only_and_can_be_reset() {
       r"\\fileserver\release"
    );
 }
+
+#[test]
+fn cab_roundtrip_reuses_old_files_and_stages_offline_without_activation() {
+   let fixture = Fixture::new();
+   fixture.publish(content(1, 10_000), V1_TIME);
+   let cab = fixture.temp.path().join("Test.App.cab");
+   let keys = [fixture.key.public.clone()];
+   let progress = std::sync::Arc::new(launcher::install::UpdateProgress::new());
+   let message =
+      launcher::commands::CabCommand::download(&cab, &fixture.release.display().to_string(), &keys, progress.clone())
+         .unwrap();
+   assert!(message.starts_with("Cab updated to release"));
+   assert_eq!(&fs::read(&cab).unwrap()[..4], b"MSCF");
+   assert!(
+      launcher::commands::CabCommand::download(&cab, &fixture.release.display().to_string(), &keys, progress.clone())
+         .unwrap()
+         .starts_with("Cab is up to date")
+   );
+   fixture.publish(content(2, 20_000), V2_TIME);
+   launcher::commands::CabCommand::download(&cab, &fixture.release.display().to_string(), &keys, progress.clone())
+      .unwrap();
+   let before = fs::read(&cab).unwrap();
+   assert!(
+      launcher::commands::CabCommand::download(&cab, "nonexistent-release-source", &keys, progress.clone()).is_err()
+   );
+   assert_eq!(fs::read(&cab).unwrap(), before);
+   let release = launcher::commands::CabCommand::stage(&cab, &fixture.layout(), &keys, progress.clone()).unwrap();
+   assert!(!fixture.layout().current_path().exists());
+   let offline = launcher::source::FolderSource::new("unreachable-source");
+   launcher::install::Updater::new(&offline, &fixture.layout(), progress)
+      .install(&release)
+      .unwrap();
+   assert!(fixture.layout().current_path().is_file());
+}

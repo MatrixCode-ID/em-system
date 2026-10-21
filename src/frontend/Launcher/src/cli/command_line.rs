@@ -24,6 +24,8 @@ Usage: launcher.exe [options] [-- <app arguments>]
   --remove-key <keyId>         Stop trusting a key imported by the user
   --apply --pid <pid>          Wait for the process to exit, then update and start without asking
   --prepare [--quiet]         Prepare verified update files; print one JSON line\n\
+  --download-cab [--source S] [--quiet]\n\
+                               Download verified release to an LZX cab beside installer\n\
   --version                    Show launcher and engine versions\n\
   --help                       Show this text
 
@@ -46,6 +48,9 @@ pub enum Command {
 
    /// Menyiapkan update tanpa mengaktifkannya, menghasilkan JSON.
    Prepare,
+
+   /// Mengunduh ke cab IT tanpa instalasi.
+   DownloadCab { source: Option<String> },
 
    /// Menampilkan versi launcher dan source engine.
    Version,
@@ -155,6 +160,7 @@ fn collect(args: Vec<OsString>) -> Result<Collected, lexopt::Error> {
    while let Some(arg) = parser.next()? {
       match arg {
          Arg::Long("install") => c.commands.push("--install"),
+         Arg::Long("download-cab") => c.commands.push("--download-cab"),
          Arg::Long("prepare") => c.commands.push("--prepare"),
          Arg::Long("version") => c.commands.push("--version"),
          Arg::Long("update") => c.commands.push("--update"),
@@ -241,6 +247,7 @@ fn build(mut c: Collected, app_args: Option<Vec<OsString>>) -> Result<CommandLin
          "--quiet",
       ],
       "--prepare" | "--update" | "--repair" | "--uninstall" | "--import" => &["--quiet"],
+      "--download-cab" => &["--source", "--quiet"],
       "--apply" => &["--pid"],
       Uninstaller::FINISH_ARGUMENT => &[Uninstaller::PARENT_PID_ARGUMENT, "--quiet"],
       _ => &[],
@@ -271,6 +278,9 @@ fn build(mut c: Collected, app_args: Option<Vec<OsString>>) -> Result<CommandLin
       "--install" => Command::Install(c.install),
       "--update" => Command::Update,
       "--prepare" => Command::Prepare,
+      "--download-cab" => Command::DownloadCab {
+         source: c.install.source,
+      },
       "--version" => Command::Version,
       "--maintenance" => Command::Maintenance,
       "--repair" => Command::Repair,

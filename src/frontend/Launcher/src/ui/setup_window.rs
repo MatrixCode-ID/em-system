@@ -66,6 +66,7 @@ pub struct SetupWindow {
    done_folder: gui::Label,
    done_text: gui::Label,
    install: gui::Button,
+   cab: gui::Button,
    cancel: gui::Button,
    state: Rc<SetupState>,
 }
@@ -223,6 +224,7 @@ impl SetupWindow {
             (side - BUTTON_WIDTH - GAP, bottom),
             co::DLGID::OK.raw(),
          ),
+         cab: WindowStyle::button(&wnd, "Download to cab", (MARGIN, bottom), 0),
          cancel: WindowStyle::button(&wnd, "Cancel", (side, bottom), co::DLGID::CANCEL.raw()),
          wnd,
          state,
@@ -266,6 +268,16 @@ impl SetupWindow {
       let this = self.clone();
       self.install.on().bn_clicked(move || {
          this.start_install();
+         Ok(())
+      });
+
+      let this = self.clone();
+      self.cab.on().bn_clicked(move || {
+         let context = this.state.context.clone();
+         let address = this.source.text()?;
+         if let Err(error) = crate::commands::CabCommand::run(&context, Some(address)) {
+            Prompts::error(&error.message);
+         }
          Ok(())
       });
 
@@ -341,6 +353,8 @@ impl SetupWindow {
       WindowStyle::set_visible(&self.done_folder, page == Page::Done);
       WindowStyle::set_visible(&self.done_text, page == Page::Done);
       WindowStyle::set_visible(&self.install, form);
+      WindowStyle::set_visible(&self.cab, form);
+      WindowStyle::set_enabled(&self.cab, page == Page::Form);
       WindowStyle::set_enabled(&self.cancel, true);
       WindowStyle::set_text(&self.cancel, if page == Page::Done { "Finish" } else { "Cancel" });
 

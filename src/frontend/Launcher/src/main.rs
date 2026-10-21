@@ -44,6 +44,7 @@ fn run(context: &CommandContext, command: Command, has_console: bool) -> Result<
    match command {
       Command::Start { app_args, from_app } => StartCommand::run(context, &app_args, from_app),
       Command::Install(options) => InstallCommand::run(context, &options),
+      Command::DownloadCab { source } => launcher::commands::CabCommand::run(context, source),
       Command::Version => {
          Console::out(launcher::product::version_display());
          Ok(())
