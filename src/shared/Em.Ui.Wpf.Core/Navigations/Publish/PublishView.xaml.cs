@@ -10,6 +10,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 using Em.Ui.Wpf.Controls;
 using Em.Ui.Wpf.Core;
+using Em.Ui.Wpf.Dialogs;
 using Em.Ui.Wpf.Publish;
 using Microsoft.Win32;
 
@@ -167,7 +168,7 @@ public partial class PublishView : UserControl {
    ProfileEntry saved;
    try {saved=_store.Save(result,previous);}
    catch(ProfileConflictException) {
-    var choice=MessageBox.Show("The profile changed outside this application. Yes: explicitly overwrite. No: reload the current file. Cancel: keep the existing file.","Profile conflict",MessageBoxButton.YesNoCancel,MessageBoxImage.Warning);
+    var choice=EmMessageBox.Show(Window.GetWindow(this),"Profile conflict","The profile changed outside this application. Yes: explicitly overwrite. No: reload the current file. Cancel: keep the existing file.",MessageBoxButton.YesNoCancel,MessageBoxImage.Warning,MessageBoxResult.Cancel);
     if(choice==MessageBoxResult.Yes)saved=_store.Save(result,previous,true);else {if(choice==MessageBoxResult.No)ReloadProfiles(result.Id);return;}
    }
    ReloadProfiles(saved.Profile!.Id);
@@ -272,7 +273,7 @@ public partial class PublishView : UserControl {
  private void PackagesDragOver(object s,DragEventArgs e) {e.Effects=_kind==PublishKind.NuGet&&_cancel==null&&e.Data.GetDataPresent(DataFormats.FileDrop)?DragDropEffects.Copy:DragDropEffects.None;e.Handled=true;}
  private void PackagesDrop(object s,DragEventArgs e) {if(_kind==PublishKind.NuGet&&e.Data.GetData(DataFormats.FileDrop) is string[] files)AddPackages(files);}
  private void CopyTarget(object s,RoutedEventArgs e) {try {Clipboard.SetText(targetText.Text);}catch(System.Runtime.InteropServices.COMException ex){message.Text=ex.Message;}}
- private static bool Confirm(string text)=>MessageBox.Show(text,"Publisher",MessageBoxButton.YesNo,MessageBoxImage.Warning)==MessageBoxResult.Yes;
+ private bool Confirm(string text)=>EmMessageBox.Show(Window.GetWindow(this),"Publisher",text,MessageBoxButton.YesNo,MessageBoxImage.Warning,MessageBoxResult.No)==MessageBoxResult.Yes;
  private void OpenFolder(string folder) {try {Directory.CreateDirectory(folder);Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});}catch(Exception ex){message.Text=ex.Message;}}
  private async void DockerInsecureClick(object s,RoutedEventArgs e) {
   if(Profile is not {Kind:PublishKind.Container} p||p.Container!.Mode==ContainerMode.Set) {message.Text="Select a container profile that pushes to one registry.";return;}

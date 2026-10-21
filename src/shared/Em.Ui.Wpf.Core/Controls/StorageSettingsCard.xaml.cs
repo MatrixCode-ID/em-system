@@ -7,7 +7,7 @@ using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
 using Microsoft.Extensions.DependencyInjection;
 using UserControl = System.Windows.Controls.UserControl;
-using MessageBox = System.Windows.MessageBox;
+using Em.Ui.Wpf.Dialogs;
 
 namespace Em.Ui.Wpf.Controls;
 
@@ -43,8 +43,8 @@ public partial class StorageSettingsCard : UserControl
       && new ClaimCollection(Defaults.AdministrativeToolsModuleName, _app.AllClaims, _app.ActiveUser)[SettingsClaim];
    private ICdnServices Cdn => _app!.ServiceProvider.GetRequiredService<ICdnServices>();
    private ICtnServices Registry => _app!.ServiceProvider.GetRequiredService<ICtnServices>();
-   private bool Confirm(string text) => MessageBox.Show(Window.GetWindow(this), text, "Storage settings",
-      MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+   private bool Confirm(string text) => EmMessageBox.Show(Window.GetWindow(this), "Storage settings", text,
+      MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
    /// <summary>Asks whether the screen may be left; <c>false</c> when there are unsaved changes that the user chose to keep.</summary>
    public bool ConfirmLeave() {
       if (_busy) { message.Text = "Wait for the settings request to finish before leaving."; return false; }

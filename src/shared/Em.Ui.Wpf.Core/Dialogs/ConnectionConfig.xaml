@@ -197,7 +197,7 @@
                   </DataTemplate>
                </ListBox.ItemTemplate>
                <ListBox.ContextMenu>
-                  <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                  <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" Style="{StaticResource cascadeContextMenuStyle}" Placement="MousePoint">
                      <MenuItem Header="Edit" Command="{Binding Commands[EditConnectionCommand]}" />
                      <MenuItem Header="Delete" Command="{Binding Commands[DeleteConnectionCommand]}" />
                   </ContextMenu>

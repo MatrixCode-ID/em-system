@@ -469,7 +469,7 @@
                               <KeyBinding Key="Delete" Command="{Binding Commands[DeleteRootCommand]}" />
                            </ListBox.InputBindings>
                            <ListBox.ContextMenu>
-                              <ContextMenu>
+                              <ContextMenu Style="{StaticResource cascadeContextMenuStyle}" Placement="MousePoint">
                                  <MenuItem Header="New root" Command="{Binding Commands[NewRootCommand]}" />
                                  <Separator />
                                  <MenuItem Header="Edit root" Command="{Binding Commands[EditRootCommand]}" />
@@ -587,7 +587,7 @@
                               <KeyBinding Key="F2" Command="{Binding Commands[EditNodeCommand]}" />
                            </TreeView.InputBindings>
                            <TreeView.ContextMenu>
-                              <ContextMenu>
+                              <ContextMenu Style="{StaticResource cascadeContextMenuStyle}" Placement="MousePoint">
                                  <MenuItem Header="New folder" Command="{Binding Commands[NewFolderCommand]}" />
                                  <MenuItem Header="New container" Command="{Binding Commands[NewImageCommand]}" />
                                  <Separator />
@@ -1082,7 +1082,7 @@
                                        <Border Style="{StaticResource innerCardStyle}" Margin="0,0,0,8" Padding="12,10,12,6"
                                                Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                           <Border.ContextMenu>
-                                             <ContextMenu>
+                                             <ContextMenu Style="{StaticResource cascadeContextMenuStyle}" Placement="MousePoint">
                                                 <MenuItem Header="Delete manifest"
                                                           Command="{Binding PlacementTarget.Tag.Commands[DeleteManifestCommand],
                                                                             RelativeSource={RelativeSource AncestorType=ContextMenu}}"
@@ -1111,7 +1111,7 @@
                                                                                 RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                               CommandParameter="{Binding}">
                                                          <Button.ContextMenu>
-                                                            <ContextMenu>
+                                                            <ContextMenu Style="{StaticResource cascadeContextMenuStyle}" Placement="MousePoint">
                                                                <MenuItem Header="Copy docker pull"
                                                                          Command="{Binding PlacementTarget.Tag.Commands[CopyTagPullCommand],
                                                                                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"

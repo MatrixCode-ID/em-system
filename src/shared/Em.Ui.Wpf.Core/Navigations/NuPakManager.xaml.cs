@@ -4,6 +4,7 @@ using Em;
 using Em.Shared;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
+using Em.Ui.Wpf.Dialogs;
 using Em.Ui.Wpf.Shared;
 using Em.Api.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -138,7 +139,8 @@ public partial class NuPakManager : UserControl, INavigationBody
       if(!CanManage||_feed is not {} f)return;var desired=feedEnabled.IsChecked==true;feedEnabled.IsChecked=f.Enabled;
       await Run("mutation",async()=>{await _service!.PostGetMeta_NuPakFeedUpdate(f.Id,f.Name,f.Description,desired,f.AnonymousRead);});await RefreshAllAsync();
    }
-   private bool Confirm(string text) => MessageBox.Show(text, "NuGet Manager", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+   private bool Confirm(string text) => EmMessageBox.Show(Window.GetWindow(this), "NuGet Manager", text, MessageBoxButton.YesNo, MessageBoxImage.Warning,
+      MessageBoxResult.No) == MessageBoxResult.Yes;
    private async void EnabledClick(object sender, RoutedEventArgs e) {
       if (!CanManage || _status is null) return;
       var desired = enabled.IsChecked == true; enabled.IsChecked = _status.Enabled;
