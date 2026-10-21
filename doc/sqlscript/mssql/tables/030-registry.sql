@@ -268,6 +268,8 @@ IF OBJECT_ID(N'[dbo].[ta_CtnDeploy]', N'U') IS NULL
          [cCtnDeployService]        varchar(128)   COLLATE SQL_Latin1_General_CP1_CS_AS NULL,
          [cCtnDeployContainer]      varchar(128)   COLLATE SQL_Latin1_General_CP1_CS_AS NULL,
          [cCtnDeployImageVar]       varchar(128)   COLLATE SQL_Latin1_General_CP1_CS_AS NULL,
+         -- Image line of a Stack deploy: 1 or NULL = ${variable}, 2 = name:tag@digest, 3 = name:tag.
+         [cCtnDeployImageRef]       int            NULL,
          [ustamp]                   datetime       NOT NULL,
          [datestamp]                datetime       NOT NULL,
          [json_object]              nvarchar(max)  COLLATE SQL_Latin1_General_CP1_CI_AS NULL,

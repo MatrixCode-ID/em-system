@@ -59,6 +59,20 @@ namespace Em.Api.Core.Registry.Deploy
          return (replaced, true, image.Value);
       }
 
+      /// <summary>Replaces the image of <paramref name="service"/> with the literal reference <paramref name="image"/>.</summary>
+      /// <returns>The new text, whether it changed, and the old image value.</returns>
+      /// <exception cref="InvalidDataException">The service does not exist or has no plain <c>image:</c> value.</exception>
+      public static (string Content, bool Changed, string OldImage) SetImage(string compose, string service, string image) {
+         var found = Find(compose, service);
+         if (found.Image is not { } current) {
+            throw new InvalidDataException($"Service '{service}' has no image: line. Add one (for example image: {image}) before deploying.");
+         }
+
+         if (current.Value == image) return (compose, false, current.Value);
+
+         return (compose[..current.Start] + image + compose[current.End..], true, current.Value);
+      }
+
       /// <summary>Value of <paramref name="variable"/> in a <c>.env</c> text, without quotes; <c>null</c> when absent.</summary>
       public static string? ReadEnv(string? env, string variable) {
          foreach (var line in (env ?? "").Split('\n')) {

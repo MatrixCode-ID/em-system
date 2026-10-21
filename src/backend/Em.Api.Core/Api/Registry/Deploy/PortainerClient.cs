@@ -114,6 +114,9 @@ namespace Em.Api.Core.Registry.Deploy
          return Bare(url) == Bare(host);
       }
 
+      /// <summary>A copy of a Portainer <c>Env</c> array, or an empty one; for an update that leaves the variables as they are.</summary>
+      public static JsonArray CopyEnv(JsonNode? env) => env is JsonArray items ? (JsonArray)items.DeepClone() : [];
+
       /// <summary>Sets <paramref name="name"/> in a Portainer <c>Env</c> array (<c>[{name, value}]</c>), keeping the others.</summary>
       public static JsonArray SetEnv(JsonNode? env, string name, string value) {
          var result = new JsonArray();

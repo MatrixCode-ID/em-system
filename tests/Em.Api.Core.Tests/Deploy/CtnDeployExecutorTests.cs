@@ -24,14 +24,15 @@ namespace Em.Api.Core.Tests.Deploy
 
       private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-      private static CtnDeployTarget Ssh(CtnDeployMode mode, string? registryUser = null, string? fingerprint = Pin) => new() {
-         Kind = CtnDeployKind.Ssh, Mode = mode, Host = "docker.example.com", Port = 22, User = "deploy", Auth = CtnDeployAuth.SshPassword,
+      private static CtnDeployTarget Ssh(CtnDeployMode mode, string? registryUser = null, string? fingerprint = Pin,
+         CtnDeployImageRef imageRef = CtnDeployImageRef.Variable) => new() {
+         ImageRef = imageRef, Kind = CtnDeployKind.Ssh, Mode = mode, Host = "docker.example.com", Port = 22, User = "deploy", Auth = CtnDeployAuth.SshPassword,
          Secret = "ssh-password-1", Fingerprint = fingerprint, Stack = "/opt/app", Service = "api", Container = "api",
          RegistryHost = Registry, RegistryUser = registryUser, RegistrySecret = registryUser is null ? null : "registry-token-1"
       };
 
-      private static CtnDeployTarget Portainer(CtnDeployMode mode, int? stackId = 7) => new() {
-         Kind = CtnDeployKind.Portainer, Mode = mode, Host = "https://portainer.example.com:9443", Auth = CtnDeployAuth.PortainerToken,
+      private static CtnDeployTarget Portainer(CtnDeployMode mode, int? stackId = 7, CtnDeployImageRef imageRef = CtnDeployImageRef.Variable) => new() {
+         ImageRef = imageRef, Kind = CtnDeployKind.Portainer, Mode = mode, Host = "https://portainer.example.com:9443", Auth = CtnDeployAuth.PortainerToken,
          Secret = "ptr_token_1", EndpointId = 2, Stack = "app", StackId = stackId, Service = "api", Container = "api", RegistryHost = Registry
       };
 
@@ -54,6 +55,37 @@ namespace Em.Api.Core.Tests.Deploy
             "cd '/opt/app' && docker compose -f 'compose.yml' pull 'api'",
             "cd '/opt/app' && docker compose -f 'compose.yml' up -d 'api'"
          ], host.Commands);
+      }
+
+      [Fact]
+      public async Task SshStack_ImageName_WritesTagAndDigestIntoCompose_LeavesEnvAlone() {
+         var host = new FakeShell();
+         host.Files["/opt/app/compose.yml"] = Compose;
+         host.Files["/opt/app/.env"] = "TZ=UTC\n";
+         var log = new CtnDeployLog();
+
+         var outcome = await new CtnDeployExecutor(new FakeTransports(host))
+            .DeployAsync(Ssh(CtnDeployMode.Stack, imageRef: CtnDeployImageRef.TagDigest), Repository, DigestA, log, Ct, "1.2.0");
+
+         Assert.Equal(Compose, outcome.OldFile);
+         Assert.Contains($"image: {Registry}/{Repository}:1.2.0@{DigestA}", host.Files["/opt/app/compose.yml"]);
+         Assert.Contains("restart: always", host.Files["/opt/app/compose.yml"]);
+         Assert.Equal("TZ=UTC\n", host.Files["/opt/app/.env"]);
+         Assert.Equal(2, host.Commands.Count);
+      }
+
+      [Fact]
+      public async Task SshStack_TagOnly_AfterVariable_ReadsPreviousDigestFromEnv() {
+         var host = new FakeShell();
+         host.Files["/opt/app/compose.yml"] = "services:\n  api:\n    image: ${EM_IMAGE_API}\n";
+         host.Files["/opt/app/.env"] = $"EM_IMAGE_API={Registry}/{Repository}@{DigestA}\n";
+         var log = new CtnDeployLog();
+
+         var outcome = await new CtnDeployExecutor(new FakeTransports(host))
+            .DeployAsync(Ssh(CtnDeployMode.Stack, imageRef: CtnDeployImageRef.Tag), Repository, DigestB, log, Ct, "1.3.0");
+
+         Assert.Equal(DigestA, outcome.PrevDigest);
+         Assert.Equal($"services:\n  api:\n    image: {Registry}/{Repository}:1.3.0\n", host.Files["/opt/app/compose.yml"]);
       }
 
       [Fact]
@@ -202,6 +234,31 @@ namespace Em.Api.Core.Tests.Deploy
          var env = update["env"]!.AsArray().ToDictionary(e => (string)e!["name"]!, e => (string?)e!["value"]);
          Assert.Equal("UTC", env["TZ"]);
          Assert.Equal($"{Registry}/{Repository}@{DigestB}", env["EM_IMAGE_API"]);
+      }
+
+      [Fact]
+      public async Task PortainerStack_ImageName_WritesImageLine_KeepsEnv() {
+         var portainer = new FakePortainer(new FakeDocker());
+         var log = new CtnDeployLog();
+
+         var outcome = await new CtnDeployExecutor(new FakeTransports(portainer: portainer))
+            .DeployAsync(Portainer(CtnDeployMode.Stack, imageRef: CtnDeployImageRef.TagDigest), Repository, DigestB, log, Ct, "2.0.0");
+
+         Assert.Equal(Compose, outcome.OldFile);
+         var update = portainer.LastBody!;
+         Assert.Contains($"image: {Registry}/{Repository}:2.0.0@{DigestB}", (string?)update["stackFileContent"]);
+         var env = update["env"]!.AsArray().ToDictionary(e => (string)e!["name"]!, e => (string?)e!["value"]);
+         Assert.Equal($"{Registry}/{Repository}@{DigestA}", env["EM_IMAGE_API"]);
+      }
+
+      [Fact]
+      public async Task PortainerGitStack_ImageName_IsRefused() {
+         var portainer = new FakePortainer(new FakeDocker()) { Git = true };
+
+         var failure = await Assert.ThrowsAsync<InvalidOperationException>(() => new CtnDeployExecutor(new FakeTransports(portainer: portainer))
+            .DeployAsync(Portainer(CtnDeployMode.Stack, imageRef: CtnDeployImageRef.Tag), Repository, DigestB, new CtnDeployLog(), Ct, "2.0.0"));
+
+         Assert.Contains("only use the image variable", failure.Message);
       }
 
       [Fact]

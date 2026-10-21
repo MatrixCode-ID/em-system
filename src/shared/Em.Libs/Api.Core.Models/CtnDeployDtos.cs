@@ -23,6 +23,19 @@ namespace Em.Api.Core.Models
       Container = 2
    }
 
+   /// <summary>How a Stack deploy writes the image of its service into the compose file.</summary>
+   public enum CtnDeployImageRef
+   {
+      /// <summary>The image line reads <c>${VARIABLE}</c>; each deploy sets the variable in <c>.env</c> or the stack environment.</summary>
+      Variable = 1,
+
+      /// <summary>Each deploy writes <c>host/root/name:tag@sha256:...</c> into the image line: readable, pinned to the digest.</summary>
+      TagDigest = 2,
+
+      /// <summary>Each deploy writes <c>host/root/name:tag</c> into the image line; the tag is pulled as it is at that moment.</summary>
+      Tag = 3
+   }
+
    /// <summary>Credential kind of a deploy target.</summary>
    public enum CtnDeployAuth
    {
@@ -134,6 +147,9 @@ namespace Em.Api.Core.Models
       /// <summary>Variable holding the image in the compose file; empty = <c>EM_IMAGE_&lt;SERVICE&gt;</c>.</summary>
       public string? ImageVariable { get; set; }
 
+      /// <summary>How a Stack deploy writes the image into the compose file.</summary>
+      public CtnDeployImageRef ImageRef { get; set; } = CtnDeployImageRef.Variable;
+
       /// <summary>Latest run, or <c>null</c> when the target never ran.</summary>
       public CtnDeployRunInfo? LastRun { get; set; }
 
@@ -210,6 +226,9 @@ namespace Em.Api.Core.Models
 
       /// <summary>Variable holding the image in the compose file; empty = <c>EM_IMAGE_&lt;SERVICE&gt;</c>.</summary>
       public string? ImageVariable { get; set; }
+
+      /// <summary>How a Stack deploy writes the image into the compose file; <c>null</c> keeps the saved choice (a new target: <see cref="CtnDeployImageRef.Variable"/>).</summary>
+      public CtnDeployImageRef? ImageRef { get; set; }
    }
 
    /// <summary>A Portainer environment (endpoint).</summary>

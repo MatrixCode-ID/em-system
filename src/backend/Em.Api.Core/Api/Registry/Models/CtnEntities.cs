@@ -156,6 +156,7 @@ namespace Em.Api.Core.Registry
       public string? cCtnDeployService { get; set; }
       public string? cCtnDeployContainer { get; set; }
       public string? cCtnDeployImageVar { get; set; }
+      public int? cCtnDeployImageRef { get; set; }
       public DateTime ustamp { get; set; }
       public DateTime datestamp { get; set; }
       public string? json_object { get; set; }

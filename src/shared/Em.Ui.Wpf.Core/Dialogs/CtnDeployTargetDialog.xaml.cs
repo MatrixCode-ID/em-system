@@ -97,6 +97,8 @@ namespace Em.Ui.Wpf.Dialogs
          Service = t?.Service ?? "";
          Container = t?.Container ?? "";
          ImageVariable = t?.ImageVariable ?? "";
+         // A new target writes the deployed image into the compose file; a saved one keeps its choice.
+         ImageRef = t?.ImageRef ?? CtnDeployImageRef.TagDigest;
          TagFilter = t?.TagFilter ?? "";
          RegistryHost = t?.RegistryHost ?? registryHost;
          RegistryUser = t?.RegistryUser ?? "";
@@ -116,6 +118,12 @@ namespace Em.Ui.Wpf.Dialogs
          new(CtnDeployMode.Stack, "Stack (compose service)"), new(CtnDeployMode.Container, "Container (standalone)")
       ];
 
+      /// <summary>How a Stack deploy writes the image into the compose file.</summary>
+      public CtnDeployChoice<CtnDeployImageRef>[] ImageRefs { get; } = [
+         new(CtnDeployImageRef.TagDigest, "Image name: tag and digest"), new(CtnDeployImageRef.Tag, "Image name: tag only"),
+         new(CtnDeployImageRef.Variable, "Image variable in the environment")
+      ];
+
       /// <summary>The ssh auths.</summary>
       public CtnDeployChoice<CtnDeployAuth>[] SshAuths { get; } = [new(CtnDeployAuth.SshKey, "Private key"), new(CtnDeployAuth.SshPassword, "Password")];
 
@@ -124,6 +132,8 @@ namespace Em.Ui.Wpf.Dialogs
       public CtnDeployChoice<CtnDeployKind> KindChoice { get => Kinds.First(k => k.Value == Kind); set => Kind = value.Value; }
       /// <summary>The mode choice.</summary>
       public CtnDeployChoice<CtnDeployMode> ModeChoice { get => Modes.First(m => m.Value == Mode); set => Mode = value.Value; }
+      /// <summary>The image reference choice.</summary>
+      public CtnDeployChoice<CtnDeployImageRef> ImageRefChoice { get => ImageRefs.First(r => r.Value == ImageRef); set => ImageRef = value.Value; }
       /// <summary>The ssh auth choice.</summary>
       public CtnDeployChoice<CtnDeployAuth> SshAuthChoice { get => SshAuths.First(a => a.Value == SshAuth); set => SshAuth = value.Value; }
 
@@ -141,6 +151,15 @@ namespace Em.Ui.Wpf.Dialogs
          get => Get(CtnDeployMode.Stack);
          set => Set(value, _ => NotifyAll());
       }
+
+      /// <summary>How a Stack deploy writes the image into the compose file.</summary>
+      public CtnDeployImageRef ImageRef {
+         get => Get(CtnDeployImageRef.TagDigest);
+         set => Set(value, _ => NotifyAll());
+      }
+
+      /// <summary>Indicates the image is read from a variable, so the variable name applies.</summary>
+      public bool UsesVariable => ImageRef == CtnDeployImageRef.Variable;
 
       /// <summary>The ssh auth.</summary>
       public CtnDeployAuth SshAuth {
@@ -257,8 +276,9 @@ namespace Em.Ui.Wpf.Dialogs
 
       internal void Pick(string field, string value) {
          switch (field) {
-            case "pickEndpoint": EndpointText = value; break;
-            case "pickStack": StackText = value.EndsWith(" (Git)", StringComparison.Ordinal) ? value[..^6] : value; break;
+            // A new environment or stack changes the stacks and services on offer, so they are read again right away.
+            case "pickEndpoint": EndpointText = value; _ = TestCommand(); break;
+            case "pickStack": StackText = value.EndsWith(" (Git)", StringComparison.Ordinal) ? value[..^6] : value; _ = TestCommand(); break;
             case "pickService": Service = value; break;
             case "pickContainer": Container = value; break;
          }
@@ -266,7 +286,7 @@ namespace Em.Ui.Wpf.Dialogs
 
       private void NotifyAll() {
          foreach (var name in new[] {
-                     nameof(Title), nameof(IsActive), nameof(Kind), nameof(Mode), nameof(SshAuth), nameof(KindChoice), nameof(ModeChoice),
+                     nameof(Title), nameof(IsActive), nameof(Kind), nameof(Mode), nameof(SshAuth), nameof(KindChoice), nameof(ModeChoice), nameof(ImageRefChoice), nameof(UsesVariable),
                      nameof(SshAuthChoice), nameof(IsSsh), nameof(IsPortainer),
                      nameof(IsStack), nameof(IsContainer), nameof(IsKeyAuth), nameof(IsPasswordAuth), nameof(IsSshStack),
                      nameof(IsPortainerStack), nameof(ShowEndpoint), nameof(KeyHint), nameof(HasSavedPassword), nameof(HasSavedPassphrase),
@@ -323,7 +343,7 @@ namespace Em.Ui.Wpf.Dialogs
             Host = Host.Trim(), Port = port, User = IsSsh ? Empty(User) : null, Auth = auth, Secret = Secret(secret),
             Passphrase = IsKeyAuth ? Secret(_passphrase) : null, Fingerprint = Empty(Fingerprint),
             EndpointId = endpoint, Stack = IsSsh ? Empty(SshFolder) : stackName, StackId = stackId, Service = Empty(Service),
-            Container = Empty(Container), ImageVariable = Empty(ImageVariable)
+            Container = Empty(Container), ImageVariable = Empty(ImageVariable), ImageRef = ImageRef
          };
       }
 
@@ -362,8 +382,9 @@ namespace Em.Ui.Wpf.Dialogs
          ShowRegisterPortainer = result.PortainerRegistryMissing;
          if (result.Endpoints.Length > 0) EndpointChoices = [.. result.Endpoints.Select(e => $"{e.Id} · {e.Name}")];
          if (result.Stacks.Length > 0) StackChoices = [.. result.Stacks.Select(s => $"{s.Id} · {s.Name}{(s.IsGit ? " (Git)" : "")}")];
-         if (result.Services.Length > 0) ServiceChoices = result.Services;
-         if (result.Containers.Length > 0) ContainerChoices = result.Containers;
+         // Services and containers belong to the stack or environment just tested; keeping the previous ones would offer stale names.
+         ServiceChoices = result.Services;
+         ContainerChoices = result.Containers;
       }
 
       /// <summary>Saves the target and closes.</summary>

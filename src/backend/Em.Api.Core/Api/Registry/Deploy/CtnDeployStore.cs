@@ -99,9 +99,13 @@ namespace Em.Api.Core.Registry.Deploy
          Secret = await secrets.UnprotectAsync(row.cCtnDeploySecret, ct), Passphrase = await secrets.UnprotectAsync(row.cCtnDeployPassphrase, ct),
          Fingerprint = row.cCtnDeployFingerprint, EndpointId = row.cCtnDeployEndpointId, Stack = row.cCtnDeployStack,
          StackId = row.cCtnDeployStackId, Service = row.cCtnDeployService, Container = row.cCtnDeployContainer,
-         ImageVariable = row.cCtnDeployImageVar, RegistryHost = row.cCtnDeployRegistryHost, RegistryUser = row.cCtnDeployRegistryUser,
-         RegistrySecret = await secrets.UnprotectAsync(row.cCtnDeployRegistrySecret, ct), TagFilter = row.cCtnDeployTagFilter
+         ImageVariable = row.cCtnDeployImageVar, ImageRef = ImageRefOf(row.cCtnDeployImageRef), RegistryHost = row.cCtnDeployRegistryHost,
+         RegistryUser = row.cCtnDeployRegistryUser, RegistrySecret = await secrets.UnprotectAsync(row.cCtnDeployRegistrySecret, ct),
+         TagFilter = row.cCtnDeployTagFilter
       };
+
+      // Rows saved before the choice existed have no value: they keep the image variable they were deployed with.
+      private static CtnDeployImageRef ImageRefOf(int? value) => value is { } v ? (CtnDeployImageRef)v : CtnDeployImageRef.Variable;
 
       /// <summary>
       /// The target described by an unsaved request, for a connection test. Secrets left <c>null</c> come from the
@@ -118,7 +122,8 @@ namespace Em.Api.Core.Registry.Deploy
             Passphrase = request.Passphrase ?? await secrets.UnprotectAsync(stored?.cCtnDeployPassphrase, ct),
             Fingerprint = row.cCtnDeployFingerprint, EndpointId = row.cCtnDeployEndpointId, Stack = row.cCtnDeployStack,
             StackId = row.cCtnDeployStackId, Service = row.cCtnDeployService, Container = row.cCtnDeployContainer,
-            ImageVariable = row.cCtnDeployImageVar, RegistryHost = row.cCtnDeployRegistryHost, RegistryUser = row.cCtnDeployRegistryUser,
+            ImageVariable = row.cCtnDeployImageVar, ImageRef = ImageRefOf(row.cCtnDeployImageRef ?? stored?.cCtnDeployImageRef),
+            RegistryHost = row.cCtnDeployRegistryHost, RegistryUser = row.cCtnDeployRegistryUser,
             RegistrySecret = request.RegistrySecret ?? await secrets.UnprotectAsync(stored?.cCtnDeployRegistrySecret, ct),
             TagFilter = row.cCtnDeployTagFilter
          };
@@ -160,6 +165,8 @@ namespace Em.Api.Core.Registry.Deploy
             throw Bad("Image variable must be letters, digits and _, not starting with a digit.");
          }
 
+         if (r.ImageRef is { } imageRef && !Enum.IsDefined(imageRef)) throw Bad("Choose how the image is written: variable, tag and digest, or tag.");
+
          var container = Trim(r.Container);
          if (container is not null && !DockerNamePattern().IsMatch(container)) throw Bad("Container name is not a valid Docker container name.");
 
@@ -180,6 +187,7 @@ namespace Em.Api.Core.Registry.Deploy
          row.cCtnDeployService = Max(Trim(r.Service), 128, "Service");
          row.cCtnDeployContainer = container;
          row.cCtnDeployImageVar = variable;
+         if (r.ImageRef is { } chosen) row.cCtnDeployImageRef = (int)chosen;
       }
 
       private static string? Trim(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -285,7 +293,8 @@ namespace Em.Api.Core.Registry.Deploy
          Host = d.cCtnDeployHost, Port = d.cCtnDeployPort, User = d.cCtnDeployUser, Auth = (CtnDeployAuth)d.cCtnDeployAuth,
          HasSecret = d.cCtnDeploySecret is { Length: > 0 }, HasPassphrase = d.cCtnDeployPassphrase is { Length: > 0 },
          Fingerprint = d.cCtnDeployFingerprint, EndpointId = d.cCtnDeployEndpointId, Stack = d.cCtnDeployStack, StackId = d.cCtnDeployStackId,
-         Service = d.cCtnDeployService, Container = d.cCtnDeployContainer, ImageVariable = d.cCtnDeployImageVar, LastRun = last,
+         Service = d.cCtnDeployService, Container = d.cCtnDeployContainer, ImageVariable = d.cCtnDeployImageVar,
+         ImageRef = ImageRefOf(d.cCtnDeployImageRef), LastRun = last,
          UpdatedAt = d.ustamp
       };
 

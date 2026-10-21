@@ -200,7 +200,23 @@ a **Retry deploy** button while something failed; fix the server and retry, or u
 | **SSH** | `docker compose pull` + `up -d` of one service in a compose folder on the host | the standalone container is recreated through the Docker Engine API (`docker system dial-stdio` over SSH) |
 | **Portainer** (CE or BE) | the stack is updated with a new environment and *pull image* | the standalone container is recreated through the environment's Docker proxy |
 
-**Pinning the image by variable.** A stack reads its image from a variable, `image: ${EM_IMAGE_<SERVICE>}`
+**Image in the compose file.** A Stack target chooses how the deploy names the image (**Image in the compose
+file** in the target dialog; a new target starts with tag and digest):
+
+| Choice | Image line after a deploy | Environment |
+|---|---|---|
+| Image name: tag and digest | `image: <registry host>/<root>/<name>:<tag>@sha256:<digest>` | unchanged |
+| Image name: tag only | `image: <registry host>/<root>/<name>:<tag>` | unchanged |
+| Image variable | `image: ${EM_IMAGE_<SERVICE>}` | variable set to `<registry host>/<root>/<name>@sha256:<digest>` |
+
+With an image name every deploy rewrites only the value of that `image:` line (over SSH in the compose file on the
+host, in Portainer in the stack file) and keeps the old file in the run's history. Tag and digest stay pinned, so
+rollback deploys exactly the earlier image; tag only pulls the tag as it is at that moment, so a rollback can get a
+newer image if the tag was moved. A deploy without a tag (an untagged manifest) writes the digest only. A Portainer
+stack deployed **from Git** can only use the image variable: Test connection reports it and a deploy is refused.
+Targets saved before this choice existed keep using the image variable.
+
+**Pinning the image by variable.** With **Image variable**, a stack reads its image from a variable, `image: ${EM_IMAGE_<SERVICE>}`
 by default (another name can be set per target). A deploy sets that variable to
 `<registry host>/<root>/<name>@sha256:<digest>`: in the `.env` next to the compose file over SSH (other lines
 are kept) or in the stack environment in Portainer (other variables are kept). The digest pins exactly what

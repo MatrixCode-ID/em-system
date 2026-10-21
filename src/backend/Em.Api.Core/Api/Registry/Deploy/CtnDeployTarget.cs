@@ -21,6 +21,7 @@ namespace Em.Api.Core.Registry.Deploy
       public string? Service { get; init; }
       public string? Container { get; init; }
       public string? ImageVariable { get; init; }
+      public CtnDeployImageRef ImageRef { get; init; } = CtnDeployImageRef.Variable;
       public string RegistryHost { get; init; } = "";
       public string? RegistryUser { get; init; }
       public string? RegistrySecret { get; init; }

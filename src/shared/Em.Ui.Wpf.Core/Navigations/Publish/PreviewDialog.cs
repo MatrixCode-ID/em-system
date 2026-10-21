@@ -45,7 +45,7 @@ public sealed class PreviewDialog : EmWindow {
   var list=new StackPanel();
   for(var i=0;i<rows.Count;i++)list.Children.Add(Row(rows[i],i==rows.Count-1));
   if(rows.Count==0)list.Children.Add(new Border {Padding=new Thickness(18,14,18,14),Child=Muted("Nothing to show.")});
-  var scroll=new ScrollViewer {Content=list,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};
+  var scroll=new ScrollViewer {FocusVisualStyle=null,Content=list,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};
   var text=string.Join("\n",rows.Select(r=>string.Join("\n",new[] {r.Title,r.Detail,r.Meta}.Where(x=>!string.IsNullOrEmpty(x)))));
   return new PreviewDialog(title,intro,scroll,text);
  }
@@ -54,7 +54,7 @@ public sealed class PreviewDialog : EmWindow {
  public static PreviewDialog Code(string title,string intro,string text) {
   var block=new TextBlock {Text=text,FontFamily=new System.Windows.Media.FontFamily("Consolas"),FontSize=12.5,Margin=new Thickness(18,14,18,14)};
   block.SetResourceReference(ForegroundProperty,"themeWindowForegroundBrush");AutomationProperties.SetName(block,title);
-  var scroll=new ScrollViewer {Content=block,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Auto};
+  var scroll=new ScrollViewer {FocusVisualStyle=null,Content=block,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Auto};
   return new PreviewDialog(title,intro,scroll,text);
  }
 

@@ -32,20 +32,24 @@ namespace Em.Api.Core.Registry.Deploy
 
       #region Deploy
 
-      /// <summary>Pulls <paramref name="digest"/> of <paramref name="repository"/> on the target and recreates the container.</summary>
+      /// <summary>
+      /// Pulls <paramref name="digest"/> of <paramref name="repository"/> on the target and recreates the container.
+      /// <paramref name="tag"/> is the tag being deployed; a Stack target that writes the image itself puts it in the image line.
+      /// </summary>
       /// <exception cref="Exception">Any failure; the log holds the steps done so far.</exception>
-      public async Task<CtnDeployOutcome> DeployAsync(CtnDeployTarget t, string repository, string digest, CtnDeployLog log, CancellationToken ct) {
+      public async Task<CtnDeployOutcome> DeployAsync(CtnDeployTarget t, string repository, string digest, CtnDeployLog log, CancellationToken ct,
+         string? tag = null) {
          var outcome = new CtnDeployOutcome();
          log.Line($"Deploying {Reference(t, repository, digest)} via {t.Kind}, mode {t.Mode}.");
          switch (t.Kind, t.Mode) {
             case (CtnDeployKind.Ssh, CtnDeployMode.Stack):
-               await SshStackAsync(t, repository, digest, outcome, log, ct);
+               await SshStackAsync(t, repository, digest, tag, outcome, log, ct);
                break;
             case (CtnDeployKind.Ssh, CtnDeployMode.Container):
                await SshContainerAsync(t, repository, digest, outcome, log, ct);
                break;
             case (CtnDeployKind.Portainer, CtnDeployMode.Stack):
-               await PortainerAsync(t, (p, pin) => PortainerStackAsync(p, t, repository, digest, outcome, log, ct));
+               await PortainerAsync(t, (p, pin) => PortainerStackAsync(p, t, repository, digest, tag, outcome, log, ct));
                break;
             case (CtnDeployKind.Portainer, CtnDeployMode.Container):
                await PortainerAsync(t, (p, _) => RecreateAsync(p.Docker(Require(t.EndpointId, "Portainer environment")), t, repository, digest, outcome, log, ct));
@@ -58,8 +62,8 @@ namespace Em.Api.Core.Registry.Deploy
          return outcome;
       }
 
-      private async Task SshStackAsync(CtnDeployTarget t, string repository, string digest, CtnDeployOutcome outcome, CtnDeployLog log,
-         CancellationToken ct) {
+      private async Task SshStackAsync(CtnDeployTarget t, string repository, string digest, string? tag, CtnDeployOutcome outcome,
+         CtnDeployLog log, CancellationToken ct) {
          var folder = Require(t.Stack, "compose folder");
          var service = Require(t.Service, "compose service");
          var variable = t.Variable;
@@ -71,21 +75,36 @@ namespace Em.Api.Core.Registry.Deploy
             var (file, content) = await FindComposeAsync(shell, folder, ct)
                ?? throw new InvalidOperationException($"No compose file ({string.Join(", ", ComposeFiles)}) in '{folder}'. Use Create stack, or fix the folder.");
             var path = Join(folder, file);
-            var rewrite = ComposeImageRewriter.Rewrite(content, service, variable);
-            if (rewrite.Changed) {
-               outcome.OldFile = content;
-               await shell.WriteFileAsync(path, rewrite.Content, ct);
-               log.Line($"Rewrote the image of service '{service}' in {path}: '{rewrite.OldImage}' -> '${{{variable}}}'. The old file is kept in this run.");
-            }
-            else if (!ComposeImageRewriter.ReferencesVariable(rewrite.OldImage, variable)) {
-               log.Warn($"The image of service '{service}' is '{rewrite.OldImage}', which does not use ${{{variable}}}; the running image may not change.");
-            }
-
             var envPath = Join(folder, ".env");
-            var env = await shell.ReadFileAsync(envPath, ct);
-            outcome.PrevDigest = ComposeImageRewriter.DigestOf(ComposeImageRewriter.ReadEnv(env, variable));
-            await shell.WriteFileAsync(envPath, ComposeImageRewriter.SetEnv(env, variable, reference), ct);
-            log.Line($"Set {variable} in {envPath}" + (outcome.PrevDigest is null ? "." : $" (was {outcome.PrevDigest})."));
+            if (t.ImageRef != CtnDeployImageRef.Variable) {
+               var image = Image(t, repository, digest, tag, log);
+               var written = ComposeImageRewriter.SetImage(content, service, image);
+               outcome.PrevDigest = ComposeImageRewriter.ReferencesVariable(written.OldImage, variable)
+                  ? ComposeImageRewriter.DigestOf(ComposeImageRewriter.ReadEnv(await shell.ReadFileAsync(envPath, ct), variable))
+                  : ComposeImageRewriter.DigestOf(written.OldImage);
+               if (written.Changed) {
+                  outcome.OldFile = content;
+                  await shell.WriteFileAsync(path, written.Content, ct);
+               }
+
+               log.Line($"Image of service '{service}' in {path}: '{written.OldImage}' -> '{image}'." + (written.Changed ? " The old file is kept in this run." : ""));
+            }
+            else {
+               var rewrite = ComposeImageRewriter.Rewrite(content, service, variable);
+               if (rewrite.Changed) {
+                  outcome.OldFile = content;
+                  await shell.WriteFileAsync(path, rewrite.Content, ct);
+                  log.Line($"Rewrote the image of service '{service}' in {path}: '{rewrite.OldImage}' -> '${{{variable}}}'. The old file is kept in this run.");
+               }
+               else if (!ComposeImageRewriter.ReferencesVariable(rewrite.OldImage, variable)) {
+                  log.Warn($"The image of service '{service}' is '{rewrite.OldImage}', which does not use ${{{variable}}}; the running image may not change.");
+               }
+
+               var env = await shell.ReadFileAsync(envPath, ct);
+               outcome.PrevDigest = ComposeImageRewriter.DigestOf(ComposeImageRewriter.ReadEnv(env, variable));
+               await shell.WriteFileAsync(envPath, ComposeImageRewriter.SetEnv(env, variable, reference), ct);
+               log.Line($"Set {variable} in {envPath}" + (outcome.PrevDigest is null ? "." : $" (was {outcome.PrevDigest})."));
+            }
 
             var compose = $"cd {Quote(folder)} && docker compose -f {Quote(file)}";
             await RequireAsync(shell, $"{compose} pull {Quote(service)}", "docker compose pull", log, ct);
@@ -113,7 +132,7 @@ namespace Em.Api.Core.Registry.Deploy
       }
 
       private static async Task PortainerStackAsync(PortainerClient portainer, CtnDeployTarget t, string repository, string digest,
-         CtnDeployOutcome outcome, CtnDeployLog log, CancellationToken ct) {
+         string? tag, CtnDeployOutcome outcome, CtnDeployLog log, CancellationToken ct) {
          var stackId = Require(t.StackId, "Portainer stack");
          var service = Require(t.Service, "compose service");
          var variable = t.Variable;
@@ -126,6 +145,18 @@ namespace Em.Api.Core.Registry.Deploy
          var env = PortainerClient.SetEnv(stack["Env"], variable, reference);
          var content = await portainer.StackFileAsync(stackId, ct);
          log.Line($"Stack '{stack["Name"]?.GetValue<string>()}' (id {stackId}) on environment {endpointId}.");
+
+         if (t.ImageRef != CtnDeployImageRef.Variable) {
+            if (stack["GitConfig"] is JsonObject) throw new InvalidOperationException(GitNeedsVariable);
+            var image = Image(t, repository, digest, tag, log);
+            var written = ComposeImageRewriter.SetImage(content, service, image);
+            if (!ComposeImageRewriter.ReferencesVariable(written.OldImage, variable)) outcome.PrevDigest = ComposeImageRewriter.DigestOf(written.OldImage);
+            if (written.Changed) outcome.OldFile = content;
+            // The stack environment goes back unchanged; only the image line carries the new image.
+            await portainer.UpdateStackAsync(stackId, endpointId, written.Content, PortainerClient.CopyEnv(stack["Env"]), ct);
+            log.Line($"Stack updated: image of service '{service}' '{written.OldImage}' -> '{image}', pulling images.");
+            return;
+         }
 
          if (stack["GitConfig"] is JsonObject) {
             if (!ComposeImageRewriter.UsesVariable(content, service, variable)) {
@@ -277,7 +308,12 @@ namespace Em.Api.Core.Registry.Deploy
          var service = t.Service is { } wanted && services.Contains(wanted) ? wanted : services[0];
          var variable = string.IsNullOrWhiteSpace(t.ImageVariable) ? ComposeImageRewriter.DefaultVariable(service) : t.ImageVariable.Trim();
          var reference = latestDigest is null ? $"{t.RegistryHost}/{repository}:latest" : Reference(t, repository, latestDigest);
-         if (!ComposeImageRewriter.UsesVariable(content, service, variable)) {
+         var literal = t.ImageRef != CtnDeployImageRef.Variable;
+         if (literal) {
+            // The image line names the image itself; nothing goes into .env or the stack environment.
+            content = ComposeImageRewriter.SetImage(content, service, reference).Content;
+         }
+         else if (!ComposeImageRewriter.UsesVariable(content, service, variable)) {
             log.Warn($"The image of service '{service}' does not use ${{{variable}}}; the first deploy rewrites it.");
          }
 
@@ -290,9 +326,14 @@ namespace Em.Api.Core.Registry.Deploy
 
             await RequireAsync(shell, $"mkdir -p {Quote(folder)}", "mkdir", log, ct);
             await shell.WriteFileAsync(Join(folder, "compose.yml"), content, ct);
-            var envPath = Join(folder, ".env");
-            await shell.WriteFileAsync(envPath, ComposeImageRewriter.SetEnv(await shell.ReadFileAsync(envPath, ct), variable, reference), ct);
-            log.Line($"Created {Join(folder, "compose.yml")} and set {variable} in .env. Press Deploy to start it.");
+            if (literal) {
+               log.Line($"Created {Join(folder, "compose.yml")} with image {reference}. Press Deploy to start it.");
+            }
+            else {
+               var envPath = Join(folder, ".env");
+               await shell.WriteFileAsync(envPath, ComposeImageRewriter.SetEnv(await shell.ReadFileAsync(envPath, ct), variable, reference), ct);
+               log.Line($"Created {Join(folder, "compose.yml")} and set {variable} in .env. Press Deploy to start it.");
+            }
             return new CtnDeployCreated(folder, null, null, service, variable);
          }
 
@@ -417,7 +458,11 @@ namespace Em.Api.Core.Registry.Deploy
                }
                else {
                   ReadServices(await portainer.StackFileAsync(stackId, ct), t, result, messages, $"stack '{stack.Name}'");
-                  if (stack.IsGit && !result.ImageVariablePresent) {
+                  if (stack.IsGit && t.ImageRef != CtnDeployImageRef.Variable) {
+                     result.Success = false;
+                     messages.Add(GitNeedsVariable);
+                  }
+                  else if (stack.IsGit && !result.ImageVariablePresent) {
                      messages.Add("The stack comes from Git: its file cannot be rewritten, so rollback needs the image variable in Git.");
                   }
                }
@@ -461,6 +506,11 @@ namespace Em.Api.Core.Registry.Deploy
          }
 
          result.ImageVariablePresent = ComposeImageRewriter.UsesVariable(content, t.Service, t.Variable);
+         if (t.ImageRef != CtnDeployImageRef.Variable) {
+            messages.Add($"Service '{t.Service}' has image '{ComposeImageRewriter.ImageOf(content, t.Service)}'; each deploy writes the deployed image there.");
+            return;
+         }
+
          messages.Add(result.ImageVariablePresent
             ? $"Service '{t.Service}' uses ${{{t.Variable}}}."
             : $"Service '{t.Service}' does not use ${{{t.Variable}}} yet; the first deploy rewrites its image line.");
@@ -481,6 +531,21 @@ namespace Em.Api.Core.Registry.Deploy
       #region Helpers
 
       private static string Reference(CtnDeployTarget t, string repository, string digest) => $"{t.RegistryHost}/{repository}@{digest}";
+
+      private const string GitNeedsVariable =
+         "The stack comes from Git: its file cannot be rewritten here, so it can only use the image variable. Choose Image variable for this target.";
+
+      // The image a target that writes it itself puts in the image line. Without a tag (an untagged manifest) only the digest can name it.
+      private static string Image(CtnDeployTarget t, string repository, string digest, string? tag, CtnDeployLog log) {
+         if (string.IsNullOrWhiteSpace(tag)) {
+            log.Warn("This deploy has no tag, so the image is written with its digest only.");
+            return Reference(t, repository, digest);
+         }
+
+         return t.ImageRef == CtnDeployImageRef.Tag
+            ? $"{t.RegistryHost}/{repository}:{tag}"
+            : $"{t.RegistryHost}/{repository}:{tag}@{digest}";
+      }
 
       private static string Join(string folder, string name) => folder.TrimEnd('/') + "/" + name;
 

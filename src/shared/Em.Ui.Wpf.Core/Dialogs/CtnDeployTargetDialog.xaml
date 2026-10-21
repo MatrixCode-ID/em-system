@@ -43,6 +43,14 @@
             <Setter Property="Margin" Value="8,0,0,0" />
             <Setter Property="Tag" Value="Pick..." />
             <Setter Property="ToolTip" Value="Pick from the last Test connection" />
+            <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+            <Style.Triggers>
+               <!-- The choices come from Test connection; until then the picker has nothing to offer. -->
+               <Trigger Property="HasItems" Value="False">
+                  <Setter Property="IsEnabled" Value="False" />
+                  <Setter Property="ToolTip" Value="Run Test connection to list the choices" />
+               </Trigger>
+            </Style.Triggers>
          </Style>
       </ResourceDictionary>
    </windows:EmWindow.Resources>
@@ -79,7 +87,8 @@
          </Grid>
 
          <!-- ==== form ==== -->
-         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0"
+                       FocusVisualStyle="{x:Null}">
             <StackPanel>
                <TextBlock Text="CONNECTION" Style="{StaticResource formSection}" />
                <Grid Style="{StaticResource pairGrid}">
@@ -269,10 +278,19 @@
                   <StackPanel Grid.Column="2">
                      <TextBlock Text="Image variable" Style="{StaticResource formLabel}" />
                      <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding ImageVariable, UpdateSourceTrigger=PropertyChanged}"
+                              IsEnabled="{Binding UsesVariable}"
                               Tag="{Binding VariableHint}" AutomationProperties.Name="Image variable"
                               ToolTip="The compose file reads the image from this variable (image: ${VARIABLE}). A plain image line is rewritten to it on the first deploy, so rollback works." />
                   </StackPanel>
                </Grid>
+
+               <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsStack, Converter={StaticResource boolToVisibility}}">
+                  <TextBlock Text="Image in the compose file" Style="{StaticResource formLabel}" />
+                  <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding ImageRefs}" SelectedItem="{Binding ImageRefChoice}"
+                            AutomationProperties.Name="Image in the compose file" />
+                  <TextBlock Style="{StaticResource fieldHelpStyle}"
+                             Text="Image name: each deploy writes the deployed image into the image line, so the stack shows it. Tag only pulls the tag as it is at that moment, so rollback may get a newer image. Image variable: the image line reads ${VARIABLE} and the deploy sets it in .env or the stack environment; a stack from Git can only use this." />
+               </StackPanel>
 
                <StackPanel Style="{StaticResource fieldStack}" Visibility="{Binding IsContainer, Converter={StaticResource boolToVisibility}}">
                   <TextBlock Text="Container" Style="{StaticResource formLabel}" />

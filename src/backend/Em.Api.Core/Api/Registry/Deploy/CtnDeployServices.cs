@@ -109,10 +109,14 @@ namespace Em.Api.Core.Registry
          var row = await store.FindAsync(imageId, AbortToken);
          var name = ComposeImageRewriter.SafeName(repository.Split('/')[1]);
          var variable = row?.cCtnDeployImageVar ?? ComposeImageRewriter.DefaultVariable(name);
+         // A target that writes the image itself starts from the latest tag; the first deploy replaces it with what it deploys.
+         var image = row?.cCtnDeployImageRef is { } imageRef && imageRef != (int)CtnDeployImageRef.Variable
+            ? $"{row.cCtnDeployRegistryHost}/{repository}:latest"
+            : "${" + variable + "}";
          return $$"""
                   services:
                     {{name}}:
-                      image: ${{{variable}}}
+                      image: {{image}}
                       container_name: {{name}}
                       restart: unless-stopped
 

@@ -52,7 +52,7 @@ namespace Em.Api.Core.Registry.Deploy
             var log = new CtnDeployLog(target.Secrets);
             log.Line($"{trigger} deploy started" + (userName is null ? "." : $" by {userName}."));
             try {
-               var outcome = await Executor.DeployAsync(target, repository, digest, log, ct);
+               var outcome = await Executor.DeployAsync(target, repository, digest, log, ct, tag);
                run.cCtnDeployRunResult = (int)CtnDeployResult.Success;
                run.cCtnDeployRunPrevDigest = outcome.PrevDigest;
                run.cCtnDeployRunOldFile = outcome.OldFile;
