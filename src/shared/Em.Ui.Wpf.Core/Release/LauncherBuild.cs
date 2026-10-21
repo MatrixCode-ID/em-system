@@ -18,7 +18,9 @@ public static class LauncherBuild {
       if (settings.Channel is not ("prealpha" or "alpha" or "beta" or "rc" or "release")) throw new InvalidDataException("Invalid launcher version channel.");
       if (remote?.InputHash == hash) return remote.Version;
       if (settings.Channel == "release") {
-         if (remote?.Version == settings.BaseVersion) throw new InvalidDataException("This launcher release version has already been used. Increase MAJOR.MINOR.PATCH.");
+         if (remote?.Version == settings.BaseVersion ||
+             (Version.TryParse(remote?.Version, out var previous) && Version.TryParse(settings.BaseVersion, out var requested) && requested <= previous))
+            throw new InvalidDataException("This launcher release version has already been used or precedes the published release. Increase MAJOR.MINOR.PATCH.");
          return settings.BaseVersion;
       }
       var prefix = settings.BaseVersion + "-" + settings.Channel + ".";
@@ -38,52 +40,74 @@ public static class LauncherBuild {
          .Concat(new[] { "build.rs", "Cargo.toml", "Cargo.lock", "launcher.manifest", "build-dist.ps1", "rust-toolchain.toml", ".cargo/config.toml" }.Select(p => Path.Combine(source, p)))
          .OrderBy(p => Path.GetRelativePath(source, p).Replace('\\', '/'), StringComparer.Ordinal);
       foreach (var path in paths) Add(Path.GetRelativePath(source, path).Replace('\\', '/'), File.ReadAllBytes(path));
-      Add("product", JsonSerializer.SerializeToUtf8Bytes(new { profile.Product, profile.Launcher.FileName, profile.Launcher.BaseVersion,
-         profile.Launcher.Channel, profile.Launcher.UpdateBehavior, defaultSource, PublicKey = ReleasePemKey.Public(profile.PrivateKeyPem) }));
+      Add("product", ProductInputs(profile, defaultSource));
       return Convert.ToHexStringLower(hash.GetHashAndReset());
    }
+
+   private static byte[] ProductInputs(ReleaseProfile profile, string defaultSource) => JsonSerializer.SerializeToUtf8Bytes(new {
+      profile.Product, profile.Launcher.FileName, profile.Launcher.BaseVersion, profile.Launcher.Channel,
+      profile.Launcher.UpdateBehavior, defaultSource, PublicKey = ReleasePemKey.Public(profile.PrivateKeyPem)
+   });
+   private static string ProductHash(ReleaseProfile profile, string defaultSource) => Convert.ToHexStringLower(SHA256.HashData(ProductInputs(profile, defaultSource)));
 
    /// <summary>Gets the default product-specific output folder.</summary>
    public static string DefaultOutput(string appId) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Em", "ReleaseManager", "Launchers", appId);
 
    /// <summary>Explains why Prepare cannot obtain a launcher without attempting a build.</summary>
-   public static string? BlockedReason(string source, string output, ReleaseProfile profile) {
+   public static string? BlockedReason(string source, string output, ReleaseProfile profile, string? defaultSource = null) {
       if (profile.PrivateKeyPem.Length == 0) return "Create or import the product signing PEM in Settings.";
-      try { profile.Product.Validate(); ValidateSettings(profile.Launcher); }
+      try { profile.Product.Validate(); ValidateSettings(profile.Launcher, profile.Product.AppExe); }
       catch (Exception ex) { return ex.Message; }
       var exe = Path.Combine(output, profile.Launcher.FileName);
       if (!File.Exists(Path.Combine(source, "Cargo.toml")))
-         return CacheMatches(exe, profile.Launcher.InputHash) ? null : "Choose the local launcher source folder in Settings; this product needs a launcher build.";
+         return CacheMatches(exe, profile.Launcher.InputHash, ProductHash(profile, defaultSource ?? profile.CdnAddress)) ? null : "Choose the local launcher source folder in Settings; this product needs a launcher build.";
+      try {
+         var hash = InputHash(source, profile, defaultSource ?? profile.CdnAddress);
+         if (CacheMatches(exe, hash)) return null;
+         var cargo = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
+            .Any(p => File.Exists(Path.Combine(p, "cargo.exe"))) ||
+            File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cargo", "bin", "cargo.exe"));
+         if (!cargo) return "Launcher inputs changed; install Rust (cargo) before Prepare.";
+         var vswhere = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft Visual Studio", "Installer", "vswhere.exe");
+         if (!File.Exists(vswhere)) return "Launcher inputs changed; install Visual Studio x64 C++ tools before Prepare.";
+         using var probe = Process.Start(new ProcessStartInfo(vswhere, "-latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath") {
+            UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true });
+         if (string.IsNullOrWhiteSpace(probe?.StandardOutput.ReadToEnd())) return "Launcher inputs changed; install Visual Studio x64 C++ tools before Prepare.";
+      }
+      catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception) { return ex.Message; }
       return null;
    }
 
-   private static bool CacheMatches(string exe, string hash) {
+   private static bool CacheMatches(string exe, string hash, string? productHash = null) {
       try {
          var stamp = JsonSerializer.Deserialize<BuildStamp>(File.ReadAllText(Path.ChangeExtension(exe, ".build.json")));
-         return File.Exists(exe) && stamp?.InputHash == hash && stamp.ExeHash == Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(exe)));
+         return File.Exists(exe) && stamp?.InputHash == hash && (productHash is null || stamp.ProductHash == productHash) && stamp.ExeHash == Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(exe)));
       }
       catch (Exception ex) when (ex is IOException or JsonException) { return false; }
    }
 
    /// <summary>Validates product launcher filename and update behavior.</summary>
-   public static void ValidateSettings(ReleaseLauncher settings) {
+   public static void ValidateSettings(ReleaseLauncher settings, string? applicationExe = null) {
       if (ReleaseManifestSerializer.CheckPath(settings.FileName) is not null || settings.FileName.Contains('/') ||
           settings.FileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || !settings.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
          throw new InvalidDataException("Launcher name must be a single .exe filename.");
+      if (string.Equals(settings.FileName, applicationExe, StringComparison.OrdinalIgnoreCase))
+         throw new InvalidDataException("Launcher executable and application executable must have different names.");
       if (settings.UpdateBehavior is not ("automatic" or "ask")) throw new InvalidDataException("Update behavior must be automatic or ask.");
    }
 
    /// <summary>Builds only if necessary, writes a marker and copies the launcher into the publish output.</summary>
    public static async Task PrepareAsync(string source, string output, ReleaseProfile profile, string defaultSource,
       ReleaseLauncherMetadata? remote, IProgress<string> log, CancellationToken token) {
-      profile.Product.Validate(); ValidateSettings(profile.Launcher);
+      profile.Product.Validate(); ValidateSettings(profile.Launcher, profile.Product.AppExe);
       Directory.CreateDirectory(output);
       var exe = Path.Combine(output, profile.Launcher.FileName);
       var hasSource = File.Exists(Path.Combine(source, "Cargo.toml"));
       var hash = hasSource ? InputHash(source, profile, defaultSource) : profile.Launcher.InputHash;
       if (hash.Length == 0) throw new InvalidDataException("A local launcher source folder is required for the first build.");
       var version = SelectVersion(profile.Launcher, hash, remote);
-      if (!CacheMatches(exe, hash) || profile.Launcher.Version != version) {
+      var productHash = ProductHash(profile, defaultSource);
+      if (!CacheMatches(exe, hash, productHash) || profile.Launcher.Version != version) {
          if (!hasSource) throw new InvalidDataException("The launcher inputs changed; select its local source folder and install Rust/MSVC.");
          var buildFolder = Path.Combine(output, ".build"); Directory.CreateDirectory(buildFolder);
          var icon = Path.Combine(buildFolder, "product.ico"); File.WriteAllBytes(icon, Convert.FromBase64String(profile.Product.IconBase64));
@@ -106,7 +130,7 @@ public static class LauncherBuild {
          try { await process.WaitForExitAsync(token); await Task.WhenAll(stdout, stderr); }
          catch (OperationCanceledException) { process.Kill(true); throw; }
          if (process.ExitCode != 0) throw new IOException("Launcher build failed. Install Rust/MSVC or fix the source. See the activity log.");
-         var stamp = new BuildStamp(version, hash, engine, DateTimeOffset.UtcNow, Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(exe))));
+         var stamp = new BuildStamp(version, hash, engine, DateTimeOffset.UtcNow, Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(exe))), productHash);
          await File.WriteAllTextAsync(Path.ChangeExtension(exe, ".build.json"), JsonSerializer.Serialize(stamp), token);
          async Task Pump(StreamReader reader) { while (await reader.ReadLineAsync(token) is { } line) log.Report(line); }
       }
@@ -123,5 +147,5 @@ public static class LauncherBuild {
       }
       catch (System.ComponentModel.Win32Exception) { return "unknown"; }
    }
-   private sealed record BuildStamp(string Version, string InputHash, string EngineVersion, DateTimeOffset BuiltAtUtc, string ExeHash);
+   private sealed record BuildStamp(string Version, string InputHash, string EngineVersion, DateTimeOffset BuiltAtUtc, string ExeHash, string ProductHash);
 }

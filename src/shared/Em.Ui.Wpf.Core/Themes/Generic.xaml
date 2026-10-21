@@ -466,7 +466,7 @@
                   <Border.Resources>
                      <DataTemplate DataType="{x:Type windows:StatusUpdateItem}">
                         <Button x:Name="update" Margin="10,0,0,0" Padding="2,0" Background="Transparent" BorderThickness="0"
-                                Foreground="{DynamicResource themeTextBrush}" ToolTip="{Binding ToolTip}" Command="{Binding RestartCommand}" ContextMenuService.ShowOnDisabled="True">
+                                Foreground="{DynamicResource themeOnSurfaceVariantBrush}" ToolTip="{Binding ToolTip}" Command="{Binding RestartCommand}" ContextMenuService.ShowOnDisabled="True" ToolTipService.ShowOnDisabled="True">
                            <Button.Template><ControlTemplate TargetType="Button"><Border Background="Transparent"><ContentPresenter /></Border></ControlTemplate></Button.Template>
                            <Button.ContextMenu><ContextMenu><MenuItem Header="Check for update" Command="{Binding CheckCommand}" /></ContextMenu></Button.ContextMenu>
                            <StackPanel Orientation="Horizontal">

@@ -11,7 +11,7 @@ namespace Em.Ui.Wpf.Core.Release
    /// <summary>
    /// A release target on the built-in CDN of the server that is currently connected. It reads through the
    /// public <c>/cdn/...</c> address without login (just as the launcher will later read it), and writes
-   /// through <see cref="ICdnServices"/>, which requires the CDN manager claim.
+   /// through <see cref="ICdnReleaseServices"/>, which requires the Release Manager claim.
    /// </summary>
    public sealed class CdnReleaseTarget : ReleaseTarget
    {
@@ -106,7 +106,7 @@ namespace Em.Ui.Wpf.Core.Release
       /// <inheritdoc />
       public override async Task WriteFileAsync(string path, Stream content, IProgress<long>? progress,
          CancellationToken token) {
-         // The server writes to a dot-prefixed temporary file and moves it into place, so a cut-off
+         // The server writes to a private temporary file and moves it into place, so a cut-off
          // upload leaves the old file as it was.
          var full = Full(path);
          await using var body = new ProgressReadStream(content, progress, token);

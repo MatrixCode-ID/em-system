@@ -245,6 +245,41 @@ pub(crate) fn cabinet_error(error: std::io::Error, progress: &UpdateProgress) ->
 pub(crate) fn verify_folder(folder: &Path, keys: &[ReleasePublicKey]) -> Result<VerifiedRelease, CommandError> {
    let source = FolderSource::new(&folder.display().to_string());
    let release = VerifiedRelease::fetch(&source, keys)?;
+   let mut allowed = std::collections::HashSet::from(["release.json".to_string(), "release.json.sig".to_string()]);
+   allowed.extend(
+      release
+         .manifest()
+         .files()
+         .iter()
+         .map(|f| format!("binaries/{}", f.path.to_ascii_lowercase())),
+   );
+   let mut pending = vec![folder.to_path_buf()];
+   while let Some(directory) = pending.pop() {
+      for item in fs::read_dir(directory).map_err(CommandError::io("cannot inspect cabinet files"))? {
+         let item = item.map_err(CommandError::io("cannot inspect cabinet file"))?;
+         if item
+            .file_type()
+            .map_err(CommandError::io("cannot inspect cabinet file type"))?
+            .is_dir()
+         {
+            pending.push(item.path());
+         } else {
+            let path = item.path();
+            let relative = path
+               .strip_prefix(folder)
+               .map_err(|e| CommandError::invalid(e.to_string()))?
+               .to_string_lossy()
+               .replace('\\', "/")
+               .to_ascii_lowercase();
+            if !allowed.contains(&relative) {
+               return Err(CommandError::new(
+                  ExitCode::SourceFailed,
+                  "Cab contains a file not listed in its signed manifest.",
+               ));
+            }
+         }
+      }
+   }
    for file in release.manifest().files() {
       let (size, hash) =
          ReleaseHash::compute_file(&folder.join("binaries").join(file.path.replace('/', "\\")), |_| Ok(()))

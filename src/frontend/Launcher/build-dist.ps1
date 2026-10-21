@@ -62,6 +62,10 @@ $rustflags = "target.x86_64-pc-windows-msvc.rustflags=[$($remaps -join ', ')]"
 Push-Location $projectDir
 try {
    if ($ProductFile) { $env:LAUNCHER_PRODUCT = [IO.Path]::GetFullPath($ProductFile) }
+   else {
+      Remove-Item Env:LAUNCHER_PRODUCT -ErrorAction SilentlyContinue
+      $env:LAUNCHER_ENGINE_VERSION = (& git -C $repoRoot describe --tags --always --dirty | Select-Object -First 1)
+   }
    if ($TargetDirectory) { $env:CARGO_TARGET_DIR = [IO.Path]::GetFullPath($TargetDirectory) }
    & cargo build --release --config $rustflags
    if ($LASTEXITCODE -ne 0) { throw "cargo build failed with exit code $LASTEXITCODE." }

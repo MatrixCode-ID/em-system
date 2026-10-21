@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, RECT};
@@ -21,40 +20,51 @@ struct Pixels {
    height: u32,
    bytes: Vec<u8>,
 }
+struct ShiftContext {
+   parent: HWND,
+   delta: i32,
+}
 
 impl Logo {
    pub(super) fn attach(wnd: &gui::WindowMain) {
-      let pixels = Rc::new(RefCell::new(None));
-      wnd.on().wm_create({
-         let wnd = wnd.clone();
-         let pixels = pixels.clone();
-         move |_| {
-            let hwnd = HWND(wnd.hwnd().ptr());
-            let dpi = unsafe { GetDpiForWindow(hwnd) }.max(96);
-            let shift = (64 * dpi / 96) as isize;
-            unsafe {
-               let _ = EnumChildWindows(Some(hwnd), Some(shift_child), LPARAM(shift));
-            }
-            if !product::LOGO.is_empty() {
-               *pixels.borrow_mut() = decode(product::LOGO).ok();
-            }
-            Ok(0)
-         }
+      let pixels = Rc::new(if product::LOGO.is_empty() {
+         None
+      } else {
+         decode(product::LOGO).ok()
       });
       wnd.on().wm_paint({
          let wnd = wnd.clone();
          move || {
             unsafe {
-               paint(HWND(wnd.hwnd().ptr()), pixels.borrow().as_ref());
+               paint(HWND(wnd.hwnd().ptr()), pixels.as_ref().as_ref());
             }
             Ok(())
          }
       });
    }
+   pub(super) fn created(wnd: &gui::WindowMain) {
+      let hwnd = HWND(wnd.hwnd().ptr());
+      let dpi = unsafe { GetDpiForWindow(hwnd) }.max(96);
+      let context = ShiftContext {
+         parent: hwnd,
+         delta: (64 * dpi / 96) as i32,
+      };
+      unsafe {
+         let _ = EnumChildWindows(
+            Some(hwnd),
+            Some(shift_child),
+            LPARAM(&context as *const ShiftContext as isize),
+         );
+      }
+   }
 }
 
 unsafe extern "system" fn shift_child(child: HWND, offset: LPARAM) -> BOOL {
    unsafe {
+      let context = &*(offset.0 as *const ShiftContext);
+      if GetParent(child).ok() != Some(context.parent) {
+         return BOOL(1);
+      }
       let mut rect = RECT::default();
       if GetWindowRect(child, &mut rect).is_ok() {
          let parent = GetParent(child).unwrap_or_default();
@@ -67,7 +77,7 @@ unsafe extern "system" fn shift_child(child: HWND, offset: LPARAM) -> BOOL {
             child,
             None,
             point.x,
-            point.y + offset.0 as i32,
+            point.y + context.delta,
             0,
             0,
             SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE,
@@ -166,7 +176,7 @@ unsafe fn paint(hwnd: HWND, image: Option<&Pixels>) {
             let _ = DeleteObject(HGDIOBJ(bitmap.0));
          }
       } else if let Ok(module) = GetModuleHandleW(None)
-         && let Ok(icon) = LoadIconW(Some(HINSTANCE(module.0)), PCWSTR(1usize as *const u16))
+         && let Ok(icon) = LoadIconW(Some(HINSTANCE(module.0)), PCWSTR(std::ptr::without_provenance(1)))
       {
          let edge = (48.0 * scale).round() as i32;
          let _ = DrawIconEx(dc, x, y, icon, edge, edge, 0, None, DI_NORMAL);

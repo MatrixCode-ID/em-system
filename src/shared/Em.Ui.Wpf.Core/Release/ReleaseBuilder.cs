@@ -70,11 +70,13 @@ namespace Em.Ui.Wpf.Core.Release
          static bool IsApplication(string projectPath) {
             if (!File.Exists(projectPath)) return false;
             try {
-               return XDocument.Load(projectPath).Descendants()
-                  .Where(r => r.Name.LocalName == "OutputType")
-                  .Any(r => r.Value.Trim() is { } type &&
-                            (type.Equals("WinExe", StringComparison.OrdinalIgnoreCase) ||
-                             type.Equals("Exe", StringComparison.OrdinalIgnoreCase)));
+               var declared = XDocument.Load(projectPath).Descendants().Where(r => r.Name.LocalName == "OutputType").Select(r => r.Value.Trim()).ToArray();
+               if (declared.Length > 0) return declared.Any(type => type.Equals("WinExe", StringComparison.OrdinalIgnoreCase) || type.Equals("Exe", StringComparison.OrdinalIgnoreCase));
+               var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+               foreach (var arg in new[] { "msbuild", projectPath, "-nologo", "-getProperty:OutputType" }) start.ArgumentList.Add(arg);
+               using var process = Process.Start(start)!;
+               var output = process.StandardOutput.ReadToEnd(); var error = process.StandardError.ReadToEnd(); process.WaitForExit();
+               return process.ExitCode == 0 && output.Trim() is "Exe" or "WinExe";
             }
             catch (Exception x) when (x is System.Xml.XmlException or IOException) {
                return false;

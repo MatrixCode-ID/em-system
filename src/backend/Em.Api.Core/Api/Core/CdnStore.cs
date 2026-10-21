@@ -93,7 +93,7 @@ namespace Em.Api.Core
       /// <see cref="RootPath"/>. <c>null</c> or empty means the root itself.
       /// </summary>
       /// <exception cref="ActionException">
-      /// 400 for <c>..</c>, empty or dot-prefixed segments, invalid characters, or anything that would
+      /// 400 for <c>..</c>, empty traversal segments, invalid characters, or anything that would
       /// land outside the root.
       /// </exception>
       public string ResolveInside(string? relativePath) {
@@ -174,7 +174,7 @@ namespace Em.Api.Core
 
       private CdnEntry ToEntry(FileSystemInfo info, string relative) => new() {
          Name = info.Name,
-         ManagedFolder = ManagedAt(relative),
+         ManagedFolder = ManagedAt(relative, includeUsage: false),
          Path = relative,
          IsFolder = info is DirectoryInfo,
          Size = info is FileInfo file ? file.Length : 0,
@@ -243,8 +243,7 @@ namespace Em.Api.Core
 
       /// <summary>
       /// Every visible entry below <paramref name="relativePath"/>, depth first, each folder listed
-      /// before its content. Dot-prefixed, hidden and system entries are skipped together with
-      /// whatever is inside them, exactly as the public side never serves them.
+      /// before its content. Dot-prefixed, hidden and system entries are ordinary public content.
       /// </summary>
       public CdnEntry[] Tree(string relativePath) {
          var folder = new DirectoryInfo(RequireFolder(relativePath));
@@ -323,7 +322,7 @@ namespace Em.Api.Core
       /// limit is counted while copying, since a stream does not say how long it is up front.
       /// </summary>
       public async Task<CdnEntry> UploadAsync(string? relativePath, string fileName, Stream content, bool overwrite,
-         CancellationToken token, string? appId = null) {
+         CancellationToken token, string? appId = null, string deletedBy = "") {
          EnsureWritable(relativePath, appId);
          ValidateName(fileName);
 
@@ -338,9 +337,8 @@ namespace Em.Api.Core
             throw new ActionException($"'{fileName}' already exists in this folder.", 409);
          }
 
-         // Written next to the target and moved into place, so a download already running on the old
-         // file never receives a mix of old and new content. The dot prefix keeps it off the public
-         // side and out of the manager's listing while it exists.
+         // Written in the private same-volume temp directory, then moved into place.
+         // An existing downloader keeps its previous read handle.
          using var operation = Temporary("upload");
          var temp = operation.Path;
          try {
@@ -366,7 +364,7 @@ namespace Em.Api.Core
                   throw new ActionException($"'{fileName}' already exists.", 409);
                if (ManagedAt(relativePath) is { } managed)
                   CheckQuota(managed, checked(managed.UsedBytes - (File.Exists(target) ? new FileInfo(target).Length : 0) + new FileInfo(temp).Length));
-               Retire(target, appId);
+               Retire(target, appId, deletedBy);
                File.Move(temp, target);
             }
          }
@@ -472,10 +470,8 @@ namespace Em.Api.Core
       }
 
       /// <summary>
-      /// Writes the selected entries into a zip next to them. The zip is built in a dot-prefixed temporary
-      /// file - invisible to the public side and to the listing - and only moved to its name once complete,
-      /// so a cancelled or failed archive leaves nothing behind. Dot-prefixed, hidden and system entries
-      /// inside a source folder are skipped, exactly as <see cref="Tree"/> skips them.
+      /// Builds a zip in the private temp directory, including dot-prefixed, hidden and system entries,
+      /// and publishes it only after completion. Active temporary files are excluded from garbage cleanup.
       /// </summary>
       public async Task ArchiveAsync(string? folderPath, string[] names, string archiveName, bool overwrite,
          Action<double?, string> report, CancellationToken token) {
@@ -590,7 +586,7 @@ namespace Em.Api.Core
 
       /// <summary>
       /// Reads the entry list of a zip and refuses it as a whole - 400 - for an entry that would leave the
-      /// folder, a dot-prefixed or otherwise invalid name in any segment, too many entries, an entry that is
+      /// folder, a traversal segment or otherwise invalid name in any segment, too many entries, an entry that is
       /// both a file and a folder, or a file that would land on an existing folder (or the reverse).
       /// Existing files that would be overwritten are reported, not refused.
       /// </summary>
@@ -650,6 +646,7 @@ namespace Em.Api.Core
          }
 
          foreach (var relative in files) {
+            EnsureWritable(ToRelative(Path.Combine(folder, relative)));
             var target = Path.Combine(folder, relative);
             if (Directory.Exists(target)) {
                throw new ActionException($"'{relative}' is a file in the archive but a folder in this folder.", 400);
@@ -689,7 +686,7 @@ namespace Em.Api.Core
 
       /// <summary>
       /// Splits one entry name into segments, each held to the same rules as any other CDN name - which
-      /// already rules out <c>..</c>, dot prefixes, drive letters and empty segments. A leading separator
+      /// already rules out <c>..</c>, drive letters and empty segments. A leading separator
       /// (an absolute path) is refused on its own, since trimming it would hide it.
       /// </summary>
       private static string[] SplitEntryName(string original, string name, bool isFolder) {
@@ -712,7 +709,7 @@ namespace Em.Api.Core
 
       /// <summary>
       /// Extracts a zip into the folder it sits in ("Extract Here"). Everything is written into a
-      /// dot-prefixed temporary folder first, with every entry held to <see cref="MaxFileSize"/> and the
+      /// private temporary folder first, with every entry held to <see cref="MaxFileSize"/> and the
       /// whole to <see cref="MaxExtractTotalFactor"/> times that, counted on the bytes actually written -
       /// never on what the zip headers claim. Only once all of it is in does a short move phase put each
       /// entry in place; that phase ignores the token, so a cancellation either comes before it and leaves
@@ -781,6 +778,8 @@ namespace Em.Api.Core
 
             lock (_gate) {
             EnsureWritable(relativePath);
+            foreach (var relative in plan.Files.Concat(plan.Folders))
+               EnsureWritable(ToRelative(Path.Combine(plan.Folder, relative)));
             report(100, "Moving files into place");
             foreach (var relative in plan.Folders) {
                Directory.CreateDirectory(Path.Combine(plan.Folder, relative));

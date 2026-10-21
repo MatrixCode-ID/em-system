@@ -187,7 +187,7 @@ namespace Em.Ui.Wpf.Windows
       /// <inheritdoc />
       protected override void OnClosing(System.ComponentModel.CancelEventArgs e) {
          base.OnClosing(e);
-         if (e.Cancel) return;
+         if (e.Cancel) { Vm.StatusBar.Updates.CancelRestart(); return; }
          if (_closeAgreed || !NeedsConfirmation()) {
             // The close goes ahead: remember where the main window is. A close that is still being
             // asked about saves nothing yet; it comes back through here once everyone has agreed.
@@ -235,6 +235,9 @@ namespace Em.Ui.Wpf.Windows
          }
          catch (Exception x) {
             this.ShowMboxError(x);
+         }
+         finally {
+            if (!_closed) Vm.StatusBar.Updates.CancelRestart();
          }
       }
 

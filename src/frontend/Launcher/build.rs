@@ -59,7 +59,11 @@ fn main() {
    println!("cargo:rerun-if-changed={}", product_file.display());
    println!("cargo:rerun-if-changed={MANIFEST_FILE}");
 
-   let product = read_product(&product_file);
+   let mut product = read_product(&product_file);
+   println!("cargo:rerun-if-env-changed=LAUNCHER_ENGINE_VERSION");
+   if product.engine_version.is_empty() {
+      product.engine_version = env::var("LAUNCHER_ENGINE_VERSION").unwrap_or_else(|_| "unknown".into());
+   }
    let icon = product_file.parent().unwrap_or(Path::new(".")).join(&product.icon);
    let icon =
       fs::canonicalize(&icon).unwrap_or_else(|_| fail(&format!("the icon '{}' does not exist", icon.display())));
@@ -124,10 +128,10 @@ fn read_product(path: &Path) -> Product {
 fn product_constants(product: &Product) -> String {
    // `{:?}` on a str yields a valid Rust string literal, escapes included.
    let mut code = String::new();
-   let old_name = product
-      .launcher_exe
-      .strip_suffix(".exe")
-      .unwrap_or(&product.launcher_exe)
+   let old_name = Path::new(&product.launcher_exe)
+      .file_stem()
+      .and_then(|s| s.to_str())
+      .unwrap_or("launcher")
       .to_string()
       + ".old.exe";
    let items = [

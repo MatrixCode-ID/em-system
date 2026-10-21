@@ -91,6 +91,7 @@ impl ProgressWindow {
       wnd.on().wm_create({
          let (wnd, heading, panel, progress) = (wnd.clone(), heading.clone(), panel.clone(), progress.clone());
          move |_| {
+            super::Logo::created(&wnd);
             WindowStyle::apply_heading(&heading);
             panel.refresh(&progress);
             wnd.hwnd().SetTimer(TIMER_ID, TIMER_MS, None)?;

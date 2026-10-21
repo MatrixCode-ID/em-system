@@ -30,11 +30,12 @@ public partial class ReleaseSettingsDialog : EmWindow {
 
    /// <summary>Creates a product profile editor.</summary>
    public ReleaseSettingsDialog(EmApp app, ReleaseProfileStore store, ReleaseProfile profile, DateTime lastWriteUtc,
-      IReadOnlyList<ReleaseProfile> others, ReleaseSigningSecrets secrets, string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
+      IReadOnlyList<ReleaseProfile> others, string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
       InitializeComponent(); _app = app; _store = store; _draft = profile.Clone(); _lastWrite = lastWriteUtc; _others = others;
       _preferences = new ReleaseManagerPreferences(app);
       Title = "Release settings · " + profile.Name; Width = 920; Height = 850; ShowMinimizeButton = false;
       Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml") });
+      _hosts.SetResourceReference(StyleProperty, "fieldComboStyle");
       var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
       Button(toolbar, "Save", Save); Button(toolbar, "Cancel", () => { DialogResult = false; return Task.CompletedTask; }); _form.Children.Add(toolbar);
       Field("Solution", profile.SolutionPath, "The .slnx containing the host.", async () => {
@@ -96,10 +97,21 @@ public partial class ReleaseSettingsDialog : EmWindow {
    private void Choice(string name, string value, string[] choices, string help) {
       var box = new TextBox { Text = value }; _fields[name] = box;
       var combo = new ComboBox { ItemsSource = choices, SelectedItem = value };
+      combo.SetResourceReference(StyleProperty, "fieldComboStyle");
       combo.SelectionChanged += (_, _) => box.Text = combo.SelectedItem as string ?? ""; Row(name, combo, help);
    }
    private void Button(Panel panel, string text, Func<Task> action) {
-      var button = new Button { Content = text, Margin = new Thickness(0, 0, 8, 0) }; button.SetResourceReference(StyleProperty, "outlinedButtonStyle");
+      var content = new StackPanel { Orientation = Orientation.Horizontal };
+      var icon = new FontAwesome6.Fonts.FontAwesome { Icon = text switch {
+         "Save" => FontAwesome6.EFontAwesomeIcon.Solid_FloppyDisk,
+         "Cancel" => FontAwesome6.EFontAwesomeIcon.Solid_Xmark,
+         "Create signing PEM" => FontAwesome6.EFontAwesomeIcon.Solid_Key,
+         "Release owned folder" => FontAwesome6.EFontAwesomeIcon.Solid_Unlock,
+         _ => FontAwesome6.EFontAwesomeIcon.Solid_FolderOpen
+      } };
+      icon.SetResourceReference(StyleProperty, "buttonIconStyle"); content.Children.Add(icon);
+      content.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+      var button = new Button { Content = content, Margin = new Thickness(0, 0, 8, 0) }; button.SetResourceReference(StyleProperty, text == "Save" ? "filledButtonStyle" : "outlinedButtonStyle");
       button.Click += async (_, _) => await Run(action); panel.Children.Add(button);
    }
    private async Task Run(Func<Task> action) {
@@ -130,7 +142,10 @@ public partial class ReleaseSettingsDialog : EmWindow {
       if (_draft.Product.LogoBase64.Length > 0) image = ReleaseProduct.ReadLogo(_draft.Product.LogoBase64);
       else if (_draft.Product.IconBase64.Length > 0) { using var stream = new MemoryStream(Convert.FromBase64String(_draft.Product.IconBase64)); image = BitmapFrame.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad); }
       if (image is not null) {
-         foreach (var scale in new[] { 1d, 2d }) { _previews.Children.Add(new TextBlock { Text = $"Logo {scale * 100:0}%" }); _previews.Children.Add(new Image { Source = image, Width = 240 * scale, Height = 48 * scale, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Left }); }
+         foreach (var scale in new[] { 1d, 2d }) { _previews.Children.Add(new TextBlock { Text = $"Logo {scale * 100:0}%" }); var fit = Math.Min(240d / image.PixelWidth, 48d / image.PixelHeight);
+            _previews.Children.Add(new Border { Width = 240 * scale, Height = 48 * scale, HorizontalAlignment = HorizontalAlignment.Left,
+               Child = new Image { Source = image, Width = image.PixelWidth * fit * scale, Height = image.PixelHeight * fit * scale,
+                  Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center } }); }
          var factor = Math.Min(240d / image.PixelWidth, 48d / image.PixelHeight);
          if (Math.Min(image.PixelWidth, image.PixelHeight) * factor < 24 || factor * 2 > 1) _previews.Children.Add(new TextBlock { Text = "Warning: logo is smaller than 24 px on one side or has insufficient resolution for 200%.", TextWrapping = TextWrapping.Wrap });
       }
@@ -153,7 +168,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       _draft.SolutionPath = Value("Solution"); _draft.HostProject = _hosts.SelectedItem as string ?? ""; _draft.PublishFolder = Value("Publish folder");
       _draft.TargetKind = Enum.Parse<ReleaseTargetKind>(Value("Target")); _draft.TargetFolder = Value("Target folder"); _draft.ReleaseFolder = Value("Release folder"); _draft.CdnAddress = Value("CDN address");
       if (_draft.CdnAddress.Length > 0 && (!Uri.TryCreate(_draft.CdnAddress, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) throw new InvalidDataException("CDN address must be an absolute HTTP(S) URL.");
-      _draft.Launcher.FileName = Value("Launcher exe"); _draft.Launcher.BaseVersion = Value("Launcher version"); _draft.Launcher.Channel = Value("Channel"); _draft.Launcher.UpdateBehavior = Value("Update at start"); LauncherBuild.ValidateSettings(_draft.Launcher);
+      _draft.Launcher.FileName = Value("Launcher exe"); _draft.Launcher.BaseVersion = Value("Launcher version"); _draft.Launcher.Channel = Value("Channel"); _draft.Launcher.UpdateBehavior = Value("Update at start"); LauncherBuild.ValidateSettings(_draft.Launcher, _draft.Product.AppExe);
       var conflicts = ReleaseProfileConflicts.Find(_draft, _others, true, true);
       if (conflicts.Count > 0 && this.ShowMboxDecideWarning(string.Join("\n", conflicts) + "\nContinue?", Title) != MessageBoxResult.Yes) return;
       if (_draft.TargetKind == ReleaseTargetKind.Cdn) await Service.PostGetMeta_CdnReleaseManage(_draft.ReleaseFolder, _draft.Product.AppId);

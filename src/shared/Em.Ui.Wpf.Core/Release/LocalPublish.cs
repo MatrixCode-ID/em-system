@@ -258,7 +258,9 @@ namespace Em.Ui.Wpf.Core.Release
             AttributesToSkip = 0,
             IgnoreInaccessible = false
          };
-         return root.EnumerateFiles("*", options).ToDictionary(
+         return root.EnumerateFiles("*", options)
+            .Where(file => !string.Equals(Path.GetRelativePath(root.FullName, file.FullName), "settings.ini", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(
             r => Path.GetRelativePath(root.FullName, r.FullName).Replace(Path.DirectorySeparatorChar, '/'),
             StringComparer.OrdinalIgnoreCase);
       }

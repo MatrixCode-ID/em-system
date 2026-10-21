@@ -39,9 +39,12 @@ impl Drop for TestLocation {
 }
 
 #[test]
-fn product_location_uses_the_application_name() {
+fn product_location_uses_the_technical_app_id() {
    let location = ConfigLocation::for_product();
-   assert_eq!(location.user_key, format!(r"{}\Launcher", launcher::product::APP_NAME));
+   assert_eq!(
+      location.user_key,
+      format!(r"Software\{}\Launcher", launcher::product::APP_ID)
+   );
    assert_eq!(location.policy_hive, RegistryHive::LocalMachine);
    assert!(location.policy_key.starts_with(r"Software\Policies\"));
 }

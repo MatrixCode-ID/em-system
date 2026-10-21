@@ -46,7 +46,7 @@ Archive and extraction remain global business tasks with cancellation/status act
   open retired downloads are excluded. There is no automatic startup cleanup.
 - Managed folders: owner app_id, usage/quota, optional byte quota, Release by typing the folder name.
 
-Delete and ordinary overwrite rename the previous payload into `recycle/<id>/<original-name>`;
+Delete and ordinary overwrite rename the previous payload into `recycle/<id>/payload/<original-name>`;
 `item.json` records original path, UTC deletion time, authenticated user, size and file/folder kind.
 A directory is one item. Retention is manual. Purge skips items still read by a tracked download.
 Restore recreates parents but refuses existing paths and destinations inside/containing managed folders;

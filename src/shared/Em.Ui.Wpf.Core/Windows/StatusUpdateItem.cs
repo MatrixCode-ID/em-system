@@ -32,7 +32,7 @@ public sealed class StatusUpdateItem : NotifyPropertyBase, IDisposable {
    private string _failure = "";
    /// <summary>Creates commands without starting a check.</summary>
    public StatusUpdateItem() {
-      CheckCommand = new UiCommand("CheckForUpdate", _ => _ = CheckAsync(), _ => !_checking && !_ready);
+      CheckCommand = new UiCommand("CheckForUpdate", _ => _ = CheckAsync(), _ => !_checking && IsVisible);
       RestartCommand = new UiCommand("RestartToUpdate", _ => Restart(), _ => _ready);
       _timer.Tick += async (_, _) => { _timer.Stop(); await CheckAsync(); };
    }
@@ -62,11 +62,12 @@ public sealed class StatusUpdateItem : NotifyPropertyBase, IDisposable {
          if (!_restart || LauncherIntegration.LauncherPath is not { } path) return;
          var start = new ProcessStartInfo(path) { UseShellExecute = false, CreateNoWindow = true };
          foreach (var arg in new[] { "--apply", "--pid", Environment.ProcessId.ToString() }) start.ArgumentList.Add(arg);
-         Process.Start(start)?.Dispose();
+         try { Process.Start(start)?.Dispose(); }
+         catch (System.ComponentModel.Win32Exception ex) { Trace.TraceError("Cannot start launcher after shutdown: " + ex.Message); }
       };
    }
    private async Task CheckAsync() {
-      if (_checking || _ready || !IsVisible) return;
+      if (_checking || !IsVisible) return;
       _timer.Stop(); _checking = true; Changed();
       try {
          var start = new ProcessStartInfo(LauncherIntegration.LauncherPath!) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
@@ -94,6 +95,7 @@ public sealed class StatusUpdateItem : NotifyPropertyBase, IDisposable {
       if (_window is null || !_ready || _window.ShowMboxDecideWarning("Restart now to install the verified update? Unsaved screens will ask before closing.", "Restart to update") != MessageBoxResult.Yes) return;
       _restart = true; _window.Close();
    }
+   internal void CancelRestart() => _restart = false;
    /// <summary>Stops future checks when the host closes.</summary>
    public void Dispose() { _timer.Stop(); if (!_cancel.IsCancellationRequested) _cancel.Cancel(); }
 }

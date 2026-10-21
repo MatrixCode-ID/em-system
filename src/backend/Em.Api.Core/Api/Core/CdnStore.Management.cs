@@ -33,21 +33,21 @@ internal sealed partial class CdnStore {
       string.Equals(path, root, StringComparison.OrdinalIgnoreCase) ||
       path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
 
-   internal CdnManagedFolder? ManagedAt(string? path) {
+   internal CdnManagedFolder? ManagedAt(string? path, bool includeUsage = true) {
       lock (_gate) {
          var normalized = NormalizePath(path);
          var item = _managed.FirstOrDefault(m => Within(normalized, m.Path));
-         return item is null ? null : Snapshot(item);
+         return item is null ? null : Snapshot(item, includeUsage);
       }
    }
 
-   private CdnManagedFolder Snapshot(CdnManagedFolder item) => new() {
+   private CdnManagedFolder Snapshot(CdnManagedFolder item, bool includeUsage = true) => new() {
       Path = item.Path, Owner = new() { Kind = item.Owner.Kind, Id = item.Owner.Id },
-      QuotaBytes = item.QuotaBytes, UsedBytes = SizeOf(ResolveInside(item.Path)).TotalBytes
+      QuotaBytes = item.QuotaBytes, UsedBytes = includeUsage ? SizeOf(ResolveInside(item.Path)).TotalBytes : 0
    };
 
    internal CdnManagedFolder[] ManagedFolders() {
-      lock (_gate) return _managed.Select(Snapshot).ToArray();
+      lock (_gate) return _managed.Select(item => Snapshot(item)).ToArray();
    }
 
    private void SaveManaged() {
@@ -229,7 +229,7 @@ internal sealed partial class CdnStore {
             if (File.Exists(ancestor)) throw new ActionException($"Restore conflicts with '{ToRelative(ancestor)}'.", 409);
          }
          Directory.CreateDirectory(parent);
-         MovePhysical(Path.Combine(itemDirectory, Path.GetFileName(target)), target);
+         MovePhysical(Path.Combine(itemDirectory, "payload", Path.GetFileName(target)), target);
          Directory.Delete(itemDirectory, true);
       }
    }
@@ -258,10 +258,12 @@ internal sealed partial class CdnStore {
       var directory = Path.Combine(RecyclePath, item.Id);
       Directory.CreateDirectory(directory);
       try {
+         var payload = Path.Combine(directory, "payload");
+         Directory.CreateDirectory(payload);
          File.WriteAllBytes(Path.Combine(directory, "item.json"), JsonSerializer.SerializeToUtf8Bytes(item, StorageJson));
-         MovePhysical(target, Path.Combine(directory, Path.GetFileName(target)));
+         MovePhysical(target, Path.Combine(payload, Path.GetFileName(target)));
       }
-      catch { if (Directory.GetFileSystemEntries(directory).Length == 1) Directory.Delete(directory, true); throw; }
+      catch { Directory.Delete(directory, true); throw; }
    }
 
    private bool IsOpen(string path) => _readers.Any(r =>

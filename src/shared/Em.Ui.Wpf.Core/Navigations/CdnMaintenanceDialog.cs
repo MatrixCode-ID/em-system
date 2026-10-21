@@ -28,6 +28,7 @@ internal sealed class CdnMaintenanceDialog : EmWindow {
       });
       _recycle.SetResourceReference(StyleProperty, "surfaceListBoxStyle");
       _managed.SetResourceReference(StyleProperty, "surfaceListBoxStyle");
+      _quota.SetResourceReference(StyleProperty, "fieldBoxStyle");
       _recycle.Height = 160; _managed.Height = 120;
       var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
       AddButton(toolbar, "Refresh", Refresh);
@@ -78,7 +79,17 @@ internal sealed class CdnMaintenanceDialog : EmWindow {
 
    private bool Confirm(string text) => this.ShowMboxDecideWarning(text, Title) == MessageBoxResult.Yes;
    private void AddButton(Panel panel, string text, Func<Task> action) {
-      var button = new Button { Content = text, Margin = new Thickness(0, 0, 8, 0) };
+      var content = new StackPanel { Orientation = Orientation.Horizontal };
+      var icon = new FontAwesome6.Fonts.FontAwesome { Icon = text switch {
+         "Refresh" => FontAwesome6.EFontAwesomeIcon.Solid_ArrowsRotate,
+         "Restore" => FontAwesome6.EFontAwesomeIcon.Solid_RotateLeft,
+         "Save quota" => FontAwesome6.EFontAwesomeIcon.Solid_FloppyDisk,
+         "Release" => FontAwesome6.EFontAwesomeIcon.Solid_Unlock,
+         _ => FontAwesome6.EFontAwesomeIcon.Solid_TrashCan
+      } };
+      icon.SetResourceReference(StyleProperty, "buttonIconStyle"); content.Children.Add(icon);
+      content.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+      var button = new Button { Content = content, Margin = new Thickness(0, 0, 8, 0) };
       button.SetResourceReference(StyleProperty, "outlinedButtonStyle");
       button.Click += async (_, _) => await Run(async () => { await action(); await Refresh(); });
       panel.Children.Add(button);

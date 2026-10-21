@@ -199,14 +199,6 @@ internal sealed class ManagedStorageSettings
             var attributes = File.GetAttributes(entry);
             if ((attributes & FileAttributes.ReparsePoint) != 0)
                throw new ActionException("Public CDN storage must not contain symbolic links/reparse points.", 400);
-            var name = Path.GetFileName(entry);
-            if (name.Equals(EmApiConfig.FileName, StringComparison.OrdinalIgnoreCase)
-                || name.Equals("em.local.json", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("secrets.local.json", StringComparison.OrdinalIgnoreCase)
-                || name.Equals(".git", StringComparison.OrdinalIgnoreCase)
-                || name.Equals(".env", StringComparison.OrdinalIgnoreCase)
-                || name.StartsWith(".env.", StringComparison.OrdinalIgnoreCase))
-               throw new ActionException("Public CDN storage contains known application/secret files. Choose a dedicated payload directory.", 400);
             if ((attributes & FileAttributes.Directory) != 0) pending.Push(entry);
          }
       }

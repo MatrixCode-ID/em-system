@@ -5,16 +5,12 @@ namespace Em.Ui.Wpf.Core.Release;
 
 /// <summary>Atomic single-JSON profile storage. Version-one directories are ignored.</summary>
 public sealed class ReleaseProfileStore {
-   /// <summary>Legacy filename, retained only for source compatibility.</summary>
-   public const string ProfileFileName = "profile.json";
    /// <summary>Profile storage root.</summary>
    public string Root { get; }
    /// <summary>Creates a profile store.</summary>
    public ReleaseProfileStore(string root) => Root = Path.GetFullPath(root);
    /// <summary>Gets the profile JSON path.</summary>
    public string FileOf(string id) { ReleaseProfile.ValidateId(id); return PublishPaths.Inside(Root, id.ToLowerInvariant() + ".json"); }
-   /// <summary>Gets the containing directory.</summary>
-   public string DirectoryOf(string id) { ReleaseProfile.ValidateId(id); return Root; }
    private ReleaseProfileEntry Read(string file) {
       try {
          PublishPaths.RejectLinks(file);
@@ -48,7 +44,7 @@ public sealed class ReleaseProfileStore {
    /// <summary>Deletes only the JSON of this profile.</summary>
    public void Delete(string id) { var file = FileOf(id); PublishPaths.RejectLinks(file); File.Delete(file); }
    /// <summary>Exports all product settings, including its unencrypted key.</summary>
-   public void Export(string id, string path, bool includeSensitive = true) => PublishPaths.Atomic(Path.GetFullPath(path), ReleaseProfile.ToJson(Load(id)));
+   public void Export(string id, string path) => PublishPaths.Atomic(Path.GetFullPath(path), ReleaseProfile.ToJson(Load(id)));
    /// <summary>Imports a version-two JSON; old formats are refused.</summary>
    public ReleaseProfile Import(string path, bool newId) {
       if (!string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase) || new FileInfo(path).Length > 16 * 1024 * 1024) throw new InvalidDataException("Choose a product profile JSON (maximum 16 MB).");
@@ -57,12 +53,7 @@ public sealed class ReleaseProfileStore {
       if (File.Exists(FileOf(p.Id))) throw new ReleaseProfileConflictException();
       p.Name = UniqueName(p.Name); Save(p); return p;
    }
-   /// <summary>Legacy keys are never read by current profiles.</summary>
-   public bool HasKeyFile(string id) => Load(id).PrivateKeyPem.Length > 0;
-   /// <summary>Unsupported legacy key path.</summary>
-   public string KeyFilePath(string id) => throw new NotSupportedException("Signing keys are stored as PEM in the profile JSON.");
-   /// <summary>Unsupported legacy certificate path.</summary>
-   public string CertificateFilePath(string id) => throw new NotSupportedException("Certificates are no longer used by Release Manager.");
+
 }
 /// <summary>The profile was modified outside the current editor.</summary>
 public sealed class ReleaseProfileChangedException() : IOException("The profile JSON changed outside Release Manager.");

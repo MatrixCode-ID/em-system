@@ -184,7 +184,6 @@ namespace Em.Ui.Wpf.Navigations
 
       private ReleaseManagerPreferences? _preferences;
       private ReleaseProfileStore? _store;
-      private ReleaseSigningSecrets _secrets = new();
       private DateTime _profileLastWriteUtc;
       private string? _loadedServerKey;
       private bool _reloadingProfiles;
@@ -323,7 +322,7 @@ namespace Em.Ui.Wpf.Navigations
          : SolutionPath.Length == 0 || !File.Exists(SolutionPath) ? "Set the .slnx file in Settings to enable Prepare."
          : HostProject.Length == 0 || !File.Exists(HostProjectPath) ? "Set the host project in Settings to enable Prepare."
          : PublishFolder.Length == 0 ? "Set the local publish folder in Settings."
-         : Profile is { } profile ? LauncherBuild.BlockedReason(_preferences?.LauncherSourceFolder ?? "", LauncherOutput, profile) : null;
+         : Profile is { } profile ? LauncherBuild.BlockedReason(_preferences?.LauncherSourceFolder ?? "", LauncherOutput, profile, DefaultReleaseSource) : null;
 
       /// <summary>The content of the Source summary: the local publish folder, or a note when it is not filled in.</summary>
       public string SourceCaption => !HasProfile ? "No profile" : PublishFolder.Length > 0 ? PublishFolder : "No local publish folder";
@@ -476,7 +475,7 @@ namespace Em.Ui.Wpf.Navigations
       public async Task SettingsCommand() {
          if (EmApp is not { } app || Profile is null || _store is null) return;
 
-         var dialog = new ReleaseSettingsDialog(app, _store, Profile, _profileLastWriteUtc, OtherProfiles, _secrets, SdkVersion, IsSdkChecked, CanUseCdn) { Owner = DialogOwner };
+         var dialog = new ReleaseSettingsDialog(app, _store, Profile, _profileLastWriteUtc, OtherProfiles, SdkVersion, IsSdkChecked, CanUseCdn) { Owner = DialogOwner };
          var saved = dialog.ShowDialog() == true;
          if (!saved) {
             // A key imported or created in the dialog stays installed even when the dialog is canceled, but
@@ -659,7 +658,7 @@ namespace Em.Ui.Wpf.Navigations
          if (EmApp is null) return;
 
          var preferences = new ReleaseManagerPreferences(EmApp);
-         Initialize(preferences, new ReleaseProfileStore(preferences.ProfilesFolder), new ReleaseSigningSecrets());
+         Initialize(preferences, new ReleaseProfileStore(preferences.ProfilesFolder));
          _ = CheckSdkAsync();
       }
 
@@ -735,7 +734,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       private string LauncherOutput => string.IsNullOrWhiteSpace(_preferences?.LauncherOutputFolder) ? LauncherBuild.DefaultOutput(Profile?.Product.AppId ?? "") : _preferences.LauncherOutputFolder;
-      private string DefaultReleaseSource => Profile?.CdnAddress.Length > 0 ? Profile.CdnAddress : TargetKind == ReleaseTargetKind.Cdn ? $"{EmApp!.ActiveConnection!.Host.TrimEnd('/')}/cdn/{ReleaseFolder}/" : Path.Combine(TargetFolder, ReleaseFolder);
+      private string DefaultReleaseSource => Profile?.CdnAddress.Length > 0 ? Profile.CdnAddress : TargetKind == ReleaseTargetKind.Cdn ? $"{EmApp?.ActiveConnection?.Host.TrimEnd('/')}/cdn/{ReleaseFolder}/" : Path.Combine(TargetFolder, ReleaseFolder);
 
       private ReleaseTarget? CreateTarget() {
          if (TargetBlockedReason is not null || EmApp is not { } app) return null;
@@ -808,17 +807,16 @@ namespace Em.Ui.Wpf.Navigations
          SigningKey = null;
          if (Profile?.PrivateKeyPem.Length > 0) {
             try { using var key = ReleasePemKey.Open(Profile.PrivateKeyPem);
-               SigningKey = new ReleaseSigningKey { Thumbprint = "", Subject = Profile.Product.AppName, KeyId = ReleaseSignature.KeyIdOf(key.ExportSubjectPublicKeyInfo()), NotAfter = DateTime.MaxValue, IsExportable = true };
+               SigningKey = new ReleaseSigningKey { KeyId = ReleaseSignature.KeyIdOf(key.ExportSubjectPublicKeyInfo()) };
             } catch (Exception ex) { Log(ex.Message); }
          }
          RefreshState();
       }
 
       /// <summary>Isolated initialization for the harness without reading the production Registry.</summary>
-      public void Initialize(ReleaseManagerPreferences preferences, ReleaseProfileStore store, ReleaseSigningSecrets secrets) {
+      public void Initialize(ReleaseManagerPreferences preferences, ReleaseProfileStore store) {
          _preferences = preferences;
          _store = store;
-         _secrets = secrets;
          HideUnchanged = true;
          LoadProfiles();
       }
@@ -930,7 +928,6 @@ namespace Em.Ui.Wpf.Navigations
          try {
             var name = Profile.Name;
             _store.Delete(Profile.Id);
-            _secrets.Forget(Profile.Id);
             LoadProfiles();
             Log($"Profile '{name}' deleted.");
          }

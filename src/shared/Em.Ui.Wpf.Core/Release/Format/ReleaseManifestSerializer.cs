@@ -101,6 +101,7 @@ namespace Em.Ui.Wpf.Core.Release
             ValidateFiles(files);
             ReleaseLauncherMetadata? launcher = null;
             if (root.TryGetProperty("launcher", out var metadata)) {
+               RequireKind(metadata, JsonValueKind.Object, "launcher");
                launcher = new() { FileName = RequireString(metadata, "fileName"), Version = RequireString(metadata, "version"), InputHash = RequireString(metadata, "inputHash") };
                ValidateLauncher(launcher, files);
             }

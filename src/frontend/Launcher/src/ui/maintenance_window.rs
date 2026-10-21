@@ -165,6 +165,7 @@ impl MaintenanceWindow {
    fn events(&self) {
       let this = self.clone();
       self.wnd.on().wm_create(move |_| {
+         super::Logo::created(&this.wnd);
          WindowStyle::apply_heading(&this.heading);
          if this.state.config.borrow().is_source_locked() {
             WindowStyle::set_read_only(&this.source, true);

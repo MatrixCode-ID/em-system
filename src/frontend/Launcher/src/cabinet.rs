@@ -76,7 +76,7 @@ impl Cabinet {
          ));
       }
       let _scope = begin(root, paths, progress, false)?;
-      let mut erf = ERF::default();
+      let erf = ERF::default();
       let mut cab = CCAB {
          cb: MAX_CAB_BYTES as u32,
          cbFolderThresh: MAX_CAB_BYTES as u32,
@@ -88,7 +88,7 @@ impl Cabinet {
       }
       let handle = Fci(unsafe {
          FCICreate(
-            &mut erf,
+            &erf,
             Some(placed),
             Some(allocate),
             Some(release_alloc),
@@ -221,7 +221,15 @@ fn begin(
    })
 }
 fn valid_path(path: &str) -> io::Result<()> {
-   if ReleaseFile::check_path(path).is_some()
+   let reserved = |segment: &str| {
+      let base = segment.split('.').next().unwrap_or("").to_ascii_uppercase();
+      ["CON", "PRN", "AUX", "NUL"].contains(&base.as_str())
+         || (base.len() == 4
+            && (base.starts_with("COM") || base.starts_with("LPT"))
+            && matches!(base.as_bytes()[3], b'1'..=b'9'))
+   };
+   if path.split('/').any(reserved)
+      || ReleaseFile::check_path(path).is_some()
       || !(path == "release.json" || path == "release.json.sig" || path.starts_with("binaries/"))
       || path
          .split('/')

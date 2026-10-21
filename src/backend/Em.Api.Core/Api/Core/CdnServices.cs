@@ -94,7 +94,8 @@ namespace Em.Api.Core
       /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
       public Task<CdnEntry> PostGetMeta_CdnUpload(CdnUploadRequest request, Stream content) =>
-         Store.UploadAsync(request.Path, request.FileName, content, request.Overwrite, AbortToken);
+         Store.UploadAsync(request.Path, request.FileName, content, request.Overwrite, AbortToken,
+            deletedBy: Request.cUserId ?? Request.cUserAccount ?? "");
 
       /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]

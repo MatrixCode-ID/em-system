@@ -11,7 +11,6 @@ namespace Em.Ui.Wpf.Core.Release
       public const string SubKey = "ReleaseManager";
       /// <summary>The last profiles sub key.</summary>
       public const string LastProfilesSubKey = "LastProfiles";
-      private static readonly string[] LegacyNames = ["SolutionPath", "HostProject", "PublishFolder", "TargetKind", "TargetFolder", "ReleaseFolder", "SigningThumbprint"];
       private readonly Func<RegistryKey> _baseKey;
       /// <summary>Creates a new instance of <see cref="ReleaseManagerPreferences"/>.</summary>
       public ReleaseManagerPreferences(EmApp app) : this(() => app.BaseRegKey) { }
@@ -65,33 +64,5 @@ namespace Em.Ui.Wpf.Core.Release
          key.SetValue(serverKey, id);
       }
 
-      /// <summary>Whether settings in the old Registry format exist.</summary>
-      public bool HasLegacySettings() {
-         using var root = _baseKey();
-         using var key = root.OpenSubKey(SubKey);
-         return key is not null && LegacyNames.Any(name => key.GetValue(name) is not null);
-      }
-
-      /// <summary>Reads the old Registry settings as a profile.</summary>
-      public ReleaseProfile? ReadLegacyProfile() {
-         using var root = _baseKey();
-         using var key = root.OpenSubKey(SubKey);
-         if (key is null || !LegacyNames.Any(name => key.GetValue(name) is not null)) return null;
-         string Read(string name) => key.GetValue(name) as string ?? "";
-         return new ReleaseProfile {
-            Name = "Default", SolutionPath = Read("SolutionPath"), HostProject = Read("HostProject"),
-            PublishFolder = Read("PublishFolder"), TargetFolder = Read("TargetFolder"),
-            TargetKind = Enum.TryParse<ReleaseTargetKind>(Read("TargetKind"), out var kind) && Enum.IsDefined(kind) ? kind : ReleaseTargetKind.Cdn,
-            ReleaseFolder = Read("ReleaseFolder") is { Length: > 0 } folder ? folder : ReleaseLayout.DefaultReleaseFolder,
-            Signing = new() { Thumbprint = Read("SigningThumbprint") }
-         };
-      }
-
-      /// <summary>Deletes the old Registry settings.</summary>
-      public void DeleteLegacySettings() {
-         using var root = _baseKey();
-         using var key = root.OpenSubKey(SubKey, writable: true);
-         foreach (var name in LegacyNames) key?.DeleteValue(name, false);
-      }
    }
 }

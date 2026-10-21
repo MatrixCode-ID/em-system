@@ -80,11 +80,11 @@ namespace Em.Ui.Wpf.Core
 
          var launcherPath = Environment.GetEnvironmentVariable(PathVariable);
          var appId = Environment.GetEnvironmentVariable(AppIdVariable);
-         if (!string.IsNullOrEmpty(launcherPath) && !string.IsNullOrEmpty(appId)) {
+         if (!string.IsNullOrEmpty(launcherPath)) {
             LauncherPath = launcherPath;
             AppUserModelId = appId;
             // A failure only costs the taskbar grouping, never the application itself.
-            _ = SetCurrentProcessExplicitAppUserModelID(appId);
+            if (!string.IsNullOrEmpty(appId)) _ = SetCurrentProcessExplicitAppUserModelID(appId);
             return;
          }
 

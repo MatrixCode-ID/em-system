@@ -10,8 +10,7 @@ namespace Em.Api.Core.Models
    /// </summary>
    /// <remarks>
    /// Every <c>path</c> parameter is a path relative to the CDN root folder, separated by <c>/</c>;
-   /// <c>null</c> or an empty string means the root folder. Paths that try to leave the root folder, or
-   /// that name an entry starting with a dot, are rejected with 400.
+   /// <c>null</c> or an empty string means the root folder. Paths that try to leave the root folder, are rejected with 400. Dot-prefixed files are public.
    /// <para>
    /// Creating and extracting zips can take a long time, so both run as global business tasks on the
    /// server: the action returns immediately, and the status is monitored through the status actions
@@ -63,8 +62,7 @@ namespace Em.Api.Core.Models
 
       #region Meta's
 
-      /// <summary>Total size of the public files across the CDN. Ignores internal/temporary,
-      /// hidden/system files and symlinks. Does not include filesystem overhead or free volume space.</summary>
+      /// <summary>Total size of the public files across the CDN. Includes files, temp and recycle; excludes settings and symlinks. Does not include filesystem overhead or free volume space.</summary>
       Task<CdnStorageInfo> GetMeta_CdnStorageSize();
 
       /// <summary>Contents of one folder plus its upload limit and public address.</summary>
@@ -112,7 +110,7 @@ namespace Em.Api.Core.Models
       /// Starts creating a zip file from the selected items. Names, sources and conflicts are checked
       /// before the task starts: 400 for invalid names, 404 for missing sources, and 409 when the zip name
       /// exists without <see cref="CdnArchiveRequest.Overwrite"/>, or when another archive is still running
-      /// (the message names who started it). Dot folders inside the sources are skipped.
+      /// (the message names who started it). Dot folders inside the sources are included.
       /// </summary>
       /// <returns>Snapshot of the newly started task.</returns>
       Task<BusinessTaskInfo> PostGetMeta_CdnArchive(CdnArchiveRequest request);
@@ -130,7 +128,7 @@ namespace Em.Api.Core.Models
 
       /// <summary>
       /// Checks a zip file before extracting it into the folder that holds it, and returns the paths of
-      /// the files that would be overwritten. Zips whose entries try to leave the folder, use dot or
+      /// the files that would be overwritten. Zips whose entries try to leave the folder, use traversal or
       /// invalid names, have too many entries, or clash with existing folders are rejected with 400.
       /// </summary>
       /// <param name="path">Path of the zip file.</param>

@@ -54,6 +54,9 @@ namespace Em.Api.Core
          builder.RegisterDbConnection();
          builder.RegisterDbCommand();
          appBuilder(builder);
+         foreach (var claim in new[] { ClaimAction.Create<CdnServices>(ICdnServices.CdnClaim), ClaimAction.Create<CdnServices>(ICdnServices.SettingsClaim), ClaimAction.Create<CdnReleaseServices>(ICdnReleaseServices.ReleaseClaim) }) {
+            if (!builder.ClaimActions.Any(c => string.Equals(c.Key, claim.Key, StringComparison.OrdinalIgnoreCase))) builder.AddClaims(claim);
+         }
          InitContainerManager(builder);
          app.ApplyProxyHeaderRegistration(builder);
          app.ApplyDbContextRegistrations(builder);
@@ -543,7 +546,7 @@ namespace Em.Api.Core
          var cdnAction = _actions.Any(r =>
             string.Equals(r.Module, module, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(r.ActionName, action, StringComparison.OrdinalIgnoreCase) &&
-            (r.Type == typeof(CdnServices) || r.Type == typeof(CdnReleaseServices)));
+            (r.Type == typeof(ICdnServices) || r.Type == typeof(ICdnReleaseServices)));
          if (!cdnAction && IsRateLimited(http)) {
             return Reject(BuildErrorActionResult(TooManyRequestsMessage, 429, null, routeLabel));
          }

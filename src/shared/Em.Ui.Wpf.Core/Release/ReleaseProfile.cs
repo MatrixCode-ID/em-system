@@ -13,38 +13,6 @@ namespace Em.Ui.Wpf.Core.Release
       Folder = 1
    }
 
-   /// <summary>The location of the private key used to sign releases.</summary>
-   /// <summary>The release signing source.</summary>
-   public enum ReleaseSigningSource
-   {
-      /// <summary>The key is in the Windows certificate store.</summary>
-      Store = 0,
-      /// <summary>The key is a file in the profile folder.</summary>
-      ProfileFile = 1,
-   }
-   /// <summary>How the password of the key file is stored.</summary>
-   /// <summary>The release password storage.</summary>
-   public enum ReleasePasswordStorage
-   {
-      /// <summary>The password is kept apart from the profile (session or DPAPI).</summary>
-      Separate = 0,
-      /// <summary>The password is stored in the profile file as plain text.</summary>
-      Plaintext = 1,
-   }
-
-   /// <summary>The signing key settings that belong to one profile.</summary>
-   public sealed class ReleaseProfileSigning
-   {
-      /// <summary>The source.</summary>
-      public ReleaseSigningSource Source { get; set; }
-      /// <summary>The thumbprint.</summary>
-      public string Thumbprint { get; set; } = "";
-      /// <summary>The password storage.</summary>
-      public ReleasePasswordStorage PasswordStorage { get; set; }
-      /// <summary>The password.</summary>
-      public string? Password { get; set; }
-   }
-
    /// <summary>The source, target, and signing key of one application; stored as profile.json.</summary>
    public sealed class ReleaseProfile
    {
@@ -74,9 +42,6 @@ namespace Em.Ui.Wpf.Core.Release
       public string TargetFolder { get; set; } = "";
       /// <summary>The release folder.</summary>
       public string ReleaseFolder { get; set; } = ReleaseLayout.DefaultReleaseFolder;
-      /// <summary>The signing.</summary>
-      [JsonIgnore]
-      public ReleaseProfileSigning Signing { get; set; } = new();
 
       /// <summary>Identity read from the host project and selected by the developer.</summary>
       public ReleaseProduct Product { get; set; } = new();
@@ -103,9 +68,10 @@ namespace Em.Ui.Wpf.Core.Release
          HostProject ??= "";
          PublishFolder ??= "";
          TargetFolder ??= "";
+         CdnAddress ??= "";
+         PrivateKeyPem ??= "";
          if (PrivateKeyPem.Length > 0) { using var key = ReleasePemKey.Open(PrivateKeyPem); }
          if (string.IsNullOrWhiteSpace(ReleaseFolder)) ReleaseFolder = ReleaseLayout.DefaultReleaseFolder;
-         if (Signing.PasswordStorage == ReleasePasswordStorage.Separate) Signing.Password = null;
       }
 
       /// <summary>Validates a profile id.</summary>
@@ -122,6 +88,9 @@ namespace Em.Ui.Wpf.Core.Release
       /// <summary>Reads a profile from JSON.</summary>
       public static ReleaseProfile FromJson(string json) {
          try {
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty("formatVersion", out var version) || !version.TryGetInt32(out var number) || number != 2)
+               throw new InvalidDataException("Only version-two product profiles are supported. Legacy profiles are not migrated.");
             var profile = JsonSerializer.Deserialize<ReleaseProfile>(json, JsonOptions)
                           ?? throw new InvalidDataException("The profile is empty.");
             profile.Validate();

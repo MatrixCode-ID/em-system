@@ -25,11 +25,18 @@ identifier or environment variable names should carry product identity. Everythi
 
 | Field | Meaning |
 | --- | --- |
-| `app_name` | Application name. Must equal `builder.ApplicationName` of the host: it is the registry root, the shortcut name and the Apps & Features display name. |
+| `app_name` | Display name from the host Product property; shortcut and Apps & Features caption only. |
 | `publisher` | Publisher in Apps & Features and the exe version info. |
 | `app_exe` | The application exe inside a version folder. |
-| `app_id` | AppUserModelID, and the name of the Apps & Features key. |
-| `icon` | Icon file, relative to the toml. For Em System it references `Logo.ico` of `Em.Ui.Wpf.Core` (not a copy). |
+| `app_id` | Technical identity: install directory, application registry root, AppUserModelID and Apps & Features key. |
+| `icon` | ICO path relative to the product TOML. |
+| `logo` | Optional transparent PNG path. |
+| `launcher_exe` | Product installer/root runner filename. |
+| `launcher_version` | Independent semantic version; PE version is A.B.C.N. |
+| `engine_version` | Source engine version, including dirty state. |
+| `public_key` | Embedded public P-256 PEM. |
+| `default_source` | Default release address for installer settings.ini. |
+| `update_behavior` | automatic (default) or ask. |
 
 `build.rs` reads it, generates the `product` module (`product::APP_NAME`, `product::APP_ID`, …) and the `.rc` file
 (icon, `launcher.manifest`, version info), and rejects a toml with an empty field or a missing icon. To build the
@@ -68,7 +75,7 @@ CLI tambahan: `--version` menampilkan versi launcher dan engine;
 baris JSON `prepared`/`none`/`failed`; `--download-cab [--source S] [--quiet]`
 membuat cab LZX di samping installer, tanpa mengubah registry. Installer boleh
 memakai cab yang sudah diverifikasi; runner selalu memakai CDN. Detail:
-`plan/unexecuted/release-manager-cdn-launcher.codex.md` dan kontrak rilis.
+`plan/executed/release-manager-cdn-launcher.codex.md` dan kontrak rilis.
 
 ## Build
 
@@ -90,9 +97,10 @@ cargo clippy --all-targets -- -D warnings
 
 ### `build-dist.ps1` and `dist/launcher/`
 
-The desktop client ships `launcher.exe` inside every release: `Em.Ui.Wpf.csproj` references
-`dist/launcher/launcher.exe` (repository root) as `Content`, so it lands at the root of the output and publish
-folders and is covered by `release.json` and its signature. `dist/` holds committed binaries only.
+Release Manager builds each product launcher and copies it into the publish root. Host projects do not
+include dist as Content. `build-dist.ps1` retains the default product build and local-test workflow;
+ProductFile, OutputDirectory, ExeName and TargetDirectory parameters support Release Manager builds.
+`dist/` holds the committed default-product binary.
 
 [build-dist.ps1](build-dist.ps1) finds a Visual Studio with the x64 tools through `vswhere`, loads `vcvars64.bat`
 (and restores the caller's environment afterwards), runs `cargo build --release` with `--remap-path-prefix` for the

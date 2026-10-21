@@ -13,6 +13,21 @@ fn samples() -> PathBuf {
    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../doc/release-format-samples")
 }
 
+#[test]
+fn signed_launcher_metadata_vector_validates_names_hashes_and_versions() {
+   let bytes = fs::read(samples().join("launcher-metadata.json")).unwrap();
+   let manifest = ReleaseManifest::from_bytes(&bytes).unwrap();
+   assert_eq!(manifest.launcher().unwrap().file_name, "inventory-installer.exe");
+   let text = String::from_utf8(bytes).unwrap();
+   for modified in [
+      text.replace("inventory-installer.exe", "../escape.exe"),
+      text.replace("1.0.1-beta.3", "1.0.1-beta"),
+      text.replace("0123456789abcdef", "0123456789ABCDEF"),
+   ] {
+      assert!(ReleaseManifest::from_bytes(modified.as_bytes()).is_err());
+   }
+}
+
 fn trusted_key() -> ReleasePublicKey {
    let pem = fs::read_to_string(samples().join("public-key.pem")).unwrap();
    ReleasePublicKey::from_pem(&pem).unwrap()

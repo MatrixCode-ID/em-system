@@ -87,7 +87,10 @@ namespace Em.Ui.Wpf.Navigations
       public CdnEntry Entry { get; }
 
       /// <summary>Name of the file or folder.</summary>
-      public string Name => Entry.ManagedFolder is { } managed ? $"{Entry.Name} [managed: {managed.Owner.Id}]" : Entry.Name;
+      public string Name => Entry.Name;
+
+      /// <summary>Display name with ownership, separate from the file's actual name.</summary>
+      public string DisplayName => Entry.ManagedFolder is { } managed ? $"{Entry.Name} [managed: {managed.Owner.Id}]" : Entry.Name;
 
       /// <summary><c>true</c> for a folder.</summary>
       public bool IsFolder => Entry.IsFolder;
@@ -558,7 +561,7 @@ namespace Em.Ui.Wpf.Navigations
 
          return dropped switch {
             DroppedFiles => true,
-            CdnManagerItem item => target != ParentOf(item.Entry.Path) && target != item.Entry.Path &&
+            CdnManagerItem item => item.Entry.ManagedFolder is null && !Items.Any(i => i.Entry.Path == target && i.Entry.ManagedFolder is not null) && target != ParentOf(item.Entry.Path) && target != item.Entry.Path &&
                                    !target.StartsWith(item.Entry.Path + "/", StringComparison.OrdinalIgnoreCase),
             _ => false
          };

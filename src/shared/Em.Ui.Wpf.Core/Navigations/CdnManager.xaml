@@ -444,8 +444,8 @@
                                                  VerticalAlignment="Center" />
                                  <TextBlock Margin="12,0,16,0"
                                             Style="{StaticResource primaryCellStyle}"
-                                            Text="{Binding Name}"
-                                            ToolTip="{Binding Name}" />
+                                            Text="{Binding DisplayName}"
+                                            ToolTip="{Binding DisplayName}" />
                               </StackPanel>
 
                               <TextBlock Grid.Column="1"

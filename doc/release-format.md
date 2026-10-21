@@ -228,6 +228,7 @@ itu sudah dibuang dan tidak pernah menjadi kunci rilis; yang tersimpan hanya pub
 | `tampered-file/` | Sama dengan `valid/`, tetapi satu byte satu file di `binaries/` diubah (`release.json` dan `.sig` tetap). | Tanda tangan **sah**, lalu **ditolak** di langkah 5: SHA-256 file itu tidak cocok. |
 | `unknown-key/` | Sama dengan `valid/`, tetapi `keyId` di `.sig` diganti nilai yang tidak dikenal. | **Ditolak** di langkah 2: tidak ada public key yang cocok. |
 | `expected.txt` | `keyId` kunci contoh uji dan daftar `path  size  sha256` isi `valid/binaries/`. | Implementasi baru harus menghasilkan nilai yang sama. |
+| `launcher-metadata.json` | Vektor parser metadata launcher, sengaja tanpa tanda tangan. | Nama exe, versi dan inputHash sah; perubahan tidak sah di `launcher-metadata.expected.txt` ditolak. Tidak boleh dipasang tanpa signature. |
 
 Folder itu punya `.gitattributes` sendiri (`* -text`), supaya git tidak mengubah akhir baris file-filenya
 saat checkout. Tanpa itu, hash dan tanda tangannya tidak cocok lagi.
