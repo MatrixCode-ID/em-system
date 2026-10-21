@@ -54,6 +54,22 @@ impl InstallCommand {
    /// Runs `--install` with `options`. Silent: installs right away. Not silent: the setup form, already
    /// filled in with `options`.
    pub fn run(context: &CommandContext, options: &InstallOptions) -> Result<(), CommandError> {
+      let mut options = options.clone();
+      let own = std::env::current_exe().map_err(CommandError::io("cannot locate installer"))?;
+      let config = context.load_config()?;
+      let runner = config
+         .install_layout()
+         .is_some_and(|layout| InstallLayout::same_path(&own, &layout.launcher_path()));
+      if !runner && context.location == crate::config::ConfigLocation::for_product() {
+         let source = crate::config::InstallerSettings::source(own.parent().unwrap(), product::DEFAULT_SOURCE)
+            .map_err(CommandError::io(
+               "cannot read or create installer settings.ini beside the executable",
+            ))?;
+         if options.source.is_none() {
+            options.source = Some(source);
+         }
+      }
+      let options = &options;
       if !context.quiet {
          // Held while the form is open, so a second setup cannot start next to this one.
          let _lock = context.lock()?;
@@ -80,6 +96,7 @@ impl InstallCommand {
    /// [`InstallJob::execute`].
    pub fn prepare(context: &CommandContext, request: &InstallRequest) -> Result<InstallJob, CommandError> {
       let mut config = context.load_config()?;
+      context.check_product_fingerprint(false)?;
       let target = &request.target;
       if let Some(existing) = config.install_layout()
          && !InstallLayout::same_path(existing.root(), target)
@@ -197,6 +214,7 @@ impl InstallJob {
    /// pass are the install folder, the configuration, the keys, the shortcuts, and the entry written.
    /// Cancelling through `progress` only leaves a staging folder that is resumed on the next attempt.
    pub fn execute(&self, context: &CommandContext, progress: Arc<UpdateProgress>) -> Result<String, CommandError> {
+      context.check_product_fingerprint(false)?;
       let source = context.source(&self.config)?;
       let layout = self.layout();
       let updater = Updater::new(source.as_ref(), &layout, progress);
@@ -214,6 +232,7 @@ impl InstallJob {
       let outcome = updater.install(&release)?;
       context.ensure_root_launcher(&layout)?;
 
+      context.check_product_fingerprint(true)?;
       self
          .config
          .save(&context.location)

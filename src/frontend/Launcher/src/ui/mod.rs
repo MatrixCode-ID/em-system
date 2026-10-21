@@ -19,3 +19,6 @@ pub use progress_window::ProgressWindow;
 pub use prompts::{AlreadyInstalledChoice, Prompts, format_published, format_size, sentence};
 pub use setup_window::{SetupOutcome, SetupWindow};
 pub use window_style::WindowStyle;
+
+mod logo;
+use logo::Logo;

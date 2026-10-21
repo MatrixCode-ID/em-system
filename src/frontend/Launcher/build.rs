@@ -21,6 +21,30 @@ struct Product {
    app_exe: String,
    app_id: String,
    icon: String,
+   #[serde(default)]
+   logo: String,
+   #[serde(default)]
+   public_key: String,
+   #[serde(default = "default_launcher_exe")]
+   launcher_exe: String,
+   #[serde(default = "default_launcher_version")]
+   launcher_version: String,
+   #[serde(default)]
+   engine_version: String,
+   #[serde(default)]
+   default_source: String,
+   #[serde(default = "default_update_behavior")]
+   update_behavior: String,
+}
+
+fn default_launcher_exe() -> String {
+   "launcher.exe".into()
+}
+fn default_launcher_version() -> String {
+   "0.1.0".into()
+}
+fn default_update_behavior() -> String {
+   "automatic".into()
 }
 
 fn main() {
@@ -41,6 +65,14 @@ fn main() {
       fs::canonicalize(&icon).unwrap_or_else(|_| fail(&format!("the icon '{}' does not exist", icon.display())));
    println!("cargo:rerun-if-changed={}", icon.display());
 
+   let logo = if product.logo.is_empty() {
+      Vec::new()
+   } else {
+      let path = product_file.parent().unwrap().join(&product.logo);
+      println!("cargo:rerun-if-changed={}", path.display());
+      fs::read(path).expect("cannot read product logo PNG")
+   };
+   fs::write(out_dir.join("logo.png"), logo).expect("cannot embed logo");
    fs::write(out_dir.join("product.rs"), product_constants(&product))
       .unwrap_or_else(|x| fail(&format!("cannot write product.rs: {x}")));
 
@@ -80,13 +112,60 @@ fn read_product(path: &Path) -> Product {
       }
    }
 
+   if !["automatic", "ask"].contains(&product.update_behavior.as_str()) {
+      fail("update_behavior must be automatic or ask");
+   }
+   if product.launcher_exe.contains(['/', '\\']) || !product.launcher_exe.to_ascii_lowercase().ends_with(".exe") {
+      fail("launcher_exe must be a single .exe filename");
+   }
    product
 }
 
 fn product_constants(product: &Product) -> String {
    // `{:?}` on a str yields a valid Rust string literal, escapes included.
    let mut code = String::new();
+   let old_name = product
+      .launcher_exe
+      .strip_suffix(".exe")
+      .unwrap_or(&product.launcher_exe)
+      .to_string()
+      + ".old.exe";
    let items = [
+      (
+         "Nama exe installer dan runner produk.",
+         "LAUNCHER_EXE",
+         &product.launcher_exe,
+      ),
+      (
+         "Nama backup launcher saat penggantian exe.",
+         "OLD_LAUNCHER_EXE",
+         &old_name,
+      ),
+      (
+         "Versi launcher independen dari aplikasi.",
+         "LAUNCHER_VERSION",
+         &product.launcher_version,
+      ),
+      (
+         "Versi source engine pembuat launcher.",
+         "ENGINE_VERSION",
+         &product.engine_version,
+      ),
+      (
+         "Kunci publik tertanam untuk memverifikasi rilis.",
+         "PUBLIC_KEY",
+         &product.public_key,
+      ),
+      (
+         "Sumber default yang ditulis installer ke settings.ini.",
+         "DEFAULT_SOURCE",
+         &product.default_source,
+      ),
+      (
+         "Perilaku update saat start: automatic atau ask.",
+         "UPDATE_BEHAVIOR",
+         &product.update_behavior,
+      ),
       (
          "The application name, the same as the host's `ApplicationName`; also the registry root `HKCU\\<APP_NAME>`.",
          "APP_NAME",
@@ -111,20 +190,26 @@ fn product_constants(product: &Product) -> String {
    for (doc, name, value) in items {
       let _ = writeln!(code, "/// {doc}\npub const {name}: &str = {value:?};");
    }
+   code.push_str("/// PNG logo produk yang ditanam saat build.\npub const LOGO: &[u8] = include_bytes!(concat!(env!(\"OUT_DIR\"), \"/logo.png\"));\n");
    code
 }
 
 fn resource_script(product: &Product, icon: &Path, manifest: &Path) -> String {
-   let version = env::var("CARGO_PKG_VERSION").unwrap_or_default();
-   let numeric = version.split(['-', '+']).next().unwrap_or("0.0.0").replace('.', ",");
+   let version = &product.launcher_version;
+   let base = version.split('-').next().unwrap_or("0.0.0").replace('.', ",");
+   let counter = version
+      .rsplit_once('.')
+      .filter(|_| version.contains('-'))
+      .map_or("0", |(_, n)| n);
+   let numeric = format!("{base},{counter}");
    format!(
       r#"#pragma code_page(65001)
 1 ICON "{icon}"
 1 24 "{manifest}"
 
 1 VERSIONINFO
-FILEVERSION {numeric},0
-PRODUCTVERSION {numeric},0
+FILEVERSION {numeric}
+PRODUCTVERSION {numeric}
 FILEOS 0x40004
 FILETYPE 0x1
 BEGIN
@@ -136,7 +221,7 @@ BEGIN
       VALUE "FileDescription", "{description}"
       VALUE "FileVersion", "{version}"
       VALUE "InternalName", "launcher"
-      VALUE "OriginalFilename", "launcher.exe"
+      VALUE "OriginalFilename", "{launcher_exe}"
       VALUE "ProductName", "{name}"
       VALUE "ProductVersion", "{version}"
     END
@@ -152,6 +237,7 @@ END
       publisher = rc_string(&product.publisher),
       description = rc_string(&format!("{} Launcher", product.app_name)),
       name = rc_string(&product.app_name),
+      launcher_exe = rc_string(&product.launcher_exe),
    )
 }
 

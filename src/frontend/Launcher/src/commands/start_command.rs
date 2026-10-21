@@ -52,7 +52,7 @@ impl StartCommand {
 
 impl StartCommand {
    fn start(context: &CommandContext, app_args: &[OsString], from_app: bool, ask: bool) -> Result<(), CommandError> {
-      let config = context.load_config()?;
+      let mut config = context.load_config()?;
       let Some(layout) = config.install_layout() else {
          return InstallCommand::run(context, &Default::default());
       };
@@ -67,6 +67,12 @@ impl StartCommand {
       // the root launcher's own path, so it never asks.
       let own = std::env::current_exe().map_err(CommandError::io("cannot locate the running launcher"))?;
       if ask && !InstallLayout::same_path(&own, &layout.launcher_path()) && layout.launcher_path().is_file() {
+         context.check_product_fingerprint(false)?;
+         config.source = crate::config::InstallerSettings::source(own.parent().unwrap(), product::DEFAULT_SOURCE)
+            .map_err(CommandError::io("cannot read or create installer settings.ini"))?;
+         config
+            .save(&context.location)
+            .map_err(CommandError::io("cannot save installer source"))?;
          return match Prompts::already_installed(&layout.root().display().to_string()) {
             AlreadyInstalledChoice::Run => Command::new(layout.launcher_path())
                .arg("--")
@@ -138,7 +144,10 @@ impl StartCommand {
       if updater.is_active(&release) {
          return;
       }
-      if ask && !Prompts::offer_update(release.manifest().published_at_utc(), updater.download_size(&release)) {
+      if ask
+         && product::UPDATE_BEHAVIOR == "ask"
+         && !Prompts::offer_update(release.manifest().published_at_utc(), updater.download_size(&release))
+      {
          LauncherLog::info(format!("The user postponed release {}", release.id()));
          return;
       }

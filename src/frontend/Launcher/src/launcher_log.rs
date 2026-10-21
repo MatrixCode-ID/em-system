@@ -41,6 +41,7 @@ impl LauncherLog {
             file,
          });
       }
+      Self::info(crate::product::version_display());
    }
 
    /// Stops writing the log and closes its file, for example before the install folder is deleted.

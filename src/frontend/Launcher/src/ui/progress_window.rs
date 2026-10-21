@@ -56,7 +56,9 @@ impl ProgressWindow {
 impl ProgressWindow {
    fn show(title: &str, progress: Arc<UpdateProgress>, finished: Arc<AtomicBool>) -> w::AnyResult<i32> {
       let height = MARGIN + 24 + PROGRESS_PANEL_HEIGHT + 12 + 26 + MARGIN;
-      let wnd = gui::WindowMain::new(WindowStyle::main_opts(title, (WIDTH, height)));
+      let caption = format!("{} - {title}", crate::product::version_display());
+      let wnd = gui::WindowMain::new(WindowStyle::main_opts(&caption, (WIDTH, height)));
+      super::Logo::attach(&wnd);
       let heading = gui::Label::new(
          &wnd,
          gui::LabelOpts {

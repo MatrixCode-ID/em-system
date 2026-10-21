@@ -32,6 +32,9 @@ pub enum KeyScope {
    /// The IT policy in HKLM. It cannot be removed from the launcher.
    Machine,
 
+   /// Kunci yang ditanam saat build; tidak dapat dihapus.
+   Embedded,
+
    /// The user's in HKCU. Ignored when the IT policy holds `AllowUserKeys = 0`.
    User,
 }
@@ -43,6 +46,16 @@ impl TrustedKeys {
    /// skipped and recorded in the log.
    pub fn list(location: &ConfigLocation) -> io::Result<Vec<TrustedKey>> {
       let mut keys = read(location.policy_hive, &location.policy_key, KeyScope::Machine)?;
+      if !crate::product::PUBLIC_KEY.is_empty() {
+         let key = ReleasePublicKey::from_pem(crate::product::PUBLIC_KEY).map_err(io::Error::other)?;
+         keys.insert(
+            0,
+            TrustedKey {
+               key,
+               scope: KeyScope::Embedded,
+            },
+         );
+      }
       keys.extend(read(RegistryHive::CurrentUser, &location.user_key, KeyScope::User)?);
       Ok(keys)
    }

@@ -12,6 +12,7 @@ pub struct ReleaseManifest {
    published_at_utc: String,
    files: Vec<ReleaseFile>,
    index: HashMap<String, usize>,
+   launcher: Option<LauncherMetadata>,
 }
 
 // The wire shape only; ReleaseManifest itself is built through from_bytes, so nothing unvalidated escapes.
@@ -20,6 +21,19 @@ struct ManifestJson {
    #[serde(rename = "publishedAtUtc")]
    published_at_utc: String,
    files: Vec<ReleaseFile>,
+   launcher: Option<LauncherMetadata>,
+}
+
+/// Metadata launcher yang ikut ditandatangani di manifest rilis.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LauncherMetadata {
+   /// Nama exe pada root binaries.
+   pub file_name: String,
+   /// Versi launcher independen dari aplikasi.
+   pub version: String,
+   /// SHA-256 seluruh input build launcher.
+   pub input_hash: String,
 }
 
 impl ReleaseManifest {
@@ -63,10 +77,26 @@ impl ReleaseManifest {
          }
       }
 
+      if let Some(launcher) = &json.launcher {
+         let listed = json
+            .files
+            .iter()
+            .any(|f| f.path.eq_ignore_ascii_case(&launcher.file_name));
+         if ReleaseFile::check_path(&launcher.file_name).is_some()
+            || launcher.file_name.contains('/')
+            || !launcher.file_name.to_ascii_lowercase().ends_with(".exe")
+            || !listed
+            || !ReleaseFile::is_valid_sha256(&launcher.input_hash)
+            || !valid_launcher_version(&launcher.version)
+         {
+            return Err(ReleaseFormatError::new("Invalid signed launcher metadata."));
+         }
+      }
       Ok(Self {
          published_at_utc: json.published_at_utc,
          files: json.files,
          index,
+         launcher: json.launcher,
       })
    }
 
@@ -83,6 +113,11 @@ impl ReleaseManifest {
    /// All release files, in manifest order.
    pub fn files(&self) -> &[ReleaseFile] {
       &self.files
+   }
+
+   /// Metadata launcher produk yang sudah lolos validasi format.
+   pub fn launcher(&self) -> Option<&LauncherMetadata> {
+      self.launcher.as_ref()
    }
 
    /// The total size of all release files, in bytes.
@@ -103,6 +138,23 @@ impl ReleaseManifest {
    }
 
    // endregion
+}
+
+fn valid_launcher_version(text: &str) -> bool {
+   let (base, suffix) = text.split_once('-').map_or((text, None), |(b, s)| (b, Some(s)));
+   let parts: Vec<_> = base.split('.').collect();
+   if parts.len() != 3
+      || !parts
+         .iter()
+         .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+   {
+      return false;
+   }
+   suffix.is_none_or(|s| {
+      s.split_once('.').is_some_and(|(channel, n)| {
+         ["prealpha", "alpha", "beta", "rc"].contains(&channel) && n.parse::<u32>().is_ok_and(|v| v > 0)
+      })
+   })
 }
 
 // Accepts yyyy-MM-ddTHH:mm:ss, an optional fraction of a second, then a mandatory 'Z'.

@@ -23,7 +23,7 @@ impl WindowStyle {
       gui::WindowMainOpts {
          title,
          class_icon: gui::Icon::Id(Self::ICON_ID),
-         size: gui::dpi(size.0, size.1),
+         size: gui::dpi(size.0, size.1 + 64),
          style: co::WS::CAPTION
             | co::WS::SYSMENU
             | co::WS::MINIMIZEBOX

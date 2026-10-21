@@ -167,8 +167,9 @@ impl SetupWindow {
 
 impl SetupWindow {
    fn new(state: Rc<SetupState>, source: &str, folder: &str, options: &InstallOptions) -> Self {
-      let title = format!("{} Setup", product::APP_NAME);
+      let title = format!("{} - Setup", product::version_display());
       let wnd = gui::WindowMain::new(WindowStyle::main_opts(&title, (WIDTH, HEIGHT)));
+      super::Logo::attach(&wnd);
       let inner = WIDTH - 2 * MARGIN;
       let field = inner - BUTTON_WIDTH - GAP;
       let side = WIDTH - MARGIN - BUTTON_WIDTH;
@@ -400,6 +401,7 @@ impl SetupWindow {
          .map(|saved| {
             let origin = match saved.scope {
                KeyScope::Machine => "IT policy",
+               KeyScope::Embedded => "Embedded product key",
                KeyScope::User if allow_user_keys => "Trusted earlier on this computer",
                KeyScope::User => "Trusted earlier, ignored by the IT policy",
             };
@@ -424,7 +426,7 @@ impl SetupWindow {
          .state
          .saved_keys
          .iter()
-         .filter(|saved| saved.scope == KeyScope::Machine || allow_user_keys)
+         .filter(|saved| saved.scope != KeyScope::User || allow_user_keys)
          .map(|saved| saved.key.key_id().to_string())
          .collect();
       if allow_user_keys {

@@ -32,7 +32,6 @@ impl Console {
          connect(STD_OUTPUT_HANDLE);
          connect(STD_ERROR_HANDLE);
          // The shell already printed its prompt; start on a fresh line below it.
-         Self::out("");
       }
       attached
    }

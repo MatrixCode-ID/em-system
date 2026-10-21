@@ -16,3 +16,6 @@ pub use maintenance_command::MaintenanceCommand;
 pub use start_command::StartCommand;
 pub use uninstall_command::UninstallCommand;
 pub use update_command::UpdateCommand;
+
+mod prepare_command;
+pub use prepare_command::PrepareCommand;

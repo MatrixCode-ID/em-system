@@ -49,7 +49,7 @@ impl CommandContext {
          location: ConfigLocation::for_product(),
          integration: ShellIntegration::for_product()
             .map_err(CommandError::io("cannot locate the shortcut folders"))?,
-         app_key: product::APP_NAME.to_string(),
+         app_key: format!(r"Software\{}", product::APP_ID),
          lock_name: LauncherLock::product_name(),
          quiet,
       })
@@ -58,7 +58,7 @@ impl CommandContext {
    /// The default install folder: `%LocalAppData%\<APP_NAME>`.
    pub fn default_install_folder() -> Result<PathBuf, CommandError> {
       w::SHGetKnownFolderPath(&co::KNOWNFOLDERID::LocalAppData, co::KF::DEFAULT, None)
-         .map(|folder| PathBuf::from(folder).join(product::APP_NAME))
+         .map(|folder| PathBuf::from(folder).join(product::APP_ID))
          .map_err(|error| {
             CommandError::io("cannot locate the local application data folder")(io::Error::from_raw_os_error(
                error.raw() as i32,
@@ -89,6 +89,30 @@ impl CommandContext {
    /// Reads the launcher configuration.
    pub fn load_config(&self) -> Result<LauncherConfig, CommandError> {
       LauncherConfig::load(&self.location).map_err(CommandError::io("cannot read the launcher configuration"))
+   }
+
+   /// Menolak app_id sama dengan kunci tertanam berbeda; simpan fingerprint setelah install sukses.
+   pub fn check_product_fingerprint(&self, save: bool) -> Result<(), CommandError> {
+      if product::PUBLIC_KEY.is_empty() {
+         return Ok(());
+      }
+      let key = ReleasePublicKey::from_pem(product::PUBLIC_KEY).map_err(|e| CommandError::invalid(e.to_string()))?;
+      let fingerprint = crate::format::ReleaseHash::sha256_hex(key.spki_der());
+      let hive = crate::config::RegistryHive::CurrentUser;
+      let previous = hive
+         .read_string(&self.location.user_key, "ProductKeyFingerprint")
+         .map_err(CommandError::io("cannot read product fingerprint"))?;
+      if previous.is_some_and(|old| old != fingerprint) {
+         return Err(CommandError::invalid(
+            "This app_id is already installed with a different embedded signing key. Use a distinct app_id for another product or environment.",
+         ));
+      }
+      if save {
+         hive
+            .write_string(&self.location.user_key, "ProductKeyFingerprint", &fingerprint)
+            .map_err(CommandError::io("cannot save product fingerprint"))?;
+      }
+      Ok(())
    }
 
    /// The layout of the install folder from `config`, then the launcher log in that folder is opened. Fails

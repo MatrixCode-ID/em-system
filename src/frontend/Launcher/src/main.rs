@@ -19,7 +19,8 @@ fn main() -> std::process::ExitCode {
 
    let args: Vec<OsString> = std::env::args_os().skip(1).collect();
    // Needed before parsing succeeds, to know whether a parse error may be shown in a dialog.
-   let quiet = args.iter().any(|arg| arg == "--quiet");
+   let preparing = args.iter().any(|arg| arg == "--prepare");
+   let quiet = preparing || args.iter().any(|arg| arg == "--quiet");
    let result = CommandLine::parse(args).and_then(|command_line| {
       let context = CommandContext::for_product(command_line.quiet)?;
       run(&context, command_line.command, has_console)
@@ -28,7 +29,12 @@ fn main() -> std::process::ExitCode {
    match result {
       Ok(()) => ExitCode::Success.into(),
       Err(error) => {
-         report(&error, quiet);
+         if preparing {
+            Console::out(serde_json::json!({"state":"failed","message":error.message}));
+            LauncherLog::error(&error.message);
+         } else {
+            report(&error, quiet);
+         }
          error.code.into()
       }
    }
@@ -38,6 +44,15 @@ fn run(context: &CommandContext, command: Command, has_console: bool) -> Result<
    match command {
       Command::Start { app_args, from_app } => StartCommand::run(context, &app_args, from_app),
       Command::Install(options) => InstallCommand::run(context, &options),
+      Command::Version => {
+         Console::out(launcher::product::version_display());
+         Ok(())
+      }
+      Command::Prepare => {
+         let result = launcher::commands::PrepareCommand::run(context)?;
+         Console::out(result);
+         Ok(())
+      }
       Command::Update => UpdateCommand::update(context),
       Command::Maintenance => MaintenanceCommand::run(context),
       Command::Repair => UpdateCommand::repair(context),

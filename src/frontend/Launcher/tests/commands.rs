@@ -491,3 +491,42 @@ fn uninstall_finish_only_removes_the_registered_folder() {
    assert!(!fixture.target.exists());
    assert!(!fixture.context.integration.entry.exists().unwrap());
 }
+
+#[test]
+fn prepare_verifies_staging_without_activating_and_resumes() {
+   let fixture = Fixture::new();
+   fixture.install();
+   let before = fs::read(fixture.layout().current_path()).unwrap();
+   fixture.publish(content(4, 20_000), V2_TIME);
+   let prepared = launcher::commands::PrepareCommand::run(&fixture.context).unwrap();
+   assert_eq!(prepared["state"], "prepared");
+   assert_eq!(fs::read(fixture.layout().current_path()).unwrap(), before);
+   let id = prepared["release"].as_str().unwrap();
+   assert!(fixture.layout().staging_folder(id).join("release.json").is_file());
+   assert_eq!(
+      launcher::commands::PrepareCommand::run(&fixture.context).unwrap(),
+      prepared
+   );
+   UpdateCommand::update(&fixture.context).unwrap();
+   assert_eq!(
+      launcher::commands::PrepareCommand::run(&fixture.context).unwrap()["state"],
+      "none"
+   );
+}
+
+#[test]
+fn installer_ini_uses_source_only_and_can_be_reset() {
+   let temp = tempfile::tempdir().unwrap();
+   let source =
+      launcher::config::InstallerSettings::source(temp.path(), "https://example.test/cdn/inventory/").unwrap();
+   assert_eq!(source, "https://example.test/cdn/inventory/");
+   fs::write(
+      temp.path().join("settings.ini"),
+      "; IT override\n[Launcher]\nSource=\\\\fileserver\\release\n",
+   )
+   .unwrap();
+   assert_eq!(
+      launcher::config::InstallerSettings::source(temp.path(), "unused").unwrap(),
+      r"\\fileserver\release"
+   );
+}

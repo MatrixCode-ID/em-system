@@ -62,9 +62,9 @@ impl ConfigLocation {
    /// `HKLM\Software\Policies\<APP_NAME>\Launcher`.
    pub fn for_product() -> Self {
       Self {
-         user_key: format!(r"{}\Launcher", product::APP_NAME),
+         user_key: format!(r"Software\{}\Launcher", product::APP_ID),
          policy_hive: RegistryHive::LocalMachine,
-         policy_key: format!(r"Software\Policies\{}\Launcher", product::APP_NAME),
+         policy_key: format!(r"Software\Policies\{}\Launcher", product::APP_ID),
       }
    }
 }

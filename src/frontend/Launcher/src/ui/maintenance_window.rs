@@ -97,8 +97,9 @@ impl MaintenanceWindow {
 
 impl MaintenanceWindow {
    fn new(state: Rc<MaintenanceState>, layout: &InstallLayout) -> Self {
-      let title = format!("{} Maintenance", product::APP_NAME);
+      let title = format!("{} - Maintenance", product::version_display());
       let wnd = gui::WindowMain::new(WindowStyle::main_opts(&title, (WIDTH, HEIGHT)));
+      super::Logo::attach(&wnd);
       let inner = WIDTH - 2 * MARGIN;
       let side = WIDTH - MARGIN - BUTTON_WIDTH;
       let bottom = HEIGHT - MARGIN - 26;
@@ -249,6 +250,7 @@ impl MaintenanceWindow {
          .map(|trusted| {
             let origin = match trusted.scope {
                KeyScope::Machine => "IT policy",
+               KeyScope::Embedded => "Embedded product key",
                KeyScope::User if allow_user_keys => "Trusted by this user",
                KeyScope::User => "Trusted by this user, ignored by the IT policy",
             };

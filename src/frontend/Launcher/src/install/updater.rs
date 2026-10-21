@@ -149,6 +149,29 @@ impl<'a> Updater<'a> {
          return Ok(UpdateOutcome::AlreadyActive);
       }
 
+      let summary = self.prepare(release)?;
+      let staging = self.layout.staging_folder(release.id());
+      let version = self.layout.version_folder(release.id());
+      if version.exists() {
+         // A leftover of an earlier attempt; it is not active, so the fresh copy wins.
+         fs::remove_dir_all(&version).map_err(UpdateError::io("remove", &version))?;
+      }
+      fs::rename(&staging, &version).map_err(UpdateError::io("rename", &staging))?;
+
+      self.activate(release)?;
+      LauncherLog::info(format!(
+         "Release {} is active: {} files downloaded ({} bytes), {} files reused",
+         release.id(),
+         summary.downloaded_files,
+         summary.downloaded_bytes,
+         summary.reused_files
+      ));
+      Ok(UpdateOutcome::Installed(summary))
+   }
+
+   /// Mengunduh dan memverifikasi staging tanpa mengganti versi aktif.
+   pub fn prepare(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
+      let active = self.layout.active_version();
       let staging = self.layout.staging_folder(release.id());
       fs::create_dir_all(&staging).map_err(UpdateError::io("create", &staging))?;
       LauncherLog::info(format!("Preparing release {} in {}", release.id(), staging.display()));
@@ -194,22 +217,7 @@ impl<'a> Updater<'a> {
 
       self.progress.begin(UpdatePhase::Finishing, 0);
       write_release_files(&staging, release)?;
-      let version = self.layout.version_folder(release.id());
-      if version.exists() {
-         // A leftover of an earlier attempt; it is not active, so the fresh copy wins.
-         fs::remove_dir_all(&version).map_err(UpdateError::io("remove", &version))?;
-      }
-      fs::rename(&staging, &version).map_err(UpdateError::io("rename", &staging))?;
-
-      self.activate(release)?;
-      LauncherLog::info(format!(
-         "Release {} is active: {} files downloaded ({} bytes), {} files reused",
-         release.id(),
-         summary.downloaded_files,
-         summary.downloaded_bytes,
-         summary.reused_files
-      ));
-      Ok(UpdateOutcome::Installed(summary))
+      Ok(summary)
    }
 
    /// Cleans up what the previous run left: `launcher.old.exe` and `app-*` folders other than the active

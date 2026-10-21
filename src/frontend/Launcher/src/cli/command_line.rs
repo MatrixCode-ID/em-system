@@ -23,6 +23,8 @@ Usage: launcher.exe [options] [-- <app arguments>]
   --list-keys                  List the trusted public keys
   --remove-key <keyId>         Stop trusting a key imported by the user
   --apply --pid <pid>          Wait for the process to exit, then update and start without asking
+  --prepare [--quiet]         Prepare verified update files; print one JSON line\n\
+  --version                    Show launcher and engine versions\n\
   --help                       Show this text
 
 Arguments after -- are passed to the application unchanged.
@@ -41,6 +43,12 @@ pub enum Command {
 
    /// `--update`.
    Update,
+
+   /// Menyiapkan update tanpa mengaktifkannya, menghasilkan JSON.
+   Prepare,
+
+   /// Menampilkan versi launcher dan source engine.
+   Version,
 
    /// `--maintenance`.
    Maintenance,
@@ -147,6 +155,8 @@ fn collect(args: Vec<OsString>) -> Result<Collected, lexopt::Error> {
    while let Some(arg) = parser.next()? {
       match arg {
          Arg::Long("install") => c.commands.push("--install"),
+         Arg::Long("prepare") => c.commands.push("--prepare"),
+         Arg::Long("version") => c.commands.push("--version"),
          Arg::Long("update") => c.commands.push("--update"),
          Arg::Long("maintenance") => c.commands.push("--maintenance"),
          Arg::Long("repair") => c.commands.push("--repair"),
@@ -230,7 +240,7 @@ fn build(mut c: Collected, app_args: Option<Vec<OsString>>) -> Result<CommandLin
          "--no-run",
          "--quiet",
       ],
-      "--update" | "--repair" | "--uninstall" | "--import" => &["--quiet"],
+      "--prepare" | "--update" | "--repair" | "--uninstall" | "--import" => &["--quiet"],
       "--apply" => &["--pid"],
       Uninstaller::FINISH_ARGUMENT => &[Uninstaller::PARENT_PID_ARGUMENT, "--quiet"],
       _ => &[],
@@ -260,6 +270,8 @@ fn build(mut c: Collected, app_args: Option<Vec<OsString>>) -> Result<CommandLin
       },
       "--install" => Command::Install(c.install),
       "--update" => Command::Update,
+      "--prepare" => Command::Prepare,
+      "--version" => Command::Version,
       "--maintenance" => Command::Maintenance,
       "--repair" => Command::Repair,
       "--uninstall" => Command::Uninstall,

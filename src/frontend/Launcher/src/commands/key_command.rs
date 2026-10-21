@@ -58,6 +58,7 @@ impl KeyCommand {
       }
       for trusted in keys {
          let scope = match trusted.scope {
+            KeyScope::Embedded => "Embedded product key",
             KeyScope::Machine => "HKLM (IT policy)",
             KeyScope::User if config.allow_user_keys() => "HKCU (user)",
             KeyScope::User => "HKCU (user, ignored by the IT policy)",

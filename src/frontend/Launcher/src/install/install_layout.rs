@@ -75,11 +75,11 @@ impl InstallLayout {
    // region: Statics
 
    /// The launcher file name, both at the root of the install folder and inside a release.
-   pub const LAUNCHER_FILE_NAME: &str = "launcher.exe";
+   pub const LAUNCHER_FILE_NAME: &str = crate::product::LAUNCHER_EXE;
 
    /// The name of the old root launcher after it is replaced by the launcher from a new release. A running
    /// exe cannot be deleted, only renamed, so this file is only deleted on the next run.
-   pub const OLD_LAUNCHER_FILE_NAME: &str = "launcher.old.exe";
+   pub const OLD_LAUNCHER_FILE_NAME: &str = crate::product::OLD_LAUNCHER_EXE;
 
    /// The name of the file that points to the active version.
    pub const CURRENT_FILE_NAME: &str = "current.json";

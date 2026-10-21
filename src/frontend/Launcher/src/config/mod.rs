@@ -8,3 +8,6 @@ mod trusted_keys;
 pub use launcher_config::{ConfigLocation, LauncherConfig};
 pub use registry_hive::RegistryHive;
 pub use trusted_keys::{KeyScope, TrustedKey, TrustedKeys};
+
+mod installer_settings;
+pub use installer_settings::InstallerSettings;
