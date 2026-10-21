@@ -279,6 +279,13 @@
                      <TextBlock Text="{Binding ArchiveCaption}" VerticalAlignment="Center" />
                   </StackPanel>
                </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"
+                       Command="{Binding Commands[MaintenanceCommand]}" ToolTip="Recycle bin, temporary files, managed folders and quotas">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Ellipsis" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="More" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
             </StackPanel>
 
             <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">

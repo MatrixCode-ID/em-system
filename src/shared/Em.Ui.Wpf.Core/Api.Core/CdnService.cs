@@ -22,6 +22,25 @@ namespace Em.Api.Core
       public Task<CdnStorageInfo> GetMeta_CdnStorageSize() =>
          GetAsync<CdnStorageInfo>(nameof(GetMeta_CdnStorageSize));
 
+      /// <inheritdoc />
+      public Task<CdnRecycleItem[]> GetMeta_CdnRecycle() => GetAsync<CdnRecycleItem[]>(nameof(GetMeta_CdnRecycle));
+      /// <inheritdoc />
+      public Task<CdnStorageInfo> GetMeta_CdnTemporaryGarbage() => GetAsync<CdnStorageInfo>(nameof(GetMeta_CdnTemporaryGarbage));
+      /// <inheritdoc />
+      public Task<CdnManagedFolder[]> GetMeta_CdnManagedFolders() => GetAsync<CdnManagedFolder[]>(nameof(GetMeta_CdnManagedFolders));
+      /// <inheritdoc />
+      public Task PostMeta_CdnRestore(string id) => PostAsync(nameof(PostMeta_CdnRestore), id);
+      /// <inheritdoc />
+      public Task PostMeta_CdnRecycleDelete(string id) => PostAsync(nameof(PostMeta_CdnRecycleDelete), id);
+      /// <inheritdoc />
+      public Task PostMeta_CdnRecycleEmpty() => PostAsync(nameof(PostMeta_CdnRecycleEmpty));
+      /// <inheritdoc />
+      public Task PostMeta_CdnTemporaryClear() => PostAsync(nameof(PostMeta_CdnTemporaryClear));
+      /// <inheritdoc />
+      public Task PostMeta_CdnManagedRelease(string path, string confirmation) => PostAsync(nameof(PostMeta_CdnManagedRelease), path, confirmation);
+      /// <inheritdoc />
+      public Task PostMeta_CdnManagedQuota(string path, long? quotaBytes) => PostAsync(nameof(PostMeta_CdnManagedQuota), path, quotaBytes!);
+
       #region Meta's
 
       /// <inheritdoc />

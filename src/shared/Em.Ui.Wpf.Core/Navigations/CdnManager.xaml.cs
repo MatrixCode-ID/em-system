@@ -87,7 +87,7 @@ namespace Em.Ui.Wpf.Navigations
       public CdnEntry Entry { get; }
 
       /// <summary>Name of the file or folder.</summary>
-      public string Name => Entry.Name;
+      public string Name => Entry.ManagedFolder is { } managed ? $"{Entry.Name} [managed: {managed.Owner.Id}]" : Entry.Name;
 
       /// <summary><c>true</c> for a folder.</summary>
       public bool IsFolder => Entry.IsFolder;
@@ -188,7 +188,7 @@ namespace Em.Ui.Wpf.Navigations
    /// <summary>
    /// View model for <see cref="CdnManager"/>.
    /// </summary>
-   public class CdnManagerVm : MvvmModelBase
+   public partial class CdnManagerVm : MvvmModelBase
    {
       /// <summary>
       /// Creates a new view model and registers all commands of the screen.
@@ -198,6 +198,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(GoUpCommand), GoUpCommand, GoUpCommandAllowed);
          RegisterCommand<CdnBreadcrumb?>(nameof(NavigateToSegmentCommand), NavigateToSegmentCommand,
             NavigateToSegmentCommandAllowed);
+         RegisterCommand(nameof(MaintenanceCommand), MaintenanceCommand, RefreshCommandAllowed);
          RegisterCommand(nameof(UploadCommand), UploadCommand, UploadCommandAllowed);
          RegisterCommand(nameof(CancelTransferCommand), CancelTransferCommand, CancelTransferCommandAllowed);
          RegisterCommand(nameof(NewFolderCommand), NewFolderCommand, NewFolderCommandAllowed);
@@ -275,7 +276,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>Caption of the upload limit for the chip in the toolbar.</summary>
-      public string LimitCaption => MaxFileSize > 0 ? $"Max {FormatSize(MaxFileSize)} per file" : "";
+      public string LimitCaption => _managedFolder is { } m ? $"Managed by {m.Owner.Id}: {FormatSize(m.UsedBytes)} / {(m.QuotaBytes is { } q ? FormatSize(q) : "Unlimited")}" : MaxFileSize > 0 ? $"Max {FormatSize(MaxFileSize)} per file" : "";
 
       /// <summary>Content count of the folder for the chip in the toolbar, e.g. <c>"2 folders · 5 files"</c>.</summary>
       public string ItemsCaption {
@@ -410,7 +411,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>Only when the CDN is on and the screen is not busy.</summary>
-      public bool UploadCommandAllowed() => CanAct;
+      public bool UploadCommandAllowed() => CanWrite;
 
       /// <summary>
       /// Stops the upload or download that is running. The file being transferred is cut off midway without
@@ -439,7 +440,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>Only when the CDN is on and the screen is not busy.</summary>
-      public bool NewFolderCommandAllowed() => CanAct;
+      public bool NewFolderCommandAllowed() => CanWrite;
 
       /// <summary>
       /// Deletes row <paramref name="item"/> after confirmation. For a folder, its content is counted first
@@ -461,7 +462,7 @@ namespace Em.Ui.Wpf.Navigations
             caption = $"Delete file '{item.Name}'?";
          }
 
-         if (owner.ShowMboxDecideWarning(caption + "\n\nThis cannot be undone.", "Delete") != MessageBoxResult.Yes)
+         if (owner.ShowMboxDecideWarning(caption + "\n\nThe item will be moved to the recycle bin.", "Delete") != MessageBoxResult.Yes)
             return;
 
          await RunBusyAsync("Deleting...", async () => {
@@ -471,7 +472,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>Only for a row, and while the screen is not busy.</summary>
-      public bool DeleteCommandAllowed(CdnManagerItem? item) => item is not null && CanAct;
+      public bool DeleteCommandAllowed(CdnManagerItem? item) => item is not null && item.Entry.ManagedFolder is null && CanWrite;
 
       /// <summary>Reads the open folder again.</summary>
       public Task RefreshCommand() => ReloadAsync();
@@ -550,7 +551,7 @@ namespace Em.Ui.Wpf.Navigations
       /// files from Explorer may be dropped on any folder.
       /// </summary>
       public bool DropCommandAllowed(object? payload) {
-         if (!CanAct) return false;
+         if (!CanWrite) return false;
 
          var (dropped, target) = ResolveDrop(payload);
          if (target is null) return false;
@@ -581,7 +582,7 @@ namespace Em.Ui.Wpf.Navigations
       public bool ArchiveCommandAllowed() => ArchiveMode switch {
          CdnTaskMode.Running => IsNotBusy && ArchiveTask!.CanCancel,
          CdnTaskMode.Failed => IsNotBusy && ArchiveTask!.CanClear,
-         _ => CanAct && Items.Any(r => r.IsSelected)
+         _ => CanWrite && Items.Any(r => r.IsSelected) && Items.Where(r => r.IsSelected).All(r => r.Entry.ManagedFolder is null)
       };
 
       /// <summary>
@@ -602,7 +603,7 @@ namespace Em.Ui.Wpf.Navigations
          item is { IsZip: true } && item.ExtractMode switch {
             CdnTaskMode.Running => IsNotBusy && item.ExtractTask!.CanCancel,
             CdnTaskMode.Failed => IsNotBusy && item.ExtractTask!.CanClear,
-            _ => CanAct
+            _ => CanWrite && item.Entry.ManagedFolder is null
          };
 
       #endregion
@@ -816,6 +817,14 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public Task ReloadAsync() => LoadAsync(CurrentPath);
 
+      private bool CanWrite => CanAct && _managedFolder is null;
+      private CdnManagedFolder? _managedFolder;
+      /// <summary>Opens recycle, temporary-file and managed-folder administration.</summary>
+      public async Task MaintenanceCommand() {
+         new CdnMaintenanceDialog(Service) { Owner = DialogOwner }.ShowDialog();
+         await ReloadAsync();
+      }
+
       private bool CanAct => IsNotBusy && !IsCdnDisabled && IsLoaded;
 
       private Task LoadAsync(string path) =>
@@ -841,7 +850,9 @@ namespace Em.Ui.Wpf.Navigations
          IsCdnDisabled = false;
          CurrentPath = content.Path;
          PublicPath = content.PublicPath;
+         _managedFolder = content.ManagedFolder;
          MaxFileSize = content.MaxFileSize;
+         NotifyChanged(nameof(LimitCaption));
          RebuildBreadcrumbs();
 
          Items.Clear();
