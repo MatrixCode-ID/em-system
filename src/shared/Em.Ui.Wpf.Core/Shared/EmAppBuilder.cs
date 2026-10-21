@@ -13,6 +13,10 @@ namespace Em.Ui.Wpf.Shared
    public partial class EmAppBuilder
    {
       internal EmAppBuilder() { }
+      /// <summary>Technical host identity; defaults to assembly EmAppId metadata.</summary>
+      public string? AppId { get; set; }
+      /// <summary>Installed-launcher update polling schedule.</summary>
+      public Em.Ui.Wpf.Windows.LauncherUpdateOptions LauncherUpdates { get; } = new();
 
       /// <summary>
       /// The name of the application, used as the main window title and the Registry subkey name. It must be

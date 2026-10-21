@@ -464,6 +464,20 @@
                <Border Background="{TemplateBinding Background}"
                        Padding="{TemplateBinding Padding}">
                   <Border.Resources>
+                     <DataTemplate DataType="{x:Type windows:StatusUpdateItem}">
+                        <Button x:Name="update" Margin="10,0,0,0" Padding="2,0" Background="Transparent" BorderThickness="0"
+                                Foreground="{DynamicResource themeTextBrush}" ToolTip="{Binding ToolTip}" Command="{Binding RestartCommand}" ContextMenuService.ShowOnDisabled="True">
+                           <Button.Template><ControlTemplate TargetType="Button"><Border Background="Transparent"><ContentPresenter /></Border></ControlTemplate></Button.Template>
+                           <Button.ContextMenu><ContextMenu><MenuItem Header="Check for update" Command="{Binding CheckCommand}" /></ContextMenu></Button.ContextMenu>
+                           <StackPanel Orientation="Horizontal">
+                              <fa:FontAwesome x:Name="icon" Icon="{Binding Icon}" Spin="{Binding Spin}" Opacity="0.55" VerticalAlignment="Center" />
+                              <TextBlock Text="{Binding Text}" Margin="5,0,0,0" VerticalAlignment="Center" />
+                           </StackPanel>
+                        </Button>
+                        <DataTemplate.Triggers>
+                           <DataTrigger Binding="{Binding IsReady}" Value="True"><Setter TargetName="update" Property="Foreground" Value="{DynamicResource themeAccentBrush}" /><Setter TargetName="icon" Property="Opacity" Value="1" /></DataTrigger>
+                        </DataTemplate.Triggers>
+                     </DataTemplate>
                      <!-- Product version slot: v1.3.0-alpha.1 or dev; right-click copies the full version. -->
                      <DataTemplate DataType="{x:Type windows:StatusVersionItem}">
                         <TextBlock Text="{Binding Text}"

@@ -91,7 +91,14 @@ namespace Em.Ui.Wpf.Core
          if (!IsManaged) return;
          // The installation root sits one level above the version folder (<install>\app-<id>\). The copy
          // of launcher.exe inside the version folder itself is only the one the next update installs.
-         var rootLauncher = Path.GetFullPath(Path.Combine(baseDirectory, "..", LauncherFileName));
+         string name;
+         try {
+            var manifest = Release.ReleaseManifestSerializer.Deserialize(File.ReadAllBytes(Path.Combine(baseDirectory, ReleaseMarkerFileName)));
+            if (manifest.Launcher is null) return;
+            name = manifest.Launcher.FileName;
+         }
+         catch (Exception ex) when (ex is IOException or Release.ReleaseFormatException) { return; }
+         var rootLauncher = Path.GetFullPath(Path.Combine(baseDirectory, "..", name));
          if (!File.Exists(rootLauncher)) return;
          if (StartLauncher(rootLauncher, args)) Environment.Exit(0);
       }

@@ -42,4 +42,7 @@
       <Folder Include="Navigations\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Include="buildTransitive\EmSys.Ui.Wpf.Core.targets" Pack="true" PackagePath="buildTransitive/EmSys.Ui.Wpf.Core.targets" />
+    </ItemGroup>
 </Project>

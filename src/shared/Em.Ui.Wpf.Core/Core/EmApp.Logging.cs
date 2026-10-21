@@ -41,7 +41,7 @@ namespace Em.Ui.Wpf.Core
       // Called at the end of BuildApp's registration phase, once ApplicationName is known.
       private static void InitClientLog(EmApp app) {
          var options = new ClientLogOptions {
-            Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), app.ApplicationName, "Logs", "outbox"),
+            Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), app.AppId ?? app.ApplicationName, "Logs", "outbox"),
             App = app.ApplicationName,
             AppVersion = AppVersion.Current
          };

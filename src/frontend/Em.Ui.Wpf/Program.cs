@@ -12,9 +12,7 @@ internal static class Program
    public static void Main(string[] args) {
       var emApp = EmApp.BuildApp(args, builder => {
          
-         builder.ApplicationName = "Em System";
          builder.ApplyBranding(new BrandingInfo {
-            LogoSource = "pack://application:,,,/Em.Ui.Wpf;component/Logo.png",
             Title = "Em System",
             Tagline = "ERP engine by Matrix Code",
             Description = "Backend API, desktop, and mobile in one platform.",

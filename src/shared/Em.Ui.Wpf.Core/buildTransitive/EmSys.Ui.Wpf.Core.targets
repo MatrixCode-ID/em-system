@@ -1,0 +1,18 @@
+<Project>
+  <Target Name="EmHostIdentity" BeforeTargets="GenerateAssemblyInfo;AssignTargetPaths" Condition="'$(UseWPF)' == 'true' And '$(OutputType)' != 'Library'">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute" Condition="'$(EmAppId)' != ''">
+        <_Parameter1>EmAppId</_Parameter1><_Parameter2>$(EmAppId)</_Parameter2>
+      </AssemblyAttribute>
+      <Resource Include="$(ApplicationIcon)" Link="EmBranding/Product.ico" Condition="'$(ApplicationIcon)' != ''" />
+      <Resource Include="$(EmAppLogo)" Link="EmBranding/Product.png" Condition="'$(EmAppLogo)' != ''" />
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute" Condition="'$(ApplicationIcon)' != ''">
+        <_Parameter1>EmAppIcon</_Parameter1><_Parameter2>EmBranding/Product.ico</_Parameter2>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute" Condition="'$(EmAppLogo)' != ''">
+        <_Parameter1>EmAppLogo</_Parameter1><_Parameter2>EmBranding/Product.png</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+    <Error Condition="'$(EmAppLogo)' != '' And $([System.IO.Path]::GetExtension('$(EmAppLogo)')) != '.png'" Text="EmAppLogo must be a PNG image." />
+  </Target>
+</Project>

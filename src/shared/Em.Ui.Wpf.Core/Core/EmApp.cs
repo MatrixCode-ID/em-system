@@ -356,9 +356,14 @@ namespace Em.Ui.Wpf.Core
       /// The application's base Registry key (<c>HKCU\{ApplicationName}</c>), created automatically if it
       /// does not exist.
       /// </summary>
-      public RegistryKey BaseRegKey =>
-         Registry.CurrentUser.OpenSubKey(ApplicationName, RegistryKeyPermissionCheck.ReadWriteSubTree) ??
-         Registry.CurrentUser.CreateSubKey(ApplicationName);
+      public RegistryKey BaseRegKey => BaseRegistryKeyFactory?.Invoke() ??
+         Registry.CurrentUser.CreateSubKey(HostIdentity.RegistryPath(AppId, ApplicationName));
+      /// <summary>Technical host app_id, with ApplicationName used by legacy hosts.</summary>
+      public string? AppId { get; internal set; }
+      /// <summary>Optional isolated registry key factory for console verification.</summary>
+      public Func<RegistryKey>? BaseRegistryKeyFactory { get; set; }
+      /// <summary>Launcher update schedule configured by the host.</summary>
+      public Em.Ui.Wpf.Windows.LauncherUpdateOptions LauncherUpdates { get; internal set; } = new();
 
       // Internal, not private: the session store rides on the same subkey, and two places that may type its
       // name themselves means one typo would leave a session stored in a Registry branch nobody ever reads.

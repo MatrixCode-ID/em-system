@@ -9,6 +9,10 @@
         <UseWPF>true</UseWPF>
         <UseWindowsForms>true</UseWindowsForms>
         <RootNamespace>Em</RootNamespace>
+        <Product>Em System</Product>
+        <Company>Matrix Code</Company>
+        <EmAppId>MatrixCode.EmSystem</EmAppId>
+        <EmAppLogo>Logo.png</EmAppLogo>
         <ApplicationIcon>..\..\shared\Em.Ui.Wpf.Core\Assets\Icons\Logo.ico</ApplicationIcon>
     </PropertyGroup>
 
@@ -18,15 +22,6 @@
       <!-- Logo.png needs no entry: the WPF SDK already picks image files up as Resource. -->
       <None Remove="Logo.png" />
       <Resource Include="Logo.png" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- The launcher/updater ships inside every release, at the root of the output and publish folders.
-           Built by src/frontend/Launcher/build-dist.ps1 and committed under dist/; never edit it by hand. -->
-      <Content Include="..\..\..\dist\launcher\launcher.exe" Link="launcher.exe" Condition="Exists('..\..\..\dist\launcher\launcher.exe')">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </Content>
     </ItemGroup>
 
     <!-- Debug builds embed the developer private key from the local artefacts folder
@@ -42,4 +37,5 @@
       <ProjectReference Include="..\..\modules\Em.Test\Em.Test.Wpf\Em.Test.Wpf.csproj" />
     </ItemGroup>
 
+    <Import Project="..\..\shared\Em.Ui.Wpf.Core\buildTransitive\EmSys.Ui.Wpf.Core.targets" />
 </Project>

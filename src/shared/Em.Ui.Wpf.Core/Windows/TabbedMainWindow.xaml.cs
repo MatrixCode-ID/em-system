@@ -65,6 +65,7 @@ namespace Em.Ui.Wpf.Windows
          // Dialogs asked from this window's own commands and menus appear on this window.
          Vm.MainWindow = this;
          Vm.EmApp = app;
+         if (stack is null) Loaded += (_, _) => Vm.StatusBar.Updates.Attach(this, app.LauncherUpdates);
          Vm.Commands[nameof(TabbedMainWindowVm.ColorThemeCommand)]?.RaiseCanExecuteChanged();
          Vm.RequestClose += () => {
             if (!_closed) Close();

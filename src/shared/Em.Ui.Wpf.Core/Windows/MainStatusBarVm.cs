@@ -42,7 +42,9 @@ namespace Em.Ui.Wpf.Windows
 
       /// <summary>Creates the bar content with the engine's system slots.</summary>
       public MainStatusBarVm() {
-         SystemItems = new([Version]);
+         SystemItems = new(Updates.IsVisible ? [Version, Updates] : [Version]);
       }
+      /// <summary>Update slot to the right of the product version.</summary>
+      public StatusUpdateItem Updates { get; } = new();
    }
 }
