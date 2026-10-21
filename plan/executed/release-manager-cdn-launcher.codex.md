@@ -1,6 +1,8 @@
 # Plan — Managed CDN, Release Manager membangun launcher, update dari aplikasi, dan cab (untuk Codex)
 
-Status: **belum dieksekusi — keputusan sudah final, siap dikerjakan**
+Status: **selesai dieksekusi 2026-10-21 — build/tes console lulus; GUI dan smoke HTTP penuh tertunda sesuai laporan**
+
+Laporan: [release-manager-cdn-launcher.md](../../doc/report/release-manager-cdn-launcher.md).
 Dibuat: 2026-10-21
 Pembaca: Codex. Berkas ini memuat semua keputusan yang dibutuhkan; jangan bertanya ke pengguna selama
 eksekusi. Hal yang tidak tercakup diputuskan dengan pilihan yang paling konsisten dengan plan ini, lalu

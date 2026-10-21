@@ -404,3 +404,22 @@ pemakai lulus. Batas tes mouse dan provider log store yang tidak dikonfigurasi d
 pada laporan. Tidak ada push. Source generator awal di
 `../.artefacts/em-system/scripts/approval-implementation/` jangan dijalankan ulang.
 Harness HTTP/fixture lokal di `../.artefacts/em-system/scripts/approval-smoke/`.
+
+## Managed CDN, Release Manager dan launcher (2026-10-21)
+
+Plan `plan/executed/release-manager-cdn-launcher.codex.md` telah dieksekusi.
+CDN menggunakan parent `files/temp/recycle/settings`, managed folder milik app_id,
+kuota dan recycle manual. Profile Release Manager versi 2 berupa satu JSON/PEM,
+membangun launcher per produk. Identitas host berasal dari csproj/metadata;
+BaseRegKey memakai app_id dengan fallback ApplicationName. Launcher mendukung
+prepare tanpa aktivasi, logo WIC, kunci tertanam dan cab LZX FCI/FDI.
+Aturan registry di atas dan `src/frontend/Launcher/CLAUDE.md` diperbarui sesuai plan.
+
+Guide: `doc/engine/engine-cdn-storage.md`, `engine-release-manager.md`,
+`engine-launcher.md`, `engine-storage-settings.md`, dan `build.md`.
+Laporan: `doc/report/release-manager-cdn-launcher.md`. Backend 344 lulus/8 skip,
+frontend 202 lulus, Rust 76 lulus, fmt/clippy dan smoke produk 15/15 lulus.
+Visual dan smoke API HTTP penuh tetap tertunda; batas quota live selama Sync
+dicatat dalam laporan. Tidak ada push atau tindakan manual policy.
+Harness/log/paket fixture berada di luar repo pada
+`../.artefacts/em-system/scripts/release-cdn-smoke/`, output di `out/`.
