@@ -89,6 +89,9 @@ Container profiles use one of five modes: **Dockerfile**, **LocalImage**, **Temp
   set can be previewed before building.
 - **Compose** builds the selected services only and never runs `up`.
 - **Template** can use a project `.pubxml`; `PublishDir` is redirected into the run workspace.
+- In **Template**, Configuration, Runtime and Framework are editable combos filled from the project
+  (`Configurations`, `RuntimeIdentifiers` followed by the Linux runtime identifiers, `TargetFrameworks`); a value
+  outside the list can still be typed. The lists load when the editor opens and again on Re-read project information.
 - **Set** builds Base before App, sharing identical publish inputs. Named file lists support IncludeOnly and
   Exclude complements, with Error (default) or Warning for missing entries. Existing Dockerfiles build
   against the staged output, optionally under a named subfolder (`.file-base`, `.file-module`). App can use

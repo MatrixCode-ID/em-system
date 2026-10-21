@@ -57,6 +57,10 @@ public partial class PublishProfileDialog : EmWindow {
  private readonly PublishSecretStore _secrets;
  private readonly string _logs;
  private readonly List<Action> _commit=[];
+ // Configuration, Runtime and Framework of a Template publish: editable combos offering what the project declares.
+ private readonly Dictionary<string,ComboBox> _projectChoices=[];
+ private ProjectOptions _projectOptions=ProjectOptions.Fallback;
+ private string? _optionsProject;
  private bool _busy;
  private Action? _modeChanged;
  private Action? _targetTypeChanged;
@@ -85,6 +89,7 @@ public partial class PublishProfileDialog : EmWindow {
   var credentials=Tab("Credentials");Fields(credentials,Profile,["SensitiveDataStorage"]);
   Row(credentials,"",Help("Separate: DPAPI CurrentUser with optional Remember; otherwise session only. Plaintext: secrets are saved as ordinary text in this JSON file."));
   Fields(credentials,Profile,["Credentials"]);
+  Loaded+=async(_,_)=>await LoadProjectOptions();
   var advanced=Tab("Advanced");Fields(advanced,Profile,["KeepWorkspace","RequireReleaseNotes"]);if(Profile.Container!=null)Fields(advanced,Profile.Container,["UseMyDockerLogin","AutoDeploy"]);
  }
  /// <summary>
@@ -181,8 +186,8 @@ public partial class PublishProfileDialog : EmWindow {
    }
    case ContainerMode.Template: {
     Fields(panel,container.Template,null,SourceTemplateFields);
-    Actions(panel,("Preview generated Dockerfile",EFontAwesomeIcon.Solid_Eye,()=> {ShowText("Dockerfile preview",TemplateBuilder.Dockerfile(container.Template));return Task.CompletedTask;}),
-     ("Preview file set from folder",EFontAwesomeIcon.Solid_FolderOpen,()=> {var picker=new OpenFolderDialog {Title="Choose an existing publish output for preview"};if(picker.ShowDialog()==true)ShowText("File set preview",string.Join("\n",TemplateBuilder.SelectFiles(picker.FolderName,container.Template.FileSet,container.Set.FileLists)));return Task.CompletedTask;}));
+    Actions(panel,("Preview generated Dockerfile",EFontAwesomeIcon.Solid_Eye,()=> {ShowPreview(PreviewDialog.Code("Dockerfile preview","The Dockerfile Template mode generates from the current fields.",TemplateBuilder.Dockerfile(container.Template)));return Task.CompletedTask;}),
+     ("Preview file set from folder",EFontAwesomeIcon.Solid_FolderOpen,()=> {var picker=new OpenFolderDialog {Title="Choose an existing publish output for preview"};if(picker.ShowDialog()==true) {var files=TemplateBuilder.SelectFiles(picker.FolderName,container.Template.FileSet,container.Set.FileLists);ShowPreview(PreviewDialog.Code("File set preview",$"{files.Length} file(s) from {picker.FolderName} would be copied into the image.",string.Join("\n",files)));}return Task.CompletedTask;}));
     break;
    }
    case ContainerMode.Compose: {
@@ -308,6 +313,12 @@ public partial class PublishProfileDialog : EmWindow {
      Row(panel,label,cell);
      _commit.Add(()=> {if(secret.Password.Length>0)credential.Secret=secret.Password;});continue;
     }
+    if(obj is TemplateProfile&&property.Name is "Configuration" or "Runtime" or "Framework") {
+     var combo=new ComboBox {Text=value?.ToString()??""};combo.SetResourceReference(StyleProperty,"fieldEditableComboStyle");
+     combo.AddHandler(TextBoxBase.TextChangedEvent,new TextChangedEventHandler((_,_)=>property.SetValue(obj,combo.Text)));
+     _projectChoices[property.Name]=combo;FillChoices(combo,property.Name);
+     _rows[key]=Row(panel,label,combo,tip:tip);continue;
+    }
     var field=new TextBox {Text=value?.ToString()??""};
     field.TextChanged+=(_,_)=> {if(type==typeof(string))property.SetValue(obj,field.Text);else if(int.TryParse(field.Text,out var number))property.SetValue(obj,number);};
     Button? browse=null;
@@ -353,10 +364,23 @@ public partial class PublishProfileDialog : EmWindow {
   var add=TextButton("Add",EFontAwesomeIcon.Solid_Plus,()=> {var item=Activator.CreateInstance(itemType)!;list.Add(item);AddRow(item);return Task.CompletedTask;});
   AutomationProperties.SetName(add,"Add to "+label);cell.Children.Add(add);Row(panel,label,cell,top:true,tip:tip);
  }
+ private void FillChoices(ComboBox combo,string name) {
+  // Changing the items must not change what was typed: a value outside the list is still a valid choice.
+  var text=combo.Text;combo.ItemsSource=name switch {"Configuration"=>_projectOptions.Configurations,"Runtime"=>_projectOptions.Runtimes,_=>_projectOptions.Frameworks};combo.Text=text;
+ }
+ /// <summary>Reads the configurations, runtimes and frameworks of the Template project into the editable combos, once per project.</summary>
+ private async Task LoadProjectOptions() {
+  if(Profile.Container?.Template is not {Project.Length:>0} template||Profile.Workspace.Length==0)return;
+  string project;try {project=Profile.Resolve(template.Project);}catch(Exception ex) when(ex is ArgumentException or IOException or NotSupportedException) {return;}
+  if(project==_optionsProject||!File.Exists(project))return;
+  _optionsProject=project;_projectOptions=await new ProjectReader(new PublishProcessRunner()).Options(project);
+  foreach(var (name,combo) in _projectChoices)FillChoices(combo,name);
+ }
  private async Task ReadProjects(Panel panel) {
   var reader=new ProjectReader(new PublishProcessRunner());var sources=Profile.NuGet?.Sources.Select(s=>Profile.Resolve(s.Path)).ToArray()??[Profile.Resolve(Profile.Container!.Template.Project)];
   var rows=new List<ProjectInformation>();foreach(var source in sources)foreach(var path in await reader.Projects(source))rows.Add(await reader.Read(path));
-  ShowText("Project information (review changes; overrides and target are retained)",string.Join("\n",rows.Select(x=>$"{x.Path}\nPackage {x.PackageId} · version {x.Version} · frameworks {x.Frameworks} · {x.Reason}")));
+  _optionsProject=null;await LoadProjectOptions();
+  ShowPreview(PreviewDialog.List("Project information","Review the changes; overrides and target are retained.",rows.Select(x=>new PreviewRow(x.PackageId,$"Version {x.Version} · {x.Frameworks} · {x.Reason}",x.Path)).ToArray()));
   panel.Children.Clear();
   if(Profile.NuGet!=null)foreach(var source in Profile.NuGet.Sources) {
    var projects=await reader.Projects(Profile.Resolve(source.Path));
@@ -369,7 +393,7 @@ public partial class PublishProfileDialog : EmWindow {
   }
   if(Profile.Container!=null) {
    var hosts=new ComboBox {ItemsSource=rows.Where(x=>x.IsHost).ToArray(),DisplayMemberPath="Path"};
-   hosts.SelectionChanged+=(_,_)=> {if(hosts.SelectedItem is ProjectInformation host) {Profile.Container.Template.Project=Path.GetRelativePath(Profile.Workspace,host.Path);message.Text="Host selected: "+host.PackageId+" · frameworks: "+host.Frameworks;}};
+   hosts.SelectionChanged+=(_,_)=> {if(hosts.SelectedItem is ProjectInformation host) {Profile.Container.Template.Project=Path.GetRelativePath(Profile.Workspace,host.Path);message.Text="Host selected: "+host.PackageId+" · frameworks: "+host.Frameworks;_=LoadProjectOptions();}};
    Row(panel,"Container host",hosts);
   }
  }
@@ -385,7 +409,7 @@ public partial class PublishProfileDialog : EmWindow {
    imagePicker.SelectionChanged+=(_,_)=> {if(imagePicker.SelectedItem is CtnImageInfo image) {var target=Profile.Container!.Target;target.Type=TargetType.BuiltIn;target.Server=_targets.Scope;target.Container=image.Name;refresh();message.Text="Built-in target: "+target.Root+"/"+image.Name;}};
   }
  }
- private void ShowText(string title,string text) {var view=new TextBox {Text=text,IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,VerticalScrollBarVisibility=ScrollBarVisibility.Auto};view.SetResourceReference(StyleProperty,"fieldBoxStyle");view.Margin=new Thickness(16);var window=new EmWindow {Title=title,Owner=this,Width=750,Height=520,Content=view,WindowStartupLocation=WindowStartupLocation.CenterOwner,ShowMinimizeButton=false};window.Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml",UriKind.Relative)});window.ShowDialog();}
+ private void ShowPreview(PreviewDialog dialog) {dialog.Owner=this;dialog.ShowDialog();}
  private void Save(bool asNew) {try {foreach(var commit in _commit)commit();Profile.Validate();if(!Directory.Exists(Profile.Workspace))throw new InvalidDataException("Workspace directory is required.");SaveAs=asNew;DialogResult=true;}catch(Exception ex){message.Text=ex.Message;}}
  private void SaveClick(object s,RoutedEventArgs e)=>Save(false);
  private void SaveAsClick(object s,RoutedEventArgs e)=>Save(true);
