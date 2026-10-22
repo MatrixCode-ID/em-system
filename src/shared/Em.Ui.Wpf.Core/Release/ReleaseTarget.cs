@@ -89,6 +89,15 @@ namespace Em.Ui.Wpf.Core.Release
          return normalized.Length == 0 ? ReleaseLayout.DefaultReleaseFolder : normalized;
       }
 
+      /// <summary>
+      /// The public URL of a release: the CDN base address followed by the release folder, ending in
+      /// <c>/</c>. The base is the address the CDN answers on (e.g. <c>https://host/cdn/</c>), never the release
+      /// folder itself. <c>null</c> when no base is given, so the caller derives it from the connection.
+      /// </summary>
+      public static string? ReleaseAddress(string? cdnBaseAddress, string? releaseFolder) =>
+         string.IsNullOrWhiteSpace(cdnBaseAddress) ? null
+            : $"{cdnBaseAddress.Trim().TrimEnd('/')}/{NormalizeReleaseFolder(releaseFolder)}/";
+
       internal static string? ParentOf(string path) {
          var index = path.LastIndexOf('/');
          return index < 0 ? null : path[..index];

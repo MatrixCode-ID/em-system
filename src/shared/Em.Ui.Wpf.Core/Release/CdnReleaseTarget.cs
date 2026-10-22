@@ -33,10 +33,10 @@ namespace Em.Ui.Wpf.Core.Release
       /// <param name="connection">The active connection; its address and certificate choice are used for <c>/cdn</c>.</param>
       /// <param name="releaseFolder">The path of the release folder inside the CDN, e.g. <c>wpf-release</c>.</param>
       /// <param name="appId">Owning product identity.</param>
-      /// <param name="publicAddress">Optional client-facing release URL.</param>
+      /// <param name="publicAddress">Optional client-facing CDN base address; the release folder is added to it.</param>
       public CdnReleaseTarget(ICdnReleaseServices service, ApiConnection connection, string releaseFolder, string appId, string? publicAddress = null) {
          _appId = appId;
-         _publicAddress = string.IsNullOrWhiteSpace(publicAddress) ? null : publicAddress.TrimEnd('/') + "/";
+         _publicAddress = ReleaseAddress(publicAddress, releaseFolder);
          _service = service;
          _host = connection.Host.TrimEnd('/');
          _client = PublicClients.Get(connection.IgnoreSslErrors);

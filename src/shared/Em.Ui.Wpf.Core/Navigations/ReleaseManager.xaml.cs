@@ -732,7 +732,7 @@ namespace Em.Ui.Wpf.Navigations
          if (comparison.RemoteManifestBytes is null && target is CdnReleaseTarget cdn && await cdn.HasManifestOnServerAsync(token))
             throw new InvalidOperationException(
                $"The CDN folder '{ReleaseFolder}' has a release.json, but {target.Description}{ReleaseLayout.ManifestFileName} was not found. " +
-               $"The CDN address must point at the release folder itself, e.g. <host>/cdn/{ReleaseFolder}/ (or leave it empty). " +
+               $"The CDN address is the CDN base only (e.g. https://host/cdn/), the release folder '{ReleaseFolder}' is added to it; or leave it empty. " +
                "Fix it in Settings, then Prepare again so the launcher gets the right address.");
 
          _comparedTarget = target;
@@ -743,7 +743,7 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       private string LauncherOutput => string.IsNullOrWhiteSpace(_preferences?.LauncherOutputFolder) ? LauncherBuild.DefaultOutput(Profile?.Product.AppId ?? "") : _preferences.LauncherOutputFolder;
-      private string DefaultReleaseSource => Profile?.CdnAddress.Length > 0 ? Profile.CdnAddress : TargetKind == ReleaseTargetKind.Cdn ? $"{EmApp?.ActiveConnection?.Host.TrimEnd('/')}/cdn/{ReleaseFolder}/" : Path.Combine(TargetFolder, ReleaseFolder);
+      private string DefaultReleaseSource => ReleaseTarget.ReleaseAddress(Profile?.CdnAddress, ReleaseFolder) is { } address ? address : TargetKind == ReleaseTargetKind.Cdn ? $"{EmApp?.ActiveConnection?.Host.TrimEnd('/')}/cdn/{ReleaseFolder}/" : Path.Combine(TargetFolder, ReleaseFolder);
 
       private ReleaseTarget? CreateTarget() {
          if (TargetBlockedReason is not null || EmApp is not { } app) return null;

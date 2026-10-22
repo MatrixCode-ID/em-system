@@ -55,12 +55,12 @@ application and launcher share the same identity. See [host build integration](b
 ## Destination and permissions
 
 Folder targets write directly to a local/UNC release folder. CDN writes go through the active connection;
-Compare/Verify and the launcher's default source use the profile CDN address. Empty CDN address derives
-`<connection>/cdn/<release-folder>/`. An explicit address can point at a reverse proxy.
-An explicit address is the URL of the release folder itself, the one that serves `release.json` (for
-example `https://host/cdn/<release-folder>/`), not the CDN root. When the server has a `release.json` in
-the release folder but the address answers 404, Compare stops with an error: otherwise every Compare would
-see no release, every Sync would upload everything again, and the launcher would look in the wrong place.
+Compare/Verify and the launcher's default source read the release at `<CDN address>/<release-folder>/`.
+The CDN address is the base only (e.g. `https://host/cdn/`, or a reverse proxy in front of it); the release
+folder is always added to it, so changing the release folder moves every address with it. Empty CDN
+address derives `<connection>/cdn/<release-folder>/`. When the server has a `release.json` in the release
+folder but that address answers 404, Compare stops with an error: otherwise every Compare would see no
+release, every Sync would upload everything again, and the launcher would look in the wrong place.
 
 Browse CDN / select managed folder browses relative paths and creates/adopts a physically empty root.
 Selecting the same root for the same app_id is allowed; another owner, a nonempty root or nesting is

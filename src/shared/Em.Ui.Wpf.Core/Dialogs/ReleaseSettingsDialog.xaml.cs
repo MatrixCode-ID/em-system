@@ -60,7 +60,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
          if (this.ShowMboxDecideWarning("Release this product's managed folder?", Title) == MessageBoxResult.Yes)
             await Service.PostMeta_CdnReleaseUnmanage(Value("Release folder"), Value("app_id"));
       }); _form.Children.Add(cdn);
-      Field("CDN address", profile.CdnAddress, "Public URL of the release folder itself (where release.json is), e.g. https://host/cdn/<release folder>/, for launcher, Compare and Verify. Empty derives from the active host /cdn/<release folder>/. Sync uses the active connection.");
+      Field("CDN address", profile.CdnAddress, "Public CDN base address only, e.g. https://host/cdn/. The release folder is added to it (https://host/cdn/<release folder>/) for launcher, Compare and Verify. Empty derives from the active host /cdn/. Sync uses the active connection.");
       Field("Product", profile.Product.AppName, "Display name only."); Field("Company", profile.Product.Publisher, "Publisher.");
       Field("app_id", profile.Product.AppId, "Two or more alphanumeric segments separated by dots. Use a different id per environment. MatrixCode.EmSystem is reserved.");
       Field("Application exe", profile.Product.AppExe, "AssemblyName plus .exe; no directory.");

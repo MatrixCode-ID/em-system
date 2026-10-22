@@ -60,9 +60,9 @@ public static class LauncherBuild {
       catch (Exception ex) { return ex.Message; }
       var exe = Path.Combine(output, profile.Launcher.FileName);
       if (!File.Exists(Path.Combine(source, "Cargo.toml")))
-         return CacheMatches(exe, profile.Launcher.InputHash, ProductHash(profile, defaultSource ?? profile.CdnAddress)) ? null : "Choose the local launcher source folder in Settings; this product needs a launcher build.";
+         return CacheMatches(exe, profile.Launcher.InputHash, ProductHash(profile, defaultSource ?? ReleaseTarget.ReleaseAddress(profile.CdnAddress, profile.ReleaseFolder) ?? "")) ? null : "Choose the local launcher source folder in Settings; this product needs a launcher build.";
       try {
-         var hash = InputHash(source, profile, defaultSource ?? profile.CdnAddress);
+         var hash = InputHash(source, profile, defaultSource ?? ReleaseTarget.ReleaseAddress(profile.CdnAddress, profile.ReleaseFolder) ?? "");
          if (CacheMatches(exe, hash)) return null;
          var cargo = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
             .Any(p => File.Exists(Path.Combine(p, "cargo.exe"))) ||
