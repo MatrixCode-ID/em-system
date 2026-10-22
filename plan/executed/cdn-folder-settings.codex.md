@@ -1,7 +1,7 @@
 # Plan — Folder settings CDN (`.meta` per folder), Rename, Copy (untuk Codex)
 
-Status: **belum dieksekusi**
-Laporan: `doc/report/cdn-folder-settings.md` (dibuat saat eksekusi)
+Status: **selesai dieksekusi 2026-10-22** (Claude Code)
+Laporan: [doc/report/cdn-folder-settings.md](../../doc/report/cdn-folder-settings.md)
 Dibuat: 2026-10-22
 Pembaca: Codex. Baca juga `CLAUDE.md` di root repo ini dan `CLAUDE.md` subfolder pada jalur berkas yang
 disentuh. Semua keputusan di bawah adalah keputusan pengguna kecuali ditandai **(default plan)**; bila selama

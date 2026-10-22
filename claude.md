@@ -479,3 +479,13 @@ HTTP, uji visual, release note NuGet atau push. Guide `doc/engine/engine-skin.md
 laporan `doc/report/cdn-home-skin.md`. Visual diperiksa pengguna.
 Artefak nonrahasia: `../.artefacts/em-system/cdn-home-skin-build.log` dan
 `cdn-home-skin-tests.log` (2026-10-22).
+
+## Folder settings CDN `.meta`, Rename, Copy (2026-10-22)
+
+Plan `plan/executed/cdn-folder-settings.codex.md` dieksekusi. Setelan per folder di berkas `.meta`
+(tanpa inheritance): tidak pernah terlihat atau dilayani `/cdn` (diperiksa terhadap nama sebenarnya di
+disk), `publicListing: false` membuat listing 404 dan berkas folder itu ber-header `X-Robots-Tag: noindex`,
+`hiddenFiles`/`shownFiles` menyaring listing publik. CDN Manager mendapat Folder Settings, Show hidden
+files, Rename (`F2`) dan Copy (Ctrl+drag, business task). Release Manager menulis `.meta` ke seluruh pohon
+rilis setiap Sync. Build API/WPF/MAUI dan 35 test CDN terfilter lulus; GUI dan HTTP nyata diperiksa
+pengguna. Guide `doc/engine/engine-cdn-storage.md`; laporan `doc/report/cdn-folder-settings.md`.

@@ -83,7 +83,11 @@ conflicting launcher version. Application version still comes from the host Vers
 Compare hashes local output and reads the public target. Sync confirms uploads/removals, checks that
 neither source nor remote manifest changed since Compare, checks final quota, signs metadata, uploads
 changed binaries, writes signature then manifest, and removes obsolete content. Readers can observe a
-transient mismatch during Sync and must retry later. Verify checks signature, sizes and hashes using
+transient mismatch during Sync and must retry later. After the last removal, a CDN Sync writes `.meta` with
+`publicListing: false` to the release folder, `binaries/` and every folder inside `binaries/` (settings are
+not inherited), so the application components are fetched only by direct link and sent with
+`X-Robots-Tag: noindex`; the release folder also gets it when it is adopted. Manual changes are replaced by
+the next Sync. Folder targets write no `.meta`. Verify checks signature, sizes and hashes using
 the profile key. Overlapping publish/target folders produce a warning that can be accepted or cancelled.
 
 See [Launcher and updates](engine-launcher.md) for installation, in-app preparation and IT cab packages.

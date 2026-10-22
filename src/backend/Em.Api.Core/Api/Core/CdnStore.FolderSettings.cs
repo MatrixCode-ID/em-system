@@ -12,7 +12,8 @@ namespace Em.Api.Core;
 // name on disk so case, 8.3 short names and other spellings cannot reach it either.
 internal sealed partial class CdnStore {
    private sealed record CachedSettings(DateTime WriteTimeUtc, long Length, CdnFolderSettings? Settings, string? Error);
-   private readonly ConcurrentDictionary<string, CachedSettings> _settingsCache = new(StringComparer.OrdinalIgnoreCase);
+   private readonly ConcurrentDictionary<string, CachedSettings> _settingsCache =
+      new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
    /// <summary>Receives warnings about invalid settings files; set by the host once logging is available.</summary>
    internal ILogger? Logger { get; set; }
