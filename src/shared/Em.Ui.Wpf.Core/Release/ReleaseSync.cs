@@ -133,6 +133,9 @@ namespace Em.Ui.Wpf.Core.Release
                .ConfigureAwait(false);
          }
 
+         // 6. Whatever the target applies to the final tree (the CDN hides its release folders from listings).
+         await target.CompleteSyncAsync(token).ConfigureAwait(false);
+
          return manifest;
       }
 

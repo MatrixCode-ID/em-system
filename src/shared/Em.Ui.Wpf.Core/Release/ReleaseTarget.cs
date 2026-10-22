@@ -74,6 +74,9 @@ namespace Em.Ui.Wpf.Core.Release
       /// <summary>Validates expected final files before the first write.</summary>
       public virtual Task PreflightAsync(IReadOnlyList<Em.Api.Core.Models.CdnSyncFile> files, CancellationToken token) => Task.CompletedTask;
 
+      /// <summary>Runs once a Sync has written and deleted everything, e.g. to apply folder settings to the new tree.</summary>
+      public virtual Task CompleteSyncAsync(CancellationToken token) => Task.CompletedTask;
+
       /// <summary>The path of a release file inside the release folder: <c>binaries/</c> + <paramref name="path"/>.</summary>
       public static string BinaryPath(string path) => $"{ReleaseLayout.BinariesFolder}/{path}";
 

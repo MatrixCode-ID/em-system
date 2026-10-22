@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
 using FontAwesome6;
 using Microsoft.Extensions.DependencyInjection;
@@ -92,6 +93,9 @@ namespace Em.Ui.Wpf.Navigations
 
       /// <summary><c>true</c> for a folder.</summary>
       public bool IsFolder => Entry.IsFolder;
+
+      /// <summary><c>true</c> when the folder settings leave this row out of the public listing.</summary>
+      public bool IsHidden => Entry.IsHidden;
 
       /// <summary>
       /// <c>true</c> when this row is also selected. The list can select many rows at once; only Create
@@ -214,6 +218,9 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(EditLimitCommand), EditLimitCommand, EditLimitCommandAllowed);
          RegisterCommand(nameof(SaveLimitCommand), SaveLimitCommand, SaveLimitCommandAllowed);
          RegisterCommand(nameof(CancelLimitCommand), CancelLimitCommand, CancelLimitCommandAllowed);
+         RegisterCommand<CdnManagerItem?>(nameof(RenameCommand), RenameCommand, RenameCommandAllowed);
+         RegisterCommand(nameof(FolderSettingsCommand), FolderSettingsCommand, FolderSettingsCommandAllowed);
+         RegisterCommand(nameof(CopyTaskCommand), CopyTaskCommand, CopyTaskCommandAllowed);
          Breadcrumbs.Add(RootCrumb);
 
          _taskTimer = new DispatcherTimer { Interval = SlowTaskPoll };
@@ -249,8 +256,56 @@ namespace Em.Ui.Wpf.Navigations
 
       #region Data
 
-      /// <summary>Content of the folder that is open: subfolders first, then files.</summary>
+      /// <summary>
+      /// Content of the folder that is open: subfolders first, then files. Rows hidden from the public
+      /// listing are left out unless <see cref="ShowHiddenFiles"/> is on.
+      /// </summary>
       public ObservableCollection<CdnManagerItem> Items { get; } = [];
+
+      // Every entry of the open folder as the server sent it; Items is the visible part.
+      private CdnEntry[] _entries = [];
+
+      /// <summary>
+      /// Shows rows that the folder settings hide from the public listing, marked as hidden. Display only:
+      /// sizes, copy and move still include them. Kept for this session.
+      /// </summary>
+      public bool ShowHiddenFiles {
+         get => Get<bool>();
+         set => Set(value, _ => RebuildItems(SelectedItem?.Name));
+      }
+
+      /// <summary>
+      /// The CDN copy task that is still live - whoever's it is - or that failed and has not been cleared;
+      /// <c>null</c> when there is none. Only one copy can run on the whole server.
+      /// </summary>
+      public BusinessTaskInfo? CopyTask {
+         get => Get<BusinessTaskInfo?>();
+         private set => Set(value, _ => {
+            NotifyChanged(nameof(HasCopyTask));
+            NotifyChanged(nameof(CopyCaption));
+            NotifyChanged(nameof(CopyTooltip));
+            Commands[nameof(CopyTaskCommand)]?.RaiseCanExecuteChanged();
+         });
+      }
+
+      /// <summary><c>true</c> while a copy runs or a failed copy waits to be cleared.</summary>
+      public bool HasCopyTask => ModeOf(CopyTask) != CdnTaskMode.None;
+
+      /// <summary>Text of the copy status button.</summary>
+      public string CopyCaption => CopyTask switch {
+         null => "",
+         { Status: BusinessTaskStatus.Queued } => "Copy Queued",
+         { Status: BusinessTaskStatus.Running, Percent: { } percent } => $"Copying {percent:0}%",
+         { Status: BusinessTaskStatus.Running } => "Copying...",
+         _ => "Copy Failed"
+      };
+
+      /// <summary>Tooltip of the copy status button.</summary>
+      public string CopyTooltip => ModeOf(CopyTask) switch {
+         CdnTaskMode.Running => $"{ProgressText(CopyTask!)} - click to cancel",
+         CdnTaskMode.Failed => "The copy failed - click for details",
+         _ => ""
+      };
 
       /// <summary>The pieces of the open folder's path, from the root to the folder itself.</summary>
       public ObservableCollection<CdnBreadcrumb> Breadcrumbs { get; } = [];
@@ -478,6 +533,67 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Only for a row, and while the screen is not busy.</summary>
       public bool DeleteCommandAllowed(CdnManagerItem? item) => item is not null && item.Entry.ManagedFolder is null && CanWrite;
 
+      /// <summary>
+      /// Asks for a new name of row <paramref name="item"/> and renames it in this folder. Renaming a file to
+      /// the folder settings name turns its content into the settings of this folder, after confirmation.
+      /// </summary>
+      public async Task RenameCommand(CdnManagerItem? item) {
+         if (item is null || DialogOwner is not { } owner) return;
+         var dialog = new TextInputDialog("Rename", $"New name of '{item.Name}' in this folder.", "Name", "Rename",
+            EFontAwesomeIcon.Solid_Pen, item.Name) { Owner = owner };
+         if (dialog.ShowDialog() != true) return;
+
+         var name = dialog.Vm.Result;
+         if (name == item.Name) return;
+         var toSettings = CdnFolderSettingsFormat.IsSettingsName(name);
+         if (toSettings) {
+            if (item.IsFolder) {
+               owner.ShowMboxWarning($"'{name}' is reserved for folder settings and cannot name a folder.", "Rename");
+               return;
+            }
+
+            if (owner.ShowMboxDecideWarning(
+                   $"'{item.Name}' will become the settings of this folder and disappear from the list. Its content must be valid folder settings; the file itself is removed.",
+                   "Rename to Folder Settings") != MessageBoxResult.Yes) return;
+         }
+
+         await RunBusyAsync("Renaming...", async () => {
+            await Service.PostGetMeta_CdnRename(item.Entry.Path, name);
+            await ReadFolderAsync(CurrentPath, select: toSettings ? null : name);
+         });
+      }
+
+      /// <summary>Only for a row outside managed folders, and while the screen is not busy.</summary>
+      public bool RenameCommandAllowed(CdnManagerItem? item) => item is not null && item.Entry.ManagedFolder is null && CanWrite;
+
+      /// <summary>Opens the settings of the open folder; managed folders open read-only.</summary>
+      public async Task FolderSettingsCommand() {
+         if (DialogOwner is not { } owner) return;
+         CdnFolderSettingsDetail? detail = null;
+         await RunBusyAsync("Reading folder settings...", async () => detail = await Service.GetMeta_CdnFolderSettings(CurrentPath));
+         if (detail is null) return;
+
+         var dialog = new CdnFolderSettingsDialog(Service, detail) { Owner = owner };
+         if (dialog.ShowDialog() == true) await LoadAsync(CurrentPath);
+      }
+
+      /// <summary>Whenever a folder is open and the screen is not busy.</summary>
+      public bool FolderSettingsCommandAllowed() => CanAct;
+
+      /// <summary>While a copy runs: cancels it. After a copy failed: shows its error and then clears it.</summary>
+      public Task CopyTaskCommand() => ModeOf(CopyTask) switch {
+         CdnTaskMode.Running => CancelCopyAsync(),
+         CdnTaskMode.Failed => ClearCopyAsync(),
+         _ => Task.CompletedTask
+      };
+
+      /// <summary>Cancelling and clearing follow the rights reported by the server.</summary>
+      public bool CopyTaskCommandAllowed() => ModeOf(CopyTask) switch {
+         CdnTaskMode.Running => IsNotBusy && CopyTask!.CanCancel,
+         CdnTaskMode.Failed => IsNotBusy && CopyTask!.CanClear,
+         _ => false
+      };
+
       /// <summary>Reads the open folder again.</summary>
       public Task RefreshCommand() => ReloadAsync();
 
@@ -544,6 +660,8 @@ namespace Em.Ui.Wpf.Navigations
       public Task DropCommand(object? payload) {
          var (dropped, target) = ResolveDrop(payload);
          return dropped switch {
+            // Ctrl copies, as in Explorer; a plain drop moves.
+            CdnManagerItem item when Keyboard.Modifiers.HasFlag(ModifierKeys.Control) => CopyAsync(item, target!),
             CdnManagerItem item => MoveAsync(item, target!),
             DroppedFiles files => UploadDroppedAsync(files.Paths, target!),
             _ => Task.CompletedTask
@@ -670,21 +788,25 @@ namespace Em.Ui.Wpf.Navigations
       private async Task<bool> ReadTasksAsync(bool detectFinished) {
          var folder = CurrentPath;
          var archive = await Service.GetMeta_CdnArchiveTask();
+         var copy = await Service.GetMeta_CdnCopyTask();
          var extracts = await Service.GetMeta_CdnExtractTasks(folder);
          // The folder changed while the answers were out; they describe the one left behind.
          if (folder != CurrentPath) return false;
 
          var alive = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
          if (archive is { IsAlive: true }) alive.Add(archive.Key);
+         if (copy is { IsAlive: true }) alive.Add(copy.Key);
          foreach (var task in extracts.Where(r => r.IsAlive)) alive.Add(task.Key);
 
          var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
          if (archive is not null) known.Add(archive.Key);
+         if (copy is not null) known.Add(copy.Key);
          foreach (var task in extracts) known.Add(task.Key);
          var finished = detectFinished && _aliveTaskKeys.Any(r => !known.Contains(r));
 
          _aliveTaskKeys = alive;
          ArchiveTask = archive;
+         CopyTask = copy;
          foreach (var item in Items) {
             item.ExtractTask = item.IsZip
                ? extracts.FirstOrDefault(r =>
@@ -752,6 +874,22 @@ namespace Em.Ui.Wpf.Navigations
                 "Archive Failed") != MessageBoxResult.Yes) return;
 
          await RunTaskActionAsync("Clearing archive...", "Clear Archive", () => Service.PostMeta_CdnArchiveClear());
+      }
+
+      private async Task CancelCopyAsync() {
+         if (CopyTask is not { } task || DialogOwner is not { } owner) return;
+         if (owner.ShowMboxDecideWarning($"Cancel '{task.Title}' started by {task.OwnerName}?", "Cancel Copy") !=
+             MessageBoxResult.Yes) return;
+
+         await RunTaskActionAsync("Canceling copy...", "Cancel Copy", () => Service.PostMeta_CdnCopyCancel());
+      }
+
+      private async Task ClearCopyAsync() {
+         if (CopyTask is not { } task || DialogOwner is not { } owner) return;
+         if (owner.ShowMboxDecideWarning($"'{task.Title}' failed:\n\n{task.ErrorMessage}\n\nClear this error?",
+                "Copy Failed") != MessageBoxResult.Yes) return;
+
+         await RunTaskActionAsync("Clearing copy...", "Clear Copy", () => Service.PostMeta_CdnCopyClear());
       }
 
       private async Task StartExtractAsync(CdnManagerItem item) {
@@ -883,9 +1021,8 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(LimitCaption));
          RebuildBreadcrumbs();
 
-         Items.Clear();
-         content.Entries.EachOf(r => Items.Add(new CdnManagerItem(r, this)));
-         SelectedItem = select is null ? null : Items.FirstOrDefault(r => r.Name == select);
+         _entries = content.Entries;
+         RebuildItems(select);
          IsLoaded = true;
          NotifyChanged(nameof(CanEditLimit));
          NotifyChanged(nameof(ItemsCaption));
@@ -916,8 +1053,24 @@ namespace Em.Ui.Wpf.Navigations
          finally { IsStorageRefreshing = false; }
       }
 
+      // Rows are rebuilt from the last answer; extract states move over by path, so toggling hidden rows
+      // needs no new request.
+      private void RebuildItems(string? select) {
+         var extracts = Items.Where(r => r.ExtractTask is not null).ToDictionary(r => r.Entry.Path, r => r.ExtractTask);
+         Items.Clear();
+         foreach (var entry in _entries.Where(r => ShowHiddenFiles || !r.IsHidden)) {
+            var item = new CdnManagerItem(entry, this);
+            if (extracts.TryGetValue(entry.Path, out var task)) item.ExtractTask = task;
+            Items.Add(item);
+         }
+         SelectedItem = select is null ? null : Items.FirstOrDefault(r => r.Name == select);
+         NotifyChanged(nameof(ItemsCaption));
+         NotifyChanged(nameof(IsEmpty));
+      }
+
       private void ShowDisabled() {
          StorageCaption = "Storage: CDN disabled";
+         _entries = [];
          Items.Clear();
          SelectedItem = null;
          CurrentPath = "";
@@ -975,6 +1128,25 @@ namespace Em.Ui.Wpf.Navigations
             }
             finally {
                await ReadFolderAsync(CurrentPath);
+            }
+         });
+      }
+
+      // Copies run as a server business task; a file that already exists at the target may be replaced once
+      // the user agrees, while a folder is never merged.
+      private async Task CopyAsync(CdnManagerItem item, string target) {
+         var owner = DialogOwner;
+         var request = new CdnCopyRequest { Path = item.Entry.Path, TargetFolder = target };
+         await RunTaskActionAsync($"Copying {item.Name}...", "Copy", async () => {
+            try {
+               CopyTask = await Service.PostGetMeta_CdnCopy(request);
+            }
+            catch (ActionException x) when (x.StatusCode == 409 && !item.IsFolder &&
+                                            x.Message.Contains("already exists in the target folder", StringComparison.Ordinal)) {
+               if (owner?.ShowMboxDecideWarning($"'{item.Name}' already exists in '{FolderLabel(target)}'. Replace it?",
+                      "File Exists") != MessageBoxResult.Yes) return;
+               request.Overwrite = true;
+               CopyTask = await Service.PostGetMeta_CdnCopy(request);
             }
          });
       }

@@ -136,8 +136,30 @@ namespace Em.Ui.Wpf.Core.Release
       /// <inheritdoc />
       public override async Task<long?> GetMaxFileSizeAsync(CancellationToken token) {
          await _service.PostGetMeta_CdnReleaseManage(_root, _appId).ConfigureAwait(false);
+         await HideFromListingAsync(_root).ConfigureAwait(false);
          return null;
       }
+
+      /// <summary>
+      /// Turns the public listing off for the release folder, <c>binaries/</c> and every folder inside it, so
+      /// the application components can only be fetched by direct link. Folder settings are not inherited,
+      /// hence one settings file per folder; it is rewritten on every Sync, replacing manual changes.
+      /// </summary>
+      public override async Task CompleteSyncAsync(CancellationToken token) {
+         var binaries = Full(ReleaseLayout.BinariesFolder);
+         var folders = new List<string> { _root, binaries };
+         folders.AddRange((await ListBinariesAsync(token).ConfigureAwait(false))
+            .Where(r => r.IsFolder).Select(r => $"{binaries}/{r.Path}"));
+         foreach (var folder in folders) {
+            token.ThrowIfCancellationRequested();
+            await HideFromListingAsync(folder).ConfigureAwait(false);
+         }
+      }
+
+      private Task HideFromListingAsync(string folder) =>
+         _service.PostMeta_CdnReleaseFolderSettings(new CdnReleaseFolderSettingsRequest {
+            AppId = _appId, Path = folder, Settings = new CdnFolderSettings { PublicListing = false }
+         });
 
       /// <inheritdoc />
       public override Task PreflightAsync(IReadOnlyList<CdnSyncFile> files, CancellationToken token) =>

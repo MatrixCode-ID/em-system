@@ -24,4 +24,6 @@ public sealed class CdnReleaseService(EmApp app) : ServiceWpfBase(app), ICdnRele
    public Task<CdnEntry> PostGetMeta_CdnReleaseUpload(CdnReleaseUploadRequest request, Stream content) => PostStreamAsync<CdnEntry>(nameof(PostGetMeta_CdnReleaseUpload), content, request);
    /// <inheritdoc />
    public Task PostMeta_CdnReleaseDelete(string path, string appId) => PostAsync(nameof(PostMeta_CdnReleaseDelete), path, appId);
+   /// <inheritdoc />
+   public Task PostMeta_CdnReleaseFolderSettings(CdnReleaseFolderSettingsRequest request) => PostAsync(nameof(PostMeta_CdnReleaseFolderSettings), request);
 }

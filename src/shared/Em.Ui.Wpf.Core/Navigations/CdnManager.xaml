@@ -261,6 +261,15 @@
                      <TextBlock Text="Open in Browser" VerticalAlignment="Center" />
                   </StackPanel>
                </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}"
+                       Margin="8,0,0,0"
+                       Command="{Binding Commands[FolderSettingsCommand]}"
+                       ToolTip="Public listing and hidden files of this folder">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Sliders" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="Folder Settings" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
                <Button Style="{StaticResource archiveButtonStyle}"
                        Margin="8,0,0,0"
                        Command="{Binding Commands[ArchiveCommand]}"
@@ -309,6 +318,16 @@
                      <TextBlock Text="Cancel" VerticalAlignment="Center" />
                   </StackPanel>
                </Button>
+               <Button Style="{StaticResource outlinedButtonStyle}"
+                       Margin="0,0,8,0"
+                       Command="{Binding Commands[CopyTaskCommand]}"
+                       ToolTip="{Binding CopyTooltip}"
+                       Visibility="{Binding HasCopyTask, Converter={StaticResource boolToVisibility}}">
+                  <StackPanel Orientation="Horizontal">
+                     <fa:FontAwesome Icon="Solid_Copy" Style="{StaticResource buttonIconStyle}" />
+                     <TextBlock Text="{Binding CopyCaption}" VerticalAlignment="Center" />
+                  </StackPanel>
+               </Button>
                <Border Style="{StaticResource chipStyle}"
                        Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}">
                   <TextBlock Text="{Binding ItemsCaption}" />
@@ -347,7 +366,13 @@
          </Grid>
 
          <!-- ==== breadcrumb ==== -->
-         <StackPanel Grid.Row="2" Margin="18,0,22,8" Orientation="Horizontal">
+         <DockPanel Grid.Row="2" Margin="18,0,22,8">
+         <CheckBox DockPanel.Dock="Right"
+                   VerticalAlignment="Center"
+                   Content="Show hidden files"
+                   IsChecked="{Binding ShowHiddenFiles}"
+                   ToolTip="Include items that the folder settings hide from the public listing. Display only: sizes, copy and move always include them." />
+         <StackPanel Orientation="Horizontal">
             <Button Style="{StaticResource rowActionButtonStyle}"
                     Command="{Binding Commands[GoUpCommand]}"
                     ToolTip="Up one folder">
@@ -391,6 +416,7 @@
                </ItemsControl.ItemTemplate>
             </ItemsControl>
          </StackPanel>
+         </DockPanel>
 
          <!-- ==== list card ==== -->
          <Border Grid.Row="3"
@@ -437,6 +463,11 @@
                         SelectedItem="{Binding SelectedItem}"
                         ItemContainerStyle="{StaticResource cdnRowStyle}"
                         Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}">
+                  <ListBox.InputBindings>
+                     <KeyBinding Key="F2"
+                                 Command="{Binding Commands[RenameCommand]}"
+                                 CommandParameter="{Binding SelectedItem}" />
+                  </ListBox.InputBindings>
                   <ListBox.ItemTemplate>
                      <DataTemplate>
                         <Border Style="{StaticResource rowDropFrameStyle}">
@@ -461,10 +492,18 @@
                                                  FontSize="15"
                                                  Opacity="0.7"
                                                  VerticalAlignment="Center" />
-                                 <TextBlock Margin="12,0,16,0"
+                                 <TextBlock x:Name="entryName"
+                                            Margin="12,0,16,0"
                                             Style="{StaticResource primaryCellStyle}"
                                             Text="{Binding DisplayName}"
                                             ToolTip="{Binding DisplayName}" />
+                                 <fa:FontAwesome Icon="Solid_EyeSlash"
+                                                 FontSize="12"
+                                                 Opacity="0.55"
+                                                 VerticalAlignment="Center"
+                                                 Background="Transparent"
+                                                 ToolTip="Hidden from public listing"
+                                                 Visibility="{Binding IsHidden, Converter={StaticResource boolToVisibility}}" />
                               </StackPanel>
 
                               <TextBlock Grid.Column="1"
@@ -505,6 +544,13 @@
                                     <fa:FontAwesome Icon="Solid_Download" />
                                  </Button>
                                  <Button Style="{StaticResource rowActionButtonStyle}"
+                                         ToolTip="Rename (F2)"
+                                         Command="{Binding DataContext.Commands[RenameCommand],
+                                                           RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                         CommandParameter="{Binding}">
+                                    <fa:FontAwesome Icon="Solid_Pen" />
+                                 </Button>
+                                 <Button Style="{StaticResource rowActionButtonStyle}"
                                          ToolTip="Delete"
                                          Command="{Binding DataContext.Commands[DeleteCommand],
                                                            RelativeSource={RelativeSource AncestorType=ListBox}}"
@@ -519,6 +565,9 @@
                               <Setter TargetName="entryIcon" Property="Foreground"
                                       Value="{DynamicResource themeAccentBrush}" />
                               <Setter TargetName="entryIcon" Property="Opacity" Value="1" />
+                           </DataTrigger>
+                           <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                              <Setter TargetName="entryName" Property="Opacity" Value="0.55" />
                            </DataTrigger>
                         </DataTemplate.Triggers>
                      </DataTemplate>

@@ -1,0 +1,161 @@
+<windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.CdnFolderSettingsDialog"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+                    xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+                    xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+                    mc:Ignorable="d"
+                    Title="Folder Settings"
+                    Width="560"
+                    SizeToContent="Height"
+                    ResizeMode="NoResize"
+                    ShowMinimizeButton="False"
+                    ShowInTaskbar="False"
+                    WindowStartupLocation="CenterOwner">
+
+   <windows:EmWindow.Resources>
+      <ResourceDictionary>
+         <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary
+               Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+         </ResourceDictionary.MergedDictionaries>
+
+         <!-- One editable pattern row with its remove button; shared by both lists. -->
+         <DataTemplate x:Key="patternRowTemplate">
+            <Grid Margin="0,0,0,6">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+               </Grid.ColumnDefinitions>
+               <TextBox Style="{StaticResource fieldBoxStyle}"
+                        Tag="Pattern, e.g. *.dll"
+                        IsReadOnly="{Binding DataContext.IsReadOnly, RelativeSource={RelativeSource AncestorType=Window}}"
+                        Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" />
+               <Button Grid.Column="1"
+                       Margin="8,0,0,0"
+                       Style="{StaticResource rowActionButtonStyle}"
+                       ToolTip="Remove pattern"
+                       Command="{Binding DataContext.Commands[RemovePatternCommand], RelativeSource={RelativeSource AncestorType=Window}}"
+                       CommandParameter="{Binding}">
+                  <fa:FontAwesome Icon="Solid_Xmark" />
+               </Button>
+            </Grid>
+         </DataTemplate>
+      </ResourceDictionary>
+   </windows:EmWindow.Resources>
+
+   <windows:EmWindow.DataContext>
+      <local:CdnFolderSettingsDialogVm />
+   </windows:EmWindow.DataContext>
+
+   <Grid Margin="22,4,22,22">
+      <Grid.RowDefinitions>
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+         <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!-- ==== banner ==== -->
+      <Grid Grid.Row="0">
+         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+         </Grid.ColumnDefinitions>
+         <Grid Width="42" Height="42" VerticalAlignment="Center">
+            <Border CornerRadius="12" Opacity="0.18" Background="{DynamicResource themeAccentBrush}" />
+            <fa:FontAwesome Icon="Solid_FolderTree" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Foreground="{DynamicResource themeAccentBrush}" />
+         </Grid>
+         <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+            <TextBlock Text="Folder Settings" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Caption}" Margin="0,4,0,0" FontSize="12.5" Opacity="0.75" TextWrapping="Wrap" />
+         </StackPanel>
+      </Grid>
+
+      <!-- ==== notices ==== -->
+      <StackPanel Grid.Row="1" Margin="0,16,0,0">
+         <Border Style="{StaticResource chipWarningStyle}" HorizontalAlignment="Stretch"
+                 Visibility="{Binding HasWarning, Converter={StaticResource boolToVisibility}}">
+            <TextBlock Text="{Binding Warning}" TextWrapping="Wrap" />
+         </Border>
+         <Border Style="{StaticResource chipInfoStyle}" HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                 Visibility="{Binding IsReadOnly, Converter={StaticResource boolToVisibility}}">
+            <TextBlock Text="This folder is managed by Release Manager; its settings are read-only here and are rewritten on every Sync."
+                       TextWrapping="Wrap" />
+         </Border>
+      </StackPanel>
+
+      <!-- ==== public listing ==== -->
+      <DockPanel Grid.Row="2" Margin="0,16,0,0"
+                 ToolTip="Off: the web listing of this folder answers 404 and its files are sent with 'X-Robots-Tag: noindex'. Direct links to files keep working. Applies to this folder only; subfolders need their own settings."
+                 ToolTipService.ShowOnDisabled="True">
+         <ToggleButton DockPanel.Dock="Right" Style="{StaticResource switchStyle}" VerticalAlignment="Center"
+                   IsEnabled="{Binding IsEditable}" IsChecked="{Binding PublicListing}" />
+         <StackPanel>
+            <TextBlock Text="Public listing" Style="{StaticResource fieldLabelStyle}" />
+            <TextBlock Text="Show the content of this folder in the web browser." Opacity="0.65" TextWrapping="Wrap" />
+         </StackPanel>
+      </DockPanel>
+
+      <!-- ==== hidden files ==== -->
+      <StackPanel Grid.Row="3" Margin="0,16,0,0"
+                  ToolTip="Names of files and subfolders directly in this folder to leave out of the web listing. '*' matches any run of characters, '?' one character; no '/' or '\'. Hidden items are still served by direct link."
+                  ToolTipService.ShowOnDisabled="True">
+         <DockPanel Margin="0,0,0,6">
+            <Button DockPanel.Dock="Right" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[AddHiddenCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Add" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <TextBlock Text="Hidden files" Style="{StaticResource fieldLabelStyle}" VerticalAlignment="Center" />
+         </DockPanel>
+         <ItemsControl ItemsSource="{Binding HiddenFiles}" ItemTemplate="{StaticResource patternRowTemplate}" />
+      </StackPanel>
+
+      <!-- ==== shown files ==== -->
+      <StackPanel Grid.Row="4" Margin="0,12,0,0"
+                  ToolTip="Names that stay in the web listing even when they match a hidden pattern; Shown wins over Hidden. Same pattern rules as Hidden files."
+                  ToolTipService.ShowOnDisabled="True">
+         <DockPanel Margin="0,0,0,6">
+            <Button DockPanel.Dock="Right" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[AddShownCommand]}">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}" />
+                  <TextBlock Text="Add" VerticalAlignment="Center" />
+               </StackPanel>
+            </Button>
+            <TextBlock Text="Shown files" Style="{StaticResource fieldLabelStyle}" VerticalAlignment="Center" />
+         </DockPanel>
+         <ItemsControl ItemsSource="{Binding ShownFiles}" ItemTemplate="{StaticResource patternRowTemplate}" />
+      </StackPanel>
+
+      <!-- ==== error ==== -->
+      <TextBlock Grid.Row="5" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{StaticResource dangerBrush}"
+                 Text="{Binding ErrorText}"
+                 Visibility="{Binding HasError, Converter={StaticResource boolToVisibility}}" />
+
+      <!-- ==== actions ==== -->
+      <DockPanel Grid.Row="6" Margin="0,22,0,0">
+         <Button DockPanel.Dock="Left" Style="{StaticResource outlinedButtonStyle}"
+                 Command="{Binding Commands[ExportCommand]}"
+                 ToolTip="Save the settings file of this folder to disk"
+                 ToolTipService.ShowOnDisabled="True">
+            <StackPanel Orientation="Horizontal">
+               <fa:FontAwesome Icon="Solid_FileExport" Style="{StaticResource buttonIconStyle}" />
+               <TextBlock Text="Export" VerticalAlignment="Center" />
+            </StackPanel>
+         </Button>
+         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource textButtonStyle}" Margin="0,0,8,0" IsCancel="True" Content="Cancel" />
+            <Button Style="{StaticResource filledButtonStyle}" MinWidth="96" IsDefault="True"
+                    Command="{Binding Commands[SaveCommand]}" Content="Save" />
+         </StackPanel>
+      </DockPanel>
+   </Grid>
+</windows:EmWindow>

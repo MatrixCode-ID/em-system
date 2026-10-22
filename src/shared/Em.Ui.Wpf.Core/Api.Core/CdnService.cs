@@ -105,6 +105,36 @@ namespace Em.Api.Core
       /// <inheritdoc />
       public Task PostMeta_CdnExtractClear(string path) => PostAsync(nameof(PostMeta_CdnExtractClear), path);
 
+      /// <inheritdoc />
+      public Task<CdnFolderSettingsDetail> GetMeta_CdnFolderSettings(string? path) =>
+         GetAsync<CdnFolderSettingsDetail>(nameof(GetMeta_CdnFolderSettings), path!);
+
+      /// <inheritdoc />
+      public Task PostMeta_CdnFolderSettingsSave(CdnFolderSettingsSave request) =>
+         PostAsync(nameof(PostMeta_CdnFolderSettingsSave), request);
+
+      /// <inheritdoc />
+      public Task<string> GetMeta_CdnFolderSettingsExport(string? path) =>
+         GetAsync<string>(nameof(GetMeta_CdnFolderSettingsExport), path!);
+
+      /// <inheritdoc />
+      public Task<CdnEntry> PostGetMeta_CdnRename(string path, string newName) =>
+         PostAsync<CdnEntry>(nameof(PostGetMeta_CdnRename), path, newName);
+
+      /// <inheritdoc />
+      public Task<BusinessTaskInfo> PostGetMeta_CdnCopy(CdnCopyRequest request) =>
+         PostAsync<BusinessTaskInfo>(nameof(PostGetMeta_CdnCopy), request);
+
+      /// <inheritdoc />
+      public Task<BusinessTaskInfo?> GetMeta_CdnCopyTask() =>
+         GetAsync<BusinessTaskInfo?>(nameof(GetMeta_CdnCopyTask));
+
+      /// <inheritdoc />
+      public Task PostMeta_CdnCopyCancel() => PostAsync(nameof(PostMeta_CdnCopyCancel));
+
+      /// <inheritdoc />
+      public Task PostMeta_CdnCopyClear() => PostAsync(nameof(PostMeta_CdnCopyClear));
+
       #endregion
    }
 }
