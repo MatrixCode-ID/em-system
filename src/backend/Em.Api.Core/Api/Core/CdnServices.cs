@@ -30,7 +30,10 @@ namespace Em.Api.Core
 
       /// <inheritdoc />
       [PostAction(claim: ICdnServices.CdnClaim)]
-      public Task PostMeta_CdnMaxFileSize(int maxFileSizeMb) { Store.SetMaxFileSize(maxFileSizeMb); return Task.CompletedTask; }
+      public async Task PostMeta_CdnMaxFileSize(int maxFileSizeMb) {
+         Store.SetMaxFileSize(maxFileSizeMb);
+         await AuditSystemAsync("System.Settings", "cdn", "cdn.limit.changed", "Changed CDN maximum file size", "settings", new { maxFileSizeMb });
+      }
 
       private CdnStore Store {
          get {

@@ -35,10 +35,12 @@ public sealed partial class NuPakServices(NuPakDbContext db, NuPakStore store, N
    }
    /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
-   public Task<NuPakStatus> PostGetMeta_NuPakSetEnabled(bool enabled) => SetFlag("NuPakEnable", enabled, enabled ? "Enable" : "Disable");
-   private async Task<NuPakStatus> SetFlag(string key, bool value, string action) {
+   public Task<NuPakStatus> PostGetMeta_NuPakSetEnabled(bool enabled) => SetEnabled(enabled);
+   private async Task<NuPakStatus> SetEnabled(bool value) {
       Request.RequireAdmin();
-      await GetService<FeatureServiceRegistry>()!.Get("NuPak").SaveAsync(value);
+      await settings.Gate.WaitAsync();
+      try { await GetService<IFeatureServiceServices>()!.PostMeta_NuPakServiceState(value); }
+      finally { settings.Gate.Release(); }
       return await GetMeta_NuPakStatus();
    }
    /// <inheritdoc />

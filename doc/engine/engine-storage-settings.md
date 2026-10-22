@@ -25,7 +25,7 @@ shutdown and restart.
 
 Managed mode cannot be combined with the static calls `EnableCdn`/`AddContainerRegistry` (or
 `AddNuPak(path, maxPackageMb)`), and cannot be registered twice. Static hosts report `Managed=false`; the
-UI does not offer Save and the API rejects it with 409.
+storage Settings UI does not offer Save and the storage-settings API rejects it with 409. Runtime CDN limits and service switches remain editable.
 
 ![Storage settings card](images/storage-settings.png)
 
@@ -61,7 +61,7 @@ All claims belong to module `Administrative Tools` and are granted in User/Role 
 does not imply the settings claim; administrators follow the usual administrator rule. The general status
 never includes server paths.
 
-- Each manager has a **Settings** card that stays visible while the service is disabled.
+- Container Manager and NuGet Manager retain their **Settings** card. CDN Manager has no Settings card; its header edits the runtime per-file limit directly.
 - The small refresh button reloads the card's status and configuration; reloading over a draft asks for
   confirmation. Toggles only edit the draft.
 - Save and Validate prevent duplicate requests. Conflicts are shown and the draft is kept until the user
@@ -117,3 +117,37 @@ only files/ is served. There is no automatic migration or deletion of older cont
 folders. One parent belongs to one API instance. MaxUploadMb applies to ordinary CDN Manager uploads;
 managed release folders bypass the per-file limit and enforce their own optional byte quota.
 See [managed CDN](engine-cdn-storage.md).
+
+## Runtime service availability
+
+The host configuration enables the feature. A feature that is off declares no manager/settings claims,
+so its navigation and home card are hidden for all users, including administrators and debug sessions;
+its management and public addresses return 404. Host feature/path changes still require a restart.
+
+For an enabled feature, the manager header has the shared **Service enabled / Service disabled** status,
+switch and refresh control. Only administrators may operate the switch; manager-claim holders can read
+the status. Save applies immediately without restart. An absent or empty setting starts enabled. Existing NuPak
+`NuPakEnable` values are preserved. Use one API instance per feature folder/database; there is no
+cross-process synchronization. Refresh reloads the in-process status, not external edits to its backing file.
+
+While a service is disabled, new public requests return plain **404** before authentication. Management
+actions remain available to their existing claim holders (browse, upload and maintenance as supported by
+each manager). Internal module access through `IObjectStore`, including `ObjectStoreBinaryStorage`, throws
+`ServiceDisabledException` with HTTP **503** and `Object Storage is disabled`. Existing operations are not
+cancelled. Managers/maintenance use the underlying engine; this bypass is for management infrastructure.
+CDN/registry stores have no public module-facing contract; release and publisher actions are management.
+Publishing through the public NuGet or OCI protocols follows the public 404 rule.
+
+`IFeatureServiceServices` supplies one `FeatureServiceState(Enabled, CanManage)` contract and paired
+`GetMeta_<Feature>ServiceState` / `PostMeta_<Feature>ServiceState(bool enabled)` actions. Feature names
+are `Cdn`, `NuPak`, `ObjectStorage` and `Ctn`. Each action requires that feature's manager claim, and writes
+additionally check the authenticated caller's administrator status (403 for non-admins).
+
+| Service | Persistence | Public path while disabled |
+| --- | --- | --- |
+| CDN | `<cdn-parent>/settings/service.json` (atomic JSON boolean) | `/cdn/...` → 404 |
+| NuGet feed | `ta_Meta`, key `NuPakEnable` | `/nuget/...` → 404 |
+| Object Storage | `ta_Meta`, key `ObjectStore.ServiceEnabled` | `/store/...` → 404 |
+| Container Registry | `<registry-root>/settings/service.json` (atomic JSON boolean) | `/v2/...` → 404 |
+
+The database keys use the existing core metadata table; no schema migration is required.

@@ -96,8 +96,11 @@ namespace Em.Api.Core
       }
 
       internal static void InitContainerManager(EmAppBuilder builder) {
-         if (builder.EnableContainerManager)
+         if (builder.EnableContainerManager) {
             builder.AddService<ICtnServices, CtnServices>(enforceClaims: false);
+            foreach (var claim in new[] { ClaimAction.Create<CtnServices>(ICtnServices.CtnClaim), ClaimAction.Create<CtnServices>(ICtnServices.SettingsClaim) })
+               if (!builder.ClaimActions.Any(c => string.Equals(c.Key, claim.Key, StringComparison.OrdinalIgnoreCase))) builder.AddClaims(claim);
+         }
       }
 
       /// <summary>
@@ -317,6 +320,7 @@ namespace Em.Api.Core
          // Frontmost in the pipeline, because everything that reads the caller's address - the request
          // trace, the identity gate, any action behind them - must already see the correct address.
          app.UseForwardedHeaders();
+         MapFeatureServiceGate(app);
          MapCdn(app);
          MapContainerRegistry(app);
          foreach (var endpoint in _publicEndpoints) {
@@ -342,13 +346,6 @@ namespace Em.Api.Core
       /// because download managers open many Range connections at once for a single file.
       /// </remarks>
       private void MapCdn(WebApplication app) {
-         app.Use(async (ctx, next) => {
-            if (ctx.Request.Path.StartsWithSegments(CdnStore.PublicRequestPath) &&
-                (!_cdn.IsEnabled || !await _featureServices.Get("Cdn").ReadAsync())) {
-               ctx.Response.StatusCode = 404; return;
-            }
-            await next(ctx);
-         });
          if (_cdn.IsEnabled) {
             // ExclusionFilters.Sensitive (the default) hides dot-prefixed, hidden and system entries,
             // which is also what keeps an upload's temporary file off the public side.

@@ -78,8 +78,8 @@ namespace Em.Api.Core
       /// <summary>Absolute, always ending with a directory separator.</summary>
       public string RootPath { get; }
 
-      /// <summary>Upload limit in bytes.</summary>
       private long _maxFileSize;
+      /// <summary>Upload limit in bytes.</summary>
       public long MaxFileSize => Interlocked.Read(ref _maxFileSize);
 
       public void EnsureEnabled() {

@@ -1,6 +1,7 @@
 # Plan — Max file size CDN runtime dan toggle service fitur sistem (untuk Codex)
 
-Status: **belum dieksekusi — keputusan sudah final, siap dikerjakan**
+Status: **selesai dieksekusi 2026-10-22 — build API/WPF/MAUI dan 12 tes terfilter lulus; fungsional/GUI diperiksa pengguna**
+Laporan: [cdn-max-file-dan-toggle-service](../../doc/report/cdn-max-file-dan-toggle-service.md)
 Dibuat: 2026-10-22
 Pembaca: Codex. Baca juga `CLAUDE.md` di root repo ini dan `CLAUDE.md` subfolder pada jalur berkas yang
 disentuh. Semua keputusan di bawah adalah keputusan pengguna; bila selama eksekusi muncul hal yang tidak

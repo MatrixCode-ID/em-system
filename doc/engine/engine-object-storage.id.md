@@ -396,3 +396,13 @@ ditambahkan bersama adapter; SHA-256 tidak pernah menjadi ETag), dan tabel multi
   layar terang dan gelap: `dotnet run --project ..\.artefacts\em-system\scripts\managed-bucket-render`.
 - Listing memakai collation biner `cStoreObjectKey` dan kolom computed berindeks `cStoreObjectKeyPrefix`
   (400 karakter pertama). Performa listing pada bucket besar belum diukur.
+
+## Runtime service availability
+
+The manager header provides the shared administrator-only **Service enabled / Service disabled** switch.
+Changes apply immediately without restart. Manager-claim holders can read status and keep using management
+actions while the service is disabled. Public `/store` requests return 404; internal `IObjectStore` and
+`ObjectStoreBinaryStorage` calls throw `ServiceDisabledException` (503, `Object Storage is disabled`).
+The value is stored in existing `ta_Meta`, key `ObjectStore.ServiceEnabled`; an absent or empty key means enabled.
+Host feature disablement hides manager navigation/home cards and makes its actions return 404.
+See [Runtime service availability](engine-storage-settings.md#runtime-service-availability).

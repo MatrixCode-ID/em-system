@@ -31,13 +31,13 @@ WPF host: nothing to register. The NuGet Manager navigation is part of `Em.Ui.Wp
 
 ## Server and feed switches
 
-- The **server** switch (`NuPakEnable`) defaults to off. Turning it off keeps all data and leaves the
+- The **service** switch (`NuPakEnable`) defaults to enabled when the key is absent or empty; existing values are preserved. Only administrators may change it. Turning it off keeps all data and leaves the
   manager available; every feed request then returns 404.
 - New **feeds** start disabled and private. Enable the feed and the server separately.
 - **Anonymous read** is per feed. Wrong credentials still return 401, even on an anonymous feed.
 - A disabled server or feed returns 404 before authentication.
-- Server and feed settings are read from committed database metadata and apply to new requests
-  immediately.
+- The service switch is cached in memory and updated after a committed save. Feed settings remain in
+  the database; changes apply to new requests immediately.
 
 ## Publishing and consuming packages
 
@@ -119,7 +119,7 @@ reserved and cannot be pushed again (409) until purged. **Restore** makes it vis
 | Claim (module `Administrative Tools`) | Allows |
 | --- | --- |
 | `NuGet Manager Access` | Read, list, statistics, audit, prefix management, recycle and restore |
-| `NuGet Settings Manage` | Create, edit and delete feeds; server settings; purge and empty recycle bin |
+| `NuGet Settings Manage` | Create, edit and delete feeds; host storage settings; purge and empty recycle bin |
 
 There are no per-feed user claims.
 
@@ -146,3 +146,5 @@ Upgrading an installation from the older single-feed schema:
 [Upgrade an empty single-feed installation](engine-nupak-multifeed-upgrade.md).
 
 Protocol reference: [NuGet Server API](https://learn.microsoft.com/en-us/nuget/api/overview).
+
+The manager uses the common header switch. See [Runtime service availability](engine-storage-settings.md#runtime-service-availability). The legacy `PostGetMeta_NuPakSetEnabled` action forwards to the same persisted switch and now requires an administrator.

@@ -12,7 +12,9 @@ namespace Em.Api.Core.ObjectStorage;
 /// Storage Manager or through <see cref="IObjectStorageServices.PostGetMeta_StoreBucketSave"/>). Failures
 /// are <see cref="Em.Shared.ActionException"/> with an HTTP status: 400 for invalid names, 404 for a missing
 /// bucket, object or version, 409 for quota or read-only conflicts, 413 for content above the policy's
-/// maximum object size and 503 when not enough volumes are available.
+/// maximum object size and 503 when not enough volumes are available or the service is disabled.
+/// The injected module-facing service throws <see cref="Em.Shared.ServiceDisabledException"/> while disabled;
+/// management actions and maintenance retain access to the underlying engine.
 /// </remarks>
 public interface IObjectStore
 {

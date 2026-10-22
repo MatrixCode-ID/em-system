@@ -9,9 +9,10 @@ public sealed class FeatureServiceServices : ServicesBase, IFeatureServiceServic
    private FeatureServiceRegistry Registry => GetService<FeatureServiceRegistry>()!;
    private async Task<FeatureServiceState> Read(string feature) => new(await Registry.Get(feature).ReadAsync(), CallerIsAdmin);
    private async Task<FeatureServiceState> Save(string feature, bool enabled) {
-      var state = Registry.Get(feature);
       Request.RequireAdmin();
+      var state = Registry.Get(feature);
       await state.SaveAsync(enabled);
+      await AuditSystemAsync("System.Settings", feature, "service.changed", "Changed service availability", "settings", new { enabled });
       return new(enabled, CallerIsAdmin);
    }
    /// <inheritdoc />

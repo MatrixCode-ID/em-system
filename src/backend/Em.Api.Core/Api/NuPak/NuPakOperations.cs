@@ -27,7 +27,7 @@ public static class NuPakOperations
       try {
          await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
          var currentFeed=await db.Feeds.SingleOrDefaultAsync(f=>f.cNuPakFeedId==feed.cNuPakFeedId) ?? throw new ActionException("Feed not found.",404);
-         if(!currentFeed.cNuPakFeedEnabled || !bool.TryParse(await db.Meta.Where(m=>m.cMetaKey=="NuPakEnable").Select(m=>m.cMetaValue).SingleOrDefaultAsync(),out var serverEnabled) || !serverEnabled) throw new ActionException("Feed is off.",404);
+         if(!currentFeed.cNuPakFeedEnabled) throw new ActionException("Feed is off.",404);
          feed=currentFeed;
          var package = await db.Packages.SingleOrDefaultAsync(p => p.cNuPakFeedId==feed.cNuPakFeedId && p.cNuPakPackageName == upload.Id);
          var prefix = package is null

@@ -1,10 +1,16 @@
 using System.Text.Json;
 using Em.Shared;
+using Microsoft.AspNetCore.Http;
 
 namespace Em.Api.Core;
 
 internal sealed class FeatureServiceRegistry {
    private readonly Dictionary<string, FeatureServiceSwitch> _states = new(StringComparer.Ordinal);
+   internal async Task<bool> AllowPublicAsync(string feature, HttpContext http) {
+      if (_states.TryGetValue(feature, out var state) && await state.ReadAsync()) return true;
+      http.Response.StatusCode = StatusCodes.Status404NotFound;
+      return false;
+   }
    internal void Add(string feature, FeatureServiceSwitch state) => _states.Add(feature, state);
    internal FeatureServiceSwitch Get(string feature) => _states.TryGetValue(feature, out var state)
       ? state : throw new ActionException("Feature is not enabled on this server.", 404);
@@ -14,6 +20,7 @@ internal sealed class FeatureServiceSwitch(string name, Func<Task<bool>> load, F
    private readonly SemaphoreSlim _gate = new(1, 1);
    private bool _loaded;
    private bool _enabled = true;
+   internal static bool MetaEnabled(string? value) => string.IsNullOrWhiteSpace(value) || bool.Parse(value);
    internal async Task<bool> ReadAsync() {
       await _gate.WaitAsync();
       try {

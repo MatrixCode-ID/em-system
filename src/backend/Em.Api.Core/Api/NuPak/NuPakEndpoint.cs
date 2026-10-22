@@ -19,7 +19,7 @@ public static class NuPakEndpoint
    private static Dictionary<string, object?> Json(params (string Key, object? Value)[] fields) => fields.ToDictionary(f => f.Key, f => f.Value);
    /// <summary>Handles one request under the NuPak path.</summary>
    public static async Task HandleAsync(HttpContext ctx) {
-      if (!await ctx.RequestServices.GetRequiredService<FeatureServiceRegistry>().Get("NuPak").ReadAsync()) { ctx.Response.StatusCode = 404; return; }
+      if (!await ctx.RequestServices.GetRequiredService<FeatureServiceRegistry>().AllowPublicAsync("NuPak", ctx)) { ctx.Response.StatusCode = 404; return; }
       var db = ctx.RequestServices.GetRequiredService<NuPakDbContext>();
       var store = ctx.RequestServices.GetRequiredService<NuPakStore>();
       NuPakActor? actor = null;

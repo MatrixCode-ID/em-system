@@ -442,3 +442,24 @@ Harness/log/paket fixture berada di luar repo pada
 ## Image di compose untuk deploy Stack (keputusan pengguna 2026-10-21)
 
 Target deploy mode Stack memilih cara menulis image: **nama image tag + digest** (default target baru), **tag saja**, atau **variabel env** (`${EM_IMAGE_<SERVICE>}`, perilaku lama dan nilai untuk target yang sudah ada). Berlaku sama untuk SSH (compose.yml di host ditulis ulang tiap deploy) dan Portainer; stack Portainer dari Git hanya boleh memakai variabel (Test connection melapor, deploy ditolak). Kolom baru `ta_CtnDeploy.cCtnDeployImageRef`: **database lama wajib menjalankan `doc/sqlscript/mssql/updates/20261021-CtnDeployImageRef.sql` sebelum backend baru**. Panduan: "Image in the compose file" di `doc/engine/engine-registry.md`.
+
+## CDN runtime dan toggle service (keputusan pengguna 2026-10-22)
+
+Batas file CDN disimpan atomik di `settings/cdn.json`, default semua jalur 200 MB;
+nilai host hanya seed sampai penyimpanan runtime pertama. CDN Manager memakai
+editor NumericBox pada chip limit (claim CDN Manager Access), tanpa kartu Settings.
+Upload/extract mengambil snapshot batas ketika dimulai; managed folder tetap kuota.
+
+CDN, NuPak, Object Storage dan Container Registry memakai kontrak status dan
+kontrol switch bersama; hanya admin boleh mengubahnya, berlaku langsung. Host
+feature mati menyembunyikan claim/navigasi serta menjawab 404; service mati
+menjawab 404 publik, sementara management tetap tersedia. `IObjectStore` untuk
+modul menjawab exception khusus 503 ketika service mati. Status CDN/registry
+ada di `settings/service.json`; NuPak memakai `ta_Meta.NuPakEnable`, Object Storage
+`ta_Meta.ObjectStore.ServiceEnabled`. Tidak ada DDL baru. Satu instance per data.
+
+Eksekusi ini hanya build API/WPF/MAUI dan tes class terkait; tidak ada suite penuh,
+smoke HTTP, maupun GUI. Pengguna memeriksa fungsional/visual. Guide terkait:
+`doc/engine/engine-storage-settings.md` dan `engine-cdn-storage.md`.
+Log build/tes lokal: `../.artefacts/em-system/cdn-service-*-build.log` dan
+`cdn-service-tests.log` (2026-10-22, tanpa rahasia).

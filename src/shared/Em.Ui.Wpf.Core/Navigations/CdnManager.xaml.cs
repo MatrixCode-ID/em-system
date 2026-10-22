@@ -33,7 +33,7 @@ namespace Em.Ui.Wpf.Navigations
       public CdnManager(EmApp app) {
          InitializeComponent();
          Vm.EmApp = app;
-      serviceToggle.Attach(app, "Cdn");
+         serviceToggle.Attach(app, "Cdn");
 
          // Archive and extract status is polled only while the screen is actually in a window; there is
          // no bindable equivalent of Loaded/Unloaded, so both are forwarded here.
@@ -51,10 +51,7 @@ namespace Em.Ui.Wpf.Navigations
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
       /// <inheritdoc />
-      public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) {
-
-         return Task.CompletedTask;
-      }
+      public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
 
       /// <inheritdoc />
       public Task OnReloadRequested(INavigation sender, NavigationEventArgs args) => Vm.ReloadAsync();
@@ -300,7 +297,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public bool IsCdnDisabled {
          get => Get<bool>();
-         private set => Set(value, _ => NotifyChanged(nameof(IsEmpty)));
+         private set => Set(value, _ => { NotifyChanged(nameof(IsEmpty)); NotifyChanged(nameof(CanEditLimit)); });
       }
 
       /// <summary><c>true</c> when the open folder was read successfully and is empty.</summary>
@@ -312,7 +309,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public bool IsLoaded {
          get => Get<bool>();
-         private set => Set(value, _ => NotifyChanged(nameof(IsEmpty)));
+         private set => Set(value, _ => { NotifyChanged(nameof(IsEmpty)); NotifyChanged(nameof(CanEditLimit)); });
       }
 
       /// <summary>
@@ -934,9 +931,6 @@ namespace Em.Ui.Wpf.Navigations
 
       private void RebuildBreadcrumbs() {
          Breadcrumbs.Clear();
-         RegisterCommand(nameof(EditLimitCommand), EditLimitCommand, EditLimitCommandAllowed);
-         RegisterCommand(nameof(SaveLimitCommand), SaveLimitCommand, SaveLimitCommandAllowed);
-         RegisterCommand(nameof(CancelLimitCommand), CancelLimitCommand, CancelLimitCommandAllowed);
          Breadcrumbs.Add(RootCrumb);
          if (CurrentPath.Length == 0) return;
 

@@ -13,7 +13,7 @@ public sealed class NuPakSettings {
       await Gate.WaitAsync(ct);
       try {
          var value=await db.Meta.Where(r=>r.cMetaKey=="NuPakEnable").Select(r=>r.cMetaValue).SingleOrDefaultAsync(ct);
-         return new(bool.TryParse(value,out var enabled)&&enabled);
+         return new(FeatureServiceSwitch.MetaEnabled(value));
       } finally {Gate.Release();}
    }
 }

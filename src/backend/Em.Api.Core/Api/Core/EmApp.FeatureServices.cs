@@ -1,4 +1,6 @@
 using Em.Api.Core.Models;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Em.Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,24 +23,40 @@ public partial class EmApp {
       Register("Ctn", "Container Registry", _ctnStore.IsEnabled, _ctnStore.RootPath,
          ICtnServices.CtnClaim, ICtnServices.SettingsClaim);
       Register("NuPak", "NuGet feed", builder.NuPakRegistered && _storageSettings.Active(2).Enabled,
-         _storageSettings.Resolve(_storageSettings.Active(2).Directory), INuPakServices.ManagerClaim, INuPakServices.SettingsClaim);
+         null, INuPakServices.ManagerClaim, INuPakServices.SettingsClaim);
       Register("ObjectStorage", "Object Storage", builder.ObjectStorageAdded, null,
          IObjectStorageServices.ManagerClaim, IObjectStorageServices.SettingsClaim);
-      if (builder.ObjectStorageAdded) {
-         _featureServices.Add("ObjectStorage", new FeatureServiceSwitch("Object Storage", async () => {
-            using var scope = _rootServiceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
-            var value = await db.Meta.Where(m => m.cMetaKey == "ObjectStore.ServiceEnabled").Select(m => m.cMetaValue).SingleOrDefaultAsync();
-            return value is null || bool.Parse(value);
-         }, async enabled => {
-            using var scope = _rootServiceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
-            var row = await db.Meta.AsTracking().SingleOrDefaultAsync(m => m.cMetaKey == "ObjectStore.ServiceEnabled");
-            if (row is null) { row = new() { cMetaKey = "ObjectStore.ServiceEnabled", cMetaDescription = "Object storage service switch" }; db.Meta.Add(row); }
-            row.cMetaValue = enabled.ToString(); row.ustamp = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-         }));
-      }
+      if (builder.NuPakRegistered && _storageSettings.Active(2).Enabled)
+         AddMetaSwitch("NuPak", "NuGet feed", "NuPakEnable");
+      if (builder.ObjectStorageAdded)
+         AddMetaSwitch("ObjectStorage", "Object Storage", "ObjectStore.ServiceEnabled");
       Services.AddSingleton(_featureServices);
    }
+   private void MapFeatureServiceGate(WebApplication app) {
+      app.Use(async (http, next) => {
+         var feature = http.Request.Path.StartsWithSegments("/cdn") ? "Cdn"
+            : http.Request.Path.StartsWithSegments("/nuget") ? "NuPak"
+            : http.Request.Path.StartsWithSegments("/store") ? "ObjectStorage"
+            : http.Request.Path.StartsWithSegments("/v2") ? "Ctn" : null;
+         if (feature is not null && !await _featureServices.AllowPublicAsync(feature, http)) return;
+         await next(http);
+      });
+   }
+
+   private void AddMetaSwitch(string feature, string label, string key) {
+      _featureServices.Add(feature, new FeatureServiceSwitch(label, async () => {
+         using var scope = _rootServiceProvider.CreateScope();
+         var db = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
+         var value = await db.ta_Metas.Where(m => m.cMetaKey == key).Select(m => m.cMetaValue).SingleOrDefaultAsync();
+         return FeatureServiceSwitch.MetaEnabled(value);
+      }, async enabled => {
+         using var scope = _rootServiceProvider.CreateScope();
+         var db = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
+         var row = await db.ta_Metas.AsTracking().SingleOrDefaultAsync(m => m.cMetaKey == key);
+         if (row is null) { row = new() { cMetaKey = key, cMetaDescription = label + " service switch" }; db.ta_Metas.Add(row); }
+         row.cMetaValue = enabled.ToString(); row.ustamp = DateTime.UtcNow;
+         await db.SaveChangesAsync();
+      }));
+   }
+
 }

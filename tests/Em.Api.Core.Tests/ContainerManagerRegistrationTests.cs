@@ -17,6 +17,7 @@ public sealed class ContainerManagerRegistrationTests
 
       EmApp.InitContainerManager(builder);
 
+      Assert.Equal(enabled, builder.ClaimActions.Any(c => c.Name == ICtnServices.CtnClaim));
       Assert.Equal(enabled, builder.Services.Any(s => s.ServiceType == typeof(ICtnServices)));
       Assert.Equal(enabled, builder.ActionDefinitions.Any(a => a.ActionName == "GetMeta_CtnStatus"));
       Assert.Equal(enabled, builder.ActionDefinitions.Any(a => a.RequiredClaim == ICtnServices.CtnClaim));

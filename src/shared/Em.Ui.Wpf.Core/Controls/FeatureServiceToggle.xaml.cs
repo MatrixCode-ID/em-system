@@ -13,8 +13,11 @@ public partial class FeatureServiceToggle : UserControl {
    /// <summary>Creates the status control.</summary>
    public FeatureServiceToggle() {
       InitializeComponent(); DataContext = _vm;
+      _vm.Saved += () => StateChanged?.Invoke(this, EventArgs.Empty);
       Loaded += async (_, _) => { if (_vm.EmApp is not null) await _vm.RefreshCommand(); };
    }
+   /// <summary>Raised after a service switch is saved.</summary>
+   public event EventHandler? StateChanged;
    /// <summary>Connects this control to its host feature.</summary>
    public void Attach(EmApp app, string feature) { _vm.EmApp = app; _vm.Feature = feature; }
 }
@@ -26,6 +29,7 @@ public sealed class FeatureServiceToggleVm : MvvmModelBase {
       RegisterCommand(nameof(ToggleCommand), ToggleCommand, ToggleCommandAllowed);
       RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
    }
+   internal event Action? Saved;
    internal string Feature { get; set; } = "";
    private IFeatureServiceServices Service => EmApp!.ServiceProvider.GetRequiredService<IFeatureServiceServices>();
    /// <summary>Cached server status.</summary>
@@ -35,13 +39,13 @@ public sealed class FeatureServiceToggleVm : MvvmModelBase {
    /// <summary>Whether status has been read.</summary>
    public bool IsLoaded { get => Get<bool>(); set { Set(value); NotifyChanged(nameof(StatusCaption)); RaiseCommandsChanged(); } }
    /// <summary>Whether a server request is running.</summary>
-   public bool IsBusy { get => Get<bool>(); set { Set(value); RaiseCommandsChanged(); } }
+   public bool IsUpdating { get => Get<bool>(); set { Set(value); RaiseCommandsChanged(); } }
    /// <summary>Explicit service status, independent of the toggle position.</summary>
    public string StatusCaption => !IsLoaded ? "Service: unavailable" : Enabled ? "Service enabled" : "Service disabled";
    /// <summary>Whether the toggle can execute.</summary>
-   public bool ToggleCommandAllowed() => IsLoaded && CanManage && !IsBusy;
+   public bool ToggleCommandAllowed() => IsLoaded && CanManage && !IsUpdating;
    /// <summary>Whether status can be refreshed.</summary>
-   public bool RefreshCommandAllowed() => EmApp is not null && !IsBusy;
+   public bool RefreshCommandAllowed() => EmApp is not null && !IsUpdating;
    /// <summary>Toggles the persisted status.</summary>
    public Task ToggleCommand() => UpdateAsync(!Enabled);
    /// <summary>Reads current status.</summary>
@@ -57,16 +61,16 @@ public sealed class FeatureServiceToggleVm : MvvmModelBase {
       _ => throw new InvalidOperationException("Unknown service feature.")
    };
    private async Task UpdateAsync(bool? enabled) {
-      if (IsBusy) return;
-      IsBusy = true;
+      if (IsUpdating) return;
+      IsUpdating = true;
       try {
          var state = enabled is { } value ? await SaveAsync(value) : await ReadAsync();
-         await Application.Current.Dispatcher.InvokeAsync(() => { Enabled = state.Enabled; CanManage = state.CanManage; IsLoaded = true; });
+         await Application.Current.Dispatcher.InvokeAsync(() => { Enabled = state.Enabled; CanManage = state.CanManage; IsLoaded = true; if (enabled is not null) Saved?.Invoke(); });
       }
       catch (Exception ex) {
          await Application.Current.Dispatcher.InvokeAsync(() => { IsLoaded = false; CanManage = false; AlertError(ex); });
       }
-      finally { await Application.Current.Dispatcher.InvokeAsync(() => IsBusy = false); }
+      finally { await Application.Current.Dispatcher.InvokeAsync(() => { IsUpdating = false; NotifyChanged(nameof(Enabled)); }); }
    }
    private void RaiseCommandsChanged() { foreach (var command in Commands) command.RaiseCanExecuteChanged(); }
 }

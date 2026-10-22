@@ -12,7 +12,7 @@ data/cdn/
   files/       public /cdn/ root
   temp/        uploads, archives, extraction and retired open files
   recycle/     manually retained deleted items
-  settings/    managed.json
+  settings/    managed.json, cdn.json, service.json
 ```
 
 Use one API instance per CDN parent. Operations and open downloads are tracked in process memory;
@@ -84,3 +84,29 @@ Move, PostMeta_CdnDelete. Maintenance: GetMeta_CdnRecycle, PostMeta_CdnRestore /
 RecycleEmpty, GetMeta_CdnTemporaryGarbage, PostMeta_CdnTemporaryClear, GetMeta_CdnManagedFolders,
 PostMeta_CdnManagedRelease / ManagedQuota. Release actions use the CdnRelease prefix and check ownership.
 GET accepts simple per-field parameters; Sync preflight and streamed upload use POST payloads.
+
+## Runtime maximum file size
+
+All engine defaults are **200 MB**, including `EnableCdn(path)` and host configuration. Host values
+(`EnableCdn(path, mb)`, `CdnMaxFileSizeMb`, managed `MaxUploadMb`) seed the limit only until the first
+runtime save. The persisted `settings/cdn.json` then wins even after restart or host-default changes:
+
+```json
+{ "maxFileSizeMb": 200 }
+```
+
+In CDN Manager, use the pencil beside **Max … per file**, enter an integer **1–1,048,576 MB** (1 MB =
+1,048,576 bytes), then **Save** or **Cancel**. This requires **CDN Manager Access**, not the storage-settings
+claim. The numeric field has range/effect help on hover. Save uses `PostMeta_CdnMaxFileSize(int)` and an
+atomic same-directory temporary file; a failed write leaves the active limit unchanged. The change is
+audited through the engine settings audit when enabled. Cancel discards the draft without a request.
+
+The next upload/extract uses the new value on the same store instance. Each operation snapshots its limit
+at entry: an in-flight upload/extract keeps that value. Extracted entries may each use at most the limit,
+and their total at most ten times the limit; the 10,000-entry cap is unchanged. Managed folders remain
+quota-controlled and show no max-file pencil. Their uploads are exempt from the ordinary per-file limit.
+
+The CDN Settings card has been removed in every host mode. Paths and host feature enablement belong in
+host configuration; managed-storage actions/claims remain for compatibility with the other managers.
+
+The header also provides the shared runtime service switch. See [Runtime service availability](engine-storage-settings.md#runtime-service-availability) for admin rights, persistence, 404/503 and host-feature visibility.

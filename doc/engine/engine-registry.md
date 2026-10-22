@@ -354,3 +354,5 @@ has not been exercised by automated tests.
 
 SQL Server aggregation smoke test (harness kept outside the repo, data rolled back):
 `dotnet run --project ..\.artefacts\em-system\scripts\container-storage-smoke` from the repo root.
+
+The manager header provides the shared administrator-only runtime service switch. See [Runtime service availability](engine-storage-settings.md#runtime-service-availability) for default state, immediate effect, persistence and public 404 versus internal 503 behavior. Management remains available while the service is disabled.

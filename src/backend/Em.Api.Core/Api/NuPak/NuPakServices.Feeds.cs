@@ -15,7 +15,7 @@ public sealed partial class NuPakServices {
       if(!await db.Packages.AnyAsync(p=>p.cNuPakFeedId==feedId&&p.cNuPakPackageId==packageId,AbortToken)) throw new ActionException("Package not found in feed.",404);
    }
    private async Task<NuPakFeedInfo> FeedInfo(ta_NuPakFeed f) {
-      var enabled=(await settings.ReadAsync(db,AbortToken)).Enabled && (HttpContext?.RequestServices?.GetService<Em.Api.Core.Storage.ManagedStorageSettings>()?.Active(2).Enabled ?? true);
+      var enabled=(await GetService<FeatureServiceRegistry>()!.Get("NuPak").ReadAsync()) && (HttpContext?.RequestServices?.GetService<Em.Api.Core.Storage.ManagedStorageSettings>()?.Active(2).Enabled ?? true);
       var versions=db.Versions.Where(v=>db.Packages.Any(p=>p.cNuPakFeedId==f.cNuPakFeedId&&p.cNuPakPackageId==v.cNuPakPackageId));
       return new(f.cNuPakFeedId,f.cNuPakFeedSlug,f.cNuPakFeedName,f.cNuPakFeedDescription,f.cNuPakFeedEnabled,f.cNuPakFeedAnonymousRead,enabled&&f.cNuPakFeedEnabled,
          await db.Prefixes.CountAsync(p=>p.cNuPakFeedId==f.cNuPakFeedId,AbortToken),

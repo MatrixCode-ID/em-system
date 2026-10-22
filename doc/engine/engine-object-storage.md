@@ -390,3 +390,5 @@ the multipart rule, added with the adapter; the SHA-256 is never an ETag) and mu
 - Listing uses the binary collation of `cStoreObjectKey` and the indexed computed column
   `cStoreObjectKeyPrefix` (first 400 characters). Listing performance with large buckets has not been
   measured yet.
+
+The manager header provides the shared administrator-only runtime service switch. See [Runtime service availability](engine-storage-settings.md#runtime-service-availability) for default state, immediate effect, persistence and public 404 versus internal 503 behavior. Management remains available while the service is disabled.
