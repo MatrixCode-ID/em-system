@@ -1,5 +1,20 @@
 # CLAUDE.md
 
+## Nilai default wajib untuk `ta_Meta` di engine (keputusan pengguna 2026-10-22)
+
+Engine harus bisa mulai dari database kosong (0 data). Setiap pemakaian `ta_Meta` oleh engine
+(`GetMetaValue`, query langsung ke `ta_Metas`, atau setelan yang disimpan di sana) **wajib punya nilai
+default** yang dipakai bila key belum ada atau nilainya kosong.
+
+- Default ditulis di kode engine (konstanta atau nilai bawaan setelan), bukan mengandalkan seed SQL,
+  skrip migrasi, atau langkah manual admin. Startup dan action tidak boleh gagal hanya karena key belum ada.
+- Pembacaan yang mengembalikan `null`/`default(T)` untuk key yang hilang harus langsung diganti nilai
+  default yang bermakna; jangan meneruskan `null` ke logika yang menganggap nilai pasti ada.
+- Bila default memang tidak bisa ditentukan (mis. kunci enkripsi), engine membuatnya sendiri saat pertama
+  dibutuhkan, bukan menuntut data sudah tersedia.
+- Saat menambah atau mengubah key `ta_Meta`, cantumkan key dan nilai default-nya di guide `doc/engine/`
+  fitur terkait.
+
 ## Manifest tanpa tag di Container Manager (keputusan pengguna 2026-10-19)
 
 Daftar manifest Container Manager menyembunyikan manifest tanpa tag secara default.
