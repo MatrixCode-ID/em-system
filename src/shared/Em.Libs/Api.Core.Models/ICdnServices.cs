@@ -60,6 +60,9 @@ namespace Em.Api.Core.Models
       /// <summary>Saves the CDN storage settings; they take effect after the API restarts. Requires <see cref="SettingsClaim"/>.</summary>
       Task<StorageSettingsDetail> PostGetMeta_CdnSettingsSave(StorageSettingsSave request);
 
+      /// <summary>Saves the runtime per-file limit (1–1,048,576 MB), effective for new operations.</summary>
+      Task PostMeta_CdnMaxFileSize(int maxFileSizeMb);
+
       #region Meta's
 
       /// <summary>Total size of the public files across the CDN. Includes files, temp and recycle; excludes settings and symlinks. Does not include filesystem overhead or free volume space.</summary>

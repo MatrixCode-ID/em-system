@@ -197,7 +197,7 @@
    </UserControl.Resources>
 
    <DockPanel>
-      <controls:StorageSettingsCard x:Name="settingsCard" DockPanel.Dock="Top" />
+
    <Grid>
       <Grid>
          <Grid.RowDefinitions>
@@ -316,7 +316,25 @@
                <Border Style="{StaticResource chipStyle}"
                        Margin="8,0,0,0"
                        Visibility="{Binding IsCdnDisabled, Converter={StaticResource inverseBoolToVisibility}}">
-                  <TextBlock Text="{Binding LimitCaption}" />
+                  <StackPanel Orientation="Horizontal">
+                     <StackPanel Orientation="Horizontal" Visibility="{Binding IsEditingLimit, Converter={StaticResource inverseBoolToVisibility}}">
+                        <TextBlock Text="{Binding LimitCaption}" VerticalAlignment="Center" />
+                        <Button Style="{StaticResource rowActionButtonStyle}" Margin="8,0,0,0"
+                                Visibility="{Binding CanEditLimit, Converter={StaticResource boolToVisibility}}"
+                                Command="{Binding Commands[EditLimitCommand]}" ToolTip="Edit maximum file size">
+                           <fa:FontAwesome Icon="Solid_Pencil" />
+                        </Button>
+                     </StackPanel>
+                     <StackPanel Orientation="Horizontal" Visibility="{Binding IsEditingLimit, Converter={StaticResource boolToVisibility}}"
+                                 ToolTip="Maximum size per file: 1–1,048,576 MB. Applies immediately to new uploads and extracts; managed folders use their own quota."
+                                 ToolTipService.ShowOnDisabled="True">
+                        <controls:NumericBox Width="115" Minimum="1" Maximum="1048576" Value="{Binding MaxFileSizeMb}"
+                                             Style="{StaticResource fieldNumericBoxStyle}" />
+                        <TextBlock Text="MB" VerticalAlignment="Center" Margin="8,0" />
+                        <Button Content="Save" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveLimitCommand]}" />
+                        <Button Content="Cancel" Margin="8,0,0,0" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[CancelLimitCommand]}" />
+                     </StackPanel>
+                  </StackPanel>
                </Border>
                <Button Style="{StaticResource rowActionButtonStyle}"
                        Margin="10,0,0,0"

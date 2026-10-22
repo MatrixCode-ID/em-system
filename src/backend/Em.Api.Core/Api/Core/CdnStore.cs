@@ -54,7 +54,7 @@ namespace Em.Api.Core
       private CdnStore(string? rootPath, long maxFileSize) {
          IsEnabled = rootPath is not null;
          RootPath = rootPath ?? string.Empty;
-         MaxFileSize = maxFileSize;
+         _maxFileSize = maxFileSize;
       }
 
       /// <summary>
@@ -69,6 +69,7 @@ namespace Em.Api.Core
          Directory.CreateDirectory(fullPath);
          var store = new CdnStore(Path.Combine(fullPath, "files") + Path.DirectorySeparatorChar, maxFileSize);
          store.InitializeManagement(fullPath);
+         store.LoadRuntimeSettings();
          return store;
       }
 
@@ -78,7 +79,8 @@ namespace Em.Api.Core
       public string RootPath { get; }
 
       /// <summary>Upload limit in bytes.</summary>
-      public long MaxFileSize { get; }
+      private long _maxFileSize;
+      public long MaxFileSize => Interlocked.Read(ref _maxFileSize);
 
       public void EnsureEnabled() {
          if (!IsEnabled) {
@@ -323,6 +325,7 @@ namespace Em.Api.Core
       /// </summary>
       public async Task<CdnEntry> UploadAsync(string? relativePath, string fileName, Stream content, bool overwrite,
          CancellationToken token, string? appId = null, string deletedBy = "") {
+         var maxFileSize = MaxFileSize;
          EnsureWritable(relativePath, appId);
          ValidateName(fileName);
 
@@ -349,9 +352,9 @@ namespace Em.Api.Core
                int read;
                while ((read = await content.ReadAsync(buffer, token)) > 0) {
                   written += read;
-                  if (appId is null && written > MaxFileSize) {
+                  if (appId is null && written > maxFileSize) {
                      throw new ActionException(
-                        $"'{fileName}' is larger than {MaxFileSize:N0} bytes, the most the CDN accepts per file.", 413);
+                        $"'{fileName}' is larger than {maxFileSize:N0} bytes, the most the CDN accepts per file.", 413);
                   }
 
                   await file.WriteAsync(buffer.AsMemory(0, read), token);
@@ -717,13 +720,14 @@ namespace Em.Api.Core
       /// </summary>
       public async Task ExtractAsync(string relativePath, bool overwrite, Action<double?, string> report,
          CancellationToken token) {
+         var maxFileSize = MaxFileSize;
          EnsureWritable(relativePath);
          var plan = ReadExtractPlan(relativePath);
          if (plan.Conflicts.Length > 0 && !overwrite) {
             throw new ActionException($"{plan.Conflicts.Length:N0} existing file(s) would be overwritten.", 409);
          }
 
-         var maxTotal = MaxFileSize * MaxExtractTotalFactor;
+         var maxTotal = checked(maxFileSize * MaxExtractTotalFactor);
          using var operation = Temporary("extract");
          var temp = operation.Path;
          Directory.CreateDirectory(temp);
@@ -753,9 +757,9 @@ namespace Em.Api.Core
                   while ((read = await source.ReadAsync(buffer, token)) > 0) {
                      written += read;
                      total += read;
-                     if (written > MaxFileSize) {
+                     if (written > maxFileSize) {
                         throw new ActionException(
-                           $"'{relative}' is larger than {MaxFileSize:N0} bytes, the most the CDN accepts per file.", 413);
+                           $"'{relative}' is larger than {maxFileSize:N0} bytes, the most the CDN accepts per file.", 413);
                      }
 
                      if (total > maxTotal) {

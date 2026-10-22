@@ -390,7 +390,7 @@ namespace Em.Api.Shared
       /// Default size limit - in megabytes - for a single file uploaded to the CDN, used by
       /// <see cref="EnableCdn(string)"/> when it does not state its own number.
       /// </summary>
-      public const int DefaultCdnMaxFileSizeMb = 20;
+      public const int DefaultCdnMaxFileSizeMb = 200;
 
       // null = CDN off. Stored raw as written in Program.cs; resolving it to an absolute path waits for
       // BuildApp, because ContentRootPath is only known there.

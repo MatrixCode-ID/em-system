@@ -33,7 +33,7 @@ namespace Em.Ui.Wpf.Navigations
       public CdnManager(EmApp app) {
          InitializeComponent();
          Vm.EmApp = app;
-         settingsCard.Attach(app, true);
+
          // Archive and extract status is polled only while the screen is actually in a window; there is
          // no bindable equivalent of Loaded/Unloaded, so both are forwarded here.
          Loaded += (_, _) => Vm.StartTaskPolling();
@@ -51,7 +51,7 @@ namespace Em.Ui.Wpf.Navigations
 
       /// <inheritdoc />
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) {
-         if (!settingsCard.ConfirmLeave()) args.Cancel = true;
+
          return Task.CompletedTask;
       }
 
@@ -213,6 +213,9 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand<object?>(nameof(DropCommand), DropCommand, DropCommandAllowed);
          RegisterCommand(nameof(ArchiveCommand), ArchiveCommand, ArchiveCommandAllowed);
          RegisterCommand<CdnManagerItem?>(nameof(ExtractCommand), ExtractCommand, ExtractCommandAllowed);
+         RegisterCommand(nameof(EditLimitCommand), EditLimitCommand, EditLimitCommandAllowed);
+         RegisterCommand(nameof(SaveLimitCommand), SaveLimitCommand, SaveLimitCommandAllowed);
+         RegisterCommand(nameof(CancelLimitCommand), CancelLimitCommand, CancelLimitCommandAllowed);
          Breadcrumbs.Add(RootCrumb);
 
          _taskTimer = new DispatcherTimer { Interval = SlowTaskPoll };
@@ -820,6 +823,29 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public Task ReloadAsync() => LoadAsync(CurrentPath);
 
+      /// <summary>Whether the limit is being edited.</summary>
+      public bool IsEditingLimit { get => Get<bool>(); set { Set(value); RaiseCommandsChanged(); } }
+      /// <summary>Draft maximum file size in MB.</summary>
+      public int MaxFileSizeMb { get => Get<int>(); set => Set(value); }
+      /// <summary>Whether the current folder supports a per-file limit.</summary>
+      public bool CanEditLimit => IsLoaded && !IsCdnDisabled && _managedFolder is null;
+      /// <summary>Starts editing the runtime limit.</summary>
+      public void EditLimitCommand() { MaxFileSizeMb = (int)(MaxFileSize / 1024 / 1024); IsEditingLimit = true; }
+      /// <summary>Requires an ordinary folder and an idle screen.</summary>
+      public bool EditLimitCommandAllowed() => CanEditLimit && IsNotBusy && !IsEditingLimit;
+      /// <summary>Saves the runtime limit.</summary>
+      public Task SaveLimitCommand() => RunBusyAsync("Saving limit...", async () => {
+         await Service.PostMeta_CdnMaxFileSize(MaxFileSizeMb);
+         IsEditingLimit = false;
+         await ReadFolderAsync(CurrentPath);
+      });
+      /// <summary>Requires an active editor.</summary>
+      public bool SaveLimitCommandAllowed() => IsEditingLimit && CanEditLimit && IsNotBusy;
+      /// <summary>Discards the draft.</summary>
+      public void CancelLimitCommand() => IsEditingLimit = false;
+      /// <summary>Requires an idle editor.</summary>
+      public bool CancelLimitCommandAllowed() => IsEditingLimit && IsNotBusy;
+
       private bool CanWrite => CanAct && _managedFolder is null;
       private CdnManagedFolder? _managedFolder;
       /// <summary>Opens recycle, temporary-file and managed-folder administration.</summary>
@@ -854,6 +880,7 @@ namespace Em.Ui.Wpf.Navigations
          CurrentPath = content.Path;
          PublicPath = content.PublicPath;
          _managedFolder = content.ManagedFolder;
+         IsEditingLimit = false;
          MaxFileSize = content.MaxFileSize;
          NotifyChanged(nameof(LimitCaption));
          RebuildBreadcrumbs();
@@ -862,6 +889,7 @@ namespace Em.Ui.Wpf.Navigations
          content.Entries.EachOf(r => Items.Add(new CdnManagerItem(r, this)));
          SelectedItem = select is null ? null : Items.FirstOrDefault(r => r.Name == select);
          IsLoaded = true;
+         NotifyChanged(nameof(CanEditLimit));
          NotifyChanged(nameof(ItemsCaption));
          NotifyChanged(nameof(IsEmpty));
          // The rows are new objects, so the extract status of the zips in this folder is read again too.
@@ -905,6 +933,9 @@ namespace Em.Ui.Wpf.Navigations
 
       private void RebuildBreadcrumbs() {
          Breadcrumbs.Clear();
+         RegisterCommand(nameof(EditLimitCommand), EditLimitCommand, EditLimitCommandAllowed);
+         RegisterCommand(nameof(SaveLimitCommand), SaveLimitCommand, SaveLimitCommandAllowed);
+         RegisterCommand(nameof(CancelLimitCommand), CancelLimitCommand, CancelLimitCommandAllowed);
          Breadcrumbs.Add(RootCrumb);
          if (CurrentPath.Length == 0) return;
 

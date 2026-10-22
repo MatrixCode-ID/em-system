@@ -41,6 +41,9 @@ namespace Em.Api.Core
       /// <inheritdoc />
       public Task PostMeta_CdnManagedQuota(string path, long? quotaBytes) => PostAsync(nameof(PostMeta_CdnManagedQuota), path, quotaBytes!);
 
+      /// <inheritdoc />
+      public Task PostMeta_CdnMaxFileSize(int maxFileSizeMb) => PostAsync(nameof(PostMeta_CdnMaxFileSize), maxFileSizeMb);
+
       #region Meta's
 
       /// <inheritdoc />

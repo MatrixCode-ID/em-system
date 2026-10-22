@@ -28,6 +28,10 @@ namespace Em.Api.Core
       [PostAction(claim: ICdnServices.SettingsClaim)]
       public Task<StorageSettingsDetail> PostGetMeta_CdnSettingsSave(StorageSettingsSave request) => Task.FromResult(Settings.Save(true, request));
 
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnMaxFileSize(int maxFileSizeMb) { Store.SetMaxFileSize(maxFileSizeMb); return Task.CompletedTask; }
+
       private CdnStore Store {
          get {
             var store = GetService<CdnStore>()!;
