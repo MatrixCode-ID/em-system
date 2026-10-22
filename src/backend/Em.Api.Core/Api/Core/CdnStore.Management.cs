@@ -166,7 +166,7 @@ internal sealed partial class CdnStore {
       else if (Directory.Exists(path)) {
          foreach (var file in new DirectoryInfo(path).EnumerateFiles("*", new EnumerationOptions {
             RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = false
-         }).Where(f => !IsSkinPhysical(f.FullName))) { result.FileCount++; result.TotalBytes = checked(result.TotalBytes + file.Length); }
+         }).Where(f => !IsSkinPhysical(f.FullName) && !IsMetaEntry(f))) { result.FileCount++; result.TotalBytes = checked(result.TotalBytes + file.Length); }
       }
       return result;
    }
@@ -245,12 +245,15 @@ internal sealed partial class CdnStore {
 
    private void Retire(string target, string? appId = null, string deletedBy = "") {
       if (!File.Exists(target) && !Directory.Exists(target)) return;
+      InvalidateSettings(target);
       if (appId is not null) {
          var temp = Path.Combine(TempPath, "retired-" + Guid.NewGuid().ToString("N"));
          MovePhysical(target, temp);
          if (!IsOpen(temp)) DeletePhysical(temp);
          return;
       }
+      // Folder settings never enter the recycle bin: a restored folder comes back without them.
+      if (Directory.Exists(target)) DropSettingsTree(target);
       var item = new CdnRecycleItem {
          Id = Guid.NewGuid().ToString("N"), Path = ToRelative(target), DeletedAtUtc = DateTimeOffset.UtcNow,
          DeletedBy = deletedBy, IsFolder = Directory.Exists(target), Size = SizeOf(target).TotalBytes

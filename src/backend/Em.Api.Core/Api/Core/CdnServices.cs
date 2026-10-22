@@ -214,6 +214,74 @@ namespace Em.Api.Core
          return Task.CompletedTask;
       }
 
+      /// <inheritdoc />
+      [GetAction(claim: ICdnServices.CdnClaim)]
+      public Task<CdnFolderSettingsDetail> GetMeta_CdnFolderSettings(string? path) =>
+         Task.FromResult(Store.FolderSettings(path));
+
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnFolderSettingsSave(CdnFolderSettingsSave request) {
+         ArgumentNullException.ThrowIfNull(request);
+         Store.SaveFolderSettings(request.Path, request.Settings);
+         return Task.CompletedTask;
+      }
+
+      /// <inheritdoc />
+      [GetAction(claim: ICdnServices.CdnClaim)]
+      public Task<string> GetMeta_CdnFolderSettingsExport(string? path) =>
+         Task.FromResult(Store.ExportFolderSettings(path));
+
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task<CdnEntry> PostGetMeta_CdnRename(string path, string newName) =>
+         Task.FromResult(Store.Rename(path, newName));
+
+      // One copy at a time across the whole server, like archives.
+      private const string CopyTaskKey = "cdn:copy";
+
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task<BusinessTaskInfo> PostGetMeta_CdnCopy(CdnCopyRequest request) {
+         ArgumentNullException.ThrowIfNull(request);
+         var (source, _, _) = Store.ValidateCopy(request.Path, request.TargetFolder, request.Overwrite);
+
+         // Copied out of the request: the work runs after this action has returned.
+         var path = request.Path;
+         var targetFolder = request.TargetFolder;
+         var overwrite = request.Overwrite;
+
+         return Task.FromResult(StartBusinessTask(new BusinessTaskOptions {
+            Key = CopyTaskKey,
+            Scope = BusinessTaskScope.Global,
+            Title = $"Copy {Path.GetFileName(Path.TrimEndingDirectorySeparator(source))}"
+         }, ctx => ctx.Services.GetRequiredService<CdnStore>()
+            .CopyAsync(path, targetFolder, overwrite, ctx.Report, ctx.CancellationToken)));
+      }
+
+      /// <inheritdoc />
+      [GetAction(claim: ICdnServices.CdnClaim)]
+      public Task<BusinessTaskInfo?> GetMeta_CdnCopyTask() {
+         Store.EnsureEnabled();
+         return Task.FromResult(FindBusinessTask(CopyTaskKey));
+      }
+
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnCopyCancel() {
+         Store.EnsureEnabled();
+         CancelBusinessTask(CopyTaskKey);
+         return Task.CompletedTask;
+      }
+
+      /// <inheritdoc />
+      [PostAction(claim: ICdnServices.CdnClaim)]
+      public Task PostMeta_CdnCopyClear() {
+         Store.EnsureEnabled();
+         ClearBusinessTask(CopyTaskKey);
+         return Task.CompletedTask;
+      }
+
       #endregion
    }
 }

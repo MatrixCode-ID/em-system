@@ -37,4 +37,11 @@ public sealed class CdnReleaseServices : ServicesBase, ICdnReleaseServices {
    /// <inheritdoc />
    [PostAction(claim: ICdnReleaseServices.ReleaseClaim)]
    public Task PostMeta_CdnReleaseDelete(string path, string appId) { Store.Delete(path, appId); return Task.CompletedTask; }
+   /// <inheritdoc />
+   [PostAction(claim: ICdnReleaseServices.ReleaseClaim)]
+   public Task PostMeta_CdnReleaseFolderSettings(CdnReleaseFolderSettingsRequest request) {
+      ArgumentNullException.ThrowIfNull(request);
+      Store.SaveFolderSettings(request.Path, request.Settings, request.AppId);
+      return Task.CompletedTask;
+   }
 }

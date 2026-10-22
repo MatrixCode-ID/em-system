@@ -26,5 +26,11 @@ namespace Em.Api.Core.Models
 
       /// <summary>When this file or folder was last modified on the server.</summary>
       public DateTimeOffset LastModified { get; set; }
+
+      /// <summary>
+      /// <c>true</c> when the settings of the containing folder leave this item out of the public listing.
+      /// It is still served by a direct link.
+      /// </summary>
+      public bool IsHidden { get; set; }
    }
 }

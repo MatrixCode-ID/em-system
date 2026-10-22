@@ -22,6 +22,8 @@ public interface ICdnReleaseServices : IServices {
    Task<CdnEntry> PostGetMeta_CdnReleaseUpload(CdnReleaseUploadRequest request, Stream content);
    /// <summary>Deletes owned content without retaining it in the recycle bin.</summary>
    Task PostMeta_CdnReleaseDelete(string path, string appId);
+   /// <summary>Replaces the settings of a folder inside the owned root.</summary>
+   Task PostMeta_CdnReleaseFolderSettings(CdnReleaseFolderSettingsRequest request);
 }
 
 /// <summary>Product ownership and target of one streamed release upload.</summary>

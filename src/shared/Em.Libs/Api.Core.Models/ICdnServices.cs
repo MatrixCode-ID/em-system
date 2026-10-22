@@ -10,7 +10,7 @@ namespace Em.Api.Core.Models
    /// </summary>
    /// <remarks>
    /// Every <c>path</c> parameter is a path relative to the CDN root folder, separated by <c>/</c>;
-   /// <c>null</c> or an empty string means the root folder. Paths that try to leave the root folder, are rejected with 400. Dot-prefixed files are public.
+   /// <c>null</c> or an empty string means the root folder. Paths that try to leave the root folder, are rejected with 400. Dot-prefixed files are public, except the folder settings file <c>.meta</c>, which is never listed or served.
    /// <para>
    /// Creating and extracting zips can take a long time, so both run as global business tasks on the
    /// server: the action returns immediately, and the status is monitored through the status actions
@@ -158,6 +158,46 @@ namespace Em.Api.Core.Models
 
       /// <summary>Clears the finished extraction task of the zip file at <paramref name="path"/>.</summary>
       Task PostMeta_CdnExtractClear(string path);
+
+      /// <summary>
+      /// Settings of one folder: the effective values, whether a settings file exists, why an invalid one
+      /// is ignored, and whether CDN Manager may change them (not in managed folders).
+      /// </summary>
+      Task<CdnFolderSettingsDetail> GetMeta_CdnFolderSettings(string? path);
+
+      /// <summary>
+      /// Replaces the settings of one folder as a whole. 400 for invalid settings, 409 in a managed folder
+      /// or a folder that contains one.
+      /// </summary>
+      Task PostMeta_CdnFolderSettingsSave(CdnFolderSettingsSave request);
+
+      /// <summary>The canonical settings file text of one folder; 404 when it has none or it is invalid.</summary>
+      Task<string> GetMeta_CdnFolderSettingsExport(string? path);
+
+      /// <summary>
+      /// Renames a file or folder within its folder. 409 when the name is taken or in a managed folder.
+      /// Renaming a file to the settings file name turns its content into the folder settings (400 when it
+      /// is invalid) and removes the file; the folder is returned then.
+      /// </summary>
+      Task<CdnEntry> PostGetMeta_CdnRename(string path, string newName);
+
+      /// <summary>
+      /// Starts copying a file or folder, including folder settings, into another folder under the same
+      /// name. Checked before the task starts: 404 for a missing source, 400 for a folder copied into
+      /// itself, 409 for a name already used (a file only with <see cref="CdnCopyRequest.Overwrite"/>), a
+      /// managed destination, or another copy still running.
+      /// </summary>
+      /// <returns>Snapshot of the newly started task.</returns>
+      Task<BusinessTaskInfo> PostGetMeta_CdnCopy(CdnCopyRequest request);
+
+      /// <summary>The copy task that is still alive, or that failed and has not been cleared; <c>null</c> when none.</summary>
+      Task<BusinessTaskInfo?> GetMeta_CdnCopyTask();
+
+      /// <summary>Cancels the running copy.</summary>
+      Task PostMeta_CdnCopyCancel();
+
+      /// <summary>Clears a finished copy task.</summary>
+      Task PostMeta_CdnCopyClear();
 
       #endregion
    }

@@ -36,7 +36,8 @@ namespace Em.Api.Core
       private static readonly StringComparison PathComparison =
          OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-      // Dot-prefixed, hidden and system entries are public; symbolic links are excluded.
+      // Dot-prefixed, hidden and system entries are public, except the folder settings file, which callers
+      // filter out by name; symbolic links are excluded.
       private static readonly EnumerationOptions VisibleEntries = new() {
          AttributesToSkip = FileAttributes.ReparsePoint,
          IgnoreInaccessible = true
@@ -113,6 +114,8 @@ namespace Em.Api.Core
             throw new ActionException("The path points outside the CDN folder.", 400);
          }
 
+         EnsureNotMetaPath(segments, fullPath);
+
          for (var current = fullPath; current.Length >= RootPath.TrimEnd(Path.DirectorySeparatorChar).Length;
               current = Path.GetDirectoryName(current)!) {
             if ((File.Exists(current) || Directory.Exists(current)) &&
@@ -174,8 +177,9 @@ namespace Em.Api.Core
             ? PublicRequestPath.TrimStart('/') + "/"
             : $"{PublicRequestPath.TrimStart('/')}/{string.Join('/', folderRelative.Split('/').Select(Uri.EscapeDataString))}/";
 
-      private CdnEntry ToEntry(FileSystemInfo info, string relative) => new() {
+      private CdnEntry ToEntry(FileSystemInfo info, string relative, CdnFolderSettings? parentSettings = null) => new() {
          Name = info.Name,
+         IsHidden = CdnFolderSettingsFormat.IsHidden(parentSettings, info.Name),
          ManagedFolder = ManagedAt(relative, includeUsage: false),
          Path = relative,
          IsFolder = info is DirectoryInfo,
@@ -211,13 +215,14 @@ namespace Em.Api.Core
       public CdnFolderContent List(string? relativePath) {
          var folder = new DirectoryInfo(RequireFolder(relativePath));
          var folderRelative = ToRelative(folder.FullName);
+         var settings = EffectiveSettings(folder.FullName);
 
-         var folders = folder.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
+         var folders = folder.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName) && !IsMetaEntry(r))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(r => ToEntry(r, ToRelative(r.FullName)));
-         var files = folder.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
+            .Select(r => ToEntry(r, ToRelative(r.FullName), settings));
+         var files = folder.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName) && !IsMetaEntry(r))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(r => ToEntry(r, ToRelative(r.FullName)));
+            .Select(r => ToEntry(r, ToRelative(r.FullName), settings));
 
          return new CdnFolderContent {
             Path = folderRelative,
@@ -231,7 +236,7 @@ namespace Em.Api.Core
       public CdnItemCount CountInside(string relativePath) {
          var folder = new DirectoryInfo(RequireFolder(relativePath));
          var result = new CdnItemCount();
-         foreach (var info in folder.EnumerateFileSystemInfos("*", EverythingRecursive).Where(r => !IsSkinPhysical(r.FullName))) {
+         foreach (var info in folder.EnumerateFileSystemInfos("*", EverythingRecursive).Where(r => !IsSkinPhysical(r.FullName) && !IsMetaEntry(r))) {
             if (info is DirectoryInfo) {
                result.Folders++;
             }
@@ -254,15 +259,16 @@ namespace Em.Api.Core
          return result.ToArray();
 
          void Walk(DirectoryInfo current) {
-            foreach (var sub in current.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
+            var settings = EffectiveSettings(current.FullName);
+            foreach (var sub in current.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName) && !IsMetaEntry(r))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
-               result.Add(ToEntry(sub, ToRelative(sub.FullName)));
+               result.Add(ToEntry(sub, ToRelative(sub.FullName), settings));
                Walk(sub);
             }
 
-            foreach (var file in current.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
+            foreach (var file in current.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName) && !IsMetaEntry(r))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
-               result.Add(ToEntry(file, ToRelative(file.FullName)));
+               result.Add(ToEntry(file, ToRelative(file.FullName), settings));
             }
          }
       }
@@ -302,6 +308,7 @@ namespace Em.Api.Core
             }
 
             MovePhysical(source, destination);
+            InvalidateSettings(source);
             return ToEntry(new DirectoryInfo(destination), ToRelative(destination));
          }
 
@@ -329,6 +336,9 @@ namespace Em.Api.Core
          var maxFileSize = MaxFileSize;
          EnsureWritable(relativePath, appId);
          ValidateName(fileName);
+         if (IsMetaName(fileName)) {
+            return await UploadSettingsAsync(relativePath, content, token, appId);
+         }
 
          var folder = RequireFolder(relativePath);
          var target = Path.Combine(folder, fileName);
@@ -386,6 +396,7 @@ namespace Em.Api.Core
          lock (_gate) {
          EnsureWritable(relativePath, appId);
          ValidateName(folderName);
+         EnsureNotMetaFolderName(folderName);
          var parent = RequireFolder(relativePath);
          var target = Path.Combine(parent, folderName);
          EnsureNotReserved(ToRelative(target));
@@ -448,6 +459,9 @@ namespace Em.Api.Core
          var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
          foreach (var name in names) {
             ValidateName(name);
+            if (IsMetaName(name)) {
+               throw MetaNotFound();
+            }
             EnsureNotReserved(ToRelative(Path.Combine(folder, name)));
             if (!seen.Add(name)) {
                throw new ActionException($"'{name}' is listed more than once.", 400);
@@ -565,6 +579,7 @@ namespace Em.Api.Core
          void Walk(DirectoryInfo current, string prefix) {
             foreach (var sub in current.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
+               if (IsMetaEntry(sub)) continue;
                var entryName = $"{prefix}/{sub.Name}";
                result.Add(new ArchiveItem(entryName, null));
                Walk(sub, entryName);
@@ -572,6 +587,7 @@ namespace Em.Api.Core
 
             foreach (var file in current.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
+               if (IsMetaEntry(file)) continue;
                result.Add(new ArchiveItem($"{prefix}/{file.Name}", file));
             }
          }
@@ -589,7 +605,9 @@ namespace Em.Api.Core
       /// <param name="Files">Relative paths (inside <paramref name="Folder"/>, <c>/</c>-separated) of every file entry.</param>
       /// <param name="Folders">Relative paths of every folder the extract creates, parents first.</param>
       /// <param name="Conflicts">CDN paths of existing files that would be overwritten.</param>
-      public sealed record ExtractPlan(string ZipPath, string Folder, string[] Files, string[] Folders, string[] Conflicts);
+      /// <param name="Settings">Relative paths of folder settings entries; applied as settings, never as files or conflicts.</param>
+      public sealed record ExtractPlan(string ZipPath, string Folder, string[] Files, string[] Folders, string[] Conflicts,
+         string[] Settings);
 
       /// <summary>
       /// Reads the entry list of a zip and refuses it as a whole - 400 - for an entry that would leave the
@@ -610,6 +628,7 @@ namespace Em.Api.Core
          var folder = Path.GetDirectoryName(zipPath)!;
          var files = new List<string>();
          var folders = new List<string>();
+         var settings = new List<string>();
          var fileSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
          var folderSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -623,6 +642,9 @@ namespace Em.Api.Core
                var name = entry.FullName.Replace('\\', '/');
                var isFolder = name.EndsWith('/');
                var segments = SplitEntryName(entry.FullName, name, isFolder);
+               if ((isFolder ? segments : segments[..^1]).Any(IsMetaName)) {
+                  throw new ActionException($"The archive entry '{entry.FullName}' uses a folder name reserved for folder settings.", 400);
+               }
 
                for (var depth = 1; depth < segments.Length; depth++) {
                   AddFolder(string.Join('/', segments[..depth]));
@@ -636,6 +658,11 @@ namespace Em.Api.Core
 
                if (folderSet.Contains(relative) || !fileSet.Add(relative)) {
                   throw new ActionException($"The archive holds '{relative}' more than once.", 400);
+               }
+
+               if (IsMetaName(segments[^1])) {
+                  settings.Add(relative);
+                  continue;
                }
 
                files.Add(relative);
@@ -670,7 +697,11 @@ namespace Em.Api.Core
             }
          }
 
-         return new ExtractPlan(zipPath, folder, files.ToArray(), folders.ToArray(), conflicts.ToArray());
+         foreach (var relative in settings) {
+            EnsureWritable(ToRelative(Path.GetDirectoryName(Path.Combine(folder, relative))!));
+         }
+
+         return new ExtractPlan(zipPath, folder, files.ToArray(), folders.ToArray(), conflicts.ToArray(), settings.ToArray());
 
          void AddFolder(string relative) {
             if (fileSet.Contains(relative)) {
@@ -736,6 +767,8 @@ namespace Em.Api.Core
          using var operation = Temporary("extract");
          var temp = operation.Path;
          Directory.CreateDirectory(temp);
+         var settingsToApply = new List<(string Folder, CdnFolderSettings Settings)>();
+         var skipped = new List<string>();
 
          try {
             using (var zip = OpenZip(plan.ZipPath)) {
@@ -749,7 +782,21 @@ namespace Em.Api.Core
                   var name = entry.FullName.Replace('\\', '/');
                   if (name.EndsWith('/')) continue;
 
-                  var relative = string.Join('/', SplitEntryName(entry.FullName, name, isFolder: false));
+                  var entrySegments = SplitEntryName(entry.FullName, name, isFolder: false);
+                  var relative = string.Join('/', entrySegments);
+                  if (IsMetaName(entrySegments[^1])) {
+                     // A settings entry never becomes a file: valid ones replace the settings of their folder,
+                     // invalid ones are skipped while the rest of the archive is extracted.
+                     try {
+                        await using var settingsSource = entry.Open();
+                        settingsToApply.Add((string.Join('/', entrySegments[..^1]), await ReadSettingsContentAsync(settingsSource, token)));
+                     }
+                     catch (ActionException ex) {
+                        skipped.Add($"{relative} ({ex.Message})");
+                     }
+                     continue;
+                  }
+
                   var destination = Path.Combine(temp, relative);
                   Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                   report(Percent(total, claimedTotal), relative);
@@ -801,7 +848,16 @@ namespace Em.Api.Core
                File.Move(Path.Combine(temp, relative), target);
             }
 
-            report(100, "Completed");
+            foreach (var (settingsFolder, settings) in settingsToApply) {
+               var target = settingsFolder.Length == 0 ? plan.Folder : Path.Combine(plan.Folder, settingsFolder);
+               EnsureWritable(ToRelative(target));
+               Directory.CreateDirectory(target);
+               WriteSettings(target, settings);
+            }
+
+            report(100, skipped.Count == 0
+               ? "Completed"
+               : $"Completed; skipped folder settings: {string.Join("; ", skipped)}");
             }
          }
          finally {

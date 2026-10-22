@@ -360,14 +360,21 @@ namespace Em.Api.Core
       /// </remarks>
       private void MapCdn(WebApplication app) {
          if (_cdn.IsEnabled) {
-            // Dot-prefixed content is public; only the reserved skin directory is hidden from listings.
+            // Dot-prefixed content is public; the reserved skin directory and folder settings files are not listed,
+            // and settings files are never served.
+            _cdn.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger<CdnStore>();
             var provider = new CdnFileProvider(_cdn);
             app.UseStaticFiles(new StaticFileOptions {
                RequestPath = CdnStore.PublicRequestPath,
                FileProvider = provider,
                // A CDN is not a web site: .msi, .apk, .7z and anything else must download too.
                ServeUnknownFileTypes = true,
-               DefaultContentType = "application/octet-stream"
+               DefaultContentType = "application/octet-stream",
+               // Files of a folder whose public listing is off are kept out of search indexes too.
+               OnPrepareResponse = ctx => {
+                  if (ctx.File is CdnFileProvider.Download { NoIndex: true })
+                     ctx.Context.Response.Headers["X-Robots-Tag"] = "noindex";
+               }
             });
             app.UseDirectoryBrowser(new DirectoryBrowserOptions {
                RequestPath = CdnStore.PublicRequestPath,
