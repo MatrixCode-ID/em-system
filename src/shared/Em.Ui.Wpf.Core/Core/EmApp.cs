@@ -215,11 +215,7 @@ namespace Em.Ui.Wpf.Core
       }
 
       private void RebuildClaimCatalog() =>
-         _allClaims = [
-            .. _internalClaims,
-            .. _serverClaims.Where(s =>
-               !_internalClaims.Any(i => string.Equals(i.Key, s.Key, StringComparison.OrdinalIgnoreCase)))
-         ];
+         _allClaims = NavigationAccess.MergeClaimCatalogs(_internalClaims, _serverClaims, _serverClaimsLoaded);
 
       /// <summary>
       /// Whether <paramref name="navigation"/> may be opened by the active user - used by both the home menu

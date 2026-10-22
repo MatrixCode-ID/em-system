@@ -87,3 +87,20 @@ Guide diperbarui: engine-cdn-storage, engine-storage-settings, engine-nupak,
 engine-object-storage (termasuk .id), dan engine-registry. Keputusan dicatat di
 CLAUDE.md dengan mempertahankan aturan sebelumnya. Dua commit tahap disimpan
 lebih dahulu, disusul commit perbaikan/tes/guide/laporan. Tidak ada push.
+
+## Perbaikan lanjutan 2026-10-22 — menu fitur host mati
+
+Laporan pengguna menemukan NuGet Manager masih bisa diluncurkan ketika API host
+tidak memanggil AddNuPak. Penyebab: katalog gabungan client selalu menyertakan
+claim internal NuGet, sehingga filter navigasi menganggap fitur tersedia walaupun
+claim server sudah dihapus dengan benar. Ini bukan masalah database atau skema.
+
+NavigationAccess.MergeClaimCatalogs sekarang hanya mempertahankan claim internal
+storage yang dideklarasikan API setelah katalog server dimuat. WPF/MAUI memakai
+penggabungan yang sama; menu/home dan navigasi langsung mengikuti hasilnya.
+Claim layar client lainnya dipertahankan. Tidak menambahkan fallback palsu atau
+mengaktifkan fitur host yang mati.
+
+Build WPF dan MAUI lulus; 10 tes terfilter NavigationAccessTests lulus. Tidak ada
+GUI atau smoke HTTP. Client host perlu rebuild/restart. Perubahan lanjutan ini
+belum di-commit pada saat laporan diperbarui.

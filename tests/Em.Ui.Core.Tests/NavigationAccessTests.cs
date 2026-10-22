@@ -41,6 +41,26 @@ namespace Em.Ui.Core.Tests
          Assert.False(NavigationAccess.IsDeclared(new FakeNavigation("test", RunClaim), Catalog[..1]));
       }
 
+      [Theory]
+      [InlineData("CDN Manager Access")]
+      [InlineData("NuGet Manager Access")]
+      [InlineData("Container Manager Access")]
+      [InlineData("Object Storage Manager Access")]
+      public void HostFeatureCannotBeDeclaredByClientClaims(string name) {
+         var feature = new ClaimAction { ModuleName = "Administrative Tools", Name = name };
+         var local = new ClaimAction { ModuleName = "Administrative Tools", Name = "User Manager Access" };
+         ClaimAction[] client = [local, feature];
+         var navigation = new FakeNavigation(feature.ModuleName, feature);
+         Assert.True(NavigationAccess.IsDeclared(navigation, NavigationAccess.MergeClaimCatalogs(client, [], false)));
+         var missing = NavigationAccess.MergeClaimCatalogs(client, [], true);
+         Assert.False(NavigationAccess.IsDeclared(navigation, missing));
+         Assert.Contains(local, missing);
+         var enabled = NavigationAccess.MergeClaimCatalogs(client, [feature], true);
+         Assert.True(NavigationAccess.IsDeclared(navigation, enabled));
+         Assert.Single(enabled.Where(c => c.Key == feature.Key));
+         Assert.False(NavigationAccess.IsDeclared(navigation, NavigationAccess.MergeClaimCatalogs(client, [], true)));
+      }
+
       private sealed class FakeNavigation(string? moduleName, ClaimAction? requiredClaim) : INavigation
       {
          public string Name => "fake";

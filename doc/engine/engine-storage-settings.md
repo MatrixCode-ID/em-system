@@ -151,3 +151,8 @@ additionally check the authenticated caller's administrator status (403 for non-
 | Container Registry | `<registry-root>/settings/service.json` (atomic JSON boolean) | `/v2/...` → 404 |
 
 The database keys use the existing core metadata table; no schema migration is required.
+
+Client catalog merging also enforces host feature presence: built-in client CDN/NuGet/registry/storage
+claims do not declare a feature on behalf of the API. After loading the server catalog, absent feature
+claims are removed from the merged WPF/MAUI catalog, so menu/home visibility and direct navigation
+agree even for administrators and debug sessions. Other client-owned screen claims remain available.

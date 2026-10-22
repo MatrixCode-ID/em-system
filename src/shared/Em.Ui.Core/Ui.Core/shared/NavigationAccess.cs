@@ -13,6 +13,27 @@ namespace Em.Ui.Core.Shared
    public static class NavigationAccess
    {
       /// <summary>
+      /// Merges client claims with the active server catalog. Host-controlled storage claims only
+      /// remain available after loading when the server declares them, including for administrators.
+      /// </summary>
+      /// <param name="clientClaims">Built-in client screen claims.</param>
+      /// <param name="serverClaims">Claims declared by the active API.</param>
+      /// <param name="serverLoaded">Whether the API catalog has been loaded.</param>
+      public static ClaimAction[] MergeClaimCatalogs(IReadOnlyList<ClaimAction> clientClaims,
+         IReadOnlyList<ClaimAction> serverClaims, bool serverLoaded) {
+         var available = clientClaims.Where(c => !serverLoaded || !RequiresHostFeature(c) ||
+            serverClaims.Any(s => string.Equals(s.Key, c.Key, StringComparison.OrdinalIgnoreCase))).ToArray();
+         return [.. available, .. serverClaims.Where(s =>
+            !available.Any(c => string.Equals(c.Key, s.Key, StringComparison.OrdinalIgnoreCase)))];
+      }
+
+      private static bool RequiresHostFeature(ClaimAction claim) =>
+         string.Equals(claim.ModuleName, Defaults.AdministrativeToolsModuleName, StringComparison.OrdinalIgnoreCase) &&
+         new[] { ICdnServices.CdnClaim, ICdnServices.SettingsClaim, INuPakServices.ManagerClaim, INuPakServices.SettingsClaim,
+            ICtnServices.CtnClaim, ICtnServices.SettingsClaim, IObjectStorageServices.ManagerClaim, IObjectStorageServices.SettingsClaim }
+            .Contains(claim.Name, StringComparer.OrdinalIgnoreCase);
+
+      /// <summary>
       /// Answers whether the module of <paramref name="navigation"/> is declared in
       /// <paramref name="catalog"/> (the active server's claim catalog merged with the client's built-in
       /// claims). A navigation with no module binding is always considered present; a navigation with a
