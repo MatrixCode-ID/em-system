@@ -57,15 +57,29 @@ namespace Em.Ui.Wpf.Core.Release
       /// The projects in the <c>.slnx</c> that produce an application (<c>OutputType</c> <c>WinExe</c> or
       /// <c>Exe</c>), with their paths as written in the <c>.slnx</c> (relative to its folder).
       /// </summary>
-      public static IReadOnlyList<string> ReadHostProjects(string solutionPath) {
+      public static IReadOnlyList<string> ReadHostProjects(string solutionPath) =>
+         ReadHostProjects(solutionPath, null, CancellationToken.None);
+
+      /// <summary>
+      /// The projects in the <c>.slnx</c> that produce an application, reporting each project as it is
+      /// checked. A project without a declared <c>OutputType</c> is evaluated with MSBuild, which takes a
+      /// few seconds each, so call this off the UI thread.
+      /// </summary>
+      public static IReadOnlyList<string> ReadHostProjects(string solutionPath, IProgress<string>? progress, CancellationToken token) {
          var folder = Path.GetDirectoryName(Path.GetFullPath(solutionPath))!;
-         return XDocument.Load(solutionPath)
+         var projects = XDocument.Load(solutionPath)
             .Descendants()
             .Where(r => r.Name.LocalName == "Project")
             .Select(r => (string?)r.Attribute("Path"))
             .OfType<string>()
-            .Where(r => IsApplication(Path.Combine(folder, r)))
             .ToArray();
+         var hosts = new List<string>();
+         for (var i = 0; i < projects.Length; i++) {
+            token.ThrowIfCancellationRequested();
+            progress?.Report($"Checking project {i + 1} of {projects.Length}: {Path.GetFileName(projects[i])}");
+            if (IsApplication(Path.Combine(folder, projects[i]))) hosts.Add(projects[i]);
+         }
+         return hosts;
 
          static bool IsApplication(string projectPath) {
             if (!File.Exists(projectPath)) return false;

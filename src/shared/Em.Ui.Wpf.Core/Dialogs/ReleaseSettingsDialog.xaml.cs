@@ -26,6 +26,11 @@ public partial class ReleaseSettingsDialog : EmWindow {
    private readonly StackPanel _form = new() { Margin = new Thickness(22, 12, 22, 22) };
    private readonly StackPanel _previews = new();
    private readonly TextBlock _message = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) };
+   // Shown above the form while an action runs: what is being done right now, since the form is
+   // disabled meanwhile and reading a solution can take a while.
+   private readonly TextBlock _statusText = new() { TextWrapping = TextWrapping.Wrap };
+   private readonly ProgressBar _statusProgress = new() { IsIndeterminate = true };
+   private readonly StackPanel _status = new() { Margin = new Thickness(22, 12, 22, 0), Visibility = Visibility.Collapsed };
    private bool _busy;
 
    /// <summary>Creates a product profile editor.</summary>
@@ -79,8 +84,16 @@ public partial class ReleaseSettingsDialog : EmWindow {
       Button(keys, "Export public PEM", () => {
          var picker = new SaveFileDialog { Filter = "Public PEM|*.pem" }; if (picker.ShowDialog(this) == true) File.WriteAllText(picker.FileName, ReleasePemKey.Public(_draft.PrivateKeyPem)); return Task.CompletedTask;
       }); _form.Children.Add(keys); _form.Children.Add(_message); KeySummary(); Preview();
-      Content = new ScrollViewer { Content = _form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-      if (File.Exists(profile.SolutionPath)) { _busy = true; try { _hosts.ItemsSource = ReleaseBuilder.ReadHostProjects(profile.SolutionPath); _hosts.SelectedItem = profile.HostProject; } finally { _busy = false; } }
+      _statusProgress.SetResourceReference(StyleProperty, "hairlineProgressStyle");
+      _status.Children.Add(_statusText); _status.Children.Add(_statusProgress);
+      var root = new DockPanel(); DockPanel.SetDock(_status, Dock.Top); root.Children.Add(_status);
+      root.Children.Add(new ScrollViewer { Content = _form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+      Content = root;
+      // Reading the hosts may run MSBuild per project; doing it once the dialog is shown keeps it from
+      // opening late and lets the status line say what is going on.
+      if (File.Exists(profile.SolutionPath)) Loaded += async (_, _) => await Run(async () => {
+         _hosts.ItemsSource = await ReadHostProjects(profile.SolutionPath); _hosts.SelectedItem = profile.HostProject;
+      });
    }
    private ICdnReleaseServices Service => _app.ServiceProvider.GetRequiredService<ICdnReleaseServices>();
    private string Value(string name) => _fields[name].Text.Trim();
@@ -116,13 +129,32 @@ public partial class ReleaseSettingsDialog : EmWindow {
    }
    private async Task Run(Func<Task> action) {
       if (_busy) return; _busy = true; _form.IsEnabled = false;
-      try { await action(); } catch (Exception ex) { _message.Text = ex.Message; } finally { _busy = false; _form.IsEnabled = true; }
+      // A long step announces itself through ShowStatus; quick buttons leave the line hidden.
+      try { await action(); _status.Visibility = Visibility.Collapsed; }
+      catch (Exception ex) { _message.Text = ex.Message; ShowStatus("Failed: " + ex.Message, false); }
+      finally { _busy = false; _form.IsEnabled = true; }
+   }
+   private void ShowStatus(string text, bool running = true) {
+      _statusText.Text = text; _statusProgress.Visibility = running ? Visibility.Visible : Visibility.Collapsed; _status.Visibility = Visibility.Visible;
+   }
+   private Task<IReadOnlyList<string>> ReadHostProjects(string solution) {
+      ShowStatus($"Reading host projects from {Path.GetFileName(solution)}…");
+      // Progress reports are posted to the UI thread and may land after the read finished; drop those.
+      var done = false;
+      var progress = new Progress<string>(text => { if (!done) ShowStatus(text); });
+      return Task.Run(() => ReleaseBuilder.ReadHostProjects(solution, progress, CancellationToken.None))
+         .ContinueWith(t => { done = true; return t; }, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
    }
    private Task Browse(string name) { var dialog = new OpenFolderDialog(); if (dialog.ShowDialog(this) == true) _fields[name].Text = dialog.FolderName; return Task.CompletedTask; }
-   private async Task LoadSolution() { _hosts.ItemsSource = ReleaseBuilder.ReadHostProjects(Value("Solution")); _hosts.SelectedIndex = 0; await ReadIdentity(); }
+   private async Task LoadSolution() {
+      var hosts = await ReadHostProjects(Value("Solution")); _hosts.ItemsSource = hosts; _hosts.SelectedIndex = 0;
+      if (hosts.Count == 0) throw new InvalidDataException($"No application project (OutputType Exe or WinExe) found in {Path.GetFileName(Value("Solution"))}.");
+      await ReadIdentity();
+   }
    private ReleaseProduct Product() => new() { AppName = Value("Product"), Publisher = Value("Company"), AppId = Value("app_id"), AppExe = Value("Application exe"), IconBase64 = _draft.Product.IconBase64, LogoBase64 = _draft.Product.LogoBase64, IsEmHost = _draft.Product.IsEmHost };
    private async Task ReadIdentity() {
       if (_hosts.SelectedItem is not string host) return;
+      ShowStatus($"Reading product identity of {Path.GetFileName(host)} with MSBuild…");
       var identity = await ReleaseProduct.ReadAsync(Path.GetFullPath(host, Path.GetDirectoryName(Value("Solution"))!), CancellationToken.None);
       var old = Product();
       string Hash(string value) => value.Length == 0 ? "(empty)" : Convert.ToHexStringLower(SHA256.HashData(Convert.FromBase64String(value)))[..16];
