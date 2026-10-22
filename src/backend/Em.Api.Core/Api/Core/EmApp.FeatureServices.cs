@@ -38,7 +38,10 @@ public partial class EmApp {
             : http.Request.Path.StartsWithSegments("/nuget") ? "NuPak"
             : http.Request.Path.StartsWithSegments("/store") ? "ObjectStorage"
             : http.Request.Path.StartsWithSegments("/v2") ? "Ctn" : null;
-         if (feature is not null && !await _featureServices.AllowPublicAsync(feature, http)) return;
+         if (feature is not null && !await _featureServices.AllowPublicAsync(feature, http)) {
+            if (feature == "Cdn") await _skinPages.CdnNotFoundAsync(http, assetsAvailable: false);
+            return;
+         }
          await next(http);
       });
    }

@@ -9,14 +9,22 @@ namespace Em.Api.Core;
 internal sealed class CdnFileProvider(CdnStore store) : IFileProvider {
    private readonly PhysicalFileProvider _inner = new(store.RootPath, ExclusionFilters.None);
    public IFileInfo GetFileInfo(string subpath) {
-      try { store.ResolveInside(subpath); }
+      try { store.ResolveInside(subpath, allowSkin: true); }
       catch { return new NotFoundFileInfo(subpath); }
       var info = _inner.GetFileInfo(subpath);
+      if (info.IsDirectory && CdnStore.IsReservedRootName(subpath)) return new NotFoundFileInfo(subpath);
       return info.Exists && !info.IsDirectory ? new Download(info, store) : info;
    }
    public IDirectoryContents GetDirectoryContents(string subpath) {
-      try { store.ResolveInside(subpath); return _inner.GetDirectoryContents(subpath); }
+      if (CdnStore.IsReservedRootName(subpath)) return NotFoundDirectoryContents.Singleton;
+      try { store.ResolveInside(subpath, allowSkin: true); return new Contents(_inner.GetDirectoryContents(subpath), subpath); }
       catch { return NotFoundDirectoryContents.Singleton; }
+   }
+   private sealed class Contents(IDirectoryContents contents, string subpath) : IDirectoryContents {
+      public bool Exists => contents.Exists;
+      public IEnumerator<IFileInfo> GetEnumerator() => contents.Where(i =>
+         subpath.Trim('/').Length != 0 || !CdnStore.IsReservedRootName(i.Name)).GetEnumerator();
+      System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
    }
    public IChangeToken Watch(string filter) => _inner.Watch(filter);
    private sealed class Download(IFileInfo info, CdnStore store) : IFileInfo {

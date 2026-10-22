@@ -1,6 +1,8 @@
 # Plan — Skin CDN dan halaman home yang bisa diganti saat builder (untuk Codex)
 
-Status: **belum dieksekusi**
+Status: **dieksekusi — kode, build, test terfilter dan review selesai; visual diperiksa pengguna**
+Selesai: 2026-10-22
+Laporan: [cdn-home-skin.md](../../doc/report/cdn-home-skin.md)
 Dibuat: 2026-10-22
 Pembaca: Codex. Baca juga `CLAUDE.md` di root repo ini dan `CLAUDE.md` subfolder pada jalur berkas yang
 disentuh. Semua keputusan di bawah adalah keputusan pengguna; bila selama eksekusi muncul hal yang tidak

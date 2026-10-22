@@ -23,10 +23,12 @@ Administrators move or remove it manually.
 ## Public downloads
 
 GET/HEAD `/cdn/<path>` supports Range, If-Range, ETag, 206 and 416 through ASP.NET Core static files.
-Unknown file types download as application/octet-stream. Directories show a public listing.
+Unknown file types download as application/octet-stream. GET browsers accepting HTML see a directory
+listing through the registered skin; non-HTML clients receive no listing.
 Dot-prefixed, hidden and system entries are ordinary public files, including `.htaccess`.
 Never place confidential content in `files/`. Symlinks/reparse points and traversal are refused.
-Missing paths and disabled CDN return a plain 404. The other three directories are never public.
+Missing paths and disabled CDN return 404; GET clients accepting HTML receive the CDN skin not-found page,
+while other clients receive no body. The other three directories are never public.
 
 Public downloads and both CDN management services are exempt from ActionRateLimit. Authentication,
 claims and path validation still apply to actions. Existing downloads keep their tracked read handle
@@ -110,3 +112,15 @@ The CDN Settings card has been removed in every host mode. Paths and host featur
 host configuration; managed-storage actions/claims remain for compatibility with the other managers.
 
 The header also provides the shared runtime service switch. See [Runtime service availability](engine-storage-settings.md#runtime-service-availability) for admin rights, persistence, 404/503 and host-feature visibility.
+
+## CDN skin assets
+
+See [Home and CDN skins](engine-skin.md) for `UseCdnSkin<T>()`, Razor components and page models.
+The root name `.skin` is always reserved for embedded CDN skin assets, even with the default skin.
+At startup with CDN and its service enabled, `files/.skin` is cleared and rewritten directly, or removed
+when no assets are declared. Failure aborts startup. Disabled CDN/service leaves it untouched.
+
+The directory and descendants are hidden from public browsing, Manager listings/tree/count/storage
+usage and root archives. Management and release operations targeting it are rejected with 400;
+known asset files remain downloadable at `/cdn/.skin/<path>`. Other dot-prefixed names remain public.
+Home and favicon do not use this directory. Use one instance per CDN storage parent.

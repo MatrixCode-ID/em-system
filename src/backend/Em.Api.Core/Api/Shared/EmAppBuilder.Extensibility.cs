@@ -30,7 +30,7 @@ public partial class EmAppBuilder
       pathPrefix = pathPrefix.TrimEnd('/');
       static bool Overlaps(string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase) ||
          a.StartsWith(b + "/", StringComparison.OrdinalIgnoreCase) || b.StartsWith(a + "/", StringComparison.OrdinalIgnoreCase);
-      if (new[] { "/api", "/cdn", "/v2" }.Concat(PublicEndpoints.Select(e => e.Prefix)).Any(p => Overlaps(p, pathPrefix)))
+      if (new[] { "/api", "/cdn", "/v2", "/favicon.ico" }.Concat(PublicEndpoints.Select(e => e.Prefix)).Any(p => Overlaps(p, pathPrefix)))
          throw new InvalidOperationException($"Public endpoint '{pathPrefix}' overlaps another endpoint.");
       PublicEndpoints.Add((pathPrefix, handler));
    }

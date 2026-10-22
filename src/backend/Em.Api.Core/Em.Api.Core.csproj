@@ -48,6 +48,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <EmbeddedResource Include="../../shared/Em.Ui.Maui.Core/Resources/Images/em_logo.svg" LogicalName="Em.Skin.Logo.svg" Link="Api/Skin/em_logo.svg" />
+        <EmbeddedResource Include="../../../doc/assets/logo/Logo.ico" LogicalName="Em.Skin.favicon.ico" Link="Api/Skin/favicon.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
         <InternalsVisibleTo Include="Em.Api.Core.IntegrationTests"/>
         <InternalsVisibleTo Include="Em.Api.Core.Tests"/>
     </ItemGroup>

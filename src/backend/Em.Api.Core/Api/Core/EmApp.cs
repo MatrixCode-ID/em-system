@@ -69,6 +69,8 @@ namespace Em.Api.Core
          app.ApplyBusinessTaskRegistration(builder);
          app.ApplyBinaryStorageRegistration(builder);
          app.ApplyApprovalRegistration(builder);
+         app._applicationName = builder.ApplicationName;
+         builder.RegisterDefaultSkins();
          app._publicEndpoints = builder.PublicEndpoints.ToArray();
          app._actions = builder.ActionDefinitions.Where(a => !app.IsDisabledFeatureAction(a.RequiredClaim)).ToArray();
          // Frozen from here on, like _actions: developer public keys may only come from Program.cs,
@@ -302,9 +304,17 @@ namespace Em.Api.Core
 
       private (string Prefix, Microsoft.AspNetCore.Http.RequestDelegate Handler)[] _publicEndpoints = [];
 
+      private string _applicationName = "API";
+      private SkinPages _skinPages = null!;
+
       /// <summary>Seeds the core metadata, maps the endpoints, and runs the web application until it stops.</summary>
       public void Run() {
          var app = _webApplication;
+         _skinPages = new SkinPages(_rootServiceProvider.GetRequiredService<IEmCdnSkin>(),
+            _rootServiceProvider.GetRequiredService<IEmHomeSkin>(), _applicationName, AppVersion.Display);
+         _skinPages.Initialize();
+         if (_cdn.IsEnabled && _featureServices.Get("Cdn").ReadAsync().GetAwaiter().GetResult())
+            _skinPages.AssetUrls = _cdn.PrepareSkinAssets(_rootServiceProvider.GetRequiredService<IEmCdnSkin>().Assets);
          SeedCoreMetadata();
          if (_ctnStore.IsEnabled || _storageSettings.Managed) CtnStartupChecks.VerifyTables(_rootServiceProvider);
          if (_storageSettings.Managed && _ctnStore.IsEnabled) {
@@ -331,14 +341,17 @@ namespace Em.Api.Core
          // middlewares step aside for any request that already has an endpoint - /cdn/ included.
          app.UseRouting();
          app.MapMethods("/api/{module}/{action}", ["GET", "POST"], ProcessRequest);
-         app.MapFallback(() => "Welcome to PT. EM ASIA API! This path is empty!");
+         app.MapMethods("/", ["GET", "HEAD"], async (HttpContext context) =>
+            await _skinPages.HomeAsync(context, _cdn.IsEnabled && await _featureServices.Get("Cdn").ReadAsync()));
+         app.MapMethods("/favicon.ico", ["GET", "HEAD"], _skinPages.FaviconAsync);
+         app.MapFallback("/{**path}", _skinPages.SiteNotFoundAsync);
          app.Run();
       }
       
       /// <summary>
       /// Maps the public <c>/cdn</c> path: files and folder listings, without identity and without a
       /// request quota - both belong to the dispatcher, and this path is deliberately outside it. Mapped
-      /// before the fallback, which would otherwise answer 200 for any address under <c>/cdn</c>.
+      /// before routing so file downloads and directory browsing take precedence.
       /// </summary>
       /// <remarks>
       /// Range, <c>If-Range</c>, <c>ETag</c>, <c>HEAD</c>, 206 and 416 are all handled by
@@ -347,8 +360,7 @@ namespace Em.Api.Core
       /// </remarks>
       private void MapCdn(WebApplication app) {
          if (_cdn.IsEnabled) {
-            // ExclusionFilters.Sensitive (the default) hides dot-prefixed, hidden and system entries,
-            // which is also what keeps an upload's temporary file off the public side.
+            // Dot-prefixed content is public; only the reserved skin directory is hidden from listings.
             var provider = new CdnFileProvider(_cdn);
             app.UseStaticFiles(new StaticFileOptions {
                RequestPath = CdnStore.PublicRequestPath,
@@ -360,16 +372,13 @@ namespace Em.Api.Core
             app.UseDirectoryBrowser(new DirectoryBrowserOptions {
                RequestPath = CdnStore.PublicRequestPath,
                FileProvider = provider,
-               Formatter = new CdnDirectoryFormatter()
+               Formatter = new CdnDirectoryFormatter(_skinPages, _cdn)
             });
          }
 
          // Whatever is left under /cdn - a missing path while the CDN is on, everything while it is
-         // off - is a plain 404, not an ActionResult envelope: this is not an API action.
-         app.Map(CdnStore.PublicRequestPath, branch => branch.Run(ctx => {
-            ctx.Response.StatusCode = StatusCodes.Status404NotFound;
-            return Task.CompletedTask;
-         }));
+         // off - uses one browser-facing 404 without exposing its cause, outside the dispatcher.
+         app.Map(CdnStore.PublicRequestPath, branch => branch.Run(ctx => _skinPages.CdnNotFoundAsync(ctx, _cdn.IsEnabled)));
       }
 
       /// <summary>

@@ -463,3 +463,19 @@ smoke HTTP, maupun GUI. Pengguna memeriksa fungsional/visual. Guide terkait:
 `doc/engine/engine-storage-settings.md` dan `engine-cdn-storage.md`.
 Log build/tes lokal: `../.artefacts/em-system/cdn-service-*-build.log` dan
 `cdn-service-tests.log` (2026-10-22, tanpa rahasia).
+
+## Skin home dan CDN (keputusan pengguna 2026-10-22)
+
+`UseCdnSkin<T>` dan `UseHomeSkin<T>` terpisah, singleton DI, masing-masing sekali.
+Home `/` dan favicon milik engine; fallback path tak dikenal kini 404 (sebelumnya 200).
+HTML hanya GET yang menerima text/html; unduhan tetap melalui static middleware.
+Nama root CDN `.skin` selalu dicadangkan untuk aset embedded skin CDN, tersembunyi
+pada listing/management/count/archive; berkas aset tetap publik. Startup CDN+service
+aktif menulis ulang langsung atau menghapus `.skin`; gagal tulis/hapus menggagalkan
+startup. Service mati tidak mengubah disk. Home tidak memakai folder aset CDN.
+Eksekusi lintas repo ini menulis seluruh kode engine dahulu, lalu kode host;
+build, test terfilter dan review hanya sesudah keduanya selesai. Tidak ada smoke
+HTTP, uji visual, release note NuGet atau push. Guide `doc/engine/engine-skin.md`;
+laporan `doc/report/cdn-home-skin.md`. Visual diperiksa pengguna.
+Artefak nonrahasia: `../.artefacts/em-system/cdn-home-skin-build.log` dan
+`cdn-home-skin-tests.log` (2026-10-22).

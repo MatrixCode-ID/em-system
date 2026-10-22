@@ -160,13 +160,13 @@ internal sealed partial class CdnStore {
          throw new ActionException($"Quota of folder '{folder.Path}' is {quota:N0} bytes; the synced folder would be {total:N0} bytes.", 413);
    }
 
-   private static CdnStorageInfo SizeOf(string path) {
+   private CdnStorageInfo SizeOf(string path) {
       var result = new CdnStorageInfo();
       if (File.Exists(path)) { result.FileCount = 1; result.TotalBytes = new FileInfo(path).Length; }
       else if (Directory.Exists(path)) {
          foreach (var file in new DirectoryInfo(path).EnumerateFiles("*", new EnumerationOptions {
             RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = false
-         })) { result.FileCount++; result.TotalBytes = checked(result.TotalBytes + file.Length); }
+         }).Where(f => !IsSkinPhysical(f.FullName))) { result.FileCount++; result.TotalBytes = checked(result.TotalBytes + file.Length); }
       }
       return result;
    }

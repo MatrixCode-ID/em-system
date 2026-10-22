@@ -19,7 +19,7 @@ builder.AddPublicEndpoint("/protocol", async context => {
 - The branch owns its authentication, authorization, request body limits, cancellation and errors. Action
   claims, action rate limits and GET timeouts do not apply.
 - Registration rejects empty or root prefixes, prefixes containing `\`, `%`, whitespace, `?`, `#`, `//` or
-  `.`/`..` segments, the reserved `/api`, `/cdn` and `/v2`, and any prefix that overlaps another branch.
+  `.`/`..` segments, the reserved `/api`, `/cdn`, `/v2` and `/favicon.ico`, and any prefix that overlaps another branch.
 
 ## Module infrastructure
 
@@ -43,3 +43,11 @@ Both enforce the active state and expiration, and update `LastUsed` periodically
 minutes per robot). Invalid credentials return `null`; the caller answers 401. Authentication only proves
 identity: the module **must still check its own grants** for every operation. There is no authentication
 failure throttle yet.
+
+## Engine home and site fallback
+
+The engine owns GET/HEAD `/` and `/favicon.ico`. Replace their presentation with
+`UseHomeSkin<T>()`, not a public endpoint branch. Unknown paths now return **404** instead of the
+previous 200 welcome fallback, including unknown paths with extensions. GET browsers accepting
+`text/html` receive the site's not-found skin; other clients receive no body. CDN has its own skin
+and not-found handling before routing. See [Home and CDN skins](engine-skin.md).

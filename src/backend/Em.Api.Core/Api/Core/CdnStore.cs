@@ -36,8 +36,7 @@ namespace Em.Api.Core
       private static readonly StringComparison PathComparison =
          OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-      // Mirrors PhysicalFileProvider's ExclusionFilters.Sensitive, so the manager lists exactly what
-      // the public side serves.
+      // Dot-prefixed, hidden and system entries are public; symbolic links are excluded.
       private static readonly EnumerationOptions VisibleEntries = new() {
          AttributesToSkip = FileAttributes.ReparsePoint,
          IgnoreInaccessible = true
@@ -98,7 +97,8 @@ namespace Em.Api.Core
       /// 400 for <c>..</c>, empty traversal segments, invalid characters, or anything that would
       /// land outside the root.
       /// </exception>
-      public string ResolveInside(string? relativePath) {
+      public string ResolveInside(string? relativePath, bool allowSkin = false) {
+         if (!allowSkin) EnsureNotReserved(relativePath);
          var segments = SplitSegments(relativePath);
          foreach (var segment in segments) {
             ValidateName(segment);
@@ -212,10 +212,10 @@ namespace Em.Api.Core
          var folder = new DirectoryInfo(RequireFolder(relativePath));
          var folderRelative = ToRelative(folder.FullName);
 
-         var folders = folder.EnumerateDirectories("*", VisibleEntries)
+         var folders = folder.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .Select(r => ToEntry(r, ToRelative(r.FullName)));
-         var files = folder.EnumerateFiles("*", VisibleEntries)
+         var files = folder.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
             .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .Select(r => ToEntry(r, ToRelative(r.FullName)));
 
@@ -231,7 +231,7 @@ namespace Em.Api.Core
       public CdnItemCount CountInside(string relativePath) {
          var folder = new DirectoryInfo(RequireFolder(relativePath));
          var result = new CdnItemCount();
-         foreach (var info in folder.EnumerateFileSystemInfos("*", EverythingRecursive)) {
+         foreach (var info in folder.EnumerateFileSystemInfos("*", EverythingRecursive).Where(r => !IsSkinPhysical(r.FullName))) {
             if (info is DirectoryInfo) {
                result.Folders++;
             }
@@ -254,13 +254,13 @@ namespace Em.Api.Core
          return result.ToArray();
 
          void Walk(DirectoryInfo current) {
-            foreach (var sub in current.EnumerateDirectories("*", VisibleEntries)
+            foreach (var sub in current.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                result.Add(ToEntry(sub, ToRelative(sub.FullName)));
                Walk(sub);
             }
 
-            foreach (var file in current.EnumerateFiles("*", VisibleEntries)
+            foreach (var file in current.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                result.Add(ToEntry(file, ToRelative(file.FullName)));
             }
@@ -284,6 +284,7 @@ namespace Em.Api.Core
          var target = RequireFolder(targetFolder);
          var name = Path.GetFileName(source);
          var destination = Path.Combine(target, name);
+         EnsureNotReserved(ToRelative(destination));
 
          if (string.Equals(Path.GetFullPath(destination), Path.GetFullPath(source), PathComparison)) {
             return ToEntry(isFolder ? new DirectoryInfo(source) : new FileInfo(source), ToRelative(source));
@@ -331,6 +332,7 @@ namespace Em.Api.Core
 
          var folder = RequireFolder(relativePath);
          var target = Path.Combine(folder, fileName);
+         EnsureNotReserved(ToRelative(target));
 
          if (Directory.Exists(target)) {
             throw new ActionException($"A folder named '{fileName}' already exists here.", 409);
@@ -386,6 +388,7 @@ namespace Em.Api.Core
          ValidateName(folderName);
          var parent = RequireFolder(relativePath);
          var target = Path.Combine(parent, folderName);
+         EnsureNotReserved(ToRelative(target));
 
          if (Directory.Exists(target) || File.Exists(target)) {
             throw new ActionException($"'{folderName}' already exists in this folder.", 409);
@@ -445,6 +448,7 @@ namespace Em.Api.Core
          var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
          foreach (var name in names) {
             ValidateName(name);
+            EnsureNotReserved(ToRelative(Path.Combine(folder, name)));
             if (!seen.Add(name)) {
                throw new ActionException($"'{name}' is listed more than once.", 400);
             }
@@ -543,7 +547,7 @@ namespace Em.Api.Core
       private sealed record ArchiveItem(string EntryName, FileInfo? File);
 
       /// <summary>Files and folders to write, each folder before its content; folders carry no file.</summary>
-      private static List<ArchiveItem> CollectArchiveItems(string folder, string[] names) {
+      private List<ArchiveItem> CollectArchiveItems(string folder, string[] names) {
          var result = new List<ArchiveItem>();
          foreach (var name in names) {
             var path = Path.Combine(folder, name);
@@ -559,14 +563,14 @@ namespace Em.Api.Core
          return result;
 
          void Walk(DirectoryInfo current, string prefix) {
-            foreach (var sub in current.EnumerateDirectories("*", VisibleEntries)
+            foreach (var sub in current.EnumerateDirectories("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                var entryName = $"{prefix}/{sub.Name}";
                result.Add(new ArchiveItem(entryName, null));
                Walk(sub, entryName);
             }
 
-            foreach (var file in current.EnumerateFiles("*", VisibleEntries)
+            foreach (var file in current.EnumerateFiles("*", VisibleEntries).Where(r => !IsSkinPhysical(r.FullName))
                                     .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)) {
                result.Add(new ArchiveItem($"{prefix}/{file.Name}", file));
             }
@@ -643,6 +647,7 @@ namespace Em.Api.Core
          var conflicts = new List<string>();
 
          foreach (var relative in folders) {
+            EnsureWritable(ToRelative(Path.Combine(folder, relative)));
             if (File.Exists(Path.Combine(folder, relative))) {
                throw new ActionException($"'{relative}' is a folder in the archive but a file in this folder.", 400);
             }

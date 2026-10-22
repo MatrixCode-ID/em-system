@@ -10,4 +10,7 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     </ItemGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="SkinTest.css" LogicalName="skin-test/site.css" />
+    </ItemGroup>
 </Project>
