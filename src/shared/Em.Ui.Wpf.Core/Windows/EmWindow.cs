@@ -24,9 +24,17 @@ namespace Em.Ui.Wpf.Windows
       }
 
       /// <summary>
-      /// Creates the window and connects the caption buttons to the window system commands.
+      /// Creates the window, centred on its owner by default, and connects the caption buttons to the window
+      /// system commands.
       /// </summary>
+      /// <remarks>
+      /// Without a placement Windows cascades every new window from the last one, so the same dialog opened
+      /// twice lands in a different place each time. <c>CenterOwner</c> falls back to the centre of the screen
+      /// when no <see cref="Window.Owner"/> is given. A window that places itself (a detached window, a restored
+      /// position) sets <see cref="Window.WindowStartupLocation"/> explicitly, which overrides this default.
+      /// </remarks>
       public EmWindow() {
+         WindowStartupLocation = WindowStartupLocation.CenterOwner;
          // The caption buttons are part of this control's own template, not of any screen, so they
          // are wired here rather than through a view model.
          CommandBindings.Add(new CommandBinding(SystemCommands.MinimizeWindowCommand,
