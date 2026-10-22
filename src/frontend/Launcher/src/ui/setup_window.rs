@@ -23,6 +23,7 @@ const WIDTH: i32 = 540;
 const HEIGHT: i32 = 456;
 const MARGIN: i32 = 16;
 const BUTTON_WIDTH: i32 = 88;
+const CAB_BUTTON_WIDTH: i32 = 128;
 const GAP: i32 = 8;
 
 /// The result of the setup form.
@@ -224,7 +225,7 @@ impl SetupWindow {
             (side - BUTTON_WIDTH - GAP, bottom),
             co::DLGID::OK.raw(),
          ),
-         cab: WindowStyle::button(&wnd, "Download to cab", (MARGIN, bottom), 0),
+         cab: WindowStyle::wide_button(&wnd, "Download to cab", (MARGIN, bottom), CAB_BUTTON_WIDTH, 0),
          cancel: WindowStyle::button(&wnd, "Cancel", (side, bottom), co::DLGID::CANCEL.raw()),
          wnd,
          state,

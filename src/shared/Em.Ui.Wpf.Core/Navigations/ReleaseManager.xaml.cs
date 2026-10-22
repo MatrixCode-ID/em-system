@@ -200,6 +200,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(ImportProfileCommand), ImportProfileCommand, () => !IsRunning);
          RegisterCommand(nameof(ExportProfileCommand), ExportProfileCommand, SettingsCommandAllowed);
          RegisterCommand(nameof(OpenProfilesFolderCommand), OpenProfilesFolderCommand, () => !IsRunning);
+         RegisterCommand(nameof(OpenLauncherFolderCommand), OpenLauncherFolderCommand, OpenLauncherFolderCommandAllowed);
          RegisterCommand(nameof(ProfilesFolderCommand), ProfilesFolderCommand, () => !IsRunning);
          RegisterCommand(nameof(RefreshSummaryCommand), RefreshSummaryCommand, () => !IsRunning);
          RegisterCommand(nameof(SettingsCommand), SettingsCommand, SettingsCommandAllowed);
@@ -980,6 +981,20 @@ namespace Em.Ui.Wpf.Navigations
          }
          catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
       }
+
+      /// <summary>Opens the folder the launcher of the selected profile is built into.</summary>
+      public void OpenLauncherFolderCommand() {
+         if (Profile is null) return;
+         try {
+            var folder = LauncherOutput;
+            Directory.CreateDirectory(folder);
+            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{folder}\"") { UseShellExecute = true });
+         }
+         catch (Exception x) { DialogOwner?.ShowMboxError(x.Message); }
+      }
+
+      /// <summary>Whether the launcher folder can be opened.</summary>
+      public bool OpenLauncherFolderCommandAllowed() => Profile is not null && !IsRunning;
 
       /// <summary>Runs the profiles folder command.</summary>
       public async Task ProfilesFolderCommand() {

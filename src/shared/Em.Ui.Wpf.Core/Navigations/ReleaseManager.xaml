@@ -193,6 +193,7 @@
                      <MenuItem Header="Export..." Command="{Binding Commands[ExportProfileCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_FileExport"/></MenuItem.Icon></MenuItem>
                      <Separator/>
                      <MenuItem Header="Open folder" Command="{Binding Commands[OpenProfilesFolderCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_FolderOpen"/></MenuItem.Icon></MenuItem>
+                     <MenuItem Header="Open launcher folder" Command="{Binding Commands[OpenLauncherFolderCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_Rocket"/></MenuItem.Icon></MenuItem>
                      <MenuItem Header="Profiles folder..." Command="{Binding Commands[ProfilesFolderCommand]}" Style="{StaticResource surfaceMenuItemStyle}"><MenuItem.Icon><fa:FontAwesome Icon="Solid_Gear"/></MenuItem.Icon></MenuItem>
                   </ContextMenu>
                </Button.ContextMenu>

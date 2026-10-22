@@ -66,12 +66,24 @@ impl WindowStyle {
    /// A button 88 pixels wide. `ctrl_id` 0 = an automatic id; `IDOK` makes it the Enter button, `IDCANCEL`
    /// the Esc button.
    pub fn button(parent: &(impl GuiParent + 'static), text: &str, position: (i32, i32), ctrl_id: u16) -> gui::Button {
+      Self::wide_button(parent, text, position, 88, ctrl_id)
+   }
+
+   /// Like [`button`](Self::button), `width` pixels wide, for captions longer than 88 pixels hold.
+   pub fn wide_button(
+      parent: &(impl GuiParent + 'static),
+      text: &str,
+      position: (i32, i32),
+      width: i32,
+      ctrl_id: u16,
+   ) -> gui::Button {
       let default = ctrl_id == co::DLGID::OK.raw();
       gui::Button::new(
          parent,
          gui::ButtonOpts {
             text,
             position: gui::dpi(position.0, position.1),
+            width: gui::dpi_x(width),
             ctrl_id,
             control_style: if default {
                co::BS::DEFPUSHBUTTON
