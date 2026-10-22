@@ -11,6 +11,7 @@ namespace Em.Api.Shared;
 public partial class EmAppBuilder
 {
    private bool _objectStorageAdded;
+   internal bool ObjectStorageAdded => _objectStorageAdded;
 
    /// <summary>Managed buckets declared with <see cref="AddManagedBucket"/>; handed to object storage when it is turned on.</summary>
    internal ManagedBucketRegistry ManagedBuckets { get; } = new();
@@ -45,7 +46,7 @@ public partial class EmAppBuilder
       Services.AddSingleton(options);
       Services.AddSingleton(sp => new ObjectStorageRuntime(sp.GetServices<IStoreVolumeProvider>()) { ManagedBuckets = this.ManagedBuckets, Options = options });
       Services.AddScoped<ObjectStore>();
-      Services.AddScoped<IObjectStore>(sp => sp.GetRequiredService<ObjectStore>());
+      Services.AddScoped<IObjectStore, SwitchedObjectStore>();
       Services.AddScoped<ObjectStorageMaintenance>();
       AddService<IObjectStorageServices, ObjectStorageServices>();
       AddClaims(ClaimAction.Create<ObjectStorageServices>(IObjectStorageServices.ManagerClaim),

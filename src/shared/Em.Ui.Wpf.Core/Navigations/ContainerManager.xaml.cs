@@ -28,6 +28,7 @@ namespace Em.Ui.Wpf.Navigations
       public ContainerManager(EmApp app) {
          InitializeComponent();
          Vm.EmApp = app;
+      serviceToggle.Attach(app, "Ctn");
          settingsCard.Attach(app, false);
          publisher.Attach(app,Em.Ui.Wpf.Publish.PublishKind.Container);
          // A right click does not select what it lands on, and every context-menu command works on the

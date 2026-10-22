@@ -28,27 +28,17 @@ public sealed partial class NuPakServices(NuPakDbContext db, NuPakStore store, N
    /// <inheritdoc />
    [GetAction(claim: INuPakServices.ManagerClaim)]
    public async Task<NuPakStatus> GetMeta_NuPakStatus() {
-      var flags = await settings.ReadAsync(db, AbortToken);
+      var serviceEnabled = await GetService<FeatureServiceRegistry>()!.Get("NuPak").ReadAsync();
       var active = HttpContext?.RequestServices?.GetService<Em.Api.Core.Storage.ManagedStorageSettings>()?.Active(2).Enabled ?? true;
-      return new(flags.Enabled && active, await db.Feeds.CountAsync(AbortToken), flags.Enabled && active ? await db.Feeds.CountAsync(f=>f.cNuPakFeedEnabled,AbortToken) : 0, await db.Prefixes.CountAsync(AbortToken), await db.Packages.CountAsync(AbortToken),
+      return new(serviceEnabled && active, await db.Feeds.CountAsync(AbortToken), serviceEnabled && active ? await db.Feeds.CountAsync(f=>f.cNuPakFeedEnabled,AbortToken) : 0, await db.Prefixes.CountAsync(AbortToken), await db.Packages.CountAsync(AbortToken),
          await db.Versions.CountAsync(v => v.cNuPakVersionState == 1, AbortToken), await db.Versions.CountAsync(v => v.cNuPakVersionState == -2, AbortToken));
    }
    /// <inheritdoc />
    [PostAction(claim: INuPakServices.SettingsClaim)]
    public Task<NuPakStatus> PostGetMeta_NuPakSetEnabled(bool enabled) => SetFlag("NuPakEnable", enabled, enabled ? "Enable" : "Disable");
    private async Task<NuPakStatus> SetFlag(string key, bool value, string action) {
-      await store.Gate.WaitAsync(AbortToken);
-      try {
-         await settings.Gate.WaitAsync(AbortToken);
-         try {
-         await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
-         var row = await db.Meta.AsTracking().SingleOrDefaultAsync(r => r.cMetaKey == key);
-         if (row is null) { row = new() { cMetaKey = key, cMetaDescription = "NuGet runtime setting" }; db.Meta.Add(row); }
-         row.cMetaValue = value.ToString(); row.ustamp = DateTime.UtcNow;
-         NuPakOperations.Audit(db, Actor, action, detail: value.ToString());
-         await db.SaveChangesAsync(); await tx.CommitAsync();
-         } finally { settings.Gate.Release(); }
-      } finally { store.Gate.Release(); }
+      Request.RequireAdmin();
+      await GetService<FeatureServiceRegistry>()!.Get("NuPak").SaveAsync(value);
       return await GetMeta_NuPakStatus();
    }
    /// <inheritdoc />

@@ -96,6 +96,7 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<INavigationHost>(app);
          app.Services.AddSingleton<IContactServices, ContactService>();
          app.Services.AddSingleton<ICredentialServices, CredentialService>();
+         app.Services.AddSingleton<IFeatureServiceServices, FeatureServiceService>();
          app.Services.AddSingleton<ICdnServices, CdnService>();
          app.Services.AddSingleton<ICdnReleaseServices, CdnReleaseService>();
          app.Services.AddSingleton<ICtnServices, CtnService>();

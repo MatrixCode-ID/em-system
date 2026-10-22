@@ -65,17 +65,18 @@ namespace Em.Api.Core
          app.ApplyNuPakRegistration(builder);
          app.ApplyCdnRegistration(builder);
          app.ApplyContainerRegistryRegistration(builder);
+         app.ApplyFeatureServiceRegistration(builder);
          app.ApplyBusinessTaskRegistration(builder);
          app.ApplyBinaryStorageRegistration(builder);
          app.ApplyApprovalRegistration(builder);
          app._publicEndpoints = builder.PublicEndpoints.ToArray();
-         app._actions = builder.ActionDefinitions.ToArray();
+         app._actions = builder.ActionDefinitions.Where(a => !app.IsDisabledFeatureAction(a.RequiredClaim)).ToArray();
          // Frozen from here on, like _actions: developer public keys may only come from Program.cs,
          // never from the database, and never change while the server is alive.
          app._debugTokenKeys = builder.DebugTokenKeys.ToArray();
          // Frozen as well: the claim catalog may only come from Program.cs through AddClaims, and
          // never changes while the server is alive.
-         app._claims = builder.ClaimActions.ToArray();
+         app._claims = builder.ClaimActions.Where(c => !app.IsDisabledFeatureAction(c.Name)).ToArray();
          EnsureClaimModulesAreRegistered(app._claims, builder.ActionDefinitions);
          app._firstTimeAdminPassword = builder.FirstTimeAdminPassword;
          app.SessionTokenRetentionHour = builder.SessionTokenRetentionHour;
@@ -138,6 +139,7 @@ namespace Em.Api.Core
          // enforceClaims: false for a different reason than the three above: every CDN action names
          // its claim explicitly, and an explicit claim is enforced regardless. What is dropped is only
          // the "any claim in this module" default, which would add nothing on top of that.
+         builder.AddService<IFeatureServiceServices, FeatureServiceServices>(enforceClaims: false);
          builder.AddService<ICdnServices, CdnServices>(enforceClaims: false);
          builder.AddService<ICdnReleaseServices, CdnReleaseServices>(enforceClaims: false);
 
@@ -340,6 +342,13 @@ namespace Em.Api.Core
       /// because download managers open many Range connections at once for a single file.
       /// </remarks>
       private void MapCdn(WebApplication app) {
+         app.Use(async (ctx, next) => {
+            if (ctx.Request.Path.StartsWithSegments(CdnStore.PublicRequestPath) &&
+                (!_cdn.IsEnabled || !await _featureServices.Get("Cdn").ReadAsync())) {
+               ctx.Response.StatusCode = 404; return;
+            }
+            await next(ctx);
+         });
          if (_cdn.IsEnabled) {
             // ExclusionFilters.Sensitive (the default) hides dot-prefixed, hidden and system entries,
             // which is also what keeps an upload's temporary file off the public side.

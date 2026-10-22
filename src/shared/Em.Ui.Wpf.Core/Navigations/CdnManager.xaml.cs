@@ -33,6 +33,7 @@ namespace Em.Ui.Wpf.Navigations
       public CdnManager(EmApp app) {
          InitializeComponent();
          Vm.EmApp = app;
+      serviceToggle.Attach(app, "Cdn");
 
          // Archive and extract status is polled only while the screen is actually in a window; there is
          // no bindable equivalent of Loaded/Unloaded, so both are forwarded here.

@@ -27,11 +27,10 @@ public partial class NuPakManager : UserControl, INavigationBody
    /// <summary>Creates a new instance of <see cref="NuPakManager"/>.</summary>
    public NuPakManager(EmApp app) : this() { Attach(app, app.ServiceProvider.GetRequiredService<INuPakServices>()); }
    /// <summary>Attaches the screen to the application and the NuPak service.</summary>
-   public void Attach(EmApp app, INuPakServices service) { _app = app; _service = service; settingsCard.AttachNuGet(app); publisher.Attach(app,Em.Ui.Wpf.Publish.PublishKind.NuGet); ApplyPermissions(); }
+   public void Attach(EmApp app, INuPakServices service) { _app = app; _service = service; settingsCard.AttachNuGet(app); serviceToggle.Attach(app, "NuPak"); publisher.Attach(app,Em.Ui.Wpf.Publish.PublishKind.NuGet); ApplyPermissions(); }
    private bool CanManage => _app is not null && _app.AllClaims.Any(c => c.ModuleName == Defaults.AdministrativeToolsModuleName && c.Name == INuPakServices.SettingsClaim)
       && new ClaimCollection(Defaults.AdministrativeToolsModuleName, _app.AllClaims, _app.ActiveUser)[INuPakServices.SettingsClaim];
    private void ApplyPermissions() {
-      enabled.IsEnabled = CanManage && _status is not null && !_busy.Contains("settings");
       anonymous.IsEnabled = feedEnabled.IsEnabled = CanManage && _feed is not null && !_busy.Overlaps(new[]{"settings","feed","mutation"});
       feedCreate.IsEnabled=CanManage&&!_busy.Contains("mutation");
       feedUpdate.IsEnabled=feedDelete.IsEnabled=CanManage&&_feed is not null&&!_busy.Overlaps(new[]{"mutation","feed"});
@@ -72,8 +71,8 @@ public partial class NuPakManager : UserControl, INavigationBody
    }
    private Task RefreshFeedContents() => Task.WhenAll(RefreshFeed(),RefreshPrefixes(),RefreshBin(),RefreshAudit());
    private Task RefreshSettings() => Run("settings", async () => {
-      _status=await _service!.GetMeta_NuPakStatus();enabled.IsChecked=_status.Enabled;
-      status.Text=$"Server {(_status.Enabled?"on":"off")} · {_status.Feeds:N0} feeds · {_status.EffectiveFeeds:N0} effective active · {_status.Packages:N0} packages";
+      _status=await _service!.GetMeta_NuPakStatus();
+      status.Text=$"Server {(_status.Enabled?"on":"off")} Â· {_status.Feeds:N0} feeds Â· {_status.EffectiveFeeds:N0} effective active Â· {_status.Packages:N0} packages";
    });
    private Task RefreshFeeds() => Run("feeds",async()=> {
       var rows=await _service!.GetMeta_NuPakFeeds();var id=(feeds.SelectedItem as NuPakFeedInfo)?.Id;
@@ -111,7 +110,7 @@ public partial class NuPakManager : UserControl, INavigationBody
       if(generation!=_generation||id!=FeedId)return;
       _feed=f;feedEnabled.IsChecked=f.Enabled;anonymous.IsChecked=f.AnonymousRead;
       endpoint.Text=(_app?.ActiveConnection?.Host??"").TrimEnd('/')+f.ServiceIndex;
-      storage.Text=$"{(f.EffectiveEnabled?"Ready":"Off")} · {f.Packages:N0} packages · {f.Versions:N0} active versions · Total {NuPakDisplay.Size(size.TotalBytes)} · Recycle {NuPakDisplay.Size(size.RecycleBytes)}";
+      storage.Text=$"{(f.EffectiveEnabled?"Ready":"Off")} Â· {f.Packages:N0} packages Â· {f.Versions:N0} active versions Â· Total {NuPakDisplay.Size(size.TotalBytes)} Â· Recycle {NuPakDisplay.Size(size.RecycleBytes)}";
    });
    private void FeedMoreClick(object s,RoutedEventArgs e) {if(s is Button {ContextMenu: {} menu} button) {menu.PlacementTarget=button;menu.Placement=System.Windows.Controls.Primitives.PlacementMode.Bottom;menu.IsOpen=true;}}
    private async void FeedListRefresh(object s,RoutedEventArgs e) => await RefreshFeeds();
@@ -141,12 +140,6 @@ public partial class NuPakManager : UserControl, INavigationBody
    }
    private bool Confirm(string text) => EmMessageBox.Show(Window.GetWindow(this), "NuGet Manager", text, MessageBoxButton.YesNo, MessageBoxImage.Warning,
       MessageBoxResult.No) == MessageBoxResult.Yes;
-   private async void EnabledClick(object sender, RoutedEventArgs e) {
-      if (!CanManage || _status is null) return;
-      var desired = enabled.IsChecked == true; enabled.IsChecked = _status.Enabled;
-      if (!desired && !Confirm("Switch off the NuGet server? Clients will receive 404 until it is enabled again.")) return;
-      await Run("settings", async () => { _status = await _service!.PostGetMeta_NuPakSetEnabled(desired); }); await Task.WhenAll(RefreshSettings(),RefreshFeed());
-   }
    private async void AnonymousClick(object sender,RoutedEventArgs e) {
       if(!CanManage||_feed is not {} f)return;var desired=anonymous.IsChecked==true;anonymous.IsChecked=f.AnonymousRead;
       await Run("mutation",async()=>{await _service!.PostGetMeta_NuPakFeedUpdate(f.Id,f.Name,f.Description,f.Enabled,desired);});await RefreshFeed();

@@ -126,7 +126,7 @@
          </Button>
          <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
             <Border Style="{StaticResource chipStyle}" Margin="0,0,12,0"><TextBlock x:Name="status" Text="Server status not loaded"/></Border>
-            <CheckBox x:Name="enabled" Content="Server on" Style="{StaticResource checkBoxStyle}" Click="EnabledClick" ToolTip="Enable all configured feeds" AutomationProperties.Name="NuGet server enabled" Margin="0,0,4,0"/>
+            <controls:FeatureServiceToggle x:Name="serviceToggle" />
             <Button x:Name="settingsRefresh" Style="{StaticResource cornerRefresh}" ToolTip="Refresh server" AutomationProperties.Name="Refresh server" Click="SettingsRefresh"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
          </StackPanel>
       </Grid>

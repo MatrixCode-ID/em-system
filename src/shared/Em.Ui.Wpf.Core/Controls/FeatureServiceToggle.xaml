@@ -1,0 +1,24 @@
+<UserControl x:Class="Em.Ui.Wpf.Controls.FeatureServiceToggle"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:fa="http://schemas.fontawesome.com/icons/fonts">
+ <UserControl.Resources>
+  <ResourceDictionary>
+   <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml" />
+   </ResourceDictionary.MergedDictionaries>
+  </ResourceDictionary>
+ </UserControl.Resources>
+ <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ToolTipService.ShowOnDisabled="True"
+             ToolTip="Administrators can enable or disable the service immediately. Management remains available. Public access returns 404 and internal module use returns 503 while disabled.">
+  <Border Style="{StaticResource chipStyle}" Margin="8,0">
+   <TextBlock Text="{Binding StatusCaption}" />
+  </Border>
+  <ToggleButton Style="{StaticResource switchStyle}" IsChecked="{Binding Enabled, Mode=OneWay}"
+                Command="{Binding Commands[ToggleCommand]}" AutomationProperties.Name="Service enabled" />
+  <Button Style="{StaticResource rowActionButtonStyle}" Margin="8,0,0,0" Command="{Binding Commands[RefreshCommand]}"
+          ToolTip="Refresh service status" AutomationProperties.Name="Refresh service status">
+   <fa:FontAwesome Icon="Solid_ArrowsRotate" />
+  </Button>
+ </StackPanel>
+</UserControl>

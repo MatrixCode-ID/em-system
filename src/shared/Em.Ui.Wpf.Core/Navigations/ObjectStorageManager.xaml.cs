@@ -22,6 +22,7 @@ public partial class ObjectStorageManager : UserControl, INavigationBody
    public ObjectStorageManager(EmApp app) {
       InitializeComponent();
       AttachDialogs(Vm, this, app);
+      serviceToggle.Attach(app, "ObjectStorage");
    }
 
    /// <summary>Gives the view model its confirm, open-file and save-file dialogs, owned by the window of <paramref name="view"/>.</summary>

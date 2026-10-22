@@ -52,7 +52,10 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
          </Grid.RowDefinitions>
-         <controls:EmTabStrip Margin="22,8,22,0" ItemsSource="{Binding Tabs}" SelectedItem="{Binding ActiveTab, Mode=TwoWay}" TitlePath="Title" CanReorder="False" IsEnabled="{Binding CanBrowse}"/>
+         <DockPanel Margin="22,8,22,0" LastChildFill="True">
+            <controls:FeatureServiceToggle x:Name="serviceToggle" DockPanel.Dock="Right" />
+         <controls:EmTabStrip ItemsSource="{Binding Tabs}" SelectedItem="{Binding ActiveTab, Mode=TwoWay}" TitlePath="Title" CanReorder="False" IsEnabled="{Binding CanBrowse}"/>
+         </DockPanel>
 
          <!-- Buckets and the object browser -->
          <Grid Grid.Row="1" Visibility="{Binding IsBucketsTab, Converter={StaticResource boolVisibility}}">

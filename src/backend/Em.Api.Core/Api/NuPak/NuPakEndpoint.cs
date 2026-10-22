@@ -19,6 +19,7 @@ public static class NuPakEndpoint
    private static Dictionary<string, object?> Json(params (string Key, object? Value)[] fields) => fields.ToDictionary(f => f.Key, f => f.Value);
    /// <summary>Handles one request under the NuPak path.</summary>
    public static async Task HandleAsync(HttpContext ctx) {
+      if (!await ctx.RequestServices.GetRequiredService<FeatureServiceRegistry>().Get("NuPak").ReadAsync()) { ctx.Response.StatusCode = 404; return; }
       var db = ctx.RequestServices.GetRequiredService<NuPakDbContext>();
       var store = ctx.RequestServices.GetRequiredService<NuPakStore>();
       NuPakActor? actor = null;
@@ -35,8 +36,6 @@ public static class NuPakEndpoint
          if(rawTarget?.Split('?')[0].Contains('%')==true) {ctx.Response.StatusCode=404;return;}
          feed=await db.Feeds.SingleOrDefaultAsync(f=>f.cNuPakFeedSlug==slug,ctx.RequestAborted);
          if(feed is null||!feed.cNuPakFeedEnabled) {ctx.Response.StatusCode=404;return;}
-         var settings = await ctx.RequestServices.GetRequiredService<NuPakSettings>().ReadAsync(db, ctx.RequestAborted);
-         if (!settings.Enabled) { ctx.Response.StatusCode = 404; return; }
          var read = HttpMethods.IsGet(ctx.Request.Method) || HttpMethods.IsHead(ctx.Request.Method);
          if (!read && !write) { ctx.Response.StatusCode = 404; return; }
          var identities = ctx.RequestServices.GetRequiredService<RobotContext>();

@@ -41,7 +41,7 @@ namespace Em.Api.Core.Registry
 
       public static async Task HandleAsync(HttpContext http) {
          var store = http.RequestServices.GetRequiredService<CtnBlobStore>();
-         if (!store.IsEnabled) {
+         if (!store.IsEnabled || !await http.RequestServices.GetRequiredService<FeatureServiceRegistry>().Get("Ctn").ReadAsync()) {
             http.Response.StatusCode = StatusCodes.Status404NotFound;
             return;
          }

@@ -20,6 +20,7 @@ public static class ObjectStorageEndpoint
 
    /// <summary>Handles one request under <see cref="PublicRequestPath"/>.</summary>
    public static async Task HandleAsync(HttpContext ctx) {
+      if (!await ctx.RequestServices.GetRequiredService<FeatureServiceRegistry>().Get("ObjectStorage").ReadAsync()) { ctx.Response.StatusCode = 404; return; }
       if (!HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method)) {
          ctx.Response.StatusCode = StatusCodes.Status404NotFound;
          return;

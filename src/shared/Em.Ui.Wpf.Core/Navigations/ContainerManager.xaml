@@ -415,6 +415,7 @@
                   <fa:FontAwesome Icon="Solid_ArrowsRotate" />
                </Button>
                <Border Style="{StaticResource toolbarSeparatorStyle}" />
+               <controls:FeatureServiceToggle x:Name="serviceToggle" />
                <Button Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}" ToolTip="Reload roots and containers (F5)">
                   <StackPanel Orientation="Horizontal">
                      <fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}" />

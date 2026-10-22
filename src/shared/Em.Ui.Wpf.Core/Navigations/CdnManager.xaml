@@ -336,6 +336,7 @@
                      </StackPanel>
                   </StackPanel>
                </Border>
+               <controls:FeatureServiceToggle x:Name="serviceToggle" />
                <Button Style="{StaticResource rowActionButtonStyle}"
                        Margin="10,0,0,0"
                        Command="{Binding Commands[RefreshCommand]}"
