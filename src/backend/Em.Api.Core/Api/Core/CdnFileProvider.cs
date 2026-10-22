@@ -26,15 +26,17 @@ internal sealed class CdnFileProvider(CdnStore store) : IFileProvider {
          var physical = store.ResolveInside(subpath, allowSkin: true);
          var settings = Directory.Exists(physical) ? store.EffectiveSettings(physical) : null;
          if (settings is { PublicListing: false }) return NotFoundDirectoryContents.Singleton;
-         return new Contents(_inner.GetDirectoryContents(subpath), subpath, settings);
+         return new Contents(_inner.GetDirectoryContents(subpath), subpath, settings, store);
       }
       catch { return NotFoundDirectoryContents.Singleton; }
    }
-   private sealed class Contents(IDirectoryContents contents, string subpath, CdnFolderSettings? settings) : IDirectoryContents {
+   // A subfolder whose own listing is off is left out of its parent's web listing too; CDN Manager still lists it.
+   private sealed class Contents(IDirectoryContents contents, string subpath, CdnFolderSettings? settings, CdnStore store) : IDirectoryContents {
       public bool Exists => contents.Exists;
       public IEnumerator<IFileInfo> GetEnumerator() => contents.Where(i =>
          (subpath.Trim('/').Length != 0 || !CdnStore.IsReservedRootName(i.Name)) &&
-         !CdnStore.IsMetaName(i.Name) && !CdnFolderSettingsFormat.IsHidden(settings, i.Name)).GetEnumerator();
+         !CdnStore.IsMetaName(i.Name) && !CdnFolderSettingsFormat.IsHidden(settings, i.Name) &&
+         !(i.IsDirectory && i.PhysicalPath is { } path && store.EffectiveSettings(path) is { PublicListing: false })).GetEnumerator();
       System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
    }
    public IChangeToken Watch(string filter) => _inner.Watch(filter);

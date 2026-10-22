@@ -87,7 +87,9 @@ public sealed class CdnFolderSettingsTests : IDisposable {
       var provider = new CdnFileProvider(store);
       Assert.False(provider.GetDirectoryContents("/rel").Exists);
       Assert.True(provider.GetDirectoryContents("/rel/sub").Exists);
-      var file = Assert.IsType<CdnFileProvider.Download>(provider.GetFileInfo("/rel/a.dll"));
+      Assert.DoesNotContain(provider.GetDirectoryContents("/"), i => i.Name == "rel");
+      Assert.Contains(store.List("").Entries, e => e.Name == "rel");
+      var file =Assert.IsType<CdnFileProvider.Download>(provider.GetFileInfo("/rel/a.dll"));
       Assert.True(file.NoIndex);
       using (var stream = file.CreateReadStream()) Assert.Equal("x", new StreamReader(stream).ReadToEnd());
       Assert.True(Assert.IsType<CdnFileProvider.Download>(provider.GetFileInfo("/rel/release.json")).NoIndex);
@@ -95,6 +97,7 @@ public sealed class CdnFolderSettingsTests : IDisposable {
       store.CreateFolder("", "open"); await Put(store, "open", "b.txt", "y");
       Assert.False(Assert.IsType<CdnFileProvider.Download>(provider.GetFileInfo("/open/b.txt")).NoIndex);
       Assert.True(provider.GetDirectoryContents("/open").Exists);
+      Assert.Contains(provider.GetDirectoryContents("/"), i => i.Name == "open");
    }
 
    [Fact]

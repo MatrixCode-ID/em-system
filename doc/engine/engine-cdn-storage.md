@@ -85,9 +85,9 @@ similar to `.htaccess`. They apply **to that folder only**; subfolders do not in
 
 - `version` is required and must be `1`. Unknown keys are refused. The file is UTF-8 JSON (a BOM is
   allowed) of at most 64 KiB.
-- `publicListing` (default `true`): `false` makes the web listing of the folder 404. Files directly in it
-  keep downloading by direct link and are sent with `X-Robots-Tag: noindex`; folders whose listing is on
-  get no such header.
+- `publicListing` (default `true`): `false` makes the web listing of the folder 404 and leaves the folder
+  out of its parent's web listing; CDN Manager still lists it. Files directly in it keep downloading by
+  direct link and are sent with `X-Robots-Tag: noindex`; folders whose listing is on get no such header.
 - `hiddenFiles` / `shownFiles` (default empty, at most 256 each): name patterns for entries directly in
   the folder, files and subfolders alike. `*` matches any run of characters, `?` one character; no `/`,
   `\` or characters invalid in a file name. Shown wins over hidden. Hidden entries are left out of the
