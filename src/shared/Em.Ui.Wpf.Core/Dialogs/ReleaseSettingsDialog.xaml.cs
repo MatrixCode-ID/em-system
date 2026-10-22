@@ -47,8 +47,8 @@ public partial class ReleaseSettingsDialog : EmWindow {
          var picker = new OpenFileDialog { Filter = "Solution|*.slnx" }; if (picker.ShowDialog(this) != true) return;
          _fields["Solution"].Text = picker.FileName; await LoadSolution();
       });
-      Button(_form, "Load solution / identity", LoadSolution);
-      Row("Host project", _hosts, "Select a host to read its evaluated MSBuild product identity.");
+      Button(_form, "Check solution", LoadSolution);
+      Row("Host project", _hosts, "Select a host to read its evaluated MSBuild product identity. Check solution lists the hosts again.");
       _hosts.SelectionChanged += async (_, _) => { if (!_busy) await Run(ReadIdentity); };
       Field("Publish folder", profile.PublishFolder, "Prepare empties this folder after confirmation.", () => Browse("Publish folder"));
       Choice("Target", profile.TargetKind.ToString(), new[] { "Cdn", "Folder" }, "CDN writes through the active connection; Folder writes directly.");
@@ -60,7 +60,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
          if (this.ShowMboxDecideWarning("Release this product's managed folder?", Title) == MessageBoxResult.Yes)
             await Service.PostMeta_CdnReleaseUnmanage(Value("Release folder"), Value("app_id"));
       }); _form.Children.Add(cdn);
-      Field("CDN address", profile.CdnAddress, "Public release URL for launcher, Compare and Verify. Empty derives from the active host /cdn/<folder>/. Sync uses the active connection.");
+      Field("CDN address", profile.CdnAddress, "Public URL of the release folder itself (where release.json is), e.g. https://host/cdn/<release folder>/, for launcher, Compare and Verify. Empty derives from the active host /cdn/<release folder>/. Sync uses the active connection.");
       Field("Product", profile.Product.AppName, "Display name only."); Field("Company", profile.Product.Publisher, "Publisher.");
       Field("app_id", profile.Product.AppId, "Two or more alphanumeric segments separated by dots. Use a different id per environment. MatrixCode.EmSystem is reserved.");
       Field("Application exe", profile.Product.AppExe, "AssemblyName plus .exe; no directory.");
@@ -89,11 +89,11 @@ public partial class ReleaseSettingsDialog : EmWindow {
       var root = new DockPanel(); DockPanel.SetDock(_status, Dock.Top); root.Children.Add(_status);
       root.Children.Add(new ScrollViewer { Content = _form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
       Content = root;
-      // Reading the hosts may run MSBuild per project; doing it once the dialog is shown keeps it from
-      // opening late and lets the status line say what is going on.
-      if (File.Exists(profile.SolutionPath)) Loaded += async (_, _) => await Run(async () => {
-         _hosts.ItemsSource = await ReadHostProjects(profile.SolutionPath); _hosts.SelectedItem = profile.HostProject;
-      });
+      // Reading the hosts runs MSBuild per project and takes long on a large solution, so opening the
+      // dialog shows only the saved host; Browse or Check solution reads the solution again.
+      if (profile.HostProject.Length > 0) {
+         _busy = true; try { _hosts.ItemsSource = new[] { profile.HostProject }; _hosts.SelectedIndex = 0; } finally { _busy = false; }
+      }
    }
    private ICdnReleaseServices Service => _app.ServiceProvider.GetRequiredService<ICdnReleaseServices>();
    private string Value(string name) => _fields[name].Text.Trim();
@@ -120,6 +120,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
          "Cancel" => FontAwesome6.EFontAwesomeIcon.Solid_Xmark,
          "Create signing PEM" => FontAwesome6.EFontAwesomeIcon.Solid_Key,
          "Release owned folder" => FontAwesome6.EFontAwesomeIcon.Solid_Unlock,
+         "Check solution" => FontAwesome6.EFontAwesomeIcon.Solid_ListCheck,
          _ => FontAwesome6.EFontAwesomeIcon.Solid_FolderOpen
       } };
       icon.SetResourceReference(StyleProperty, "buttonIconStyle"); content.Children.Add(icon);

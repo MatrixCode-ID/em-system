@@ -80,6 +80,25 @@ namespace Em.Ui.Wpf.Core.Release
          return tree.Select(r => new ReleaseTargetEntry(r.Path[prefixLength..], r.IsFolder, r.Size)).ToArray();
       }
 
+      /// <summary>
+      /// Whether the release folder holds a <c>release.json</c>, asked through the server rather than the
+      /// public address - so a public address that points elsewhere can be told apart from a new release.
+      /// </summary>
+      public async Task<bool> HasManifestOnServerAsync(CancellationToken token) {
+         token.ThrowIfCancellationRequested();
+         CdnEntry[] tree;
+         try {
+            tree = await _service.GetMeta_CdnReleaseTree(_root, _appId).ConfigureAwait(false);
+         }
+         catch (ActionException x) when (x.StatusCode == 404) {
+            return false;
+         }
+
+         var prefixLength = _root.Length + 1;
+         return tree.Any(r => !r.IsFolder && r.Path.Length > prefixLength &&
+            string.Equals(r.Path[prefixLength..], ReleaseLayout.ManifestFileName, StringComparison.OrdinalIgnoreCase));
+      }
+
       /// <inheritdoc />
       public override async Task EnsureFolderAsync(string folder, CancellationToken token) {
          string? parent = _root;

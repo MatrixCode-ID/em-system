@@ -185,18 +185,8 @@ namespace Em.Ui.Wpf.Core.Release
          };
          foreach (var argument in BuildPublishArguments(projectPath, Path.GetFullPath(publishFolder)))
             start.ArgumentList.Add(argument);
-         if (profile is not null) {
-            profile.Product.Validate();
-            var assets = Path.Combine(Path.GetTempPath(), "EmReleaseAssets", profile.Id);
-            Directory.CreateDirectory(assets);
-            var icon = Path.Combine(assets, "Product.ico"); File.WriteAllBytes(icon, Convert.FromBase64String(profile.Product.IconBase64));
-            foreach (var value in new[] { "Product=" + profile.Product.AppName, "Company=" + profile.Product.Publisher, "EmAppId=" + profile.Product.AppId,
-               "AssemblyName=" + Path.GetFileNameWithoutExtension(profile.Product.AppExe), "ApplicationIcon=" + icon })
-               start.ArgumentList.Add("-p:" + value.Replace("%", "%25").Replace(";", "%3B").Replace(",", "%2C"));
-            var logo = "";
-            if (profile.Product.LogoBase64.Length > 0) { logo = Path.Combine(assets, "Product.png"); File.WriteAllBytes(logo, Convert.FromBase64String(profile.Product.LogoBase64)); }
-            start.ArgumentList.Add("-p:EmAppLogo=" + logo);
-         }
+         if (profile is not null)
+            start.ArgumentList.Add("-p:CustomBeforeMicrosoftCommonTargets=" + WriteIdentityTargets(profile, projectPath));
          // MSBuild worker nodes that outlive the build inherit the output pipes, and the wait below would
          // then last until they time out. Turning reuse off changes nothing in what is built.
          start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
@@ -231,6 +221,47 @@ namespace Em.Ui.Wpf.Core.Release
          return process.ExitCode;
 
          static string Quote(string argument) => argument.Contains(' ') ? $"\"{argument}\"" : argument;
+      }
+
+      /// <summary>
+      /// Writes the product identity of <paramref name="profile"/> into an MSBuild targets file that applies
+      /// it to <paramref name="projectPath"/> only, and returns the file's path.
+      /// </summary>
+      /// <remarks>
+      /// A <c>-p:</c> property is global: it reaches every referenced project too, so passing
+      /// <c>AssemblyName</c> that way renames every library after the host (restore stops with an
+      /// ambiguous project name) and stamps the product name, app id and logo on all of them. The file is
+      /// passed through <c>CustomBeforeMicrosoftCommonTargets</c>, which every project imports after its own
+      /// body, and its properties are conditioned on the host's path, so the other projects are untouched.
+      /// </remarks>
+      public static string WriteIdentityTargets(ReleaseProfile profile, string projectPath) {
+         profile.Product.Validate();
+         var assets = Path.Combine(Path.GetTempPath(), "EmReleaseAssets", profile.Id);
+         Directory.CreateDirectory(assets);
+         var properties = new List<(string Name, string Value)> {
+            ("Product", profile.Product.AppName), ("Company", profile.Product.Publisher), ("EmAppId", profile.Product.AppId),
+            ("AssemblyName", Path.GetFileNameWithoutExtension(profile.Product.AppExe))
+         };
+         if (profile.Product.IconBase64.Length > 0) {
+            var icon = Path.Combine(assets, "Product.ico"); File.WriteAllBytes(icon, Convert.FromBase64String(profile.Product.IconBase64));
+            properties.Add(("ApplicationIcon", icon));
+         }
+         // An empty logo is written too, so a logo set by the project itself is cleared as the profile says.
+         var logo = "";
+         if (profile.Product.LogoBase64.Length > 0) { logo = Path.Combine(assets, "Product.png"); File.WriteAllBytes(logo, Convert.FromBase64String(profile.Product.LogoBase64)); }
+         properties.Add(("EmAppLogo", logo));
+
+         XNamespace ns = "http://schemas.microsoft.com/developer/msbuild/2003";
+         var group = new XElement(ns + "PropertyGroup",
+            new XAttribute("Condition", $"'$(MSBuildProjectFullPath)' == '{EscapeMsBuild(Path.GetFullPath(projectPath))}'"),
+            properties.Select(p => new XElement(ns + p.Name, EscapeMsBuild(p.Value))));
+         var file = Path.Combine(assets, "Product.targets");
+         new XDocument(new XElement(ns + "Project", group)).Save(file);
+         return file;
+
+         // MSBuild expands $(...), @(...), %(...) and splits on ';' in property text; escaping keeps the value literal.
+         static string EscapeMsBuild(string value) => value.Replace("%", "%25").Replace("$", "%24").Replace("@", "%40")
+            .Replace(";", "%3B").Replace("'", "%27").Replace("*", "%2A").Replace("?", "%3F");
       }
    }
 }

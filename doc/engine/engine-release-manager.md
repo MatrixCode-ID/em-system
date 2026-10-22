@@ -22,9 +22,16 @@ new profile id; it does not create a distinct installation identity.
 
 ## Read product identity
 
-Choose the .slnx and host, then Load solution / identity. MSBuild evaluates Product, Company, EmAppId,
-AssemblyName, ApplicationIcon, EmAppLogo and references. The difference dialog shows profile versus
-solution values (asset hashes for images); accept solution identity or keep the profile.
+Choose the .slnx with Browse, or press Check solution to read the selected one again. Both list the
+host projects (projects without a declared OutputType are evaluated with MSBuild one by one, so a large
+solution takes a while; a status line above the form names the project being checked) and then read the
+host identity. Opening the settings does not read the solution: it shows the saved host only.
+
+MSBuild evaluates Product, Company, EmAppId, AssemblyName, ApplicationIcon, EmAppLogo and references. The
+difference dialog shows profile versus solution values (asset hashes for images); accept solution identity
+or keep the profile. Prepare applies this identity to the host project only, through a generated targets
+file passed as `CustomBeforeMicrosoftCommonTargets`; global `-p:` properties would also rename every
+referenced library.
 
 ```xml
 <Product>Contoso Inventory</Product>
@@ -50,6 +57,10 @@ application and launcher share the same identity. See [host build integration](b
 Folder targets write directly to a local/UNC release folder. CDN writes go through the active connection;
 Compare/Verify and the launcher's default source use the profile CDN address. Empty CDN address derives
 `<connection>/cdn/<release-folder>/`. An explicit address can point at a reverse proxy.
+An explicit address is the URL of the release folder itself, the one that serves `release.json` (for
+example `https://host/cdn/<release-folder>/`), not the CDN root. When the server has a `release.json` in
+the release folder but the address answers 404, Compare stops with an error: otherwise every Compare would
+see no release, every Sync would upload everything again, and the launcher would look in the wrong place.
 
 Browse CDN / select managed folder browses relative paths and creates/adopts a physically empty root.
 Selecting the same root for the same app_id is allowed; another owner, a nonempty root or nesting is

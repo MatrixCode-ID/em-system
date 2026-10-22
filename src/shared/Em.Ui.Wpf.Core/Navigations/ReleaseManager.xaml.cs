@@ -726,6 +726,15 @@ namespace Em.Ui.Wpf.Navigations
          ShowProgress(new ReleaseProgress("Reading the target", 0, 0, null, 0, 0));
          var comparison = await ReleaseComparer.CompareAsync(target, local, token);
 
+         // Compare reads through the public address while Sync writes through the server. When the two
+         // disagree, every Compare finds no release and every Sync uploads everything again - and the
+         // launcher would be built with an address that has no release either.
+         if (comparison.RemoteManifestBytes is null && target is CdnReleaseTarget cdn && await cdn.HasManifestOnServerAsync(token))
+            throw new InvalidOperationException(
+               $"The CDN folder '{ReleaseFolder}' has a release.json, but {target.Description}{ReleaseLayout.ManifestFileName} was not found. " +
+               $"The CDN address must point at the release folder itself, e.g. <host>/cdn/{ReleaseFolder}/ (or leave it empty). " +
+               "Fix it in Settings, then Prepare again so the launcher gets the right address.");
+
          _comparedTarget = target;
          Comparison = comparison;
          if (comparison.RemoteManifestError is not null) Log($"The target release.json is not valid: {comparison.RemoteManifestError}");
