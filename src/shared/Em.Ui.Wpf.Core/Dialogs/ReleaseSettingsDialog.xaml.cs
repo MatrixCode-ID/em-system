@@ -64,9 +64,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       Field("Product", profile.Product.AppName, "Display name only."); Field("Company", profile.Product.Publisher, "Publisher.");
       Field("app_id", profile.Product.AppId, "Two or more alphanumeric segments separated by dots. Use a different id per environment. MatrixCode.EmSystem is reserved.");
       Field("Application exe", profile.Product.AppExe, "AssemblyName plus .exe; no directory.");
-      var assets = new StackPanel { Orientation = Orientation.Horizontal };
-      Button(assets, "Import ICO", () => ImportAsset(false)); Button(assets, "Import PNG logo", () => ImportAsset(true));
-      Button(assets, "Clear logo", () => { _draft.Product.LogoBase64 = ""; Preview(); return Task.CompletedTask; }); _form.Children.Add(assets); _form.Children.Add(_previews);
+      Row("Branding", _previews, "Application icon (ICO) and launcher logo (transparent PNG) of the product.", labelOnTop: true);
       Field("Launcher exe", profile.Launcher.FileName, "Filename shared by installer and root runner; must end in .exe.");
       Field("Launcher version", profile.Launcher.BaseVersion, "MAJOR.MINOR.PATCH, independent of the app version. Prerelease counter comes from the target manifest.");
       Choice("Channel", profile.Launcher.Channel, new[] { "prealpha", "alpha", "beta", "rc", "release" }, "Used release versions cannot be reused for changed inputs.");
@@ -97,10 +95,10 @@ public partial class ReleaseSettingsDialog : EmWindow {
    }
    private ICdnReleaseServices Service => _app.ServiceProvider.GetRequiredService<ICdnReleaseServices>();
    private string Value(string name) => _fields[name].Text.Trim();
-   private void Row(string label, FrameworkElement input, string help) {
+   private void Row(string label, FrameworkElement input, string help, bool labelOnTop = false) {
       var row = new Grid { Margin = new Thickness(0, 8, 0, 0), ToolTip = help }; ToolTipService.SetShowOnDisabled(row, true);
       row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(185) }); row.ColumnDefinitions.Add(new ColumnDefinition());
-      row.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center }); Grid.SetColumn(input, 1); row.Children.Add(input); _form.Children.Add(row);
+      row.Children.Add(new TextBlock { Text = label, VerticalAlignment = labelOnTop ? VerticalAlignment.Top : VerticalAlignment.Center, Margin = labelOnTop ? new Thickness(0, 14, 0, 0) : new Thickness() }); Grid.SetColumn(input, 1); row.Children.Add(input); _form.Children.Add(row);
    }
    private void Field(string name, string text, string help, Func<Task>? browse = null) {
       var box = new TextBox { Text = text }; box.SetResourceReference(StyleProperty, "fieldBoxStyle"); _fields[name] = box;
@@ -121,11 +119,14 @@ public partial class ReleaseSettingsDialog : EmWindow {
          "Create signing PEM" => FontAwesome6.EFontAwesomeIcon.Solid_Key,
          "Release owned folder" => FontAwesome6.EFontAwesomeIcon.Solid_Unlock,
          "Check solution" => FontAwesome6.EFontAwesomeIcon.Solid_ListCheck,
+         "Import ICO" or "Import PNG logo" => FontAwesome6.EFontAwesomeIcon.Solid_FileImport,
+         "Clear logo" => FontAwesome6.EFontAwesomeIcon.Solid_Eraser,
          _ => FontAwesome6.EFontAwesomeIcon.Solid_FolderOpen
       } };
       icon.SetResourceReference(StyleProperty, "buttonIconStyle"); content.Children.Add(icon);
       content.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
-      var button = new Button { Content = content, Margin = new Thickness(0, 0, 8, 0) }; button.SetResourceReference(StyleProperty, text == "Save" ? "filledButtonStyle" : "outlinedButtonStyle");
+      var style = text switch { "Save" => "filledButtonStyle", "Import ICO" or "Import PNG logo" or "Clear logo" => "compactOutlinedButtonStyle", _ => "outlinedButtonStyle" };
+      var button = new Button { Content = content, Margin = new Thickness(0, 0, 8, 0) }; button.SetResourceReference(StyleProperty, style);
       button.Click += async (_, _) => await Run(action); panel.Children.Add(button);
    }
    private async Task Run(Func<Task> action) {
@@ -170,19 +171,78 @@ public partial class ReleaseSettingsDialog : EmWindow {
       var picker = new OpenFileDialog { Filter = logo ? "PNG|*.png" : "ICO|*.ico" };
       if (picker.ShowDialog(this) == true) { var data = Convert.ToBase64String(File.ReadAllBytes(picker.FileName)); if (logo) { ReleaseProduct.ReadLogo(data); _draft.Product.LogoBase64 = data; } else _draft.Product.IconBase64 = data; Preview(); } return Task.CompletedTask;
    }
+   // Two cards side by side - the application icon and the launcher logo - each with its own state chip, preview
+   // and buttons, so an imported ICO stays visible even when a logo is set.
    private void Preview() {
-      _previews.Children.Clear(); BitmapSource? image = null;
-      if (_draft.Product.LogoBase64.Length > 0) image = ReleaseProduct.ReadLogo(_draft.Product.LogoBase64);
-      else if (_draft.Product.IconBase64.Length > 0) { using var stream = new MemoryStream(Convert.FromBase64String(_draft.Product.IconBase64)); image = BitmapFrame.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad); }
-      if (image is not null) {
-         foreach (var scale in new[] { 1d, 2d }) { _previews.Children.Add(new TextBlock { Text = $"Logo {scale * 100:0}%" }); var fit = Math.Min(240d / image.PixelWidth, 48d / image.PixelHeight);
-            _previews.Children.Add(new Border { Width = 240 * scale, Height = 48 * scale, HorizontalAlignment = HorizontalAlignment.Left,
-               Child = new Image { Source = image, Width = image.PixelWidth * fit * scale, Height = image.PixelHeight * fit * scale,
-                  Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center } }); }
-         var factor = Math.Min(240d / image.PixelWidth, 48d / image.PixelHeight);
-         if (Math.Min(image.PixelWidth, image.PixelHeight) * factor < 24 || factor * 2 > 1) _previews.Children.Add(new TextBlock { Text = "Warning: logo is smaller than 24 px on one side or has insufficient resolution for 200%.", TextWrapping = TextWrapping.Wrap });
+      _previews.Children.Clear();
+      var cards = new WrapPanel();
+      cards.Children.Add(IconCard()); cards.Children.Add(LogoCard());
+      _previews.Children.Add(cards);
+      _previews.Children.Add(Help(_draft.Product.IsEmHost ? "Em host: full branding and in-app update support." : "Other .NET host: basic launcher support; in-app updates unavailable."));
+   }
+   private Border IconCard() {
+      var body = new StackPanel();
+      var frames = IconFrames();
+      if (frames.Count > 0) {
+         var images = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 4) };
+         foreach (var size in new[] { 16, 32, 48 }) {
+            var frame = frames.OrderBy(f => Math.Abs(f.PixelWidth - size)).First();
+            images.Children.Add(new Image { Source = frame, Width = size, Height = size, Stretch = Stretch.Uniform, Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Bottom });
+         }
+         body.Children.Add(images);
+         body.Children.Add(Help("Sizes in file: " + string.Join(", ", frames.Select(f => f.PixelWidth).Distinct().Order()) + " px"));
       }
-      _previews.Children.Add(new TextBlock { Text = _draft.Product.IsEmHost ? "Em host: full branding and in-app update support." : "Other .NET host: basic launcher support; in-app updates unavailable." });
+      else body.Children.Add(Help("No icon imported."));
+      var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
+      Button(buttons, "Import ICO", () => ImportAsset(false));
+      body.Children.Add(buttons);
+      return Card("Application icon", frames.Count > 0, body);
+   }
+   private Border LogoCard() {
+      var body = new StackPanel();
+      var hasLogo = _draft.Product.LogoBase64.Length > 0;
+      if (hasLogo) {
+         var image = ReleaseProduct.ReadLogo(_draft.Product.LogoBase64);
+         var fit = Math.Min(240d / image.PixelWidth, 48d / image.PixelHeight);
+         foreach (var scale in new[] { 1d, 2d }) {
+            body.Children.Add(Help($"{scale * 100:0}%"));
+            body.Children.Add(new Image { Source = image, Width = image.PixelWidth * fit * scale, Height = image.PixelHeight * fit * scale,
+               Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 2, 0, 8) });
+         }
+         if (Math.Min(image.PixelWidth, image.PixelHeight) * fit < 24 || fit * 2 > 1)
+            body.Children.Add(Help("Warning: logo is smaller than 24 px on one side or has insufficient resolution for 200%."));
+      }
+      else body.Children.Add(Help("No logo imported."));
+      var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
+      Button(buttons, "Import PNG logo", () => ImportAsset(true));
+      if (hasLogo) Button(buttons, "Clear logo", () => { _draft.Product.LogoBase64 = ""; Preview(); return Task.CompletedTask; });
+      body.Children.Add(buttons);
+      return Card("Logo", hasLogo, body);
+   }
+   private List<BitmapFrame> IconFrames() {
+      if (_draft.Product.IconBase64.Length == 0) return [];
+      try {
+         using var stream = new MemoryStream(Convert.FromBase64String(_draft.Product.IconBase64));
+         return [.. BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames];
+      }
+      catch (Exception) { return []; }
+   }
+   private static Border Card(string title, bool isSet, UIElement body) {
+      var header = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+      var chip = new Border { Child = new TextBlock { Text = isSet ? "Imported" : "Not set" }, VerticalAlignment = VerticalAlignment.Center };
+      chip.SetResourceReference(StyleProperty, isSet ? "chipSuccessStyle" : "chipMutedStyle");
+      DockPanel.SetDock(chip, Dock.Right); header.Children.Add(chip);
+      var caption = new TextBlock { Text = title, VerticalAlignment = VerticalAlignment.Center };
+      caption.SetResourceReference(StyleProperty, "typeLabelLargeStyle"); header.Children.Add(caption);
+      var content = new StackPanel(); content.Children.Add(header); content.Children.Add(body);
+      var card = new Border { Child = content, Width = 300, Padding = new Thickness(16, 14, 16, 14), Margin = new Thickness(0, 0, 12, 12) };
+      card.SetResourceReference(StyleProperty, "innerCardStyle");
+      return card;
+   }
+   private static TextBlock Help(string text) {
+      var help = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
+      help.SetResourceReference(StyleProperty, "fieldHelpStyle");
+      return help;
    }
    private void KeySummary() => _message.Text = _draft.PrivateKeyPem.Length > 0 ? "Signing PEM present. Anyone holding this JSON can sign releases." : "Create or import the product's P-256 PKCS#8 private PEM.";
    private async Task SelectManaged() {

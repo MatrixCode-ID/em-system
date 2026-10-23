@@ -99,15 +99,26 @@ public static class LauncherBuild {
    /// <summary>Builds only if necessary, writes a marker and copies the launcher into the publish output.</summary>
    public static async Task PrepareAsync(string source, string output, ReleaseProfile profile, string defaultSource,
       ReleaseLauncherMetadata? remote, IProgress<string> log, CancellationToken token) {
+      await BuildAsync(source, output, profile, defaultSource, remote, log, token, force: false);
+      File.Copy(Path.Combine(output, profile.Launcher.FileName), Path.Combine(profile.PublishFolder, profile.Launcher.FileName), true);
+   }
+
+   /// <summary>
+   /// Builds the launcher into <paramref name="output"/> when its inputs changed, or always with
+   /// <paramref name="force"/>, then records the input hash and version on the profile.
+   /// </summary>
+   public static async Task BuildAsync(string source, string output, ReleaseProfile profile, string defaultSource,
+      ReleaseLauncherMetadata? remote, IProgress<string> log, CancellationToken token, bool force) {
       profile.Product.Validate(); ValidateSettings(profile.Launcher, profile.Product.AppExe);
       Directory.CreateDirectory(output);
       var exe = Path.Combine(output, profile.Launcher.FileName);
       var hasSource = File.Exists(Path.Combine(source, "Cargo.toml"));
+      if (force && !hasSource) throw new InvalidDataException("Building the launcher needs its local source folder (Cargo.toml) in Settings.");
       var hash = hasSource ? InputHash(source, profile, defaultSource) : profile.Launcher.InputHash;
       if (hash.Length == 0) throw new InvalidDataException("A local launcher source folder is required for the first build.");
       var version = SelectVersion(profile.Launcher, hash, remote);
       var productHash = ProductHash(profile, defaultSource);
-      if (!CacheMatches(exe, hash, productHash) || profile.Launcher.Version != version) {
+      if (force || !CacheMatches(exe, hash, productHash) || profile.Launcher.Version != version) {
          if (!hasSource) throw new InvalidDataException("The launcher inputs changed; select its local source folder and install Rust/MSVC.");
          var buildFolder = Path.Combine(output, ".build"); Directory.CreateDirectory(buildFolder);
          var icon = Path.Combine(buildFolder, "product.ico"); File.WriteAllBytes(icon, Convert.FromBase64String(profile.Product.IconBase64));
@@ -135,7 +146,6 @@ public static class LauncherBuild {
          async Task Pump(StreamReader reader) { while (await reader.ReadLineAsync(token) is { } line) log.Report(line); }
       }
       profile.Launcher.InputHash = hash; profile.Launcher.Version = version;
-      File.Copy(exe, Path.Combine(profile.PublishFolder, profile.Launcher.FileName), true);
    }
 
    private static async Task<string> EngineVersion(string source, CancellationToken token) {

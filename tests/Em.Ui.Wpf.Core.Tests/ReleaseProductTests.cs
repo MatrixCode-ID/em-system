@@ -50,6 +50,14 @@ public sealed class ReleaseProductTests : IDisposable {
       LauncherBuild.SelectVersion(new ReleaseLauncher { BaseVersion = "1.0.0", Channel = "release" }, "new", new() { Version = "1.0.0", InputHash = "old" }));
 
    [Fact]
+   public async Task ForcedLauncherBuildNeedsTheSourceFolder() {
+      var p = Profile(); p.Product.IconBase64 = Convert.ToBase64String(new byte[] { 0, 0, 1, 0, 0, 0 }); p.Launcher.FileName = "inventory-installer.exe";
+      var error = await Assert.ThrowsAsync<InvalidDataException>(() => LauncherBuild.BuildAsync(Path.Combine(_root, "no-source"), Path.Combine(_root, "out"), p,
+         "https://example.test/release", null, new Progress<string>(), CancellationToken.None, force: true));
+      Assert.Contains("source folder", error.Message);
+   }
+
+   [Fact]
    public void InputHashUsesContentsAndSettingsNotTimestampsOrBuildOutputs() {
       Directory.CreateDirectory(Path.Combine(_root, "src")); Directory.CreateDirectory(Path.Combine(_root, ".cargo"));
       var files = new[] { "build.rs", "Cargo.toml", "Cargo.lock", "launcher.manifest", "build-dist.ps1", "rust-toolchain.toml", ".cargo/config.toml", "src/main.rs" };

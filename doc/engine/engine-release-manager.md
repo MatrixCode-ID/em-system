@@ -83,6 +83,10 @@ A missing/changed binary requires local source, Rust and Visual Studio x64 C++ t
 what is missing. The build uses a target directory per app_id and remaps machine paths out of the exe.
 `build-dist.ps1` remains the default-product/local-test build entry point.
 
+**Build launcher** (profile menu) rebuilds the launcher even when the cache matches; it needs the local
+source folder. When the publish folder holds a publish result, the new launcher replaces the one in it and
+the last Compare is dropped. **Open launcher folder** opens the output folder.
+
 Launcher version is independent from application version. Pick MAJOR.MINOR.PATCH and prealpha/alpha/
 beta/rc/release. A changed prerelease input gets the matching target counter plus one; identical target
 inputs reuse its version. A changed stable launcher cannot reuse the target's stable version.

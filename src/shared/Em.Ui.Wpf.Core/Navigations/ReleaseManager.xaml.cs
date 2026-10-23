@@ -201,6 +201,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(ExportProfileCommand), ExportProfileCommand, SettingsCommandAllowed);
          RegisterCommand(nameof(OpenProfilesFolderCommand), OpenProfilesFolderCommand, () => !IsRunning);
          RegisterCommand(nameof(OpenLauncherFolderCommand), OpenLauncherFolderCommand, OpenLauncherFolderCommandAllowed);
+         RegisterCommand(nameof(BuildLauncherCommand), BuildLauncherCommand, BuildLauncherCommandAllowed);
          RegisterCommand(nameof(ProfilesFolderCommand), ProfilesFolderCommand, () => !IsRunning);
          RegisterCommand(nameof(RefreshSummaryCommand), RefreshSummaryCommand, () => !IsRunning);
          RegisterCommand(nameof(SettingsCommand), SettingsCommand, SettingsCommandAllowed);
@@ -549,6 +550,28 @@ namespace Em.Ui.Wpf.Navigations
             }
          });
       }
+
+      /// <summary>
+      /// Builds the launcher of the selected profile again, even when its inputs did not change. When the publish
+      /// folder already holds a publish result, the new launcher replaces the one in it and the last Compare is
+      /// dropped, so Sync never uploads a result compared before the rebuild.
+      /// </summary>
+      public Task BuildLauncherCommand() => RunAsync("Build launcher", async token => {
+         var target = CreateTarget();
+         var remote = target is null ? null : LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
+         await LauncherBuild.BuildAsync(_preferences!.LauncherSourceFolder, LauncherOutput, Profile!, DefaultReleaseSource, remote, new Progress<string>(Log), token, force: true);
+         _profileLastWriteUtc = _store!.Save(Profile!).LastWriteUtc;
+         if (HasPublishContent) {
+            File.Copy(Path.Combine(LauncherOutput, Profile!.Launcher.FileName), Path.Combine(PublishFolder, Profile.Launcher.FileName), true);
+            ResetComparison();
+            RefreshPublishContent();
+         }
+         Log($"Launcher {Profile!.Launcher.Version} built into {LauncherOutput}.");
+      });
+
+      /// <summary>Only with a profile, and a launcher source folder chosen in Settings.</summary>
+      public bool BuildLauncherCommandAllowed() =>
+         !IsRunning && HasProfile && !string.IsNullOrWhiteSpace(_preferences?.LauncherSourceFolder);
 
       /// <summary>Only when the SDK, the <c>.slnx</c>, the host project, and the folder are ready.</summary>
       public bool PrepareCommandAllowed() => !IsRunning && HasProfile && PrepareBlockedReason is null;
