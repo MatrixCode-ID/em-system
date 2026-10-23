@@ -277,7 +277,10 @@ impl SetupWindow {
       self.cab.on().bn_clicked(move || {
          let context = this.state.context.clone();
          let address = this.source.text()?;
-         if let Err(error) = crate::commands::CabCommand::run(&context, Some(address)) {
+         let result = super::ProgressWindow::owned_by(this.wnd.hwnd(), || {
+            crate::commands::CabCommand::run(&context, Some(address))
+         });
+         if let Err(error) = result {
             Prompts::error(&error.message);
          }
          Ok(())
