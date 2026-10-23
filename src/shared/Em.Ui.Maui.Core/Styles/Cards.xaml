@@ -72,6 +72,30 @@
               Value="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
    </Style>
 
+   <!-- A small count bubble on the top-right corner of an icon button, e.g. the work waiting for the user. -->
+   <Style x:Key="countBadgeStyle" TargetType="Border">
+      <Setter Property="HeightRequest" Value="18" />
+      <Setter Property="MinimumWidthRequest" Value="18" />
+      <Setter Property="Padding" Value="5,0" />
+      <Setter Property="Margin" Value="0,6,2,0" />
+      <Setter Property="HorizontalOptions" Value="End" />
+      <Setter Property="VerticalOptions" Value="Start" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="9" />
+      </Setter>
+   </Style>
+
+   <Style x:Key="countBadgeTextStyle" TargetType="Label">
+      <Setter Property="FontFamily" Value="OpenSansSemibold" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="TextColor" Value="White" />
+      <Setter Property="HorizontalOptions" Value="Center" />
+      <Setter Property="VerticalOptions" Value="Center" />
+   </Style>
+
    <!-- A circle holding initials, standing in for a photo that does not exist. -->
    <Style x:Key="avatarStyle" TargetType="Border">
       <Setter Property="WidthRequest" Value="44" />

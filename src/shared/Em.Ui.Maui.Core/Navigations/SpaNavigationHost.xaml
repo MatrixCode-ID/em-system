@@ -21,7 +21,7 @@
               again if this host is used on MAUI desktop. -->
          <Grid Grid.Row="0"
                Style="{StaticResource appBarStyle}"
-               ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+               ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
                IsVisible="{Binding IsToolbarVisible}">
 
             <controls:IconButton Grid.Column="0"
@@ -44,7 +44,16 @@
                       LineBreakMode="TailTruncation" IsVisible="{Binding HasSubtitle}" />
             </VerticalStackLayout>
 
-            <controls:IconButton Grid.Column="3"
+            <Grid Grid.Column="3" IsVisible="{Binding HasHubTasks}">
+               <controls:IconButton Glyph="{x:Static controls:FontIcons.Inbox}"
+                                    Command="{Binding Commands[HubTasksCommand]}"
+                                    TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+               <Border Style="{StaticResource countBadgeStyle}" InputTransparent="True">
+                  <Label Text="{Binding HubTaskBadge}" Style="{StaticResource countBadgeTextStyle}" />
+               </Border>
+            </Grid>
+
+            <controls:IconButton Grid.Column="4"
                                  Glyph="{x:Static controls:FontIcons.RotateRight}"
                                  IsVisible="{Binding IsReloadVisible}"
                                  Command="{Binding Commands[ReloadCommand]}"
@@ -52,7 +61,7 @@
 
             <!-- The account badge, which opens the account panel. It is on every screen, not only home: it is the one
                  and only way to the account, server, theme, and sign-out once the side menu has been dropped. -->
-            <Border Grid.Column="4" Style="{StaticResource accountBadgeStyle}"
+            <Border Grid.Column="5" Style="{StaticResource accountBadgeStyle}"
                     IsVisible="{Binding IsUserVisible}">
                <Border.GestureRecognizers>
                   <TapGestureRecognizer Command="{Binding Commands[AccountPanelCommand]}" />

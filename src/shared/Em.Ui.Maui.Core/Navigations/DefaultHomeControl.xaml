@@ -24,6 +24,39 @@
             </Grid>
          </Border>
 
+         <!-- ==== my tasks ==== -->
+         <VerticalStackLayout Spacing="10" IsVisible="{Binding HasHubSection}">
+            <Label Text="MY TASKS" Style="{StaticResource sectionCaptionStyle}" />
+            <Label Text="Could not load your tasks. Tap reload to try again."
+                   Style="{StaticResource errorTextStyle}" IsVisible="{Binding HubTaskLoadFailed}" />
+            <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding HubTasks}">
+               <BindableLayout.ItemTemplate>
+                  <DataTemplate>
+                     <Border Style="{StaticResource actionCardStyle}">
+                        <Border.GestureRecognizers>
+                           <TapGestureRecognizer Command="{Binding Commands[OpenCommand]}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                           <Border Grid.Column="0" Style="{StaticResource accentChipStyle}" MinimumWidthRequest="40"
+                                   Padding="8,6">
+                              <Label Text="{Binding CountText}" Style="{StaticResource chipTextStyle}" FontSize="15"
+                                     HorizontalOptions="Center" />
+                           </Border>
+                           <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                              <Label Text="{Binding SourceCaption}" Style="{StaticResource sectionCaptionStyle}" FontSize="10" />
+                              <Label Text="{Binding Title}" Style="{StaticResource titleTextStyle}" FontSize="15" />
+                              <Label Text="{Binding Detail}" Style="{StaticResource supportTextStyle}" />
+                           </VerticalStackLayout>
+                           <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.ArrowRight}" IconSize="18"
+                                              VerticalOptions="Center" Opacity="0.55"
+                                              TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+                        </Grid>
+                     </Border>
+                  </DataTemplate>
+               </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+         </VerticalStackLayout>
+
          <Border Style="{StaticResource outlinedCardStyle}" IsVisible="{Binding IsModuleListEmpty}">
             <VerticalStackLayout Spacing="8">
                <controls:FontIcon Glyph="{x:Static controls:FontIcons.TableCellsLarge}" IconSize="24"

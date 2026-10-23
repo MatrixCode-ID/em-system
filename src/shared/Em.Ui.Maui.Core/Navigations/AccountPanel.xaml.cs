@@ -238,6 +238,9 @@ namespace Em.Ui.Maui.Navigations
             () => app.NavigateTo(EmApp.ChangePasswordNavigationName),
             isEnabled: app.ActiveUser?.cUserId != Defaults.DebuggerUserId);
 
+         AddStaticItem("Approval Manager", FontIcons.Inbox,
+            () => app.NavigateTo(ApprovalManagerNavigationPayload.NavigationName));
+
          if (app.IsDebugMode) {
             AddStaticItem("Simulate Login", FontIcons.RightToBracket, () => app.ShowLoginScreen(null));
          }

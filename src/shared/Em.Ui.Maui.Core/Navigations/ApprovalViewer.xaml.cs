@@ -435,6 +435,7 @@ namespace Em.Ui.Maui.Navigations
             step?.cApprovalRequestStepId, string.IsNullOrWhiteSpace(note) ? null : note.Trim()));
          Notice = result.Message ?? string.Empty;
          await LoadAsync();
+         _ = EmApp?.RefreshHubTasksAsync();
       });
 
       // Returns null when cancelled. A rejection must say why; a signature note is optional.

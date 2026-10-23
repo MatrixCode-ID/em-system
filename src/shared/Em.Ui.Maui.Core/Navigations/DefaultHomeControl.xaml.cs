@@ -1,5 +1,6 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Microsoft.Maui.Controls;
+using Em.Api.Core.Models;
 using Em.Ui.Core.Shared;
 using Em.Ui.Maui.Controls;
 using Em.Ui.Maui.Core;
@@ -126,6 +127,48 @@ namespace Em.Ui.Maui.Navigations
       public void ToggleCommand() => IsExpanded = !IsExpanded;
    }
 
+   /// <summary>One MY TASKS card on the home screen: a kind of work waiting for the user.</summary>
+   public sealed class HomeHubTaskVm : MvvmModelBase
+   {
+      public HomeHubTaskVm(EmApp app, HubTaskInfo task) {
+         EmApp = app;
+         Info = task;
+         RegisterCommand(nameof(OpenCommand), OpenCommand);
+      }
+
+      /// <summary>The row as the server returned it.</summary>
+      public HubTaskInfo Info { get; }
+
+      /// <summary>The kind of work, e.g. the approval name.</summary>
+      public string Title => Info.Title;
+
+      /// <summary>The source of the row in words.</summary>
+      public string SourceCaption => Info.Source switch {
+         "approval.system" => "SYSTEM APPROVAL",
+         "approval.data" => "DATA APPROVAL",
+         _ => Info.Source.ToUpperInvariant()
+      };
+
+      /// <summary>The number of items, capped like the top bar badge.</summary>
+      public string CountText => Info.Count > 99 ? "99+" : Info.Count.ToString();
+
+      /// <summary>"3 waiting · oldest 2 d", or the server's own description when it sent one.</summary>
+      public string Detail {
+         get {
+            if (!string.IsNullOrWhiteSpace(Info.Description)) return Info.Description;
+            var text = $"{Info.Count} waiting";
+            return Info.OldestAge is { } age ? $"{text} · oldest {FormatAge(age)}" : text;
+         }
+      }
+
+      private static string FormatAge(TimeSpan age) =>
+         age.TotalDays >= 1 ? $"{(int)age.TotalDays} d" :
+         age.TotalHours >= 1 ? $"{(int)age.TotalHours} h" :
+         $"{Math.Max(1, (int)age.TotalMinutes)} min";
+
+      public Task OpenCommand() => EmApp!.OpenHubTaskAsync(Info);
+   }
+
    /// <summary>View model <see cref="DefaultHomeControl"/>.</summary>
    public class DefaultHomeControlVm : MvvmModelBase
    {
@@ -148,6 +191,17 @@ namespace Em.Ui.Maui.Navigations
       /// <summary><c>true</c> when no module screen is shown yet.</summary>
       public bool IsModuleListEmpty => AppMenus.Count == 0;
 
+      private bool _hubAttached;
+
+      /// <summary>The MY TASKS cards, one per kind of work waiting for the user.</summary>
+      public ObservableCollection<HomeHubTaskVm> HubTasks { get; } = [];
+
+      /// <summary>The MY TASKS section is drawn while there is work, or while its last load failed.</summary>
+      public bool HasHubSection => HubTasks.Count > 0 || HubTaskLoadFailed;
+
+      /// <summary><c>true</c> when the last MY TASKS load failed.</summary>
+      public bool HubTaskLoadFailed => EmApp?.HubTaskLoadFailed == true;
+
       /// <summary>
       /// Rebuilds the content of the screen: the list of screens and the menu tree. Called every time this
       /// screen is opened or asked to reload.
@@ -164,7 +218,23 @@ namespace Em.Ui.Maui.Navigations
 
          RebuildMenuTree();
          NotifyChanged(nameof(IsModuleListEmpty));
-         return Task.CompletedTask;
+
+         // Home is built once and never released, so it follows the application's MY TASKS for good.
+         if (!_hubAttached) {
+            _hubAttached = true;
+            app.HubTasksChanged += (_, _) => RebuildHubTasks();
+         }
+
+         RebuildHubTasks();
+         return app.RefreshHubTasksAsync();
+      }
+
+      private void RebuildHubTasks() {
+         if (EmApp is not { } app) return;
+         HubTasks.Clear();
+         foreach (var task in app.HubTasks.Where(x => x.Count > 0)) HubTasks.Add(new HomeHubTaskVm(app, task));
+         NotifyChanged(nameof(HasHubSection));
+         NotifyChanged(nameof(HubTaskLoadFailed));
       }
 
       private void RebuildMenuTree() {

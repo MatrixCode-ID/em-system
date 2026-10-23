@@ -297,10 +297,18 @@ The editor is a MAUI `View` implementing the same `IEmApprovalSystemEditor`. Kee
 column of cards: the engine places it inside a vertical scroll, so it must not scroll itself.
 `ToolbarItems` and `OpenSourceAsync` are not shown on mobile.
 
-- **Approvals** (`em.approval.manager`, home menu, no claim): one column of request cards with
-  search, an *Only requests waiting for me* switch, pull-to-refresh and paging (30 per page). The
-  switch starts off for SYSTEM DEBUGGER and administrators, on for other users, unless the
-  navigation payload states it. Tapping a card opens the request.
+- **Approval Manager** (`em.approval.manager`, no claim): an engine tool, so like the desktop Tools it
+  is not in the home menu of modules. It opens from the account panel, from a MY TASKS card and from
+  the inbox button. One column of request cards with search, an *Only requests waiting for me*
+  switch, pull-to-refresh and paging (30 per page). The switch starts off for SYSTEM DEBUGGER and
+  administrators, on for other users, unless the navigation payload states it. It also accepts the
+  hub's `Kind:Name` text parameter. Tapping a card opens the request.
+- **MY TASKS** (home, above the module menu): one card per `GetMeta_UserHubTasks` row with its count
+  and the age of the oldest item; tapping opens Approval Manager filtered to that approval and to the
+  user's own decisions. The top bar shows an inbox button with the total count while work is waiting.
+  `EmApp.HubTasks` is refreshed when home opens, when the app returns to the foreground, when the
+  user changes, after a decision in the viewer, and every 60 seconds while the app is in front.
+  There is no notification while the app is closed.
 - **Approval** (`em.approval.editor`, `ApprovalManagerNavigationPayload` with the request ID): the
   request header with status, level and requester; the module view (System) or the proposed field
   changes (Data); signer steps top to bottom; comments with a box to add one. A bottom action bar
@@ -324,8 +332,8 @@ and the upload controls are hidden.
 
 MY TASKS groups waiting requests by `(kind, name)`. Data counts use the root's decision check; System
 counts use candidates of active steps. Opening a group filters Approval Manager. Counts disappear when
-the request is decided. Escalation, quorum, email delivery by the engine, MAUI UI and physical-document
-approval are outside this implementation.
+the request is decided. Escalation, quorum, email delivery by the engine, push notifications to
+mobile devices and physical-document approval are outside this implementation.
 
 ## Verification
 

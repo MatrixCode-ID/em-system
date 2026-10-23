@@ -288,10 +288,12 @@ namespace Em.Ui.Maui.Core
             IsMenuVisible = false
          });
 
-         // Bound to no module and no claim: the server decides which requests the caller may see and sign.
+         // Bound to no module and no claim: the server decides which requests the caller may see and sign. Like
+         // the desktop Tools, it stays out of the home menu of modules; it is opened from the account panel,
+         // from MY TASKS and from the inbox button.
          app.AddNavigation(new Navigation {
             Name = ApprovalManagerNavigationPayload.NavigationName,
-            Title = "Approvals",
+            Title = "Approval Manager",
             Subtitle = "Review and sign approval requests",
             Description = "Requests waiting for your signature and their history.",
             OrderIndex = -1,
@@ -299,7 +301,7 @@ namespace Em.Ui.Maui.Core
             Kind = NavigationKind.Manager,
             EmApp = app,
             RequireParameter = false,
-            IsMenuVisible = true
+            IsMenuVisible = false
          });
 
          app.AddNavigation(new Navigation {

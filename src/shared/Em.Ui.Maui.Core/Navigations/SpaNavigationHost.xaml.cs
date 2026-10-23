@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Microsoft.Maui.Controls;
 using Em.Ui.Maui.Core;
 using Em.Ui.Maui.Shared;
@@ -17,6 +17,12 @@ namespace Em.Ui.Maui.Navigations
       private const uint OpenDuration = 260;
       private const uint CloseDuration = 200;
       private const double ScrimOpacity = 0.4;
+
+      // How often MY TASKS is asked again while the application is in front, the same as the desktop client.
+      private static readonly TimeSpan HubInterval = TimeSpan.FromSeconds(60);
+
+      private readonly IDispatcherTimer _hubTimer;
+      private Window? _window;
 
       public SpaNavigationHost(EmApp app) {
          InitializeComponent();
@@ -37,11 +43,45 @@ namespace Em.Ui.Maui.Navigations
          // A session can end without anyone pressing the sign-out button - its lifetime ran out, or it was
          // revoked from elsewhere. Both must land on the login screen through exactly the same way.
          app.SessionEnded += OnSessionEnded;
+         app.HubTasksChanged += OnHubTasksChanged;
+
+         _hubTimer = Dispatcher.CreateTimer();
+         _hubTimer.Interval = HubInterval;
+         _hubTimer.Tick += OnHubTimerTick;
+         _hubTimer.Start();
 
          // The badge binding was evaluated inside InitializeComponent, before EmApp was set. A host built for
          // an already signed-in user (Android recreating the activity) gets no ActiveUserChanged to fix it.
          Vm.RefreshAccount();
+         _ = app.RefreshHubTasksAsync();
       }
+
+      // The window is only known once the page is attached to it; it tells when the application goes to the
+      // background and comes back, so MY TASKS is not polled while nobody can see it.
+      protected override void OnHandlerChanged() {
+         base.OnHandlerChanged();
+         if (_window is not null) {
+            _window.Resumed -= OnWindowResumed;
+            _window.Stopped -= OnWindowStopped;
+         }
+
+         _window = Window;
+         if (_window is not null) {
+            _window.Resumed += OnWindowResumed;
+            _window.Stopped += OnWindowStopped;
+         }
+      }
+
+      private void OnWindowResumed(object? sender, EventArgs e) {
+         _hubTimer.Start();
+         _ = Vm.EmApp?.RefreshHubTasksAsync();
+      }
+
+      private void OnWindowStopped(object? sender, EventArgs e) => _hubTimer.Stop();
+
+      private void OnHubTimerTick(object? sender, EventArgs e) => _ = Vm.EmApp?.RefreshHubTasksAsync();
+
+      private void OnHubTasksChanged(object? sender, EventArgs e) => Vm.RefreshHubTasks();
 
       /// <summary>
       /// Disconnects this host from the application and its main stack, so a replaced host no longer reacts
@@ -54,10 +94,22 @@ namespace Em.Ui.Maui.Navigations
          app.ActiveConnectionChanged -= OnAccountChanged;
          app.ThemeChanged -= OnThemeChanged;
          app.SessionEnded -= OnSessionEnded;
+         app.HubTasksChanged -= OnHubTasksChanged;
+         _hubTimer.Stop();
+         _hubTimer.Tick -= OnHubTimerTick;
+         if (_window is not null) {
+            _window.Resumed -= OnWindowResumed;
+            _window.Stopped -= OnWindowStopped;
+            _window = null;
+         }
+
          Vm.Stack = null;
       }
 
-      private void OnAccountChanged(object? sender, EventArgs e) => Vm.RefreshAccount();
+      private void OnAccountChanged(object? sender, EventArgs e) {
+         Vm.RefreshAccount();
+         _ = Vm.EmApp?.RefreshHubTasksAsync();
+      }
 
       private void OnThemeChanged(object? sender, EventArgs e) => AccountPanelView.Vm.RefreshTheme();
 
@@ -127,7 +179,31 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(ReloadCommand), ReloadCommand, ReloadCommandAllowed);
          RegisterCommand(nameof(AccountPanelCommand), AccountPanelCommand, AccountPanelCommandAllowed);
          RegisterCommand(nameof(CloseAccountPanelCommand), CloseAccountPanelCommand);
+         RegisterCommand(nameof(HubTasksCommand), HubTasksCommand, HubTasksCommandAllowed);
       }
+
+      /// <summary>The number of work items waiting for the user, shown on the inbox button.</summary>
+      public int HubTaskCount => EmApp?.HubTaskCount ?? 0;
+
+      /// <summary>The inbox button is only drawn while something waits for the user.</summary>
+      public bool HasHubTasks => HubTaskCount > 0 && (Navigation?.IsUserVisible ?? false);
+
+      /// <summary>The count on the inbox button; large numbers are capped so the bubble keeps its size.</summary>
+      public string HubTaskBadge => HubTaskCount > 99 ? "99+" : HubTaskCount.ToString();
+
+      /// <summary>Redraws the inbox button after MY TASKS changed.</summary>
+      public void RefreshHubTasks() {
+         NotifyChanged(nameof(HubTaskCount));
+         NotifyChanged(nameof(HasHubTasks));
+         NotifyChanged(nameof(HubTaskBadge));
+      }
+
+      /// <summary>Opens the approval manager on the requests waiting for the user.</summary>
+      public Task HubTasksCommand() =>
+         EmApp!.NavigateTo(Em.Ui.Core.Shared.ApprovalManagerNavigationPayload.NavigationName,
+            new Em.Ui.Core.Shared.ApprovalManagerNavigationPayload { WaitingForMeOnly = true });
+
+      public bool HubTasksCommandAllowed() => EmApp is not null;
 
       /// <summary>Whether the account panel is open. The page animates the change.</summary>
       public bool IsAccountPanelOpen {
@@ -262,6 +338,7 @@ namespace Em.Ui.Maui.Navigations
          NotifyChanged(nameof(IsBackVisible));
          NotifyChanged(nameof(IsHomeVisible));
          NotifyChanged(nameof(IsUserVisible));
+         NotifyChanged(nameof(HasHubTasks));
          NotifyChanged(nameof(Title));
          NotifyChanged(nameof(Subtitle));
          NotifyChanged(nameof(HasSubtitle));

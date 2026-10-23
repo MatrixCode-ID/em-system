@@ -27,7 +27,10 @@ namespace Em.Ui.Maui.Navigations
 
       /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) {
-         Vm.Configure(args.Data as ApprovalManagerNavigationPayload);
+         var payload = args.Data as ApprovalManagerNavigationPayload;
+         if (args.Data is string text && ApprovalManagerFilter.TryParse(text, out var kind, out var name))
+            payload = new ApprovalManagerNavigationPayload { Kind = kind, Name = name, WaitingForMeOnly = true };
+         Vm.Configure(payload);
          return Vm.RefreshAsync();
       }
 
