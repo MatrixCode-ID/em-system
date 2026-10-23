@@ -5,12 +5,12 @@ use std::sync::Arc;
 use crate::cli::{CommandError, Console, InstallOptions};
 use crate::config::{LauncherConfig, TrustedKeys};
 use crate::format::ReleasePublicKey;
-use crate::install::{InstallLayout, UpdateProgress, Updater};
+use crate::install::{InstallLayout, Uninstaller, UpdateProgress, Updater};
 use crate::launcher_log::LauncherLog;
 use crate::product;
 use crate::ui::{SetupOutcome, SetupWindow, format_published};
 
-use super::{CommandContext, KeyCommand, MaintenanceCommand, UpdateCommand};
+use super::{CommandContext, InstallAction, KeyCommand, UpdateCommand};
 
 /// The `--install` command: installs the product from a release source into the install folder, then
 /// registers the shortcuts and the Apps & Features entry.
@@ -71,18 +71,7 @@ impl InstallCommand {
       }
       let options = &options;
       if !context.quiet {
-         let outcome = {
-            // Held while the form is open, so a second setup cannot start next to this one.
-            let _lock = context.lock()?;
-            SetupWindow::run(context, options)?
-         };
-         return match outcome {
-            SetupOutcome::Cancelled => Err(CommandError::cancelled("")),
-            SetupOutcome::Installed { layout, run } if run => context.start_app(&layout, &[]),
-            SetupOutcome::Installed { .. } => Ok(()),
-            // Repair and Uninstall take the lock themselves, so the form has released it by now.
-            SetupOutcome::Maintenance => MaintenanceCommand::run(context),
-         };
+         return Self::run_form(context, options);
       }
 
       let request = InstallRequest::from_options(options)?;
@@ -94,6 +83,20 @@ impl InstallCommand {
          context.start_app(&job.layout(), &[])?;
       }
       Ok(())
+   }
+
+   /// Opens the combined form without reading settings.ini, using the supplied source or installed source.
+   pub fn run_form(context: &CommandContext, options: &InstallOptions) -> Result<(), CommandError> {
+      let _lock = context.lock()?;
+      Self::run_locked_form(context, options)
+   }
+
+   pub(crate) fn run_locked_form(context: &CommandContext, options: &InstallOptions) -> Result<(), CommandError> {
+      match SetupWindow::run(context, options)? {
+         SetupOutcome::Cancelled => Err(CommandError::cancelled("")),
+         SetupOutcome::Installed { layout, run: true } => context.start_app(&layout, &[]),
+         SetupOutcome::Installed { .. } | SetupOutcome::Uninstalled => Ok(()),
+      }
    }
 
    /// Checks `request` without writing anything: the product is not yet installed in another folder, the
@@ -219,9 +222,31 @@ impl InstallJob {
    /// pass are the install folder, the configuration, the keys, the shortcuts, and the entry written.
    /// Cancelling through `progress` only leaves a staging folder that is resumed on the next attempt.
    pub fn execute(&self, context: &CommandContext, progress: Arc<UpdateProgress>) -> Result<String, CommandError> {
+      self.execute_action(context, progress, InstallAction::Install)
+   }
+
+   /// Executes install/update/repair/clean on the worker; the form confirms and waits for the app first.
+   pub fn execute_action(
+      &self,
+      context: &CommandContext,
+      progress: Arc<UpdateProgress>,
+      action: InstallAction,
+   ) -> Result<String, CommandError> {
+      if action == InstallAction::Uninstall {
+         return Err(CommandError::invalid("Uninstall does not use an installation job."));
+      }
       context.check_product_fingerprint(false)?;
       let source = context.source(&self.config)?;
       let layout = self.layout();
+      // Cabinet extraction must survive a clean removal, including when the CDN is offline.
+      let clean_work = if action == InstallAction::CleanInstall {
+         Some(super::cab_command::CabWork::new(self.target.parent().ok_or_else(
+            || CommandError::invalid("Installation has no parent folder"),
+         )?)?)
+      } else {
+         None
+      };
+      let cab_layout = clean_work.as_ref().map(|work| InstallLayout::new(work.path()));
       let updater = Updater::new(source.as_ref(), &layout, progress.clone());
       let remote = updater.check(&self.keys);
       let release = if context.location == crate::config::ConfigLocation::for_product() {
@@ -229,15 +254,31 @@ impl InstallJob {
             context,
             &super::CabCommand::path()?,
             self.config.effective_source(),
-            &layout,
+            cab_layout.as_ref().unwrap_or(&layout),
             &self.keys,
             remote,
-            progress,
+            progress.clone(),
          )?
       } else {
          remote?
       };
 
+      if action == InstallAction::CleanInstall {
+         if progress.is_cancelled() {
+            return Err(CommandError::cancelled(""));
+         }
+         Uninstaller::new(&layout)
+            .remove(&context.integration, &context.app_key, &progress)
+            .map_err(CommandError::io("cannot remove the installation"))?;
+         if let Some(cab_layout) = &cab_layout {
+            let staged = cab_layout.staging_folder(release.id());
+            if staged.is_dir() {
+               fs::create_dir_all(&self.target).map_err(CommandError::io("cannot recreate install folder"))?;
+               fs::rename(&staged, layout.staging_folder(release.id()))
+                  .map_err(CommandError::io("cannot restore cabinet staging"))?;
+            }
+         }
+      }
       fs::create_dir_all(&self.target)
          .map_err(CommandError::io(&format!("cannot create {}", self.target.display())))?;
       LauncherLog::open(&layout.log_path());
@@ -247,7 +288,11 @@ impl InstallJob {
          source.address(),
          self.target.display()
       ));
-      let outcome = updater.install(&release)?;
+      let outcome = if action == InstallAction::Repair {
+         updater.repair(&release)?
+      } else {
+         updater.install(&release)?
+      };
       context.ensure_root_launcher(&layout)?;
 
       context.check_product_fingerprint(true)?;
@@ -264,9 +309,16 @@ impl InstallJob {
          .map_err(CommandError::io("cannot create the shortcuts"))?;
 
       Ok(format!(
-         "{} (release published {}) was installed in {}: {}.",
+         "{} (release published {}) was {} in {}: {}.",
          product::APP_NAME,
          format_published(release.manifest().published_at_utc()),
+         if action == InstallAction::Repair {
+            "repaired"
+         } else if action == InstallAction::Update {
+            "updated"
+         } else {
+            "installed"
+         },
          self.target.display(),
          UpdateCommand::describe(&outcome)
       ))

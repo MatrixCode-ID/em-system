@@ -36,8 +36,42 @@ Replacement renames the running exe to `<name>.old.exe`, cleaned up on the next 
 
 The logo occupies exactly 240 by 48 logical pixels, scaled uniformly, left aligned and vertically
 centered, retaining transparent margins. WIC decodes the embedded PNG to premultiplied pixels and GDI
-alpha blends it; an empty logo uses the product icon. Setup, maintenance and progress show launcher
+alpha blends it; an empty logo uses the product icon. Setup and progress show launcher
 and engine versions. `--version` and launcher.log also record them.
+
+## Installed setup form and removal
+
+Opening an installer outside the installation opens the same 560×478 setup form with a locked
+install folder, saved shortcut choices and the installed publication time and release ID.
+Four action radios select Update, Repair, Clean install or Uninstall; the main button follows the
+selection. A new installation hides these radios and offers Install. There are still four pages:
+Form, Checking, Installing and Done.
+
+Update reuses unchanged installed files. Repair verifies and restores files against the selected
+signed source. Clean install confirms, waits for the app to close, removes the installation and all
+product settings, then installs afresh. Uninstall confirms, waits for the app and removes everything,
+then offers Finish without starting the app. All filesystem work runs on a worker thread while the
+form refreshes progress. Run installed starts the installed app while the form stays open and holds
+the launcher lock, so that start skips the update check.
+
+Source and imported keys are saved after a successful Install, Update, Repair or Clean install.
+Uninstall does not save a source. Remove below Import immediately removes a user-owned trusted key
+after confirmation; embedded and policy keys cannot be removed. Clean install also removes keys
+that exist only in the product registry. Source/signature checks happen before that removal.
+
+Apps & Features Modify (`--maintenance`) opens this same installed form with the saved configuration,
+without settings.ini. From inside the installation, the launcher copies itself into a unique
+TEMP/launcher-uninstall-* folder and starts `--maintenance --parent-pid PID`. The copy waits for its
+parent to exit, takes the lock and schedules its own folder removal on exit. From outside the
+installation the form opens directly. `--maintenance --quiet` is rejected.
+
+Finishing reports manifest/signature writing, staging rename, current.json, root launcher replacement
+and old-version removal as steps. Removal advances per file listed in each folder's manifest, followed
+by one sweep for unlisted files and empty folders; a missing/invalid manifest uses one sweep.
+Clean install and Uninstall use the Removing phase, including CLI uninstall's temporary second stage.
+Both phases display the current step/path and n of m units, and disable cancellation until complete.
+Locked old versions are logged and retried on a later run. CLI and automatic updates keep the small
+ProgressWindow, with the same progress details.
 
 ## Updates
 
@@ -60,12 +94,15 @@ at start and do not get the in-app slot.
 
 ## Cabinet for IT
 
-Download to cab in setup, or `--download-cab`, creates `<app_id>.cab` beside the installer. It is a
+The setup button shows Download to cab when `<app_id>.cab` is absent beside the installer, and
+Update cab when it exists. `--download-cab` creates a new cab and refuses an existing one, directing IT
+to `--update-cab`. `--update-cab` requires an existing cab and directs IT to `--download-cab` if absent. It is a
 Microsoft Cabinet using LZX through Windows FCI/FDI, without encryption or spanning. Releases above
 approximately 2 GB fail clearly. Release Manager does not create cabinets.
 
 The cab contains release.json, release.json.sig and binaries/. An unchanged, verified cab is retained;
-otherwise unchanged files are reused from the old cab and only changed files are downloaded. The new
+otherwise unchanged files are reused from the old cab and only changed files are downloaded. A damaged
+or untrusted existing cab is logged and rebuilt with a full download, without a confirmation prompt. The new
 cab is built, extracted and verified in temporary storage, then renamed over the old cab atomically.
 A failure/cancellation leaves the old cab intact. The command does not install or write registry.
 
@@ -82,9 +119,10 @@ The installed Source remains the CDN address. User PCs use the CDN for future re
 | --install [--source S] [--target T] [--quiet] [--no-run] | First install; quiet uses no GUI |
 | --prepare [--quiet] | Check, download and verify without activation, always without GUI |
 | --apply --pid PID | Wait for the app to exit, apply and start |
-| --download-cab [--source S] [--quiet] | Update the IT cab only |
+| --download-cab [--source S] [--quiet] | Create a new IT cab; fail if it exists |
+| --update-cab [--source S] [--quiet] | Update an existing IT cab; fail if absent |
 | --update / --repair / --uninstall [--quiet] | Installed maintenance |
-| --maintenance | Maintenance window |
+| --maintenance | Combined installed setup form (Modify) |
 | --import key.pem / --list-keys / --remove-key keyId | Additional trusted keys |
 | --version | Launcher and engine versions |
 
@@ -92,8 +130,9 @@ Prepare writes one JSON line: `{"state":"none"}`,
 `{"state":"prepared","release":"a1b2c3d4e5f6","publishedAt":"2026-10-21T08:00:00Z"}` or
 `{"state":"failed","message":"..."}`. Failures are logged without a dialog.
 Cab success exits 0 and reports either "Cab is up to date" or "Cab updated to release ..." with
-publication time and downloaded bytes. Errors: 2 source/signature, 3 filesystem, 4 cancelled.
-Other launcher commands additionally use 1 for invalid arguments and 5 for an application still running.
+publication time and downloaded bytes. Errors: 1 invalid arguments or cab creation/update precondition,
+2 source/signature, 3 filesystem, 4 cancelled. Other launcher commands additionally use 5 for an
+application still running.
 
 For build inputs and versions see [Release Manager](engine-release-manager.md); for the signature and
 layout see the [release contract](../release-format.md). GUI/interactions must be verified separately

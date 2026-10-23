@@ -15,7 +15,7 @@ pub const PROGRESS_PANEL_HEIGHT: i32 = 92;
 
 /// The control that shows [`UpdateProgress`]: the status text, a bar based on bytes, the name of the file
 /// being worked on, then the byte count, the speed, and the estimated time left. A phase whose size is not
-/// known yet (checking the release, finishing) uses a marquee bar.
+/// known yet (checking the release) uses a marquee bar.
 ///
 /// It is created in the parent window before that window is created, then updated with [`Self::refresh`]
 /// from the window's timer, about every 200 ms. Its clones point to the same controls.
@@ -90,15 +90,19 @@ impl ProgressPanel {
       let total = progress.total_bytes();
       let done = progress.done_bytes().min(total);
       let status = match phase {
-         _ if progress.is_cancelled() => "Cancelling...",
+         _ if progress.is_cancelled() && progress.can_cancel() => "Cancelling...",
          UpdatePhase::Idle | UpdatePhase::Checking => "Checking the release...",
          UpdatePhase::Verifying => "Checking the installed files...",
          UpdatePhase::Preparing => "Downloading the new version...",
          UpdatePhase::Finishing => "Finishing...",
+         UpdatePhase::Removing => "Removing the installation...",
       };
       set_text(self.status.hwnd(), status);
 
-      let sized = matches!(phase, UpdatePhase::Verifying | UpdatePhase::Preparing) && total > 0;
+      let sized = matches!(
+         phase,
+         UpdatePhase::Verifying | UpdatePhase::Preparing | UpdatePhase::Finishing | UpdatePhase::Removing
+      ) && total > 0;
       if sized {
          if self.marquee.replace(false) {
             self.bar.set_marquee(false);
@@ -112,6 +116,7 @@ impl ProgressPanel {
 
       set_text(self.file.hwnd(), &progress.current_file());
       let detail = match phase {
+         UpdatePhase::Finishing | UpdatePhase::Removing if sized => format!("{done} of {total}"),
          UpdatePhase::Verifying if sized => format!("{} of {} checked", format_size(done), format_size(total)),
          UpdatePhase::Preparing if sized => {
             let mut detail = format!("{} of {}", format_size(done), format_size(total));

@@ -79,19 +79,46 @@ memakai cab yang sudah diverifikasi; runner selalu memakai CDN. Detail:
 
 ## Installer di PC yang sudah terpasang (keputusan pengguna 2026-10-23)
 
-Exe yang dijalankan **dari luar folder instalasi** pada PC yang sudah terpasang langsung membuka form
-setup dalam mode update, tanpa dialog "already installed". Runner di folder instalasi tidak berubah.
+Exe dari luar instalasi membuka form setup gabungan. Ukuran area form tetap 560×478,
+empat halaman Form, Checking, Installing, Done. Versi terpasang tampil pada intro.
+Folder instalasi dikunci, pilihan shortcut mengikuti konfigurasi, dan radio aksi
+**Update / Repair / Clean install / Uninstall** menggantikan checkbox clean.
+Instalasi baru tidak menampilkan radio dan memakai tombol Install.
 
-- Folder instalasi dikunci ke folder terpasang; pilihan shortcut diambil dari instalasi.
-- Tombol utama **Update**: memasang rilis dari source/cab dengan versi aktif sebagai donor, jadi hanya
-  file yang berubah yang diunduh. Halaman selesai menampilkan ringkasan unduhan.
-- **Run installed** menjalankan app terpasang dan form tetap terbuka; karena form memegang lock, app
-  berjalan tanpa cek update.
-- **Maintenance** menutup form, melepas lock, lalu membuka jendela maintenance.
-- **Clean installation** (checkbox): setelah konfirmasi dan app ditutup, menghapus folder instalasi,
-  shortcut, entri Apps & Features, dan key registry produk seperti uninstall, lalu memasang baru.
-  Kunci yang hanya tersimpan di registry ikut terhapus.
-- Source dari `settings.ini` baru disimpan ke registry saat Install/Update.
+- Update memakai versi aktif sebagai donor. Repair memverifikasi dan memperbaiki file.
+- Clean install meminta konfirmasi dan app ditutup, lalu menghapus folder, shortcut,
+  Apps & Features dan seluruh registry produk sebelum memasang baru. Kunci yang hanya
+  tersimpan pada registry ikut dihapus. Release diperiksa sebelum penghapusan.
+- Uninstall meminta konfirmasi dan app ditutup, lalu menghapus pada worker dan membuka
+  Done dengan tombol Finish, tanpa menjalankan app. Tidak memerlukan source atau key.
+- Repair, Clean install dan Uninstall memakai worker thread dan ProgressPanel di form;
+  tidak ada jendela maintenance terpisah atau tombol Maintenance/Save.
+- Source yang diverifikasi disimpan setelah aksi Install/Update/Repair/Clean install
+  berhasil; Uninstall tidak menyimpannya. Import disimpan setelah aksi berhasil.
+  Remove key di bawah Import langsung menyimpan setelah konfirmasi, hanya untuk key user.
+- **Run installed** menjalankan app tanpa menutup form; lock tetap dipegang sehingga
+  app berjalan tanpa cek update. Tombol cab dinamis: Download to cab bila belum ada,
+  Update cab bila ada; label diperbarui setelah operasi dan saat kembali ke Form.
+- `--maintenance` (Modify) membuka form yang sama memakai konfigurasi terpasang,
+  tanpa membaca settings.ini. Bila berjalan dari instalasi, launcher menyalin dirinya
+  ke `%TEMP%/launcher-uninstall-<random>/`, menjalankan `--maintenance --parent-pid PID`,
+  lalu keluar. Salinan menunggu induk keluar sebelum mengambil lock, dan menjadwalkan
+  penghapusan foldernya saat ditutup. `--maintenance --quiet` tetap ditolak.
+- `--download-cab [--source S] [--quiet]` hanya membuat cab baru, menolak cab yang ada;
+  `--update-cab [--source S] [--quiet]` hanya memperbarui cab yang ada, menolak cab hilang.
+  Cab rusak/key tidak cocok dibuat ulang dengan unduhan penuh dan dicatat pada log.
+  Cab sama tetap menghasilkan "Cab is up to date". Prompt update cab sebelum install tetap.
+- Finishing menampilkan langkah manifest/signature, rename staging, current.json,
+  launcher root dan pembersihan versi lama. Penghapusan maju per file dari manifest,
+  lalu satu unit sapuan file tambahan/folder kosong (tanpa manifest: satu sapuan).
+  Removing digunakan Clean install dan Uninstall, termasuk tahap kedua CLI di TEMP.
+  Detail menampilkan n of m unit; Cancel tidak aktif selama Finishing/Removing.
+  Folder versi terkunci dicatat dan dicoba lagi lewat remove_leftovers.
+- ProgressWindow tetap untuk runner dan CLI update/repair/uninstall/cab tanpa form.
+
+Pengecualian eksekusi plan `launcher-installer-satu-form.codex.md`: binary
+`dist/launcher/launcher.exe` produk tidak dibangun ulang oleh plan ini. Build debug/release,
+unit test, fmt dan clippy wajib; uji visual menunggu konfirmasi pengguna.
 
 ## Build
 
@@ -164,7 +191,7 @@ HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<app_id>   Apps & Featu
 ```
 
 There is **no built-in public key**. Keys come from a `*.pem` next to the exe at setup, Import in the form or the
-maintenance window, `--import`, or the HKLM policy. A value name in `TrustedKeys` is the `keyId` recomputed from the
+combined setup form, `--import`, or the HKLM policy. A value name in `TrustedKeys` is the `keyId` recomputed from the
 PEM, never taken from the file. A file holding a private key is refused. Uninstall removes the whole
 `HKCU\<app_name>` key, the app's own settings included.
 
@@ -189,7 +216,7 @@ launcher.exe [options] [-- <app arguments>]
   --install [--source S] [--target T] [--import P]... [--no-start-menu] [--no-desktop] [--no-run] [--quiet]
                                without --quiet: the setup form, filled in; with --quiet: no GUI at all
   --update [--quiet]           check for an update and apply it without asking
-  --maintenance                the maintenance window (ModifyPath)
+  --maintenance                the installed setup form (ModifyPath)
   --repair [--quiet]           verify every installed file and restore the damaged ones
   --uninstall [--quiet]        UninstallString / QuietUninstallString
   --import <file.pem> [--quiet]
@@ -219,7 +246,7 @@ dispatches and reports errors.
 | `src/shell/` | Shortcuts with AUMID, the Apps & Features entry. |
 | `src/cli/` | Argument parsing, exit codes, console. |
 | `src/commands/` | One type per command group, shared by CLI and GUI. |
-| `src/ui/` | Win32 GUI: setup form, progress window, maintenance window, task dialogs. |
+| `src/ui/` | Win32 GUI: combined setup form, progress window, task dialogs. |
 
 The GUI is plain Win32 through `winsafe` `gui`. Its controls can only be created before their window is, so a window
 with several pages (the setup form) creates every control up front and shows or hides them per page. Event handlers
@@ -248,7 +275,7 @@ Same as the C# code of the repo, as far as Rust allows:
 - Inside a file: `use`, module constants, type definitions, then `impl` split with `// region: Statics` /
   `Properties` / `Methods` â€¦ `// endregion` when the file is long enough to need it; trait impls after the main
   `impl`; unit tests in `#[cfg(test)] mod tests` at the bottom.
-- Help (`///`) on `pub` items in **Bahasa Indonesia**, explaining what and why. Identifiers, inline comments, log,
+- Help (`///`) on new or changed `pub` items in **English**, explaining what and why (root rule). Identifiers, inline comments, log,
   error and UI text in **English**. Inline comments give reasons, not a retelling of the code.
 - Rust naming stays: `snake_case` functions, variables and modules, `PascalCase` types, `SCREAMING_SNAKE_CASE`
   constants. `else` stays on the closing-brace line (rustfmt stable cannot change it).

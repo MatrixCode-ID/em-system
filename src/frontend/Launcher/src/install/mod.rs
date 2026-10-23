@@ -2,6 +2,7 @@
 //! install, update, repair, and uninstall, as well as running the app of the active version.
 
 mod app_process;
+mod folder_removal;
 mod install_layout;
 mod repair;
 mod uninstall;

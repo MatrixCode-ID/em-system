@@ -538,22 +538,37 @@ fn cab_roundtrip_reuses_old_files_and_stages_offline_without_activation() {
    let cab = fixture.temp.path().join("Test.App.cab");
    let keys = [fixture.key.public.clone()];
    let progress = std::sync::Arc::new(launcher::install::UpdateProgress::new());
-   let message =
-      launcher::commands::CabCommand::download(&cab, &fixture.release.display().to_string(), &keys, progress.clone())
-         .unwrap();
+   let message = launcher::commands::CabCommand::download_new(
+      &cab,
+      &fixture.release.display().to_string(),
+      &keys,
+      progress.clone(),
+   )
+   .unwrap();
    assert!(message.starts_with("Cab updated to release"));
    assert_eq!(&fs::read(&cab).unwrap()[..4], b"MSCF");
    assert!(
-      launcher::commands::CabCommand::download(&cab, &fixture.release.display().to_string(), &keys, progress.clone())
-         .unwrap()
-         .starts_with("Cab is up to date")
+      launcher::commands::CabCommand::update_existing(
+         &cab,
+         &fixture.release.display().to_string(),
+         &keys,
+         progress.clone()
+      )
+      .unwrap()
+      .starts_with("Cab is up to date")
    );
    fixture.publish(content(2, 20_000), V2_TIME);
-   launcher::commands::CabCommand::download(&cab, &fixture.release.display().to_string(), &keys, progress.clone())
-      .unwrap();
+   launcher::commands::CabCommand::update_existing(
+      &cab,
+      &fixture.release.display().to_string(),
+      &keys,
+      progress.clone(),
+   )
+   .unwrap();
    let before = fs::read(&cab).unwrap();
    assert!(
-      launcher::commands::CabCommand::download(&cab, "nonexistent-release-source", &keys, progress.clone()).is_err()
+      launcher::commands::CabCommand::update_existing(&cab, "nonexistent-release-source", &keys, progress.clone())
+         .is_err()
    );
    assert_eq!(fs::read(&cab).unwrap(), before);
    let release = launcher::commands::CabCommand::stage(&cab, &fixture.layout(), &keys, progress.clone()).unwrap();
@@ -563,4 +578,209 @@ fn cab_roundtrip_reuses_old_files_and_stages_offline_without_activation() {
       .install(&release)
       .unwrap();
    assert!(fixture.layout().current_path().is_file());
+}
+
+#[test]
+fn cab_commands_enforce_creation_and_update_preconditions() {
+   use launcher::commands::CabCommand;
+   use launcher::install::UpdateProgress;
+   use std::sync::Arc;
+   let fixture = Fixture::new();
+   let cab = fixture.temp.path().join("test.cab");
+   let error = CabCommand::update_existing(&cab, "unused", &[], Arc::new(UpdateProgress::new())).unwrap_err();
+   assert!(error.message.contains("--download-cab"));
+   assert!(!cab.exists());
+   fs::write(&cab, b"original").unwrap();
+   let error = CabCommand::download_new(&cab, "unused", &[], Arc::new(UpdateProgress::new())).unwrap_err();
+   assert!(error.message.contains("--update-cab"));
+   assert_eq!(fs::read(&cab).unwrap(), b"original");
+   fixture.publish(content(1, 10_000), V1_TIME);
+   let keys = [fixture.key.public.clone()];
+   CabCommand::update_existing(
+      &cab,
+      &fixture.release.display().to_string(),
+      &keys,
+      Arc::new(UpdateProgress::new()),
+   )
+   .unwrap();
+   assert_eq!(&fs::read(&cab).unwrap()[..4], b"MSCF");
+}
+
+#[test]
+fn form_repair_saves_checked_source_and_clean_install_removes_settings() {
+   use launcher::commands::{InstallAction, InstallRequest};
+   use launcher::install::UpdateProgress;
+   use std::sync::Arc;
+   let fixture = Fixture::new();
+   fixture.install();
+   let alternate = fixture.temp.path().join("alternate");
+   publish(
+      &alternate,
+      &[
+         (product::APP_EXE, fs::read(r"C:\Windows\System32\PING.EXE").unwrap()),
+         ("new.dll", content(9, 200)),
+      ],
+      &fixture.key,
+      V2_TIME,
+   );
+   let mut request = InstallRequest::from_options(&fixture.options()).unwrap();
+   request.source = Some(alternate.display().to_string());
+   request.imported.clear();
+   let job = InstallCommand::prepare(&fixture.context, &request).unwrap();
+   let progress = Arc::new(UpdateProgress::new());
+   job.execute_action(&fixture.context, progress.clone(), InstallAction::Repair)
+      .unwrap();
+   assert_eq!(
+      fixture.context.load_config().unwrap().source,
+      alternate.display().to_string()
+   );
+   assert_eq!(progress.done_bytes(), progress.total_bytes());
+   RegistryHive::CurrentUser
+      .write_string(&fixture.context.app_key, "CustomSetting", "old")
+      .unwrap();
+   fs::write(fixture.target.join("unlisted"), b"remove me").unwrap();
+   job.execute_action(
+      &fixture.context,
+      Arc::new(UpdateProgress::new()),
+      InstallAction::CleanInstall,
+   )
+   .unwrap();
+   assert!(!fixture.target.join("unlisted").exists());
+   assert_eq!(
+      RegistryHive::CurrentUser
+         .read_string(&fixture.context.app_key, "CustomSetting")
+         .unwrap(),
+      None
+   );
+   assert!(fixture.installed_file("new.dll").is_file());
+   assert!(TrustedKeys::list(&fixture.context.location).unwrap().is_empty());
+}
+
+#[test]
+fn clean_install_checks_signature_before_removing_existing_installation() {
+   use launcher::commands::{InstallAction, InstallRequest};
+   use launcher::install::UpdateProgress;
+   use std::sync::Arc;
+   let fixture = Fixture::new();
+   fixture.install();
+   let original = fs::read(fixture.layout().current_path()).unwrap();
+   fs::write(fixture.release.join("release.json"), b"invalid").unwrap();
+   let request = InstallRequest::from_options(&fixture.options()).unwrap();
+   let job = InstallCommand::prepare(&fixture.context, &request).unwrap();
+   assert!(
+      job.execute_action(
+         &fixture.context,
+         Arc::new(UpdateProgress::new()),
+         InstallAction::CleanInstall
+      )
+      .is_err()
+   );
+   assert_eq!(fs::read(fixture.layout().current_path()).unwrap(), original);
+   assert!(fixture.context.integration.entry.exists().unwrap());
+}
+
+#[test]
+fn uninstall_progress_counts_files_and_windows_integration() {
+   use launcher::install::{Uninstaller, UpdatePhase, UpdateProgress};
+   let fixture = Fixture::new();
+   fixture.install();
+   let progress = UpdateProgress::new();
+   Uninstaller::new(&fixture.layout())
+      .remove(&fixture.context.integration, &fixture.context.app_key, &progress)
+      .unwrap();
+   assert_eq!(progress.phase(), UpdatePhase::Removing);
+   // Three release files, a version sweep, a root sweep, and two Windows integration steps.
+   assert_eq!(progress.total_bytes(), 7);
+   assert_eq!(progress.done_bytes(), 7);
+   assert!(!fixture.target.exists());
+}
+
+#[test]
+fn a_cancelled_clean_check_keeps_the_installation() {
+   use launcher::commands::{InstallAction, InstallRequest};
+   use launcher::install::UpdateProgress;
+   use std::sync::Arc;
+   let fixture = Fixture::new();
+   fixture.install();
+   let before = fs::read(fixture.layout().current_path()).unwrap();
+   let job = InstallCommand::prepare(
+      &fixture.context,
+      &InstallRequest::from_options(&fixture.options()).unwrap(),
+   )
+   .unwrap();
+   let progress = Arc::new(UpdateProgress::new());
+   progress.cancel();
+   assert_eq!(
+      job.execute_action(&fixture.context, progress, InstallAction::CleanInstall)
+         .unwrap_err()
+         .code,
+      ExitCode::Cancelled
+   );
+   assert_eq!(fs::read(fixture.layout().current_path()).unwrap(), before);
+}
+
+#[test]
+fn uninstall_retries_without_counting_completed_files_twice() {
+   use launcher::install::{Uninstaller, UpdateProgress};
+   use std::os::windows::fs::OpenOptionsExt;
+   let fixture = Fixture::new();
+   fixture.install();
+   let locked = fixture.target.join("unlisted-lock");
+   fs::write(&locked, b"locked").unwrap();
+   let held = fs::OpenOptions::new().read(true).share_mode(1).open(&locked).unwrap();
+   let progress = UpdateProgress::new();
+   std::thread::scope(|scope| {
+      scope.spawn(move || {
+         std::thread::sleep(std::time::Duration::from_millis(650));
+         drop(held);
+      });
+      Uninstaller::new(&fixture.layout())
+         .remove(&fixture.context.integration, &fixture.context.app_key, &progress)
+         .unwrap();
+   });
+   assert_eq!(progress.done_bytes(), progress.total_bytes());
+   assert!(!fixture.target.exists());
+}
+
+#[test]
+fn cab_with_a_different_signing_key_is_rebuilt_with_a_full_download() {
+   use launcher::commands::CabCommand;
+   use launcher::install::UpdateProgress;
+   use std::sync::Arc;
+   let fixture = Fixture::new();
+   let files = [("same.dll", content(3, 1000))];
+   publish(&fixture.release, &files, &fixture.key, V1_TIME);
+   let cab = fixture.temp.path().join("test.cab");
+   CabCommand::download_new(
+      &cab,
+      &fixture.release.display().to_string(),
+      std::slice::from_ref(&fixture.key.public),
+      Arc::new(UpdateProgress::new()),
+   )
+   .unwrap();
+   let new_key = TestKey::new(55);
+   publish(&fixture.release, &files, &new_key, V2_TIME);
+   let progress = Arc::new(UpdateProgress::new());
+   CabCommand::update_existing(
+      &cab,
+      &fixture.release.display().to_string(),
+      &[new_key.public],
+      progress.clone(),
+   )
+   .unwrap();
+   assert_eq!(progress.transferred_bytes(), 1000);
+}
+
+#[test]
+fn uninstall_does_not_need_a_source_or_trusted_keys() {
+   let fixture = Fixture::new();
+   fixture.install();
+   let mut config = fixture.context.load_config().unwrap();
+   config.source.clear();
+   config.save(&fixture.context.location).unwrap();
+   RegistryHive::CurrentUser
+      .delete_tree(&format!(r"{}\TrustedKeys", fixture.context.location.user_key))
+      .unwrap();
+   UninstallCommand::run(&fixture.context).unwrap();
+   assert!(!fixture.target.exists());
 }

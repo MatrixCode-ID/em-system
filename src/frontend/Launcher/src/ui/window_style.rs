@@ -128,6 +128,27 @@ impl WindowStyle {
       )
    }
 
+   /// The mutually exclusive actions in the installed setup form.
+   pub fn actions(parent: &(impl GuiParent + 'static)) -> gui::RadioGroup {
+      let opts: Vec<_> = [
+         ("Update", 70, 82),
+         ("Repair", 156, 78),
+         ("Clean install", 238, 112),
+         ("Uninstall", 358, 100),
+      ]
+      .into_iter()
+      .enumerate()
+      .map(|(index, (text, x, width))| gui::RadioButtonOpts {
+         text,
+         position: gui::dpi(x, 370),
+         size: gui::dpi(width, 20),
+         selected: index == 0,
+         ..Default::default()
+      })
+      .collect();
+      gui::RadioGroup::new(parent, &opts)
+   }
+
    /// Gives `label` the page title font. Called after its parent window has been created (in `wm_create`).
    pub fn apply_heading(label: &gui::Label) {
       HEADING_FONT.with(|font| {

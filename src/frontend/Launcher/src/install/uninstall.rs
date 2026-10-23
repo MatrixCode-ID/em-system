@@ -12,7 +12,8 @@ use crate::config::RegistryHive;
 use crate::launcher_log::LauncherLog;
 use crate::shell::ShellIntegration;
 
-use super::InstallLayout;
+use super::folder_removal::FolderRemoval;
+use super::{InstallLayout, UpdatePhase, UpdateProgress};
 
 // CREATE_NO_WINDOW: the helper processes must not flash a console window.
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -117,6 +118,15 @@ impl<'a> Uninstaller<'a> {
    /// [`Self::FINISH_ARGUMENT`]). After this the calling process must exit right away, because the second
    /// stage waits for it. `quiet` is passed on, so the second stage shows nothing.
    pub fn start_finisher(&self, quiet: bool) -> io::Result<()> {
+      self.start_copy(quiet, false)
+   }
+
+   /// Starts the installed setup form from a temporary copy that waits for this process to exit.
+   pub fn start_maintenance(&self) -> io::Result<()> {
+      self.start_copy(false, true)
+   }
+
+   fn start_copy(&self, quiet: bool, maintenance: bool) -> io::Result<()> {
       let exe = std::env::current_exe()?;
       let temp = PathBuf::from(w::GetTempPath().map_err(to_io)?);
       let stamp = SystemTime::now()
@@ -132,9 +142,12 @@ impl<'a> Uninstaller<'a> {
       fs::copy(&exe, &copy)?;
 
       let mut command = Command::new(&copy);
+      if maintenance {
+         command.arg("--maintenance");
+      } else {
+         command.arg(Self::FINISH_ARGUMENT).arg(self.layout.root());
+      }
       command
-         .arg(Self::FINISH_ARGUMENT)
-         .arg(self.layout.root())
          .arg(Self::PARENT_PID_ARGUMENT)
          .arg(w::GetCurrentProcessId().to_string())
          // The finisher must not keep the install folder busy as its working directory.
@@ -145,7 +158,7 @@ impl<'a> Uninstaller<'a> {
       }
       let child = command.spawn()?;
       LauncherLog::info(format!(
-         "Uninstall continues in {} (pid {})",
+         "Maintenance continues in {} (pid {})",
          copy.display(),
          child.id()
       ));
@@ -159,12 +172,24 @@ impl<'a> Uninstaller<'a> {
    /// When the install folder cannot be deleted (a file is in use), the work stops there and the shortcuts,
    /// the Apps & Features entry, and the registry are left alone, so uninstall can be repeated. The folder is
    /// tried several times first, because antivirus or an indexer often holds a file for a moment.
-   pub fn remove(&self, integration: &ShellIntegration, app_key: &str) -> io::Result<()> {
+   pub fn remove(&self, integration: &ShellIntegration, app_key: &str, progress: &UpdateProgress) -> io::Result<()> {
       LauncherLog::close();
       let root = self.layout.root();
+      let mut folders: Vec<FolderRemoval> = self
+         .layout
+         .version_folders()?
+         .iter()
+         .map(|folder| FolderRemoval::new(&folder.path))
+         .collect();
+      folders.push(FolderRemoval::new(root));
+      progress.begin(
+         UpdatePhase::Removing,
+         2 + folders.iter().map(FolderRemoval::units).sum::<u64>(),
+      );
       let mut attempt = 0;
       loop {
-         match fs::remove_dir_all(root) {
+         let result = folders.iter_mut().try_for_each(|folder| folder.remove(progress));
+         match result {
             Ok(()) => break,
             Err(error) if error.kind() == io::ErrorKind::NotFound => break,
             Err(error) => {
@@ -180,9 +205,13 @@ impl<'a> Uninstaller<'a> {
          }
       }
 
-      let integration_result = integration.remove(self.layout);
+      progress.set_file("Removing shortcuts and Apps & Features entry");
+      integration.remove(self.layout)?;
+      progress.add_done(1);
+      progress.set_file("Removing application settings");
       RegistryHive::CurrentUser.delete_tree(app_key)?;
-      integration_result
+      progress.add_done(1);
+      Ok(())
    }
 
    // endregion

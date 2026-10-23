@@ -373,3 +373,34 @@ fn a_damaged_active_copy_is_downloaded_instead_of_copied() {
    assert_eq!(fixture.installed(&v2, "Sample.Core.dll"), content(2, 5000));
    assert!(Path::new(&fixture.layout.version_folder(&v2)).exists());
 }
+
+#[test]
+fn finishing_counts_old_files_stale_target_and_repair_cleanup() {
+   use launcher::install::UpdatePhase;
+   let fixture = Fixture::new();
+   let source = CountingSource::new(&fixture.release);
+   fixture.publish(&v1_files(), V1_TIME);
+   fixture.update(&source).unwrap();
+   let id = fixture.publish(&[(product::APP_EXE, content(8, 500))], V2_TIME);
+   let stale = fixture.layout.version_folder(&id);
+   fs::create_dir(&stale).unwrap();
+   fs::write(stale.join("unlisted"), b"stale").unwrap();
+   let progress = Arc::new(UpdateProgress::new());
+   let updater = Updater::new(&source, &fixture.layout, progress.clone());
+   let release = updater.check(fixture.keys()).unwrap();
+   updater.install(&release).unwrap();
+   assert_eq!(progress.phase(), UpdatePhase::Finishing);
+   assert_eq!(progress.total_bytes(), 5 + 1 + 6);
+   assert_eq!(progress.done_bytes(), progress.total_bytes());
+   let leftover = fixture.layout.version_folder("old");
+   fs::create_dir(&leftover).unwrap();
+   fs::write(leftover.join("extra"), b"old").unwrap();
+   let stale_staging = fixture.layout.staging_folder(&id);
+   fs::create_dir(&stale_staging).unwrap();
+   fs::write(stale_staging.join("extra"), b"stale").unwrap();
+   updater.repair(&release).unwrap();
+   assert_eq!(progress.total_bytes(), 6);
+   assert!(!stale_staging.exists());
+   assert_eq!(progress.done_bytes(), progress.total_bytes());
+   assert!(!leftover.exists());
+}

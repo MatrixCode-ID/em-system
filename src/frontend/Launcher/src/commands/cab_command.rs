@@ -7,6 +7,7 @@ use crate::cabinet::{Cabinet, MAX_CAB_BYTES};
 use crate::cli::{CommandError, ExitCode};
 use crate::format::{ReleaseHash, ReleaseLayout, ReleasePublicKey};
 use crate::install::{InstallLayout, UpdateProgress, Updater, VerifiedRelease};
+use crate::launcher_log::LauncherLog;
 use crate::product;
 use crate::source::{self, FolderSource};
 
@@ -105,7 +106,7 @@ impl CabCommand {
                   "Update cab",
                )
             {
-               Self::download(path, address, keys, progress.clone())?;
+               Self::update_existing(path, address, keys, progress.clone())?;
                Self::stage(path, layout, keys, progress)
             } else {
                Ok(release)
@@ -115,15 +116,16 @@ impl CabCommand {
          Err(error) => Err(error.into()),
       }
    }
-   /// Alamat cab di samping executable installer.
+   /// The cabinet path beside the installer executable.
    pub fn path() -> Result<PathBuf, CommandError> {
       let exe = std::env::current_exe().map_err(CommandError::io("cannot locate installer"))?;
       Ok(exe.with_file_name(format!("{}.cab", product::APP_ID)))
    }
 
-   /// Perintah CLI; tanpa quiet menampilkan progress download dan kompresi.
-   pub fn run(context: &CommandContext, source: Option<String>) -> Result<(), CommandError> {
+   /// Runs cabinet creation or update from the CLI, showing progress unless quiet.
+   pub fn run(context: &CommandContext, source: Option<String>, update: bool) -> Result<(), CommandError> {
       let path = Self::path()?;
+      Self::check_path(&path, update)?;
       let config = context.load_config()?;
       let address = match source {
          Some(value) => value,
@@ -133,19 +135,59 @@ impl CabCommand {
       };
       let keys = context.trusted_keys(&config)?;
       let progress = Arc::new(UpdateProgress::new());
-      let message = context.with_progress("Download to cab", &progress, || {
-         Self::download(&path, &address, &keys, progress.clone())
+      let message = context.with_progress(if update { "Update cab" } else { "Download to cab" }, &progress, || {
+         if update {
+            Self::update_existing(&path, &address, &keys, progress.clone())
+         } else {
+            Self::download_new(&path, &address, &keys, progress.clone())
+         }
       })?;
       context.note(&message);
       Ok(())
    }
 
-   /// Menggunakan kembali berkas cab lama, lalu mengganti cab hanya setelah semua terverifikasi.
-   pub fn download(
+   fn check_path(path: &Path, update: bool) -> Result<(), CommandError> {
+      if path.exists() != update {
+         return Err(CommandError::invalid(if update {
+            "Cab does not exist; use --download-cab to create it."
+         } else {
+            "Cab already exists; use --update-cab to update it."
+         }));
+      }
+      if update && !path.is_file() {
+         return Err(CommandError::invalid("Cab path is not a file."));
+      }
+      Ok(())
+   }
+
+   /// Creates a cabinet; refuses to replace an existing path.
+   pub fn download_new(
       path: &Path,
       address: &str,
       keys: &[ReleasePublicKey],
       progress: Arc<UpdateProgress>,
+   ) -> Result<String, CommandError> {
+      Self::check_path(path, false)?;
+      Self::download(path, address, keys, progress, false)
+   }
+
+   /// Updates an existing cabinet, reusing verified files or rebuilding a damaged cabinet.
+   pub fn update_existing(
+      path: &Path,
+      address: &str,
+      keys: &[ReleasePublicKey],
+      progress: Arc<UpdateProgress>,
+   ) -> Result<String, CommandError> {
+      Self::check_path(path, true)?;
+      Self::download(path, address, keys, progress, true)
+   }
+
+   fn download(
+      path: &Path,
+      address: &str,
+      keys: &[ReleasePublicKey],
+      progress: Arc<UpdateProgress>,
+      update: bool,
    ) -> Result<String, CommandError> {
       let source =
          source::from_address(address).map_err(|e| CommandError::new(ExitCode::SourceFailed, e.to_string()))?;
@@ -164,6 +206,14 @@ impl CabCommand {
       let old = work.path().join("old");
       let valid_old =
          path.is_file() && Cabinet::extract(path, &old, progress.clone()).is_ok() && verify_folder(&old, keys).is_ok();
+      if path.is_file() && !valid_old {
+         LauncherLog::warn(
+            "Existing cab is damaged or signed by an untrusted key; rebuilding it with a full download.",
+         );
+      }
+      if progress.is_cancelled() {
+         return Err(CommandError::cancelled("Cab operation cancelled."));
+      }
       if valid_old
          && fs::read(old.join(ReleaseLayout::MANIFEST_FILE_NAME)).ok().as_deref() == Some(release.manifest_bytes())
       {
@@ -221,7 +271,11 @@ impl CabCommand {
          MoveFileExW(
             &windows::core::HSTRING::from(temporary.as_os_str()),
             &windows::core::HSTRING::from(path.as_os_str()),
-            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+            if update {
+               MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+            } else {
+               MOVEFILE_WRITE_THROUGH
+            },
          )
       }
       .map_err(|e| CommandError::new(ExitCode::IoFailed, e.to_string()))?;

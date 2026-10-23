@@ -44,7 +44,8 @@ fn run(context: &CommandContext, command: Command, has_console: bool) -> Result<
    match command {
       Command::Start { app_args, from_app } => StartCommand::run(context, &app_args, from_app),
       Command::Install(options) => InstallCommand::run(context, &options),
-      Command::DownloadCab { source } => launcher::commands::CabCommand::run(context, source),
+      Command::DownloadCab { source } => launcher::commands::CabCommand::run(context, source, false),
+      Command::UpdateCab { source } => launcher::commands::CabCommand::run(context, source, true),
       Command::Version => {
          Console::out(launcher::product::version_display());
          Ok(())
@@ -56,6 +57,7 @@ fn run(context: &CommandContext, command: Command, has_console: bool) -> Result<
       }
       Command::Update => UpdateCommand::update(context),
       Command::Maintenance => MaintenanceCommand::run(context),
+      Command::MaintenanceFinish { parent_pid } => MaintenanceCommand::finish(context, parent_pid),
       Command::Repair => UpdateCommand::repair(context),
       Command::Uninstall => UninstallCommand::run(context),
       Command::Import { file } => KeyCommand::import(context, &file),

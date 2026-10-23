@@ -58,9 +58,10 @@ impl Updater<'_> {
          self.download(file, &InstallLayout::file_in(&folder, &file.path), &mut summary)?;
       }
 
-      self.progress.begin(UpdatePhase::Finishing, 0);
+      let cleanup = self.begin_repair_finishing(release);
       write_release_files(&folder, release)?;
-      self.activate(release)?;
+      self.progress.add_done(1);
+      self.activate(release, cleanup)?;
       LauncherLog::info(format!(
          "Release {} repaired: {} files downloaded ({} bytes), {} files intact",
          release.id(),

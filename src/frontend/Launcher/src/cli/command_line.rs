@@ -15,7 +15,7 @@ Usage: launcher.exe [options] [-- <app arguments>]
   --install [--source S] [--target T] [--import P]... [--no-start-menu] [--no-desktop] [--no-run] [--quiet]
                                Install (with --quiet: without the setup form)
   --update [--quiet]           Check for an update and apply it without asking
-  --maintenance                Open the maintenance window
+  --maintenance                Open the installed setup form
   --repair [--quiet]           Verify every installed file and restore the damaged ones
   --uninstall [--quiet]        Remove the application, its shortcuts and all its user settings
   --import <file.pem> [--quiet]
@@ -25,7 +25,9 @@ Usage: launcher.exe [options] [-- <app arguments>]
   --apply --pid <pid>          Wait for the process to exit, then update and start without asking
   --prepare [--quiet]         Prepare verified update files; print one JSON line\n\
   --download-cab [--source S] [--quiet]\n\
-                               Download verified release to an LZX cab beside installer\n\
+                               Create a new verified LZX cab beside installer\n\
+  --update-cab [--source S] [--quiet]\n\
+                               Update an existing cab (or rebuild it if damaged)\n\
   --version                    Show launcher and engine versions\n\
   --help                       Show this text
 
@@ -49,14 +51,20 @@ pub enum Command {
    /// Menyiapkan update tanpa mengaktifkannya, menghasilkan JSON.
    Prepare,
 
-   /// Mengunduh ke cab IT tanpa instalasi.
+   /// Creates a new IT cabinet without installing.
    DownloadCab { source: Option<String> },
 
-   /// Menampilkan versi launcher dan source engine.
+   /// Updates an existing IT cabinet without installing.
+   UpdateCab { source: Option<String> },
+
+   /// Shows launcher and source engine versions.
    Version,
 
    /// `--maintenance`.
    Maintenance,
+
+   /// Internal temporary maintenance copy waiting for its parent to exit.
+   MaintenanceFinish { parent_pid: u32 },
 
    /// `--repair`.
    Repair,
@@ -160,6 +168,7 @@ fn collect(args: Vec<OsString>) -> Result<Collected, lexopt::Error> {
    while let Some(arg) = parser.next()? {
       match arg {
          Arg::Long("install") => c.commands.push("--install"),
+         Arg::Long("update-cab") => c.commands.push("--update-cab"),
          Arg::Long("download-cab") => c.commands.push("--download-cab"),
          Arg::Long("prepare") => c.commands.push("--prepare"),
          Arg::Long("version") => c.commands.push("--version"),
@@ -247,7 +256,8 @@ fn build(mut c: Collected, app_args: Option<Vec<OsString>>) -> Result<CommandLin
          "--quiet",
       ],
       "--prepare" | "--update" | "--repair" | "--uninstall" | "--import" => &["--quiet"],
-      "--download-cab" => &["--source", "--quiet"],
+      "--download-cab" | "--update-cab" => &["--source", "--quiet"],
+      "--maintenance" => &[Uninstaller::PARENT_PID_ARGUMENT],
       "--apply" => &["--pid"],
       Uninstaller::FINISH_ARGUMENT => &[Uninstaller::PARENT_PID_ARGUMENT, "--quiet"],
       _ => &[],
@@ -281,8 +291,14 @@ fn build(mut c: Collected, app_args: Option<Vec<OsString>>) -> Result<CommandLin
       "--download-cab" => Command::DownloadCab {
          source: c.install.source,
       },
+      "--update-cab" => Command::UpdateCab {
+         source: c.install.source,
+      },
       "--version" => Command::Version,
-      "--maintenance" => Command::Maintenance,
+      "--maintenance" => match c.parent_pid {
+         Some(parent_pid) => Command::MaintenanceFinish { parent_pid },
+         None => Command::Maintenance,
+      },
       "--repair" => Command::Repair,
       "--uninstall" => Command::Uninstall,
       "--import" => {
@@ -405,6 +421,30 @@ mod tests {
       );
       assert_eq!(command(&["--help"]), Command::Help);
       assert_eq!(command(&["-h"]), Command::Help);
+   }
+
+   #[test]
+   fn parses_cab_commands_and_temporary_maintenance() {
+      assert_eq!(
+         command(&["--update-cab", "--source", "local", "--quiet"]),
+         Command::UpdateCab {
+            source: Some("local".into())
+         }
+      );
+      assert_eq!(command(&["--download-cab"]), Command::DownloadCab { source: None });
+      assert_eq!(
+         command(&["--maintenance", "--parent-pid", "42"]),
+         Command::MaintenanceFinish { parent_pid: 42 }
+      );
+      for args in [
+         &["--maintenance", "--quiet"][..],
+         &["--maintenance", "--parent-pid", "abc"],
+         &["--maintenance", "--parent-pid"],
+         &["--update-cab", "--download-cab"],
+         &["--update-cab", "--target", "x"],
+      ] {
+         assert!(parse(args).is_err(), "{args:?}");
+      }
    }
 
    #[test]

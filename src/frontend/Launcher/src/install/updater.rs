@@ -7,6 +7,7 @@ use crate::format::{ReleaseFile, ReleaseHash, ReleaseLayout, ReleasePublicKey};
 use crate::launcher_log::LauncherLog;
 use crate::source::{ReleaseSource, SourceError};
 
+use super::folder_removal::FolderRemoval;
 use super::{CurrentVersion, InstallLayout, UpdateError, UpdatePhase, UpdateProgress, VerifiedRelease};
 
 const COPY_BUFFER_SIZE: usize = 64 * 1024;
@@ -149,16 +150,31 @@ impl<'a> Updater<'a> {
          return Ok(UpdateOutcome::AlreadyActive);
       }
 
-      let summary = self.prepare(release)?;
+      let summary = self.prepare_files(release)?;
+      let mut leftover = self
+         .layout
+         .version_folder(release.id())
+         .exists()
+         .then(|| FolderRemoval::new(&self.layout.version_folder(release.id())));
+      let cleanup = self.cleanup_folders(release.id(), true);
+      let total =
+         5 + leftover.as_ref().map_or(0, FolderRemoval::units) + cleanup.iter().map(FolderRemoval::units).sum::<u64>();
+      self.progress.begin(UpdatePhase::Finishing, total);
+      self.progress.set_file("Writing release manifest and signature");
+      write_release_files(&self.layout.staging_folder(release.id()), release)?;
+      self.progress.add_done(1);
       let staging = self.layout.staging_folder(release.id());
       let version = self.layout.version_folder(release.id());
-      if version.exists() {
-         // A leftover of an earlier attempt; it is not active, so the fresh copy wins.
-         fs::remove_dir_all(&version).map_err(UpdateError::io("remove", &version))?;
+      if let Some(removal) = &mut leftover {
+         removal
+            .remove(&self.progress)
+            .map_err(UpdateError::io("remove", &version))?;
       }
+      self.progress.set_file("Renaming staging to the release folder");
       fs::rename(&staging, &version).map_err(UpdateError::io("rename", &staging))?;
+      self.progress.add_done(1);
 
-      self.activate(release)?;
+      self.activate(release, cleanup)?;
       LauncherLog::info(format!(
          "Release {} is active: {} files downloaded ({} bytes), {} files reused",
          release.id(),
@@ -169,8 +185,18 @@ impl<'a> Updater<'a> {
       Ok(UpdateOutcome::Installed(summary))
    }
 
-   /// Mengunduh dan memverifikasi staging tanpa mengganti versi aktif.
+   /// Downloads and verifies staging without replacing the active version.
    pub fn prepare(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
+      let summary = self.prepare_files(release)?;
+      self.progress.begin(UpdatePhase::Finishing, 1);
+      self.progress.set_file("Writing release manifest and signature");
+      write_release_files(&self.layout.staging_folder(release.id()), release)?;
+      self.progress.add_done(1);
+      Ok(summary)
+   }
+
+   // Prepares bytes without starting the non-cancellable commit phase.
+   fn prepare_files(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
       let active = self.layout.active_version();
       let staging = self.layout.staging_folder(release.id());
       fs::create_dir_all(&staging).map_err(UpdateError::io("create", &staging))?;
@@ -215,8 +241,6 @@ impl<'a> Updater<'a> {
          self.download(file, &target, &mut summary)?;
       }
 
-      self.progress.begin(UpdatePhase::Finishing, 0);
-      write_release_files(&staging, release)?;
       Ok(summary)
    }
 
@@ -232,7 +256,10 @@ impl<'a> Updater<'a> {
       }
 
       if let Ok(Some(current)) = self.layout.read_current() {
-         self.remove_versions_except(&current.version, false);
+         let cleanup = self.cleanup_folders(&current.version, false);
+         let progress = UpdateProgress::new();
+         progress.begin(UpdatePhase::Finishing, cleanup.iter().map(FolderRemoval::units).sum());
+         Self::remove_versions(cleanup, &progress);
       }
    }
 
@@ -241,7 +268,22 @@ impl<'a> Updater<'a> {
 
 impl Updater<'_> {
    // Steps 5 to 7: point current.json at the release, refresh the root launcher, drop other versions.
-   pub(super) fn activate(&self, release: &VerifiedRelease) -> Result<(), UpdateError> {
+   pub(super) fn begin_repair_finishing(&self, release: &VerifiedRelease) -> Vec<FolderRemoval> {
+      let mut cleanup = self.cleanup_folders(release.id(), true);
+      let staging = self.layout.staging_folder(release.id());
+      if staging.exists() {
+         cleanup.push(FolderRemoval::new(&staging));
+      }
+      self.progress.begin(
+         UpdatePhase::Finishing,
+         4 + cleanup.iter().map(FolderRemoval::units).sum::<u64>(),
+      );
+      self.progress.set_file("Writing release manifest and signature");
+      cleanup
+   }
+
+   pub(super) fn activate(&self, release: &VerifiedRelease, cleanup: Vec<FolderRemoval>) -> Result<(), UpdateError> {
+      self.progress.set_file("Writing current.json");
       let current = CurrentVersion {
          version: release.id().to_string(),
          published_at_utc: release.manifest().published_at_utc().to_string(),
@@ -251,11 +293,16 @@ impl Updater<'_> {
          .write_current(&current)
          .map_err(UpdateError::io("write", &self.layout.current_path()))?;
 
+      self.progress.add_done(1);
+      self.progress.set_file("Replacing the root launcher");
       // The new version already runs without it, so a failure here is only logged.
       if let Err(error) = self.replace_root_launcher(&self.layout.version_folder(release.id())) {
          LauncherLog::warn(format!("Cannot replace the root launcher: {error}"));
       }
-      self.remove_versions_except(release.id(), true);
+      self.progress.add_done(1);
+      self.progress.set_file("Removing old versions");
+      Self::remove_versions(cleanup, &self.progress);
+      self.progress.add_done(1);
       Ok(())
    }
 
@@ -432,23 +479,31 @@ impl Updater<'_> {
       Ok(())
    }
 
-   // Step 7: removes every app-* folder except `keep`, and every .staging-* folder when `with_staging`.
-   fn remove_versions_except(&self, keep: &str, with_staging: bool) {
-      let folders = match self.layout.version_folders() {
-         Ok(folders) => folders,
+   // Snapshot removal units before Finishing so the denominator stays fixed.
+   fn cleanup_folders(&self, keep: &str, with_staging: bool) -> Vec<FolderRemoval> {
+      match self.layout.version_folders() {
+         Ok(folders) => folders
+            .into_iter()
+            .filter(|folder| folder.id != keep && (with_staging || !folder.is_staging))
+            .map(|folder| FolderRemoval::new(&folder.path))
+            .collect(),
          Err(error) => {
             LauncherLog::warn(format!("Cannot list {}: {error}", self.layout.root().display()));
-            return;
+            Vec::new()
          }
-      };
-      for folder in folders {
-         if (folder.is_staging && !with_staging) || (!folder.is_staging && folder.id == keep) {
-            continue;
-         }
-         // A version that is still running cannot be removed; the next run tries again.
-         match fs::remove_dir_all(&folder.path) {
-            Ok(()) => LauncherLog::info(format!("Removed {}", folder.path.display())),
-            Err(error) => LauncherLog::warn(format!("Cannot remove {} yet: {error}", folder.path.display())),
+      }
+   }
+
+   fn remove_versions(folders: Vec<FolderRemoval>, progress: &UpdateProgress) {
+      for mut folder in folders {
+         let before = progress.done_bytes();
+         let units = folder.units();
+         if let Err(error) = folder.remove(progress) {
+            LauncherLog::warn(format!("Cannot remove {} yet: {error}", progress.current_file()));
+            // Attempted but locked files count as completed work; remove_leftovers retries next run.
+            progress.add_done(units - (progress.done_bytes() - before));
+         } else {
+            LauncherLog::info(format!("Removed {}", progress.current_file()));
          }
       }
    }

@@ -1,6 +1,6 @@
 # Launcher: satu form installer, progres Finishing dan hapus, pemisahan cab
 
-Tanggal: 2026-10-23. Status: belum dieksekusi. Eksekutor: Codex.
+Tanggal: 2026-10-23. Status: selesai implementasi dan verifikasi console. Eksekutor: Codex.
 
 Lingkup kode: `src/frontend/Launcher` (Rust). Baca `CLAUDE.md` root dan
 `src/frontend/Launcher/CLAUDE.md` sebelum mulai. Komentar kode, teks UI, pesan
@@ -240,4 +240,82 @@ bertanya.
 
 ## Laporan eksekusi
 
-(diisi saat eksekusi)
+Tanggal pelaksanaan: 2026-10-23. Branch: `work-bench`. Tidak ada push.
+
+### Hasil implementasi
+
+- Form setup tetap empat halaman dengan radio Update/Repair/Clean install/Uninstall,
+  tombol utama/heading/Done sesuai aksi, versi terpasang, Remove key user setelah
+  konfirmasi, serta tombol cab dinamis. `maintenance_window.rs` dihapus.
+- Pekerjaan Repair, Clean install dan Uninstall berjalan pada worker. Uninstall
+  tidak membutuhkan source/key dan menghasilkan outcome tersendiri tanpa menjalankan app.
+  Source/import hanya disimpan setelah aksi pemasangan/perbaikan berhasil; Remove
+  langsung tersimpan, dan key embedded/policy tidak dapat dihapus dari form.
+- `--maintenance` membuka form gabungan dari konfigurasi terpasang tanpa settings.ini.
+  Dari dalam instalasi, launcher memakai salinan TEMP dan `--parent-pid`; parent
+  ditunggu sebelum mengambil lock. Salinan menjadwalkan pembersihan saat keluar.
+- Finishing memakai langkah tetap dan unit hapus dari manifest. Helper bersama
+  menyapu file tambahan/folder kosong dan tidak mengikuti directory reparse point
+  saat menghapus file manifest. Versi lama terkunci dicatat dan dicoba lagi saat
+  remove_leftovers; penghitung menyelesaikan unit percobaan yang ditunda tersebut.
+- Removing mencakup clean/uninstall beserta salinan tahap kedua CLI. Retry 10×500 ms
+  dipertahankan tanpa menghitung ulang unit yang sudah selesai. Cancel dinonaktifkan
+  pada Finishing/Removing, termasuk permintaan lewat tombol tutup jendela.
+- Cab dipisah menjadi `download_new` dan `update_existing`, argumen/help/dispatch
+  `--update-cab` ditambah. Cab rusak atau key tidak cocok dibuat ulang dengan log;
+  cab sama tetap up to date. Pembuatan cab baru juga tidak menimpa path yang muncul
+  ketika operasi berlangsung (replacement atomik hanya untuk update).
+- Guide `doc/engine/engine-launcher.md` dan `src/frontend/Launcher/CLAUDE.md`
+  diperbarui sesuai keputusan 2026-10-23. Tidak ada perubahan format rilis,
+  dependency, database, atau binary `dist/launcher/launcher.exe` produk.
+
+### Pilihan implementasi dan review
+
+- Satu unit sapuan ditambahkan per folder selain jumlah file manifest. Folder
+  tanpa manifest valid hanya memakai unit sapuan. Finishing memakai lima langkah
+  tetap pada install/update, empat pada repair, dan satu pada prepare tanpa aktivasi.
+- Clean memeriksa source/signature sebelum penghapusan. Jika memakai cab offline,
+  staging sementara berada di samping instalasi agar selamat dari penghapusan
+  dan dapat dipindah pada volume yang sama. Key lama yang hanya ada di registry
+  tetap hilang kecuali diimpor kembali sebagai bagian request baru.
+- Review akhir memperbaiki Cancel sebelum clean menghapus instalasi, cleanup staging
+  sisa dengan id yang sama saat Repair, serta retry hapus yang tidak menggandakan counter.
+  Form tetap mengenali instalasi dari konfigurasi meskipun current.json perlu diperbaiki.
+- Tidak ada tindakan yang ditolak policy atau skrip manual yang perlu dijalankan pengguna.
+
+### Verifikasi
+
+Semua perintah final dijalankan dari `src/frontend/Launcher` dengan environment
+MSVC x64 dari `vcvars64.bat` yang ditemukan lewat vswhere. Percobaan awal tanpa
+environment tersebut gagal menemukan header `excpt.h`; environment build yang
+lengkap menyelesaikannya. Clippy awal menemukan clone untuk slice satu key pada
+regresi baru; diganti borrowing melalui `std::slice::from_ref`.
+
+| Pemeriksaan | Hasil final |
+| --- | --- |
+| `cargo build` | Lulus |
+| `cargo build --release` | Lulus |
+| `cargo test` | 90 lulus, 0 gagal, 0 diabaikan |
+| `cargo fmt --check` | Lulus |
+| `cargo clippy --all-targets -- -D warnings` | Lulus tanpa warning |
+| `git diff --check` | Lulus |
+
+Test mencakup helper hapus (unit, nama file terkunci, sapuan file tambahan),
+Finishing update dengan versi lama dan target sisa, Repair dengan staging sisa,
+retry Uninstall, Uninstall tanpa source/key, pemeriksaan signature/Cancel sebelum
+clean, penyimpanan source Repair, penghapusan setting/key lama pada clean,
+parse argumen cab/maintenance internal, prasyarat cab, roundtrip cab, serta rebuild
+cab rusak/key berbeda dengan unduhan penuh. Vektor kontrak rilis dan suite HTTP
+lokal yang sudah ada ikut lulus.
+
+Log final di luar repo: `../.artefacts/em-system/scripts/launcher-installer-smoke/out/`
+(`debug-build.log`, `release-build.log`, `test.log`, `fmt.log`, `clippy.log`).
+
+### Batas verifikasi
+
+Uji visual/GUI tidak dijalankan sesuai keputusan plan. Tata letak nyata, interaksi
+radio/key/Done, respons form saat menghapus, serta peluncuran Modify lewat salinan
+TEMP perlu dicoba pengguna pada GUI. Tes console memeriksa parser internal dan
+jalur engine penghapusan/repair, bukan membuka jendela tersebut. Binary dist produk
+sengaja tidak di-rebuild; hasil build ada pada target/debug dan target/release
+project Launcher. Commit hanya memuat perubahan plan ini di `work-bench`, tanpa push.

@@ -2,6 +2,7 @@
 //! one of the types here with the same [`CommandContext`].
 
 mod command_context;
+mod install_action;
 mod install_command;
 mod key_command;
 mod maintenance_command;
@@ -10,6 +11,7 @@ mod uninstall_command;
 mod update_command;
 
 pub use command_context::CommandContext;
+pub use install_action::InstallAction;
 pub use install_command::{InstallCommand, InstallJob, InstallRequest};
 pub use key_command::KeyCommand;
 pub use maintenance_command::MaintenanceCommand;

@@ -20,7 +20,7 @@ pub struct UpdateProgress {
 }
 
 /// The phase of the updater's work. [`UpdateProgress::total_bytes`] and [`UpdateProgress::done_bytes`]
-/// apply to the phase that is running.
+/// apply to the phase that is running: bytes for Verifying/Preparing, units for Finishing/Removing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum UpdatePhase {
@@ -33,8 +33,10 @@ pub enum UpdatePhase {
    /// Preparing the files of the new version: copying the identical ones from the active version, downloading
    /// the rest.
    Preparing,
-   /// Moving the new version into place and cleaning up old leftovers. The size is not known.
+   /// Moving the new version into place and cleaning up old leftovers, counted in steps and files.
    Finishing,
+   /// Removing the installation, counted in steps and files. Cancellation is disabled.
+   Removing,
 }
 
 impl UpdateProgress {
@@ -56,16 +58,17 @@ impl UpdateProgress {
          2 => UpdatePhase::Verifying,
          3 => UpdatePhase::Preparing,
          4 => UpdatePhase::Finishing,
+         5 => UpdatePhase::Removing,
          _ => UpdatePhase::Idle,
       }
    }
 
-   /// The number of bytes to be worked in this phase, or `0` when not known yet.
+   /// Bytes to process, or steps/files in Finishing/Removing; `0` means unknown.
    pub fn total_bytes(&self) -> u64 {
       self.total_bytes.load(Ordering::Relaxed)
    }
 
-   /// The number of bytes already done in this phase (copied, downloaded, or hashed).
+   /// Bytes processed, or steps/files completed in Finishing/Removing.
    pub fn done_bytes(&self) -> u64 {
       self.done_bytes.load(Ordering::Relaxed)
    }
@@ -104,7 +107,15 @@ impl UpdateProgress {
    /// Asks the work to stop as soon as possible. The updater checks it between chunks of data, then stops
    /// with a "cancelled" error; files that were already downloaded are kept to be resumed later.
    pub fn cancel(&self) {
+      if !self.can_cancel() {
+         return;
+      }
       self.cancelled.store(true, Ordering::Relaxed);
+   }
+
+   /// Whether cancellation is allowed in the current phase.
+   pub fn can_cancel(&self) -> bool {
+      !matches!(self.phase(), UpdatePhase::Finishing | UpdatePhase::Removing)
    }
 
    pub(crate) fn begin(&self, phase: UpdatePhase, total_bytes: u64) {
@@ -137,4 +148,23 @@ impl UpdateProgress {
    }
 
    // endregion
+}
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn commit_and_removal_cannot_be_cancelled() {
+      let progress = UpdateProgress::new();
+      for phase in [UpdatePhase::Finishing, UpdatePhase::Removing] {
+         progress.begin(phase, 3);
+         assert!(!progress.can_cancel());
+         progress.cancel();
+         assert!(!progress.is_cancelled());
+      }
+      progress.begin(UpdatePhase::Preparing, 100);
+      progress.cancel();
+      assert!(progress.is_cancelled());
+   }
 }

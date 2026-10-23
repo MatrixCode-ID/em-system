@@ -1,8 +1,9 @@
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::cli::{CommandError, ExitCode};
-use crate::install::{AppProcess, InstallLayout, Uninstaller};
+use crate::install::{AppProcess, InstallLayout, Uninstaller, UpdatePhase, UpdateProgress};
 use crate::launcher_lock::LauncherLock;
 use crate::launcher_log::LauncherLog;
 use crate::product;
@@ -47,9 +48,7 @@ impl UninstallCommand {
          product::APP_NAME,
          layout.root().display()
       ));
-      uninstaller
-         .remove(&context.integration, &context.app_key)
-         .map_err(CommandError::io("cannot uninstall"))?;
+      Self::remove_with_progress(context, &layout)?;
       context.done(&format!("{} was uninstalled.", product::APP_NAME));
       Ok(())
    }
@@ -79,6 +78,16 @@ impl UninstallCommand {
 }
 
 impl UninstallCommand {
+   fn remove_with_progress(context: &CommandContext, layout: &InstallLayout) -> Result<(), CommandError> {
+      let progress = Arc::new(UpdateProgress::new());
+      progress.begin(UpdatePhase::Removing, 0);
+      context
+         .with_progress(&format!("Removing {}", product::APP_NAME), &progress, || {
+            Uninstaller::new(layout).remove(&context.integration, &context.app_key, &progress)
+         })
+         .map_err(CommandError::io("cannot uninstall"))
+   }
+
    fn remove(context: &CommandContext, install: &Path, parent_pid: u32) -> Result<(), CommandError> {
       let config = context.load_config()?;
       let layout = config
@@ -102,8 +111,6 @@ impl UninstallCommand {
       let _lock = LauncherLock::acquire(&context.lock_name, LOCK_WAIT)
          .map_err(CommandError::io("cannot take the launcher lock"))?
          .ok_or_else(|| CommandError::new(ExitCode::IoFailed, "another launcher is busy with the installation"))?;
-      Uninstaller::new(&layout)
-         .remove(&context.integration, &context.app_key)
-         .map_err(CommandError::io("cannot uninstall"))
+      Self::remove_with_progress(context, &layout)
    }
 }

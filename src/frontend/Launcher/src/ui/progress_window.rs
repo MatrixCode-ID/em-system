@@ -98,6 +98,9 @@ impl ProgressWindow {
       let request_cancel = {
          let (progress, cancel) = (progress.clone(), cancel.clone());
          move || {
+            if !progress.can_cancel() {
+               return;
+            }
             progress.cancel();
             cancel.hwnd().EnableWindow(false);
          }
@@ -127,9 +130,12 @@ impl ProgressWindow {
          }
       });
       wnd.on().wm_timer(TIMER_ID, {
-         let wnd = wnd.clone();
+         let (wnd, cancel) = (wnd.clone(), cancel.clone());
          move || {
             panel.refresh(&progress);
+            cancel
+               .hwnd()
+               .EnableWindow(progress.can_cancel() && !progress.is_cancelled());
             if finished.load(Ordering::Acquire) {
                wnd.hwnd().KillTimer(TIMER_ID)?;
                // Enabled again before the progress window goes, so the owner gets the activation back.
