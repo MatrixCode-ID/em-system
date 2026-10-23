@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -211,16 +212,30 @@ impl CommandContext {
    /// Runs `job`, the updater work that reports its progress to `progress`. Silent: right on this thread.
    /// Not silent: on a worker thread, while a progress window titled `title` shows `progress` and its Cancel
    /// button asks for cancellation through `progress`.
-   pub fn with_progress<R: Send>(
+   pub fn with_progress<R: Send, E: Display + Send>(
       &self,
       title: &str,
       progress: &Arc<UpdateProgress>,
-      job: impl FnOnce() -> R + Send,
-   ) -> R {
+      job: impl FnOnce() -> Result<R, E> + Send,
+   ) -> Result<R, E> {
       if self.quiet {
          job()
       } else {
          ProgressWindow::run(title, progress, job)
+      }
+   }
+
+   /// Shows progress for work immediately followed by starting the real app; success closes automatically.
+   pub fn with_progress_before_launch<R: Send, E: Display + Send>(
+      &self,
+      title: &str,
+      progress: &Arc<UpdateProgress>,
+      job: impl FnOnce() -> Result<R, E> + Send,
+   ) -> Result<R, E> {
+      if self.quiet {
+         job()
+      } else {
+         ProgressWindow::run_before_launch(title, progress, job)
       }
    }
 

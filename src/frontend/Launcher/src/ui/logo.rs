@@ -27,12 +27,16 @@ struct ShiftContext {
 
 impl Logo {
    pub(super) fn attach(wnd: &gui::WindowMain) {
+      Self::attach_to(wnd, wnd.on());
+   }
+
+   pub(super) fn attach_to(wnd: &(impl GuiParent + 'static), events: &impl GuiEventsParent) {
       let pixels = Rc::new(if product::LOGO.is_empty() {
          None
       } else {
          decode(product::LOGO).ok()
       });
-      wnd.on().wm_paint({
+      events.wm_paint({
          let wnd = wnd.clone();
          move || {
             unsafe {
@@ -42,7 +46,7 @@ impl Logo {
          }
       });
    }
-   pub(super) fn created(wnd: &gui::WindowMain) {
+   pub(super) fn created(wnd: &impl GuiWindow) {
       let hwnd = HWND(wnd.hwnd().ptr());
       let dpi = unsafe { GetDpiForWindow(hwnd) }.max(96);
       let context = ShiftContext {

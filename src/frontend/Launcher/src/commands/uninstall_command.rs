@@ -49,7 +49,7 @@ impl UninstallCommand {
          layout.root().display()
       ));
       Self::remove_with_progress(context, &layout)?;
-      context.done(&format!("{} was uninstalled.", product::APP_NAME));
+      context.note(&format!("{} was uninstalled.", product::APP_NAME));
       Ok(())
    }
 
@@ -70,7 +70,7 @@ impl UninstallCommand {
          let _ = Uninstaller::schedule_removal_of(folder);
       }
       result?;
-      context.done(&format!("{} was uninstalled.", product::APP_NAME));
+      context.note(&format!("{} was uninstalled.", product::APP_NAME));
       Ok(())
    }
 

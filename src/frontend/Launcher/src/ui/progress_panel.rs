@@ -135,6 +135,31 @@ impl ProgressPanel {
       set_text(self.detail.hwnd(), &detail);
    }
 
+   /// Stops animation and retains the outcome until the user closes the progress window.
+   pub fn finish(&self, result: Result<(), &str>, cancelled: bool) {
+      self.marquee.set(false);
+      self.bar.set_marquee(false);
+      if result.is_ok() {
+         self.bar.set_position(BAR_STEPS);
+      }
+      let status = if result.is_ok() {
+         "Completed."
+      } else if cancelled {
+         "Cancelled."
+      } else {
+         "Failed."
+      };
+      set_text(self.status.hwnd(), status);
+      set_text(
+         self.file.hwnd(),
+         result
+            .err()
+            .filter(|error| !error.is_empty())
+            .unwrap_or("Choose Finish to close this window."),
+      );
+      set_text(self.detail.hwnd(), "");
+   }
+
    // endregion
 }
 

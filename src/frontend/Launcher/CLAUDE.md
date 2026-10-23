@@ -79,7 +79,7 @@ memakai cab yang sudah diverifikasi; runner selalu memakai CDN. Detail:
 
 ## Installer di PC yang sudah terpasang (keputusan pengguna 2026-10-23)
 
-Exe dari luar instalasi membuka form setup gabungan. Ukuran area form tetap 560×478,
+Exe dari luar instalasi membuka form setup gabungan. Ukuran area form tetap 560Ã—478,
 empat halaman Form, Checking, Installing, Done. Versi terpasang tampil pada intro.
 Folder instalasi dikunci, pilihan shortcut mengikuti konfigurasi, dan radio aksi
 **Update / Repair / Clean install / Uninstall** menggantikan checkbox clean.
@@ -119,6 +119,22 @@ Instalasi baru tidak menampilkan radio dan memakai tombol Install.
 Pengecualian eksekusi plan `launcher-installer-satu-form.codex.md`: binary
 `dist/launcher/launcher.exe` produk tidak dibangun ulang oleh plan ini. Build debug/release,
 unit test, fmt dan clippy wajib; uji visual menunggu konfirmasi pengguna.
+
+## Font dan window selesai (keputusan pengguna 2026-10-23)
+
+- Font form utama tidak boleh berubah setelah dialog cab ditutup. Progress milik
+  setup memakai `WindowModal` dengan parent form sebenarnya; jangan menjalankan
+  `WindowMain::run_main` bersarang karena winsafe menghapus font UI global saat
+  loop utama tersebut keluar sementara form utama masih memakainya.
+- Setelah Update, Repair, Clean install, Uninstall atau operasi cab selesai,
+  window tetap menampilkan status hasil dan tombol Finish sampai pengguna menutupnya.
+  Cancel/tombol X saat pekerjaan berjalan tetap meminta pembatalan dan menunggu worker.
+- Pengecualian hanya alur yang langsung menjalankan aplikasi utama: runner memakai
+  progress sebelum launch yang menutup otomatis setelah berhasil; form setup dengan
+  pilihan Start after ... aktif langsung menutup dan meneruskan outcome untuk launch.
+  Form dengan pilihan itu tidak aktif tetap pada Done; Uninstall tidak meluncurkan app.
+- Kegagalan pada progress sebelum launch tetap ditahan untuk dibaca pengguna.
+  Mode quiet tetap tanpa window. Perbaikan lanjutan ini tidak membangun ulang dist produk.
 
 ## Build
 

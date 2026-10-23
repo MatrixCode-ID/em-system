@@ -28,16 +28,21 @@ impl UpdateCommand {
 
       let title = format!("Updating {}", product::APP_NAME);
       let result = context.with_progress(&title, &progress, || {
-         let release = updater.check(&keys)?;
+         let release = updater.check(&keys).map_err(from_update_error)?;
          if updater.is_active(&release) {
             return Ok((release, None));
          }
-         let outcome = updater.install(&release)?;
-         Ok::<_, UpdateError>((release, Some(outcome)))
+         let outcome = updater.install(&release).map_err(from_update_error)?;
+         context.ensure_root_launcher(&layout)?;
+         context
+            .integration
+            .refresh_entry(&layout)
+            .map_err(CommandError::io("cannot update the Apps & Features entry"))?;
+         Ok::<_, CommandError>((release, Some(outcome)))
       });
-      let (release, outcome) = result.map_err(from_update_error)?;
+      let (release, outcome) = result?;
       let Some(outcome) = outcome else {
-         context.done(&format!(
+         context.note(&format!(
             "{} is up to date (release published {}).",
             product::APP_NAME,
             format_published(release.manifest().published_at_utc())
@@ -45,12 +50,7 @@ impl UpdateCommand {
          return Ok(());
       };
 
-      context.ensure_root_launcher(&layout)?;
-      context
-         .integration
-         .refresh_entry(&layout)
-         .map_err(CommandError::io("cannot update the Apps & Features entry"))?;
-      context.done(&format!(
+      context.note(&format!(
          "{} was updated to the release published {}: {}.",
          product::APP_NAME,
          format_published(release.manifest().published_at_utc()),
@@ -63,6 +63,15 @@ impl UpdateCommand {
    /// downloads again the ones that are broken or missing, then reinstalls the root launcher, the shortcuts,
    /// and the Apps & Features entry. The app must be closed first, because a file in use cannot be replaced.
    pub fn repair(context: &CommandContext) -> Result<(), CommandError> {
+      Self::repair_mode(context, false)
+   }
+
+   /// Repairs for the runner and closes successful progress before it starts the real app.
+   pub(crate) fn repair_before_start(context: &CommandContext) -> Result<(), CommandError> {
+      Self::repair_mode(context, true)
+   }
+
+   fn repair_mode(context: &CommandContext, before_start: bool) -> Result<(), CommandError> {
       let config = context.load_config()?;
       let layout = context.installed_layout(&config)?;
       let _lock = context.lock()?;
@@ -73,15 +82,23 @@ impl UpdateCommand {
       let updater = Updater::new(source.as_ref(), &layout, progress.clone());
 
       let title = format!("Repairing {}", product::APP_NAME);
-      let outcome = context
-         .with_progress(&title, &progress, || updater.repair(&updater.check(&keys)?))
-         .map_err(from_update_error)?;
-      context.ensure_root_launcher(&layout)?;
-      context
-         .integration
-         .apply(&layout, config.start_menu, config.desktop)
-         .map_err(CommandError::io("cannot restore the shortcuts"))?;
-      context.done(&format!(
+      let work = || {
+         let outcome = updater
+            .repair(&updater.check(&keys).map_err(from_update_error)?)
+            .map_err(from_update_error)?;
+         context.ensure_root_launcher(&layout)?;
+         context
+            .integration
+            .apply(&layout, config.start_menu, config.desktop)
+            .map_err(CommandError::io("cannot restore the shortcuts"))?;
+         Ok::<_, CommandError>(outcome)
+      };
+      let outcome = if before_start {
+         context.with_progress_before_launch(&title, &progress, work)
+      } else {
+         context.with_progress(&title, &progress, work)
+      }?;
+      context.note(&format!(
          "{} was repaired: {}.",
          product::APP_NAME,
          Self::describe(&outcome)

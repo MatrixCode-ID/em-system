@@ -296,7 +296,7 @@ impl SetupWindow {
       self.cab.on().bn_clicked(move || {
          let context = this.state.context.clone();
          let address = this.source.text()?;
-         let result = super::ProgressWindow::owned_by(this.wnd.hwnd(), || {
+         let result = super::ProgressWindow::owned_by(&this.wnd, || {
             crate::commands::CabCommand::run(
                &context,
                Some(address),
@@ -822,7 +822,11 @@ impl SetupWindow {
                   run: self.run_after.is_checked(),
                }
             });
-            self.show_page(Page::Done);
+            if self.state.running_action.get() != InstallAction::Uninstall && self.run_after.is_checked() {
+               let _ = self.wnd.hwnd().DestroyWindow();
+            } else {
+               self.show_page(Page::Done);
+            }
          }
          Err(error) if error.code == ExitCode::Cancelled => {
             LauncherLog::info("The user cancelled the installation");

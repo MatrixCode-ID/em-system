@@ -88,7 +88,7 @@ impl StartCommand {
          }
          // Repair takes the lock itself.
          drop(lock);
-         UpdateCommand::repair(context)?;
+         UpdateCommand::repair_before_start(context)?;
          return context.start_app(&layout, app_args);
       }
 
@@ -139,16 +139,14 @@ impl StartCommand {
       }
 
       let title = format!("Updating {}", product::APP_NAME);
-      let result = context
-         .with_progress(&title, &progress, || updater.install(&release))
-         .map_err(CommandError::from)
-         .and_then(|_| context.ensure_root_launcher(layout))
-         .and_then(|_| {
-            context
-               .integration
-               .refresh_entry(layout)
-               .map_err(CommandError::io("cannot update the Apps & Features entry"))
-         });
+      let result = context.with_progress_before_launch(&title, &progress, || {
+         updater.install(&release).map_err(CommandError::from)?;
+         context.ensure_root_launcher(layout)?;
+         context
+            .integration
+            .refresh_entry(layout)
+            .map_err(CommandError::io("cannot update the Apps & Features entry"))
+      });
       match result {
          Ok(()) => {}
          // The staged files stay for the next try; the user knows they cancelled.

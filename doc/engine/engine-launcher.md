@@ -41,7 +41,7 @@ and engine versions. `--version` and launcher.log also record them.
 
 ## Installed setup form and removal
 
-Opening an installer outside the installation opens the same 560×478 setup form with a locked
+Opening an installer outside the installation opens the same 560Ã—478 setup form with a locked
 install folder, saved shortcut choices and the installed publication time and release ID.
 Four action radios select Update, Repair, Clean install or Uninstall; the main button follows the
 selection. A new installation hides these radios and offers Install. There are still four pages:
@@ -72,6 +72,14 @@ Clean install and Uninstall use the Removing phase, including CLI uninstall's te
 Both phases display the current step/path and n of m units, and disable cancellation until complete.
 Locked old versions are logged and retried on a later run. CLI and automatic updates keep the small
 ProgressWindow, with the same progress details.
+
+Completion stays visible until the user chooses Finish or closes the window, for Update, Repair,
+Clean install, Uninstall and cabinet work. Errors and cancellation also remain readable until closed.
+The exception is work immediately followed by launching the real application: successful runner
+progress closes automatically, and setup with Start after ... selected closes to launch the app.
+With that option cleared, setup stays on Done. Uninstall never launches an app. Quiet commands stay
+windowless. Cabinet progress opened from setup uses a true owned modal, sharing the parent's UI font
+lifetime without a nested main-window loop; returning to setup preserves its original font.
 
 ## Updates
 

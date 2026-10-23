@@ -34,6 +34,18 @@ impl WindowStyle {
       }
    }
 
+   /// Options for an owned modal that must not run another main-window loop.
+   pub fn modal_opts(title: &str, size: (i32, i32)) -> gui::WindowModalOpts<'_> {
+      let main = Self::main_opts(title, size);
+      gui::WindowModalOpts {
+         title,
+         class_icon: main.class_icon,
+         size: main.size,
+         style: main.style,
+         ..Default::default()
+      }
+   }
+
    /// A text label in `parent` at `position` with size `size` (96 DPI pixels). Text that is too long is
    /// wrapped to the next line, and `&` is displayed as it is.
    pub fn label(parent: &(impl GuiParent + 'static), text: &str, position: (i32, i32), size: (i32, i32)) -> gui::Label {
