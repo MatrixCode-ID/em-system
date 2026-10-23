@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Microsoft.Maui.Controls;
 using Em.Shared;
 using Em.Ui.Core.Shared;
@@ -136,6 +136,12 @@ namespace Em.Ui.Maui.Navigations
       /// </summary>
       public bool HasStaticItems => StaticItems.Count > 0;
 
+      /// <summary>The engine management tools, drawn in a card of their own below the account rows.</summary>
+      public ObservableCollection<AccountPanelItemVm> ManagementItems { get; } = [];
+
+      /// <summary><c>true</c> when there are management tools to draw.</summary>
+      public bool HasManagementItems => ManagementItems.Count > 0;
+
       // The screen being opened, handed over by the owning page every time this panel is about to appear. The
       // panel's visibility switches are owned by its navigation, just like the switches of the top bar.
       private Navigation? _navigation;
@@ -226,8 +232,8 @@ namespace Em.Ui.Maui.Navigations
       }
 
       // The static navigation list follows the same pattern as the desktop client, but its content belongs to
-      // this panel itself. For now it is only Simulate Login, and only in debug mode: no MAUI screen needs
-      // rights restrictions yet.
+      // this panel itself: the account rows (Change Password, Simulate Login in debug mode). The engine tools sit
+      // in a separate management card.
       private void RebuildStaticItems(EmApp app) {
          StaticItems.Clear();
 
@@ -238,22 +244,33 @@ namespace Em.Ui.Maui.Navigations
             () => app.NavigateTo(EmApp.ChangePasswordNavigationName),
             isEnabled: app.ActiveUser?.cUserId != Defaults.DebuggerUserId);
 
-         AddStaticItem("Approval Manager", FontIcons.Inbox,
-            () => app.NavigateTo(ApprovalManagerNavigationPayload.NavigationName));
-
          if (app.IsDebugMode) {
             AddStaticItem("Simulate Login", FontIcons.RightToBracket, () => app.ShowLoginScreen(null));
          }
 
-         for (var index = 0; index < StaticItems.Count; index++) {
-            StaticItems[index].HasDividerAbove = index > 0;
-         }
+         // Engine management tools get a card of their own, apart from the account's own rows.
+         ManagementItems.Clear();
+         AddStaticItem(ManagementItems, "Approval Manager", FontIcons.Inbox,
+            () => app.NavigateTo(ApprovalManagerNavigationPayload.NavigationName));
 
+         MarkDividers(StaticItems);
+         MarkDividers(ManagementItems);
          NotifyChanged(nameof(HasStaticItems));
+         NotifyChanged(nameof(HasManagementItems));
+      }
+
+      private static void MarkDividers(ObservableCollection<AccountPanelItemVm> items) {
+         for (var index = 0; index < items.Count; index++) {
+            items[index].HasDividerAbove = index > 0;
+         }
       }
 
       private void AddStaticItem(string title, string glyph, Func<Task> action, bool isEnabled = true) =>
-         StaticItems.Add(new AccountPanelItemVm {
+         AddStaticItem(StaticItems, title, glyph, action, isEnabled);
+
+      private static void AddStaticItem(ObservableCollection<AccountPanelItemVm> items, string title, string glyph,
+         Func<Task> action, bool isEnabled = true) =>
+         items.Add(new AccountPanelItemVm {
             Title = title, Glyph = glyph, Action = action, IsEnabled = isEnabled
          });
 

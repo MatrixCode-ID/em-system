@@ -159,6 +159,14 @@
                                        BindableLayout.ItemTemplate="{StaticResource accountPanelItemTemplate}" />
                </Border>
 
+               <!-- ==== management ==== -->
+               <Border Style="{StaticResource accountPanelCardStyle}"
+                       IsVisible="{Binding HasManagementItems}">
+                  <VerticalStackLayout Padding="0,4"
+                                       BindableLayout.ItemsSource="{Binding ManagementItems}"
+                                       BindableLayout.ItemTemplate="{StaticResource accountPanelItemTemplate}" />
+               </Border>
+
                <!-- ==== server ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}">
                   <VerticalStackLayout Padding="0,12" Spacing="10">
