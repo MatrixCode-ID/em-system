@@ -2,6 +2,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::format::{ReleaseFile, ReleaseHash, ReleaseLayout, ReleasePublicKey};
 use crate::launcher_log::LauncherLog;
@@ -227,7 +228,7 @@ impl<'a> Updater<'a> {
          .begin(UpdatePhase::Preparing, release.manifest().total_size());
       for file in release.manifest().files() {
          self.check_cancelled()?;
-         self.progress.set_file(&file.path);
+         self.progress.set_file(&format!("Checking {}", file.path));
          let target = InstallLayout::file_in(&staging, &file.path);
 
          // Staged by an earlier run that did not finish: it was verified before it got its name.
@@ -242,6 +243,7 @@ impl<'a> Updater<'a> {
             && let Some(old) = old
             && old.has_same_content(file)
          {
+            self.progress.set_file(&format!("Copying {}", file.path));
             if self.copy_local(&InstallLayout::file_in(folder, &old.path), &target, file)? {
                summary.reused_files += 1;
                continue;
@@ -263,6 +265,7 @@ impl<'a> Updater<'a> {
                Some(_) => "changed in this release",
             }
          ));
+         self.progress.set_file(&format!("Downloading {}", file.path));
          self.download(file, &target, &mut summary)?;
       }
 
@@ -383,6 +386,7 @@ impl Updater<'_> {
       let mut size = stream.offset;
       loop {
          self.check_cancelled()?;
+         let started = Instant::now();
          let read = match reader.read(&mut buffer) {
             Ok(0) => break,
             Ok(read) => read,
@@ -400,7 +404,7 @@ impl Updater<'_> {
             .write_all(&buffer[..read])
             .map_err(UpdateError::io("write", &part))?;
          self.progress.add_done(read as u64);
-         self.progress.add_transferred(read as u64);
+         self.progress.add_transferred(read as u64, started.elapsed());
          summary.downloaded_bytes += read as u64;
       }
       output.sync_all().map_err(UpdateError::io("write", &part))?;

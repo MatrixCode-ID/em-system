@@ -54,7 +54,7 @@ impl Updater<'_> {
          .begin(UpdatePhase::Preparing, broken.iter().map(|file| file.size).sum());
       for file in broken {
          self.check_cancelled()?;
-         self.progress.set_file(&file.path);
+         self.progress.set_file(&format!("Downloading {}", file.path));
          self.download(file, &InstallLayout::file_in(&folder, &file.path), &mut summary)?;
       }
 

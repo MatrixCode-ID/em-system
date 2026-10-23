@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering};
-use std::time::Instant;
+use std::time::Duration;
 
 /// The progress of the updater's work that other threads (the progress window, the CLI) read while it is
 /// running, and also the channel to cancel it.
@@ -15,7 +15,7 @@ pub struct UpdateProgress {
    done_bytes: AtomicU64,
    transferred_bytes: AtomicU64,
    current_file: Mutex<String>,
-   started: Mutex<Option<Instant>>,
+   transfer_nanos: AtomicU64,
    cancelled: AtomicBool,
 }
 
@@ -90,12 +90,10 @@ impl UpdateProgress {
       self.current_file.lock().map(|file| file.clone()).unwrap_or_default()
    }
 
-   /// The average download speed since the work started, in bytes per second.
+   /// The average download speed in bytes per second, measured only over the time spent receiving from the
+   /// source, so local copies do not drag it down.
    pub fn bytes_per_second(&self) -> u64 {
-      let Some(started) = self.started.lock().ok().and_then(|started| *started) else {
-         return 0;
-      };
-      let seconds = started.elapsed().as_secs_f64();
+      let seconds = Duration::from_nanos(self.transfer_nanos.load(Ordering::Relaxed)).as_secs_f64();
       if seconds < 0.5 {
          return 0;
       }
@@ -126,9 +124,6 @@ impl UpdateProgress {
    }
 
    pub(crate) fn begin(&self, phase: UpdatePhase, total_bytes: u64) {
-      if let Ok(mut started) = self.started.lock() {
-         started.get_or_insert_with(Instant::now);
-      }
       self.total_bytes.store(total_bytes, Ordering::Relaxed);
       self.done_bytes.store(0, Ordering::Relaxed);
       self.phase.store(phase as u8, Ordering::Relaxed);
@@ -150,8 +145,11 @@ impl UpdateProgress {
       self.done_bytes.fetch_sub(bytes, Ordering::Relaxed);
    }
 
-   pub(crate) fn add_transferred(&self, bytes: u64) {
+   pub(crate) fn add_transferred(&self, bytes: u64, elapsed: Duration) {
       self.transferred_bytes.fetch_add(bytes, Ordering::Relaxed);
+      self
+         .transfer_nanos
+         .fetch_add(u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX), Ordering::Relaxed);
    }
 
    // endregion

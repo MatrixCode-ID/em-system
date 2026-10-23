@@ -93,7 +93,7 @@ impl ProgressPanel {
          _ if progress.is_cancelled() && progress.can_cancel() => "Cancelling...",
          UpdatePhase::Idle | UpdatePhase::Checking => "Checking the release...",
          UpdatePhase::Verifying => "Checking the files...",
-         UpdatePhase::Preparing => "Downloading the new version...",
+         UpdatePhase::Preparing => "Preparing the new version...",
          UpdatePhase::Finishing => "Finishing...",
          UpdatePhase::Removing => "Removing the installation...",
          UpdatePhase::Packing => "Building the cab...",
@@ -121,14 +121,16 @@ impl ProgressPanel {
             format!("{} of {}", format_size(done), format_size(total))
          }
          UpdatePhase::Preparing if sized => {
+            // Files copied from the installed version count towards done but not towards downloaded, so the two
+            // are shown apart; a time estimate would mix copy and download rates and is left out.
             let mut detail = format!("{} of {}", format_size(done), format_size(total));
-            let speed = progress.bytes_per_second();
-            if speed > 0 {
-               detail.push_str(&format!(
-                  ", {}/s, {} left",
-                  format_size(speed),
-                  format_duration((total - done) / speed)
-               ));
+            let downloaded = progress.transferred_bytes();
+            if downloaded > 0 {
+               detail.push_str(&format!(", {} downloaded", format_size(downloaded)));
+               let speed = progress.bytes_per_second();
+               if speed > 0 {
+                  detail.push_str(&format!(" at {}/s", format_size(speed)));
+               }
             }
             detail
          }
@@ -169,13 +171,5 @@ impl ProgressPanel {
 fn set_text(hwnd: &w::HWND, text: &str) {
    if hwnd.GetWindowText().is_ok_and(|current| current != text) {
       let _ = hwnd.SetWindowText(text);
-   }
-}
-
-fn format_duration(seconds: u64) -> String {
-   match seconds {
-      0..60 => format!("about {} s", seconds.max(1)),
-      60..3600 => format!("about {} min", seconds.div_ceil(60)),
-      _ => format!("about {} h {} min", seconds / 3600, seconds % 3600 / 60),
    }
 }
