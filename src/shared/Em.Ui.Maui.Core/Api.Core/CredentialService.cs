@@ -164,6 +164,9 @@ namespace Em.Api.Core
       public Task<TokenResult> PostGetMeta_SignIn(string cUserAccount, string password) =>
          PostAsync<TokenResult>(nameof(PostGetMeta_SignIn), cUserAccount, password);
 
+      public Task<TokenResult> PostGetMeta_DebugSignIn(string cUserAccount) =>
+         PostAsync<TokenResult>(nameof(PostGetMeta_DebugSignIn), cUserAccount);
+
       public Task<TokenResult> PostGetMeta_RefreshToken(string refreshToken) =>
          PostAsync<TokenResult>(nameof(PostGetMeta_RefreshToken), refreshToken);
 

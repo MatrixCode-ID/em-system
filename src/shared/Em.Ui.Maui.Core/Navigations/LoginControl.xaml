@@ -73,14 +73,19 @@
                   <!-- The theme switch sits beside the sign-in button, not in the top bar: that bar is deliberately hidden
                        until someone signs in, and the account panel - where the theme switch row lives on another screen -
                        is opened from there. -->
-                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                  <!-- Spacing comes from margins, not ColumnSpacing: a hidden Debug Sign In must not leave a gap. -->
+                  <Grid ColumnDefinitions="Auto,*,Auto">
                      <controls:IconButton Grid.Column="0"
                                           Glyph="{x:Static controls:FontIcons.CircleHalfStroke}" IconSize="20"
                                           VerticalOptions="Center"
                                           Command="{Binding Commands[ToggleThemeCommand]}"
                                           TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-                     <Button Grid.Column="1" Text="Sign in" Style="{StaticResource filledButtonStyle}"
+                     <Button Grid.Column="1" Margin="10,0,0,0" Text="Sign in" Style="{StaticResource filledButtonStyle}"
                              Command="{Binding Commands[SignInCommand]}" />
+                     <!-- Debug only: a real session as the typed account, without its password. -->
+                     <Button Grid.Column="2" Margin="10,0,0,0" Text="Debug Sign In" Style="{StaticResource tonalButtonStyle}"
+                             Command="{Binding Commands[DebugSignInCommand]}"
+                             IsVisible="{Binding IsDebugSignInVisible}" />
                   </Grid>
 
                   <HorizontalStackLayout Spacing="8" IsVisible="{Binding HasSignInError}">

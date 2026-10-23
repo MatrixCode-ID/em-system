@@ -133,6 +133,14 @@ namespace Em.Api.Core.Models
       /// <summary>Signs in with an account name and password and returns the access and refresh tokens.</summary>
       Task<TokenResult> PostGetMeta_SignIn(string cUserAccount, string password);
 
+      /// <summary>
+      /// Debug only: signs in as an account without its password and returns a real session's tokens, the same
+      /// as <see cref="PostGetMeta_SignIn"/>. Answered only to a debug token caller; any other caller is told
+      /// the action does not exist. Only the password is skipped: an unknown account, an account that may not
+      /// sign in, or a switched off built-in administrator is refused the same way as a normal sign in.
+      /// </summary>
+      Task<TokenResult> PostGetMeta_DebugSignIn(string cUserAccount);
+
       /// <summary>Exchanges a refresh token for a new token pair.</summary>
       Task<TokenResult> PostGetMeta_RefreshToken(string refreshToken);
 

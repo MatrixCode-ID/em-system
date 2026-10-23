@@ -1,4 +1,4 @@
-# WPF debug mode: Switch User and Simulate Login
+# WPF debug mode: Switch User, Simulate Login and Debug Sign In
 
 A WPF host enters debug mode when it is built with `builder.AddDebug(...)` and at least one debug
 connection. The application then starts signed in as the **SYSTEM DEBUGGER** account, and every request
@@ -68,6 +68,28 @@ While signed in during the simulation, a `SIMULATED` chip with an exit button si
 debugger)**. Leaving the simulation while signed in asks open screens to close, signs the session out of
 the server (a failure is ignored), puts the debug token back, returns to the default debug connection and
 makes SYSTEM DEBUGGER active again.
+
+## Debug Sign In
+
+During Simulate Login the login screen (Material and Classic) shows **Debug Sign In** next to **Sign in**.
+It signs in as the typed account on the chosen connection **without its password**; the password field is
+ignored:
+
+- the client sends `PostGetMeta_DebugSignIn` through a client of its own that carries the debug token for
+  that one request only; every other request of the simulation still runs without it;
+- the server answers only debug token callers (404 to everyone else, like `GetMeta_AdminAccountEnabled`).
+  Only the password is skipped: an unknown account, a suspended, pending or deleted user, and a switched off
+  built-in administrator are refused with the same *Incorrect username or password* as a normal sign in;
+- the session is a real JWT session opened the same way as a normal sign in, and is not marked or audited
+  differently. Nothing about it is stored, as with any simulated sign in. From there on everything behaves
+  as after **Sign in**: the `SIMULATED` chip, sign out, an expired session, and leaving the simulation.
+
+A holder of the debug key can therefore open a session for any account that may sign in. That is no more
+than Switch User already allows; the debug token stays outside `#if DEBUG` on the server by design.
+
+The MAUI login screen offers the same button whenever the build is in debug mode, because there the login
+screen only appears through Simulate Login. MAUI has no `IsSimulatingLogin` state of its own and does not
+take the debug token off its connections the way WPF does.
 
 ## Sign out in debug mode
 

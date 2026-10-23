@@ -1,4 +1,5 @@
 using Em.Api.Core.Models;
+using Em.Shared;
 using Em.Ui.Core.Shared;
 
 namespace Em.Ui.Wpf.Core
@@ -135,6 +136,36 @@ namespace Em.Ui.Wpf.Core
 
          await MainWindow.ShowSignedInAsync();
          return true;
+      }
+
+      /// <summary>
+      /// Debug only, during Simulate Login: asks the server for a real session of <paramref name="account"/>
+      /// without its password. The debug token goes on this one request only, through a client of its own, so
+      /// every other request of the simulation still runs without it.
+      /// </summary>
+      /// <param name="connection">The connection chosen on the login screen.</param>
+      /// <param name="account">The account name typed on the login screen.</param>
+      /// <returns>The session's tokens, to be opened with <see cref="BeginSessionAsync"/>.</returns>
+      /// <exception cref="InvalidOperationException">When Simulate Login is not running.</exception>
+      internal async Task<TokenResult> RequestDebugSignInAsync(ApiConnection connection, string account) {
+         ArgumentNullException.ThrowIfNull(connection);
+         if (!IsSimulatingLogin || _debugToken is null) {
+            throw new InvalidOperationException("Debug Sign In is only available while Simulate Login is running.");
+         }
+
+         // A copy, not the connection itself: putting the token on the shared connection would let any
+         // request sent meanwhile carry it too.
+         var debugConnection = new ApiConnection {
+            ProfileName = connection.ProfileName,
+            Host = connection.Host,
+            Timeout = connection.Timeout,
+            IgnoreSslErrors = connection.IgnoreSslErrors,
+            DebugToken = _debugToken
+         };
+
+         using var client = debugConnection.CreateApiClient();
+         return await client.PostAsync<TokenResult>(
+            Defaults.CredentialModuleName, nameof(ICredentialServices.PostGetMeta_DebugSignIn), account);
       }
 
       // The same questions closing the main window asks: on the single-page layout the detached

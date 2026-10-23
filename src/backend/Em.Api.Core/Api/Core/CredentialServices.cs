@@ -796,15 +796,7 @@ namespace Em.Api.Core
             return await SignInAdminAsync(password);
          }
 
-         var user = await ctx.ta_Users.SingleOrDefaultAsync(r => r.cUserAccount == cUserAccount);
-
-         // Deleted, suspended and pending accounts are all turned away here rather than further in:
-         // the state column is what says an account may be signed into, and a correct password does
-         // not override it.
-         if (user is null || user.cUserState < UserState.Inactive) {
-            await AuditSignInFailedAsync(cUserAccount, user?.cUserId, user is null ? "account" : "state");
-            throw new ActionException(InvalidCredentialsMessage, 401);
-         }
+         var user = await RequireSignInUserAsync(cUserAccount);
 
          var credential = await this.GetCredentialAsync(user, PasswordCredential.CredentialType);
          if (!await credential.IsValidAsync(password)) {
@@ -812,6 +804,26 @@ namespace Em.Api.Core
             throw new ActionException(InvalidCredentialsMessage, 401);
          }
 
+         return await Tokens.IssueAsync(user.cUserId);
+      }
+
+      /// <inheritdoc />
+      [PostAction]
+      public async Task<TokenResult> PostGetMeta_DebugSignIn(string cUserAccount) {
+         // Same answer as a route that does not exist, like GetMeta_AdminAccountEnabled: without the debug
+         // token this action must not even be seen to be there.
+         if (!Request.IsDebugRequest) {
+            throw new ActionException($"Action '{Request.RouteLabel}' was not found.", 404);
+         }
+
+         // Only the password is skipped. Every other reason a sign in is turned away still applies, with
+         // the same message, so a debug session can never reach an account a real sign in could not.
+         if (AdminAccount.IsAdminAccount(cUserAccount)) {
+            await RequireAdminAccountEnabledAsync();
+            return await Tokens.IssueAsync(Defaults.AdminUserId);
+         }
+
+         var user = await RequireSignInUserAsync(cUserAccount);
          return await Tokens.IssueAsync(user.cUserId);
       }
 
@@ -1118,14 +1130,32 @@ namespace Em.Api.Core
 
       // Signing in as the administrator account. Kept apart from the action above rather than woven
       // into it: the two share the answer they give when they fail, and nothing else.
-      private async Task<TokenResult> SignInAdminAsync(string password) {
-         // Turned away with the very same message as a wrong password, deliberately. A message of
-         // its own would turn the login screen into a way of learning that the account is there but
-         // currently switched off - which is exactly what switching it off was meant to stop.
+      // The user an account name signs into. Deleted, suspended and pending accounts are all turned
+      // away here rather than further in: the state column is what says an account may be signed
+      // into, and a correct password does not override it.
+      private async Task<ta_User> RequireSignInUserAsync(string cUserAccount) {
+         var user = await ctx.ta_Users.SingleOrDefaultAsync(r => r.cUserAccount == cUserAccount);
+
+         if (user is null || user.cUserState < UserState.Inactive) {
+            await AuditSignInFailedAsync(cUserAccount, user?.cUserId, user is null ? "account" : "state");
+            throw new ActionException(InvalidCredentialsMessage, 401);
+         }
+
+         return user;
+      }
+
+      // Turned away with the very same message as a wrong password, deliberately. A message of its
+      // own would turn the login screen into a way of learning that the account is there but
+      // currently switched off - which is exactly what switching it off was meant to stop.
+      private async Task RequireAdminAccountEnabledAsync() {
          if (!await AdminAccount.IsEnabledAsync(ctx)) {
             await AuditSignInFailedAsync(Defaults.AdminUserAccount, Defaults.AdminUserId, "state");
             throw new ActionException(InvalidCredentialsMessage, 401);
          }
+      }
+
+      private async Task<TokenResult> SignInAdminAsync(string password) {
+         await RequireAdminAccountEnabledAsync();
 
          // PasswordCredential is not used here even though this is a password: it works over a user
          // row and a credential row, and this account has neither.

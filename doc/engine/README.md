@@ -35,7 +35,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [Launcher and updates](engine-launcher.md) | Product installer, in-app update preparation, IT Cabinet packages |
 | [Login branding](engine-login-branding.md) | Material/Classic login and background images |
 | [User Manager roles](engine-user-manager.md) | The Roles tab of the user editor: giving roles, periods, saving |
-| [Debug mode](engine-debug-mode.md) | Switch User, Simulate Login and the debug switches of `EmApp` |
+| [Debug mode](engine-debug-mode.md) | Switch User, Simulate Login, Debug Sign In and the debug switches of `EmApp` |
 | [Tab strip](engine-tab-strip.md) | Reorderable panel tabs, optional leading content and cascading menu styles |
 
 ## Reference module

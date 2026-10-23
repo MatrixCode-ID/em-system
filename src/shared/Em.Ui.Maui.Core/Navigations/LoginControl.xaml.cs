@@ -67,6 +67,7 @@ namespace Em.Ui.Maui.Navigations
 
       public LoginControlVm() {
          RegisterCommand(nameof(SignInCommand), SignInCommand, SignInCommandAllowed);
+         RegisterCommand(nameof(DebugSignInCommand), DebugSignInCommand, DebugSignInCommandAllowed);
          RegisterCommand(nameof(ToggleThemeCommand), ToggleThemeCommand);
       }
 
@@ -164,6 +165,8 @@ namespace Em.Ui.Maui.Navigations
             ?? string.Empty;
 
          NotifyChanged(nameof(IsServerLocked));
+         NotifyChanged(nameof(IsDebugSignInVisible));
+         RaiseSignInCommandChanged();
          NotifyChanged(nameof(LogoImage));
          NotifyChanged(nameof(BrandTitle));
          NotifyChanged(nameof(BrandTagline));
@@ -179,7 +182,31 @@ namespace Em.Ui.Maui.Navigations
       // Nothing may escape this method. ICommand.Execute is void, so UiCommandAsync runs it as
       // async void: an exception leaving here is rethrown on the dispatcher, and there is nothing
       // above it to catch it - the process ends.
-      public async Task SignInCommand() {
+      public Task SignInCommand() => RunSignInAsync(debug: false);
+
+      /// <summary>
+      /// Debug only: signs in as the typed account without its password. The session that comes back is a real
+      /// one and behaves like one opened by <see cref="SignInCommand"/>, except that nothing about it is stored.
+      /// Failures land in <see cref="SignInError"/> the same way, and this command never throws either.
+      /// </summary>
+      public Task DebugSignInCommand() => RunSignInAsync(debug: true);
+
+      /// <summary>
+      /// Whether Debug Sign In is offered. In debug mode this screen only comes up through Simulate Login or
+      /// after a simulated session ended, so the debug build is the whole condition.
+      /// </summary>
+      public bool IsDebugSignInVisible => EmApp?.IsDebugMode ?? false;
+
+      /// <summary>Debug Sign In needs an account name; the password is not needed.</summary>
+      public bool DebugSignInCommandAllowed() =>
+         IsNotBusy
+         && IsDebugSignInVisible
+         && !string.IsNullOrWhiteSpace(ServerUrl)
+         && !string.IsNullOrWhiteSpace(UserName);
+
+      // The part both sign ins share. Debug Sign In only asks for the token differently and, like Simulate
+      // Login on the desktop, keeps nothing: the stored sign-in belongs to the runs without it.
+      private async Task RunSignInAsync(bool debug) {
          SignInError = null;
 
          try {
@@ -191,13 +218,20 @@ namespace Em.Ui.Maui.Navigations
             var connection = ResolveConnection(app);
 
             // The password is checked on the server and nowhere else.
-            var services = app.ServiceProvider.GetRequiredService<ICredentialServices>();
-            var token = await services.PostGetMeta_SignIn(UserName, Password);
+            var token = debug
+               ? await app.RequestDebugSignInAsync(connection, UserName)
+               : await app.ServiceProvider.GetRequiredService<ICredentialServices>()
+                  .PostGetMeta_SignIn(UserName, Password);
 
             // Everything from here on runs on a password that was already accepted. Should it fail -
             // loading the account behind the token, say - the second catch below is the right one:
             // what went wrong is not the pair that was typed.
-            await app.BeginSessionAsync(token, remember: true);
+            await app.BeginSessionAsync(token, remember: !debug);
+
+            if (debug) {
+               SignInSucceeded?.Invoke();
+               return;
+            }
 
             // The address has only now been proven usable for signing in, by the lines above, and only now does it
             // deserve to be stored. A debug connection never goes along - it belongs to the code, not to storage.
@@ -300,7 +334,9 @@ namespace Em.Ui.Maui.Navigations
          && !string.IsNullOrWhiteSpace(UserName)
          && !string.IsNullOrWhiteSpace(Password);
 
-      private void RaiseSignInCommandChanged() =>
+      private void RaiseSignInCommandChanged() {
          Commands[nameof(SignInCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(DebugSignInCommand)]?.RaiseCanExecuteChanged();
+      }
    }
 }

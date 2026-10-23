@@ -622,6 +622,35 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
+      /// Debug only: asks the server for a real session of <paramref name="account"/> without its password. The
+      /// debug token goes on this one request only, through a client of its own, whatever the connection
+      /// itself carries.
+      /// </summary>
+      /// <param name="connection">The connection the login screen signs in on.</param>
+      /// <param name="account">The account name typed on the login screen.</param>
+      /// <returns>The session's tokens, to be opened with <see cref="BeginSessionAsync"/>.</returns>
+      /// <exception cref="InvalidOperationException">When this is not a debug build.</exception>
+      internal async Task<TokenResult> RequestDebugSignInAsync(ApiConnection connection, string account) {
+         ArgumentNullException.ThrowIfNull(connection);
+         if (!IsDebugMode || _debugToken is null) {
+            throw new InvalidOperationException("Debug Sign In is only available in debug mode.");
+         }
+
+         // A copy, not the connection itself, so whether the connection carries the token stays as it was.
+         var debugConnection = new ApiConnection {
+            ProfileName = connection.ProfileName,
+            Host = connection.Host,
+            Timeout = connection.Timeout,
+            IgnoreSslErrors = connection.IgnoreSslErrors,
+            DebugToken = _debugToken
+         };
+
+         using var client = debugConnection.CreateApiClient();
+         return await client.PostAsync<TokenResult>(
+            Defaults.CredentialModuleName, nameof(ICredentialServices.PostGetMeta_DebugSignIn), account);
+      }
+
+      /// <summary>
       /// Opens a session from a pair of tokens that the server just issued: installs it in the active
       /// connection's client, loads its owner's identity, and - if asked - stores it so the next restart does
       /// not need the password typed again.

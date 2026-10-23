@@ -43,6 +43,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public LoginControlVm() {
          RegisterCommand(nameof(SignInCommand), SignInCommand, SignInCommandAllowed);
+         RegisterCommand(nameof(DebugSignInCommand), DebugSignInCommand, DebugSignInCommandAllowed);
          RegisterCommand<ThemeVariant>(nameof(ChangeThemeCommand), ChangeThemeCommand);
          RegisterCommand(nameof(ConnectionConfigCommand), ConnectionConfigCommand);
          RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand);
@@ -166,7 +167,34 @@ namespace Em.Ui.Wpf.Navigations
       // Nothing may escape this method. ICommand.Execute is void, so UiCommandAsync runs it as
       // async void: an exception leaving here is rethrown on the dispatcher, and there is no
       // DispatcherUnhandledException handler in this application to catch it - the process ends.
-      public async Task SignInCommand() {
+      public Task SignInCommand() =>
+         // The password is checked on the server and nowhere else. What used to happen here - pulling
+         // the stored credential down and comparing the hash locally - meant the hash of every account
+         // was there for the asking.
+         RunSignInAsync(() => EmApp!.ServiceProvider.GetRequiredService<ICredentialServices>()
+            .PostGetMeta_SignIn(UserName, Password));
+
+      /// <summary>
+      /// Debug only, during Simulate Login: signs in as the typed account without its password. The session
+      /// that comes back is a real one and from there on behaves exactly like one opened by
+      /// <see cref="SignInCommand"/>; the password field is ignored. Failures land in <see cref="SignInError"/>
+      /// the same way, and this command never throws an exception to its caller either.
+      /// </summary>
+      public Task DebugSignInCommand() =>
+         RunSignInAsync(() => EmApp!.RequestDebugSignInAsync(SelectedConnection!, UserName));
+
+      /// <summary>
+      /// Debug Sign In may run only during Simulate Login, with a connection chosen and an account typed; the
+      /// password is not needed.
+      /// </summary>
+      public bool DebugSignInCommandAllowed() =>
+         IsNotBusy
+         && IsSimulatingLogin
+         && SelectedConnection is not null
+         && !string.IsNullOrWhiteSpace(UserName);
+
+      // The part both sign ins share: only the way the token is asked for differs.
+      private async Task RunSignInAsync(Func<Task<TokenResult>> requestToken) {
          SignInError = null;
          SignInErrorDetail = null;
 
@@ -175,12 +203,7 @@ namespace Em.Ui.Wpf.Navigations
             IsBusy = InWaiting = true;
             RaiseSignInCommandChanged();
 
-            // The password is checked on the server and nowhere else. What used to happen here -
-            // pulling the stored credential down and comparing the hash locally - meant the hash of
-            // every account was there for the asking.
-            var services = EmApp!.ServiceProvider.GetRequiredService<ICredentialServices>();
-
-            var token = await services.PostGetMeta_SignIn(UserName, Password);
+            var token = await requestToken();
 
             // Everything from here on runs on a password that was already accepted. Should it fail -
             // loading the account behind the token, say - the second catch below is the right one:
@@ -239,8 +262,10 @@ namespace Em.Ui.Wpf.Navigations
          && !string.IsNullOrWhiteSpace(UserName)
          && !string.IsNullOrWhiteSpace(Password);
 
-      private void RaiseSignInCommandChanged() =>
+      private void RaiseSignInCommandChanged() {
          Commands[nameof(SignInCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(DebugSignInCommand)]?.RaiseCanExecuteChanged();
+      }
 
       /// <summary>
       /// Turns the "restoring the stored session" state on or off. The login screen is drawn first in a busy
@@ -362,6 +387,8 @@ namespace Em.Ui.Wpf.Navigations
          NotifyChanged(nameof(IsSimulatingLogin));
          NotifyChanged(nameof(IsRememberVisible));
          SyncSelectedConnection();
+         // Debug Sign In hangs off IsSimulatingLogin, which was unknown until EmApp arrived.
+         RaiseSignInCommandChanged();
 
          // Simulate Login neither reads nor writes the remembered sign-in.
          if (app.IsSimulatingLogin) return;
