@@ -160,17 +160,18 @@ impl<'a> Updater<'a> {
       let total =
          5 + leftover.as_ref().map_or(0, FolderRemoval::units) + cleanup.iter().map(FolderRemoval::units).sum::<u64>();
       self.progress.begin(UpdatePhase::Finishing, total);
-      self.progress.set_file("Writing release manifest and signature");
+      self.step("Writing release manifest and signature");
       write_release_files(&self.layout.staging_folder(release.id()), release)?;
       self.progress.add_done(1);
       let staging = self.layout.staging_folder(release.id());
       let version = self.layout.version_folder(release.id());
       if let Some(removal) = &mut leftover {
+         LauncherLog::info(format!("Removing the leftover folder {}", version.display()));
          removal
             .remove(&self.progress)
             .map_err(UpdateError::io("remove", &version))?;
       }
-      self.progress.set_file("Renaming staging to the release folder");
+      self.step("Renaming staging to the release folder");
       fs::rename(&staging, &version).map_err(UpdateError::io("rename", &staging))?;
       self.progress.add_done(1);
 
@@ -189,7 +190,7 @@ impl<'a> Updater<'a> {
    pub fn prepare(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
       let summary = self.prepare_files(release)?;
       self.progress.begin(UpdatePhase::Finishing, 1);
-      self.progress.set_file("Writing release manifest and signature");
+      self.step("Writing release manifest and signature");
       write_release_files(&self.layout.staging_folder(release.id()), release)?;
       self.progress.add_done(1);
       Ok(summary)
@@ -207,6 +208,18 @@ impl<'a> Updater<'a> {
          let manifest = active.manifest.as_ref()?;
          Some((self.layout.version_folder(&active.current.version), manifest))
       });
+      match (&active, &donor) {
+         (_, Some((folder, manifest))) => LauncherLog::info(format!(
+            "Unchanged files are copied from {} ({} files in its manifest)",
+            folder.display(),
+            manifest.files().len()
+         )),
+         (Some(active), None) => LauncherLog::warn(format!(
+            "The manifest of the active version {} cannot be read; every file is downloaded",
+            active.current.version
+         )),
+         (None, None) => LauncherLog::info("There is no active version; every file is downloaded"),
+      }
 
       let mut summary = UpdateSummary::default();
       self
@@ -224,8 +237,9 @@ impl<'a> Updater<'a> {
             continue;
          }
 
-         if let Some((folder, manifest)) = &donor
-            && let Some(old) = manifest.find(&file.path)
+         let old = donor.as_ref().and_then(|(_, manifest)| manifest.find(&file.path));
+         if let Some((folder, _)) = &donor
+            && let Some(old) = old
             && old.has_same_content(file)
          {
             if self.copy_local(&InstallLayout::file_in(folder, &old.path), &target, file)? {
@@ -238,9 +252,27 @@ impl<'a> Updater<'a> {
             ));
          }
 
+         LauncherLog::info(format!(
+            "Downloading {} ({} bytes): {}",
+            file.path,
+            file.size,
+            match old {
+               _ if donor.is_none() => "no active version to copy from",
+               None => "new in this release",
+               Some(old) if old.has_same_content(file) => "the installed copy is damaged",
+               Some(_) => "changed in this release",
+            }
+         ));
          self.download(file, &target, &mut summary)?;
       }
 
+      LauncherLog::info(format!(
+         "Prepared release {}: {} files downloaded ({} bytes), {} files reused",
+         release.id(),
+         summary.downloaded_files,
+         summary.downloaded_bytes,
+         summary.reused_files
+      ));
       Ok(summary)
    }
 
@@ -278,12 +310,18 @@ impl Updater<'_> {
          UpdatePhase::Finishing,
          4 + cleanup.iter().map(FolderRemoval::units).sum::<u64>(),
       );
-      self.progress.set_file("Writing release manifest and signature");
+      self.step("Writing release manifest and signature");
       cleanup
    }
 
+   // Shows a commit step and records it, so the log timestamps tell how long each step took.
+   pub(super) fn step(&self, text: &str) {
+      self.progress.set_file(text);
+      LauncherLog::info(text);
+   }
+
    pub(super) fn activate(&self, release: &VerifiedRelease, cleanup: Vec<FolderRemoval>) -> Result<(), UpdateError> {
-      self.progress.set_file("Writing current.json");
+      self.step("Writing current.json");
       let current = CurrentVersion {
          version: release.id().to_string(),
          published_at_utc: release.manifest().published_at_utc().to_string(),
@@ -294,15 +332,16 @@ impl Updater<'_> {
          .map_err(UpdateError::io("write", &self.layout.current_path()))?;
 
       self.progress.add_done(1);
-      self.progress.set_file("Replacing the root launcher");
+      self.step("Replacing the root launcher");
       // The new version already runs without it, so a failure here is only logged.
       if let Err(error) = self.replace_root_launcher(&self.layout.version_folder(release.id())) {
          LauncherLog::warn(format!("Cannot replace the root launcher: {error}"));
       }
       self.progress.add_done(1);
-      self.progress.set_file("Removing old versions");
+      self.step("Removing old versions");
       Self::remove_versions(cleanup, &self.progress);
       self.progress.add_done(1);
+      LauncherLog::info("Old versions removed");
       Ok(())
    }
 

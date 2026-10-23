@@ -20,7 +20,8 @@ pub struct UpdateProgress {
 }
 
 /// The phase of the updater's work. [`UpdateProgress::total_bytes`] and [`UpdateProgress::done_bytes`]
-/// apply to the phase that is running: bytes for Verifying/Preparing, units for Finishing/Removing.
+/// apply to the phase that is running: bytes for Verifying/Preparing/Packing/Unpacking, units for
+/// Finishing/Removing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum UpdatePhase {
@@ -37,6 +38,10 @@ pub enum UpdatePhase {
    Finishing,
    /// Removing the installation, counted in steps and files. Cancellation is disabled.
    Removing,
+   /// Compressing the release files into a cab, counted in uncompressed bytes.
+   Packing,
+   /// Extracting the files of a cab, counted in uncompressed bytes.
+   Unpacking,
 }
 
 impl UpdateProgress {
@@ -59,6 +64,8 @@ impl UpdateProgress {
          3 => UpdatePhase::Preparing,
          4 => UpdatePhase::Finishing,
          5 => UpdatePhase::Removing,
+         6 => UpdatePhase::Packing,
+         7 => UpdatePhase::Unpacking,
          _ => UpdatePhase::Idle,
       }
    }

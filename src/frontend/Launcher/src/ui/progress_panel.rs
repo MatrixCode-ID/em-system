@@ -92,17 +92,16 @@ impl ProgressPanel {
       let status = match phase {
          _ if progress.is_cancelled() && progress.can_cancel() => "Cancelling...",
          UpdatePhase::Idle | UpdatePhase::Checking => "Checking the release...",
-         UpdatePhase::Verifying => "Checking the installed files...",
+         UpdatePhase::Verifying => "Checking the files...",
          UpdatePhase::Preparing => "Downloading the new version...",
          UpdatePhase::Finishing => "Finishing...",
          UpdatePhase::Removing => "Removing the installation...",
+         UpdatePhase::Packing => "Building the cab...",
+         UpdatePhase::Unpacking => "Unpacking the cab...",
       };
       set_text(self.status.hwnd(), status);
 
-      let sized = matches!(
-         phase,
-         UpdatePhase::Verifying | UpdatePhase::Preparing | UpdatePhase::Finishing | UpdatePhase::Removing
-      ) && total > 0;
+      let sized = !matches!(phase, UpdatePhase::Idle | UpdatePhase::Checking) && total > 0;
       if sized {
          if self.marquee.replace(false) {
             self.bar.set_marquee(false);
@@ -118,6 +117,9 @@ impl ProgressPanel {
       let detail = match phase {
          UpdatePhase::Finishing | UpdatePhase::Removing if sized => format!("{done} of {total}"),
          UpdatePhase::Verifying if sized => format!("{} of {} checked", format_size(done), format_size(total)),
+         UpdatePhase::Packing | UpdatePhase::Unpacking if sized => {
+            format!("{} of {}", format_size(done), format_size(total))
+         }
          UpdatePhase::Preparing if sized => {
             let mut detail = format!("{} of {}", format_size(done), format_size(total));
             let speed = progress.bytes_per_second();

@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::cabinet::{Cabinet, MAX_CAB_BYTES};
 use crate::cli::{CommandError, ExitCode};
 use crate::format::{ReleaseHash, ReleaseLayout, ReleasePublicKey};
-use crate::install::{InstallLayout, UpdateProgress, Updater, VerifiedRelease};
+use crate::install::{InstallLayout, UpdatePhase, UpdateProgress, Updater, VerifiedRelease};
 use crate::launcher_log::LauncherLog;
 use crate::product;
 use crate::source::{self, FolderSource};
@@ -58,7 +58,7 @@ impl CabCommand {
       }
       let result = (|| {
          Cabinet::extract(path, &staging, progress.clone()).map_err(|e| cabinet_error(e, &progress))?;
-         let checked = verify_folder(&staging, keys)?;
+         let checked = verify_folder(&staging, keys, &progress)?;
          if checked.manifest_bytes() != release.manifest_bytes() {
             return Err(CommandError::new(
                ExitCode::SourceFailed,
@@ -204,8 +204,12 @@ impl CabCommand {
             .ok_or_else(|| CommandError::invalid("Cab path has no parent"))?,
       )?;
       let old = work.path().join("old");
-      let valid_old =
-         path.is_file() && Cabinet::extract(path, &old, progress.clone()).is_ok() && verify_folder(&old, keys).is_ok();
+      if path.is_file() {
+         LauncherLog::info(format!("Checking the existing cab {}", path.display()));
+      }
+      let valid_old = path.is_file()
+         && Cabinet::extract(path, &old, progress.clone()).is_ok()
+         && verify_folder(&old, keys, &progress).is_ok();
       if path.is_file() && !valid_old {
          LauncherLog::warn(
             "Existing cab is damaged or signed by an untrusted key; rebuilding it with a full download.",
@@ -248,7 +252,7 @@ impl CabCommand {
          fs::rename(package.join("binaries").join(name), package.join(name))
             .map_err(CommandError::io("cannot prepare cabinet metadata"))?;
       }
-      verify_folder(&package, keys)?;
+      // No hash pass here: prepare verified every staged file, and the extracted cab is checked below.
       let mut files = vec!["release.json".to_string(), "release.json.sig".to_string()];
       files.extend(
          release
@@ -258,10 +262,12 @@ impl CabCommand {
             .map(|f| format!("binaries/{}", f.path)),
       );
       let temporary = work.path().join("new.cab");
+      LauncherLog::info(format!("Building the cab for release {}", release.id()));
       Cabinet::create(&temporary, &package, &files, progress.clone()).map_err(|e| cabinet_error(e, &progress))?;
       let check = work.path().join("check");
+      LauncherLog::info("Checking the new cab");
       Cabinet::extract(&temporary, &check, progress.clone()).map_err(|e| cabinet_error(e, &progress))?;
-      verify_folder(&check, keys)?;
+      verify_folder(&check, keys, &progress)?;
       if progress.is_cancelled() {
          return Err(CommandError::cancelled("Cab download cancelled."));
       }
@@ -296,7 +302,11 @@ pub(crate) fn cabinet_error(error: std::io::Error, progress: &UpdateProgress) ->
    }
 }
 
-pub(crate) fn verify_folder(folder: &Path, keys: &[ReleasePublicKey]) -> Result<VerifiedRelease, CommandError> {
+pub(crate) fn verify_folder(
+   folder: &Path,
+   keys: &[ReleasePublicKey],
+   progress: &UpdateProgress,
+) -> Result<VerifiedRelease, CommandError> {
    let source = FolderSource::new(&folder.display().to_string());
    let release = VerifiedRelease::fetch(&source, keys)?;
    let mut allowed = std::collections::HashSet::from(["release.json".to_string(), "release.json.sig".to_string()]);
@@ -334,10 +344,23 @@ pub(crate) fn verify_folder(folder: &Path, keys: &[ReleasePublicKey]) -> Result<
          }
       }
    }
+   progress.begin(UpdatePhase::Verifying, release.manifest().total_size());
    for file in release.manifest().files() {
-      let (size, hash) =
-         ReleaseHash::compute_file(&folder.join("binaries").join(file.path.replace('/', "\\")), |_| Ok(()))
-            .map_err(CommandError::io("cannot verify cabinet file"))?;
+      progress.set_file(&file.path);
+      let mut last = 0;
+      let hashed = ReleaseHash::compute_file(&folder.join("binaries").join(file.path.replace('/', "\\")), |read| {
+         if progress.is_cancelled() {
+            return Err(std::io::ErrorKind::Interrupted.into());
+         }
+         progress.add_done(read - last);
+         last = read;
+         Ok(())
+      });
+      let (size, hash) = match hashed {
+         Ok(hashed) => hashed,
+         Err(_) if progress.is_cancelled() => return Err(CommandError::cancelled("Cab operation cancelled.")),
+         Err(error) => return Err(CommandError::io("cannot verify cabinet file")(error)),
+      };
       if size != file.size || hash != file.sha256 {
          return Err(CommandError::new(
             ExitCode::SourceFailed,

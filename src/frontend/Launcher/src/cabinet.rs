@@ -11,7 +11,7 @@ use windows::Win32::Storage::Cabinets::*;
 use windows::core::{BOOL, PCSTR, PSTR};
 
 use crate::format::ReleaseFile;
-use crate::install::UpdateProgress;
+use crate::install::{UpdatePhase, UpdateProgress};
 
 /// Pembaca dan penulis Microsoft Cabinet LZX melalui cabinet.dll, tanpa proses eksternal.
 pub struct Cabinet;
@@ -29,6 +29,8 @@ struct State {
    error: Option<String>,
    extracting: bool,
    metadata_only: bool,
+   // Set by the first extraction pass, which only sums the entry sizes for the progress total.
+   counting: Option<u64>,
 }
 
 thread_local! { static STATE: RefCell<Option<State>> = const { RefCell::new(None) }; }
@@ -75,7 +77,8 @@ impl Cabinet {
             "Release exceeds the approximately 2 GB single-cab limit; cabinet spanning is not supported.",
          ));
       }
-      let _scope = begin(root, paths, progress, false)?;
+      progress.begin(UpdatePhase::Packing, total);
+      let _scope = begin(root, paths, progress.clone(), false)?;
       let erf = ERF::default();
       let mut cab = CCAB {
          cb: MAX_CAB_BYTES as u32,
@@ -107,6 +110,7 @@ impl Cabinet {
          return Err(failed("create cabinet", &erf));
       }
       for (index, name) in files.iter().enumerate() {
+         progress.set_file(name);
          let source = CString::new(format!("source-{index}")).map_err(io::Error::other)?;
          let name = CString::new(name.replace('/', "\\")).map_err(io::Error::other)?;
          let ok = unsafe {
@@ -125,6 +129,7 @@ impl Cabinet {
             return Err(failed("compress cabinet", &erf));
          }
       }
+      progress.set_file("Writing the cab");
       if !unsafe { FCIFlushCabinet(handle.0, false, Some(next_cab), Some(status)) }.as_bool() {
          return Err(failed("finish cabinet", &erf));
       }
@@ -152,10 +157,11 @@ impl Cabinet {
       }
       let mut paths = HashMap::new();
       paths.insert("input.cab".into(), path.to_path_buf());
-      let _scope = begin(target, paths, progress, true)?;
+      let _scope = begin(target, paths, progress.clone(), true)?;
       STATE.with(|s| {
          if let Some(s) = s.borrow_mut().as_mut() {
             s.metadata_only = metadata_only;
+            s.counting = (!metadata_only).then_some(0);
          }
       });
       let mut erf = ERF::default();
@@ -175,6 +181,16 @@ impl Cabinet {
       if handle.0.is_null() {
          return Err(failed("open cabinet", &erf));
       }
+      if !metadata_only {
+         // Skipping every entry reads only the file headers, so this pass is quick.
+         Self::copy(&handle, &erf)?;
+         let total = STATE.with(|s| s.borrow_mut().as_mut().and_then(|s| s.counting.take()).unwrap_or(0));
+         progress.begin(UpdatePhase::Unpacking, total);
+      }
+      Self::copy(&handle, &erf)
+   }
+
+   fn copy(handle: &Fdi, erf: &ERF) -> io::Result<()> {
       if !unsafe {
          FDICopy(
             handle.0,
@@ -188,7 +204,7 @@ impl Cabinet {
       }
       .as_bool()
       {
-         return Err(failed("extract cabinet", &erf));
+         return Err(failed("extract cabinet", erf));
       }
       Ok(())
    }
@@ -216,6 +232,7 @@ fn begin(
          error: None,
          extracting,
          metadata_only: false,
+         counting: None,
       });
       Ok(Scope)
    })
@@ -343,6 +360,9 @@ unsafe extern "system" fn write(handle: isize, buffer: *const c_void, count: u32
       let mut state = s.borrow_mut();
       if let Some(state) = state.as_mut() {
          state.bytes += u64::from(count);
+         if state.extracting && !state.metadata_only {
+            state.progress.add_done(u64::from(count));
+         }
          state.extracting && state.bytes > MAX_CAB_BYTES
       } else {
          true
@@ -420,7 +440,14 @@ unsafe extern "system" fn next_cab(_: *mut CCAB, _: u32, _: *mut c_void) -> BOOL
    remember("Release exceeds the approximately 2 GB single-cab limit; spanning is not supported.");
    BOOL(0)
 }
-unsafe extern "system" fn status(_: u32, _: u32, _: u32, _: *mut c_void) -> i32 {
+unsafe extern "system" fn status(kind: u32, _: u32, uncompressed: u32, _: *mut c_void) -> i32 {
+   if kind == statusFile {
+      STATE.with(|s| {
+         if let Some(s) = s.borrow().as_ref() {
+            s.progress.add_done(u64::from(uncompressed));
+         }
+      });
+   }
    if allowed() { 0 } else { -1 }
 }
 unsafe extern "system" fn open_info(
@@ -474,6 +501,15 @@ unsafe extern "system" fn notify(kind: FDINOTIFICATIONTYPE, notice: *mut FDINOTI
          return 1;
       }
       if kind != fdintCOPY_FILE {
+         return 0;
+      }
+      let counted = STATE.with(|s| {
+         let mut state = s.borrow_mut();
+         let count = state.as_mut().and_then(|s| s.counting.as_mut())?;
+         *count += u64::try_from(notice.cb).unwrap_or(0);
+         Some(())
+      });
+      if counted.is_some() {
          return 0;
       }
       let result = (|| {
