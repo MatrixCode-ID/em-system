@@ -35,10 +35,10 @@ impl AppProcess {
       I: IntoIterator<Item = S>,
       S: AsRef<OsStr>,
    {
-      let current = layout
+      layout
          .read_current()?
          .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "there is no active version"))?;
-      let folder = layout.version_folder(&current.version);
+      let folder = layout.installed_app_folder();
       let exe = folder.join(product::APP_EXE);
       if !exe.is_file() {
          return Err(io::Error::new(
@@ -91,5 +91,68 @@ impl AppProcess {
       }
    }
 
+   /// The PIDs of the app's exe running from the install folder. The process that started this launcher is
+   /// left out: an app opened directly from its folder hands over to the launcher and exits right after.
+   pub fn running(layout: &InstallLayout) -> io::Result<Vec<u32>> {
+      let own = w::GetCurrentProcessId();
+      let mut snapshot = w::HPROCESSLIST::CreateToolhelp32Snapshot(co::TH32CS::SNAPPROCESS, None).map_err(to_io)?;
+      let mut processes = Vec::new();
+      for entry in snapshot.iter_processes() {
+         let entry = entry.map_err(to_io)?;
+         processes.push((entry.th32ProcessID, entry.th32ParentProcessID));
+      }
+      let parent = processes.iter().find(|(pid, _)| *pid == own).map(|(_, parent)| *parent);
+
+      let mut running = Vec::new();
+      for (pid, _) in processes {
+         if pid == own || pid == 0 || Some(pid) == parent {
+            continue;
+         }
+         // Processes of other users or protected ones cannot be opened; they cannot run from this folder anyway.
+         let Ok(process) = w::HPROCESS::OpenProcess(co::PROCESS::QUERY_LIMITED_INFORMATION, false, pid) else {
+            continue;
+         };
+         let Ok(path) = process.QueryFullProcessImageName(co::PROCESS_NAME::WIN32) else {
+            continue;
+         };
+         let path = std::path::PathBuf::from(path);
+         if layout.contains(&path)
+            && path
+               .file_name()
+               .is_some_and(|name| name.eq_ignore_ascii_case(product::APP_EXE))
+         {
+            running.push(pid);
+         }
+      }
+      Ok(running)
+   }
+
+   /// Brings the main window of process `pid` to the front, restoring it when it is minimized. `false` when
+   /// the process has no visible window with a title.
+   pub fn activate(pid: u32) -> bool {
+      let mut found = None;
+      let _ = w::EnumWindows(|hwnd: w::HWND| {
+         if hwnd.GetWindowThreadProcessId().1 == pid
+            && hwnd.IsWindowVisible()
+            && hwnd.GetWindowText().is_ok_and(|title| !title.is_empty())
+         {
+            found = Some(hwnd);
+            return false;
+         }
+         true
+      });
+      let Some(hwnd) = found else {
+         return false;
+      };
+      if hwnd.IsIconic() {
+         hwnd.ShowWindow(co::SW::RESTORE);
+      }
+      hwnd.SetForegroundWindow()
+   }
+
    // endregion
+}
+
+fn to_io(error: co::ERROR) -> io::Error {
+   io::Error::from_raw_os_error(error.raw() as i32)
 }

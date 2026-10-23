@@ -24,9 +24,13 @@ then HKCU Source. It never reads settings.ini. HTTP(S), local and UNC release fo
   inventory-installer.exe
   current.json
   launcher.log
-  app-<release-id>/
+  app/
   .staging-<release-id>/
 ```
+
+`app/` holds the installed release, updated in place. `.staging-<release-id>/` only exists while the
+changed files of a release are downloaded. Installations made before the in-place update keep the app in
+`app-<release-id>/` until their next update renames that folder to `app/`.
 
 Registry: HKCU/Software/<app_id>/Launcher. IT policy:
 HKLM/Software/Policies/<app_id>/Launcher. The embedded public-key fingerprint is recorded at install;
@@ -65,9 +69,10 @@ TEMP/launcher-uninstall-* folder and starts `--maintenance --parent-pid PID`. Th
 parent to exit, takes the lock and schedules its own folder removal on exit. From outside the
 installation the form opens directly. `--maintenance --quiet` is rejected.
 
-Finishing reports manifest/signature writing, staging rename, current.json, root launcher replacement
-and old-version removal as steps. Removal advances per file listed in each folder's manifest, followed
-by one sweep for unlisted files and empty folders; a missing/invalid manifest uses one sweep.
+Finishing reports each replaced and deleted file, then manifest/signature writing, current.json, root
+launcher replacement and the removal of staging and older folders as steps. Removal advances per file
+listed in each folder's manifest, followed by one sweep for unlisted files and empty folders; a
+missing/invalid manifest uses one sweep.
 Clean install and Uninstall use the Removing phase, including CLI uninstall's temporary second stage.
 Both phases display the current step/path and n of m units, and disable cancellation until complete.
 Locked old versions are logged and retried on a later run. CLI and automatic updates keep the small
@@ -83,10 +88,27 @@ lifetime without a nested main-window loop; returning to setup preserves its ori
 
 ## Updates
 
+The application runs as a single instance. When the runner starts while the application is already
+running from the installation, it brings the application window to the front and exits without checking
+for an update. When another launcher holds the installation lock, the runner exits as well; that
+launcher starts the application.
+
 At start the runner checks the signed source. Profile update behavior is `automatic` by default;
-`ask` offers Update now / Later. Every binary is checked by size and SHA-256 after the signature and
-manifest have been accepted. Unchanged files are reused; interrupted downloads resume in staging.
-Only a complete verified version becomes current. The installed app can keep running during preparation.
+`ask` offers Update now / Later. The update compares the source's release.json with the installed one
+and works in place:
+
+1. Files that are new or changed are downloaded into `.staging-<release-id>/`, each checked by size and
+   SHA-256; interrupted downloads resume there. Unchanged files are trusted from the installed
+   release.json and not read; Repair checks them.
+2. Every installed file to replace or delete is opened without sharing. If one is in use, the update
+   stops before anything in `app/` changes, and runs again on a later start (exit code 5 from the CLI).
+3. The staged files are moved over those in `app/`, files the release no longer lists are deleted
+   (with folders left empty), and release.json and its signature are written last, followed by
+   current.json and the root launcher.
+
+An update that stops while files are being moved leaves the old release.json in place, so the next run
+finds the remaining differences; files already replaced are recognized by their hash and not downloaded
+again. There is no previous version to return to: a faulty release is fixed by publishing another one.
 
 Em WPF hosts only poll when LAUNCHER_PATH is set. First check: five minutes after start. Later checks:
 sixty minutes with random plus/minus ten minutes per PC. The host can configure these through
@@ -117,6 +139,7 @@ A failure/cancellation leaves the old cab intact. The command does not install o
 At install, a cab matching the CDN is used; an unreachable CDN allows the verified cab. A differing cab
 offers IT the option to update it first. Quiet install uses the CDN when they differ, without changing
 the cab. Extraction goes directly into the installation's .staging directory; failure removes staging.
+Building or updating a cab still stages every file of the release, because the cab holds the whole release.
 The installed Source remains the CDN address. User PCs use the CDN for future repair and update.
 
 ## CLI
@@ -125,7 +148,7 @@ The installed Source remains the CDN address. User PCs use the CDN for future re
 | --- | --- |
 | no command | Setup if uninstalled; otherwise check/update and run |
 | --install [--source S] [--target T] [--quiet] [--no-run] | First install; quiet uses no GUI |
-| --prepare [--quiet] | Check, download and verify without activation, always without GUI |
+| --prepare [--quiet] | Check, download and verify the changed files without changing the app, always without GUI |
 | --apply --pid PID | Wait for the app to exit, apply and start |
 | --download-cab [--source S] [--quiet] | Create a new IT cab; fail if it exists |
 | --update-cab [--source S] [--quiet] | Update an existing IT cab; fail if absent |

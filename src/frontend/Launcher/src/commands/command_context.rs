@@ -77,6 +77,7 @@ impl CommandContext {
             entries.next().is_none()
                || layout.launcher_path().is_file()
                || layout.current_path().is_file()
+               || layout.app_folder().is_dir()
                || layout.version_folders().is_ok_and(|folders| !folders.is_empty())
          }
          Err(error) => error.kind() == io::ErrorKind::NotFound,

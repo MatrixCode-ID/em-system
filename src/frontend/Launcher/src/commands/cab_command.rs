@@ -227,7 +227,7 @@ impl CabCommand {
       if valid_old {
          let old_source = FolderSource::new(&old.display().to_string());
          let donor = VerifiedRelease::fetch(&old_source, keys)?;
-         let folder = layout.version_folder(donor.id());
+         let folder = layout.app_folder();
          fs::create_dir_all(layout.root()).map_err(CommandError::io("cannot create cabinet staging"))?;
          // Cabinet layout has a binaries directory; installed donor layout has its content at the root.
          fs::rename(old.join("binaries"), &folder).map_err(CommandError::io("cannot reuse old cabinet binaries"))?;
@@ -243,7 +243,8 @@ impl CabCommand {
             .map_err(CommandError::io("cannot write donor pointer"))?;
       }
       let updater = Updater::new(source.as_ref(), &layout, progress.clone());
-      let summary = updater.prepare(&release)?;
+      // A cab holds the whole release, so unchanged files are copied into staging as well.
+      let summary = updater.prepare_complete(&release)?;
       let package = work.path().join("package");
       fs::create_dir_all(&package).map_err(CommandError::io("cannot create cabinet package"))?;
       let staged = layout.staging_folder(release.id());

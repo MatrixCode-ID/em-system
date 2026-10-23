@@ -110,8 +110,7 @@ impl Fixture {
 
    fn installed_file(&self, path: &str) -> PathBuf {
       let layout = self.layout();
-      let current = layout.read_current().unwrap().unwrap();
-      InstallLayout::file_in(&layout.version_folder(&current.version), path)
+      InstallLayout::file_in(&layout.installed_app_folder(), path)
    }
 }
 

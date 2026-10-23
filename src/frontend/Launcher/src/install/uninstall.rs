@@ -181,6 +181,9 @@ impl<'a> Uninstaller<'a> {
          .iter()
          .map(|folder| FolderRemoval::new(&folder.path))
          .collect();
+      if self.layout.app_folder().is_dir() {
+         folders.push(FolderRemoval::new(&self.layout.app_folder()));
+      }
       folders.push(FolderRemoval::new(root));
       progress.begin(
          UpdatePhase::Removing,

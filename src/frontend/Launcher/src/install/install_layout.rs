@@ -10,25 +10,25 @@ use windows::core::HSTRING;
 
 use crate::format::{ReleaseHash, ReleaseLayout, ReleaseManifest};
 
+const APP_FOLDER_NAME: &str = "app";
 const VERSION_PREFIX: &str = "app-";
 const STAGING_PREFIX: &str = ".staging-";
 const RELEASE_ID_LENGTH: usize = 12;
 
-/// The layout of the install folder: where the root launcher, `current.json`, the log, and the folder of
-/// each version are.
+/// The layout of the install folder: where the root launcher, `current.json`, the log, and the app are.
 ///
 /// ```text
 /// <install>\
 /// ├── launcher.exe       root launcher: the target of shortcuts, pins, and the Uninstall entry
-/// ├── current.json       the active version
+/// ├── current.json       the active release
 /// ├── launcher.log       the launcher log
-/// ├── app-<id>\          the content of binaries/ + release.json + release.json.sig
-/// └── .staging-<id>\     a version that is being prepared
+/// ├── app\               the content of binaries/ + release.json + release.json.sig, updated in place
+/// └── .staging-<id>\     the changed files of release <id>, downloaded before they replace those in app\
 /// ```
 ///
 /// `<id>` is the first 12 hex characters of the SHA-256 of the `release.json` bytes (see
-/// [`Self::release_id`]), so the same release always lands in the same folder without needing a version
-/// number.
+/// [`Self::release_id`]). Installations made before the in-place update keep the app in `app-<id>\`
+/// ([`Self::version_folder`]) until their next update moves it to `app\`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstallLayout {
    root: PathBuf,
@@ -37,7 +37,7 @@ pub struct InstallLayout {
 /// The content of `current.json`: which version is active.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CurrentVersion {
-   /// The `<id>` of the active version, which is also the suffix of its folder name (`app-<id>`).
+   /// The `<id>` of the active release (in an older installation also the suffix of its `app-<id>` folder).
    pub version: String,
 
    /// The `publishedAtUtc` of the active version's release, for display (e.g. `DisplayVersion` in Apps &
@@ -58,7 +58,7 @@ pub struct ActiveVersion {
    pub manifest: Option<ReleaseManifest>,
 }
 
-/// One version folder (`app-<id>`) or staging folder (`.staging-<id>`) in the install folder.
+/// One folder of an older installation (`app-<id>`) or a staging folder (`.staging-<id>`) in the install folder.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionFolder {
    /// Path lengkap foldernya.
@@ -139,7 +139,25 @@ impl InstallLayout {
 
    // region: Methods
 
-   /// Folder versi `id`, `<install>\app-<id>`.
+   /// The folder of the app, `<install>\app`, which every update changes in place.
+   pub fn app_folder(&self) -> PathBuf {
+      self.root.join(APP_FOLDER_NAME)
+   }
+
+   /// The folder the active app runs from now: [`Self::app_folder`], or the `app-<id>` folder of an older
+   /// installation that has not been updated since.
+   pub fn installed_app_folder(&self) -> PathBuf {
+      let app = self.app_folder();
+      if app.is_dir() {
+         return app;
+      }
+      match self.read_current() {
+         Ok(Some(current)) if self.version_folder(&current.version).is_dir() => self.version_folder(&current.version),
+         _ => app,
+      }
+   }
+
+   /// The folder of release `id` in an older installation, `<install>\app-<id>`.
    pub fn version_folder(&self, id: &str) -> PathBuf {
       self.root.join(format!("{VERSION_PREFIX}{id}"))
    }
@@ -188,16 +206,15 @@ impl InstallLayout {
    /// The active version, or `None` when `current.json` is missing or broken.
    pub fn active_version(&self) -> Option<ActiveVersion> {
       let current = self.read_current().ok()??;
-      let manifest_path = self
-         .version_folder(&current.version)
-         .join(ReleaseLayout::MANIFEST_FILE_NAME);
+      let manifest_path = self.installed_app_folder().join(ReleaseLayout::MANIFEST_FILE_NAME);
       let manifest = fs::read(manifest_path)
          .ok()
          .and_then(|bytes| ReleaseManifest::from_bytes(&bytes).ok());
       Some(ActiveVersion { current, manifest })
    }
 
-   /// The version folders (`app-*`) and staging folders (`.staging-*`) that exist in the install folder.
+   /// The folders of an older installation (`app-*`) and the staging folders (`.staging-*`) that exist in the
+   /// install folder; `app\` itself is not one of them.
    pub fn version_folders(&self) -> io::Result<Vec<VersionFolder>> {
       let mut folders = Vec::new();
       let entries = match fs::read_dir(&self.root) {

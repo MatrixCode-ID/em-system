@@ -1,5 +1,6 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::os::windows::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
@@ -18,14 +19,15 @@ const PART_SUFFIX: &str = ".part";
 /// use the same sequence.
 ///
 /// 1. [`Self::check`]: fetch and verify the release in the source.
-/// 2. [`Self::install`]: prepare the new version in `.staging-<id>` (identical files are copied from the
-///    active version, the rest are downloaded with resume), match the size and SHA-256 of every file, move
-///    it to `app-<id>`, write `current.json`, replace the root launcher if it changed, then delete the
-///    other versions.
+/// 2. [`Self::install`]: compare the release's `release.json` with the one in `app\`; download only the files
+///    that are new or changed into `.staging-<id>` (with resume, size and SHA-256 checked), make sure none of
+///    the files to replace or delete is in use, then move the downloaded files into `app\`, delete the files
+///    the release no longer lists, write `release.json` last, `current.json`, and replace the root launcher
+///    if it changed.
 ///
-/// The active version is never touched before the new version is complete, so an update may run even
-/// while the app of the old version is still open, and a failure midway does not break anything. Progress
-/// and cancellation go through [`UpdateProgress`], so this work can be run on another thread.
+/// Unchanged files are trusted from the installed `release.json` and not read again; Repair checks them. The
+/// app must be closed while it is updated: the launcher does not start an update while it runs. Progress and
+/// cancellation go through [`UpdateProgress`], so this work can be run on another thread.
 pub struct Updater<'a> {
    // pub(super): repair.rs is a sibling module and still needs them.
    pub(super) source: &'a dyn ReleaseSource,
@@ -138,9 +140,9 @@ impl<'a> Updater<'a> {
          .sum()
    }
 
-   /// Installs `release` as the active version (update steps 3–7). When it fails or is cancelled, the active
-   /// version does not change and the files that were already prepared stay in `.staging-<id>` to be
-   /// resumed.
+   /// Installs `release` as the active version by changing `app\` in place. Downloading can be cancelled and
+   /// resumes later from `.staging-<id>`. When a file to replace or delete is in use, the update stops with
+   /// [`UpdateError::Locked`] before anything in `app\` changes.
    pub fn install(&self, release: &VerifiedRelease) -> Result<UpdateOutcome, UpdateError> {
       let active = self.layout.active_version();
       if active
@@ -151,34 +153,97 @@ impl<'a> Updater<'a> {
          return Ok(UpdateOutcome::AlreadyActive);
       }
 
-      let summary = self.prepare_files(release)?;
-      let mut leftover = self
-         .layout
-         .version_folder(release.id())
-         .exists()
-         .then(|| FolderRemoval::new(&self.layout.version_folder(release.id())));
-      let cleanup = self.cleanup_folders(release.id(), true);
-      let total =
-         5 + leftover.as_ref().map_or(0, FolderRemoval::units) + cleanup.iter().map(FolderRemoval::units).sum::<u64>();
-      self.progress.begin(UpdatePhase::Finishing, total);
-      self.step("Writing release manifest and signature");
-      write_release_files(&self.layout.staging_folder(release.id()), release)?;
-      self.progress.add_done(1);
-      let staging = self.layout.staging_folder(release.id());
-      let version = self.layout.version_folder(release.id());
-      if let Some(removal) = &mut leftover {
-         LauncherLog::info(format!("Removing the leftover folder {}", version.display()));
-         removal
-            .remove(&self.progress)
-            .map_err(UpdateError::io("remove", &version))?;
+      let (summary, staged) = self.prepare_files(release, false)?;
+      let installed = self.layout.installed_app_folder();
+      let app = self.layout.app_folder();
+      // Files the installed release lists and this one does not.
+      let removed: Vec<String> = active
+         .as_ref()
+         .and_then(|active| active.manifest.as_ref())
+         .map(|manifest| {
+            manifest
+               .files()
+               .iter()
+               .filter(|file| release.manifest().find(&file.path).is_none())
+               .map(|file| file.path.clone())
+               .collect()
+         })
+         .unwrap_or_default();
+
+      self.progress.set_file("Checking for files in use");
+      LauncherLog::info(format!(
+         "Checking {} files to replace and {} to delete for locks",
+         staged.len(),
+         removed.len()
+      ));
+      for path in staged
+         .iter()
+         .map(|file| file.path.as_str())
+         .chain(removed.iter().map(String::as_str))
+      {
+         let target = InstallLayout::file_in(&installed, path);
+         if is_locked(&target) {
+            LauncherLog::warn(format!(
+               "{} is in use; the update stops before changing anything",
+               target.display()
+            ));
+            return Err(UpdateError::Locked {
+               path: target.display().to_string(),
+            });
+         }
       }
-      self.step("Renaming staging to the release folder");
-      fs::rename(&staging, &version).map_err(UpdateError::io("rename", &staging))?;
+
+      let moving = !InstallLayout::same_path(&installed, &app) && installed.is_dir();
+      let cleanup = self.cleanup_folders(true);
+      let total = u64::from(moving)
+         + staged.len() as u64
+         + removed.len() as u64
+         + 4
+         + cleanup.iter().map(FolderRemoval::units).sum::<u64>();
+      self.progress.begin(UpdatePhase::Finishing, total);
+      if moving {
+         // An installation from before the in-place update: its version folder becomes app\.
+         self.step(&format!("Moving {} to {}", installed.display(), app.display()));
+         fs::rename(&installed, &app).map_err(UpdateError::io("rename", &installed))?;
+         self.progress.add_done(1);
+      }
+
+      let staging = self.layout.staging_folder(release.id());
+      for file in &staged {
+         self.progress.set_file(&format!("Replacing {}", file.path));
+         let source = InstallLayout::file_in(&staging, &file.path);
+         let target = InstallLayout::file_in(&app, &file.path);
+         if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent).map_err(UpdateError::io("create", parent))?;
+         }
+         fs::rename(&source, &target).map_err(UpdateError::io("replace", &target))?;
+         self.progress.add_done(1);
+      }
+      for path in &removed {
+         self.progress.set_file(&format!("Deleting {path}"));
+         let target = InstallLayout::file_in(&app, path);
+         match fs::remove_file(&target) {
+            Ok(()) => remove_empty_parents(&target, &app),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(error) => return Err(UpdateError::io("delete", &target)(error)),
+         }
+         self.progress.add_done(1);
+      }
+      LauncherLog::info(format!(
+         "Replaced {} files and deleted {} files",
+         staged.len(),
+         removed.len()
+      ));
+
+      // Written last: until then the installed release.json still describes the old release, so an update
+      // that stopped halfway finds the same differences on its next run.
+      self.step("Writing release manifest and signature");
+      write_release_files(&app, release)?;
       self.progress.add_done(1);
 
       self.activate(release, cleanup)?;
       LauncherLog::info(format!(
-         "Release {} is active: {} files downloaded ({} bytes), {} files reused",
+         "Release {} is active: {} files downloaded ({} bytes), {} files unchanged",
          release.id(),
          summary.downloaded_files,
          summary.downloaded_bytes,
@@ -187,64 +252,88 @@ impl<'a> Updater<'a> {
       Ok(UpdateOutcome::Installed(summary))
    }
 
-   /// Downloads and verifies staging without replacing the active version.
+   /// Downloads and verifies the changed files of `release` into staging without changing the installed app.
    pub fn prepare(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
-      let summary = self.prepare_files(release)?;
+      let (summary, _) = self.prepare_files(release, false)?;
+      self.write_staging_manifest(release)?;
+      Ok(summary)
+   }
+
+   /// Like [`Self::prepare`], but staging receives every file of `release`: unchanged ones are copied from the
+   /// installed app and checked. Used to build a cab, which must hold the whole release.
+   pub fn prepare_complete(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
+      let (summary, _) = self.prepare_files(release, true)?;
+      self.write_staging_manifest(release)?;
+      Ok(summary)
+   }
+
+   fn write_staging_manifest(&self, release: &VerifiedRelease) -> Result<(), UpdateError> {
       self.progress.begin(UpdatePhase::Finishing, 1);
       self.step("Writing release manifest and signature");
       write_release_files(&self.layout.staging_folder(release.id()), release)?;
       self.progress.add_done(1);
-      Ok(summary)
+      Ok(())
    }
 
-   // Prepares bytes without starting the non-cancellable commit phase.
-   fn prepare_files(&self, release: &VerifiedRelease) -> Result<UpdateSummary, UpdateError> {
+   // Puts the files of `release` that app\ does not have yet into staging, without starting the
+   // non-cancellable commit. Returns the files staged to replace those in app\; with `complete`, staging also
+   // receives copies of the unchanged files, which are then not returned.
+   fn prepare_files<'r>(
+      &self,
+      release: &'r VerifiedRelease,
+      complete: bool,
+   ) -> Result<(UpdateSummary, Vec<&'r ReleaseFile>), UpdateError> {
       let active = self.layout.active_version();
+      let installed = self.layout.installed_app_folder();
       let staging = self.layout.staging_folder(release.id());
       fs::create_dir_all(&staging).map_err(UpdateError::io("create", &staging))?;
       LauncherLog::info(format!("Preparing release {} in {}", release.id(), staging.display()));
 
-      // Files of the active version with the same path, size and hash are copied instead of downloaded.
-      let donor = active.as_ref().and_then(|active| {
-         let manifest = active.manifest.as_ref()?;
-         Some((self.layout.version_folder(&active.current.version), manifest))
-      });
-      match (&active, &donor) {
-         (_, Some((folder, manifest))) => LauncherLog::info(format!(
-            "Unchanged files are copied from {} ({} files in its manifest)",
-            folder.display(),
+      let manifest = active.as_ref().and_then(|active| active.manifest.as_ref());
+      match (&active, manifest) {
+         (_, Some(manifest)) => LauncherLog::info(format!(
+            "Comparing with the installed release.json in {} ({} files)",
+            installed.display(),
             manifest.files().len()
          )),
          (Some(active), None) => LauncherLog::warn(format!(
-            "The manifest of the active version {} cannot be read; every file is downloaded",
+            "The installed release.json of {} cannot be read; installed files are checked one by one",
             active.current.version
          )),
-         (None, None) => LauncherLog::info("There is no active version; every file is downloaded"),
+         (None, None) => LauncherLog::info("There is no installed release; every file is downloaded"),
       }
 
       let mut summary = UpdateSummary::default();
+      let mut staged = Vec::new();
       self
          .progress
          .begin(UpdatePhase::Preparing, release.manifest().total_size());
       for file in release.manifest().files() {
          self.check_cancelled()?;
          self.progress.set_file(&format!("Checking {}", file.path));
+         let old = manifest.and_then(|manifest| manifest.find(&file.path));
+         let unchanged = old.is_some_and(|old| old.has_same_content(file));
          let target = InstallLayout::file_in(&staging, &file.path);
 
-         // Staged by an earlier run that did not finish: it was verified before it got its name.
-         if self.has_content(&target, file)? {
+         if unchanged && !complete {
             self.progress.add_done(file.size);
             summary.reused_files += 1;
             continue;
          }
 
-         let old = donor.as_ref().and_then(|(_, manifest)| manifest.find(&file.path));
-         if let Some((folder, _)) = &donor
-            && let Some(old) = old
-            && old.has_same_content(file)
-         {
+         // Staged by an earlier run that did not finish: it was verified before it got its name.
+         if self.has_content(&target, file)? {
+            self.progress.add_done(file.size);
+            summary.reused_files += 1;
+            if !unchanged {
+               staged.push(file);
+            }
+            continue;
+         }
+
+         if unchanged {
             self.progress.set_file(&format!("Copying {}", file.path));
-            if self.copy_local(&InstallLayout::file_in(folder, &old.path), &target, file)? {
+            if self.copy_local(&InstallLayout::file_in(&installed, &file.path), &target, file)? {
                summary.reused_files += 1;
                continue;
             }
@@ -252,6 +341,16 @@ impl<'a> Updater<'a> {
                "The installed copy of {} is damaged; downloading it instead",
                file.path
             ));
+         } else if !complete
+            && self
+               .has_content(&InstallLayout::file_in(&installed, &file.path), file)
+               .unwrap_or(false)
+         {
+            // Already replaced by an update that stopped before writing release.json. A file that cannot be
+            // read (in use) is treated as not replaced; the lock check before the commit reports it.
+            self.progress.add_done(file.size);
+            summary.reused_files += 1;
+            continue;
          }
 
          LauncherLog::info(format!(
@@ -259,29 +358,32 @@ impl<'a> Updater<'a> {
             file.path,
             file.size,
             match old {
-               _ if donor.is_none() => "no active version to copy from",
+               _ if manifest.is_none() => "no installed release to compare with",
                None => "new in this release",
-               Some(old) if old.has_same_content(file) => "the installed copy is damaged",
+               Some(_) if unchanged => "the installed copy is damaged",
                Some(_) => "changed in this release",
             }
          ));
          self.progress.set_file(&format!("Downloading {}", file.path));
          self.download(file, &target, &mut summary)?;
+         if !unchanged {
+            staged.push(file);
+         }
       }
 
       LauncherLog::info(format!(
-         "Prepared release {}: {} files downloaded ({} bytes), {} files reused",
+         "Prepared release {}: {} files downloaded ({} bytes), {} files unchanged or already staged",
          release.id(),
          summary.downloaded_files,
          summary.downloaded_bytes,
          summary.reused_files
       ));
-      Ok(summary)
+      Ok((summary, staged))
    }
 
-   /// Cleans up what the previous run left: `launcher.old.exe` and `app-*` folders other than the active
-   /// version that could not be deleted back then (the old app was still running). `.staging-*` folders are
-   /// left for resuming. A failure is only recorded in the log.
+   /// Cleans up what the previous run left: `launcher.old.exe`, and `app-*` folders of an older installation
+   /// that are no longer the installed app. `.staging-*` folders are left for resuming. A failure is only
+   /// recorded in the log.
    pub fn remove_leftovers(&self) {
       let old_launcher = self.layout.old_launcher_path();
       if old_launcher.exists()
@@ -290,25 +392,19 @@ impl<'a> Updater<'a> {
          LauncherLog::warn(format!("Cannot remove {}: {error}", old_launcher.display()));
       }
 
-      if let Ok(Some(current)) = self.layout.read_current() {
-         let cleanup = self.cleanup_folders(&current.version, false);
-         let progress = UpdateProgress::new();
-         progress.begin(UpdatePhase::Finishing, cleanup.iter().map(FolderRemoval::units).sum());
-         Self::remove_versions(cleanup, &progress);
-      }
+      let cleanup = self.cleanup_folders(false);
+      let progress = UpdateProgress::new();
+      progress.begin(UpdatePhase::Finishing, cleanup.iter().map(FolderRemoval::units).sum());
+      Self::remove_versions(cleanup, &progress);
    }
 
    // endregion
 }
 
 impl Updater<'_> {
-   // Steps 5 to 7: point current.json at the release, refresh the root launcher, drop other versions.
-   pub(super) fn begin_repair_finishing(&self, release: &VerifiedRelease) -> Vec<FolderRemoval> {
-      let mut cleanup = self.cleanup_folders(release.id(), true);
-      let staging = self.layout.staging_folder(release.id());
-      if staging.exists() {
-         cleanup.push(FolderRemoval::new(&staging));
-      }
+   // Steps 5 to 7: point current.json at the release, refresh the root launcher, drop leftover folders.
+   pub(super) fn begin_repair_finishing(&self) -> Vec<FolderRemoval> {
+      let cleanup = self.cleanup_folders(true);
       self.progress.begin(
          UpdatePhase::Finishing,
          4 + cleanup.iter().map(FolderRemoval::units).sum::<u64>(),
@@ -337,14 +433,14 @@ impl Updater<'_> {
       self.progress.add_done(1);
       self.step("Replacing the root launcher");
       // The new version already runs without it, so a failure here is only logged.
-      if let Err(error) = self.replace_root_launcher(&self.layout.version_folder(release.id())) {
+      if let Err(error) = self.replace_root_launcher(&self.layout.installed_app_folder()) {
          LauncherLog::warn(format!("Cannot replace the root launcher: {error}"));
       }
       self.progress.add_done(1);
-      self.step("Removing old versions");
+      self.step("Removing staging and old folders");
       Self::remove_versions(cleanup, &self.progress);
       self.progress.add_done(1);
-      LauncherLog::info("Old versions removed");
+      LauncherLog::info("Staging and old folders removed");
       Ok(())
    }
 
@@ -522,12 +618,16 @@ impl Updater<'_> {
       Ok(())
    }
 
-   // Snapshot removal units before Finishing so the denominator stays fixed.
-   fn cleanup_folders(&self, keep: &str, with_staging: bool) -> Vec<FolderRemoval> {
+   // Snapshot removal units before Finishing so the denominator stays fixed. The installed app is never one of
+   // them, also when it still lives in the app-<id> folder of an older installation.
+   fn cleanup_folders(&self, with_staging: bool) -> Vec<FolderRemoval> {
+      let installed = self.layout.installed_app_folder();
       match self.layout.version_folders() {
          Ok(folders) => folders
             .into_iter()
-            .filter(|folder| folder.id != keep && (with_staging || !folder.is_staging))
+            .filter(|folder| {
+               !InstallLayout::same_path(&folder.path, &installed) && (with_staging || !folder.is_staging)
+            })
             .map(|folder| FolderRemoval::new(&folder.path))
             .collect(),
          Err(error) => {
@@ -562,6 +662,26 @@ pub(super) fn write_release_files(folder: &Path, release: &VerifiedRelease) -> R
       fs::write(&path, bytes).map_err(UpdateError::io("write", &path))?;
    }
    Ok(())
+}
+
+// True when `path` exists but cannot be opened for writing without sharing: another process holds it, or it
+// cannot be replaced for another reason (read-only, access denied). A missing file is not locked.
+pub(super) fn is_locked(path: &Path) -> bool {
+   match OpenOptions::new().read(true).write(true).share_mode(0).open(path) {
+      Ok(_) => false,
+      Err(error) => error.kind() != io::ErrorKind::NotFound,
+   }
+}
+
+// Deletes the folders between `file` and `root` that became empty; stops at the first one that is not.
+fn remove_empty_parents(file: &Path, root: &Path) {
+   let mut folder = file.parent();
+   while let Some(current) = folder {
+      if InstallLayout::same_path(current, root) || fs::remove_dir(current).is_err() {
+         break;
+      }
+      folder = current.parent();
+   }
 }
 
 fn part_path(target: &Path) -> PathBuf {

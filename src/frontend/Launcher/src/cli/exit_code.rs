@@ -34,6 +34,7 @@ impl ExitCode {
          | UpdateError::Signature(_)
          | UpdateError::Format(_)
          | UpdateError::ServerChanged { .. } => Self::SourceFailed,
+         UpdateError::Locked { .. } => Self::AppRunning,
          UpdateError::Io { .. } => Self::IoFailed,
          UpdateError::Cancelled => Self::Cancelled,
       }

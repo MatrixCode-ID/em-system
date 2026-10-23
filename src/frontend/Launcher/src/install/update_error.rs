@@ -6,8 +6,10 @@ use std::path::Path;
 use crate::format::{ReleaseFormatError, SignatureError};
 use crate::source::SourceError;
 
-/// The reason an install, update, or repair did not finish. Whatever the reason, the active version does
-/// not change: the new version is only used after all its files pass the checks.
+/// The reason an install, update, or repair did not finish. Every reason except [`Self::Io`] is found before
+/// the installed app is touched: the changed files are downloaded and checked first, and the files to replace
+/// are checked for locks. An I/O failure while files are being replaced is repaired by the next update, which
+/// finds the same differences again.
 #[derive(Debug)]
 pub enum UpdateError {
    /// The release source cannot be read, or `release.json`/`.sig` is not there.
@@ -23,6 +25,13 @@ pub enum UpdateError {
    /// is being Synced again on the server; this update is cancelled and tried again later (section 7).
    ServerChanged {
       /// The path of the release file that does not match.
+      path: String,
+   },
+
+   /// A file of the installed app that the update must replace or delete is in use. Nothing was changed; the
+   /// update is tried again on a later start.
+   Locked {
+      /// The full path of the file in use.
       path: String,
    },
 
@@ -56,6 +65,10 @@ impl Display for UpdateError {
          Self::ServerChanged { path } => write!(
             f,
             "'{path}' does not match the release manifest; the release changed on the server, try again later"
+         ),
+         Self::Locked { path } => write!(
+            f,
+            "'{path}' is in use; nothing was changed, the update runs again later"
          ),
          Self::Io { action, error } => write!(f, "{action}: {error}"),
          Self::Cancelled => f.write_str("cancelled"),

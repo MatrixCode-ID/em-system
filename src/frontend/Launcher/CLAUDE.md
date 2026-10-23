@@ -136,6 +136,26 @@ unit test, fmt dan clippy wajib; uji visual menunggu konfirmasi pengguna.
 - Kegagalan pada progress sebelum launch tetap ditahan untuk dibaca pengguna.
   Mode quiet tetap tanpa window. Perbaikan lanjutan ini tidak membangun ulang dist produk.
 
+## Update langsung di folder app (keputusan pengguna 2026-10-23)
+
+Keputusan ini menggantikan model folder per versi (`app-<id>`) di bawah dan di keputusan sebelumnya.
+Update mengubah `app\` di tempat: bandingkan `release.json` source dengan yang terpasang, unduh file
+baru/berubah ke `.staging-<id>`, **cek dulu semua file yang akan diganti/dihapus; bila ada yang terkunci,
+update gagal tanpa mengubah apa pun** (`UpdateError::Locked`, exit code 5), lalu pindahkan file staging
+ke `app\`, hapus file yang tidak tercantum lagi, tulis `release.json` paling akhir, `current.json`, dan
+launcher root. File yang tidak berubah dipercaya dari `release.json` terpasang (tidak dibaca ulang);
+kerusakan ditangani Repair. Tidak ada versi lama untuk kembali. Instalasi lama di `app-<id>` dipindah ke
+`app\` pada update pertama. Cab tetap men-stage seluruh rilis.
+
+## Aplikasi hanya satu instance (keputusan pengguna 2026-10-23)
+
+Aplikasi produk hanya boleh berjalan satu instance; launcher yang menegakkannya, **tanpa mutex**.
+Sebelum mengambil lock, alur start (`StartCommand`) mencari proses `app_exe` yang berjalan dari folder
+instalasi (`AppProcess::running`, tanpa proses launcher sendiri dan proses induknya, yaitu app yang dibuka
+langsung lalu menyerahkan ke launcher). Bila ada, launcher memunculkan window-nya (`AppProcess::activate`),
+mencatat log, lalu keluar tanpa cek update dan tanpa menjalankan app lagi. Bila launcher lain sedang
+memegang lock, launcher keluar tanpa menjalankan app, karena launcher yang sibuk itulah yang menjalankannya.
+
 ## Build
 
 Requires `rustup` (the toolchain itself is pinned by `rust-toolchain.toml`) and the MSVC build tools
@@ -177,15 +197,19 @@ Never edit or replace that file by hand. A missing file fails the host build (`M
 ├── launcher.exe          root launcher: target of shortcuts, pin and the Uninstall entry
 ├── current.json          { "version": "<id>", "publishedAtUtc": "..." }, written atomically
 ├── launcher.log          the launcher's log, rotated at 1 MB (one backup, .1)
-├── app-<id>\             binaries/ of the release + release.json + release.json.sig
-└── .staging-<id>\        the version being prepared (kept for resume)
+├── app\                  binaries/ of the release + release.json + release.json.sig, updated in place
+└── .staging-<id>\        the changed files of release <id> (kept for resume)
 ```
 
-`<id>` is the first 12 hex characters of the SHA-256 of the `release.json` bytes. An update fills `.staging-<id>`
-(files unchanged since the active version are copied locally, the rest downloaded with resume, every file checked
-by size and SHA-256), renames it to `app-<id>`, rewrites `current.json`, replaces the root launcher when the
-release carries a different one (the old one becomes `launcher.old.exe`, deleted on the next run) and removes the
-other versions that are not in use. `release.json` in a version folder is what tells the app it is managed.
+`<id>` is the first 12 hex characters of the SHA-256 of the `release.json` bytes. An update compares the source's
+`release.json` with the one in `app\`, downloads only new and changed files into `.staging-<id>` (with resume, every
+file checked by size and SHA-256), stops with `UpdateError::Locked` when a file to replace or delete is in use,
+then moves the staged files into `app\`, deletes the files the release no longer lists, writes `release.json` last,
+rewrites `current.json`, replaces the root launcher when the release carries a different one (the old one becomes
+`launcher.old.exe`, deleted on the next run) and removes staging. Unchanged files are not read again. An older
+installation still has `app-<id>\`; `InstallLayout::installed_app_folder` finds it and the next update renames it to
+`app\`. `release.json` in the app folder is what tells the app it is managed. A cab still stages the whole release
+(`Updater::prepare_complete`).
 
 ## Registry
 
@@ -218,7 +242,8 @@ When the launcher starts the app it sets:
 - `LAUNCHER_PATH` = full path of `<install>\launcher.exe`
 - `LAUNCHER_APP_ID` = `product::APP_ID`
 
-The working directory is `app-<id>\`; arguments after `--` are passed on unchanged. On the WPF side
+The working directory is the installed app folder (`app\`, or `app-<id>\` before the first in-place update);
+arguments after `--` are passed on unchanged. On the WPF side
 `LauncherIntegration` (`src/shared/Em.Ui.Wpf.Core/Core`) sets the AUMID from these variables, and an app that is
 managed but was opened without them runs `..\launcher.exe --from-app -- <its arguments>` and exits. The launcher
 always sets the variables, so there is no loop. `--from-app` only makes the log say "started by app redirect".

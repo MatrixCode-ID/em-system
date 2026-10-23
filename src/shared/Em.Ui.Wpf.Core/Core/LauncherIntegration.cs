@@ -89,8 +89,9 @@ namespace Em.Ui.Wpf.Core
          }
 
          if (!IsManaged) return;
-         // The installation root sits one level above the version folder (<install>\app-<id>\). The copy
-         // of launcher.exe inside the version folder itself is only the one the next update installs.
+         // The installation root sits one level above the app folder (<install>\app\, or <install>\app-<id>\
+         // in an older installation). The copy of launcher.exe inside the app folder is only the one the next
+         // update installs.
          string name;
          try {
             var manifest = Release.ReleaseManifestSerializer.Deserialize(File.ReadAllBytes(Path.Combine(baseDirectory, ReleaseMarkerFileName)));

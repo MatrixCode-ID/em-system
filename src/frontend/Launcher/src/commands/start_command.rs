@@ -71,11 +71,32 @@ impl StartCommand {
          return InstallCommand::run(context, &Default::default());
       }
 
+      // The app runs as one instance only: while it is open, the launcher neither updates nor starts it again.
+      match AppProcess::running(&layout) {
+         Ok(running) if !running.is_empty() => {
+            let activated = running.iter().any(|pid| AppProcess::activate(*pid));
+            LauncherLog::info(format!(
+               "{} is already running (pid {}); {}",
+               product::APP_NAME,
+               running.iter().map(u32::to_string).collect::<Vec<_>>().join(", "),
+               if activated {
+                  "its window was brought to the front"
+               } else {
+                  "it has no window to bring to the front"
+               }
+            ));
+            return Ok(());
+         }
+         Ok(_) => {}
+         Err(error) => LauncherLog::warn(format!("Cannot list running processes: {error}")),
+      }
+
       let Some(lock) = LauncherLock::acquire(&context.lock_name, Duration::ZERO)
          .map_err(CommandError::io("cannot take the launcher lock"))?
       else {
-         LauncherLog::info("Another launcher is busy with the installation; starting the installed version");
-         return context.start_app(&layout, app_args);
+         // Starting the app here would give a second instance once the busy launcher starts it as well.
+         LauncherLog::info("Another launcher is busy with the installation; it starts the app when it is done");
+         return Ok(());
       };
 
       if let Some(reason) = Self::damage(&layout) {
@@ -104,7 +125,7 @@ impl StartCommand {
       if active.manifest.is_none() {
          return Some("the release manifest of the active version is missing".into());
       }
-      let exe = layout.version_folder(&active.current.version).join(product::APP_EXE);
+      let exe = layout.installed_app_folder().join(product::APP_EXE);
       if !exe.is_file() {
          return Some(format!("{} is missing", exe.display()));
       }

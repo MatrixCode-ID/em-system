@@ -98,7 +98,7 @@ fn installs_over_http() {
       ("sub/b.dll", content(2, BIG_SIZE)),
       ("empty.txt", Vec::new()),
    ];
-   let id = InstallLayout::release_id(&publish(&release, &files, &key, TIME));
+   publish(&release, &files, &key, TIME);
    let server = TestServer::start(&temp.path().join("cdn"), true);
 
    let address = format!("{}/wpf-release", server.url);
@@ -114,7 +114,7 @@ fn installs_over_http() {
 
    for (path, bytes) in &files {
       assert_eq!(
-         &fs::read(InstallLayout::file_in(&layout.version_folder(&id), path)).unwrap(),
+         &fs::read(InstallLayout::file_in(&layout.app_folder(), path)).unwrap(),
          bytes
       );
    }

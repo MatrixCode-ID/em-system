@@ -3,18 +3,18 @@
 
 use crate::launcher_log::LauncherLog;
 
-use super::updater::write_release_files;
+use super::updater::{is_locked, write_release_files};
 use super::{InstallLayout, UpdateError, UpdateOutcome, UpdatePhase, UpdateSummary, Updater, VerifiedRelease};
 
 impl Updater<'_> {
-   /// Repairs the installation against `release`. When the folder of version `release` already exists, every
-   /// file there is hashed again, and ones that are broken or missing are downloaded again straight into
-   /// place (through `.part`), then that version is activated again. When it does not exist (the active
-   /// version is older, or the installation is gone), repair is the same as [`Self::install`].
+   /// Repairs the installation against `release`. When the installed app folder exists, every file there is
+   /// hashed again, and ones that are broken or missing are downloaded again straight into place (through
+   /// `.part`), then `release` is activated again. When it does not exist (the installation is gone), repair
+   /// is the same as [`Self::install`].
    ///
-   /// A file in use by a running app cannot be replaced; close the app first.
+   /// A broken file that is in use stops the repair with [`UpdateError::Locked`] before anything is downloaded.
    pub fn repair(&self, release: &VerifiedRelease) -> Result<UpdateOutcome, UpdateError> {
-      let folder = self.layout.version_folder(release.id());
+      let folder = self.layout.installed_app_folder();
       if !folder.is_dir() {
          return self.install(release);
       }
@@ -45,6 +45,15 @@ impl Updater<'_> {
          }
       }
 
+      for file in &broken {
+         let target = InstallLayout::file_in(&folder, &file.path);
+         if is_locked(&target) {
+            return Err(UpdateError::Locked {
+               path: target.display().to_string(),
+            });
+         }
+      }
+
       let mut summary = UpdateSummary {
          reused_files: files.len() - broken.len(),
          ..UpdateSummary::default()
@@ -58,7 +67,7 @@ impl Updater<'_> {
          self.download(file, &InstallLayout::file_in(&folder, &file.path), &mut summary)?;
       }
 
-      let cleanup = self.begin_repair_finishing(release);
+      let cleanup = self.begin_repair_finishing();
       write_release_files(&folder, release)?;
       self.progress.add_done(1);
       self.activate(release, cleanup)?;
