@@ -31,13 +31,35 @@ namespace Em.Ui.Maui.Navigations
          // belongs to this page. So the panel asks for it, and this page does the work.
          AccountPanelView.Vm.CloseRequested += (_, _) => Vm.IsAccountPanelOpen = false;
 
-         app.ActiveUserChanged += (_, _) => Vm.RefreshAccount();
-         app.ActiveConnectionChanged += (_, _) => Vm.RefreshAccount();
-         app.ThemeChanged += (_, _) => AccountPanelView.Vm.RefreshTheme();
+         app.ActiveUserChanged += OnAccountChanged;
+         app.ActiveConnectionChanged += OnAccountChanged;
+         app.ThemeChanged += OnThemeChanged;
          // A session can end without anyone pressing the sign-out button - its lifetime ran out, or it was
          // revoked from elsewhere. Both must land on the login screen through exactly the same way.
          app.SessionEnded += OnSessionEnded;
+
+         // The badge binding was evaluated inside InitializeComponent, before EmApp was set. A host built for
+         // an already signed-in user (Android recreating the activity) gets no ActiveUserChanged to fix it.
+         Vm.RefreshAccount();
       }
+
+      /// <summary>
+      /// Disconnects this host from the application and its main stack, so a replaced host no longer reacts
+      /// to their events and releases the body of the screen it was showing. Called when Android recreates
+      /// the activity and a new host takes over.
+      /// </summary>
+      internal void Detach() {
+         var app = Vm.EmApp!;
+         app.ActiveUserChanged -= OnAccountChanged;
+         app.ActiveConnectionChanged -= OnAccountChanged;
+         app.ThemeChanged -= OnThemeChanged;
+         app.SessionEnded -= OnSessionEnded;
+         Vm.Stack = null;
+      }
+
+      private void OnAccountChanged(object? sender, EventArgs e) => Vm.RefreshAccount();
+
+      private void OnThemeChanged(object? sender, EventArgs e) => AccountPanelView.Vm.RefreshTheme();
 
       /// <summary>The view model of this page, read back from the BindingContext set in XAML.</summary>
       public SpaNavigationHostVm Vm => (SpaNavigationHostVm)BindingContext;

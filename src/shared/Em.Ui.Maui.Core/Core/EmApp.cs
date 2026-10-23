@@ -342,14 +342,17 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Builds the application's main page and installs its first screen. Called once from
-      /// <c>App.CreateWindow</c> - this is the MAUI counterpart of <c>Run</c> in the desktop client, which
+      /// Builds the application's main page and installs its first screen. Called from
+      /// <c>App.CreateWindow</c>, again each time Android recreates the activity - this is the MAUI counterpart of <c>Run</c> in the desktop client, which
       /// there blocks until the application stops while here its lifecycle is held by MAUI itself.
       /// </summary>
       /// <returns>The page installed into the application window.</returns>
       public Page CreateRootPage() {
          ApplyTheme();
 
+         // Android calls this again when it recreates the activity while the process lives on; the old host
+         // must let go of the events and of the screen body first, since a view can have only one parent.
+         (RootPage as SpaNavigationHost)?.Detach();
          var host = new SpaNavigationHost(this);
          RootPage = host;
 
