@@ -5,10 +5,6 @@ namespace Em.Ui.Wpf.Core
 {
    public partial class EmApp
    {
-      // The debug tokens of the debug connections, put aside while a login is simulated so not a single
-      // request of the simulation carries one. Restored when the simulation ends.
-      private Dictionary<ApiConnection, string?>? _simulationDebugTokens;
-
       /// <summary>
       /// Debug only: makes <paramref name="user"/> the active user without its password. Every request then
       /// carries the debug token together with that user's identity, and the server runs it with the user's
@@ -94,8 +90,8 @@ namespace Em.Ui.Wpf.Core
          IsSimulatingLogin = true;
          if (_sessionClient is not null) await EndSessionCoreAsync(notifyServer: false, null, raiseEnded: false);
 
-         _simulationDebugTokens = DebugConnections.ToDictionary(c => c, c => c.DebugToken);
-         foreach (var connection in DebugConnections) connection.DebugToken = null;
+         // Off every connection, so not a single request of the simulation carries it.
+         ApplyDebugToken(null);
 
          SetActiveUser(null);
          DebugStateChanged?.Invoke(this, EventArgs.Empty);
@@ -123,12 +119,8 @@ namespace Em.Ui.Wpf.Core
          await MainWindow.ReleaseWorkspaceAsync();
          if (ApplicationLayout == ApplicationLayout.SinglePage) await MainStack.ReleaseAll();
 
-         if (_simulationDebugTokens is { } tokens) {
-            foreach (var (connection, token) in tokens) connection.DebugToken = token;
-         }
-
-         _simulationDebugTokens = null;
          IsSimulatingLogin = false;
+         ApplyDebugToken(_debugToken);
 
          // The login screen is done with; it goes with the stack once the window switches back.
          if (_loginControl is not null) _loginControl.Vm.SignInSucceeded -= OnSignInSucceeded;

@@ -78,6 +78,10 @@ namespace Em.Ui.Maui.Core
       /// <summary>The default debug connection.</summary>
       public ApiConnection? DefaultDebugConnection { get; private set; }
 
+      // The debug token of this run. It identifies the debug build, not a sign-in, so it goes out through every
+      // connection - debug or stored - not only the debug ones.
+      private string? _debugToken;
+
       /// <summary>
       /// Name of the application, used as the title of the main page and as the prefix of every key in the
       /// settings storage where application settings (e.g. API connections, theme) are kept.
@@ -467,6 +471,7 @@ namespace Em.Ui.Maui.Core
          // The same object may come in through UpdateApiConnection (edited in place, so it is already in the
          // collection); Contains uses reference equality because ApiConnection does not override Equals.
          if (!UIConnections.Contains(apiConnection)) {
+            apiConnection.DebugToken = _debugToken;
             UIConnections.Add(apiConnection);
          }
       }

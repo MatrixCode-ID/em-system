@@ -107,6 +107,11 @@ namespace Em.Ui.Wpf.Core
       /// <summary>The default debug connection.</summary>
       public ApiConnection? DefaultDebugConnection { get; private set; }
 
+      // The debug token of this run. It identifies the debug build, not a sign-in, so while debug is active it
+      // goes out through every connection - debug or stored - not only the debug ones.
+      private string? _debugToken;
+      private string? ActiveDebugToken => IsDebugActive ? _debugToken : null;
+
       /// <summary>
       /// Name of the application, used as the main window title and as the name of the Registry subkey where
       /// application settings (e.g. API connections, theme) are stored.
@@ -603,6 +608,7 @@ namespace Em.Ui.Wpf.Core
                   Host = key.GetValue(nameof(ApiConnection.Host)) as string ?? string.Empty,
                   Timeout = (int)(key.GetValue(nameof(ApiConnection.Timeout)) ?? 0),
                   IgnoreSslErrors = (int)(key.GetValue(nameof(ApiConnection.IgnoreSslErrors)) ?? 0) != 0,
+                  DebugToken = ActiveDebugToken,
                };
             })
             .Where(c => c is not null)
@@ -630,8 +636,15 @@ namespace Em.Ui.Wpf.Core
          // The same object may come in through UpdateApiConnection (edited in place, so it is already in the
          // collection); Contains uses reference equality because ApiConnection does not override Equals.
          if (!UIConnections.Contains(apiConnection)) {
+            apiConnection.DebugToken = ActiveDebugToken;
             UIConnections.Add(apiConnection);
          }
+      }
+
+      // Puts the debug token on every known connection, or takes it off (null) for Simulate Login.
+      private void ApplyDebugToken(string? token) {
+         foreach (var connection in UIConnections) connection.DebugToken = token;
+         if (ActiveConnection is { } active) active.DebugToken = token;
       }
 
       /// <summary>

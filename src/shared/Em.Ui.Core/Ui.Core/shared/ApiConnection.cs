@@ -51,13 +51,13 @@ namespace Em.Ui.Core.Shared
       }
 
       /// <summary>
-      /// The debug token sent on every request through this connection, or <c>null</c> when the connection is
-      /// not a debug connection. What is stored here is the finished token - the signature made once when the
-      /// application starts - not its key, so the request path does not touch cryptography at all.
+      /// The debug token sent on every request through this connection, or <c>null</c> when debug is not
+      /// active. A debug build puts it on every connection, debug or stored: it identifies the build, not a
+      /// sign-in. What is stored here is the finished token - the signature made once when the application
+      /// starts - not its key, so the request path does not touch cryptography at all.
       /// </summary>
       /// <remarks>
-      /// This property is never saved to the Registry: connection storage writes its fields one by one, and
-      /// debug connections are already refused entry to the Registry from the start.
+      /// This property is never saved to the Registry: connection storage writes its fields one by one.
       /// </remarks>
       public string? DebugToken {
          get => Get<string?>();

@@ -185,8 +185,8 @@ namespace Em.Ui.Maui.Core
          // mistyped key is found now - not later when every request is answered with "action not found" without
          // any explanation. What is passed to the connection is the token, not the key, so the request path never
          // touches cryptography.
-         var debugToken = pars.DebugBuilder.CreateDebugToken();
-         app.DebugConnections.EachOf(r => r.DebugToken = debugToken);
+         app._debugToken = pars.DebugBuilder.CreateDebugToken();
+         app.DebugConnections.EachOf(r => r.DebugToken = app._debugToken);
 
          app.SetActiveUser(CreateDebuggerUser(app));
       }
