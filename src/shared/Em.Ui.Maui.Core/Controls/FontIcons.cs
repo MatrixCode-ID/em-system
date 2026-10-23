@@ -92,5 +92,26 @@
 
       /// <summary>A window, the mark of a module screen.</summary>
       public const string WindowMaximize = "";
+
+      /// <summary>A pen tip, the mark of a signature.</summary>
+      public const string PenNib = "";
+
+      /// <summary>A check inside a circle, a signed step.</summary>
+      public const string CircleCheck = "";
+
+      /// <summary>A cross inside a circle, a rejected step.</summary>
+      public const string CircleXmark = "";
+
+      /// <summary>A clock, a step still waiting.</summary>
+      public const string Clock = "";
+
+      /// <summary>A speech bubble, a comment.</summary>
+      public const string Comment = "";
+
+      /// <summary>A PDF file, a document preview.</summary>
+      public const string FilePdf = "";
+
+      /// <summary>A tray, the mark of an inbox of requests.</summary>
+      public const string Inbox = "";
    }
 }

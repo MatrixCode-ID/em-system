@@ -15,7 +15,7 @@ namespace Em.Ui.Maui.Shared
    /// only knows one screen at a time (SPA), so there is no <c>UseSinglePageLayout</c> to call and no
    /// registration of a tabbed main control.
    /// </remarks>
-   public class EmAppBuilder
+   public partial class EmAppBuilder
    {
       internal EmAppBuilder() { }
 

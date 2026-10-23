@@ -39,6 +39,12 @@ namespace Em.Ui.Maui.Core
       /// <summary>The navigation name of the default home screen.</summary>
       public const string HomeNavigationName = "Home";
 
+      /// <summary>
+      /// The navigation name of the single-request approval viewer, opened with an
+      /// <see cref="ApprovalManagerNavigationPayload"/> carrying the request ID. Same name as on the desktop client.
+      /// </summary>
+      public const string ApprovalViewerNavigationName = "em.approval.editor";
+
       #endregion
 
       /// <summary>
@@ -136,6 +142,7 @@ namespace Em.Ui.Maui.Core
          InitInternalNavigation(app);
          InitInternalClaims(app);
          builder(pars);
+         app.Services.AddSingleton(pars.ApprovalEditors);
 
          app.ApplicationName = pars.ApplicationName ?? "Set ApplicationName to change!";
          // Created after the application name is known, because that name is the prefix of every setting key -
@@ -278,6 +285,32 @@ namespace Em.Ui.Maui.Core
             Kind = NavigationKind.Editor,
             EmApp = app,
             RequireParameter = false,
+            IsMenuVisible = false
+         });
+
+         // Bound to no module and no claim: the server decides which requests the caller may see and sign.
+         app.AddNavigation(new Navigation {
+            Name = ApprovalManagerNavigationPayload.NavigationName,
+            Title = "Approvals",
+            Subtitle = "Review and sign approval requests",
+            Description = "Requests waiting for your signature and their history.",
+            OrderIndex = -1,
+            BodyType = BodyType.Of<ApprovalManager>(),
+            Kind = NavigationKind.Manager,
+            EmApp = app,
+            RequireParameter = false,
+            IsMenuVisible = true
+         });
+
+         app.AddNavigation(new Navigation {
+            Name = ApprovalViewerNavigationName,
+            Title = "Approval",
+            Subtitle = "Review and decide an approval request",
+            OrderIndex = -1,
+            BodyType = BodyType.Of<ApprovalViewer>(),
+            Kind = NavigationKind.Editor,
+            EmApp = app,
+            RequireParameter = true,
             IsMenuVisible = false
          });
       }

@@ -46,6 +46,32 @@
               Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
    </Style>
 
+   <!-- A small rounded label for a status, sitting inside a card row. -->
+   <Style x:Key="chipStyle" TargetType="Border">
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="StrokeThickness" Value="0" />
+      <Setter Property="HorizontalOptions" Value="Start" />
+      <Setter Property="VerticalOptions" Value="Center" />
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}" />
+      <Setter Property="StrokeShape">
+         <shapes:RoundRectangle CornerRadius="8" />
+      </Setter>
+   </Style>
+
+   <!-- The chip of something that asks for the user's attention, e.g. a step waiting for their signature. -->
+   <Style x:Key="accentChipStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+      <Setter Property="BackgroundColor"
+              Value="{AppThemeBinding Light={StaticResource primaryContainerLight}, Dark={StaticResource primaryContainerDark}}" />
+   </Style>
+
+   <Style x:Key="chipTextStyle" TargetType="Label">
+      <Setter Property="FontFamily" Value="OpenSansSemibold" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="TextColor"
+              Value="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+   </Style>
+
    <!-- A circle holding initials, standing in for a photo that does not exist. -->
    <Style x:Key="avatarStyle" TargetType="Border">
       <Setter Property="WidthRequest" Value="44" />

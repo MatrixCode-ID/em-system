@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
+             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
+             x:Class="Em.Ui.Maui.Navigations.ApprovalManager">
+
+   <ContentView.BindingContext>
+      <local:ApprovalManagerVm />
+   </ContentView.BindingContext>
+
+   <Grid RowDefinitions="Auto,*,Auto" Padding="16,12,16,8" RowSpacing="12">
+
+      <VerticalStackLayout Grid.Row="0" Spacing="10">
+         <Border Style="{StaticResource searchFieldStyle}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+               <controls:FontIcon Grid.Column="0" Glyph="{x:Static controls:FontIcons.MagnifyingGlass}"
+                                  IconSize="14" VerticalOptions="Center" Opacity="0.6"
+                                  TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+               <Entry Grid.Column="1" Text="{Binding Search}" Placeholder="Search requests" FontSize="14"
+                      VerticalOptions="Center" ReturnType="Search"
+                      ReturnCommand="{Binding Commands[SearchCommand]}" />
+            </Grid>
+         </Border>
+
+         <Grid ColumnDefinitions="*,Auto">
+            <Label Grid.Column="0" Text="Only requests waiting for me" Style="{StaticResource labelTextStyle}"
+                   VerticalOptions="Center" />
+            <Switch Grid.Column="1" IsToggled="{Binding WaitingForMe}" VerticalOptions="Center" />
+         </Grid>
+
+         <Label Text="{Binding Error}" Style="{StaticResource errorTextStyle}" IsVisible="{Binding HasError}" />
+      </VerticalStackLayout>
+
+      <RefreshView Grid.Row="1" IsRefreshing="{Binding IsRefreshing}" Command="{Binding Commands[RefreshCommand]}">
+         <CollectionView ItemsSource="{Binding Rows}" SelectionMode="None">
+            <CollectionView.ItemsLayout>
+               <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.EmptyView>
+               <Border Style="{StaticResource outlinedCardStyle}" Margin="0,8">
+                  <VerticalStackLayout Spacing="8">
+                     <controls:FontIcon Glyph="{x:Static controls:FontIcons.Inbox}" IconSize="24"
+                                        HorizontalOptions="Start"
+                                        TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+                     <Label Text="No request" Style="{StaticResource titleTextStyle}" />
+                     <Label Text="Requests you may review will appear here. Pull down to refresh."
+                            Style="{StaticResource supportTextStyle}" />
+                  </VerticalStackLayout>
+               </Border>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+               <DataTemplate>
+                  <Border Style="{StaticResource actionCardStyle}">
+                     <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding Commands[OpenCommand]}" />
+                     </Border.GestureRecognizers>
+                     <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="4">
+                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding Title}" Style="{StaticResource sectionCaptionStyle}"
+                               LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource chipStyle}"
+                                IsVisible="{Binding IsNotHighlighted}">
+                           <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource accentChipStyle}"
+                                IsVisible="{Binding IsHighlighted}">
+                           <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
+                        </Border>
+                        <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Summary}"
+                               Style="{StaticResource titleTextStyle}" FontSize="15" MaxLines="2"
+                               LineBreakMode="TailTruncation" />
+                        <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding SubSummary}"
+                               Style="{StaticResource supportTextStyle}" IsVisible="{Binding HasSubSummary}"
+                               MaxLines="2" LineBreakMode="TailTruncation" />
+                        <Label Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding Meta}"
+                               Style="{StaticResource supportTextStyle}" FontSize="11" Opacity="0.8" />
+                     </Grid>
+                  </Border>
+               </DataTemplate>
+            </CollectionView.ItemTemplate>
+         </CollectionView>
+      </RefreshView>
+
+      <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding HasPages}">
+         <Button Grid.Column="0" Text="Previous" Style="{StaticResource textButtonStyle}"
+                 Command="{Binding Commands[PreviousCommand]}" />
+         <Label Grid.Column="1" Text="{Binding PageLabel}" Style="{StaticResource supportTextStyle}"
+                HorizontalOptions="Center" VerticalOptions="Center" />
+         <Button Grid.Column="2" Text="Next" Style="{StaticResource textButtonStyle}"
+                 Command="{Binding Commands[NextCommand]}" />
+      </Grid>
+   </Grid>
+</ContentView>

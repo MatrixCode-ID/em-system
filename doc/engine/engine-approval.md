@@ -284,7 +284,34 @@ has its own tab identity. Compact views embedded by modules continue to show det
 Reinstating a request from its editor opens the replacement in its own tab and keeps
 the original request available as history.
 
-MAUI supplies the action client only; approval screens are deferred.
+### MAUI (Android)
+
+The MAUI core has its own mobile approval screens; they are designed for a phone, not ported from
+the desktop layout.
+
+```csharp
+builder.AddSystemApproval<OrderApproval, OrderApprovalView>(); // MAUI; OrderApprovalView : ContentView
+```
+
+The editor is a MAUI `View` implementing the same `IEmApprovalSystemEditor`. Keep it a single
+column of cards: the engine places it inside a vertical scroll, so it must not scroll itself.
+`ToolbarItems` and `OpenSourceAsync` are not shown on mobile.
+
+- **Approvals** (`em.approval.manager`, home menu, no claim): one column of request cards with
+  search, an *Only requests waiting for me* switch, pull-to-refresh and paging (30 per page). The
+  switch starts off for SYSTEM DEBUGGER and administrators, on for other users, unless the
+  navigation payload states it. Tapping a card opens the request.
+- **Approval** (`em.approval.editor`, `ApprovalManagerNavigationPayload` with the request ID): the
+  request header with status, level and requester; the module view (System) or the proposed field
+  changes (Data); signer steps top to bottom; comments with a box to add one. A bottom action bar
+  appears only while the user may decide: it signs or rejects the first step waiting for them, and
+  tapping another step that is the user's turn moves the bar to it. Signing asks an optional note;
+  rejecting requires a reason. The module's `ValidateSignAsync`/`ValidateRejectAsync` run before
+  the decision is sent.
+- **Preview** writes the module's PDF to the app cache and hands it to the device's PDF viewer
+  (`Launcher.OpenAsync`); the client has no PDF renderer of its own.
+- Not on mobile: void, reinstate, withdraw, attachments, signer settings, and approving a Data
+  request whose values changed meanwhile (resolve the conflict on the desktop client).
 
 ## Attachments and hub
 
