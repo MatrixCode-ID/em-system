@@ -127,7 +127,7 @@ namespace Em.Ui.Wpf.Core
          _loginControl = null;
 
          SetActiveUser(CreateDebuggerUser(this));
-         if (DefaultDebugConnection is { } debugConnection && !ReferenceEquals(ActiveConnection, debugConnection))
+         if (PreferredDebugConnection is { } debugConnection && !ReferenceEquals(ActiveConnection, debugConnection))
             ActiveConnection = debugConnection;
 
          _claimsRefresh = RefreshClaimsAsync();

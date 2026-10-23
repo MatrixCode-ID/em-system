@@ -1050,7 +1050,7 @@ namespace Em.Ui.Wpf.Windows
          var name = app.ActiveConnection?.ProfileName;
          SelectedConnection =
             (name == null ? null : app.UIConnections.FirstOrDefault(r => r.ProfileName == name))
-            ?? app.DefaultDebugConnection;
+            ?? app.PreferredDebugConnection;
       }
 
       #endregion

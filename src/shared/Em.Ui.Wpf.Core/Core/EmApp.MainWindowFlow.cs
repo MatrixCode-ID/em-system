@@ -76,10 +76,12 @@ namespace Em.Ui.Wpf.Core
       }
 
       // Called once, on the first Loaded of the main window: the connection list is read, the debug
-      // connection (if any) becomes the active one, and a remembered session is resumed.
+      // connection picked last time (or the default one) becomes the active one, and a remembered session
+      // is resumed.
       internal async Task OnMainWindowLoadedAsync() {
          RetrieveApiConnections();
-         if (DefaultDebugConnection is { } debugConnection && ActiveConnection != debugConnection)
+         _connectionsLoaded = true;
+         if (IsDebugMode && PreferredDebugConnection is { } debugConnection && ActiveConnection != debugConnection)
             ActiveConnection = debugConnection;
 
          await RestoreSessionAsync();

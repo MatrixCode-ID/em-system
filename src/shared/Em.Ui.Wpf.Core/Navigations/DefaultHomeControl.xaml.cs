@@ -31,6 +31,10 @@ namespace Em.Ui.Wpf.Navigations
          // the profiles are re-read and changes again whenever one is saved or deleted from the
          // Connection Config dialog, so the pick has to be re-resolved every time it moves.
          _app.UIConnections.CollectionChanged += OnApiConnectionsChanged;
+
+         // The active connection also moves without this card: the startup pick of the last debug
+         // profile, the multi-tab combobox, and a restored session.
+         _app.ActiveConnectionChanged += OnActiveConnectionChanged;
       }
 
       /// <summary>The vm.</summary>
@@ -99,11 +103,14 @@ namespace Em.Ui.Wpf.Navigations
       /// <inheritdoc />
       public Task OnRelease(INavigation sender) {
          _app.UIConnections.CollectionChanged -= OnApiConnectionsChanged;
+         _app.ActiveConnectionChanged -= OnActiveConnectionChanged;
          return Task.CompletedTask;
       }
 
       private void OnApiConnectionsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
          Vm.SyncSelectedConnection();
+
+      private void OnActiveConnectionChanged(object? sender, EventArgs e) => Vm.FollowActiveConnection();
 
 
       // The list itself is the application's, shared with the Tools menu of the multi-tab window;
@@ -328,7 +335,7 @@ namespace Em.Ui.Wpf.Navigations
          SelectedConnection =
             FindConnection(_selectedProfileName)
             ?? FindConnection(EmApp.ActiveConnection?.ProfileName)
-            ?? EmApp.DefaultDebugConnection
+            ?? EmApp.PreferredDebugConnection
             ?? EmApp.UIConnections.FirstOrDefault();
       }
 
@@ -342,6 +349,18 @@ namespace Em.Ui.Wpf.Navigations
 
       // The profile the user last picked on this card, remembered by name for the reason above.
       private string? _selectedProfileName;
+
+      /// <summary>
+      /// Moves the card to the active connection when it was changed elsewhere, so the card never shows a
+      /// profile other than the one in use. An emptied active connection - a rebuild of the list - is not
+      /// followed, so <see cref="SyncSelectedConnection"/> can still put the last pick back.
+      /// </summary>
+      internal void FollowActiveConnection() {
+         if (EmApp?.ActiveConnection is not { } active || ReferenceEquals(SelectedConnection, active)) return;
+
+         _selectedProfileName = active.ProfileName;
+         SyncSelectedConnection();
+      }
 
       private void OnSelectedConnectionChanged(ApiConnection? connection) {
          // A rebuild empties the selection for a moment. The remembered name is deliberately left

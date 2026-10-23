@@ -151,9 +151,30 @@ namespace Em.Ui.Wpf.Core
          get;
          set {
             field = value;
+            RememberDebugConnection(value);
             ActiveConnectionChanged?.Invoke(this, EventArgs.Empty);
          }
       }
+
+      // Set once OnMainWindowLoadedAsync has read the connection list. Before that the screens fall back to
+      // DefaultDebugConnection, and storing that fallback would overwrite the profile picked last time.
+      private bool _connectionsLoaded;
+
+      // Only a pick from the loaded list while debug is active is kept: a simulated login keeps nothing, and an
+      // emptied selection during a rebuild of the list is not a pick.
+      private void RememberDebugConnection(ApiConnection? connection) {
+         if (!IsDebugActive || !_connectionsLoaded || connection is null || !UIConnections.Contains(connection)) return;
+         if (LastDebugProfileName != connection.ProfileName) LastDebugProfileName = connection.ProfileName;
+      }
+
+      /// <summary>
+      /// The connection debug mode starts on: the profile picked last time while debug was active (stored in
+      /// the Registry as <see cref="LastDebugProfileName"/>), when it is still in <see cref="UIConnections"/>,
+      /// otherwise <see cref="DefaultDebugConnection"/>.
+      /// </summary>
+      public ApiConnection? PreferredDebugConnection =>
+         (LastDebugProfileName is { Length: > 0 } name ? UIConnections.FirstOrDefault(r => r.ProfileName == name) : null)
+         ?? DefaultDebugConnection;
 
       /// <summary>
       /// The user who is signed in, or <c>null</c> when nobody is. "Nobody signed in" is a normal state that
@@ -437,6 +458,28 @@ namespace Em.Ui.Wpf.Core
             }
 
             key.SetValue(nameof(RememberedProfileName), value, RegistryValueKind.String);
+         }
+      }
+
+      /// <summary>
+      /// The name of the connection profile last picked while debug is active - in the multi-tab toolbar or
+      /// on the home screen card - so the next debug run starts on the same server. Separate from
+      /// <see cref="RememberedProfileName"/>, which belongs to a remembered sign-in. Set to <c>null</c> (or
+      /// empty text) to forget it.
+      /// </summary>
+      public string? LastDebugProfileName {
+         get {
+            using var key = BaseRegKey;
+            return key.GetValue(nameof(LastDebugProfileName)) as string;
+         }
+         set {
+            using var key = BaseRegKey;
+            if (string.IsNullOrWhiteSpace(value)) {
+               key.DeleteValue(nameof(LastDebugProfileName), throwOnMissingValue: false);
+               return;
+            }
+
+            key.SetValue(nameof(LastDebugProfileName), value, RegistryValueKind.String);
          }
       }
 
