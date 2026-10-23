@@ -77,6 +77,22 @@ membuat cab LZX di samping installer, tanpa mengubah registry. Installer boleh
 memakai cab yang sudah diverifikasi; runner selalu memakai CDN. Detail:
 `plan/executed/release-manager-cdn-launcher.codex.md` dan kontrak rilis.
 
+## Installer di PC yang sudah terpasang (keputusan pengguna 2026-10-23)
+
+Exe yang dijalankan **dari luar folder instalasi** pada PC yang sudah terpasang langsung membuka form
+setup dalam mode update, tanpa dialog "already installed". Runner di folder instalasi tidak berubah.
+
+- Folder instalasi dikunci ke folder terpasang; pilihan shortcut diambil dari instalasi.
+- Tombol utama **Update**: memasang rilis dari source/cab dengan versi aktif sebagai donor, jadi hanya
+  file yang berubah yang diunduh. Halaman selesai menampilkan ringkasan unduhan.
+- **Run installed** menjalankan app terpasang dan form tetap terbuka; karena form memegang lock, app
+  berjalan tanpa cek update.
+- **Maintenance** menutup form, melepas lock, lalu membuka jendela maintenance.
+- **Clean installation** (checkbox): setelah konfirmasi dan app ditutup, menghapus folder instalasi,
+  shortcut, entri Apps & Features, dan key registry produk seperti uninstall, lalu memasang baru.
+  Kunci yang hanya tersimpan di registry ikut terhapus.
+- Source dari `settings.ini` baru disimpan ke registry saat Install/Update.
+
 ## Build
 
 Requires `rustup` (the toolchain itself is pinned by `rust-toolchain.toml`) and the MSVC build tools

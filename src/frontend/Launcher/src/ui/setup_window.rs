@@ -11,7 +11,7 @@ use crate::cli::{CommandError, ExitCode, InstallOptions};
 use crate::commands::{CommandContext, InstallCommand, InstallRequest, KeyCommand};
 use crate::config::{KeyScope, LauncherConfig, TrustedKey, TrustedKeys};
 use crate::format::ReleasePublicKey;
-use crate::install::{InstallLayout, UpdatePhase, UpdateProgress};
+use crate::install::{InstallLayout, Uninstaller, UpdatePhase, UpdateProgress};
 use crate::launcher_log::LauncherLog;
 use crate::product;
 
@@ -19,8 +19,8 @@ use super::{FileDialogs, KeyListView, ProgressPanel, Prompts, WindowStyle, sente
 
 const TIMER_ID: usize = 1;
 const TIMER_MS: u32 = 200;
-const WIDTH: i32 = 540;
-const HEIGHT: i32 = 456;
+const WIDTH: i32 = 560;
+const HEIGHT: i32 = 478;
 const MARGIN: i32 = 16;
 const BUTTON_WIDTH: i32 = 88;
 const CAB_BUTTON_WIDTH: i32 = 128;
@@ -34,6 +34,10 @@ pub enum SetupOutcome {
 
    /// The product is installed in `layout`; `run` = the user chose to run the app after install.
    Installed { layout: InstallLayout, run: bool },
+
+   /// The user chose Maintenance for the installed product: the caller opens the maintenance window once the
+   /// form is closed and the launcher lock is released.
+   Maintenance,
 }
 
 /// The setup form (decision 7): the release source, the install folder, trusted keys, and three
@@ -45,6 +49,12 @@ pub enum SetupOutcome {
 /// phase, including an invalid signature, is shown in the form without anything being written. Once the
 /// check passes, the window switches to the progress page. An install that is cancelled or fails goes back
 /// to the form, and can be repeated.
+///
+/// When the product is already installed and this exe runs outside the install folder (the setup package
+/// opened again), the form is in its update mode: the install folder is locked to the installed one,
+/// **Install** becomes **Update** (only changed files are downloaded), **Run installed** starts the installed
+/// app while the form stays open, **Maintenance** closes the form and opens the maintenance window, and
+/// **Clean installation** removes the installed folder and the product's registry key before installing.
 #[derive(Clone)]
 pub struct SetupWindow {
    wnd: gui::WindowMain,
@@ -62,12 +72,15 @@ pub struct SetupWindow {
    start_menu: gui::CheckBox,
    desktop: gui::CheckBox,
    run_after: gui::CheckBox,
+   clean: gui::CheckBox,
    message: gui::Label,
    panel: ProgressPanel,
    done_folder: gui::Label,
    done_text: gui::Label,
    install: gui::Button,
    cab: gui::Button,
+   run_installed: gui::Button,
+   maintenance: gui::Button,
    cancel: gui::Button,
    state: Rc<SetupState>,
 }
@@ -92,7 +105,11 @@ struct ImportedKey {
 struct SetupState {
    context: CommandContext,
    config: LauncherConfig,
-   saved_keys: Vec<TrustedKey>,
+   saved_keys: RefCell<Vec<TrustedKey>>,
+   // The installation this form updates; `None` for a new install, and after a clean installation removed it.
+   installed: RefCell<Option<InstallLayout>>,
+   // The result message of the last finished install, shown on the finish page of an update.
+   summary: RefCell<String>,
    imported: RefCell<Vec<ImportedKey>>,
    first_message: String,
    page: Cell<Page>,
@@ -137,16 +154,29 @@ impl SetupWindow {
          Some(source) if !config.is_source_locked() => source.clone(),
          _ => config.effective_source().to_string(),
       };
-      let folder = match &options.target {
-         Some(target) => InstallRequest::absolute_target(target)?,
-         None if !config.install_folder.trim().is_empty() => PathBuf::from(config.install_folder.trim()),
-         None => CommandContext::default_install_folder()?,
+      // Update mode only for a copy outside the installation; the root launcher cannot remove its own folder.
+      let own = std::env::current_exe().map_err(CommandError::io("cannot locate installer"))?;
+      let installed = config
+         .install_layout()
+         .filter(|layout| layout.current_path().is_file() && !layout.contains(&own));
+      let folder = match (&installed, &options.target) {
+         (Some(layout), _) => layout.root().to_path_buf(),
+         (None, Some(target)) => InstallRequest::absolute_target(target)?,
+         (None, None) if !config.install_folder.trim().is_empty() => PathBuf::from(config.install_folder.trim()),
+         (None, None) => CommandContext::default_install_folder()?,
+      };
+      // An update keeps the shortcut choices of the installation.
+      let choices = match &installed {
+         Some(_) => (config.start_menu, config.desktop, !options.no_run),
+         None => (!options.no_start_menu, !options.no_desktop, !options.no_run),
       };
 
       let state = Rc::new(SetupState {
          context: context.clone(),
          config,
-         saved_keys,
+         saved_keys: RefCell::new(saved_keys),
+         installed: RefCell::new(installed),
+         summary: RefCell::new(String::new()),
          imported: RefCell::new(imported),
          first_message: messages.join("\n"),
          page: Cell::new(Page::Form),
@@ -155,7 +185,7 @@ impl SetupWindow {
          target: RefCell::new(PathBuf::new()),
          outcome: RefCell::new(None),
       });
-      let window = Self::new(state, &source, &folder.display().to_string(), options);
+      let window = Self::new(state, &source, &folder.display().to_string(), choices);
       window.events();
       window
          .wnd
@@ -168,7 +198,7 @@ impl SetupWindow {
 }
 
 impl SetupWindow {
-   fn new(state: Rc<SetupState>, source: &str, folder: &str, options: &InstallOptions) -> Self {
+   fn new(state: Rc<SetupState>, source: &str, folder: &str, choices: (bool, bool, bool)) -> Self {
       let title = format!("{} - Setup", product::version_display());
       let wnd = gui::WindowMain::new(WindowStyle::main_opts(&title, (WIDTH, HEIGHT)));
       super::Logo::attach(&wnd);
@@ -194,28 +224,23 @@ impl SetupWindow {
          keys_label: WindowStyle::label(&wnd, "Trusted public keys:", (MARGIN, 190), (inner, 18)),
          keys: KeyListView::new(&wnd, (MARGIN, 209), (field, 84)),
          import: WindowStyle::button(&wnd, "Import...", (side, 209), 0),
-         start_menu: WindowStyle::check_box(
-            &wnd,
-            "Create a Start menu item",
-            (MARGIN, 304),
-            inner,
-            !options.no_start_menu,
-         ),
-         desktop: WindowStyle::check_box(
-            &wnd,
-            "Create a desktop shortcut",
-            (MARGIN, 326),
-            inner,
-            !options.no_desktop,
-         ),
+         start_menu: WindowStyle::check_box(&wnd, "Create a Start menu item", (MARGIN, 304), inner, choices.0),
+         desktop: WindowStyle::check_box(&wnd, "Create a desktop shortcut", (MARGIN, 326), inner, choices.1),
          run_after: WindowStyle::check_box(
             &wnd,
             &format!("Start {} after installing", product::APP_NAME),
             (MARGIN, 348),
             inner,
-            !options.no_run,
+            choices.2,
          ),
-         message: WindowStyle::label(&wnd, "", (MARGIN, 376), (inner, 36)),
+         clean: WindowStyle::check_box(
+            &wnd,
+            "Clean installation: remove the installed folder and all settings first",
+            (MARGIN, 370),
+            inner,
+            false,
+         ),
+         message: WindowStyle::label(&wnd, "", (MARGIN, 398), (inner, 36)),
          panel: ProgressPanel::new(&wnd, (MARGIN, 96), inner),
          done_folder: WindowStyle::path_label(&wnd, "", (MARGIN, 52), inner),
          done_text: WindowStyle::label(&wnd, "", (MARGIN, 84), (inner, 280)),
@@ -226,6 +251,13 @@ impl SetupWindow {
             co::DLGID::OK.raw(),
          ),
          cab: WindowStyle::wide_button(&wnd, "Download to cab", (MARGIN, bottom), CAB_BUTTON_WIDTH, 0),
+         run_installed: WindowStyle::button(&wnd, "Run installed", (MARGIN + CAB_BUTTON_WIDTH + GAP, bottom), 0),
+         maintenance: WindowStyle::button(
+            &wnd,
+            "Maintenance",
+            (MARGIN + CAB_BUTTON_WIDTH + BUTTON_WIDTH + 2 * GAP, bottom),
+            0,
+         ),
          cancel: WindowStyle::button(&wnd, "Cancel", (side, bottom), co::DLGID::CANCEL.raw()),
          wnd,
          state,
@@ -286,6 +318,32 @@ impl SetupWindow {
          Ok(())
       });
 
+      // The form stays open and keeps the launcher lock, so the app starts without checking for an update.
+      let this = self.clone();
+      self.run_installed.on().bn_clicked(move || {
+         if let Some(layout) = this.state.installed.borrow().as_ref()
+            && let Err(error) = this.state.context.start_app(layout, &[])
+         {
+            Prompts::error(&sentence(&error.message));
+         }
+         Ok(())
+      });
+
+      let this = self.clone();
+      self.maintenance.on().bn_clicked(move || {
+         if this.state.page.get() == Page::Form && this.state.installed.borrow().is_some() {
+            *this.state.outcome.borrow_mut() = Some(SetupOutcome::Maintenance);
+            let _ = this.wnd.hwnd().DestroyWindow();
+         }
+         Ok(())
+      });
+
+      let this = self.clone();
+      self.clean.on().bn_clicked(move || {
+         this.update_install_button();
+         Ok(())
+      });
+
       for edit in [&self.source, &self.folder] {
          let this = self.clone();
          edit.on().en_change(move || {
@@ -341,6 +399,7 @@ impl SetupWindow {
          self.start_menu.hwnd(),
          self.desktop.hwnd(),
          self.run_after.hwnd(),
+         self.clean.hwnd(),
          self.message.hwnd(),
       ];
       for hwnd in form_controls {
@@ -353,6 +412,18 @@ impl SetupWindow {
       if self.state.config.is_source_locked() {
          WindowStyle::set_enabled(&self.source_browse, false);
       }
+      let installed = self.state.installed.borrow().is_some();
+      WindowStyle::set_read_only(&self.folder, installed);
+      if installed {
+         WindowStyle::set_enabled(&self.folder_browse, false);
+      }
+      WindowStyle::set_visible(&self.clean, form && installed);
+      for button in [&self.run_installed, &self.maintenance] {
+         WindowStyle::set_visible(button, form && installed);
+         WindowStyle::set_enabled(button, page == Page::Form);
+      }
+      let verb = if installed { "updating" } else { "installing" };
+      WindowStyle::set_text(&self.run_after, &format!("Start {} after {verb}", product::APP_NAME));
       self.panel.set_visible(page == Page::Installing);
       WindowStyle::set_visible(&self.intro, page != Page::Done);
       WindowStyle::set_visible(&self.done_folder, page == Page::Done);
@@ -364,6 +435,12 @@ impl SetupWindow {
       WindowStyle::set_text(&self.cancel, if page == Page::Done { "Finish" } else { "Cancel" });
 
       let (heading, intro) = match page {
+         Page::Form | Page::Checking if installed => (
+            format!("Update {}", product::APP_NAME),
+            "The application is already installed in this folder. Update downloads only the files that changed. \
+             Clean installation removes the installed folder and all settings first."
+               .to_string(),
+         ),
          Page::Form | Page::Checking => (
             format!("Install {}", product::APP_NAME),
             "Choose where the application is downloaded from and where it is installed. Nothing is written until \
@@ -376,6 +453,7 @@ impl SetupWindow {
              kept, and the next try continues from there."
                .to_string(),
          ),
+         Page::Done if installed => (format!("{} is up to date", product::APP_NAME), String::new()),
          Page::Done => (format!("{} is installed", product::APP_NAME), String::new()),
       };
       WindowStyle::set_text(&self.heading, &heading);
@@ -391,6 +469,14 @@ impl SetupWindow {
 
    fn done_message(&self) -> String {
       let app = product::APP_NAME;
+      if self.state.installed.borrow().is_some() {
+         let finish = if self.run_after.is_checked() {
+            format!("Choose Finish to close setup and start {app}.")
+         } else {
+            "Choose Finish to close setup.".to_string()
+         };
+         return format!("{}\n\n{finish}", self.state.summary.borrow());
+      }
       let pin = if self.start_menu.is_checked() {
          format!(
             "To pin {app} to the taskbar, open Start, find {app}, right-click it and choose Pin to taskbar. You \
@@ -416,6 +502,7 @@ impl SetupWindow {
       let mut rows: Vec<(String, String)> = self
          .state
          .saved_keys
+         .borrow()
          .iter()
          .map(|saved| {
             let origin = match saved.scope {
@@ -444,6 +531,7 @@ impl SetupWindow {
       let mut ids: Vec<String> = self
          .state
          .saved_keys
+         .borrow()
          .iter()
          .filter(|saved| saved.scope != KeyScope::User || allow_user_keys)
          .map(|saved| saved.key.key_id().to_string())
@@ -470,6 +558,8 @@ impl SetupWindow {
          && filled(&self.folder)
          && self.usable_key_count() > 0;
       WindowStyle::set_enabled(&self.install, ready);
+      let update = self.state.installed.borrow().is_some() && !self.clean.is_checked();
+      WindowStyle::set_text(&self.install, if update { "Update" } else { "Install" });
    }
 
    fn import_key(&self) {
@@ -486,6 +576,7 @@ impl SetupWindow {
       let known = self
          .state
          .saved_keys
+         .borrow()
          .iter()
          .any(|saved| saved.key.key_id() == key.key_id())
          || self
@@ -520,6 +611,9 @@ impl SetupWindow {
          Ok(target) => target,
          Err(error) => return self.set_message(&sentence(&error.message)),
       };
+      if self.clean.is_checked() && !self.remove_installation() {
+         return;
+      }
       let request = InstallRequest {
          source: (!self.state.config.is_source_locked()).then(|| self.source.text().unwrap_or_default()),
          target,
@@ -578,6 +672,7 @@ impl SetupWindow {
       match result {
          Ok(summary) => {
             self.state.context.note(&summary);
+            *self.state.summary.borrow_mut() = summary;
             let layout = InstallLayout::new(self.state.target.borrow().as_path());
             *self.state.outcome.borrow_mut() = Some(SetupOutcome::Installed {
                layout,
@@ -596,6 +691,38 @@ impl SetupWindow {
             self.set_message(&sentence(&error.message));
          }
       }
+   }
+
+   // The first step of a clean installation: once the user confirms and the app is closed, removes the
+   // installed folder, its shortcuts and Apps & Features entry, and the product's registry key, like uninstall.
+   // The form then continues as a new install. `false` = cancelled or failed; the message says why.
+   fn remove_installation(&self) -> bool {
+      let Some(layout) = self.state.installed.borrow().clone() else {
+         return true;
+      };
+      if !Prompts::confirm_clean_install(&layout.root().display().to_string()) {
+         return false;
+      }
+      let context = &self.state.context;
+      if let Err(error) = context.wait_until_app_closed(&layout) {
+         self.set_message(&sentence(&error.message));
+         return false;
+      }
+      LauncherLog::info(format!("Clean installation: removing {}", layout.root().display()));
+      if let Err(error) = Uninstaller::new(&layout).remove(&context.integration, &context.app_key) {
+         self.set_message(&sentence(&format!("cannot remove the installation: {error}")));
+         return false;
+      }
+      // The keys trusted in the removed registry key are gone; the list shows what is left.
+      match TrustedKeys::list(&context.location) {
+         Ok(keys) => *self.state.saved_keys.borrow_mut() = keys,
+         Err(error) => LauncherLog::warn(format!("cannot read the trusted keys: {error}")),
+      }
+      *self.state.installed.borrow_mut() = None;
+      self.clean.set_state(co::BST::UNCHECKED);
+      self.fill_keys();
+      self.show_page(Page::Form);
+      true
    }
 
    fn cancel_or_close(&self) {

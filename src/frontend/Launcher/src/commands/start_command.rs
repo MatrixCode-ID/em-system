@@ -1,5 +1,5 @@
 use std::ffi::OsString;
-use std::process::Command;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -9,9 +9,9 @@ use crate::install::{AppProcess, InstallLayout, UpdateProgress, Updater};
 use crate::launcher_lock::LauncherLock;
 use crate::launcher_log::LauncherLog;
 use crate::product;
-use crate::ui::{AlreadyInstalledChoice, Prompts};
+use crate::ui::Prompts;
 
-use super::{CommandContext, InstallCommand, MaintenanceCommand, UpdateCommand};
+use super::{CommandContext, InstallCommand, UpdateCommand};
 
 // How long --apply waits for the application to close itself.
 const APPLY_WAIT: Duration = Duration::from_secs(5 * 60);
@@ -52,7 +52,7 @@ impl StartCommand {
 
 impl StartCommand {
    fn start(context: &CommandContext, app_args: &[OsString], from_app: bool, ask: bool) -> Result<(), CommandError> {
-      let mut config = context.load_config()?;
+      let config = context.load_config()?;
       let Some(layout) = config.install_layout() else {
          return InstallCommand::run(context, &Default::default());
       };
@@ -63,26 +63,12 @@ impl StartCommand {
          "Launcher started"
       });
 
-      // A copy outside the install folder, e.g. the setup package opened again. --apply is always started by
-      // the root launcher's own path, so it never asks.
+      // A copy outside the install folder, e.g. the setup package opened again: the setup form, in its update
+      // mode. --apply is always started by the root launcher's own path, so it never gets here.
       let own = std::env::current_exe().map_err(CommandError::io("cannot locate the running launcher"))?;
       if ask && !InstallLayout::same_path(&own, &layout.launcher_path()) && layout.launcher_path().is_file() {
          context.check_product_fingerprint(false)?;
-         config.source = crate::config::InstallerSettings::source(own.parent().unwrap(), product::DEFAULT_SOURCE)
-            .map_err(CommandError::io("cannot read or create installer settings.ini"))?;
-         config
-            .save(&context.location)
-            .map_err(CommandError::io("cannot save installer source"))?;
-         return match Prompts::already_installed(&layout.root().display().to_string()) {
-            AlreadyInstalledChoice::Run => Command::new(layout.launcher_path())
-               .arg("--")
-               .args(app_args)
-               .spawn()
-               .map(|_| ())
-               .map_err(CommandError::io("cannot start the installed launcher")),
-            AlreadyInstalledChoice::Maintenance => MaintenanceCommand::run(context),
-            AlreadyInstalledChoice::Cancel => Err(CommandError::cancelled("")),
-         };
+         return InstallCommand::run(context, &Default::default());
       }
 
       let Some(lock) = LauncherLock::acquire(&context.lock_name, Duration::ZERO)

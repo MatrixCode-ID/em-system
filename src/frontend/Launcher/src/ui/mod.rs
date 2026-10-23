@@ -16,7 +16,7 @@ pub use key_list_view::KeyListView;
 pub use maintenance_window::{MaintenanceAction, MaintenanceWindow};
 pub use progress_panel::{PROGRESS_PANEL_HEIGHT, ProgressPanel};
 pub use progress_window::ProgressWindow;
-pub use prompts::{AlreadyInstalledChoice, Prompts, format_published, format_size, sentence};
+pub use prompts::{Prompts, format_published, format_size, sentence};
 pub use setup_window::{SetupOutcome, SetupWindow};
 pub use window_style::WindowStyle;
 

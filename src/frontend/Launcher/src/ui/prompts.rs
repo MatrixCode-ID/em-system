@@ -9,20 +9,6 @@ use super::WindowStyle;
 const FIRST_ID: u16 = 100;
 const SECOND_ID: u16 = 101;
 
-/// The user's choice when the launcher from the setup package is opened although the product is already
-/// installed in another folder.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AlreadyInstalledChoice {
-   /// Run the app that is already installed (through that installation's launcher).
-   Run,
-
-   /// Open the maintenance window.
-   Maintenance,
-
-   /// Close without doing anything.
-   Cancel,
-}
-
 /// Questions and short messages for the user (TaskDialog): the update offer, confirmations, and errors.
 ///
 /// Every function here blocks until the user answers, and is only called when `--quiet` is not given. The
@@ -106,6 +92,19 @@ impl Prompts {
       )
    }
 
+   /// Asks before a clean installation removes the installed application and all its settings.
+   pub fn confirm_clean_install(folder: &str) -> bool {
+      Self::ask(
+         &format!("Clean installation of {}?", product::APP_NAME),
+         &format!(
+            "This first removes {folder}, the shortcuts and all settings of {} for this user, including saved \
+             connections, then installs it again from the release source.",
+            product::APP_NAME
+         ),
+         "Remove and install",
+      )
+   }
+
    /// Tells the user the app is still running: `true` = try again after the user closes it, `false` = cancel.
    pub fn app_running(processes: &[RunningProcess]) -> bool {
       let names = processes
@@ -118,21 +117,6 @@ impl Prompts {
          .buttons(&[], co::TDCBF::RETRY | co::TDCBF::CANCEL)
          .show()
          == co::DLGID::RETRY.raw()
-   }
-
-   /// Tells the user the product is already installed in `folder` and asks what they want to do.
-   pub fn already_installed(folder: &str) -> AlreadyInstalledChoice {
-      let run = format!("Start {}", product::APP_NAME);
-      let maintenance = "Maintenance\nRepair, change the release source or uninstall";
-      let choice = Dialog::new(Icon::Product, &format!("Installed in {folder}"))
-         .instruction(&format!("{} is already installed", product::APP_NAME))
-         .command_links(&[(FIRST_ID, &run), (SECOND_ID, maintenance)], true)
-         .show();
-      match choice {
-         FIRST_ID => AlreadyInstalledChoice::Run,
-         SECOND_ID => AlreadyInstalledChoice::Maintenance,
-         _ => AlreadyInstalledChoice::Cancel,
-      }
    }
 
    // endregion

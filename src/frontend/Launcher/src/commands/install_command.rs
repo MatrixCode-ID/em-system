@@ -10,7 +10,7 @@ use crate::launcher_log::LauncherLog;
 use crate::product;
 use crate::ui::{SetupOutcome, SetupWindow, format_published};
 
-use super::{CommandContext, KeyCommand, UpdateCommand};
+use super::{CommandContext, KeyCommand, MaintenanceCommand, UpdateCommand};
 
 /// The `--install` command: installs the product from a release source into the install folder, then
 /// registers the shortcuts and the Apps & Features entry.
@@ -71,12 +71,17 @@ impl InstallCommand {
       }
       let options = &options;
       if !context.quiet {
-         // Held while the form is open, so a second setup cannot start next to this one.
-         let _lock = context.lock()?;
-         return match SetupWindow::run(context, options)? {
+         let outcome = {
+            // Held while the form is open, so a second setup cannot start next to this one.
+            let _lock = context.lock()?;
+            SetupWindow::run(context, options)?
+         };
+         return match outcome {
             SetupOutcome::Cancelled => Err(CommandError::cancelled("")),
             SetupOutcome::Installed { layout, run } if run => context.start_app(&layout, &[]),
             SetupOutcome::Installed { .. } => Ok(()),
+            // Repair and Uninstall take the lock themselves, so the form has released it by now.
+            SetupOutcome::Maintenance => MaintenanceCommand::run(context),
          };
       }
 
