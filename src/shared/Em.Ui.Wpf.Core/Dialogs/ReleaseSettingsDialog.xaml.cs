@@ -24,6 +24,8 @@ public partial class ReleaseSettingsDialog : EmWindow {
    private readonly Dictionary<string, TextBox> _fields = [];
    private readonly ComboBox _hosts = new();
    private readonly StackPanel _form = new() { Margin = new Thickness(22, 12, 22, 22) };
+   // Save/Cancel stay above the scrolling form, so they never scroll out of view.
+   private readonly StackPanel _toolbar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(22, 12, 22, 0) };
    private readonly StackPanel _previews = new();
    private readonly TextBlock _message = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 12) };
    // Shown above the form while an action runs: what is being done right now, since the form is
@@ -41,8 +43,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       Title = "Release settings · " + profile.Name; Width = 920; Height = 850; ShowMinimizeButton = false;
       Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml") });
       _hosts.SetResourceReference(StyleProperty, "fieldComboStyle");
-      var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
-      Button(toolbar, "Save", Save); Button(toolbar, "Cancel", () => { DialogResult = false; return Task.CompletedTask; }); _form.Children.Add(toolbar);
+      Button(_toolbar, "Save", Save); Button(_toolbar, "Cancel", () => { DialogResult = false; return Task.CompletedTask; });
       Field("Solution", profile.SolutionPath, "The .slnx containing the host.", async () => {
          var picker = new OpenFileDialog { Filter = "Solution|*.slnx" }; if (picker.ShowDialog(this) != true) return;
          _fields["Solution"].Text = picker.FileName; await LoadSolution();
@@ -84,7 +85,8 @@ public partial class ReleaseSettingsDialog : EmWindow {
       }); _form.Children.Add(keys); _form.Children.Add(_message); KeySummary(); Preview();
       _statusProgress.SetResourceReference(StyleProperty, "hairlineProgressStyle");
       _status.Children.Add(_statusText); _status.Children.Add(_statusProgress);
-      var root = new DockPanel(); DockPanel.SetDock(_status, Dock.Top); root.Children.Add(_status);
+      var root = new DockPanel(); DockPanel.SetDock(_toolbar, Dock.Top); root.Children.Add(_toolbar);
+      DockPanel.SetDock(_status, Dock.Top); root.Children.Add(_status);
       root.Children.Add(new ScrollViewer { Content = _form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
       Content = root;
       // Reading the hosts runs MSBuild per project and takes long on a large solution, so opening the
@@ -130,11 +132,11 @@ public partial class ReleaseSettingsDialog : EmWindow {
       button.Click += async (_, _) => await Run(action); panel.Children.Add(button);
    }
    private async Task Run(Func<Task> action) {
-      if (_busy) return; _busy = true; _form.IsEnabled = false;
+      if (_busy) return; _busy = true; _form.IsEnabled = false; _toolbar.IsEnabled = false;
       // A long step announces itself through ShowStatus; quick buttons leave the line hidden.
       try { await action(); _status.Visibility = Visibility.Collapsed; }
       catch (Exception ex) { _message.Text = ex.Message; ShowStatus("Failed: " + ex.Message, false); }
-      finally { _busy = false; _form.IsEnabled = true; }
+      finally { _busy = false; _form.IsEnabled = true; _toolbar.IsEnabled = true; }
    }
    private void ShowStatus(string text, bool running = true) {
       _statusText.Text = text; _statusProgress.Visibility = running ? Visibility.Visible : Visibility.Collapsed; _status.Visibility = Visibility.Visible;
