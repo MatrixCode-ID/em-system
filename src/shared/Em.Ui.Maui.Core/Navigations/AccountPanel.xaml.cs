@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Microsoft.Maui.Controls;
 using Em.Shared;
 using Em.Ui.Core.Shared;
@@ -250,7 +250,7 @@ namespace Em.Ui.Maui.Navigations
 
          // Engine management tools get a card of their own, apart from the account's own rows.
          ManagementItems.Clear();
-         AddStaticItem(ManagementItems, "Approval Manager", FontIcons.Inbox,
+         if (app.IsDebugBypass || app.ActiveUser?.cUserIsAdmin == true) AddStaticItem(ManagementItems, "Approval Manager", FontIcons.Inbox,
             () => app.NavigateTo(ApprovalManagerNavigationPayload.NavigationName));
 
          MarkDividers(StaticItems);

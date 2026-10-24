@@ -107,13 +107,13 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
          await call.Engine.DecideAsync(new(request, true, Step(call, "Finish")), Ct);
          Assert.True((await call.Core.ta_ApprovalRequestSignatures.SingleAsync(x => x.cUserId == fx.Admin, Ct)).cApprovalRequestSignatureAdmin);
          Assert.Equal(ApprovalStage.Approved, (await call.Engine.FindByKeyAsync("Test System", "subject", Ct))!.cApprovalRequestStage);
-         var replacement = await call.Engine.ReinstateAsync(request, "Replacement", "Recheck", Ct);
+         var replacement = await call.Engine.ReinstateAsync(request, "Replacement", "Recheck the complete request", Ct);
          Assert.NotEqual(request, replacement);
          Assert.Equal(ApprovalStage.ReinstatedAfterFinish, (await call.Core.ta_ApprovalRequests.FindAsync([request], Ct))!.cApprovalRequestStage);
          var reinstated = (await call.Core.ta_ApprovalRequests.FindAsync([replacement], Ct))!;
          Assert.Equal(request, reinstated.cReinstateOf);
          Assert.Equal("Second line", reinstated.cSubSummary);
-         await call.Engine.VoidAsync(replacement, "Edit subject", Ct);
+         await call.Engine.VoidAsync(replacement, "Edit subject before resubmission", Ct);
          Assert.Equal(ApprovalStage.Cancelled, (await call.Core.ta_ApprovalRequests.FindAsync([replacement], Ct))!.cApprovalRequestStage);
          var another = await call.Engine.RequestAsync("Test System", "subject", "Retry request", Ct);
          Assert.NotEqual(replacement, another);
@@ -126,6 +126,50 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
       }
    }
 
+   [Fact]
+   public async Task WrapperBatchCapturesLevelsFiltersDatesAndValidatesVoid() {
+      await using var fx = await Fixture.CreateAsync(database, Ct);
+      using (var call = fx.Call(fx.Admin, admin: true))
+         await call.Engine.SaveSignerSettingsAsync("Test System", [new("Prepared", true, null, []), new("Check A", false, fx.Decider, [fx.Backup]), new("Check B", false, fx.Decider, []), new("Finish", false, fx.Decider, [])], Ct);
+      string id;
+      using (var call = fx.Call(fx.Requester)) id = await call.Engine.RequestAsync("Test System", "batch", "Batch subject summary", Ct);
+      fx.SetBatchPolicy(false);
+      using (var call = fx.Call(fx.Backup)) {
+         Assert.False(Assert.Single((await call.Engine.SignAllAsync(new("Test System", null, ApprovalSignAllScope.Mine, null), Ct)).Items).Success);
+         Assert.False((await call.Engine.CapabilitiesAsync(Ct)).Single(x => x.Name == "Test System").AllowBatchSign);
+         Assert.False(Assert.Single((await call.Engine.VoidAllAsync(new([id], "A sufficiently detailed void reason"), Ct)).Items).Success);
+      }
+      fx.SetBatchPolicy(true);
+      using (var call = fx.Call(Defaults.DebuggerUserId, debug: true))
+         Assert.Equal(403, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.SignAllAsync(new("Test System", null, ApprovalSignAllScope.Mine, null), Ct))).StatusCode);
+      using (var call = fx.Call(fx.Backup)) {
+         var result = await call.Engine.SignAllAsync(new("Test System", null, ApprovalSignAllScope.Mine, null), Ct);
+         Assert.True(Assert.Single(result.Items).Success);
+         Assert.Equal(2, (await call.Engine.DetailAsync(id, Ct)).Header.cApprovalRequestLevel);
+      }
+      using (var call = fx.Call(fx.Requester)) {
+         Assert.False(Assert.Single((await call.Engine.SignAllAsync(new("Test System", [id], ApprovalSignAllScope.Mine, null), Ct)).Items).Success);
+         Assert.Equal(403, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.SignAllAsync(new(null, [id], ApprovalSignAllScope.AllActiveSteps, null), Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.VoidAllAsync(new([id], "short"), Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.VoidAsync(id, "short", Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.ReinstateAsync(id, "Batch subject summary", "short", Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.SignAllAsync(new(null, Enumerable.Repeat(id, 201).ToArray(), ApprovalSignAllScope.Mine, null), Ct))).StatusCode);
+         Assert.Equal(0, (await call.Engine.ListAsync(new(DateFrom: DateTime.Today.AddDays(1)), Ct)).Total);
+         Assert.Contains(await call.Engine.YearMonthsAsync(new(ApprovalKind.System, "Test System"), Ct), x => x.Year == DateTime.Today.Year && x.Month == DateTime.Today.Month);
+      }
+      using (var call = fx.Call(fx.Admin, admin: true)) {
+         Assert.True(Assert.Single((await call.Engine.SignAllAsync(new(null, [id], ApprovalSignAllScope.AllActiveSteps, "Reviewed"), Ct)).Items).Success);
+         Assert.Equal(3, (await call.Engine.DetailAsync(id, Ct)).Header.cApprovalRequestLevel);
+      }
+      using (var call = fx.Call(fx.Decider)) {
+         Assert.True(Assert.Single((await call.Engine.SignAllAsync(new("Test System", null, ApprovalSignAllScope.Mine, null), Ct)).Items).Success);
+         Assert.Equal(ApprovalStage.Approved, (await call.Engine.DetailAsync(id, Ct)).Header.cApprovalRequestStage);
+      }
+      using (var call = fx.Call(fx.Requester)) {
+         var result = await call.Engine.VoidAllAsync(new([id, "missing"], "A sufficiently detailed void reason"), Ct);
+         Assert.True(result.Items[0].Success); Assert.False(result.Items[1].Success);
+      }
+   }
    [Fact]
    public async Task MissingEntityAndIncompatibleCreateSnapshotCanStillBeRejected() {
       await using var fx = await Fixture.CreateAsync(database, Ct);
@@ -277,6 +321,7 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
          await core.SaveChangesAsync(ct);
          return fixture;
       }
+      public void SetBatchPolicy(bool allow) => ((SystemDefinition)registry.System("Test System").Definition).AllowBatchSign = allow;
       public Call Call(string userId, bool decide = false, bool admin = false, bool debug = false) => new(provider.CreateScope(), registry,
          new ActionRequest { cUserId = userId, IsAdmin = admin, Source = debug ? CallerSource.DebugToken : CallerSource.AccessToken,
             Claims = decide ? [new ClaimAction { ModuleName = "Test", Name = "Decide" }] : [] });
@@ -314,7 +359,7 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
       public Task CreateKeyAsync(Child row, IEmApprovalDataContext context, CancellationToken ct = default) { row.ChildId = Ulid.NewUlid().ToString(); return Task.CompletedTask; }
    }
    [Approval("Test System")]
-   public sealed class SystemDefinition : IEmApprovalSystem<string> { public IReadOnlyList<ApprovalSystemStep> Steps => [new(1, "Prepared"), new(2, "Check A"), new(2, "Check B"), new(3, "Finish")]; }
+   public sealed class SystemDefinition : IEmApprovalSystem<string> { public bool AllowBatchSign { get; set; } = true; public IReadOnlyList<ApprovalSystemStep> Steps => [new(1, "Prepared"), new(2, "Check A"), new(2, "Check B"), new(3, "Finish")]; }
    public sealed class DynamicHandler : IEmApprovalSystemHandler<SystemDefinition, string> {
       public Task<ApprovalDynamicSigner?> ResolveDynamicSignerAsync(ApprovalSystemStep step, string key, ActionRequest requester, CancellationToken ct = default) =>
          Task.FromResult(key == "missing" ? null : new ApprovalDynamicSigner(requester.RequireUserId(), true));

@@ -196,6 +196,9 @@ namespace Em.Ui.Maui.Core
       private void RebuildClaimCatalog() =>
          _allClaims = NavigationAccess.MergeClaimCatalogs(_internalClaims, _serverClaims, _serverClaimsLoaded);
 
+      /// <summary>Whether the active debugger identity may bypass user permissions.</summary>
+      public bool IsDebugBypass => IsDebugMode && ActiveUser?.cUserId == Defaults.DebuggerUserId;
+
       /// <summary>
       /// Whether <paramref name="navigation"/> may be opened by the active user - used by both the home menu
       /// and <see cref="NavigateTo(Navigation,object?)"/>, so what is hidden and what is refused never
@@ -205,8 +208,9 @@ namespace Em.Ui.Maui.Core
       /// </summary>
       /// <param name="navigation">The navigation about to be opened.</param>
       public bool CanOpen(Navigation navigation) =>
+         (navigation.Name != "em.approval.signers" || IsDebugBypass || ActiveUser?.cUserIsAdmin == true) &&
          (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
-         (IsDebugMode || NavigationAccess.CanOpen(navigation, ActiveUser));
+         (IsDebugBypass || NavigationAccess.CanOpen(navigation, ActiveUser));
 
       // Until a server has been asked, module presence is unknown and must not hide anything.
       private bool _serverClaimsLoaded;

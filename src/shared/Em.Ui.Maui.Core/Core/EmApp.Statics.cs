@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
 using Em.Api.Core;
 using Em.Api.Core.Models;
@@ -143,6 +143,7 @@ namespace Em.Ui.Maui.Core
          InitInternalClaims(app);
          builder(pars);
          app.Services.AddSingleton(pars.ApprovalEditors);
+         app.Services.AddSingleton(pars.ApprovalWrappers);
 
          app.ApplicationName = pars.ApplicationName ?? "Set ApplicationName to change!";
          // Created after the application name is known, because that name is the prefix of every setting key -

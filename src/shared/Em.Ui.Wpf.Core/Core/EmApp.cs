@@ -253,6 +253,7 @@ namespace Em.Ui.Wpf.Core
       /// </summary>
       /// <param name="navigation">The navigation about to be opened.</param>
       public bool CanOpen(Navigation navigation) =>
+         (navigation.Name != "em.approval.signers" || IsDebugBypass || ActiveUser?.cUserIsAdmin == true) &&
          (_containerManagerEnabled || !string.Equals(navigation.Name, "admin.container", StringComparison.OrdinalIgnoreCase)) &&
          (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
          (IsDebugBypass || NavigationAccess.CanOpen(navigation, ActiveUser));

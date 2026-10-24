@@ -490,3 +490,17 @@ disk), `publicListing: false` membuat listing 404 dan berkas folder itu ber-head
 files, Rename (`F2`) dan Copy (Ctrl+drag, business task). Release Manager menulis `.meta` ke seluruh pohon
 rilis setiap Sync. Build API/WPF/MAUI dan 35 test CDN terfilter lulus; GUI dan HTTP nyata diperiksa
 pengguna. Guide `doc/engine/engine-cdn-storage.md`; laporan `doc/report/cdn-folder-settings.md`.
+
+
+## Approval wrapper (keputusan pengguna 2026-10-24)
+
+Wrapper WPF/MAUI memakai data dan aksi engine, dengan UI milik modul, menu tanpa claim baru.
+`AddApprovalWrapper` memetakan MY TASKS ke wrapper; fallback membuka editor engine dengan filter
+menunggu, bukan manager. Approval Manager penuh hanya admin/debugger bypass; Compact tetap mengikuti
+hak lihat. Signer settings tetap di engine. Batch hanya System, maksimum 200 request per panggilan,
+Mine kandidat saja, AllActiveSteps hanya admin; snapshot level tidak merambat ke level baru.
+Definisi dapat menolak batch lewat AllowBatchSign. Semua void termasuk reinstate wajib alasan
+minimal 15 karakter setelah trim. Mobile tetap tanpa void. Tidak ada perubahan skema.
+Guide: `doc/engine/engine-approval.md`, bagian Approval wrappers.
+
+Artefak approval wrapper 2026-10-24: `../.artefacts/em-system/scripts/approval-wrapper-smoke/` menyimpan harness HTTP dan log build/tes di `out/`, tanpa kredensial atau artefak di repo.

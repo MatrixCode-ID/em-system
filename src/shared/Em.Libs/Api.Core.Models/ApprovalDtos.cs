@@ -1,10 +1,10 @@
 namespace Em.Api.Core.Models;
 /// <summary>Caller capabilities for one registered approval.</summary>
 public sealed record ApprovalCapability(ApprovalKind Kind, string Name, string Title, bool CanView,
-   bool CanDecide, int WaitingCount, string[] ApproverOnlyColumns, ApprovalSystemStep[] Steps);
+   bool CanDecide, int WaitingCount, string[] ApproverOnlyColumns, ApprovalSystemStep[] Steps, bool AllowBatchSign = true);
 /// <summary>Paged approval filter. Complex filters are sent only by POST.</summary>
 public sealed record ApprovalQuery(ApprovalKind? Kind = null, string? Name = null, string? SubjectKey = null,
-   ApprovalStage? Stage = null, bool WaitingForMeOnly = false, string? Search = null, int Page = 1, int PageSize = 50);
+   ApprovalStage? Stage = null, bool WaitingForMeOnly = false, string? Search = null, int Page = 1, int PageSize = 50, DateTime? DateFrom = null, DateTime? DateTo = null, bool OldestFirst = false);
 /// <summary>One filtered page.</summary>
 public sealed record ApprovalPage(ta_ApprovalRequest[] Items, int Total, int Page, int PageSize);
 /// <summary>Server-authorized detail including the request snapshot and live conflict values.</summary>
@@ -32,3 +32,26 @@ public sealed record ApprovalSignerUser(string UserId, string Name, bool Active)
 /// <summary>Settings snapshot and available users for one System definition.</summary>
 public sealed record ApprovalSignerSettings(string Name, ApprovalSystemStep[] Steps,
    ApprovalSignerSetting[] Settings, ApprovalSignerUser[] Users);
+
+/// <summary>Visible request count in one calendar month.</summary>
+public sealed record ApprovalYearMonth(int Year, int Month, int Count);
+/// <summary>Candidate signatures or administrative signatures on the captured active level.</summary>
+public enum ApprovalSignAllScope {
+   /// <summary>Only active steps for which the caller is a candidate.</summary>
+   Mine,
+   /// <summary>All captured active steps; requires a persisted administrator.</summary>
+   AllActiveSteps
+}
+/// <summary>Signs captured active System steps; a null ID list discovers the caller's work.</summary>
+public sealed record ApprovalSignAllRequest(string? Name, string[]? RequestIds, ApprovalSignAllScope Scope, string? Note);
+/// <summary>Voids explicitly selected System requests with a history reason.</summary>
+public sealed record ApprovalVoidAllRequest(string[] RequestIds, string Reason);
+/// <summary>Outcome of one captured step or request.</summary>
+public sealed record ApprovalBatchItem(string RequestId, string? StepId, bool Success, string? Message);
+/// <summary>Independent per-request outcomes; partial success is allowed.</summary>
+public sealed record ApprovalBatchResult(ApprovalBatchItem[] Items);
+/// <summary>Decision validation shared by server and clients.</summary>
+public static class ApprovalRules {
+   /// <summary>Minimum trimmed reason length for every System void, including reinstate.</summary>
+   public const int MinVoidReasonLength = 15;
+}

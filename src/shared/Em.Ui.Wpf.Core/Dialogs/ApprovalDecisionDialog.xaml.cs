@@ -1,3 +1,4 @@
+using Em.Api.Core.Models;
 using Em.Ui.Wpf.Shared;
 using Em.Ui.Wpf.Windows;
 namespace Em.Ui.Wpf.Dialogs;
@@ -16,9 +17,11 @@ public partial class ApprovalDecisionDialog : EmWindow {
 /// <summary>Decision input; a rejection or void cannot confirm with an empty reason.</summary>
 public sealed class ApprovalDecisionDialogVm : MvvmModelBase {
    private readonly bool _reasonRequired;
+   private readonly int _minimum;
    /// <summary>Creates the dialog state and confirmation command.</summary>
    public ApprovalDecisionDialogVm(string action, string subtitle, bool reasonRequired) {
       Action = action; Subtitle = subtitle; _reasonRequired = reasonRequired;
+      _minimum = action.StartsWith("Void", StringComparison.OrdinalIgnoreCase) || action == "Reinstate" ? ApprovalRules.MinVoidReasonLength : reasonRequired ? 1 : 0;
       RegisterCommand(nameof(ConfirmCommand), ConfirmCommand, ConfirmCommandAllowed);
    }
    /// <summary>Raised when valid input is confirmed.</summary>
@@ -32,11 +35,11 @@ public sealed class ApprovalDecisionDialogVm : MvvmModelBase {
    /// <summary>Field caption.</summary>
    public string NoteCaption => _reasonRequired ? "Reason" : "Decision note";
    /// <summary>Input hint.</summary>
-   public string Hint => _reasonRequired ? "A reason is required and stays in the approval history." : "The note is optional and stays with your signature.";
+   public string Hint => _reasonRequired ? $"A reason of at least {_minimum} characters is required and stays in the approval history." : "The note is optional and stays with your signature.";
    /// <summary>Unmodified TwoWay input.</summary>
    public string Note { get => Get(string.Empty); set { Set(value); Commands[nameof(ConfirmCommand)]?.RaiseCanExecuteChanged(); } }
    /// <summary>Confirms the local input; the caller performs the server action afterward.</summary>
    public void ConfirmCommand() { if (ConfirmCommandAllowed()) Confirmed?.Invoke(); }
    /// <summary>Whether the optional or required reason is ready for confirmation.</summary>
-   public bool ConfirmCommandAllowed() => !_reasonRequired || !string.IsNullOrWhiteSpace(Note);
+   public bool ConfirmCommandAllowed() => (Note?.Trim().Length ?? 0) >= _minimum;
 }

@@ -36,5 +36,11 @@ public interface IApprovalServices : IServices {
    Task<ta_ApprovalRequestAttachment> PostGetMeta_ApprovalAttachment(ApprovalAttachmentUpload upload, Stream content);
    /// <summary>GetMeta_ApprovalAttachment approval operation.</summary>
    Task<Stream> GetMeta_ApprovalAttachment(string attachmentId);
+   /// <summary>Returns server-authorized ApprovalYearMonths results.</summary>
+   Task<ApprovalYearMonth[]> PostGetMeta_ApprovalYearMonths(ApprovalQuery filter);
+   /// <summary>Returns server-authorized ApprovalSystemSignAll results.</summary>
+   Task<ApprovalBatchResult> PostGetMeta_ApprovalSystemSignAll(ApprovalSignAllRequest request);
+   /// <summary>Returns server-authorized ApprovalSystemVoidAll results.</summary>
+   Task<ApprovalBatchResult> PostGetMeta_ApprovalSystemVoidAll(ApprovalVoidAllRequest request);
    #endregion
 }

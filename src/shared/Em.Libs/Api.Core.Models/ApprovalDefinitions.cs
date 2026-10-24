@@ -19,6 +19,8 @@ public interface IEmApprovalSystem : IEmApproval {
    IReadOnlyList<ApprovalSystemStep> Steps { get; }
    /// <summary>Additional module claims allowed to void requests.</summary>
    IReadOnlyList<ClaimAction> VoidClaims => [];
+   /// <summary>Whether server-side batch signing may bypass module client validation.</summary>
+   bool AllowBatchSign => true;
 }
 /// <summary>System definition bound to the subject key understood by its module.</summary>
 public interface IEmApprovalSystem<TKey> : IEmApprovalSystem where TKey : notnull { }

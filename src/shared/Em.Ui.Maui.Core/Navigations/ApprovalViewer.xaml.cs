@@ -29,7 +29,7 @@ namespace Em.Ui.Maui.Navigations
 
       /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) {
-         if (args.Data is ApprovalManagerNavigationPayload { ApprovalRequestId: { Length: > 0 } id }) Vm.RequestId = id;
+         Vm.Configure(args.Data as ApprovalManagerNavigationPayload);
          return Vm.RefreshAsync();
       }
 
@@ -157,11 +157,24 @@ namespace Em.Ui.Maui.Navigations
    /// <summary>View model of <see cref="ApprovalViewer"/>; every action follows the server-returned rights.</summary>
    public sealed class ApprovalViewerVm : MvvmModelBase
    {
+      private ApprovalManagerNavigationPayload? _filter;
+      private int _page = 1;
+      private int _total;
+      /// <summary>Applies an explicit request or a waiting-work filter.</summary>
+      public void Configure(ApprovalManagerNavigationPayload? payload) { _filter = payload; RequestId = payload?.ApprovalRequestId; _page = 1; }
+      /// <summary>Opens the next request in the fallback filter.</summary>
+      public Task NextCommand() { _page++; return RefreshAsync(); }
+      /// <summary>Opens the previous request in the fallback filter.</summary>
+      public Task PreviousCommand() { _page--; return RefreshAsync(); }
+      private bool NextCommandAllowed() => !IsBusy && _filter?.ApprovalRequestId is null && _page < _total;
+      private bool PreviousCommandAllowed() => !IsBusy && _filter?.ApprovalRequestId is null && _page > 1;
       private IEmApprovalSystemEditor? _editor;
       private bool _released;
       private int _version;
 
       public ApprovalViewerVm() {
+         RegisterCommand(nameof(NextCommand), NextCommand, NextCommandAllowed);
+         RegisterCommand(nameof(PreviousCommand), PreviousCommand, PreviousCommandAllowed);
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
          RegisterCommand(nameof(ApproveCommand), ApproveCommand, ApproveCommandAllowed);
          RegisterCommand(nameof(RejectCommand), RejectCommand, RejectCommandAllowed);
@@ -361,7 +374,11 @@ namespace Em.Ui.Maui.Navigations
       }
 
       private async Task LoadAsync() {
-         if (string.IsNullOrEmpty(RequestId)) return;
+         if (_filter is { ApprovalRequestId: null }) {
+            var page = await Service.PostGetMeta_ApprovalRequests(new(_filter.Kind, _filter.Name, WaitingForMeOnly: _filter.WaitingForMeOnly, Page: _page, PageSize: 1, OldestFirst: true));
+            _total = page.Total; RequestId = page.Items.FirstOrDefault()?.cApprovalRequestId;
+         }
+         if (string.IsNullOrEmpty(RequestId)) { Detail = null; ModuleView = null; Steps.Clear(); Comments.Clear(); Error = "No approval requests match the current filters."; RaiseState(); return; }
          var version = ++_version;
          var detail = await Service.GetMeta_ApprovalRequest(RequestId);
          if (_released || version != _version) return;

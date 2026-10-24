@@ -372,7 +372,7 @@ namespace Em.Ui.Wpf.Windows
       public string? ActionName => Info.ActionName;
       /// <summary>Indicates it can open.</summary>
       public bool CanOpen => Info.ActionName == "Open"
-         && Info.NavigationTarget == ApprovalManagerNavigationPayload.NavigationName;
+         && !string.IsNullOrWhiteSpace(Info.NavigationTarget);
       /// <summary>The oldest age text.</summary>
       public string OldestAgeText => Info.OldestAge is not { } age ? "" : age.TotalDays >= 1
          ? $"Oldest {Math.Floor(age.TotalDays):0}d" : age.TotalHours >= 1
@@ -1157,24 +1157,28 @@ namespace Em.Ui.Wpf.Windows
       public bool HubTaskLoadFailed { get => Get<bool>(); private set => Set(value); }
 
       /// <summary>Whether the open hub task command may run now.</summary>
-      public bool OpenHubTaskCommandAllowed(HubTaskRowVm? row) => row?.CanOpen == true && EmApp?.ActiveUser is not null;
+      public bool OpenHubTaskCommandAllowed(HubTaskRowVm? row) {
+         if (row?.CanOpen != true || EmApp?.ActiveUser is null) return false;
+         var target = EmApp.ServiceProvider.GetRequiredService<ApprovalWrapperCatalog>().Resolve(row.Info);
+         var navigation = EmApp.Navigations.FirstOrDefault(x => x.Name == target?.NavigationName);
+         return navigation is not null && EmApp.CanOpen(navigation);
+      }
 
       /// <summary>Runs the open hub task command.</summary>
       public async Task OpenHubTaskCommand(HubTaskRowVm? row) {
          if (!OpenHubTaskCommandAllowed(row)) return;
          try {
-            var parameter = row!.Info.NavigationParameter ?? string.Empty;
-            var separator = parameter.IndexOf(':');
-            var payload = new ApprovalManagerNavigationPayload { WaitingForMeOnly = true };
-            if (separator > 0 && Enum.TryParse<ApprovalKind>(parameter[..separator], out var kind)) {
-               payload.Kind = kind; payload.Name = parameter[(separator + 1)..];
-            }
-            var existing = payload.Title is { } title ? EmApp!.FindEntry(title) : null;
-            if (await EmApp!.NavigateTo(row!.Info.NavigationTarget!, payload)) {
-               // Reusing a tab does not deliver the new payload through the core router.
-               if (existing?.Body is ApprovalManager manager) {
-                  manager.Vm.Configure(payload);
-                  await manager.Vm.RefreshAsync();
+            var target = EmApp!.ServiceProvider.GetRequiredService<ApprovalWrapperCatalog>().Resolve(row!.Info);
+            if (target is null) return;
+            var navigation = EmApp.Navigations.FirstOrDefault(x => x.Name == target.NavigationName);
+            if (navigation is null || !EmApp.CanOpen(navigation)) return;
+            var title = (target.Payload as NavigationPayloadBase)?.Title ?? navigation.Title;
+            var existing = EmApp.FindEntry(title);
+            if (await EmApp.NavigateTo(target.NavigationName, target.Payload)) {
+               if (existing?.Body is IApprovalWrapperNavigationTarget wrapper && target.Payload is ApprovalWrapperNavigationPayload filter)
+                  await wrapper.ApplyApprovalFilterAsync(filter);
+               else if (existing?.Body is ApprovalManager manager && target.Payload is ApprovalManagerNavigationPayload engineFilter) {
+                  manager.Vm.Configure(engineFilter); await manager.Vm.RefreshAsync();
                }
                IsTaskHubOpen = false;
             }

@@ -175,7 +175,7 @@ Steps are built on the server. A later level opens only after every step at the 
 has signed. One signature completes a step. The requester cannot supply or edit the flow.
 
 The **System Approval Editor** uses the `Administrative Tools:Approval Signer Settings` claim and is
-opened from **Tools**, next to Approval Manager, for users who may open it. Its
+opened from **Tools**, next to Approval Manager, for administrators. Its
 three columns show registered approvals, declared steps and a User Pool. Each step needs exactly one
 primary user or **DS · Dynamic Signer**, plus zero or more ordered four-eyes backups. DS stays above the
 pool filter and can be dropped on any step. Dropping DS replaces the primary; the previous primary user
@@ -261,8 +261,8 @@ The active SYSTEM DEBUGGER and administrator accounts can see this tool even bef
 approval capabilities load. Switch User and Simulate Login use the active account's
 permissions. When opened without an explicit filter, debugger and administrator
 accounts start with **Needs my action** cleared, showing all requests they can view.
-Ordinary users start with it checked. Explicit navigation filters, including MY TASKS,
-are preserved. Clear the checkbox and refresh to include requests awaiting other
+Full-manager navigation by an ordinary user shows an administrator-only message without loading data.
+Explicit navigation filters are preserved. Clear the checkbox and refresh to include requests awaiting other
 users, subject to the server's visibility checks.
 
 Built-in SYSTEM ADMIN and SYSTEM DEBUGGER accounts may comment on requests they can
@@ -298,13 +298,12 @@ column of cards: the engine places it inside a vertical scroll, so it must not s
 `ToolbarItems` and `OpenSourceAsync` are not shown on mobile.
 
 - **Approval Manager** (`em.approval.manager`, no claim): an engine tool, so like the desktop Tools it
-  is not in the home menu of modules. It opens from the account panel, from a MY TASKS card and from
-  the inbox button. One column of request cards with search, an *Only requests waiting for me*
+  is not in the home menu of modules. It opens from the account panel, for administrators. One column of request cards with search, an *Only requests waiting for me*
   switch, pull-to-refresh and paging (30 per page). The switch starts off for SYSTEM DEBUGGER and
   administrators, on for other users, unless the navigation payload states it. It also accepts the
   hub's `Kind:Name` text parameter. Tapping a card opens the request.
 - **MY TASKS** (home, above the module menu): one card per `GetMeta_UserHubTasks` row with its count
-  and the age of the oldest item; tapping opens Approval Manager filtered to that approval and to the
+  and the age of the oldest item; tapping opens the registered wrapper or the engine editor filtered to that approval and to the
   user's own decisions. The top bar shows an inbox button with the total count while work is waiting.
   `EmApp.HubTasks` is refreshed when home opens, when the app returns to the foreground, when the
   user changes, after a decision in the viewer, and every 60 seconds while the app is in front.
@@ -331,7 +330,7 @@ preview check visibility of the owning request. Without object storage, attachme
 and the upload controls are hidden.
 
 MY TASKS groups waiting requests by `(kind, name)`. Data counts use the root's decision check; System
-counts use candidates of active steps. Opening a group filters Approval Manager. Counts disappear when
+counts use candidates of active steps. Opening a group resolves its registered wrapper, with an engine-editor fallback. Counts disappear when
 the request is decided. Escalation, quorum, email delivery by the engine, push notifications to
 mobile devices and physical-document approval are outside this implementation.
 
@@ -342,3 +341,44 @@ test suites, API/WPF/MAUI builds, and HTTP calls to the actual Em.Api host with 
 The generic WPF screens were also rendered in light and dark themes within an integrated host.
 Direct mouse interaction and external PDF rendering remain unverified. See the
 [execution report](../../plan/executed/approval-rancang-ulang-report.md) for results and limits.
+
+
+## Approval wrappers
+
+A host/module may build its own WPF and MAUI approval screens. Register the same route on each client:
+
+```csharp
+builder.AddApprovalWrapper(ApprovalKind.System, "Order", "orders.approval");
+```
+
+Register the navigation without a module or claim to make its menu available to signed-in users. The
+server still authorizes every list, detail, decision, comment and attachment. An empty list is normal.
+A wrapper consumes data and actions; it does not embed the full Approval Manager. Signer settings stay
+in the engine. `ApprovalWrapperNavigationPayload` carries Kind, Name and WaitingForMeOnly. Implement
+`IApprovalWrapperNavigationTarget` on the wrapper body to reapply this filter and refresh when its
+navigation is already open.
+
+MY TASKS resolves registered wrappers on the client. Without a wrapper it opens `em.approval.editor`
+with a waiting-work filter; the editor walks the oldest matching requests. Other hub sources preserve
+their target and parameter. The full Approval Manager is an administrator tool; authenticated debugger
+bypass is also allowed. Compact subject reviews embedded by modules remain available to authorized
+viewers. The mobile inbox sends ordinary users to home (MY TASKS).
+
+`ApprovalQuery.DateFrom` and `DateTo` filter request dates inclusively. `OldestFirst` is optional.
+`PostGetMeta_ApprovalYearMonths` returns visible year/month counts using the same filters, ignoring the
+date range and paging. List rows include active step names and WaitingSince (the previous level's last
+signature time, or request creation for the first level), without adding database columns.
+
+System approvals support `PostGetMeta_ApprovalSystemSignAll` and `PostGetMeta_ApprovalSystemVoidAll`.
+Mine signs only captured active steps for which the caller is primary or backup, including for admins.
+A null RequestIds discovers all waiting work on the named approval independently of list dates/pages.
+AllActiveSteps requires a persisted administrator and explicit request IDs. Later levels unlocked by
+this call are excluded. A definition may set `AllowBatchSign => false` to require its individual client
+validation; capabilities expose that flag. Batch signing does not run module client validators.
+
+Each request commits independently; multiple captured steps on one request share its transaction.
+`ApprovalBatchResult.Items` reports successful steps and skipped/failed requests. Completion handlers
+run after commit. An invocation accepts at most 200 requests (including discovery); split larger explicit
+selections into separate calls. Sign descriptions are optional. Every void, including void all and the
+void performed during reinstate, needs 15 to 990 characters after trimming, enforced by the server and
+WPF dialog. Mobile provides signing but no void/reinstate actions.

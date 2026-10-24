@@ -1,6 +1,6 @@
 # Approval wrapper: data untuk layar approval milik modul, Approval Manager khusus admin, sign all dan void all
 
-Status: **belum dieksekusi** (ditulis 2026-10-24). Eksekusi hanya atas perintah pengguna.
+Status: **dieksekusi 2026-10-24** atas perintah pengguna. Build/tes/HTTP lulus; uji visual tertunda.
 
 Plan ini adalah bagian **engine** dari satu topik lintas repo. Bagian produk pemakai (layar approval
 milik modul di repo host privat) memakai plan pasangannya sendiri; plan itu menautkan ke berkas ini.
@@ -209,3 +209,58 @@ Tanpa push.
 Tidak ada mockup. Perubahan pada layar engine yang sudah ada (Approval Manager, editor approval,
 dialog keputusan, MY TASKS) tidak melalui mockup; ini mengikuti keputusan desain approval 2026-10-17
 dan keputusan pengguna 2026-10-24. Tidak ada layar engine baru.
+
+## Hasil eksekusi — 2026-10-24
+
+Seluruh kode engine ditulis dahulu, kemudian kode aplikasi pemakai. Build, tes dan review dimulai
+setelah kode keduanya lengkap; perbaikan hasil review dilakukan pada tahap akhir. Tidak ada perubahan
+skema, rilis NuGet, deployment produksi atau push.
+
+Implementasi mencakup kontrak filter tanggal/year-month/oldest-first, batch System sign/void,
+AllowBatchSign dan konstanta alasan void 15 karakter. Satu kernel keputusan dipakai single/batch,
+beberapa step dalam request berbagi transaksi; request berbeda independen. Target level dibekukan
+sebelum mutasi, primary/backup diperiksa ulang saat lock, admin AllActiveSteps memerlukan ID eksplisit.
+Mine tetap kandidat saja termasuk bagi admin; null IDs menemukan pekerjaan lintas tanggal/paging,
+maksimum 200 request. Kapabilitas mengirim count kandidat dan flag batch. Semua void termasuk reinstate
+memvalidasi alasan setelah trim. Keterangan step dan waktu tunggu adalah metadata baca tanpa DDL.
+
+Catalog/payload/resolver wrapper bersama dipakai WPF/MAUI. AddApprovalWrapper mendaftarkan navigasi
+modul tanpa menyediakan body UI. Hook IApprovalWrapperNavigationTarget menerapkan ulang filter pada
+wrapper yang sudah terbuka. Tanpa wrapper, editor mengambil request tertua dalam filter waiting,
+dengan Previous/Next dan pesan kosong. Hub sumber lain mempertahankan target/parameter serta cek CanOpen.
+Manager penuh hanya admin/debugger bypass; Compact tetap mengikuti hak server. Pengaturan signer UI
+admin-only. Mobile inbox non-admin ke home; mobile tetap tanpa void/reinstate.
+
+Manager WPF memiliki multi-select/context action, batch semua hasil filter atau pilihan, dan Waiting.
+Pilihan eksplisit lebih dari 200 dibagi per panggilan; definisi penolak batch menyembunyikan Sign all.
+Akun sistem bawaan tidak dapat menjalankan batch mutasi. Em.Test menyediakan contoh wrapper UI sendiri.
+Guide engine dan CLAUDE.md diperbarui.
+
+### Verifikasi
+
+- Build `Em.Api.slnx`, `Em.Ui.Wpf.slnx`, `Em.Ui.Maui.slnx` lulus. Build API akhir 0 warning/error;
+  warning existing TestService/test analyzer WPF dan dua binding AccountPanel MAUI dicatat di log.
+- Suite backend penuh **396 lulus, 8 skip, 0 gagal**. Skip provider log store tanpa konfigurasi.
+  Tujuh regresi ApprovalRedesignTests terakhir **7/7 lulus** setelah perbaikan akhir.
+- Suite frontend akhir **232 lulus, 0 gagal**, termasuk resolver, fallback tertua + pager,
+  batas alasan trim, manager non-admin, dan larangan batch akun bawaan.
+- HTTP Em.Api+Em.Test dengan database lokal terisolasi dan user nyata: **11/11 pemeriksaan lulus**,
+  meliputi Mine, level baru tidak ikut, parallel steps, completion handler, year/month POST,
+  alasan pendek 400 dan hasil void sebagian. Database fixture dipertahankan.
+- Build dan verifikasi aplikasi pemakai dijalankan sesudah kode kedua plan lengkap; hasil rinci
+  aplikasi dicatat pada plan pemiliknya, tanpa menyalin data privat ke repo ini.
+- Log/harness: `../.artefacts/em-system/scripts/approval-wrapper-smoke/` dengan output `out/`.
+  Tidak ada kredensial, output build, atau fixture sementara di repo.
+- Review diff dan `git diff --check` selesai. Query year/month yang tidak diterjemahkan provider
+  SQL diperbaiki dengan mengurutkan group key sebelum proyeksi record. Tes yang mengasumsikan satu
+  context action disesuaikan dengan multi-select dan akses admin yang baru.
+
+### Batas dan penutupan
+
+Uji visual/interaksi layar WPF/MAUI tidak dijalankan, menunggu konfirmasi. Tidak ada ambang otomatis
+untuk approval nyangkut. Discovery Mine di atas 200 request ditolak 400 sesuai kontrak; pemanggil
+menerima pesan, tanpa loop otomatis yang ikut menandatangani level berikutnya. Validasi client modul
+tidak dijalankan oleh batch, sesuai keputusan plan. Engine tidak mengubah link subject milik modul.
+
+Plan dipindahkan ke `plan/executed/approval-wrapper.codex.md`; commit lokal di `work-bench` sesuai
+izin plan. Tidak ada tindakan terblokir policy atau skrip pemasangan manual.

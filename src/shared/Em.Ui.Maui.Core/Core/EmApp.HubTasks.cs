@@ -66,15 +66,19 @@ namespace Em.Ui.Maui.Core
       /// <c>Kind:Name</c> parameter opens it filtered to that approval and to the user's own decisions.
       /// </summary>
       /// <param name="task">The row that was tapped.</param>
-      public Task<bool> OpenHubTaskAsync(HubTaskInfo task) {
-         if (string.IsNullOrEmpty(task.NavigationTarget)) return Task.FromResult(false);
-         object? data = task.NavigationParameter;
-         if (task.NavigationTarget == ApprovalManagerNavigationPayload.NavigationName &&
-             ApprovalManagerFilter.TryParse(task.NavigationParameter, out var kind, out var name)) {
-            data = new ApprovalManagerNavigationPayload { Kind = kind, Name = name, WaitingForMeOnly = true };
+      public async Task<bool> OpenHubTaskAsync(HubTaskInfo task) {
+         var target = ServiceProvider.GetRequiredService<ApprovalWrapperCatalog>().Resolve(task);
+         if (target is null) return false;
+         var navigation = Navigations.FirstOrDefault(x => x.Name == target.NavigationName);
+         if (navigation is null || !CanOpen(navigation)) return false;
+         var existing = FindEntry((target.Payload as NavigationPayloadBase)?.Title ?? navigation.Title);
+         if (!await NavigateTo(target.NavigationName, target.Payload)) return false;
+         if (existing?.Body is IApprovalWrapperNavigationTarget wrapper && target.Payload is ApprovalWrapperNavigationPayload filter)
+            await wrapper.ApplyApprovalFilterAsync(filter);
+         else if (existing?.Body is Em.Ui.Maui.Navigations.ApprovalViewer viewer && target.Payload is ApprovalManagerNavigationPayload engineFilter) {
+            viewer.Vm.Configure(engineFilter); await viewer.Vm.RefreshAsync();
          }
-
-         return NavigateTo(task.NavigationTarget, data);
+         return true;
       }
    }
 

@@ -1,0 +1,8 @@
+<UserControl x:Class="Em.Test.Wpf.TestApprovalWrapper" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:Em.Test.Wpf">
+ <UserControl.DataContext><local:TestApprovalWrapperVm/></UserControl.DataContext>
+ <UserControl.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/></ResourceDictionary.MergedDictionaries></ResourceDictionary></UserControl.Resources>
+ <Grid Margin="22,12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+ <StackPanel><Button Content="Refresh" Style="{StaticResource filledButtonStyle}" HorizontalAlignment="Left" Command="{Binding Commands[RefreshCommand]}"/><TextBlock Text="{Binding Message}" Margin="0,8"/></StackPanel>
+ <ListBox Grid.Row="1" ItemsSource="{Binding Rows}" Style="{StaticResource surfaceListBoxStyle}"><ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding cSummary}" Margin="12"/></DataTemplate></ListBox.ItemTemplate></ListBox>
+ </Grid>
+</UserControl>

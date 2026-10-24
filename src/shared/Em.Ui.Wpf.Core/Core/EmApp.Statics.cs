@@ -173,6 +173,7 @@ namespace Em.Ui.Wpf.Core
          // changes. Always registered - even when there is no panel at all - so the approval screen does not
          // need to know the difference.
          app.Services.AddSingleton(pars.ApprovalEditors);
+         app.Services.AddSingleton(pars.ApprovalWrappers);
 
          pars.Navigations.EachOf(app.AddNavigation);
          InitDebugMode(app, pars);

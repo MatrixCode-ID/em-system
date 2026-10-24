@@ -66,5 +66,14 @@ public sealed class ApprovalServices(IApprovalEngine engine) : ServicesBase, IAp
    /// <inheritdoc />
    [GetAction]
    public Task<Stream> GetMeta_ApprovalAttachment(string attachmentId) => Engine.AttachmentAsync(attachmentId, AbortToken);
+   /// <inheritdoc />
+   [PostAction]
+   public Task<ApprovalYearMonth[]> PostGetMeta_ApprovalYearMonths(ApprovalQuery filter) => Engine.YearMonthsAsync(filter, AbortToken);
+   /// <inheritdoc />
+   [PostAction]
+   public Task<ApprovalBatchResult> PostGetMeta_ApprovalSystemSignAll(ApprovalSignAllRequest request) => Engine.SignAllAsync(request, AbortToken);
+   /// <inheritdoc />
+   [PostAction]
+   public Task<ApprovalBatchResult> PostGetMeta_ApprovalSystemVoidAll(ApprovalVoidAllRequest request) => Engine.VoidAllAsync(request, AbortToken);
    #endregion
 }

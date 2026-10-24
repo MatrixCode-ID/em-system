@@ -17,6 +17,7 @@ public sealed class ApprovalManagerTests {
       var app = (EmApp)Activator.CreateInstance(typeof(EmApp),
          BindingFlags.Instance | BindingFlags.NonPublic, null, [Array.Empty<string>()], null)!;
       typeof(EmApp).GetField("_serviceProvider", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(app, services);
+      typeof(EmApp).GetProperty(nameof(EmApp.ActiveUser))!.SetValue(app, User.Build(app, new vi_User { cUserId = "test-admin", cUserAccount = "test-admin", cUserIsAdmin = true }));
       return app;
    }
 
@@ -31,6 +32,25 @@ public sealed class ApprovalManagerTests {
       return vm;
    }
 
+   [Theory]
+   [InlineData(Em.Defaults.AdminUserId)]
+   [InlineData(Em.Defaults.DebuggerUserId)]
+   public void BuiltInAccountsCannotRunBatchMutations(string userId) {
+      using var services = new ServiceCollection().BuildServiceProvider();
+      var app = NewApp(services);
+      typeof(EmApp).GetProperty(nameof(EmApp.ActiveUser))!.SetValue(app, User.Build(app, new vi_User { cUserId = userId, cUserAccount = userId, cUserIsAdmin = true }));
+      var vm = NewManager(app); vm.Rows.Add(Row("pending", ApprovalKind.System));
+      Assert.False(vm.Commands[nameof(vm.VoidAllCommand)]!.CanExecute());
+   }
+   [Fact]
+   public async Task NonAdminFullManagerDoesNotLoadAnyData() {
+      using var services = new ServiceCollection().BuildServiceProvider();
+      var app = NewApp(services);
+      typeof(EmApp).GetProperty(nameof(EmApp.ActiveUser))!.SetValue(app, User.Build(app, new vi_User { cUserId = "ordinary", cUserAccount = "ordinary" }));
+      var vm = NewManager(app); vm.Configure(null); await vm.RefreshAsync();
+      Assert.Equal("Approval Manager is available to administrators", vm.Error);
+      Assert.Empty(vm.Rows); Assert.False(ApprovalManagerVm.CanOpenManager(app));
+   }
    [Fact]
    public async Task ListLoadsPagesAndSelectionWithoutFetchingDetail() {
       var rows = new[] { Row("first"), Row("second", ApprovalKind.System) };
@@ -133,6 +153,27 @@ public sealed class ApprovalManagerTests {
       Assert.All(requested, id => Assert.Equal("target", id));
    }
 
+   [Fact]
+   public async Task EditorFallbackWalksOldestWaitingRequestsWithoutManagerAccess() {
+      var filters = new List<ApprovalQuery>(); var rows = new[] { Row("oldest"), Row("next") };
+      var service = DispatchProxy.Create<IApprovalServices, ApprovalServiceProxy>();
+      ((ApprovalServiceProxy)(object)service).Handler = (method, args) => method.Name switch {
+         nameof(IApprovalServices.GetMeta_ApprovalCapabilities) => Task.FromResult(Array.Empty<ApprovalCapability>()),
+         nameof(IApprovalServices.PostGetMeta_ApprovalRequests) => Read((ApprovalQuery)args![0]!),
+         nameof(IApprovalServices.GetMeta_ApprovalRequest) => Task.FromResult(new ApprovalRequestDetail(rows.Single(x => x.cApprovalRequestId == (string)args![0]!), [], [], [], [], [], [], [], false, false, false, false, false, [], [])),
+         _ => throw new InvalidOperationException(method.Name)
+      };
+      Task<ApprovalPage> Read(ApprovalQuery query) { filters.Add(query); return Task.FromResult(new ApprovalPage([rows[query.Page - 1]], 2, query.Page, 1)); }
+      using var services = new ServiceCollection().AddSingleton(service).BuildServiceProvider();
+      var app = NewApp(services);
+      typeof(EmApp).GetProperty(nameof(EmApp.ActiveUser))!.SetValue(app, User.Build(app, new vi_User { cUserId = "ordinary", cUserAccount = "ordinary" }));
+      var vm = NewManager(app); vm.Configure(new ApprovalManagerNavigationPayload { Kind = ApprovalKind.Data, Name = "Example", WaitingForMeOnly = true, SystemViewer = true });
+      await vm.RefreshAsync(); Assert.Equal("oldest", vm.Detail!.Header.cApprovalRequestId);
+      Assert.True(vm.ShowFilteredPager); Assert.True(vm.NextCommandAllowed());
+      await vm.NextCommand(); Assert.Equal("next", vm.Detail!.Header.cApprovalRequestId);
+      Assert.True(vm.PreviousCommandAllowed()); Assert.False(vm.NextCommandAllowed());
+      Assert.All(filters, query => { Assert.True(query.OldestFirst); Assert.True(query.WaitingForMeOnly); Assert.Equal(1, query.PageSize); Assert.Equal("Example", query.Name); });
+   }
    [WpfFact]
    public async Task ContextMenuAndDoubleClickUseTheClickedRecordWithoutSelectingIt() {
       var view = new ApprovalManager();
@@ -152,7 +193,7 @@ public sealed class ApprovalManagerTests {
       await Dispatcher.Yield(DispatcherPriority.DataBind);
       Assert.Same(view.Vm, item.Tag);
       Assert.Same(view.Vm, menu.DataContext);
-      var open = Assert.IsType<MenuItem>(Assert.Single(menu.Items.Cast<object>()));
+      var open = Assert.IsType<MenuItem>(menu.Items[0]);
       // The popup stays closed; supply the ContextMenu ancestor that WPF attaches when it opens.
       foreach (var property in new[] { MenuItem.CommandProperty, MenuItem.CommandParameterProperty }) {
          var binding = BindingOperations.GetBinding(open, property)!;

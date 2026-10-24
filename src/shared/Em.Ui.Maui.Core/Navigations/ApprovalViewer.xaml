@@ -15,6 +15,10 @@
          <ScrollView>
             <VerticalStackLayout Padding="16,12,16,24" Spacing="14">
 
+               <HorizontalStackLayout Spacing="8">
+                  <Button Text="Previous" Command="{Binding Commands[PreviousCommand]}" Style="{StaticResource tonalButtonStyle}"/>
+                  <Button Text="Next" Command="{Binding Commands[NextCommand]}" Style="{StaticResource tonalButtonStyle}"/>
+               </HorizontalStackLayout>
                <!-- ==== header ==== -->
                <Border Style="{StaticResource cardStyle}" Padding="16">
                   <VerticalStackLayout Spacing="8">

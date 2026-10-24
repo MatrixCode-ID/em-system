@@ -223,6 +223,9 @@ namespace Em.Ui.Maui.Navigations
       // Never throws: it runs from commands, whose async void execution has nothing above it to catch.
       public async Task RefreshAsync() {
          if (EmApp is null || _released) return;
+         if (!_payload.Compact && !EmApp.IsDebugBypass && EmApp.ActiveUser?.cUserIsAdmin != true) {
+            Rows.Clear(); Error = "Approval Manager is available to administrators"; IsRefreshing = false; return;
+         }
          if (IsBusy) {
             IsRefreshing = false;
             return;

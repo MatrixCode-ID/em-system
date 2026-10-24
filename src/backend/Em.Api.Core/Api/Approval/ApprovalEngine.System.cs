@@ -90,22 +90,28 @@ internal sealed partial class ApprovalEngine {
       if (remaining is null) Complete(request, true);
       else { request.cApprovalRequestLevel = remaining.Value; request.ustamp = DateTime.Now; }
    }
-   private async Task<ApprovalDecisionResult> DecideSystemAsync(ApprovalDecision decision, string user, CancellationToken ct) {
+   private Task<ApprovalDecisionResult> DecideSystemAsync(ApprovalDecision decision, string user, CancellationToken ct) =>
+      DecideSystemTransactionAsync(decision.RequestId, [decision.StepId!], user, decision.Approve, decision.Note, ct);
+   private Task<ApprovalDecisionResult> DecideSystemBatchAsync(string id, string[] steps, string user, string? note, CancellationToken ct) =>
+      DecideSystemTransactionAsync(id, steps, user, true, note, ct);
+   private async Task<ApprovalDecisionResult> DecideSystemTransactionAsync(string id, string[] stepIds, string user, bool approve, string? note, CancellationToken ct) {
       ta_ApprovalRequest request;
       await using (var transaction = await db.Database.BeginTransactionAsync(ct)) {
-         request = await LoadAsync(decision.RequestId, true, ct);
+         request = await LoadAsync(id, true, ct);
          if (request.cApprovalRequestStage != ApprovalStage.Pending) throw new ActionException("This request is no longer pending.", 409);
          var steps = await db.ta_ApprovalRequestSteps.AsTracking().Where(x => x.cApprovalRequestId == request.cApprovalRequestId).ToArrayAsync(ct);
-         var step = steps.SingleOrDefault(x => x.cApprovalRequestStepId == decision.StepId) ?? throw new ActionException("Choose a step of this request.", 400);
-         if (step.cApprovalRequestStepLevel != request.cApprovalRequestLevel || step.cApprovalRequestStepStage != ApprovalStepStatus.Waiting)
-            throw new ActionException("The selected step is not active.", 409);
-         var candidate = await db.ta_ApprovalRequestStepCandidates.SingleOrDefaultAsync(x => x.cApprovalRequestStepId == step.cApprovalRequestStepId && x.cUserId == user, ct);
-         if (candidate is null && !caller.IsAdmin) throw new ActionException("You are not a candidate for this active step.", 403);
-         step.cApprovalRequestStepStage = decision.Approve ? ApprovalStepStatus.Approved : ApprovalStepStatus.Rejected;
-         step.ustamp = DateTime.Now;
-         await SignatureAsync(request, step.cApprovalRequestStepId, user, decision.Approve, decision.Note,
-            caller.IsAdmin && candidate is null, candidate?.cApprovalRequestStepCandidateBackup == true, ct);
-         if (decision.Approve) Advance(request, steps); else Complete(request, false);
+         foreach (var stepId in stepIds) {
+            var step = steps.SingleOrDefault(x => x.cApprovalRequestStepId == stepId) ?? throw new ActionException("Choose a step of this request.", 400);
+            if (step.cApprovalRequestStepLevel != request.cApprovalRequestLevel || step.cApprovalRequestStepStage != ApprovalStepStatus.Waiting)
+               throw new ActionException("The selected step is not active.", 409);
+            var candidate = await db.ta_ApprovalRequestStepCandidates.SingleOrDefaultAsync(x => x.cApprovalRequestStepId == step.cApprovalRequestStepId && x.cUserId == user, ct);
+            if (candidate is null && !caller.IsAdmin) throw new ActionException("You are not a candidate for this active step.", 403);
+            step.cApprovalRequestStepStage = approve ? ApprovalStepStatus.Approved : ApprovalStepStatus.Rejected;
+            step.ustamp = DateTime.Now;
+            await SignatureAsync(request, step.cApprovalRequestStepId, user, approve, note,
+               caller.IsAdmin && candidate is null, candidate?.cApprovalRequestStepCandidateBackup == true, ct);
+         }
+         if (approve) Advance(request, steps); else Complete(request, false);
          await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct);
       }
       await NotifySystemFinishedAsync(request, ct);
@@ -119,7 +125,7 @@ internal sealed partial class ApprovalEngine {
       catch (Exception e) { logger.LogError(e, "Approval handler failed after commit for {RequestId}.", request.cApprovalRequestId); }
    }
    public async Task VoidAsync(string requestId, string reason, CancellationToken ct = default) {
-      var user = await RealUserAsync(ct); RequireText(reason, "Void reason", 990);
+      var user = await RealUserAsync(ct); reason = ValidateVoidReason(reason);
       await using var transaction = await db.Database.BeginTransactionAsync(ct);
       var request = await LoadAsync(requestId, true, ct);
       Void(request, user, reason);
@@ -132,7 +138,7 @@ internal sealed partial class ApprovalEngine {
       request.ustamp = DateTime.Now; AddComment(request.cApprovalRequestId, user, $"Voided: {reason}");
    }
    public async Task<string> ReinstateAsync(string requestId, string summary, string reason, CancellationToken ct = default) {
-      var user = await RealUserAsync(ct); RequireText(reason, "Reinstate reason", 990);
+      var user = await RealUserAsync(ct); reason = ValidateVoidReason(reason);
       ta_ApprovalRequest replacement;
       await using (var transaction = await db.Database.BeginTransactionAsync(ct)) {
          var old = await LoadAsync(requestId, true, ct);

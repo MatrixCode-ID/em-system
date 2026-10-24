@@ -41,6 +41,9 @@ namespace Em.Test.Wpf
             BodyType.Of<TestChild>(), EFontAwesomeIcon.Regular_WindowRestore), ITestServices.RunClaim);
 
          builder.AddSystemApproval<TestSystemApproval, TestSystemApprovalEditor>();
+         builder.AddApprovalWrapper(Em.Api.Core.Models.ApprovalKind.System, ITestServices.DocType, "test.approvals");
+         builder.AddNavigation(Manager("test.approvals", "Test Approvals", "Module-owned approval data example", 150,
+            BodyType.Of<TestApprovalWrapper>(), EFontAwesomeIcon.Solid_PenToSquare, "Data"));
       }
 
       private static Navigation Manager(string name, string title, string subtitle, int order, BodyType body,

@@ -23,6 +23,16 @@ public sealed class ApprovalEditorTests {
       Assert.Equal("  Reviewed  ", vm.Note);
    }
 
+   [Theory]
+   [InlineData("Void")]
+   [InlineData("Void all")]
+   [InlineData("Reinstate")]
+   public void VoidConfirmationRequiresFifteenTrimmedCharacters(string action) {
+      var vm = new ApprovalDecisionDialogVm(action, "Context", true);
+      vm.Note = "  short reason  "; Assert.False(vm.ConfirmCommandAllowed());
+      vm.Note = "  123456789012345  "; Assert.True(vm.ConfirmCommandAllowed());
+      Assert.Equal("  123456789012345  ", vm.Note);
+   }
    [Fact]
    public void SignerDraftPromotesUsersAndDynamicWithoutDuplicateBackups() {
       var vm = new ApprovalSignerSettingsVm();

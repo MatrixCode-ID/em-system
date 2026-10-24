@@ -50,6 +50,15 @@ public class ta_ApprovalRequest
    /// <summary>Stored datestamp value.</summary>
    [Column(TypeName = "datetime2")]
    public DateTime datestamp { get; set; }
+   /// <summary>Names of the currently active System steps, supplied by list queries.</summary>
+   [NotMapped]
+   public string? CurrentStep { get; set; }
+   /// <summary>When the current System level became active, supplied by list queries.</summary>
+   [NotMapped]
+   public DateTime? WaitingSince { get; set; }
+   /// <summary>Elapsed time at the active level.</summary>
+   [NotMapped]
+   public string Waiting => WaitingSince is { } since ? $"{Math.Max(0, (int)(DateTime.Now - since).TotalDays)}d {Math.Max(0, (DateTime.Now - since).Hours)}h" : string.Empty;
    /// <summary>Stored json_object value.</summary>
    [Column(TypeName = "nvarchar(max)")]
    public string? json_object { get; set; }

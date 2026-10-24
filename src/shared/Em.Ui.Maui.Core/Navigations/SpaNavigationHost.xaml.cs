@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using Microsoft.Maui.Controls;
 using Em.Ui.Maui.Core;
 using Em.Ui.Maui.Shared;
@@ -200,8 +200,9 @@ namespace Em.Ui.Maui.Navigations
 
       /// <summary>Opens the approval manager on the requests waiting for the user.</summary>
       public Task HubTasksCommand() =>
-         EmApp!.NavigateTo(Em.Ui.Core.Shared.ApprovalManagerNavigationPayload.NavigationName,
-            new Em.Ui.Core.Shared.ApprovalManagerNavigationPayload { WaitingForMeOnly = true });
+         EmApp!.IsDebugBypass || EmApp.ActiveUser?.cUserIsAdmin == true
+            ? EmApp.NavigateTo(Em.Ui.Core.Shared.ApprovalManagerNavigationPayload.NavigationName, new Em.Ui.Core.Shared.ApprovalManagerNavigationPayload { WaitingForMeOnly = true })
+            : EmApp.MainStack.NavigateHome();
 
       public bool HubTasksCommandAllowed() => EmApp is not null;
 

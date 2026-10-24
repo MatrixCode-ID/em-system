@@ -50,13 +50,14 @@ internal sealed partial class ApprovalEngine {
          var canView = caller.IsAdmin || ApprovalAccess.HoldsClaim(caller, ViewClaim(name)) ||
             await visible.AnyAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name, ct);
          if (!canView && !caller.IsDebugRequest && !ApprovalAccess.HoldsClaim(caller, new ClaimAction { ModuleName = "Administrative Tools", Name = "Approval Signer Settings" })) continue;
-         var count = real ? await waiting.CountAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name, ct) : 0;
+         var count = real ? await visible.CountAsync(x => x.cApprovalRequestKind == ApprovalKind.System && x.cApprovalName == name && x.cApprovalRequestStage == ApprovalStage.Pending &&
+            db.ta_ApprovalRequestSteps.Any(s => s.cApprovalRequestId == x.cApprovalRequestId && s.cApprovalRequestStepLevel == x.cApprovalRequestLevel && s.cApprovalRequestStepStage == ApprovalStepStatus.Waiting && db.ta_ApprovalRequestStepCandidates.Any(c => c.cApprovalRequestStepId == s.cApprovalRequestStepId && c.cUserId == caller.cUserId)), ct) : 0;
          result.Add(new ApprovalCapability(ApprovalKind.System, name, string.IsNullOrEmpty(registration.Definition.Title) ? name : registration.Definition.Title,
-            canView, real && (caller.IsAdmin || count > 0), count, [], registration.Definition.Steps.ToArray()));
+            canView, real && (caller.IsAdmin || count > 0), count, [], registration.Definition.Steps.ToArray(), registration.Definition.AllowBatchSign));
       }
       return result.ToArray();
    }
-   internal async Task<ApprovalPage> ListAsync(ApprovalQuery filter, CancellationToken ct) {
+   private IQueryable<ta_ApprovalRequest> FilterQuery(ApprovalQuery filter) {
       var query = VisibleQuery();
       if (filter.Kind is { } kind) query = query.Where(x => x.cApprovalRequestKind == kind);
       if (filter.Name is { } name) query = query.Where(x => x.cApprovalName == name);
@@ -64,8 +65,31 @@ internal sealed partial class ApprovalEngine {
       if (filter.Stage is { } stage) query = query.Where(x => x.cApprovalRequestStage == stage);
       if (!string.IsNullOrWhiteSpace(filter.Search)) query = query.Where(x => x.cSummary.Contains(filter.Search) || (x.cSubSummary != null && x.cSubSummary.Contains(filter.Search)) || x.cApprovalName.Contains(filter.Search));
       if (filter.WaitingForMeOnly) query = WaitingQuery(query);
+      if (filter.DateFrom is { } from) query = query.Where(x => x.datestamp >= from.Date);
+      if (filter.DateTo is { } to) {
+         var end = to.Date.AddDays(1); query = query.Where(x => x.datestamp < end);
+      }
+      return query;
+   }
+   internal Task<ApprovalYearMonth[]> YearMonthsAsync(ApprovalQuery filter, CancellationToken ct) =>
+      FilterQuery(filter with { DateFrom = null, DateTo = null }).AsNoTracking()
+         .GroupBy(x => new { x.datestamp.Year, x.datestamp.Month })
+         .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
+         .Select(g => new ApprovalYearMonth(g.Key.Year, g.Key.Month, g.Count())).ToArrayAsync(ct);
+   internal async Task<ApprovalPage> ListAsync(ApprovalQuery filter, CancellationToken ct) {
+      var query = FilterQuery(filter);
       var total = await query.CountAsync(ct); var page = Math.Max(1, filter.Page); var size = Math.Clamp(filter.PageSize, 1, 200);
-      return new ApprovalPage(await query.AsNoTracking().OrderByDescending(x => x.datestamp).ThenByDescending(x => x.cApprovalRequestId).Skip((page-1)*size).Take(size).ToArrayAsync(ct), total, page, size);
+      var ordered = filter.OldestFirst ? query.AsNoTracking().OrderBy(x => x.datestamp).ThenBy(x => x.cApprovalRequestId) : query.AsNoTracking().OrderByDescending(x => x.datestamp).ThenByDescending(x => x.cApprovalRequestId);
+      var rows = await ordered.Skip((page-1)*size).Take(size).ToArrayAsync(ct);
+      var ids = rows.Select(x => x.cApprovalRequestId).ToArray();
+      var steps = await db.ta_ApprovalRequestSteps.AsNoTracking().Where(x => ids.Contains(x.cApprovalRequestId)).ToArrayAsync(ct);
+      var signatures = await db.ta_ApprovalRequestSignatures.AsNoTracking().Where(x => ids.Contains(x.cApprovalRequestId)).ToArrayAsync(ct);
+      foreach (var row in rows.Where(x => x.cApprovalRequestStage == ApprovalStage.Pending && x.cApprovalRequestKind == ApprovalKind.System)) {
+         row.CurrentStep = string.Join(", ", steps.Where(x => x.cApprovalRequestId == row.cApprovalRequestId && x.cApprovalRequestStepLevel == row.cApprovalRequestLevel && x.cApprovalRequestStepStage == ApprovalStepStatus.Waiting).Select(x => x.cApprovalRequestStepName));
+         var earlier = steps.Where(x => x.cApprovalRequestId == row.cApprovalRequestId && x.cApprovalRequestStepLevel < row.cApprovalRequestLevel).Select(x => x.cApprovalRequestStepId).ToArray();
+         row.WaitingSince = signatures.Where(x => x.cApprovalRequestId == row.cApprovalRequestId && earlier.Contains(x.cApprovalRequestStepId)).Select(x => (DateTime?)x.datestamp).Max() ?? row.datestamp;
+      }
+      return new ApprovalPage(rows, total, page, size);
    }
    internal Task<ta_ApprovalRequest[]> BySubjectAsync(ApprovalKind kind, string name, string key, CancellationToken ct) =>
       VisibleQuery().AsNoTracking().Where(x => x.cApprovalRequestKind == kind && x.cApprovalName == name && x.cSubjectKey == key).OrderByDescending(x => x.datestamp).ToArrayAsync(ct);
