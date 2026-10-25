@@ -345,6 +345,33 @@ Direct mouse interaction and external PDF rendering remain unverified. See the
 
 ## Approval wrappers
 
+Data approvals can register a wrapper in exactly the same way:
+
+```csharp
+builder.AddApprovalWrapper(ApprovalKind.Data, "Account", "accounts.approval");
+```
+
+Use `PostGetMeta_ApprovalRequests` for the visible queue and
+`PostGetMeta_ApprovalRequestsBySubject` for all stages of one subject, including immediately approved
+changes. Applied Create requests receive the generated root subject key and appear in that history.
+Business columns come from the host's own authorized action; Data summaries remain unchanged.
+Open `em.approval.editor` with Kind Data, the request ID and `SystemViewer = true` for individual
+changes, conflict overrides, comments and attachments. MY TASKS resolves Data wrappers like System
+wrappers and falls back to that viewer when no wrapper is registered.
+
+`PostGetMeta_ApprovalDataDecideAll(ApprovalDataBatchRequest)` accepts a required approval Name,
+1–200 explicit RequestIds, Action (`Approve`, `Reject`, `Withdraw`) and optional Note. There is no
+discovery mode: an Approve all button sends IDs from its loaded snapshot in chunks of 200. The root
+definition may disable batch operations through `IEmApprovalData<TEntity>.AllowBatchSign` (default
+true); `ApprovalCapability.AllowBatchSign` exposes it. Each request uses the ordinary decision or
+withdrawal path and commits independently. Kind, name, Pending stage and caller permissions are checked.
+Conflicts are recorded and skipped without an override; missing entities are reported as failures.
+Review either in the individual viewer. Approve notes are optional, Reject requires 1–1000 characters,
+and Withdraw requires 1–990 characters; whitespace-only reasons are rejected. Batch returns the existing
+`ApprovalBatchResult`, with one outcome per distinct request ID. Built-in system accounts cannot decide.
+Submission behavior is unchanged: callers without decision rights create Pending requests, while
+deciders save immediately with an Approved history entry. No database upgrade is required.
+
 A host/module may build its own WPF and MAUI approval screens. Register the same route on each client:
 
 ```csharp

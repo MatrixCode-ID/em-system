@@ -50,6 +50,17 @@ public sealed record ApprovalVoidAllRequest(string[] RequestIds, string Reason);
 public sealed record ApprovalBatchItem(string RequestId, string? StepId, bool Success, string? Message);
 /// <summary>Independent per-request outcomes; partial success is allowed.</summary>
 public sealed record ApprovalBatchResult(ApprovalBatchItem[] Items);
+/// <summary>Decision applied independently to explicitly selected Data requests.</summary>
+public enum ApprovalDataBatchAction {
+   /// <summary>Apply proposals without overriding conflicts.</summary>
+   Approve,
+   /// <summary>Reject proposals with a reason.</summary>
+   Reject,
+   /// <summary>Withdraw proposals with a reason.</summary>
+   Withdraw
+}
+/// <summary>Explicit Data selection, limited to 200 IDs; no server discovery or conflict overrides.</summary>
+public sealed record ApprovalDataBatchRequest(string Name, string[] RequestIds, ApprovalDataBatchAction Action, string? Note);
 /// <summary>Decision validation shared by server and clients.</summary>
 public static class ApprovalRules {
    /// <summary>Minimum trimmed reason length for every System void, including reinstate.</summary>

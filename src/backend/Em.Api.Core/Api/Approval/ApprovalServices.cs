@@ -9,6 +9,9 @@ public sealed class ApprovalServices(IApprovalEngine engine) : ServicesBase, IAp
    private ApprovalEngine Engine => (ApprovalEngine)engine;
    #region Meta's
    /// <inheritdoc />
+   [PostAction]
+   public Task<ApprovalBatchResult> PostGetMeta_ApprovalDataDecideAll(ApprovalDataBatchRequest request) => Engine.DataDecideAllAsync(request, AbortToken);
+   /// <inheritdoc />
    [GetAction]
    public async Task<HubTaskInfo[]> GetMeta_UserHubTasks() {
       Request.RequireUserId();

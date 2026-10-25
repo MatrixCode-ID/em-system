@@ -1,5 +1,17 @@
 # CLAUDE.md
 
+## Tes lewat RunBay (keputusan pengguna 2026-10-25)
+
+Artefak Data approval wrapper 2026-10-25:
+`../.artefacts/em-system/scripts/data-approval-wrapper-smoke/` menyimpan source harness HTTP,
+output build API/WPF/MAUI, log suite approval terfilter dan database fixture lokal yang dipertahankan.
+Script PowerShell pelaksanaan tersimpan pada action RunBay; bukan di folder artefak.
+
+Build dan tes lokal dijalankan melalui RunBay. Script pelaksanaan tes berupa PowerShell `.ps1`
+yang disimpan pada action RunBay, bukan di folder `.artefacts`; isi script langsung di action.
+Harness C#, fixture dan output tetap di artefak sesuai aturan di bawah. Dalam pekerjaan lintas
+repo, tes produk memakai runner produk yang sudah terdaftar. Jangan menghentikan proses pengguna.
+
 ## Nilai default wajib untuk `ta_Meta` di engine (keputusan pengguna 2026-10-22)
 
 Engine harus bisa mulai dari database kosong (0 data). Setiap pemakaian `ta_Meta` oleh engine

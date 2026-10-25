@@ -12,6 +12,75 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
    private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
    [Fact]
+   public async Task DataBatch_ReloadsPreviouslyTrackedEntitiesBeforeCheckingConflicts() {
+      await using var fx = await Fixture.CreateAsync(database, Ct);
+      string key, request;
+      using (var call = fx.Call(fx.Decider, decide: true)) {
+         await call.Engine.SubmitDataAsync(DataChange.Create(new Root { Text = "original" }), ct: Ct);
+         key = (await call.Module.Roots.SingleAsync(Ct)).RootId;
+      }
+      using (var call = fx.Call(fx.Requester)) request = (await call.Engine.SubmitDataAsync(
+         DataChange.Update(new Root { RootId = key, Text = "original" }, new Root { RootId = key, Text = "proposal" }), ct: Ct)).ApprovalRequestId;
+      using var decider = fx.Call(fx.Decider, decide: true);
+      await decider.Module.Roots.SingleAsync(Ct);
+      using (var concurrent = fx.Call(fx.Decider, decide: true))
+         await concurrent.Module.Roots.Where(x => x.RootId == key).ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, "concurrent"), Ct);
+      Assert.False(Assert.Single((await decider.Engine.DataDecideAllAsync(new("Test Data", [request], ApprovalDataBatchAction.Approve, null), Ct)).Items).Success);
+      Assert.Equal("concurrent", (await decider.Module.Roots.SingleAsync(Ct)).Text);
+   }
+
+   [Fact]
+   public async Task DataBatch_IndependentDecisionsConflictsMissingRowsPermissionsAndHistory() {
+      await using var fx = await Fixture.CreateAsync(database, Ct);
+      string created, conflict, missing, good, withdrawn, rejected;
+      string conflictKey, missingKey;
+      using (var call = fx.Call(fx.Decider, decide: true)) {
+         created = (await call.Engine.SubmitDataAsync(DataChange.Create(new Root { Text = "original" }), ct: Ct)).ApprovalRequestId;
+         conflictKey = (await call.Module.Roots.SingleAsync(Ct)).RootId;
+         await call.Engine.SubmitDataAsync(DataChange.Create(new Root { Text = "missing" }), ct: Ct);
+         missingKey = (await call.Module.Roots.SingleAsync(x => x.Text == "missing", Ct)).RootId;
+         Assert.Contains(await call.Engine.BySubjectAsync(ApprovalKind.Data, "Test Data", ApprovalSubjectKey.Serialize(new[] { conflictKey }), Ct), x => x.cApprovalRequestId == created);
+      }
+      using (var call = fx.Call(fx.Requester)) {
+         conflict = (await call.Engine.SubmitDataAsync(DataChange.Update(new Root { RootId = conflictKey, Text = "original" }, new Root { RootId = conflictKey, Text = "proposal" }), ct: Ct)).ApprovalRequestId;
+         missing = (await call.Engine.SubmitDataAsync(DataChange.Update(new Root { RootId = missingKey, Text = "missing" }, new Root { RootId = missingKey, Text = "proposal" }), ct: Ct)).ApprovalRequestId;
+         good = (await call.Engine.SubmitDataAsync(DataChange.Create(new Root { Text = "good" }), ct: Ct)).ApprovalRequestId;
+         withdrawn = (await call.Engine.SubmitDataAsync(DataChange.Create(new Root { Text = "withdraw" }), ct: Ct)).ApprovalRequestId;
+         rejected = (await call.Engine.SubmitDataAsync(DataChange.Create(new Root { Text = "reject" }), ct: Ct)).ApprovalRequestId;
+         await call.Module.Roots.Where(x => x.RootId == conflictKey).ExecuteUpdateAsync(s => s.SetProperty(x => x.Text, "concurrent"), Ct);
+         await call.Module.Roots.Where(x => x.RootId == missingKey).ExecuteDeleteAsync(Ct);
+         Assert.False(Assert.Single((await call.Engine.DataDecideAllAsync(new("Test Data", [good], ApprovalDataBatchAction.Approve, null), Ct)).Items).Success);
+         Assert.True(Assert.Single((await call.Engine.DataDecideAllAsync(new("Test Data", [withdrawn], ApprovalDataBatchAction.Withdraw, "Changed mind"), Ct)).Items).Success);
+      }
+      using (var call = fx.Call(fx.Decider, decide: true)) {
+         var result = await call.Engine.DataDecideAllAsync(new("Test Data", [conflict, missing, good], ApprovalDataBatchAction.Approve, null), Ct);
+         Assert.False(result.Items[0].Success); Assert.Contains("conflict", result.Items[0].Message!);
+         Assert.False(result.Items[1].Success); Assert.Contains("no longer exists", result.Items[1].Message!);
+         Assert.True(result.Items[2].Success);
+         Assert.Equal("concurrent", (await call.Core.ta_ApprovalRequestItemFields.SingleAsync(x => x.cApprovalRequestItemFieldConflict, Ct)).cApprovalRequestItemFieldCurrent);
+         var key = (await call.Engine.DetailAsync(good, Ct)).Header.cSubjectKey;
+         Assert.NotNull(key);
+         Assert.Contains(await call.Engine.BySubjectAsync(ApprovalKind.Data, "Test Data", key!, Ct), x => x.cApprovalRequestId == good);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.DataDecideAllAsync(new("Test Data", [rejected], ApprovalDataBatchAction.Reject, " "), Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.DataDecideAllAsync(new("Test Data", [rejected], ApprovalDataBatchAction.Withdraw, null), Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.DataDecideAllAsync(new("Test Data", Enumerable.Repeat(rejected, 201).ToArray(), ApprovalDataBatchAction.Approve, null), Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.DataDecideAllAsync(new("Test Data", [], ApprovalDataBatchAction.Approve, null), Ct))).StatusCode);
+         Assert.Equal(400, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.DataDecideAllAsync(new("Test Data", null!, ApprovalDataBatchAction.Approve, null), Ct))).StatusCode);
+         Assert.False(Assert.Single((await call.Engine.DataDecideAllAsync(new("Other", [rejected], ApprovalDataBatchAction.Approve, null), Ct)).Items).Success);
+         Assert.False(Assert.Single((await call.Engine.DataDecideAllAsync(new("Test Data", [withdrawn], ApprovalDataBatchAction.Approve, null), Ct)).Items).Success);
+         fx.SetDataBatchPolicy(false);
+         Assert.False((await call.Engine.CapabilitiesAsync(Ct)).Single(x => x.Kind == ApprovalKind.Data).AllowBatchSign);
+         Assert.False(Assert.Single((await call.Engine.DataDecideAllAsync(new("Test Data", [rejected], ApprovalDataBatchAction.Approve, null), Ct)).Items).Success);
+         fx.SetDataBatchPolicy(true);
+         Assert.True(Assert.Single((await call.Engine.DataDecideAllAsync(new("Test Data", [rejected], ApprovalDataBatchAction.Reject, "Not needed"), Ct)).Items).Success);
+      }
+      foreach (var id in new[] { Defaults.AdminUserId, Defaults.DebuggerUserId }) {
+         using var call = fx.Call(id, admin: true, debug: id == Defaults.DebuggerUserId);
+         Assert.Equal(403, (await Assert.ThrowsAsync<ActionException>(() => call.Engine.DataDecideAllAsync(new("Test Data", [good], ApprovalDataBatchAction.Approve, null), Ct))).StatusCode);
+      }
+   }
+
+   [Fact]
    public async Task DataTree_DeferredKeysConflictOverrideDeleteRestoreAndHistory() {
       await using var fx = await Fixture.CreateAsync(database, Ct);
       string request;
@@ -306,7 +375,7 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
          if (store is not null) services.AddSingleton(store);
          services.AddDbContext<ApiCoreContext>(o => o.UseSqlServer(coreConnection).AddInterceptors(ApprovalDatabaseSwitch.Instance));
          services.AddDbContext<ModuleContext>(o => o.UseSqlServer(moduleConnection).AddInterceptors(ApprovalDatabaseSwitch.Instance));
-         services.AddScoped<RootDefinition>(); services.AddScoped<ChildDefinition>(); services.AddScoped<DynamicHandler>();
+         services.AddSingleton<RootDefinition>(); services.AddScoped<ChildDefinition>(); services.AddScoped<DynamicHandler>();
          var provider = services.BuildServiceProvider();
          var registry = new ApprovalRegistry([new(typeof(RootDefinition), typeof(Root), null), new(typeof(ChildDefinition), typeof(Child), typeof(Root))],
             [new(typeof(SystemDefinition), new SystemDefinition(), new SystemHandlerAdapter<SystemDefinition, string, DynamicHandler>())], [typeof(ModuleContext)], _ => { });
@@ -322,6 +391,7 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
          return fixture;
       }
       public void SetBatchPolicy(bool allow) => ((SystemDefinition)registry.System("Test System").Definition).AllowBatchSign = allow;
+      public void SetDataBatchPolicy(bool allow) => provider.GetRequiredService<RootDefinition>().AllowBatchSign = allow;
       public Call Call(string userId, bool decide = false, bool admin = false, bool debug = false) => new(provider.CreateScope(), registry,
          new ActionRequest { cUserId = userId, IsAdmin = admin, Source = debug ? CallerSource.DebugToken : CallerSource.AccessToken,
             Claims = decide ? [new ClaimAction { ModuleName = "Test", Name = "Decide" }] : [] });
@@ -346,6 +416,7 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
    }
    [Approval("Test Data")]
    public sealed class RootDefinition : IEmApprovalData<Root> {
+      public bool AllowBatchSign { get; set; } = true;
       public string[] KeyColumns => [nameof(Root.RootId)]; public string[] TrackedColumns => [nameof(Root.Text)];
       public ApprovalDeleteMode DeleteMode => ApprovalDeleteMode.Soft;
       public string DeleteStateColumn => nameof(Root.Deleted); public string DeleteStampColumn => nameof(Root.DeletedAt);

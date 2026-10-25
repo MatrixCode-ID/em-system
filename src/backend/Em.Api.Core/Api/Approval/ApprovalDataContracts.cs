@@ -44,6 +44,8 @@ public interface IEmApprovalDataTable<TEntity> : IEmApproval where TEntity : cla
 }
 /// <summary>Named root of an approval tree; access checks belong only to this definition.</summary>
 public interface IEmApprovalData<TEntity> : IEmApprovalDataTable<TEntity> where TEntity : class {
+   /// <summary>Whether explicit batch decisions are supported for this tree.</summary>
+   bool AllowBatchSign => true;
    /// <summary>Display title; empty uses the metadata name.</summary>
    string Title => string.Empty;
    /// <summary>Whether this caller may view requests.</summary>

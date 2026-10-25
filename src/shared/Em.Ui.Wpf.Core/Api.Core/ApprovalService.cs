@@ -7,6 +7,8 @@ namespace Em.Api.Core;
 [Module(Defaults.ApprovalModuleName)]
 public class ApprovalService(EmApp app) : ServiceWpfBase(app), IApprovalServices {
    /// <inheritdoc />
+   public Task<ApprovalBatchResult> PostGetMeta_ApprovalDataDecideAll(ApprovalDataBatchRequest request) => PostAsync<ApprovalBatchResult>(nameof(PostGetMeta_ApprovalDataDecideAll), (object)request);
+   /// <inheritdoc />
    public Task<ApprovalYearMonth[]> PostGetMeta_ApprovalYearMonths(ApprovalQuery filter) => PostAsync<ApprovalYearMonth[]>(nameof(PostGetMeta_ApprovalYearMonths), (object)filter);
    /// <inheritdoc />
    public Task<ApprovalBatchResult> PostGetMeta_ApprovalSystemSignAll(ApprovalSignAllRequest request) => PostAsync<ApprovalBatchResult>(nameof(PostGetMeta_ApprovalSystemSignAll), (object)request);

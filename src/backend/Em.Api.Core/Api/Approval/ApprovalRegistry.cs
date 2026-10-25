@@ -36,6 +36,7 @@ internal abstract class DataTable {
    public abstract object? DeletedState { get; }
    public abstract object? ActiveState { get; }
    public abstract string Title { get; }
+   public abstract bool AllowBatchSign { get; }
    public abstract bool CanView(ActionRequest caller);
    public abstract bool CanDecide(ActionRequest caller);
    public abstract bool CanWithdraw(ActionRequest caller);
@@ -65,6 +66,7 @@ internal sealed class DataTable<TDefinition, TEntity>(DataRegistration registrat
    public override object? ActiveState => _definition.ActiveStateValue;
    private IEmApprovalData<TEntity>? Root => _definition as IEmApprovalData<TEntity>;
    public override string Title => Root?.Title ?? string.Empty;
+   public override bool AllowBatchSign => Root?.AllowBatchSign ?? true;
    public override bool CanView(ActionRequest caller) => Root?.CanView(caller) == true;
    public override bool CanDecide(ActionRequest caller) => Root?.CanDecide(caller) == true;
    public override bool CanWithdraw(ActionRequest caller) => Root?.CanWithdraw(caller) == true;

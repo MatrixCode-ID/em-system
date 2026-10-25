@@ -5,6 +5,46 @@ using Microsoft.EntityFrameworkCore;
 namespace Em.Api.Core.Approval;
 
 internal sealed partial class ApprovalEngine {
+   internal async Task<ApprovalBatchResult> DataDecideAllAsync(ApprovalDataBatchRequest input, CancellationToken ct) {
+      await RealUserAsync(ct);
+      RequireText(input.Name, "Approval name", 50);
+      if (!Enum.IsDefined(input.Action)) throw new ActionException("Unknown Data batch action.", 400);
+      var ids = BatchIds(input.RequestIds);
+      if (ids.Length == 0) throw new ActionException("Select at least one Data request.", 400);
+      if (input.Action == ApprovalDataBatchAction.Withdraw) RequireText(input.Note, "Withdrawal reason", 990);
+      else if (input.Action == ApprovalDataBatchAction.Reject) RequireText(input.Note, "Rejection reason", 1000);
+      else OptionalText(input.Note, "Decision note", 1000);
+      var result = new List<ApprovalBatchItem>();
+      void ClearTracking() {
+         db.ChangeTracker.Clear();
+         foreach (var type in registry.Data.Select(x => x.ContextType).Distinct())
+            if (services.GetService(type) is DbContext context) context.ChangeTracker.Clear();
+      }
+      ClearTracking();
+      foreach (var id in ids) {
+         ct.ThrowIfCancellationRequested();
+         try {
+            var row = await LoadAsync(id, false, ct);
+            if (row.cApprovalRequestKind != ApprovalKind.Data || !string.Equals(row.cApprovalName, input.Name, StringComparison.OrdinalIgnoreCase))
+               throw new ActionException("The request does not belong to this Data approval.", 400);
+            if (row.cApprovalRequestStage != ApprovalStage.Pending) throw new ActionException("This request is no longer pending.", 409);
+            if (!registry.DataRoot(row.cApprovalName).Resolve(services).AllowBatchSign)
+               throw new ActionException("This approval requires an individual decision.", 409);
+            if (input.Action == ApprovalDataBatchAction.Withdraw) {
+               await WithdrawAsync(id, input.Note!, ct);
+               result.Add(new(id, null, true, null));
+            } else {
+               var decision = await DecideAsync(new(id, input.Action == ApprovalDataBatchAction.Approve, Note: input.Note), ct);
+               result.Add(new(id, null, decision.Applied, decision.Message));
+            }
+         }
+         catch (Exception e) when (e is not OperationCanceledException) {
+            db.ChangeTracker.Clear(); result.Add(new(id, null, false, e.Message));
+         }
+         finally { ClearTracking(); }
+      }
+      return new(result.ToArray());
+   }
    private static string ValidateVoidReason(string? reason) {
       reason = reason?.Trim() ?? string.Empty;
       if (reason.Length < ApprovalRules.MinVoidReasonLength || reason.Length > 990)

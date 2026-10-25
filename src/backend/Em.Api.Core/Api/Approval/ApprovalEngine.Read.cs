@@ -43,7 +43,7 @@ internal sealed partial class ApprovalEngine {
          if (!canView) continue;
          result.Add(new ApprovalCapability(ApprovalKind.Data, name, string.IsNullOrEmpty(table.Title) ? name : table.Title, true,
             real && (caller.IsAdmin || table.CanDecide(caller)), real ? await waiting.CountAsync(x => x.cApprovalRequestKind == ApprovalKind.Data && x.cApprovalName == name, ct) : 0,
-            table.ApproverOnly, []));
+            table.ApproverOnly, [], table.AllowBatchSign));
       }
       foreach (var registration in registry.Systems) {
          var name = ApprovalSubjectKey.NameOf(registration.DefinitionType);
