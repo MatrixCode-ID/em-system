@@ -83,6 +83,11 @@ address derives `<connection>/cdn/<release-folder>/`. When the server has a `rel
 folder but that address answers 404, Compare stops with an error: otherwise every Compare would see no
 release, every Sync would upload everything again, and the launcher would look in the wrong place.
 
+For the built-in Cdn target, **Public CDN base address (optional override)** can stay empty: the engine
+connection supplies the address automatically. The field placeholder and visible supporting text
+explain this; enter an override only when clients use a different public CDN address. For Folder
+targets, the form instead explains that Android releases require a public base address for downloads.
+
 Under Managed CDN folder, Browse / select folder browses relative paths and creates/adopts a physically empty root.
 Selecting the same root for the same app_id is allowed; another owner, a nonempty root or nesting is
 refused. Release ownership removes this product's ownership. CDN Manager access is not required.

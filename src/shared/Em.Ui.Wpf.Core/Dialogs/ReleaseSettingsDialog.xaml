@@ -33,14 +33,14 @@
    <Border BorderBrush="{StaticResource dangerBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="{Binding HasError, Converter={StaticResource visible}}">
     <TextBlock Text="{Binding Error}" TextWrapping="Wrap"/>
    </Border>
-   <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+   <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" FocusVisualStyle="{x:Null}" BorderThickness="0">
    <TextBlock Text="{Binding AndroidStatus}" TextWrapping="Wrap" Margin="0,0,0,12">
     <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource fieldHelpStyle}"><Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></TextBlock.Style>
    </TextBlock>
    </ScrollViewer>
   </StackPanel>
   <Grid Grid.Row="2">
-   <ScrollViewer x:Name="formScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsEnabled="{Binding CanEdit}" Padding="0,0,12,0">
+   <ScrollViewer x:Name="formScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsEnabled="{Binding CanEdit}" Padding="0,0,12,0" FocusVisualStyle="{x:Null}" BorderThickness="0">
     <StackPanel x:Name="profileForm" MaxWidth="840" HorizontalAlignment="Stretch">
      <Border x:Name="sourceSection" Style="{StaticResource releaseSection}">
       <StackPanel>
@@ -123,9 +123,16 @@
        <StackPanel Style="{StaticResource releaseField}" ToolTip="Cdn uses the active connection. Folder writes directly to a local or network folder."><TextBlock Text="Target" Style="{StaticResource fieldLabelStyle}"/><ComboBox ItemsSource="{Binding TargetKinds}" SelectedItem="{Binding TargetKind}" Style="{StaticResource fieldComboStyle}"/></StackPanel>
        <StackPanel Style="{StaticResource releaseField}" Visibility="{Binding IsFolder, Converter={StaticResource visible}}" ToolTip="Parent directory for a Folder release."><TextBlock Text="Target folder" Style="{StaticResource fieldLabelStyle}"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseTargetCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding TargetFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel></StackPanel>
        <StackPanel Style="{StaticResource releaseField}" ToolTip="Relative product folder inside the target. Nested managed CDN folders are forbidden."><TextBlock Text="Release folder" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding ReleaseFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
-       <StackPanel Style="{StaticResource releaseField}" ToolTip="Public CDN base address, e.g. https://host/cdn/. The release folder is appended. Empty derives from the active connection. Android Folder releases require a public address.">
-        <TextBlock Text="Public CDN base address" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding CdnAddress, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}" Tag="https://host/cdn/"/>
-        <TextBlock Text="Enter the base address only. The release folder is added automatically." Style="{StaticResource fieldHelpStyle}"/>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="For the built-in Cdn target, leave empty to use the active engine address + /cdn/. Enter an override only when the public CDN uses a different address. Enter the base address without the release folder; it is appended automatically. Android Folder releases require a public base address.">
+        <TextBlock>
+         <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource fieldLabelStyle}"><Setter Property="Text" Value="Public CDN base address"/><Style.Triggers><DataTrigger Binding="{Binding IsCdn}" Value="True"><Setter Property="Text" Value="Public CDN base address (optional override)"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+        </TextBlock>
+        <TextBox Text="{Binding CdnAddress, UpdateSourceTrigger=PropertyChanged}">
+         <TextBox.Style><Style TargetType="TextBox" BasedOn="{StaticResource fieldBoxStyle}"><Setter Property="Tag" Value="https://host/cdn/"/><Style.Triggers><DataTrigger Binding="{Binding IsCdn}" Value="True"><Setter Property="Tag" Value="Automatic from the active engine when empty"/></DataTrigger></Style.Triggers></Style></TextBox.Style>
+        </TextBox>
+        <TextBlock>
+         <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource fieldHelpStyle}"><Setter Property="Text" Value="For Folder targets, enter the public CDN base address used for downloads. Required for Android releases. The release folder is added automatically."/><Style.Triggers><DataTrigger Binding="{Binding IsCdn}" Value="True"><Setter Property="Text" Value="Optional. Leave empty to use the active engine address + /cdn/. Only fill this in if the public CDN address differs. The release folder is added automatically."/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+        </TextBlock>
        </StackPanel>
        <Expander Header="Managed CDN folder" Style="{StaticResource sectionExpanderStyle}" Visibility="{Binding IsCdn, Converter={StaticResource visible}}">
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal"><Button Content="Browse / select folder" Command="{Binding Commands[SelectManagedCommand]}" Style="{StaticResource outlinedButtonStyle}"/><Button Content="Release ownership" Command="{Binding Commands[ReleaseManagedCommand]}" Style="{StaticResource dangerOutlinedButtonStyle}" Margin="8,0,0,0"/></StackPanel></ScrollViewer>

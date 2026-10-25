@@ -60,3 +60,22 @@ No GUI interaction, environment installation, release publication, or implementa
   before the final successful captures; the WPF tests already ran under the normal WPF context.
 - Actual mouse interaction, real environment installation and production releases remain outside
   this verification. No open design question blocks the requested changes.
+
+## Follow-up: built-in CDN address clarity (2026-10-25)
+
+The user asked whether the public CDN base address must be re-entered for the built-in CDN.
+Source review confirms that an empty override already derives the release URL from the active
+engine connection host plus `/cdn/<release-folder>/`, in both ReleaseManagerVm and CdnReleaseTarget.
+The visible field label/supporting text does not explain this optional behavior; only its tooltip does.
+Proposed UI clarification: label it as an optional override and show the automatically derived address.
+The user subsequently requested updating the explanation. The Cdn field now visibly says optional
+override, its placeholder explains automatic engine addressing, and its supporting text describes
+when to leave it empty. Folder help separately retains the Android public-address requirement.
+No URL resolution or persistence behavior changed; displaying the actual resolved URL remains a proposal.
+
+## Follow-up: dotted panel focus outline (2026-10-25)
+
+The user reported a dotted rectangle around the scrolling form below Save. The form's ScrollViewer
+was still using the default WPF focus visual. Its FocusVisualStyle is now explicitly null and its
+BorderThickness is zero, as is the status ScrollViewer. Field/button focus indicators and keyboard
+scrolling remain available; card outlines retain the shared Material styling.

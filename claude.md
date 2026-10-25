@@ -7,6 +7,11 @@ Application Source (platform, solution, host), Product Identity, Build Environme
 Release Destination, lalu Release Signing. Field khusus platform ditampilkan sesuai
 platform aktif. Save/Cancel tetap terlihat saat form di-scroll. Penemuan SDK tidak
 dijalankan dari getter binding; gunakan snapshot async dengan indikator busy.
+Keterangan alamat CDN harus terlihat di form: pada target Cdn kolom merupakan override
+opsional; kosong memakai alamat engine aktif + `/cdn/`. Target Folder Android tetap
+memerlukan alamat publik. Jangan menyembunyikan penjelasan ini hanya di tooltip.
+Area scroll editor profile tidak menampilkan bingkai fokus titik-titik bawaan WPF;
+indikator fokus pada input dan tombol tetap mengikuti style Material bersama.
 Panduan: `doc/engine/engine-release-manager.md`.
 Verifikasi: 38 tes Release Manager serta render 38 kondisi terang/gelap, lebar sempit,
 bagian lanjutan dan busy. Source harness/log/gambar berada di
