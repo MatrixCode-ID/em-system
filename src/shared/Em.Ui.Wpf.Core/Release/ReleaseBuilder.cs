@@ -65,7 +65,7 @@ namespace Em.Ui.Wpf.Core.Release
       /// checked. A project without a declared <c>OutputType</c> is evaluated with MSBuild, which takes a
       /// few seconds each, so call this off the UI thread.
       /// </summary>
-      public static IReadOnlyList<string> ReadHostProjects(string solutionPath, IProgress<string>? progress, CancellationToken token) {
+      public static IReadOnlyList<string> ReadHostProjects(string solutionPath, IProgress<string>? progress, CancellationToken token, ReleasePlatform? platform = null) {
          var folder = Path.GetDirectoryName(Path.GetFullPath(solutionPath))!;
          var projects = XDocument.Load(solutionPath)
             .Descendants()
@@ -77,7 +77,8 @@ namespace Em.Ui.Wpf.Core.Release
          for (var i = 0; i < projects.Length; i++) {
             token.ThrowIfCancellationRequested();
             progress?.Report($"Checking project {i + 1} of {projects.Length}: {Path.GetFileName(projects[i])}");
-            if (IsApplication(Path.Combine(folder, projects[i]))) hosts.Add(projects[i]);
+            var projectPath = Path.Combine(folder, projects[i]);
+            if (IsApplication(projectPath) && (platform is null || ReadHostPlatforms(projectPath).Contains(platform.Value))) hosts.Add(projects[i]);
          }
          return hosts;
 
@@ -96,6 +97,14 @@ namespace Em.Ui.Wpf.Core.Release
                return false;
             }
          }
+      }
+
+      public static IReadOnlyList<ReleasePlatform> ReadHostPlatforms(string projectPath) {
+         var values = XDocument.Load(projectPath).Descendants().Where(e => e.Name.LocalName is "TargetFramework" or "TargetFrameworks").SelectMany(e => e.Value.Split(';')).ToArray();
+         var platforms = new List<ReleasePlatform>();
+         if (values.Any(f => f.EndsWith("-android", StringComparison.Ordinal))) platforms.Add(ReleasePlatform.Android);
+         if (values.Length == 0 || values.Any(f => f.Contains("-windows", StringComparison.Ordinal) || !f.Contains('-'))) platforms.Add(ReleasePlatform.Windows);
+         return platforms;
       }
 
       /// <summary>

@@ -5,6 +5,22 @@ using System.Text.Json.Serialization;
 
 namespace Em.Ui.Wpf.Core.Release
 {
+   public enum ReleasePlatform { Windows = 0, Android = 1 }
+
+   /// <summary>Android identity, permanent signing credentials and last prepared APK.</summary>
+   public sealed class ReleaseAndroid {
+      public string ApplicationId { get; set; } = "";
+      public string ApkFileName { get; set; } = "";
+      public int MinVersionCode { get; set; }
+      public string KeystoreBase64 { get; set; } = "";
+      public string KeystoreAlias { get; set; } = "";
+      public string KeystorePassword { get; set; } = "";
+      public string KeyPassword { get; set; } = "";
+      public string CertificateSha256 { get; set; } = "";
+      public int PreparedVersionCode { get; set; }
+      public string PreparedVersionName { get; set; } = "";
+      public string PreparedApkSha256 { get; set; } = "";
+   }
    /// <summary>The kind of release target in Release Manager.</summary>
    public enum ReleaseTargetKind
    {
@@ -52,6 +68,34 @@ namespace Em.Ui.Wpf.Core.Release
       public string PrivateKeyPem { get; set; } = "";
       /// <summary>Product-specific launcher settings.</summary>
       public ReleaseLauncher Launcher { get; set; } = new();
+      public ReleasePlatform Platform { get; set; }
+      public ReleaseAndroid Android { get; set; } = new();
+
+      /// <summary>Changes the platform of a settings draft after the caller confirms key replacement.</summary>
+      public void ChangePlatform(ReleasePlatform platform) {
+         if (Platform == platform) return;
+         Platform = platform;
+         PrivateKeyPem = ReleasePemKey.Create();
+         Android.PreparedVersionCode = 0;
+         Android.PreparedVersionName = Android.PreparedApkSha256 = "";
+         Launcher.InputHash = Launcher.Version = "";
+      }
+
+      public string AndroidApkFileName => string.IsNullOrEmpty(Android.ApkFileName)
+         ? Product.AppId.ToLowerInvariant().Replace('.', '-') + ".apk" : Android.ApkFileName;
+
+      /// <summary>Validates complete credentials for Prepare/Sync; drafts remain saveable.</summary>
+      public void ValidateAndroidRelease() {
+         Validate();
+         Product.Validate(ReleasePlatform.Android);
+         if (!ReleaseManifestSerializer.IsApplicationId(Android.ApplicationId)) throw new InvalidDataException("Invalid Android applicationId.");
+         if (!System.Text.RegularExpressions.Regex.IsMatch(AndroidApkFileName, @"^[a-z0-9][a-z0-9._-]*\.apk$")) throw new InvalidDataException("Invalid APK file name.");
+         if (Android.MinVersionCode < 0 || Android.MinVersionCode > 2100000000) throw new InvalidDataException("Invalid minimum version code.");
+         if (string.IsNullOrEmpty(PrivateKeyPem) || string.IsNullOrEmpty(Android.KeystoreBase64) || string.IsNullOrWhiteSpace(Android.KeystoreAlias) ||
+             string.IsNullOrEmpty(Android.KeystorePassword) || string.IsNullOrEmpty(Android.KeyPassword) || !ReleaseManifestSerializer.IsValidSha256(Android.CertificateSha256))
+            throw new InvalidDataException("Create or import the Android keystore and manifest key first.");
+         _ = Convert.FromBase64String(Android.KeystoreBase64);
+      }
 
       /// <summary>A deep copy, including the signing settings.</summary>
       public ReleaseProfile Clone() => FromJson(JsonSerializer.Serialize(this, JsonOptions));
@@ -63,7 +107,7 @@ namespace Em.Ui.Wpf.Core.Release
          Id = Id.ToLowerInvariant();
          Name = Name?.Trim() ?? "";
          if (Name.Length is 0 or > 100) throw new InvalidDataException("Profile name must contain 1 to 100 characters.");
-         if (Product is null || Launcher is null || !Enum.IsDefined(TargetKind))
+         if (Product is null || Launcher is null || Android is null || !Enum.IsDefined(Platform) || !Enum.IsDefined(TargetKind))
             throw new InvalidDataException("Invalid profile signing settings or target kind.");
          SolutionPath ??= "";
          HostProject ??= "";

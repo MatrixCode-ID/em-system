@@ -24,13 +24,24 @@ public sealed class ReleaseProduct {
    public string LogoBase64 { get; set; } = "";
    /// <summary>Whether the host references Em WPF.</summary>
    public bool IsEmHost { get; set; }
+   public string ApplicationId { get; set; } = "";
+   public string ApplicationVersion { get; set; } = "1";
+   public string Version { get; set; } = "";
+   public string AndroidTargetFramework { get; set; } = "";
+   public string MinimumSupportedJavaVersion { get; set; } = "";
+   public string LatestSupportedJavaVersion { get; set; } = "";
 
    /// <summary>Checks product identity before publishing.</summary>
-   public void Validate() {
+   public void Validate(ReleasePlatform platform = ReleasePlatform.Windows) {
       if (!Regex.IsMatch(AppId, @"^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)+$", RegexOptions.CultureInvariant) || AppId == "MatrixCode.EmSystem")
          throw new InvalidDataException("Use a product app_id with at least two alphanumeric segments; MatrixCode.EmSystem is reserved.");
       if (string.IsNullOrWhiteSpace(AppName) || string.IsNullOrWhiteSpace(Publisher))
          throw new InvalidDataException("Product name and publisher are required.");
+      if (platform == ReleasePlatform.Android) {
+         if (!ReleaseManifestSerializer.IsSemanticVersion(Version) || !AndroidTargetFramework.EndsWith("-android", StringComparison.Ordinal))
+            throw new InvalidDataException("Android host requires a SemVer Version and an Android target framework.");
+         return;
+      }
       if (ReleaseManifestSerializer.CheckPath(AppExe) is not null || AppExe.Contains('/') || !AppExe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
          throw new InvalidDataException("Application executable must be a file name ending in .exe.");
       var ico = Convert.FromBase64String(IconBase64);
@@ -50,10 +61,10 @@ public sealed class ReleaseProduct {
    }
 
    /// <summary>Reads evaluated MSBuild properties and references, including imported values.</summary>
-   public static async Task<ReleaseProduct> ReadAsync(string project, CancellationToken token) {
+   public static async Task<ReleaseProduct> ReadAsync(string project, CancellationToken token, ReleasePlatform platform = ReleasePlatform.Windows) {
       var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true,
          RedirectStandardOutput = true, RedirectStandardError = true };
-      foreach (var arg in new[] { "msbuild", project, "-nologo", "-getProperty:Product,Company,EmAppId,AssemblyName,ApplicationIcon,EmAppLogo", "-getItem:ProjectReference,PackageReference" }) start.ArgumentList.Add(arg);
+      foreach (var arg in new[] { "msbuild", project, "-nologo", "-getProperty:Product,Company,EmAppId,AssemblyName,ApplicationIcon,EmAppLogo,ApplicationTitle,ApplicationId,ApplicationVersion,Version,TargetFramework,TargetFrameworks,MinimumSupportedJavaVersion,LatestSupportedJavaVersion", "-getItem:ProjectReference,PackageReference,MauiIcon" }) start.ArgumentList.Add(arg);
       using var process = Process.Start(start) ?? throw new IOException("Cannot start MSBuild.");
       var output = process.StandardOutput.ReadToEndAsync(token); var errors = process.StandardError.ReadToEndAsync(token);
       await process.WaitForExitAsync(token);
@@ -65,10 +76,23 @@ public sealed class ReleaseProduct {
          var file = Get(name); if (file.Length == 0) return "";
          return Convert.ToBase64String(File.ReadAllBytes(Path.GetFullPath(file, Path.GetDirectoryName(Path.GetFullPath(project))!)));
       }
-      return new ReleaseProduct { AppName = Get("Product"), Publisher = Get("Company"), AppId = Get("EmAppId"),
-         AppExe = Get("AssemblyName") + ".exe", IconBase64 = Asset("ApplicationIcon"), LogoBase64 = Asset("EmAppLogo"),
-         IsEmHost = doc.RootElement.GetProperty("Items").ToString().Contains("Em.Ui.Wpf.Core", StringComparison.OrdinalIgnoreCase) ||
-            doc.RootElement.GetProperty("Items").ToString().Contains("EmSys.Ui.Wpf.Core", StringComparison.OrdinalIgnoreCase) };
+      var android = platform == ReleasePlatform.Android;
+      var framework = (Get("TargetFramework") + ";" + Get("TargetFrameworks")).Split(';').FirstOrDefault(f => f.EndsWith("-android", StringComparison.Ordinal)) ?? "";
+      var references = doc.RootElement.GetProperty("Items").ToString();
+      var logo = android ? "" : Asset("EmAppLogo");
+      if (android && doc.RootElement.GetProperty("Items").TryGetProperty("MauiIcon", out var icons)) {
+         var icon = icons.EnumerateArray().FirstOrDefault();
+         if (icon.ValueKind == JsonValueKind.Object && icon.TryGetProperty("Identity", out var identity)) {
+            var file = Path.GetFullPath(identity.GetString()!, Path.GetDirectoryName(Path.GetFullPath(project))!);
+            if (File.Exists(file) && Path.GetExtension(file).Equals(".png", StringComparison.OrdinalIgnoreCase)) logo = Convert.ToBase64String(File.ReadAllBytes(file));
+         }
+      }
+      return new ReleaseProduct { AppName = android && Get("ApplicationTitle").Length > 0 ? Get("ApplicationTitle") : Get("Product"), Publisher = Get("Company"), AppId = Get("EmAppId"),
+         AppExe = Get("AssemblyName") + ".exe", IconBase64 = android ? "" : Asset("ApplicationIcon"), LogoBase64 = logo,
+         ApplicationId = Get("ApplicationId"), ApplicationVersion = Get("ApplicationVersion"), Version = Get("Version"), AndroidTargetFramework = framework,
+         MinimumSupportedJavaVersion = Get("MinimumSupportedJavaVersion"), LatestSupportedJavaVersion = Get("LatestSupportedJavaVersion"),
+         IsEmHost = references.Contains(android ? "Em.Ui.Maui.Core" : "Em.Ui.Wpf.Core", StringComparison.OrdinalIgnoreCase) ||
+            references.Contains(android ? "EmSys.Ui.Maui.Core" : "EmSys.Ui.Wpf.Core", StringComparison.OrdinalIgnoreCase) };
    }
 }
 
