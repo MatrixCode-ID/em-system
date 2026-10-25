@@ -516,3 +516,13 @@ minimal 15 karakter setelah trim. Mobile tetap tanpa void. Tidak ada perubahan s
 Guide: `doc/engine/engine-approval.md`, bagian Approval wrappers.
 
 Artefak approval wrapper 2026-10-24: `../.artefacts/em-system/scripts/approval-wrapper-smoke/` menyimpan harness HTTP dan log build/tes di `out/`, tanpa kredensial atau artefak di repo.
+## Rilis MAUI Android (2026-10-25)
+
+Release Manager memiliki Platform Android, profile signing/keystore permanen, Prepare APK arm64,
+dan update sebelum login/manual dari engine MAUI. Format rilis bersama berada di
+Em.Ui.Core.Release.Format (breaking namespace untuk rilis paket berikutnya).
+Guide: doc/engine/engine-android-updates.md dan engine-release-manager.md.
+Eksekusi lintas repo ini menyelesaikan kode engine A–G lalu kode host pasangan sebelum
+build/tes/smoke/review. Uji visual, emulator/perangkat dan Prepare Environment yang memasang
+sungguhan tidak dijalankan; rilis produksi dilakukan pengguna. Commit per seksi di work-bench,
+tanpa push. Harness/log berada di ../.artefacts/em-system/scripts/release-android-smoke/.
