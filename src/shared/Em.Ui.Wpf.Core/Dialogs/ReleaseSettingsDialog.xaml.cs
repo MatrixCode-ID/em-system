@@ -34,12 +34,18 @@ public partial class ReleaseSettingsDialog : EmWindow {
    private readonly ProgressBar _statusProgress = new() { IsIndeterminate = true };
    private readonly StackPanel _status = new() { Margin = new Thickness(22, 12, 22, 0), Visibility = Visibility.Collapsed };
    private bool _busy;
+   private readonly ReleaseAndroidSettings _android = new();
+   private readonly List<UIElement> _windows = [];
 
    /// <summary>Creates a product profile editor.</summary>
    public ReleaseSettingsDialog(EmApp app, ReleaseProfileStore store, ReleaseProfile profile, DateTime lastWriteUtc,
       IReadOnlyList<ReleaseProfile> others, string? sdkVersion, bool isSdkChecked, bool canUseCdn) {
       InitializeComponent(); _app = app; _store = store; _draft = profile.Clone(); _lastWrite = lastWriteUtc; _others = others;
       _preferences = new ReleaseManagerPreferences(app);
+      _android.Vm.Profile = _draft; _android.Vm.Owner = this; _android.Vm.SelectedPlatform = _draft.Platform;
+      _android.Vm.Sdk = _preferences.AndroidSdkDirectory; _android.Vm.Java = _preferences.JavaSdkDirectory;
+      _android.Vm.PlatformChanged = () => { foreach (var element in _windows) element.IsEnabled = _draft.Platform == ReleasePlatform.Windows; _hosts.ItemsSource = null; _android.Vm.Refresh(); };
+      _form.Children.Add(_android);
       Title = "Release settings · " + profile.Name; Width = 920; Height = 850; ShowMinimizeButton = false;
       Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml") });
       _hosts.SetResourceReference(StyleProperty, "fieldComboStyle");
@@ -64,6 +70,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       Field("CDN address", profile.CdnAddress, "Public CDN base address only, e.g. https://host/cdn/. The release folder is added to it (https://host/cdn/<release folder>/) for launcher, Compare and Verify. Empty derives from the active host /cdn/. Sync uses the active connection.");
       Field("Product", profile.Product.AppName, "Display name only."); Field("Company", profile.Product.Publisher, "Publisher.");
       Field("app_id", profile.Product.AppId, "Two or more alphanumeric segments separated by dots. Use a different id per environment. MatrixCode.EmSystem is reserved.");
+      var windowsStart = _form.Children.Count;
       Field("Application exe", profile.Product.AppExe, "AssemblyName plus .exe; no directory.");
       Row("Branding", _previews, "Application icon (ICO) and launcher logo (transparent PNG) of the product.", labelOnTop: true);
       Field("Launcher exe", profile.Launcher.FileName, "Filename shared by installer and root runner; must end in .exe.");
@@ -72,6 +79,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       Choice("Update at start", profile.Launcher.UpdateBehavior, new[] { "automatic", "ask" }, "automatic installs verified updates; ask offers Update now / Later.");
       Field("Launcher source folder", _preferences.LauncherSourceFolder, "Machine-local Rust source with Cargo.toml and build.rs; required only when rebuilding.", () => Browse("Launcher source folder"));
       Field("Launcher output folder", _preferences.LauncherOutputFolder, "Machine-local build destination or IT share. Empty uses Documents/Em/ReleaseManager/Launchers/<app_id>/.", () => Browse("Launcher output folder"));
+      for (var index = windowsStart; index < _form.Children.Count; index++) { _windows.Add(_form.Children[index]); _form.Children[index].IsEnabled = _draft.Platform == ReleasePlatform.Windows; }
       var keys = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
       Button(keys, "Create signing PEM", () => {
          if (_draft.PrivateKeyPem.Length == 0 || this.ShowMboxDecideWarning("Replace the product key? Existing installations reject a different key for the same app_id.", Title) == MessageBoxResult.Yes) _draft.PrivateKeyPem = ReleasePemKey.Create();
@@ -146,7 +154,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       // Progress reports are posted to the UI thread and may land after the read finished; drop those.
       var done = false;
       var progress = new Progress<string>(text => { if (!done) ShowStatus(text); });
-      return Task.Run(() => ReleaseBuilder.ReadHostProjects(solution, progress, CancellationToken.None))
+      return Task.Run(() => ReleaseBuilder.ReadHostProjects(solution, progress, CancellationToken.None, _draft.Platform))
          .ContinueWith(t => { done = true; return t; }, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
    }
    private Task Browse(string name) { var dialog = new OpenFolderDialog(); if (dialog.ShowDialog(this) == true) _fields[name].Text = dialog.FolderName; return Task.CompletedTask; }
@@ -155,11 +163,15 @@ public partial class ReleaseSettingsDialog : EmWindow {
       if (hosts.Count == 0) throw new InvalidDataException($"No application project (OutputType Exe or WinExe) found in {Path.GetFileName(Value("Solution"))}.");
       await ReadIdentity();
    }
-   private ReleaseProduct Product() => new() { AppName = Value("Product"), Publisher = Value("Company"), AppId = Value("app_id"), AppExe = Value("Application exe"), IconBase64 = _draft.Product.IconBase64, LogoBase64 = _draft.Product.LogoBase64, IsEmHost = _draft.Product.IsEmHost };
+   private ReleaseProduct Product() {
+      var product = _draft.Product;
+      product.AppName = Value("Product"); product.Publisher = Value("Company"); product.AppId = Value("app_id"); product.AppExe = Value("Application exe");
+      return product;
+   }
    private async Task ReadIdentity() {
       if (_hosts.SelectedItem is not string host) return;
       ShowStatus($"Reading product identity of {Path.GetFileName(host)} with MSBuild…");
-      var identity = await ReleaseProduct.ReadAsync(Path.GetFullPath(host, Path.GetDirectoryName(Value("Solution"))!), CancellationToken.None);
+      var identity = await ReleaseProduct.ReadAsync(Path.GetFullPath(host, Path.GetDirectoryName(Value("Solution"))!), CancellationToken.None, _draft.Platform);
       var old = Product();
       string Hash(string value) => value.Length == 0 ? "(empty)" : Convert.ToHexStringLower(SHA256.HashData(Convert.FromBase64String(value)))[..16];
       var changes = new[] { ("Product", old.AppName, identity.AppName), ("Company", old.Publisher, identity.Publisher), ("app_id", old.AppId, identity.AppId), ("Application exe", old.AppExe, identity.AppExe), ("Icon hash", Hash(old.IconBase64), Hash(identity.IconBase64)), ("Logo hash", Hash(old.LogoBase64), Hash(identity.LogoBase64)) }
@@ -167,7 +179,15 @@ public partial class ReleaseSettingsDialog : EmWindow {
       if (changes.Length == 0 || old.AppId.Length == 0 || this.ShowMboxDecideWarning(string.Join("\n", changes) + "\n\nUse solution identity? No keeps the profile.", Title) == MessageBoxResult.Yes) {
          _draft.Product = identity; _fields["Product"].Text = identity.AppName; _fields["Company"].Text = identity.Publisher; _fields["app_id"].Text = identity.AppId; _fields["Application exe"].Text = identity.AppExe;
       }
-      _draft.Product.IsEmHost = identity.IsEmHost; Preview();
+      _draft.Product.IsEmHost = identity.IsEmHost;
+      if (_draft.Platform == ReleasePlatform.Android) {
+         _draft.Product.Version = identity.Version; _draft.Product.ApplicationVersion = identity.ApplicationVersion;
+         _draft.Product.AndroidTargetFramework = identity.AndroidTargetFramework;
+         _draft.Product.MinimumSupportedJavaVersion = identity.MinimumSupportedJavaVersion; _draft.Product.LatestSupportedJavaVersion = identity.LatestSupportedJavaVersion;
+         if (_draft.Android.ApplicationId.Length == 0) _draft.Android.ApplicationId = identity.ApplicationId;
+         _draft.HostProject = host; _draft.SolutionPath = Value("Solution"); _android.Vm.Refresh();
+      }
+      Preview();
    }
    private Task ImportAsset(bool logo) {
       var picker = new OpenFileDialog { Filter = logo ? "PNG|*.png" : "ICO|*.ico" };
@@ -246,7 +266,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       help.SetResourceReference(StyleProperty, "fieldHelpStyle");
       return help;
    }
-   private void KeySummary() => _message.Text = _draft.PrivateKeyPem.Length > 0 ? "Signing PEM present. Anyone holding this JSON can sign releases." : "Create or import the product's P-256 PKCS#8 private PEM.";
+   private void KeySummary() => _message.Text = _draft.PrivateKeyPem.Length > 0 ? "Signing PEM present. Export a backup: losing this key prevents existing installations from accepting updates. Anyone holding this JSON can sign releases." : "Create or import the product's P-256 PKCS#8 private PEM.";
    private async Task SelectManaged() {
       var folder = "";
       while (true) {
@@ -259,15 +279,15 @@ public partial class ReleaseSettingsDialog : EmWindow {
       }
    }
    private async Task Save() {
-      _draft.Product = Product(); _draft.Product.Validate();
+      _draft.Product = Product(); if (_draft.Platform == ReleasePlatform.Windows) _draft.Product.Validate();
       _draft.SolutionPath = Value("Solution"); _draft.HostProject = _hosts.SelectedItem as string ?? ""; _draft.PublishFolder = Value("Publish folder");
       _draft.TargetKind = Enum.Parse<ReleaseTargetKind>(Value("Target")); _draft.TargetFolder = Value("Target folder"); _draft.ReleaseFolder = Value("Release folder"); _draft.CdnAddress = Value("CDN address");
       if (_draft.CdnAddress.Length > 0 && (!Uri.TryCreate(_draft.CdnAddress, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) throw new InvalidDataException("CDN address must be an absolute HTTP(S) URL.");
-      _draft.Launcher.FileName = Value("Launcher exe"); _draft.Launcher.BaseVersion = Value("Launcher version"); _draft.Launcher.Channel = Value("Channel"); _draft.Launcher.UpdateBehavior = Value("Update at start"); LauncherBuild.ValidateSettings(_draft.Launcher, _draft.Product.AppExe);
+      _draft.Launcher.FileName = Value("Launcher exe"); _draft.Launcher.BaseVersion = Value("Launcher version"); _draft.Launcher.Channel = Value("Channel"); _draft.Launcher.UpdateBehavior = Value("Update at start"); if (_draft.Platform == ReleasePlatform.Windows) LauncherBuild.ValidateSettings(_draft.Launcher, _draft.Product.AppExe);
       var conflicts = ReleaseProfileConflicts.Find(_draft, _others, true, true);
       if (conflicts.Count > 0 && this.ShowMboxDecideWarning(string.Join("\n", conflicts) + "\nContinue?", Title) != MessageBoxResult.Yes) return;
       if (_draft.TargetKind == ReleaseTargetKind.Cdn) await Service.PostGetMeta_CdnReleaseManage(_draft.ReleaseFolder, _draft.Product.AppId);
       try { _store.Save(_draft, _lastWrite); } catch (ReleaseProfileChangedException) { if (this.ShowMboxDecideWarning("Profile JSON changed outside this editor. Overwrite it? No keeps editing.", Title) != MessageBoxResult.Yes) return; _store.Save(_draft); }
-      _preferences.LauncherSourceFolder = Value("Launcher source folder"); _preferences.LauncherOutputFolder = Value("Launcher output folder"); DialogResult = true;
+      _preferences.LauncherSourceFolder = Value("Launcher source folder"); _preferences.LauncherOutputFolder = Value("Launcher output folder"); _preferences.AndroidSdkDirectory = _android.Vm.Sdk; _preferences.JavaSdkDirectory = _android.Vm.Java; DialogResult = true;
    }
 }

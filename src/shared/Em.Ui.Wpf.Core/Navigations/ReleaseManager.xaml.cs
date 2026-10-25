@@ -203,6 +203,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(OpenProfilesFolderCommand), OpenProfilesFolderCommand, () => !IsRunning);
          RegisterCommand(nameof(OpenLauncherFolderCommand), OpenLauncherFolderCommand, OpenLauncherFolderCommandAllowed);
          RegisterCommand(nameof(BuildLauncherCommand), BuildLauncherCommand, BuildLauncherCommandAllowed);
+         RegisterCommand(nameof(CopyInstallLinkCommand), CopyInstallLinkCommand, CopyInstallLinkCommandAllowed);
          RegisterCommand(nameof(ProfilesFolderCommand), ProfilesFolderCommand, () => !IsRunning);
          RegisterCommand(nameof(RefreshSummaryCommand), RefreshSummaryCommand, () => !IsRunning);
          RegisterCommand(nameof(SettingsCommand), SettingsCommand, SettingsCommandAllowed);
@@ -325,6 +326,7 @@ namespace Em.Ui.Wpf.Navigations
          : SolutionPath.Length == 0 || !File.Exists(SolutionPath) ? "Set the .slnx file in Settings to enable Prepare."
          : HostProject.Length == 0 || !File.Exists(HostProjectPath) ? "Set the host project in Settings to enable Prepare."
          : PublishFolder.Length == 0 ? "Set the local publish folder in Settings."
+         : Profile is { Platform: ReleasePlatform.Android } ? null
          : Profile is { } profile ? LauncherBuild.BlockedReason(_preferences?.LauncherSourceFolder ?? "", LauncherOutput, profile, DefaultReleaseSource) : null;
 
       /// <summary>The content of the Source summary: the local publish folder, or a note when it is not filled in.</summary>
@@ -528,6 +530,16 @@ namespace Em.Ui.Wpf.Navigations
 
          await RunAsync("Prepare", async token => {
             ResetComparison();
+            if (Profile!.Platform == ReleasePlatform.Android) {
+               var androidTarget = CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason);
+               if (androidTarget is CdnReleaseTarget cdnTarget && await androidTarget.ReadFileAsync(ReleaseLayout.ManifestFileName, token) is null && await cdnTarget.HasManifestOnServerAsync(token))
+                  throw new InvalidOperationException("The public CDN address cannot read the existing release. Fix it before Prepare.");
+               await AndroidReleaseBuilder.PrepareAsync(Profile, androidTarget, DefaultReleaseSource, _preferences!.AndroidSdkDirectory, _preferences.JavaSdkDirectory, new Progress<string>(Log), token);
+               _profileLastWriteUtc = _store!.Save(Profile).LastWriteUtc;
+               RefreshPublishContent();
+               await CompareCoreAsync(token);
+               return;
+            }
             Directory.CreateDirectory(folder);
             ShowProgress(new ReleaseProgress("Emptying the publish folder", 0, 0, null, 0, 0));
             await ReleaseBuilder.ClearFolderAsync(folder, token);
@@ -572,7 +584,7 @@ namespace Em.Ui.Wpf.Navigations
 
       /// <summary>Only with a profile, and a launcher source folder chosen in Settings.</summary>
       public bool BuildLauncherCommandAllowed() =>
-         !IsRunning && HasProfile && !string.IsNullOrWhiteSpace(_preferences?.LauncherSourceFolder);
+         !IsRunning && Profile is { Platform: ReleasePlatform.Windows } && !string.IsNullOrWhiteSpace(_preferences?.LauncherSourceFolder);
 
       /// <summary>Only when the SDK, the <c>.slnx</c>, the host project, and the folder are ready.</summary>
       public bool PrepareCommandAllowed() => !IsRunning && HasProfile && PrepareBlockedReason is null;
@@ -606,6 +618,13 @@ namespace Em.Ui.Wpf.Navigations
          {
             await RunAsync("Sync", async token => {
                try {
+                  if (Profile!.Platform == ReleasePlatform.Android) {
+                     var androidManifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token, profile: Profile);
+                     Log($"Sync finished: {androidManifest.Files.Count} APK published.");
+                     ResetVerify();
+                     await CompareCoreAsync(token);
+                     return;
+                  }
                   var recorded = LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
                   if (LauncherBuild.SelectVersion(Profile!.Launcher, Profile.Launcher.InputHash, recorded) != Profile.Launcher.Version)
                      throw new ReleaseConflictException("The target launcher version changed. Prepare again before Sync.");
@@ -632,7 +651,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public bool SyncCommandAllowed() =>
          !IsRunning && HasProfile && Comparison is not null && _comparedTarget is not null && SigningKey is not null &&
-         TargetBlockedReason is null && Profile!.PrivateKeyPem.Length > 0 && Profile.Launcher.InputHash.Length > 0;
+         TargetBlockedReason is null && Profile!.PrivateKeyPem.Length > 0 && (Profile.Platform == ReleasePlatform.Android ? Profile.Android.PreparedVersionCode > 0 : Profile.Launcher.InputHash.Length > 0);
 
       /// <summary>
       /// Checks the release at the target: the signature (with the public key of the chosen signing key),
@@ -644,7 +663,7 @@ namespace Em.Ui.Wpf.Navigations
          if (Profile?.PrivateKeyPem.Length > 0) { using var key = ReleasePemKey.Open(Profile.PrivateKeyPem); keys = [key.ExportSubjectPublicKeyInfo()]; }
 
          Log($"Verifying {target.Description}...");
-         var result = await ReleaseVerifier.VerifyAsync(target, keys, new Progress<ReleaseProgress>(ShowProgress), token);
+         var result = await ReleaseVerifier.VerifyAsync(target, keys, new Progress<ReleaseProgress>(ShowProgress), token, Profile);
          foreach (var issue in result.Issues.Take(100))
             Log($"  {issue.Kind}: {issue.Path} - {issue.Detail}");
          if (result.Issues.Count > 100) Log($"  ... and {result.Issues.Count - 100:N0} more");
@@ -1018,7 +1037,10 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>Whether the launcher folder can be opened.</summary>
-      public bool OpenLauncherFolderCommandAllowed() => Profile is not null && !IsRunning;
+      public bool OpenLauncherFolderCommandAllowed() => Profile is { Platform: ReleasePlatform.Windows } && !IsRunning;
+
+      public void CopyInstallLinkCommand() => Clipboard.SetText(DefaultReleaseSource.TrimEnd('/') + "/binaries/" + Profile!.AndroidApkFileName);
+      public bool CopyInstallLinkCommandAllowed() => Profile is { Platform: ReleasePlatform.Android } && !IsRunning && !string.IsNullOrEmpty(DefaultReleaseSource);
 
       /// <summary>Runs the profiles folder command.</summary>
       public async Task ProfilesFolderCommand() {

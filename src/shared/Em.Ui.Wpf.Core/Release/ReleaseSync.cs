@@ -34,7 +34,7 @@ namespace Em.Ui.Wpf.Core.Release
       /// <returns>The manifest that was published.</returns>
       /// <exception cref="ReleaseConflictException">The target or the local publish folder changed since the comparison.</exception>
       public static async Task<ReleaseManifest> SyncAsync(ReleaseTarget target, ReleaseComparison comparison,
-         ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token, ReleaseLauncherMetadata? launcher = null) {
+         ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token, ReleaseLauncherMetadata? launcher = null, ReleaseProfile? profile = null) {
          var local = comparison.Local;
          var uploads = comparison.Items.Where(ReleaseComparison.IsUpload).ToArray();
 
@@ -60,10 +60,24 @@ namespace Em.Ui.Wpf.Core.Release
          }
 
          // Signed before the first upload, so a key that cannot sign fails with nothing touched.
+         ReleaseAndroidMetadata? android = null;
+         if (profile?.Platform == ReleasePlatform.Android) {
+            android = AndroidReleaseBuilder.Metadata(profile, local.Files);
+            if (current is not null) {
+               var previous = ReleaseManifestSerializer.Deserialize(current);
+               if (previous.Android is not { } old || old.ApplicationId != android.ApplicationId)
+                  throw new ReleaseConflictException("The destination is not this Android application.");
+               if (old.VersionCode > android.VersionCode || old.VersionCode == android.VersionCode &&
+                   (old != android || previous.Files[0].Sha256 != local.Files[0].Sha256))
+                  throw new ReleaseConflictException("The destination version changed. Prepare again.");
+            }
+            launcher = null;
+         }
          var manifest = new ReleaseManifest {
             PublishedAtUtc = TruncateToSeconds(DateTime.UtcNow),
             Files = local.Files,
-            Launcher = launcher
+            Launcher = launcher,
+            Android = android
          };
          var manifestBytes = ReleaseManifestSerializer.Serialize(manifest);
          var signatureBytes = ReleaseManifestSerializer.SerializeSignature(ReleaseSignature.Sign(manifestBytes, signingKey));

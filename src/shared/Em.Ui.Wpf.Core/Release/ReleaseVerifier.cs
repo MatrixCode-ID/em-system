@@ -99,7 +99,7 @@ namespace Em.Ui.Wpf.Core.Release
       /// <param name="token">Stops Verify midway.</param>
       public static async Task<ReleaseVerifyResult> VerifyAsync(ReleaseTarget target,
          IReadOnlyList<ReadOnlyMemory<byte>> trustedPublicKeys, IProgress<ReleaseProgress>? progress,
-         CancellationToken token) {
+         CancellationToken token, ReleaseProfile? profile = null) {
          progress?.Report(new ReleaseProgress("Reading release.json", 0, 0, null, 0, 0));
          var signatureBytes = await target.ReadFileAsync(ReleaseLayout.SignatureFileName, token).ConfigureAwait(false);
          var manifestBytes = await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token).ConfigureAwait(false);
@@ -134,6 +134,9 @@ namespace Em.Ui.Wpf.Core.Release
          }
 
          var issues = new List<ReleaseVerifyIssue>();
+         if (profile?.Platform == ReleasePlatform.Android && (manifest.Android is not { } android ||
+             android.ApplicationId != profile.Android.ApplicationId || android.FileName != profile.AndroidApkFileName))
+            formatError = "The manifest does not match this Android profile's applicationId/APK file name.";
          var total = manifest.Files.Sum(r => r.Size);
          var done = 0L;
          var sinceReport = Stopwatch.StartNew();
