@@ -93,13 +93,13 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
    public string PublishFolder { get => Get<string>() ?? ""; set => Set(value); }
    /// <summary>Requires a matching release note and a newer application version.</summary>
    public bool ReleaseNoteLock { get => Get<bool>(); set => Set(value); }
-   /// <summary>Profile-relative notes folder selected once in this editor.</summary>
+   /// <summary>Absolute machine-local notes folder selected in this editor.</summary>
    public string ReleaseNotesFolder { get => Get<string>() ?? ""; set => Set(value); }
    /// <summary>The host's application version.</summary>
    public string ProductVersion => _draft.Product.Version;
-   /// <summary>Selects a folder on the same drive as the profile store.</summary>
+   /// <summary>Selects an absolute notes folder on any drive.</summary>
    public void BrowseReleaseNotesCommand() => BrowseFolder(value => {
-      try { ReleaseNotesFolder = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Relative(_store!.Root, value); }
+      try { ReleaseNotesFolder = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(value); }
       catch (Exception ex) { MainWindow?.ShowMboxError(ex.Message); }
    });
    public ReleaseTargetKind TargetKind { get => Get<ReleaseTargetKind>(); set { Set(value); NotifyChanged(nameof(IsCdn)); NotifyChanged(nameof(IsFolder)); RaiseCommands(); } }
@@ -313,7 +313,7 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
    public Task SaveCommand() => Run("Saving release profile…", async () => {
       if (Android.SelectedPlatform != _draft.Platform) throw new InvalidDataException("Apply the selected platform before saving.");
       _draft.Product = Product(); if (IsWindows) _draft.Product.Validate();
-      if (ReleaseNotesFolder.Length > 0) _ = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(_store!.Root, ReleaseNotesFolder);
+      if (ReleaseNoteLock) _ = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(ReleaseNotesFolder);
       _draft.ReleaseNoteLock = ReleaseNoteLock; _draft.ReleaseNotesFolder = ReleaseNotesFolder;
       _draft.SolutionPath = SolutionPath.Trim(); _draft.HostProject = SelectedHost; _draft.PublishFolder = PublishFolder.Trim();
       _draft.TargetKind = TargetKind; _draft.TargetFolder = TargetFolder.Trim(); _draft.ReleaseFolder = ReleaseFolder.Trim(); _draft.CdnAddress = CdnAddress.Trim();

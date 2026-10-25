@@ -17,11 +17,12 @@ namespace Em.Ui.Wpf.Core.Release
 
       /// <summary>
       /// Extra arguments that make the same build produce the same bytes: no commit hash in the
-      /// informational version, normalized source paths, deterministic compilation, and no single-file.
+      /// informational version or SourceLink, normalized source paths, deterministic compilation, and no single-file.
       /// Only used by Prepare; daily builds are unchanged.
       /// </summary>
       public static readonly IReadOnlyList<string> DeterminismArguments = [
          "-p:IncludeSourceRevisionInInformationalVersion=false",
+         "-p:EnableSourceLink=false",
          "-p:ContinuousIntegrationBuild=true",
          "-p:Deterministic=true",
          "-p:PublishSingleFile=false"
@@ -237,6 +238,10 @@ namespace Em.Ui.Wpf.Core.Release
             throw;
          }
 
+         if (process.ExitCode == 0 && profile is not null) {
+            await ReleaseArtifact.WriteBuildRecordAsync(profile, projectPath, token).ConfigureAwait(false);
+            log.Report("Build provenance saved beside the publish folder (.build.json).");
+         }
          return process.ExitCode;
 
          static string Quote(string argument) => argument.Contains(' ') ? $"\"{argument}\"" : argument;
@@ -261,6 +266,7 @@ namespace Em.Ui.Wpf.Core.Release
             ("Product", profile.Product.AppName), ("Company", profile.Product.Publisher), ("EmAppId", profile.Product.AppId),
             ("AssemblyName", Path.GetFileNameWithoutExtension(profile.Product.AppExe))
          };
+         if (profile.ReleaseNoteLock) properties.Add(("Version", ReleaseNotes.ReleaseNoteGuard.Version(profile)));
          if (profile.Product.IconBase64.Length > 0) {
             var icon = Path.Combine(assets, "Product.ico"); File.WriteAllBytes(icon, Convert.FromBase64String(profile.Product.IconBase64));
             properties.Add(("ApplicationIcon", icon));

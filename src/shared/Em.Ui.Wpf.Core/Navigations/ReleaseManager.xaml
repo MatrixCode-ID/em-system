@@ -8,7 +8,7 @@
              xmlns:conv="clr-namespace:Em.Ui.Wpf.Converters"
              xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
              mc:Ignorable="d"
-             d:DesignHeight="820" d:DesignWidth="1280">
+             d:DesignHeight="820" d:DesignWidth="1280" PreviewKeyDown="NotesPreviewKeyDown">
    <UserControl.DataContext>
       <local:ReleaseManagerVm />
    </UserControl.DataContext>
@@ -267,23 +267,33 @@
             </Button>
          </StackPanel>
 
-         <StackPanel Grid.Row="1" Grid.ColumnSpan="5" HorizontalAlignment="Right" Margin="0,8,0,0" Orientation="Horizontal" VerticalAlignment="Center">
+         <WrapPanel Grid.Row="1" Grid.ColumnSpan="5" HorizontalAlignment="Right" Margin="0,8,0,0" VerticalAlignment="Center">
             <Border Style="{StaticResource verifyChipStyle}" Margin="0,0,8,0" MaxWidth="360">
                <TextBlock Text="{Binding VerifyCaption}" TextTrimming="CharacterEllipsis" ToolTip="{Binding VerifyCaption}" />
             </Border>
             <Border Style="{StaticResource chipStyle}"
-                    Visibility="{Binding HasComparison, Converter={StaticResource boolToVisibility}}">
-               <TextBlock Text="{Binding TargetReleaseCaption}" />
+                    Visibility="{Binding HasProfile, Converter={StaticResource boolToVisibility}}">
+               <TextBlock Text="{Binding TargetReleaseCaption}" MaxWidth="520" TextWrapping="Wrap" />
             </Border>
             <CheckBox Style="{StaticResource checkBoxStyle}"
                       Margin="16,0,0,0"
                       Content="Hide unchanged"
                       IsChecked="{Binding HideUnchanged}" />
-         </StackPanel>
+         </WrapPanel>
          <StackPanel Grid.Row="2" Grid.ColumnSpan="5" Margin="0,8,0,0" Visibility="{Binding HasNoteLock, Converter={StaticResource boolToVisibility}}">
-            <TextBlock Text="{Binding NoteCaption}" TextWrapping="Wrap"/>
-            <Button Content="Refresh release notes" Command="{Binding Commands[RefreshReleaseNotesCommand]}" Style="{StaticResource outlinedButtonStyle}" HorizontalAlignment="Left" Margin="0,4,0,4"/>
-            <notes:ReleaseNoteHistory State="{Binding NoteState}" Version="{Binding NoteVersion}"/>
+            <WrapPanel>
+               <ComboBox Width="300" Style="{StaticResource fieldComboStyle}" IsEnabled="{Binding CanChangeProfile}"
+                         ItemsSource="{Binding NoteFiles}" SelectedItem="{Binding SelectedNoteFile, Mode=TwoWay}"
+                         ToolTip="Select the exact release note file; its version and channel are used without incrementing">
+                  <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding FileDisplay}"/></DataTemplate></ComboBox.ItemTemplate>
+               </ComboBox>
+               <Button Content="Open folder" Margin="8,0,0,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[OpenReleaseNotesFolderCommand]}"/>
+               <ToggleButton x:Name="releaseNotesToggle" Style="{StaticResource sheetToggleStyle}" Margin="8,0,0,0" Checked="OpenReleaseNotes"
+                             ToolTip="Show release notes and version history" AutomationProperties.Name="Release notes">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FileLines" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Release Notes" VerticalAlignment="Center"/></StackPanel>
+               </ToggleButton>
+            </WrapPanel>
+            <TextBlock Text="{Binding NoteCaption}" TextWrapping="Wrap" Margin="0,4,0,0"/>
          </StackPanel>
       </Grid>
 
@@ -427,6 +437,76 @@
                      VerticalScrollBarVisibility="Auto"
                      HorizontalScrollBarVisibility="Auto"
                      Text="{Binding LogText, Mode=OneWay}" />
+         </Grid>
+      </Border>
+      <!-- Material side sheet keeps release details out of the artifacts and log layout. -->
+      <ToggleButton Grid.RowSpan="4" Panel.ZIndex="10" Style="{StaticResource sheetScrimStyle}"
+                    IsChecked="{Binding IsChecked, ElementName=releaseNotesToggle, Mode=TwoWay}" AutomationProperties.Name="Close release notes"/>
+      <Border x:Name="releaseNotesSheet" Grid.RowSpan="4" Panel.ZIndex="11"
+              MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=UserControl}}"
+              HorizontalAlignment="Right" Background="{DynamicResource themeWindowBackgroundBrush}"
+              BorderBrush="{StaticResource outlineBrush}" BorderThickness="1,0,0,0" CornerRadius="24,0,0,24"
+              KeyboardNavigation.TabNavigation="Cycle">
+         <Border.RenderTransform><TranslateTransform X="580"/></Border.RenderTransform>
+         <Border.Effect><DropShadowEffect BlurRadius="26" ShadowDepth="0" Opacity="0.25" Color="#000000"/></Border.Effect>
+         <Border.Style>
+            <Style TargetType="Border">
+               <Setter Property="Width" Value="560"/>
+               <Setter Property="Visibility" Value="Collapsed"/>
+               <Setter Property="IsHitTestVisible" Value="False"/>
+               <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsChecked, ElementName=maximizeReleaseNotes}" Value="True">
+                     <Setter Property="Width" Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                  </DataTrigger>
+                  <DataTrigger Binding="{Binding IsChecked, ElementName=releaseNotesToggle}" Value="True">
+                     <Setter Property="Visibility" Value="Visible"/>
+                     <Setter Property="IsHitTestVisible" Value="True"/>
+                     <DataTrigger.EnterActions>
+                        <BeginStoryboard><Storyboard>
+                           <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" From="580" To="0" Duration="0:0:0.22">
+                              <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                           </DoubleAnimation>
+                        </Storyboard></BeginStoryboard>
+                     </DataTrigger.EnterActions>
+                  </DataTrigger>
+               </Style.Triggers>
+            </Style>
+         </Border.Style>
+         <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Grid Margin="24,20,16,20">
+               <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+               <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="Release notes" FontSize="20" FontWeight="SemiBold"/>
+                  <TextBlock Text="Review this release and its history" Style="{StaticResource infoMuted}" Margin="0,4,8,0"/>
+               </StackPanel>
+               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Button x:Name="refreshReleaseNotes" Style="{StaticResource rowActionButtonStyle}" Command="{Binding Commands[RefreshReleaseNotesCommand]}"
+                          ToolTip="Refresh release notes and target status" AutomationProperties.Name="Refresh release notes"><fa:FontAwesome Icon="Solid_ArrowsRotate"/></Button>
+                  <ToggleButton x:Name="maximizeReleaseNotes" Margin="8,0,0,0" AutomationProperties.Name="Maximize or restore release notes">
+                     <ToggleButton.Style>
+                        <Style TargetType="ToggleButton" BasedOn="{StaticResource sheetCloseToggleStyle}">
+                           <Setter Property="ToolTip" Value="Maximize release notes"/>
+                           <Style.Triggers><Trigger Property="IsChecked" Value="True"><Setter Property="ToolTip" Value="Restore panel size"/></Trigger></Style.Triggers>
+                        </Style>
+                     </ToggleButton.Style>
+                     <fa:FontAwesome>
+                        <fa:FontAwesome.Style>
+                           <Style TargetType="fa:FontAwesome">
+                              <Setter Property="Icon" Value="Solid_Expand"/>
+                              <Style.Triggers><DataTrigger Binding="{Binding IsChecked, ElementName=maximizeReleaseNotes}" Value="True"><Setter Property="Icon" Value="Solid_Compress"/></DataTrigger></Style.Triggers>
+                           </Style>
+                        </fa:FontAwesome.Style>
+                     </fa:FontAwesome>
+                  </ToggleButton>
+                  <ToggleButton x:Name="closeReleaseNotes" Style="{StaticResource sheetCloseToggleStyle}" Margin="8,0,0,0"
+                                IsChecked="{Binding IsChecked, ElementName=releaseNotesToggle, Mode=TwoWay}"
+                                ToolTip="Close release notes" AutomationProperties.Name="Close release notes"><fa:FontAwesome Icon="Solid_Xmark"/></ToggleButton>
+               </StackPanel>
+            </Grid>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,0,24,24">
+<StackPanel><TextBlock Text="{Binding NoteCaption}" Style="{StaticResource infoMuted}" TextWrapping="Wrap" Margin="0,0,0,16"/><notes:ReleaseNoteHistory State="{Binding NoteState}" Version="{Binding NoteVersion}" IsExpanded="True" PreviewMaxHeight="Infinity"/></StackPanel>
+            </ScrollViewer>
          </Grid>
       </Border>
    </Grid>

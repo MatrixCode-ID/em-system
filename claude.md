@@ -1,5 +1,83 @@
 # CLAUDE.md
 
+## Pemilih release note Release Manager (keputusan pengguna 2026-10-26)
+
+Saat release note lock aktif, Release Manager memakai ComboBox nama berkas dan
+status seperti Container Manager. Pilihan disimpan pada profil; nama berkas
+menentukan versi persis beserta channel/N. Refresh/Prepare/Sync tidak memilih
+berkas lain atau menaikkan N. Windows Prepare menerapkan versi pilihan ke host
+dan launcher; Android memakai versi pilihan untuk displayVersion APK. Sync
+memeriksa artefak cocok dengan pilihan. Berkas hilang/invalid/sudah dirilis
+memblokir operasi; saat lock mati aturan versi sebelumnya tetap berlaku.
+Ketentuan ini menggantikan aturan lama bahwa lock Release Manager hanya memakai
+versi sumber aplikasi. Profil lama tanpa pilihan tetap mencocokkan versi aplikasinya
+sampai pengguna memilih berkas; tidak otomatis memilih note terbaru.
+
+Tombol Release Notes membuka side sheet kanan seperti CM, dengan riwayat,
+refresh, tutup/scrim/Escape serta maksimalkan/pulihkan. Tidak ada preview
+duplikat di halaman utama. Open folder membuka folder note yang dikonfigurasi.
+
+## Versi Release Manager dan metadata Prepare (keputusan pengguna 2026-10-26)
+
+Ringkasan Compare menampilkan versi artefak lokal prepared, versi aplikasi target
+dan waktu publikasi. Manifest lama tanpa versi ditampilkan eksplisit; versi engine
+atau launcher bukan versi aplikasi. Versi Windows dibaca dari host DLL hasil publish,
+versi Android dari state prepared yang cocok dengan hash APK. Sync menulis versi
+standar artefak juga saat release note lock mati; lock aktif menolak artefak yang
+versinya hilang atau tidak cocok dengan profil.
+
+Koreksi pengguna 2026-10-26: ringkasan halaman menampilkan **Server release** dari
+manifest target, bukan Local prepared. Nomor rilis Windows yang dibuat otomatis
+saat build berasal dari `launcher.version`; `version` aplikasi ditampilkan terpisah
+bila tersedia. Android memakai versionName/versionCode target. Informasi server
+dibaca saat memilih/refresh profil meskipun folder prepared lokal belum ada,
+dengan status reading, tidak ada rilis, atau error yang jelas. Compare/Sync
+memperbaruinya dari target. Jangan mengganti rilis server dengan nilai lokal.
+Koreksi ini menggantikan aturan tampilan ringkasan pada paragraf sebelumnya;
+pemeriksaan versi artefak dan penanganan metadata Prepare tetap berlaku.
+
+Prepare mematikan SourceLink berbasis commit pada build distribusi, mempertahankan
+simbol debug, normalization path dan deterministic compilation. Commit dicatat di
+`<publish-folder>.build.json` di luar isi distribusi, bersama versi dan hash artefak.
+Build development tidak diubah; Compare tetap memeriksa SHA-256 seluruh file.
+
+## Panel release notes Publish (keputusan pengguna 2026-10-26)
+
+Pratinjau dan riwayat release note Publish dibuka melalui tombol Release notes,
+bukan ditumpuk pada area artefak/log. Gunakan side sheet Material 3 dari kanan,
+dengan tutup, klik scrim/Escape, refresh serta tombol maksimalkan/pulihkan.
+Panel maksimal mengikuti lebar halaman dan tetap bisa dipulihkan. Hindari duplikasi
+pratinjau; From/To hanya ditampilkan bila ada beberapa versi, dengan teks versi
+eksplisit pada item dropdown dan pilihan aktif. Catatan manual saat lock mati
+tetap dapat diedit di panel dan dipakai oleh Push.
+
+## Pemilih berkas release note Container Manager (keputusan pengguna 2026-10-26)
+
+Saat Release note lock aktif, strip angka versi/channel Container Manager diganti
+ComboBox berkas release note dari folder profil. Nama berkas yang dipilih menjadi
+sumber versi tag persis, termasuk N. Teks tambahan floating tag seperti `+ beta`
+disembunyikan saat lock aktif. Refresh, Build dan Push tidak menaikkan N atau
+memilih berkas lain otomatis. Tampilkan nama berkas dan statusnya; pulihkan pilihan
+tersimpan bila masih tersedia. Berkas hilang, invalid atau versi tidak lebih baru
+memblokir operasi dengan pesan yang jelas. Saat lock mati, input versi/channel
+beserta N otomatis tetap mengikuti perilaku sebelumnya. Release Manager tetap
+memakai versi aplikasi. Aturan ini menggantikan aturan versi strip saat lock aktif.
+
+Tombol Open folder di sebelah dropdown membuka folder release note yang diatur di
+profil. Jika lokasi tidak tersedia, tampilkan error dan petunjuk memperbarui lokasi;
+jangan membuat folder pengganti atau bergantung pada berkas yang sedang dipilih.
+
+## Folder release note absolut pada mesin (keputusan pengguna 2026-10-26)
+
+Release note lock pada Container Manager dan Release Manager memakai folder absolut
+pada mesin, terpisah dari lokasi file profil, workspace dan solution. Folder boleh
+berbeda drive dari profil. Pemilih folder menyimpan path absolut; Export/Import
+mempertahankannya. Path relatif lama tidak dikonversi otomatis: bila lock aktif,
+folder kosong, relatif, tidak ada atau tidak terbaca memblokir operasi dan menampilkan
+lokasi/error serta petunjuk agar pengguna memperbarui Release notes folder di profil.
+Jangan membuat folder pengganti, menebak lokasi, atau memindahkan profil pengguna.
+Panduan: `doc/engine/engine-release-manager.md` dan `engine-publish.md`.
+
 ## Urutan editor profile Release Manager (keputusan pengguna 2026-10-25)
 
 Editor profile mengikuti Material 3 yang sudah dipakai proyek dan urutan input:
@@ -21,6 +99,14 @@ tersimpan di action RunBay `review-release-settings` dan `render-release-setting
 
 ## Tes lewat RunBay (keputusan pengguna 2026-10-25)
 
+Keputusan lanjutan pengguna 2026-10-26: selalu gunakan RunBay untuk build, run,
+tes dan action proyek. Jika diperlukan untuk pekerjaan, agen akan menghentikan
+action yang sedang berjalan melalui `stop_run`, termasuk run yang dimulai pengguna,
+tanpa konfirmasi ulang. Periksa app/action/run id melalui `list_runs`/`get_run`,
+pastikan run berhenti, lalu jalankan action yang diperlukan atau Build + Run kembali.
+Laporkan action/run id yang dihentikan dan dijalankan. Izin ini hanya untuk action
+yang terkait pekerjaan; jangan menghentikan action lain atau memakai kill dari shell.
+
 Artefak Data approval wrapper 2026-10-25:
 `../.artefacts/em-system/scripts/data-approval-wrapper-smoke/` menyimpan source harness HTTP,
 output build API/WPF/MAUI, log suite approval terfilter dan database fixture lokal yang dipertahankan.
@@ -29,7 +115,8 @@ Script PowerShell pelaksanaan tersimpan pada action RunBay; bukan di folder arte
 Build dan tes lokal dijalankan melalui RunBay. Script pelaksanaan tes berupa PowerShell `.ps1`
 yang disimpan pada action RunBay, bukan di folder `.artefacts`; isi script langsung di action.
 Harness C#, fixture dan output tetap di artefak sesuai aturan di bawah. Dalam pekerjaan lintas
-repo, tes produk memakai runner produk yang sudah terdaftar. Jangan menghentikan proses pengguna.
+repo, tes produk memakai runner produk yang sudah terdaftar. Penghentian action yang berjalan
+mengikuti izin lanjutan pengguna 2026-10-26 di atas.
 
 ## Nilai default wajib untuk `ta_Meta` di engine (keputusan pengguna 2026-10-22)
 

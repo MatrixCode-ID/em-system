@@ -62,7 +62,7 @@ persis.
 | --- | --- | --- |
 | `publishedAtUtc` | string | Waktu rilis diterbitkan, ISO 8601 dalam UTC dengan akhiran `Z` (mis. `2026-09-27T10:15:00Z`). Penulis menulis presisi detik; pembaca menerima pecahan detik. Hanya informasi, tidak dipakai untuk memutuskan apa pun. |
 | `files` | array | Seluruh file rilis. Boleh kosong. |
-| `version` | string, opsional | Versi aplikasi `MAJOR.MINOR.PATCH[-(prealpha|alpha|beta|rc).N]`, tanpa build metadata; N ≥ 1, angka tanpa nol awal. Ikut ditandatangani. Ditulis Release Manager hanya saat Release note lock aktif. Parser menolak format salah; pembaca lama boleh mengabaikannya tanpa nomor format baru. |
+| `version` | string, opsional | Versi aplikasi `MAJOR.MINOR.PATCH[-(prealpha|alpha|beta|rc).N]`, tanpa build metadata; N ≥ 1, angka tanpa nol awal. Ikut ditandatangani. Release Manager menulisnya dari artefak prepared bila versi standar tersedia, juga ketika Release note lock mati. Lock aktif mewajibkan versi artefak cocok dengan versi aplikasi pada profil. Manifest lama tanpa versi tetap diterima; versi tidak ditebak dari launcher atau engine. Parser menolak format salah; pembaca lama boleh mengabaikannya tanpa nomor format baru. |
 | `files[].path` | string | Path file relatif terhadap `binaries/` (aturan di 2.3). Sekaligus membawa nama file. |
 | `files[].size` | integer | Ukuran file dalam byte, ≥ 0. |
 | `files[].sha256` | string | SHA-256 isi file (aturan di 2.4). |

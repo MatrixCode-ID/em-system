@@ -10,6 +10,13 @@ namespace Em.Ui.Wpf.Core.Release;
 
 /// <summary>Content-based, incremental product launcher builds.</summary>
 public static class LauncherBuild {
+   /// <summary>Uses the selected note version exactly when locked, otherwise the automatic launcher version.</summary>
+   public static string SelectVersion(ReleaseProfile profile, string hash, ReleaseLauncherMetadata? remote) {
+      if (!profile.ReleaseNoteLock) return SelectVersion(profile.Launcher, hash, remote);
+      var version = ReleaseNotes.ReleaseNoteGuard.Version(profile);
+      if (!ReleaseManifestSerializer.IsStandardVersion(version)) throw new InvalidDataException("Select a standard release note version before building.");
+      return version;
+   }
    /// <summary>Reads a remote manifest's launcher metadata, if any.</summary>
    public static ReleaseLauncherMetadata? Remote(byte[]? bytes) => bytes is null ? null : ReleaseManifestSerializer.Deserialize(bytes).Launcher;
 
@@ -117,7 +124,7 @@ public static class LauncherBuild {
       if (force && !hasSource) throw new InvalidDataException("Building the launcher needs its local source folder (Cargo.toml) in Settings.");
       var hash = hasSource ? InputHash(source, profile, defaultSource) : profile.Launcher.InputHash;
       if (hash.Length == 0) throw new InvalidDataException("A local launcher source folder is required for the first build.");
-      var version = SelectVersion(profile.Launcher, hash, remote);
+      var version = SelectVersion(profile, hash, remote);
       var productHash = ProductHash(profile, defaultSource);
       if (force || !CacheMatches(exe, hash, productHash) || profile.Launcher.Version != version) {
          if (!hasSource) throw new InvalidDataException("The launcher inputs changed; select its local source folder and install Rust/MSVC.");

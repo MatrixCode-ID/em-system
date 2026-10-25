@@ -43,6 +43,21 @@ Unapplied platform changes disable Save until the platform is applied or restore
 
 ## Release note lock
 
+With the lock enabled, select an exact `<version>.md` file through the release page's
+ComboBox. Items show filename and release status. Selection is persisted per profile;
+refresh, Prepare and Sync never select a newer file or increment its suffix. The selected
+filename supplies the exact release version/channel/N. Windows Prepare stamps that version
+on the host and launcher; Android stamps its display version. Sync rejects an artifact
+prepared for a different selection. Missing/invalid/already released notes block release.
+Legacy profiles initially match their stored application version until a file is selected.
+With lock off, the source application version and automatic launcher rules remain active.
+
+**Release Notes** opens the same Material side sheet pattern as Container Manager: history
+and note content, refresh, maximize/restore, and close through the button, scrim or Escape.
+The main page has no duplicate preview. **Open folder** uses the configured note folder.
+The file-selection behavior above supersedes the earlier source-version-only matching
+described below; selecting a note does not edit the source project.
+
 In **Product Identity**, immediately after Application version, enable **Release note lock** and choose
 one notes folder. The setting applies to Windows and Android. The release page shows this folder read-only;
 change it only in the profile editor. Old profiles default to lock off and retain format version 2.
@@ -52,8 +67,11 @@ Android Prepare rereads host identity before checking the lock; Sync checks Prep
 requires Prepare again when it differs from the current Product.Version. Windows uses Product.Version,
 without adding an executable-version check or a separate prepared-version field.
 
-With the lock enabled, Sync signs the top-level `version` in `release.json`. With the lock disabled it
-omits this field. Verify displays it when present. Windows reads target `version`; Android prefers that
+Sync signs the top-level `version` in `release.json` whenever a standard prepared application version
+is available, including when the lock is disabled. Windows reads the actual published host DLL's
+ProductVersion; Android uses the prepared version only when the APK hash matches. A changed profile
+version never relabels an old binary. With the lock enabled, a missing or mismatching prepared version
+blocks Sync and requires Prepare again. Verify displays the signed version when present. Windows reads target `version`; Android prefers that
 field, falling back only to a standard `android.versionName` without build metadata. A missing release or
 usable version allows the first version; an unreadable target blocks release. The note and target are
 checked again before Sync. Launcher identity/version remains separate.
@@ -63,8 +81,9 @@ checked again before Sync. Launcher identity/version remains separate.
 The folder directly contains `<version>.md` files for one profile, for example
 `doc/ReleaseNote/inventory-api/1.2.0-beta.3.md`. No app_id or container subfolder is created automatically.
 Versions are `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH-(prealpha|alpha|beta|rc).N`, with N starting at 1.
-The application supplies the version; notes never select or override it. Application build metadata is
-removed for matching. Stable releases follow prereleases, with channel order prealpha, alpha, beta, rc,
+Release Manager takes its version from the application and matches the note to it. Container Manager
+with the lock enabled instead selects the exact version through its release note file ComboBox.
+Application build metadata is removed for matching in Release Manager. Stable releases follow prereleases, with channel order prealpha, alpha, beta, rc,
 then numeric N. Nonstandard application versions block release while the lock is enabled.
 
 The filename must match the application version exactly and contain a nonempty `## Summary` before the
@@ -91,13 +110,44 @@ One short paragraph.
 - ...
 ```
 
-The stored folder path is always relative to the directory containing the profile JSON, using `/`.
-For Publish this includes the `Profiles/Container` directory; for Release Manager it is
-ReleaseProfileStore.Root. Reading also accepts `\`. Another drive cannot be selected, and manually entered
-absolute paths are invalid. The basis is independent of Workspace/SolutionPath. Export and Import copy the
-value unchanged; moving/importing a profile into a different directory can change the resolved folder.
-Commit the notes and optionally the profile to the product repository. The tool does not run git or
-check whether files are committed. Pull changes to see notes written by other developers.
+The stored folder is an absolute path on the current machine, independent of the profile JSON,
+Workspace and SolutionPath. Choose it with the folder picker; it may be on a different drive from the
+profile. Moving a profile does not change the note location. Export and Import preserve this absolute
+value unchanged; after importing on another machine, select that machine's notes folder in the profile.
+Older relative values are not converted or resolved: with the lock enabled they block release and ask
+the user to update Release notes folder in profile settings.
+
+## Compared versions and stable build metadata
+
+The action area shows **Server release**, read directly from the published target manifest when a
+profile is selected or refreshed, even without a local publish folder or comparison. Windows displays
+`launcher.version`, the release number assigned by the launcher build, with the signed application
+`version` separately when present. Android displays its published versionName and versionCode. The
+publication time is shown in UTC. Reading times out after 30 seconds and reports a clear status;
+local prepared/profile versions never replace the published release. Compare and Sync refresh the
+summary from the target state they read. Older manifests with launcher metadata can therefore still
+show their build release number even without an application version. A missing recorded release
+number shows **Version not recorded**.
+
+Prepare disables SourceLink for distribution builds while retaining portable debugging symbols,
+deterministic compilation and normalized paths. A repository commit outside a module's source should
+therefore no longer change that module's PDB and the DLL's embedded PDB checksum solely through
+SourceLink. Development builds keep their normal SourceLink behavior. Compare and Verify still check
+full SHA-256 values; no metadata differences are ignored. Compiler, dependency and actual source changes
+can still change binaries. Switching this policy changes existing binaries once.
+
+Each successful Prepare writes `<publish-folder>.build.json` beside the local publish directory. It
+records the host repository commit (when Git is available), application version, preparation time,
+artifact name and SHA-256. This local provenance record is outside the distribution and is not synced
+or signed as a release file. It is informational: Compare always reads the actual artifact, never uses
+an old provenance record or the current profile as a substitute for its version.
+
+A missing, invalid or unreadable folder blocks Build/Prepare and Push/Sync. The status includes the
+configured location, the error and an instruction to open profile settings and update the folder. The
+tool does not create a missing folder or silently choose another one. After selecting an available
+folder, save the profile and refresh release notes. Commit notes to the product repository; keep
+machine-specific profile paths in local configuration. The tool does not run git or check commits.
+Pull changes to see notes written by other developers.
 
 The Release notes history panel lists version files in descending order with Released/Pending/Invalid
 status. Invalid means a missing/empty Summary. Release Manager marks versions at or below the target as

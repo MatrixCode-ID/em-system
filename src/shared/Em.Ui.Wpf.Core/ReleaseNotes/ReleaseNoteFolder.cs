@@ -11,6 +11,8 @@ public sealed record ReleaseNoteEntry(ContainerReleaseVersion ParsedVersion, str
    public string Version => ParsedVersion.Full;
    /// <summary>The version and release status.</summary>
    public string Display => $"{Version} · {Status}";
+   /// <summary>The release filename and status shown by the container version selector.</summary>
+   public string FileDisplay => $"{Path.GetFileName(File)} · {Status}";
 }
 
 /// <summary>The result of evaluating a release note lock.</summary>
@@ -19,20 +21,13 @@ public sealed record ReleaseNoteState(bool Allowed, string Message, string? File
    public bool FolderValid { get; init; }
 }
 
-/// <summary>Profile-relative note paths, validation, release ordering and history without WPF or a database.</summary>
+/// <summary>Machine-local note paths, validation, release ordering and history without WPF or a database.</summary>
 public static class ReleaseNoteFolder {
-   /// <summary>Resolves a stored relative path; absolute and drive-relative values are invalid.</summary>
-   public static string Resolve(string profileFolder, string relative) {
-      if (string.IsNullOrWhiteSpace(relative)) throw new InvalidDataException("Choose a release notes folder in the profile.");
-      if (Path.IsPathRooted(relative) || relative.Contains(':')) throw new InvalidDataException("Release notes folder must be relative to the profile file folder.");
-      return Path.GetFullPath(relative.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar), Path.GetFullPath(profileFolder));
-   }
-   /// <summary>Converts a folder selection to a portable profile-relative path, rejecting other drives.</summary>
-   public static string Relative(string profileFolder, string folder) {
-      var basis = Path.GetFullPath(profileFolder); var full = Path.GetFullPath(folder);
-      if (!string.Equals(Path.GetPathRoot(basis), Path.GetPathRoot(full), StringComparison.OrdinalIgnoreCase))
-         throw new InvalidDataException("Release notes folder must be on the same drive as the profile file.");
-      return Path.GetRelativePath(basis, full).Replace('\\', '/');
+   /// <summary>Validates and normalizes an absolute machine-local path without a profile or working-directory basis.</summary>
+   public static string Resolve(string folder) {
+      if (string.IsNullOrWhiteSpace(folder)) throw new InvalidDataException("No release notes folder is configured.");
+      if (!Path.IsPathFullyQualified(folder)) throw new InvalidDataException("Release notes folder must be an absolute path on this machine. Relative paths from older profiles must be selected again.");
+      return Path.GetFullPath(folder);
    }
    /// <summary>Requires a nonempty Summary section before the next Markdown heading.</summary>
    public static bool HasSummary(string content) {
@@ -46,11 +41,10 @@ public static class ReleaseNoteFolder {
       return fallback is not null && ReleaseManifestSerializer.IsStandardVersion(fallback) ? fallback : null;
    }
    /// <summary>Reads version notes and evaluates one application version against a known target.</summary>
-   public static ReleaseNoteState Evaluate(string profileFolder, string relative, string appVersion, IEnumerable<string> serverVersions,
+   public static ReleaseNoteState Evaluate(string notesFolder, string appVersion, IEnumerable<string> serverVersions,
       bool serverKnown, bool exactReleased = false) {
       try {
-         var folder = Resolve(profileFolder, relative);
-         if (!Directory.Exists(folder)) throw new InvalidDataException($"Release notes folder not found: {relative}");
+         var folder = Resolve(notesFolder);
          var versions = serverVersions.Where(v => ReleaseManifestSerializer.IsStandardVersion(v)).Select(v => ContainerVersion.TryParseFull(v, out var p) ? (ContainerReleaseVersion?)p : null)
             .Where(v => v.HasValue).Select(v => v!.Value).ToArray();
          ContainerReleaseVersion? highest = versions.Length == 0 ? null : versions.Max();
@@ -65,12 +59,14 @@ public static class ReleaseNoteFolder {
          var sorted = entries.OrderByDescending(e => e.ParsedVersion).ToArray();
          if (!ContainerVersion.TryParseFull(appVersion, out var app)) return new(false, "Blocked: release note lock requires a standard application version.", null, "", sorted) { FolderValid = true };
          var note = sorted.FirstOrDefault(e => e.Version == app.Full);
-         var error = note is null ? $"{app.Full}.md not found in {relative}" : !note.Valid ? $"{app.Full}.md has no nonempty ## Summary" :
+         var error = note is null ? $"{app.Full}.md not found in {folder}" : !note.Valid ? $"{app.Full}.md has no nonempty ## Summary" :
             !serverKnown ? "The release target could not be read." : highest is { } top && app.CompareTo(top) <= 0 ? $"{app.Full} is not newer than {top.Full} on the server" : null;
          return new(error is null, error is null ? $"Release note {app.Full}.md found" : "Blocked: " + error,
-            note is null ? null : Relative(profileFolder, note.File), note?.Content ?? "", sorted) { FolderValid = true };
+            note?.File, note?.Content ?? "", sorted) { FolderValid = true };
       }
-      catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException) { return new(false, "Blocked: " + ex.Message, null, "", []); }
+      catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or NotSupportedException or System.Security.SecurityException) {
+         return new(false, $"Blocked: Cannot read release notes folder '{notesFolder}': {ex.Message} Open profile settings and update Release notes folder.", null, "", []);
+      }
    }
    /// <summary>Combines notes in ascending order, excluding From and including To.</summary>
    public static string Range(IEnumerable<ReleaseNoteEntry> entries, ContainerReleaseVersion from, ContainerReleaseVersion to) =>

@@ -18,7 +18,7 @@ public static class AndroidReleaseBuilder {
    public static IReadOnlyList<string> PublishArguments(string project, string output, string framework, string sdk, string java, string targets) => [
       "publish", project, "-c", "Release", "-f", framework, "-r", "android-arm64",
       "-p:AndroidSdkDirectory=" + sdk, "-p:JavaSdkDirectory=" + java,
-      "-p:CustomBeforeMicrosoftCommonTargets=" + targets, "-o", output ];
+      "-p:CustomBeforeMicrosoftCommonTargets=" + targets, "-o", output, .. ReleaseBuilder.DeterminismArguments ];
 
    public static string WriteIdentityTargets(ReleaseProfile profile, string project, string folder, string keystore, int code, string address) {
       XNamespace ns = "http://schemas.microsoft.com/developer/msbuild/2003";
@@ -43,15 +43,15 @@ public static class AndroidReleaseBuilder {
       return file;
    }
 
-   public static async Task PrepareAsync(ReleaseProfile profile, ReleaseTarget target, string address, string sdk, string java, IProgress<string> log, CancellationToken token, string? profileFolder = null) {
+   public static async Task PrepareAsync(ReleaseProfile profile, ReleaseTarget target, string address, string sdk, string java, IProgress<string> log, CancellationToken token) {
       var hostProject = Path.GetFullPath(profile.HostProject, Path.GetDirectoryName(Path.GetFullPath(profile.SolutionPath))!);
       var identity = await ReleaseProduct.ReadAsync(hostProject, token, ReleasePlatform.Android);
-      profile.Product.Version = identity.Version;
+      profile.Product.Version = profile.ReleaseNoteLock && profile.ReleaseNoteVersion.Length > 0 ? profile.ReleaseNoteVersion : identity.Version;
       profile.Product.ApplicationVersion = identity.ApplicationVersion;
       profile.Product.AndroidTargetFramework = identity.AndroidTargetFramework;
       profile.Product.MinimumSupportedJavaVersion = identity.MinimumSupportedJavaVersion;
       profile.Product.LatestSupportedJavaVersion = identity.LatestSupportedJavaVersion;
-      await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, profileFolder ?? ReleaseManagerPreferences.DefaultProfilesFolder, token);
+      await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, token);
       profile.ValidateAndroidRelease();
       if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") || !address.EndsWith('/'))
          throw new InvalidDataException("Set the public CDN address before preparing an Android release.");
@@ -87,6 +87,8 @@ public static class AndroidReleaseBuilder {
          profile.Android.PreparedVersionCode = code;
          profile.Android.PreparedVersionName = profile.Product.Version;
          profile.Android.PreparedApkSha256 = Convert.ToHexStringLower(SHA256.HashData(await File.ReadAllBytesAsync(destination, token)));
+         await ReleaseArtifact.WriteBuildRecordAsync(profile, project, token);
+         log.Report("Build provenance saved beside the publish folder (.build.json).");
       }
       finally { Directory.Delete(temporary, true); }
    }

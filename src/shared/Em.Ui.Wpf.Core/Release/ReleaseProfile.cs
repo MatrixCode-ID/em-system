@@ -64,7 +64,9 @@ namespace Em.Ui.Wpf.Core.Release
       public ReleaseProduct Product { get; set; } = new();
       /// <summary>Requires a versioned release note before Prepare or Sync.</summary>
       public bool ReleaseNoteLock { get; set; }
-      /// <summary>Notes folder relative to ReleaseProfileStore.Root.</summary>
+      /// <summary>Exact version selected through the release note file picker; empty retains legacy application matching.</summary>
+      public string ReleaseNoteVersion { get; set; } = "";
+      /// <summary>Absolute release notes folder on this machine, independent of the profile location.</summary>
       public string ReleaseNotesFolder { get; set; } = "";
       /// <summary>Public CDN address used by clients; empty derives from the connection.</summary>
       public string CdnAddress { get; set; } = "";

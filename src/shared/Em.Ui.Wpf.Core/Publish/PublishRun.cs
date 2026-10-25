@@ -83,7 +83,7 @@ public sealed class PublishRun {
  public string WindowsUser { get; set; }=Environment.UserName;
  /// <summary>The release notes.</summary>
  public string ReleaseNotes { get; set; }="";
- /// <summary>Locked note path relative to the profile file's directory; old runs have none.</summary>
+ /// <summary>Absolute locked note path on this machine; older runs may contain a relative path or none.</summary>
  public string ReleaseNotesFile { get; set; }="";
  /// <summary>The target.</summary>
  public string Target { get; set; }="";

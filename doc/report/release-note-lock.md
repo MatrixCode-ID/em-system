@@ -57,3 +57,150 @@ Branch diperiksa sebelum setiap commit; seluruh commit hanya pada `work-bench`. 
 ## Tindakan manual terblokir policy
 
 Tidak ada tindakan ditolak policy. Tidak ada skrip manual di `plan/release-note-lock-manual/` yang perlu disiapkan atau dijalankan pengguna.
+
+
+## Refactor folder absolut (keputusan pengguna 2026-10-26)
+
+Pengguna mengganti aturan path relatif profil menjadi folder tetap pada mesin.
+Pembaca bersama, editor Container Publish Advanced dan editor Release Manager sekarang
+menyimpan/memakai path absolut tanpa basis profil atau pembatasan drive yang sama.
+Pemindahan/impor profil mempertahankan lokasinya; path relatif lama tidak ditebak atau
+migrasi otomatis. Folder kosong, relatif, hilang, tidak valid, dan kegagalan baca
+memblokir lock serta menampilkan lokasi/error dan instruksi memperbarui Release notes
+folder di pengaturan profil. Run baru mencatat path absolut catatan. File profil dan
+folder pengguna tidak dipindahkan atau diubah dalam pekerjaan ini.
+
+Aturan baru dicatat pada `CLAUDE.md`; guide Publish, Registry dan Release Manager
+beserta pasangan bahasa Indonesianya diselaraskan. Harness Folder Sync yang sudah
+ada di artefak disesuaikan dengan API tanpa parameter basis profil dan memakai
+path absolut untuk fixture.
+
+Verifikasi melalui RunBay:
+
+- `em-system / test-release-note-lock-filtered`, run
+  `20261026-051259-test-release-note-lock-filtered-123b`: output akhir **138 lulus,
+  0 gagal, 0 skip**. Mencakup lokasi absolut lintas drive/UNC, penolakan path relatif
+  lama, folder hilang, file menggantikan folder, berkas terkunci, pemilihan ulang,
+  round-trip profil, serta regresi versi/lock. Proses dotnet test sudah selesai;
+  RunBay masih menandai running sehingga run milik agent ditutup lewat stop_run.
+  Hasil metadata akhir exit 0/status stopped, bukan success.
+- Build host pemakai melalui action Build yang sudah tersedia: run
+  `20261026-051534-build-6f08`, **success, exit 0**, 0 error dan 384 warning.
+  Build akhir mengonfirmasi source setelah normalisasi encoding; run awal
+  `20261026-051358-build-caa9` juga lulus dengan hasil yang sama.
+- `em-system / smoke-release-note-lock`, run
+  `20261026-051433-smoke-release-note-lock-e849`: **success, 6 lulus, 0 gagal**;
+  Windows/Android Folder Sync, tanda tangan/Verify, penolakan versi sama dan lock off.
+- `git diff --check` lulus. Tidak ada commit/push, GUI, render, registry Push atau
+  CDN Sync nyata. Verifikasi visual/interaksi tetap tertunda.
+
+## Perbaikan tema tombol refresh (2026-10-26)
+
+Pengguna melaporkan tombol Refresh release notes berlatar putih dengan teks pudar
+pada tema gelap. Penyebab terverifikasi di source: tombol dibuat dari kode tanpa
+style eksplisit sehingga memakai template Windows bawaan. Tombol sekarang memakai
+`outlinedButtonStyle` bersama, foreground dinamis `themeWindowForegroundBrush`,
+serta jarak atas 8 agar mengikuti kontrol Material di halaman Publish. Template
+bersama menangani hover, pressed, focus dan disabled tanpa latar putih sistem.
+
+Build host melalui RunBay `emporium-localtest / Build`, run
+`20261026-051905-build-cc85`, success/exit 0, 0 error dan 384 warning.
+`git diff --check` lulus. Tidak menambah tes untuk perubahan style sederhana ini;
+render dan interaksi GUI belum dijalankan. Tidak ada commit/push.
+
+
+## Pemilih berkas release Container Manager (2026-10-26)
+
+Pengguna meminta strip angka versi/channel diganti ComboBox release file saat lock
+aktif. ComboBox sekarang menampilkan nama `<versi>.md` beserta status
+Pending/Released/Invalid dari folder absolut profil. Pemilihan menetapkan versi
+persis dari nama berkas, menyimpannya ke profil dan memperbarui target, floating
+tags serta pratinjau. Refresh mempertahankan versi tersimpan bila berkas masih
+ada; tidak memilih berkas pengganti bila hilang. Build/Push membaca ulang berkas
+dan registry serta tidak menghitung N otomatis saat lock aktif. Pemilihan berkas
+lain setelah Build tetap membutuhkan Build ulang sebelum Push. Lock mati dan
+mode Manual/Compose/Set mempertahankan perilaku sebelumnya. Release Manager tetap
+mengikuti versi host. Aturan baru dicatat pada CLAUDE.md dan guide diselaraskan.
+
+Verifikasi RunBay:
+
+- `em-system / test-release-note-lock-full`, run
+  `20261026-052352-test-release-note-lock-full-243a`: output suite penuh **361 lulus,
+  0 gagal, 0 skip**. Regresi tambahan memeriksa versi pilihan tetap saat catatan
+  lebih baru muncul, pilihan Released yang ditolak, pemilihan catatan invalid lalu
+  valid, serta berkas yang dihapus tanpa fallback. RunBay masih menandai running
+  setelah dotnet test keluar sehingga run milik agent ditutup; exit 0/status stopped.
+- `emporium-localtest / Build`, run `20261026-052458-build-cad4`: success, exit 0,
+  0 error dan 384 warning.
+- `git diff --check` lulus. Tidak ada GUI/render atau Push nyata; tampilan dan
+  interaksi ComboBox di aplikasi belum diverifikasi. Tidak ada commit/push.
+
+
+## Sembunyikan indikator floating tag saat lock aktif (2026-10-26)
+
+Pengguna meminta teks tambahan seperti `+ beta` di samping pemilih berkas dihapus.
+`ShowVersionMode` sekarang menyembunyikan `floatingText` saat lock aktif, termasuk
+setelah pemilihan berkas atau refresh. Saat lock mati tampilannya tetap seperti
+sebelumnya. Aturan tampilan dicatat pada CLAUDE.md.
+
+Aplikasi host milik pengguna masih berjalan; verifikasi kompilasi memakai action
+RunBay engine yang sudah tersedia dengan output terisolasi, tanpa menghentikan
+atau menimpa aplikasi pengguna. Action `em-system / build-frontend-approval`, run
+`20261026-052743-build-frontend-approval-7da1`, success/exit 0, 0 error dan 439 warning.
+Tidak ada GUI/render atau tes baru
+untuk perubahan visibility ini. `git diff --check` lulus; tidak ada commit/push.
+
+
+## Tombol buka folder di samping release file (2026-10-26)
+
+Permintaan pengguna: tombol untuk membuka folder di sebelah dropdown release note
+file. Tombol ikon FolderOpen sekarang tampil tepat di kanan dropdown saat lock aktif,
+memakai style outlined bersama, tooltip dan nama aksesibilitas. Tombol membuka path
+absolut pada profil melalui shell Windows meski belum ada berkas terpilih. Folder
+tidak dibuat otomatis; lokasi hilang/invalid atau gagal dibuka menampilkan pesan
+untuk memperbarui Release notes folder pada profil. Aturan dan guide diperbarui.
+
+RunBay menghentikan `emporium-localtest` run `20261026-052859-build-run-e5af`
+(status stopped/exit 0), kemudian menjalankan Build + Run terbaru:
+`20261026-053123-build-run-2912`. Build selesai dengan 0 error dan 384 warning;
+aplikasi masuk tahap Run dan tetap berjalan. Tidak menambah tes
+untuk aksi UI sederhana ini. `git diff --check` lulus; interaksi Explorer/GUI belum
+diverifikasi. Tidak ada commit/push.
+
+
+## Release notes di side sheet Material dan maximize (2026-10-26)
+
+Pengguna meminta area pratinjau/riwayat yang memenuhi halaman Publish dipindah ke
+panel kanan lewat tombol Release notes, dengan bahasa desain Material 3. Permintaan
+lanjutan menambahkan maksimalkan/pulihkan panel. Tombol memakai sheetToggleStyle;
+scrim, tombol tutup, permukaan tema, animasi slide dan spacing mengikuti pola side
+sheet bersama. Escape/klik luar menutup panel; tombol maximize/restore mengubah lebar
+antara 560 dan lebar halaman, dengan MaxWidth mengikuti halaman saat diperkecil.
+Pratinjau lock hanya satu, di panel; catatan manual tetap dapat diedit saat lock mati.
+Area artefak dan log tidak lagi berisi blok release notes. Membuka panel memfokuskan
+tombol tutup sebelum refresh async; navigasi keyboard di dalam panel memakai Cycle.
+
+Kontrol history bersama diperbaiki agar From/To memiliki ItemTemplate versi eksplisit,
+termasuk pilihan aktif pada template Material; representasi record tidak ditampilkan.
+From/To disembunyikan bila hanya ada satu catatan. Panel memakai preview tanpa batas
+tinggi internal agar seluruh isi dapat dibaca lewat scroll panel, tanpa pratinjau
+kedua. Release Manager tetap memakai batas tinggi bawaannya. Aturan dan guide diperbarui.
+
+Verifikasi melalui RunBay:
+
+- `test-release-note-lock-filtered`, run
+  `20261026-055111-test-release-note-lock-filtered-f2ea`: 146 tes, 1 gagal pada
+  pemuatan DataTemplate programatik yang belum sealed. Diperbaiki dengan Seal
+  sebelum pemakaian. Dotnet sudah keluar; run ditutup lewat RunBay, exit 2.
+- Run ulang `20261026-055243-test-release-note-lock-filtered-0c83`: **146 lulus,
+  0 gagal, 0 skip**. Empat tes WPF baru tanpa render memeriksa teks dropdown/pilihan
+  aktif, satu catatan tanpa range, hasil gabungan From/To dan pembersihan preview
+  saat folder tidak tersedia. RunBay tetap running sesudah dotnet keluar; ditutup
+  lewat stop_run, metadata akhir exit 0/status stopped. Hasil lulus berasal dari output.
+- Run host lama `20261026-054246-build-run-c27a` dihentikan melalui RunBay setelah
+  memeriksa identitas app/run; status stopped/exit 0.
+- Build + Run host terbaru `20261026-055407-build-run-f758`: build selesai dengan
+  **0 error, 384 warning**; aplikasi masuk tahap Run dan tetap berjalan.
+- `git diff --check` lulus. Tidak ada screenshot/render, verifikasi visual atau
+  interaksi panel/maximize langsung; hal tersebut tetap belum diverifikasi.
+  Tidak ada commit/push atau publish/deployment.

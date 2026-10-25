@@ -39,8 +39,21 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>A view path without production Registry access, for the harness.</summary>
       public ReleaseManager() {
          InitializeComponent();
+         Vm.PropertyChanged += (_, args) => {
+            if (args.PropertyName == nameof(ReleaseManagerVm.HasNoteLock) && !Vm.HasNoteLock) releaseNotesToggle.IsChecked = false;
+         };
          // Keeping the newest line in view is a view concern with no bindable equivalent.
          logBox.TextChanged += (_, _) => logBox.ScrollToEnd();
+      }
+
+      private async void OpenReleaseNotes(object sender, RoutedEventArgs e) {
+         if (releaseNotesToggle.IsChecked == true) closeReleaseNotes.Focus();
+         await Vm.RefreshReleaseNotesCommand();
+      }
+
+      private void NotesPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
+         if (e.Key != System.Windows.Input.Key.Escape || releaseNotesToggle.IsChecked != true) return;
+         releaseNotesToggle.IsChecked = false; releaseNotesToggle.Focus(); e.Handled = true;
       }
 
       private void ProfileMenuClick(object sender, RoutedEventArgs args) {
@@ -195,25 +208,58 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>The latest note-folder and target evaluation.</summary>
       public Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState? NoteState { get => Get<Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState?>(); private set => Set(value); }
       /// <summary>The current application version for note selection.</summary>
-      public string NoteVersion => Profile?.Product.Version ?? "";
+      public string NoteVersion => Profile is { } profile ? Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.Version(profile) : "";
+      private bool _loadingNotes;
+      /// <summary>Versioned note files with their release status.</summary>
+      public IReadOnlyList<Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry> NoteFiles => NoteState?.Entries ?? [];
+      /// <summary>The exact persisted release note selection.</summary>
+      public Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry? SelectedNoteFile {
+         get => NoteFiles.FirstOrDefault(e => e.Version == NoteVersion.Split('+')[0]);
+         set {
+            if (_loadingNotes || IsRunning || value is null || Profile is not { ReleaseNoteLock: true } profile) return;
+            if (profile.ReleaseNoteVersion == value.Version) return;
+            var previous = profile.ReleaseNoteVersion;
+            try {
+               if (_store is not null && File.GetLastWriteTimeUtc(_store.FileOf(profile.Id)) != _profileLastWriteUtc)
+                  throw new IOException("The profile changed outside this screen. Refresh the profile before selecting a release note.");
+               profile.ReleaseNoteVersion = value.Version;
+               if (_store is not null) _profileLastWriteUtc = _store.Save(profile).LastWriteUtc;
+            }
+            catch (Exception ex) { profile.ReleaseNoteVersion = previous; NotifyChanged(nameof(SelectedNoteFile)); AlertError(ex); return; }
+            ResetComparison();
+            _ = RefreshReleaseNotesCommand();
+         }
+      }
+
+      /// <summary>Opens the configured note folder without creating a replacement.</summary>
+      public void OpenReleaseNotesFolderCommand() {
+         try {
+            var folder = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(Profile?.ReleaseNotesFolder ?? "");
+            if (!Directory.Exists(folder)) throw new DirectoryNotFoundException("Update Release notes folder in profile settings: " + folder);
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+         }
+         catch (Exception ex) { AlertError(ex); }
+      }
       /// <summary>Whether the selected profile enables the note section.</summary>
       public bool HasNoteLock => Profile?.ReleaseNoteLock == true;
-      /// <summary>Read-only profile folder and current lock status.</summary>
+      /// <summary>Read-only machine-local notes folder and current lock status.</summary>
       public string NoteCaption => Profile?.ReleaseNoteLock == true ? Profile.ReleaseNotesFolder + " · " + (NoteState?.Message ?? "Reading release notes and target…") : "";
       /// <summary>Reloads notes and target versions without changing the application version.</summary>
       public async Task RefreshReleaseNotesCommand() {
          var generation = ++_noteRefresh; var profile = Profile;
-         NoteState = null; NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion)); NotifyChanged(nameof(HasNoteLock));
+         NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion)); NotifyChanged(nameof(HasNoteLock));
          if (profile?.ReleaseNoteLock != true || _store is null) return;
          Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState state;
          try {
             var target = CreateTarget();
             state = target is null ? new(false, "Blocked: " + TargetBlockedReason, null, "", []) :
-               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, _store.Root, CancellationToken.None);
+               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
          }
          catch (Exception ex) { state = new(false, "Blocked: " + ex.Message, null, "", []); }
          if (generation != _noteRefresh || Profile != profile) return;
-         NoteState = state; NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion));
+         _loadingNotes = true;
+         try { NoteState = state; NotifyChanged(nameof(NoteFiles)); NotifyChanged(nameof(SelectedNoteFile)); NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion)); }
+         finally { _loadingNotes = false; }
       }
 
       /// <summary>Creates a new view model and registers all commands of the screen.</summary>
@@ -231,6 +277,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(ProfilesFolderCommand), ProfilesFolderCommand, () => !IsRunning);
          RegisterCommand(nameof(RefreshSummaryCommand), RefreshSummaryCommand, () => !IsRunning);
          RegisterCommand(nameof(RefreshReleaseNotesCommand), RefreshReleaseNotesCommand, () => !IsRunning);
+         RegisterCommand(nameof(OpenReleaseNotesFolderCommand), OpenReleaseNotesFolderCommand, () => !IsRunning && HasNoteLock);
          RegisterCommand(nameof(SettingsCommand), SettingsCommand, SettingsCommandAllowed);
          RegisterCommand(nameof(PrepareCommand), PrepareCommand, PrepareCommandAllowed);
          RegisterCommand(nameof(CompareCommand), CompareCommand, CompareCommandAllowed);
@@ -458,7 +505,6 @@ namespace Em.Ui.Wpf.Navigations
             NotifyChanged(nameof(HasComparison));
             NotifyChanged(nameof(SummaryCaption));
             NotifyChanged(nameof(UploadCaption));
-            NotifyChanged(nameof(TargetReleaseCaption));
             FillGroups();
             RaiseCommandsChanged();
          });
@@ -484,14 +530,48 @@ namespace Em.Ui.Wpf.Navigations
          ? ""
          : $"Upload {FormatSize(Comparison.UploadBytes)} · delete {Comparison.CountOf(ReleaseDiffStatus.Removed):N0}";
 
-      /// <summary>Caption of the release that exists at the target.</summary>
-      public string TargetReleaseCaption => Comparison switch {
-         null => "",
-         { RemoteManifest: { } manifest } =>
-            $"Target release {manifest.PublishedAtUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC",
-         { RemoteManifestError: not null } => "Target release.json is invalid",
-         _ => "No release at the target yet"
-      };
+      /// <summary>The published server release, loaded independently of local preparation and comparison.</summary>
+      public string TargetReleaseCaption {
+         get => Get<string>() ?? "Server release: not loaded";
+         private set => Set(value);
+      }
+
+      private int _serverReleaseRefresh;
+      private CancellationTokenSource? _serverReleaseCancel;
+
+      private void ShowServerRelease(ReleaseManifest? manifest, string? error = null) {
+         ++_serverReleaseRefresh;
+         _serverReleaseCancel?.Cancel();
+         if (error is not null) { TargetReleaseCaption = "Server release: " + error; return; }
+         if (manifest is null) { TargetReleaseCaption = "No release published at the target yet"; return; }
+         // Windows builds assign their release number to the launcher; the application version is separate.
+         var release = manifest.Launcher?.Version ?? (manifest.Android is { } android
+            ? $"{android.VersionName} (code {android.VersionCode})" : "Version not recorded");
+         var application = manifest.Android is null && manifest.Version is { } version ? $" · application {version}" : "";
+         TargetReleaseCaption = $"Server release: {release}{application} · published {manifest.PublishedAtUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC";
+      }
+
+      private async Task RefreshServerReleaseAsync() {
+         var generation = ++_serverReleaseRefresh;
+         _serverReleaseCancel?.Cancel();
+         using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+         _serverReleaseCancel = cancel;
+         var profile = Profile;
+         TargetReleaseCaption = "Server release: reading the target…";
+         try {
+            if (profile is null) { TargetReleaseCaption = "Server release: no profile"; return; }
+            var target = CreateTarget();
+            if (target is null) { ShowServerRelease(null, TargetBlockedReason ?? "Target unavailable"); return; }
+            var bytes = await target.ReadFileAsync(ReleaseLayout.ManifestFileName, cancel.Token);
+            var manifest = bytes is null ? null : ReleaseManifestSerializer.Deserialize(bytes);
+            if (generation == _serverReleaseRefresh && Profile == profile) ShowServerRelease(manifest);
+         }
+         catch (Exception ex) {
+            if (generation == _serverReleaseRefresh && Profile == profile)
+               ShowServerRelease(null, ex is OperationCanceledException ? "Reading the target timed out. Refresh to retry." : ex.Message);
+         }
+         finally { if (ReferenceEquals(_serverReleaseCancel, cancel)) _serverReleaseCancel = null; }
+      }
 
       #endregion
 
@@ -554,14 +634,18 @@ namespace Em.Ui.Wpf.Navigations
          }
 
          await RunAsync("Prepare", async token => {
+            if (Profile!.Platform == ReleasePlatform.Windows) {
+               var identity = await ReleaseProduct.ReadAsync(HostProjectPath, token);
+               Profile.Product.Version = Profile.ReleaseNoteLock && Profile.ReleaseNoteVersion.Length > 0 ? Profile.ReleaseNoteVersion : identity.Version;
+            }
             if (Profile!.Platform == ReleasePlatform.Windows && Profile.ReleaseNoteLock)
-               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason), _store!.Root, token);
+               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason), token);
             ResetComparison();
             if (Profile!.Platform == ReleasePlatform.Android) {
                var androidTarget = CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason);
                if (androidTarget is CdnReleaseTarget cdnTarget && await androidTarget.ReadFileAsync(ReleaseLayout.ManifestFileName, token) is null && await cdnTarget.HasManifestOnServerAsync(token))
                   throw new InvalidOperationException("The public CDN address cannot read the existing release. Fix it before Prepare.");
-               await AndroidReleaseBuilder.PrepareAsync(Profile, androidTarget, DefaultReleaseSource, _preferences!.AndroidSdkDirectory, _preferences.JavaSdkDirectory, new Progress<string>(Log), token, _store!.Root);
+               await AndroidReleaseBuilder.PrepareAsync(Profile, androidTarget, DefaultReleaseSource, _preferences!.AndroidSdkDirectory, _preferences.JavaSdkDirectory, new Progress<string>(Log), token);
                _profileLastWriteUtc = _store!.Save(Profile).LastWriteUtc;
                RefreshPublishContent();
                await CompareCoreAsync(token);
@@ -598,6 +682,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public Task BuildLauncherCommand() => RunAsync("Build launcher", async token => {
          var target = CreateTarget();
+         if (Profile!.ReleaseNoteLock) await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, target ?? throw new InvalidOperationException(TargetBlockedReason), token);
          var remote = target is null ? null : LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
          await LauncherBuild.BuildAsync(_preferences!.LauncherSourceFolder, LauncherOutput, Profile!, DefaultReleaseSource, remote, new Progress<string>(Log), token, force: true);
          _profileLastWriteUtc = _store!.Save(Profile!).LastWriteUtc;
@@ -646,16 +731,16 @@ namespace Em.Ui.Wpf.Navigations
             await RunAsync("Sync", async token => {
                try {
                   if (Profile!.Platform == ReleasePlatform.Android) {
-                     var androidManifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token, profile: Profile, profileFolder: _store!.Root);
+                     var androidManifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token, profile: Profile);
                      Log($"Sync finished: {androidManifest.Files.Count} APK published.");
                      ResetVerify();
                      await CompareCoreAsync(token);
                      return;
                   }
                   var recorded = LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
-                  if (LauncherBuild.SelectVersion(Profile!.Launcher, Profile.Launcher.InputHash, recorded) != Profile.Launcher.Version)
+                  if (LauncherBuild.SelectVersion(Profile!, Profile.Launcher.InputHash, recorded) != Profile.Launcher.Version)
                      throw new ReleaseConflictException("The target launcher version changed. Prepare again before Sync.");
-                  var manifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token, new ReleaseLauncherMetadata { FileName = Profile!.Launcher.FileName, Version = Profile.Launcher.Version, InputHash = Profile.Launcher.InputHash }, Profile, _store!.Root);
+                  var manifest = await ReleaseSync.SyncAsync(target, comparison, signingKey, new Progress<ReleaseProgress>(ShowProgress), token, new ReleaseLauncherMetadata { FileName = Profile!.Launcher.FileName, Version = Profile.Launcher.Version, InputHash = Profile.Launcher.InputHash }, Profile);
                   Log($"Sync finished: {manifest.Files.Count:N0} files published to {target.Description}.");
                   ResetVerify();
                }
@@ -767,7 +852,11 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       /// <summary>Cancels the running operation, without asking.</summary>
-      public void CancelRunning() => _cancel?.Cancel();
+      public void CancelRunning() {
+         _cancel?.Cancel();
+         ++_serverReleaseRefresh;
+         _serverReleaseCancel?.Cancel();
+      }
 
       internal static string CountsText(IReadOnlyCollection<ReleaseDiffItem> items) {
          var parts = new List<string>();
@@ -796,6 +885,7 @@ namespace Em.Ui.Wpf.Navigations
          var local = await LocalPublish.ScanAsync(PublishFolder, new Progress<ReleaseProgress>(ShowProgress), token);
          ShowProgress(new ReleaseProgress("Reading the target", 0, 0, null, 0, 0));
          var comparison = await ReleaseComparer.CompareAsync(target, local, token);
+         ShowServerRelease(comparison.RemoteManifest, comparison.RemoteManifestError is null ? null : "release.json is invalid");
 
          // Compare reads through the public address while Sync writes through the server. When the two
          // disagree, every Compare finds no release and every Sync uploads everything again - and the
@@ -873,6 +963,9 @@ namespace Em.Ui.Wpf.Navigations
       }
 
       private void ApplySettings() {
+         ++_noteRefresh;
+         NoteState = null;
+         NotifyChanged(nameof(NoteFiles)); NotifyChanged(nameof(SelectedNoteFile));
          SolutionPath = Profile?.SolutionPath ?? "";
          HostProject = Profile?.HostProject ?? "";
          PublishFolder = Profile?.PublishFolder ?? "";
@@ -882,6 +975,7 @@ namespace Em.Ui.Wpf.Navigations
          LoadSigningKey();
          RefreshPublishContent();
          RefreshState();
+         _ = RefreshServerReleaseAsync();
          _ = RefreshReleaseNotesCommand();
       }
 

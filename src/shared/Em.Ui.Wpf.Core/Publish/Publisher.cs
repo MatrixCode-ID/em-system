@@ -30,14 +30,14 @@ public sealed class PreparedPublish {
 }
 /// <summary>Runs publish: checks the profile, prepares the artifacts, pushes them, and verifies the result.</summary>
 public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,PublishSecretStore secrets,PublishTargets targets) {
- /// <summary>Reads registry versions and the profile-relative note folder without changing the selected version.</summary>
+ /// <summary>Reads registry versions and the machine-local note folder without changing the selected version.</summary>
  public async Task<Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState> ReleaseNotesState(PublishProfile p,CancellationToken ct) {
   var tags=Array.Empty<string>();var known=true;
   try {var reference=await targets.ResolveContainer(p,ct);tags=await new OciClient(targets).Tags(reference,await targets.OciCredential(p,reference.Split('/')[0],ct),ct);}
   catch(System.Net.Http.HttpRequestException ex) when(ex.StatusCode==System.Net.HttpStatusCode.NotFound) {}
   catch(OperationCanceledException){throw;}
   catch(Exception){known=false;}
-  return Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(Path.Combine(profiles.Root,p.Kind.ToString()),p.ReleaseNotesFolder,p.Container!.Target.VersionTag,tags,known,true);
+  return Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(p.ReleaseNotesFolder,p.Container!.Target.VersionTag,tags,known,true);
  }
  private async Task GuardReleaseNotes(PublishProfile p,CancellationToken ct) {
   if(!p.UsesReleaseNoteLock)return;
@@ -139,7 +139,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    _operationTargets=targets.Freeze();_effective=[];
    var mask=new SecretMasker();foreach(var c in p.Credentials)mask.AddCredential(c.Username,secrets.Get(c,c.ScopeHost));
    var snapshot=p.Clone();snapshot.Credentials=[];
-   var run=new PublishRun {ProfileId=p.Id,ProfileName=p.Name,Kind=p.Kind,Operation=operation,ReleaseNotes=p.UsesReleaseNoteLock?"":notes,ReleaseNotesFile=p.UsesReleaseNoteLock?Path.Combine(p.ReleaseNotesFolder,p.Container!.Target.VersionTag+".md").Replace('\\','/'):"",RetryOf=retry,Settings=JsonSerializer.SerializeToElement(snapshot,ProfileJson.Options)};
+   var run=new PublishRun {ProfileId=p.Id,ProfileName=p.Name,Kind=p.Kind,Operation=operation,ReleaseNotes=p.UsesReleaseNoteLock?"":notes,ReleaseNotesFile=p.UsesReleaseNoteLock?Path.Combine(p.ReleaseNotesFolder,p.Container!.Target.VersionTag+".md"):"",RetryOf=retry,Settings=JsonSerializer.SerializeToElement(snapshot,ProfileJson.Options)};
    log=new(settings.Logs,run,mask);log.Output+=s=>Output?.Invoke(s);LastRun=run;LastRunDirectory=log.Directory;
    work=new(settings.Work,run.Id,p.KeepWorkspace);
    if(p.Container is {} container) {
@@ -326,7 +326,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  /// <summary>Validates the release notes of a profile.</summary>
  public void ValidateReleaseNotes(PublishProfile p,string notes) {
   if(p.UsesReleaseNoteLock) {
-   var state=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(Path.Combine(profiles.Root,p.Kind.ToString()),p.ReleaseNotesFolder,p.Container!.Target.VersionTag,[],true);
+   var state=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(p.ReleaseNotesFolder,p.Container!.Target.VersionTag,[],true);
    if(!state.Allowed)throw new InvalidDataException(state.Message);return;
   }
   if(!string.IsNullOrWhiteSpace(notes))return;

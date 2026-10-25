@@ -64,7 +64,6 @@ public partial class PublishProfileDialog : EmWindow {
  private bool _busy;
  private Action? _modeChanged;
  private Action? _updateNoteLock;
- private string _profileFolder="";
  private Action? _targetTypeChanged;
  private readonly bool _isNew;
  /// <param name="profile">The profile being edited; the dialog works on a copy.</param>
@@ -72,8 +71,7 @@ public partial class PublishProfileDialog : EmWindow {
  /// <param name="secrets">The store of publish secrets.</param>
  /// <param name="logs">The folder of the publish logs.</param>
  /// <param name="isNew">True for a profile that has never been saved: only then can its Tagging be chosen.</param>
- public PublishProfileDialog(PublishProfile profile,PublishTargets targets,PublishSecretStore secrets,string logs,bool isNew=false,string? profileFolder=null) {
-  _profileFolder=profileFolder??Path.Combine(new PublisherSettings().Profiles,profile.Kind.ToString());
+ public PublishProfileDialog(PublishProfile profile,PublishTargets targets,PublishSecretStore secrets,string logs,bool isNew=false) {
   InitializeComponent();_isNew=isNew;Profile=profile.Clone();foreach(var c in Profile.Credentials)c.Remember=secrets.IsRemembered(c);_targets=targets;_secrets=secrets;_logs=logs;
   var source=Tab("Source");Fields(source,Profile,["Name","Description","Workspace"]);
   if(Profile.NuGet is {} n)Fields(source,n,["Sources"]);else {var c=Profile.Container!;Fields(source,c,["Mode"]);Fields(source,c.Template,SourceTemplateFields);}
@@ -100,11 +98,11 @@ public partial class PublishProfileDialog : EmWindow {
   toggle.Checked+=(_,_)=>Profile.ReleaseNoteLock=true;toggle.Unchecked+=(_,_)=>Profile.ReleaseNoteLock=false;
   var folder=new TextBox {Text=Profile.ReleaseNotesFolder,IsReadOnly=true};
   var browse=IconButton(EFontAwesomeIcon.Solid_FolderOpen,"Choose release notes folder",()=> {
-   try {var picker=new OpenFolderDialog();if(picker.ShowDialog()==true)folder.Text=Profile.ReleaseNotesFolder=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Relative(_profileFolder,picker.FolderName);}
+   try {var picker=new OpenFolderDialog();if(picker.ShowDialog()==true)folder.Text=Profile.ReleaseNotesFolder=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(picker.FolderName);}
    catch(Exception ex){message.Text=ex.Message;}return Task.CompletedTask;
   });
   Row(panel,"",toggle,tip:"Requires a valid <version>.md with a nonempty ## Summary and a version newer than the registry. Only single-image Standard tagging supports this lock.");
-  Row(panel,"Release notes folder",folder,browse,tip:"Relative to the folder containing this profile JSON, including its Container subfolder. Another drive is not supported. Export/import preserves this path unchanged.");
+  Row(panel,"Release notes folder",folder,browse,tip:"Absolute folder on this machine, independent of the profile location. Any drive is supported. If unavailable after import or moving machines, choose the folder again here.");
   var help=Help("");Row(panel,"",help);
   _updateNoteLock=()=> {var supported=Profile.SupportsReleaseNoteLock;toggle.IsEnabled=folder.IsEnabled=browse.IsEnabled=supported;help.Text=supported?"Notes are read from this folder; change it only in the profile.":"Release note lock is ignored for Set, Compose and Manual tagging. Use Dockerfile, LocalImage or Template with Standard tagging.";};
   _updateNoteLock();
@@ -147,11 +145,11 @@ public partial class PublishProfileDialog : EmWindow {
    versions=Section(tab,"Version");var tagging=((ContainerTarget)destination).Tagging;
    if(_isNew) {
     Fields(versions,destination,["Tagging"]);
-    Row(versions,"",Help("Chosen once: it cannot be changed after the profile is saved. Standard: the Publish page shows A.B.C and the channel; the build number and the floating tags (alpha, beta, release, latest) follow the convention. Manual: the Publish page shows one box for a free tag such as dev; no floating tags are moved."));
+    Row(versions,"",Help("Chosen once: it cannot be changed after the profile is saved. Standard: without Release note lock, the Publish page shows A.B.C and the channel with an automatic build number. With the lock on, choose a release note file to set the exact version. Floating tags follow the chosen version. Manual: the Publish page shows one box for a free tag such as dev; no floating tags are moved."));
    } else {
     Row(versions,"Tagging",new TextBlock {Text=tagging.ToString(),VerticalAlignment=VerticalAlignment.Center});
     Row(versions,"",Help(tagging==TaggingMode.Standard
-     ?"Standard: A.B.C and the channel on the Publish page, with the build number and floating tags of the convention. Fixed when the profile was created; for free tags, create a new profile with Manual tagging."
+     ?"Standard: the Publish page uses A.B.C/channel with an automatic build number, or a release note file selector when Release note lock is on. The chosen filename supplies the exact version. Fixed when the profile was created; for free tags, create a new profile with Manual tagging."
      :"Manual: a free tag typed on the Publish page, no floating tags. Fixed when the profile was created; for versioned tags, create a new profile with Standard tagging."));
    }
   }

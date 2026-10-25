@@ -131,7 +131,7 @@ public sealed class PublishProfile
  public bool RequireReleaseNotes { get; set; }
  /// <summary>Requires a valid versioned note before building or pushing a single standard-tagged image.</summary>
  public bool ReleaseNoteLock { get; set; }
- /// <summary>Notes folder relative to this profile file's directory.</summary>
+ /// <summary>Absolute release notes folder on this machine, independent of the profile location.</summary>
  public string ReleaseNotesFolder { get; set; }="";
  /// <summary>Whether this mode and tagging scheme support the lock.</summary>
  [JsonIgnore]

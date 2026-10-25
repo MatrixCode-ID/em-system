@@ -34,8 +34,8 @@ namespace Em.Ui.Wpf.Core.Release
       /// <returns>The manifest that was published.</returns>
       /// <exception cref="ReleaseConflictException">The target or the local publish folder changed since the comparison.</exception>
       public static async Task<ReleaseManifest> SyncAsync(ReleaseTarget target, ReleaseComparison comparison,
-         ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token, ReleaseLauncherMetadata? launcher = null, ReleaseProfile? profile = null, string? profileFolder = null) {
-         if (profile is not null) await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, profileFolder ?? ReleaseManagerPreferences.DefaultProfilesFolder, token, syncing: true);
+         ECDsa signingKey, IProgress<ReleaseProgress>? progress, CancellationToken token, ReleaseLauncherMetadata? launcher = null, ReleaseProfile? profile = null) {
+         if (profile is not null) await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, token, syncing: true);
          var local = comparison.Local;
          var uploads = comparison.Items.Where(ReleaseComparison.IsUpload).ToArray();
 
@@ -74,8 +74,11 @@ namespace Em.Ui.Wpf.Core.Release
             }
             launcher = null;
          }
+         var version = profile is null ? null : ReleaseArtifact.ManifestVersion(ReleaseArtifact.ReadVersion(local, profile));
+         if (profile?.ReleaseNoteLock == true && (version is null || version != ReleaseArtifact.ManifestVersion(ReleaseNotes.ReleaseNoteGuard.Version(profile))))
+            throw new ReleaseConflictException("The prepared application version does not match the profile. Prepare again before Sync.");
          var manifest = new ReleaseManifest {
-            Version = profile?.ReleaseNoteLock == true ? (profile.Platform == ReleasePlatform.Android ? profile.Android.PreparedVersionName : profile.Product.Version).Split('+')[0] : null,
+            Version = version,
             PublishedAtUtc = TruncateToSeconds(DateTime.UtcNow),
             Files = local.Files,
             Launcher = launcher,

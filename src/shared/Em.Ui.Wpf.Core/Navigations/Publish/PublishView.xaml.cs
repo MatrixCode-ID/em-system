@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Threading;
 using Em.Ui.Wpf.Controls;
 using Em.Ui.Wpf.Core;
@@ -30,19 +31,26 @@ public partial class PublishView : UserControl {
  private readonly HashSet<string> _cards=[];
  private readonly DispatcherTimer _versionTimer=new() {Interval=TimeSpan.FromMilliseconds(400)};
  private bool _syncingVersion,_versionDirty,_resolvingVersion;
- private readonly Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteHistory _noteHistory=new();
- private readonly Button _notesRefresh=new() {Content="Refresh release notes",HorizontalAlignment=HorizontalAlignment.Left,Visibility=Visibility.Collapsed};
+ private bool _syncingNoteSelection;
+ private readonly Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteHistory _noteHistory=new() {IsExpanded=true,PreviewMaxHeight=double.PositiveInfinity};
  private int _noteRefresh;
  private ProfileEntry? Entry=>profileList.SelectedItem as ProfileEntry;
  private PublishProfile? Profile=>Entry?.Profile;
  /// <summary>Creates a new instance of <see cref="PublishView"/>.</summary>
  public PublishView() {
   InitializeComponent();releaseNotesPanel.Children.Add(_noteHistory);
-  releaseNotesPanel.Children.Add(_notesRefresh);
-  _notesRefresh.Click+=async(_,_)=> {await ResolveVersion(false,false);await RefreshReleaseNotes();};
   versionChannel.ItemsSource=ContainerVersion.Channels;_versionTimer.Tick+=VersionTick;
   foreach(var box in new[]{versionMajor,versionMinor,versionPatch})DependencyPropertyDescriptor.FromProperty(NumericBox.ValueProperty,typeof(NumericBox)).AddValueChanged(box,VersionEdited);
   Attach(null,PublishKind.NuGet);
+ }
+ private async void OpenReleaseNotes(object sender,RoutedEventArgs e) {
+  if(releaseNotesToggle.IsChecked==true)closeReleaseNotes.Focus();
+  if(Profile?.UsesReleaseNoteLock==true)await RefreshReleaseNotes();
+ }
+ private async void RefreshReleaseNotesClick(object sender,RoutedEventArgs e)=>await RefreshReleaseNotes();
+ private void NotesPreviewKeyDown(object sender,KeyEventArgs e) {
+  if(e.Key!=Key.Escape||releaseNotesToggle.IsChecked!=true)return;
+  releaseNotesToggle.IsChecked=false;releaseNotesToggle.Focus();e.Handled=true;
  }
  /// <summary>Attaches the publish view to the application for a kind of publish (NuGet or container).</summary>
  public void Attach(EmApp? app,PublishKind kind) {
@@ -62,9 +70,21 @@ public partial class PublishView : UserControl {
  private ContainerVersion VersionInput()=>new(versionMajor.Value,versionMinor.Value,versionPatch.Value,versionChannel.SelectedItem as string??ContainerVersion.First.Channel);
  private static bool IsManual(PublishProfile p)=>p.Container?.Target.Tagging==TaggingMode.Manual;
  // Standard tagging: spin edits + channel. Manual tagging (chosen in the profile): one box for the whole tag.
- private void ShowVersionMode(bool manual) {
-  var standard=manual?Visibility.Collapsed:Visibility.Visible;
-  versionNumbers.Visibility=standard;versionChannel.Visibility=standard;manualTag.Visibility=manual?Visibility.Visible:Visibility.Collapsed;
+ private void ShowVersionMode(bool manual,bool noteLock) {
+  var standard=manual||noteLock?Visibility.Collapsed:Visibility.Visible;
+  versionNumbers.Visibility=standard;versionChannel.Visibility=standard;manualTag.Visibility=manual&&!noteLock?Visibility.Visible:Visibility.Collapsed;
+  releaseFile.Visibility=noteLock?Visibility.Visible:Visibility.Collapsed;
+  openReleaseNotesFolder.Visibility=releaseFile.Visibility;
+  floatingText.Visibility=noteLock?Visibility.Collapsed:Visibility.Visible;
+ }
+ private void OpenReleaseNotesFolder(object sender,RoutedEventArgs e) {
+  if(Profile?.UsesReleaseNoteLock!=true)return;
+  try {
+   var folder=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(Profile.ReleaseNotesFolder);
+   if(!Directory.Exists(folder))throw new DirectoryNotFoundException($"Release notes folder is unavailable: {folder}.");
+   Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});
+  }
+  catch(Exception ex){message.Text=Mask("Cannot open release notes folder: "+ex.Message+" Open profile settings and update Release notes folder.");}
  }
  private static string FloatingText(string tag)=>ContainerVersion.FloatingTagsOf(tag) is {Length:>0} tags?"+ "+string.Join(", ",tags):"";
  private void LoadVersion(PublishProfile? p) {
@@ -74,7 +94,22 @@ public partial class PublishView : UserControl {
   _syncingVersion=true;
   try {versionMajor.Value=v.Major;versionMinor.Value=v.Minor;versionPatch.Value=v.Patch;versionChannel.SelectedItem=v.Channel;manualTag.Text=manual?tag:"";}
   finally {_syncingVersion=false;}
-  ShowVersionMode(manual);floatingText.Text=manual?"":FloatingText(tag);
+  ShowVersionMode(manual,p.UsesReleaseNoteLock);floatingText.Text=manual?"":FloatingText(tag);
+  _syncingNoteSelection=true;
+  try {releaseFile.ItemsSource=null;releaseFile.SelectedItem=null;}
+  finally {_syncingNoteSelection=false;}
+ }
+ private async void ReleaseFileChanged(object sender,SelectionChangedEventArgs e) {
+  if(_syncingNoteSelection||_cancel!=null||_resolvingVersion||Entry is not {Profile: {UsesReleaseNoteLock:true} p} entry||releaseFile.SelectedItem is not Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry selected)return;
+  if(p.Container!.Target.VersionTag!=selected.Version)SaveVersionTag(entry,p,selected.Version);
+  floatingText.Text=FloatingText(selected.Version);
+  try {
+   var reference=await _targets.ResolveContainer(p.Clone(),CancellationToken.None);
+   if(Profile?.Id!=p.Id||Profile.Container!.Target.VersionTag!=selected.Version)return;
+   targetText.Text=reference;
+  }
+  catch(Exception ex){if(Profile?.Id==p.Id)message.Text=Mask(ex.Message);}
+  await RefreshReleaseNotes();
  }
  private void VersionEdited(object? s,EventArgs e) {if(_syncingVersion)return;_versionDirty=true;_versionTimer.Stop();_versionTimer.Start();}
  private void VersionChannelChanged(object s,SelectionChangedEventArgs e)=>VersionEdited(s,e);
@@ -110,6 +145,15 @@ public partial class PublishView : UserControl {
  private async Task ApplyVersion(bool strict) {
   if(Entry is not {Profile: {} stored} entry||!UsesVersionStrip(stored))return;
   var current=stored.Container!.Target.VersionTag;
+  if(stored.UsesReleaseNoteLock) {
+   if(releaseFile.SelectedItem is not Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry selected||selected.Version!=current)
+    throw new InvalidDataException("Choose a release note file above. If the list is empty, check the notes folder in the profile and refresh release notes.");
+   var state=await _publisher.ReleaseNotesState(stored,CancellationToken.None);
+   if(Entry!=entry)throw new InvalidOperationException("The selected profile changed. Try again.");
+   if(!state.Allowed)throw new InvalidDataException(state.Message);
+   floatingText.Text=FloatingText(current);
+   return;
+  }
   if(IsManual(stored)) {
    var manual=manualTag.Text.Trim();
    ContainerVersion.ValidateManual(manual); // ResolveVersion shows the message and stops Build/Push
@@ -147,14 +191,22 @@ public partial class PublishView : UserControl {
  private void ReloadHistory() {history.ItemsSource=PublishLog.History(_settings.Logs,allHistory.IsChecked==true?null:Profile?.Id);}
  private async Task RefreshReleaseNotes() {
   var generation=++_noteRefresh;var p=Profile?.Clone();notes.IsReadOnly=p?.UsesReleaseNoteLock==true;
-  _notesRefresh.Visibility=p?.UsesReleaseNoteLock==true?Visibility.Visible:Visibility.Collapsed;
+  refreshReleaseNotes.Visibility=p?.UsesReleaseNoteLock==true?Visibility.Visible:Visibility.Collapsed;
+  notes.Visibility=p?.UsesReleaseNoteLock==true?Visibility.Collapsed:Visibility.Visible;
   if(p?.UsesReleaseNoteLock!=true) {noteLockStatus.Text="";_noteHistory.Show(null,"");return;}
+  releaseFile.IsEnabled=false;
   noteLockStatus.Text="Reading release notes and registry versions…";
   var state=await _publisher.ReleaseNotesState(p,CancellationToken.None);
   if(generation!=_noteRefresh||Profile?.Id!=p.Id)return;
   noteLockStatus.Text=p.ReleaseNotesFolder+" · "+state.Message;notes.Text=state.Content;
-  try {var folder=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(Path.Combine(_store.Root,p.Kind.ToString()),p.ReleaseNotesFolder);_noteHistory.Show(Directory.Exists(folder)?state:null,p.Container!.Target.VersionTag);}
-  catch(Exception ex) when(ex is IOException or InvalidDataException or ArgumentException){_noteHistory.Show(null,"");}
+  _syncingNoteSelection=true;
+  try {
+   releaseFile.ItemsSource=state.Entries;
+   releaseFile.SelectedItem=state.Entries.FirstOrDefault(note=>note.Version==p.Container!.Target.VersionTag);
+   releaseFile.IsEnabled=state.FolderValid;
+  }
+  finally {_syncingNoteSelection=false;}
+  _noteHistory.Show(state,p.Container!.Target.VersionTag);
  }
  private async Task Operation(Func<PublishProfile,CancellationToken,Task> action) {
   if(_cancel!=null||Profile==null||_cards.Count>0)return;var p=Profile.Clone();_cancel=new();profilePanel.IsEnabled=profileList.IsEnabled=operations.IsEnabled=notes.IsEnabled=artifacts.IsEnabled=false;cancel.IsEnabled=true;message.Text="Operation in progress…";
@@ -171,12 +223,13 @@ public partial class PublishView : UserControl {
  }
  private void ProfileSelected(object sender,SelectionChangedEventArgs e) {
   if(_reloadingProfiles)return;
+  releaseNotesToggle.IsChecked=false;releaseNotesToggle.IsEnabled=Profile!=null;
   if(_publisherProfileId!=Profile?.Id)SetPublisher();BindArtifacts();LoadVersion(Profile);_ = RefreshReleaseNotes();if(Profile is not {} p) {sourceText.Text=Entry?.Error??"Select a profile.";targetText.Text="";return;}
   _settings.LastProfile=p.Id;sourceText.Text=p.Name+"\n"+p.Workspace;targetText.Text=p.Kind==PublishKind.NuGet?p.NuGet!.Target.Type+" · "+p.NuGet.Target.Feed+" "+p.NuGet.Target.ServiceIndex:p.Container!.Mode+" · "+p.Container.Target.Host+"/"+p.Container.Target.Repository+":"+p.Container.Target.VersionTag;
   lastVersion.Text="";message.Text="Profile loaded. Check before preparing.";ReloadHistory();
  }
  private void OpenEditor(PublishProfile draft,ProfileEntry? previous=null) {
-  var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs,isNew:previous==null,profileFolder:Path.Combine(_store.Root,draft.Kind.ToString())) {Owner=Window.GetWindow(this)};
+  var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs,isNew:previous==null) {Owner=Window.GetWindow(this)};
   if(dialog.ShowDialog()!=true)return;
   try {
    var result=dialog.Profile;
@@ -230,6 +283,7 @@ public partial class PublishView : UserControl {
  private void PageChanged(object s,RoutedEventArgs e) {
   if(publishPage is null||historyPage is null||profilePanel is null||historyPanel is null)return;
   var history=pageHistory.IsChecked==true;
+  if(history&&releaseNotesToggle!=null)releaseNotesToggle.IsChecked=false;
   publishPage.Visibility=profilePanel.Visibility=history?Visibility.Collapsed:Visibility.Visible;
   historyPage.Visibility=historyPanel.Visibility=history?Visibility.Visible:Visibility.Collapsed;
  }

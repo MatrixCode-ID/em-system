@@ -217,7 +217,11 @@ it, run **Build** (or **Build & Push**) again. Items that already succeeded are 
 
 ### Version tag
 
-The tag is typed on the Publish page (control 4), not in the profile form. How it is typed depends on the profile's
+The tag is chosen on the Publish page (control 4), not in the profile form. With **Release note lock**
+enabled, a file ComboBox replaces the numeric version and channel controls. Select a `<version>.md`
+from the configured notes folder; its filename supplies the exact tag, including N. Files show their
+Pending/Released/Invalid status. Refresh preserves the saved choice, and missing, invalid or released
+selections block Build/Push without selecting another file. Without the lock, the controls work as follows. How it is typed depends on the profile's
 **Tagging**, chosen once when the profile is created (Target tab, field 5) and fixed after that: switching one image
 between versioned and free tags would mix both kinds in its repository. For the other kind, create a new profile.
 **Standard** follows [container-naming](../convention/container-naming.md) with the spin edits and the channel;
@@ -336,7 +340,7 @@ it to apply, then run Check again. Nothing is removed automatically; delete the 
 | --- | --- | --- |
 | 1 | **Keep Workspace** | Keeps the run's work folder after the run, for inspection |
 | 2 | **Require Release Notes** | Push and Build & Push refuse to run with empty release notes |
-| — | **Release note lock / Release notes folder** | Requires a matching valid version note and a version newer than all standard registry tags before Build, Push or Build & Push. Choose the folder once in Advanced, relative to the profile JSON directory. |
+| — | **Release note lock / Release notes folder** | Requires a matching valid version note and a version newer than all standard registry tags before Build, Push or Build & Push. Choose an absolute machine-local folder in Advanced; it may be on any drive, independently of the profile JSON. |
 | 3 | **Use My Docker Login** | Uses the login already stored in your Docker (`docker login` or a credential helper) instead of the profile credential |
 | 4 | **Save** | Saves the profile |
 | 5 | **Save As** | Saves a copy with a new ID |
@@ -345,11 +349,14 @@ it to apply, then run Check again. Nothing is removed automatically; delete the 
 
 Release note lock supports Dockerfile, LocalImage and Template with Standard tagging only. Set, Compose
 and Manual disable the option; existing profiles in these modes ignore it. A single profile's lock does
-not apply when run as a Set step. The strip still supplies the version and registry-derived N. An
+not apply when run as a Set step. The release file selector supplies the exact version; N is never
+incremented automatically while locked. An
 unreadable registry blocks the lock; a missing repository (404) is empty. Push rechecks the note and
-registry and rejects artifacts whose version differs from the current strip: Build again.
+registry and rejects artifacts whose version differs from the current selected file version: Build again.
 With the lock on, Release notes is a read-only matching-file preview, regardless of Require Release Notes.
-The release page adds status, refresh and a Released/Pending/Invalid history with From/To range preview.
+The Release notes button opens a Material side sheet with status, refresh and Released/Pending/Invalid
+history. From/To appears for multiple versions. The panel can be maximized/restored or closed; the
+main page retains its artifact table and log without an inline preview.
 See [shared folder rules and template](engine-release-manager.md#shared-note-folder-and-file-rules).
 Prepare/Check are unchanged; the container Build action is guarded.
 
@@ -394,6 +401,7 @@ Prepare/Check are unchanged; the container Build action is guarded.
 | "Source/build settings changed; Prepare again." | The profile changed after Build; run Build again |
 | "Version tag is required and must be a valid Docker tag." | Fill **Version Tag**: letters, digits, `_`, `.`, `-`, up to 128 characters |
 | "Release notes are required." | Fill **Release notes** or clear **Require Release Notes** |
+| "Blocked: Cannot read release notes folder ..." | Open the profile Advanced tab, select an available absolute folder on this machine, save and refresh. Old relative paths must be selected again. |
 | "Blocked: ... not found / ... has no nonempty ## Summary" | Create the exact version.md in the profile's notes folder and add a nonempty Summary, then refresh. |
 | "Blocked: ... is not newer ... / The release target could not be read" | Raise the application/strip version, or fix registry access and refresh. The lock does not guess server state. |
 | "Registry storage disabled." | The registry is off on the server; see [3. Settings tab](#3-settings-tab) |

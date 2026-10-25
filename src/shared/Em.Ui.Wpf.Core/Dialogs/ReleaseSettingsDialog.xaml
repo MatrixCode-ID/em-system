@@ -85,7 +85,7 @@
         <CheckBox Content="Release note lock" IsChecked="{Binding ReleaseNoteLock}"/>
         <TextBlock Text="Release notes folder" Style="{StaticResource fieldLabelStyle}"/>
         <DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseReleaseNotesCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding ReleaseNotesFolder, Mode=OneWay}" IsReadOnly="True" Style="{StaticResource fieldBoxStyle}"/></DockPanel>
-        <TextBlock Text="Relative to the folder containing this profile JSON. Choose a folder on the same drive. Export/import preserves the relative path; moving a profile can change its destination." Style="{StaticResource fieldHelpStyle}"/>
+        <TextBlock Text="Absolute folder on this machine; any drive is supported. If the location is unavailable, open this profile and choose the folder again. Export/import preserves this location." Style="{StaticResource fieldHelpStyle}"/>
        </StackPanel>
        <StackPanel Visibility="{Binding IsWindows, Converter={StaticResource visible}}">
         <StackPanel Style="{StaticResource releaseField}" ToolTip="AssemblyName plus .exe, with no directory."><TextBlock Text="Application executable" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding AppExe, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>

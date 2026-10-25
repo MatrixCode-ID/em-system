@@ -6,8 +6,10 @@ namespace Em.Ui.Wpf.Core.ReleaseNotes;
 
 /// <summary>Release Manager lock checks shared by Prepare, Sync and status refresh.</summary>
 public static class ReleaseNoteGuard {
+   /// <summary>The explicitly selected note version, with legacy profile compatibility.</summary>
+   public static string Version(ReleaseProfile profile) => profile.ReleaseNoteLock && profile.ReleaseNoteVersion.Length > 0 ? profile.ReleaseNoteVersion : profile.Product.Version;
    /// <summary>Evaluates against the current target, failing closed when it cannot be read.</summary>
-   public static async Task<ReleaseNoteState> ReadAsync(ReleaseProfile profile, ReleaseTarget target, string profileFolder,
+   public static async Task<ReleaseNoteState> ReadAsync(ReleaseProfile profile, ReleaseTarget target,
       CancellationToken token, bool syncing = false) {
       ReleaseManifest? manifest = null; var known = true;
       try {
@@ -18,10 +20,10 @@ public static class ReleaseNoteGuard {
       catch (OperationCanceledException) { throw; }
       catch (Exception) { known = false; }
       var android = profile.Platform == ReleasePlatform.Android;
-      var version = android && syncing ? profile.Android.PreparedVersionName : profile.Product.Version;
-      var remote = ReleaseNoteFolder.TargetVersion(manifest, android);
-      var state = ReleaseNoteFolder.Evaluate(profileFolder, profile.ReleaseNotesFolder, version, remote is null ? [] : [remote], known);
-      if (android && syncing && profile.Android.PreparedVersionName.Split('+')[0] != profile.Product.Version.Split('+')[0])
+      var version = Version(profile);
+      var remote = !android ? manifest?.Launcher?.Version ?? ReleaseNoteFolder.TargetVersion(manifest, false) : ReleaseNoteFolder.TargetVersion(manifest, true);
+      var state = ReleaseNoteFolder.Evaluate(profile.ReleaseNotesFolder, version, remote is null ? [] : [remote], known);
+      if (android && syncing && profile.Android.PreparedVersionName.Split('+')[0] != version.Split('+')[0])
          return state with { Allowed = false, Message = "Blocked: application version changed after Prepare. Prepare again before Sync." };
       return state;
    }
@@ -31,9 +33,9 @@ public static class ReleaseNoteGuard {
       catch (DirectoryNotFoundException) { return null; }
    }
    /// <summary>Throws before any release mutation when the lock blocks the operation.</summary>
-   public static async Task RequireAsync(ReleaseProfile profile, ReleaseTarget target, string profileFolder, CancellationToken token, bool syncing = false) {
+   public static async Task RequireAsync(ReleaseProfile profile, ReleaseTarget target, CancellationToken token, bool syncing = false) {
       if (!profile.ReleaseNoteLock) return;
-      var state = await ReadAsync(profile, target, profileFolder, token, syncing);
+      var state = await ReadAsync(profile, target, token, syncing);
       if (!state.Allowed) throw new InvalidDataException(state.Message);
    }
 }

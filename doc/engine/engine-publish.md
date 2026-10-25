@@ -38,9 +38,18 @@ rights.
 ## Profiles and local files
 
 Container profiles can enable **Release note lock** in Advanced for Dockerfile, LocalImage and Template
-with Standard tagging. Build/Push require a valid `<strip-version>.md` and a version newer than the
-registry; Set/Compose/Manual and Set steps retain their existing behavior. Release notes becomes a
-read-only matching preview with status, refresh and version history. Locked runs store the profile-relative
+with Standard tagging. The version strip becomes a **Release note file** ComboBox listing version files
+and their Pending/Released/Invalid status. Selecting a file sets the exact version from its filename;
+refresh and Build/Push never increment N or select another file automatically. The saved selection is
+restored if its file is still present. Build/Push require a valid selected note and a version newer than the
+registry. The folder icon beside the selector opens the configured notes folder, even when no file is
+selected. An unavailable location reports an error and asks the user to update the profile; no folder is created.
+Set/Compose/Manual and Set steps retain their existing behavior. The **Release notes** button opens a
+Material side sheet on the right, keeping the artifact table and log free of note content. With the
+lock enabled it shows status, refresh, version history and one read-only preview. From/To range controls
+appear only for multiple versions and display version text. Without the lock, notes remain editable
+in the sheet. Close it with the header close button, an outside click or Escape. The maximize/restore
+button switches between the right-hand panel and the full page width. Locked runs store the absolute machine-local
 note path in `ReleaseNotesFile`, leaving `ReleaseNotes` empty; run detail displays that path. Old runs
 remain readable. See [folder, Summary and template rules](engine-release-manager.md#shared-note-folder-and-file-rules).
 
