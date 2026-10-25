@@ -32,6 +32,11 @@
             <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}" />
          </Style>
 
+         <Style x:Key="infoMuted" TargetType="TextBlock" BasedOn="{StaticResource secondaryCellStyle}">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="TextTrimming" Value="None" />
+         </Style>
+
          <Style x:Key="summaryWarningStyle" TargetType="TextBlock" BasedOn="{StaticResource summaryValueStyle}">
             <Setter Property="Foreground" Value="{StaticResource warningBrush}" />
          </Style>
