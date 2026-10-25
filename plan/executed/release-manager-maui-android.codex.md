@@ -1,6 +1,6 @@
 # Plan — Release Manager merilis aplikasi MAUI Android dan update dari dalam aplikasi (untuk Codex)
 
-Status: **belum dieksekusi**
+Status: **dieksekusi 2026-10-25** — kode, build dan tes console selesai; smoke APK nyata tertunda (workload maui-android belum terpasang).
 
 Dibuat: 2026-10-25
 Pembaca: Codex atau Claude Code. Berkas ini memuat semua keputusan yang dibutuhkan; jangan bertanya ke
@@ -427,3 +427,9 @@ Tulis `doc/report/release-manager-maui-android.md` (bahasa Indonesia): ringkasan
 build/test/smoke dengan angka dan run id RunBay, keputusan implementasi yang diambil sendiri (mis. cara izin
 `REQUEST_INSTALL_PACKAGES` tergabung, sumber versi Java yang didukung, lokasi Rider), verifikasi tertunda, dan
 tindakan manual. Jangan menyatakan verifikasi tertunda sebagai lulus.
+
+
+## Hasil eksekusi 2026-10-25
+
+Lihat [laporan lengkap](../../doc/report/release-manager-maui-android.md) untuk commit, run id RunBay,
+hasil build/tes, smoke tertunda dan tindakan pengguna. Tidak ada push atau uji visual.

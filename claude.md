@@ -526,3 +526,8 @@ Eksekusi lintas repo ini menyelesaikan kode engine A–G lalu kode host pasangan
 build/tes/smoke/review. Uji visual, emulator/perangkat dan Prepare Environment yang memasang
 sungguhan tidak dijalankan; rilis produksi dilakukan pengguna. Commit per seksi di work-bench,
 tanpa push. Harness/log berada di ../.artefacts/em-system/scripts/release-android-smoke/.
+
+Verifikasi eksekusi 2026-10-25: WPF/MAUI build dan 294 tes console lulus; izin instalasi
+tergabung dari library. Create/Import keystore nyata lulus, APK nyata tertunda karena workload
+maui-android belum terpasang. Laporan: doc/report/release-manager-maui-android.md.
+Plan berada di plan/executed/release-manager-maui-android.codex.md.
