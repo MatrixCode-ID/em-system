@@ -1,0 +1,22 @@
+{
+  "publishedAtUtc": "2026-10-25T00:00:00Z",
+  "files": [
+    {
+      "path": "inventory.apk",
+      "size": 17,
+      "sha256": "f9cf15a9836c16b47febd954869bb75318a8d19232a100621263a07e4e3aebde"
+    }
+  ],
+  "android": {
+    "fileName": "inventory.apk",
+    "applicationId": "com.contoso.inventory",
+    "versionCode": 12,
+    "versionName": "1.2.0",
+    "minVersionCode": 10
+  },
+  "launcher": {
+    "version": "1.0.0",
+    "inputHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "fileName": "inventory.exe"
+  }
+}
