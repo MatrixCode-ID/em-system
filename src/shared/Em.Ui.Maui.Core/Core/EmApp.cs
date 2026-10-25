@@ -373,6 +373,7 @@ namespace Em.Ui.Maui.Core
       // and this application has no DispatcherUnhandledException - so the exception is caught and shown here.
       private async Task ShowFirstScreenAsync() {
          try {
+            if (!await CheckForUpdatesAsync()) return;
             if (IsDebugMode) {
                // Debug mode skips the login screen, so no screen got the chance to choose its server. It is chosen
                // here, right before home stands up: the active connection is what opens the way to the claim catalog

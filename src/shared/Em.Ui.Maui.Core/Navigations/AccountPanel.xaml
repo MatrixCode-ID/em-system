@@ -187,6 +187,12 @@
                   </VerticalStackLayout>
                </Border>
 
+               <Border Style="{StaticResource accountPanelCardStyle}">
+                  <VerticalStackLayout Padding="16,12" Spacing="8">
+                     <Label Text="{Binding InstalledVersion}" Style="{StaticResource supportTextStyle}"/>
+                     <Button Text="Check for updates" Command="{Binding Commands[CheckForUpdatesCommand]}" Style="{StaticResource tonalButtonStyle}"/>
+                  </VerticalStackLayout>
+               </Border>
                <!-- ==== theme switch ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}" IsVisible="{Binding IsThemeVisible}">
                   <Border Style="{StaticResource accountPanelItemStyle}">

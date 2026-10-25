@@ -24,6 +24,8 @@
 
 		<!-- App Identifier -->
 		<ApplicationId>com.matrixcode.emsystem</ApplicationId>
+		<EmAppId>Em.Ui.Maui.Android</EmAppId>
+		<Version>0.1.0-alpha.1</Version>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>

@@ -100,6 +100,8 @@
                </VerticalStackLayout>
             </Border>
 
+            <Label Text="{Binding InstalledVersion}" Style="{StaticResource labelTextStyle}" HorizontalOptions="Center"/>
+            <Button Text="Check for updates" Command="{Binding Commands[CheckForUpdatesCommand]}" Style="{StaticResource tonalButtonStyle}"/>
             <Label Text="{Binding BrandCopyright}" Style="{StaticResource labelTextStyle}"
                    FontSize="10.5" Opacity="0.6" HorizontalOptions="Center" />
          </VerticalStackLayout>

@@ -69,10 +69,13 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(SignInCommand), SignInCommand, SignInCommandAllowed);
          RegisterCommand(nameof(DebugSignInCommand), DebugSignInCommand, DebugSignInCommandAllowed);
          RegisterCommand(nameof(ToggleThemeCommand), ToggleThemeCommand);
+         RegisterCommand(nameof(CheckForUpdatesCommand), CheckForUpdatesCommand);
       }
 
       /// <summary>Raised after the session has really been opened, so this screen can be left.</summary>
       public event Action? SignInSucceeded;
+      public string InstalledVersion => EmApp.InstalledAndroidVersion;
+      public async Task CheckForUpdatesCommand() { if (EmApp is { } app) await app.CheckForUpdatesAsync(true); }
 
       /// <summary>The application logo that is in force.</summary>
       public ImageSource? LogoImage => EmApp is { } app ? BrandingImages.LoadLogo(app.Branding) : null;

@@ -121,11 +121,14 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(OpenItemCommand), OpenItemCommand);
          RegisterCommand(nameof(SelectConnectionCommand), SelectConnectionCommand);
          RegisterCommand(nameof(ToggleThemeCommand), ToggleThemeCommand);
+         RegisterCommand(nameof(CheckForUpdatesCommand), CheckForUpdatesCommand);
          RegisterCommand(nameof(SignOutCommand), SignOutCommand, SignOutCommandAllowed);
       }
 
       /// <summary>The static navigation rows, rebuilt every time the panel is opened.</summary>
       public ObservableCollection<AccountPanelItemVm> StaticItems { get; } = [];
+      public string InstalledVersion => EmApp.InstalledAndroidVersion;
+      public async Task CheckForUpdatesCommand() { if (EmApp is { } app) await app.CheckForUpdatesAsync(true); }
 
       /// <summary>The server choices available, rebuilt every time the panel is opened.</summary>
       public ObservableCollection<AccountPanelConnectionVm> Connections { get; } = [];

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using Em.Shared;
+using Em.Ui.Wpf.Shared;
 using Em.Ui.Wpf.Core;
 using Em.Ui.Wpf.Core.Release;
 using Microsoft.Win32;
@@ -35,13 +36,13 @@ public sealed class ReleaseAndroidSettingsVm : MvvmModelBase {
    public string Sdk { get => Get<string>() ?? ""; set => Set(value); }
    public string Java { get => Get<string>() ?? ""; set => Set(value); }
    public string Status { get => Get<string>() ?? ""; set => Set(value); }
-   public bool Busy { get => Get<bool>(); set { Set(value); foreach (var command in Commands.Values) command.RaiseCanExecuteChanged(); } }
+   public bool Busy { get => Get<bool>(); set { Set(value); foreach (var command in Commands) command.RaiseCanExecuteChanged(); } }
    public bool SetUserEnvironment { get => Get<bool>(); set => Set(value); }
    public IReadOnlyList<string> SdkCandidates => AndroidEnvironment.SdkCandidates(Sdk);
    public IReadOnlyList<string> JavaCandidates => AndroidEnvironment.JavaCandidates(Java);
    public bool IdleAllowed() => !Busy;
    public bool AndroidAllowed() => !Busy && IsAndroid;
-   public void Refresh() { NotifyChanged(nameof(Android)); NotifyChanged(nameof(IsAndroid)); NotifyChanged(nameof(SdkCandidates)); NotifyChanged(nameof(JavaCandidates)); foreach (var command in Commands.Values) command.RaiseCanExecuteChanged(); }
+   public void Refresh() { NotifyChanged(nameof(Android)); NotifyChanged(nameof(IsAndroid)); NotifyChanged(nameof(SdkCandidates)); NotifyChanged(nameof(JavaCandidates)); foreach (var command in Commands) command.RaiseCanExecuteChanged(); }
    public void ChangePlatformCommand() {
       if (SelectedPlatform == Profile.Platform) return;
       if (Owner?.ShowMboxDecideWarning("Change platform and create a new manifest signing key? Existing installations will reject this new key. Export a backup first.", "Release platform") != MessageBoxResult.Yes) { SelectedPlatform = Profile.Platform; return; }
