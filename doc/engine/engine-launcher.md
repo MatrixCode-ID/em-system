@@ -168,3 +168,8 @@ application still running.
 For build inputs and versions see [Release Manager](engine-release-manager.md); for the signature and
 layout see the [release contract](../release-format.md). GUI/interactions must be verified separately
 from console tests; no visual verification was run for this implementation.
+## Android
+
+Android releases do not use this Rust launcher. Each Android profile has its own manifest key;
+a Windows launcher rejects an Android manifest through its unknown keyId. See
+[Android updates](engine-android-updates.md) for the MAUI PackageInstaller flow.

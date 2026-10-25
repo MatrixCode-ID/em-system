@@ -128,3 +128,11 @@ launcher.exe Content entry: Release Manager builds and copies the product launch
 The status bar system slots contain Version followed by Updates for launcher-started apps. Hosts may
 change builder.LauncherUpdates.FirstCheckDelay, CheckInterval and Jitter. Defaults are 5 minutes,
 60 minutes and plus/minus 10 minutes. See [launcher updates](engine-launcher.md).
+## Android product versions
+
+A MAUI Android host sets Version as SemVer for its product versionName and its own EmAppId.
+Release Manager Platform Android uses ApplicationVersion only as the initial versionCode;
+subsequent codes increment the destination manifest. Generated host-only targets set
+ApplicationVersion, ApplicationDisplayVersion (Version without build metadata), APK signing and
+arm64-v8a. ApplicationTitle and MauiIcon remain defined by the project.
+See [Android updates](engine-android-updates.md).

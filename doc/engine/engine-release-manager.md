@@ -106,3 +106,51 @@ the next Sync. Folder targets write no `.meta`. Verify checks signature, sizes a
 the profile key. Overlapping publish/target folders produce a warning that can be accepted or cancelled.
 
 See [Launcher and updates](engine-launcher.md) for installation, in-app preparation and IT cab packages.
+## Android profiles
+
+Select Platform Android and Apply platform in Settings. Changing platform asks for confirmation
+and creates a separate P-256 manifest key. Old version-two JSON without platform remains Windows.
+Check solution filters hosts by platform. Read identity from the MAUI project (ApplicationTitle,
+Company, EmAppId, ApplicationId, ApplicationVersion, Version and Android target framework).
+The product's title and MauiIcon stay in the host project; Android Prepare never overrides them.
+PNG icons can be previewed; SVG preview is not required.
+
+Use an independent EmAppId such as Contoso.Inventory.Mobile and the permanent applicationId
+com.contoso.inventory. APK file name defaults to the lowercase app_id with dots replaced by hyphens.
+Launcher controls remain visible but disabled for Android, and launcher menu commands are disabled.
+
+Select the Android SDK and Java SDK for this machine. All existing candidates are listed, including
+the Visual Studio SDK and LocalAppData/Android/Sdk; Browse also accepts manually configured Rider
+locations. Machine preferences use the host BaseRegKey/ReleaseManager. Check environment reports
+platform-tools, build-tools with apksigner/aapt2, the target Android API, JDK and maui-android workload.
+The default target API for an unversioned net10.0-android TFM is 36; Java requires the evaluated
+MinimumSupportedJavaVersion/LatestSupportedJavaVersion when supplied, otherwise at least 17.
+
+Prepare Environment displays the commands and asks before installing only missing components.
+It uses dotnet workload install maui-android, Microsoft OpenJDK through winget, and
+InstallAndroidDependencies with SDK licenses accepted. Workload installation asks for elevation.
+If winget is absent, install App Installer or select a JDK manually. New SDK paths must use ASCII
+without spaces. User ANDROID_HOME/JAVA_HOME are changed only if the checkbox is selected; builds
+always receive SDK and Java directories explicitly. Environment installation is not part of smoke tests.
+
+Create makes a permanent RSA-4096 PKCS12 signing key valid for 10000 days. Import accepts JKS,
+keystore, P12 and PFX and checks the alias/passwords immediately. Show signing credentials reveals
+the passwords and provides copy buttons; the certificate SHA-256 identifies the signing certificate.
+Passwords are passed to keytool/publish through the child environment, never command arguments or targets.
+**Export the profile as a protected backup. Losing either the keystore or manifest key prevents
+existing installations from receiving accepted updates.** Export includes all credentials.
+
+Prepare builds one signed arm64-v8a APK with the selected environment. It reads the destination first:
+an unreadable destination, another applicationId or a Windows release stops preparation.
+The first versionCode is ApplicationVersion when valid (otherwise 1); subsequent releases increment
+the published Android versionCode. VersionName comes from host Version (SemVer).
+Minimum version code 0 permits deferral; a positive value must not exceed the prepared code.
+Prepare embeds the complete release URL and public manifest key in the host assembly.
+A Folder target requires its public CDN base address. Temporary keystore/targets/publish output are
+removed in finally. Prepare only when releasing: each new published version changes versionCode.
+
+Compare, Sync and Verify use the same destinations, ownership/quota and metadata privacy as Windows.
+Sync refuses a publish folder changed after Prepare or anything except the one prepared APK.
+Verify additionally checks Android applicationId and fileName. Copy install link copies the direct
+binaries/<apkFileName> URL for initial installation. Android uses no launcher or IT cabinet.
+See [Android updates](engine-android-updates.md) for runtime behavior and limitations.

@@ -54,3 +54,8 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
   Every screen also supports the dark theme.
 - **Maintainer notes** sections refer to local verification harnesses kept outside this repository; they
   are not needed to use the engine.
+## Mobile
+
+| Guide | Covers |
+| --- | --- |
+| [Android updates](engine-android-updates.md) | Embedded release source, verified APK download, mandatory update gate and PackageInstaller |
