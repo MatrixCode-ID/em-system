@@ -1040,7 +1040,8 @@ namespace Em.Ui.Wpf.Navigations
       public bool OpenLauncherFolderCommandAllowed() => Profile is { Platform: ReleasePlatform.Windows } && !IsRunning;
 
       public void CopyInstallLinkCommand() => Clipboard.SetText(DefaultReleaseSource.TrimEnd('/') + "/binaries/" + Profile!.AndroidApkFileName);
-      public bool CopyInstallLinkCommandAllowed() => Profile is { Platform: ReleasePlatform.Android } && !IsRunning && !string.IsNullOrEmpty(DefaultReleaseSource);
+      public bool CopyInstallLinkCommandAllowed() => Profile is { Platform: ReleasePlatform.Android } && !IsRunning &&
+         Uri.TryCreate(DefaultReleaseSource, UriKind.Absolute, out var address) && address.Scheme is "http" or "https";
 
       /// <summary>Runs the profiles folder command.</summary>
       public async Task ProfilesFolderCommand() {

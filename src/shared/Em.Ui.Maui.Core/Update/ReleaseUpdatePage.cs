@@ -16,12 +16,12 @@ public sealed class ReleaseUpdatePage : ContentPage {
       var progress = new ProgressBar(); progress.SetBinding(ProgressBar.ProgressProperty, nameof(vm.Progress));
       Button Action(string text, string command) { var button = new Button { Text = text }; button.SetBinding(Button.CommandProperty, "Commands[" + command + "]"); return button; }
       var actions = new VerticalStackLayout { Spacing = 12, Padding = 24, Children = { title, version, status, progress,
-         Action("Update now", nameof(vm.UpdateCommand)), Action("Cancel download", nameof(vm.CancelCommand)) } };
+         Action(vm.Mandatory ? "Update" : "Update now", nameof(vm.UpdateCommand)), Action("Cancel download", nameof(vm.CancelCommand)) } };
       if (!vm.Mandatory) actions.Add(Action("Later", nameof(vm.LaterCommand)));
       actions.Add(Action("Exit", nameof(vm.ExitCommand)));
       Content = new ScrollView { Content = actions };
       foreach (var label in actions.Children.OfType<Label>()) label.SetDynamicResource(StyleProperty, "labelTextStyle");
-      foreach (var button in actions.Children.OfType<Button>()) button.SetDynamicResource(StyleProperty, button.Text == "Update now" ? "filledButtonStyle" : "tonalButtonStyle");
+      foreach (var button in actions.Children.OfType<Button>()) button.SetDynamicResource(StyleProperty, button.Text is "Update" or "Update now" ? "filledButtonStyle" : "tonalButtonStyle");
    }
    protected override bool OnBackButtonPressed() => true;
 }
