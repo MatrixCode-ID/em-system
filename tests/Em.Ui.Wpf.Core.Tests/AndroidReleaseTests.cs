@@ -89,6 +89,13 @@ public sealed class AndroidReleaseTests : IDisposable {
       var product=await ReleaseProduct.ReadAsync(project,default,ReleasePlatform.Android); Assert.Equal("Inventory Mobile",product.AppName); Assert.Equal("1.2.0",product.Version); Assert.Equal("7",product.ApplicationVersion);
    }
    [Fact]
+   public void HostPlatformReadsImportedTargetFramework() {
+      var project=Path.Combine(_root,"Imported.csproj");
+      File.WriteAllText(Path.Combine(_root,"identity.props"),"<Project><PropertyGroup><TargetFramework>net10.0-android</TargetFramework></PropertyGroup></Project>");
+      File.WriteAllText(project,"<Project Sdk=\"Microsoft.NET.Sdk\"><Import Project=\"identity.props\"/><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>");
+      Assert.Contains(ReleasePlatform.Android,ReleaseBuilder.ReadHostPlatforms(project));
+   }
+   [Fact]
    public async Task FolderSyncVerifiesAndroidAndRejectsModifiedPreparedBytesOrIdentity() {
       var p=Profile(); p.Android.ApkFileName="inventory.apk"; p.PublishFolder=Path.Combine(_root,"publish"); Directory.CreateDirectory(p.PublishFolder);
       var data=new byte[] { 1,2,3 }; File.WriteAllBytes(Path.Combine(p.PublishFolder,"inventory.apk"),data);

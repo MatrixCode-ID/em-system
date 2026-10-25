@@ -79,6 +79,8 @@ public sealed class ReleaseAndroidSettingsVm : MvvmModelBase {
       var log = new Progress<string>(line => Status += "\n" + line);
       Status = "Preparing Android environment…";
       foreach (var command in commands) {
+         if (command.Executable == "winget" && !((Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator).Any(path => File.Exists(Path.Combine(path, "winget.exe")))))
+            throw new InvalidOperationException("winget is unavailable. Install App Installer or choose an installed JDK manually.");
          if (command.Elevated) {
             await AndroidEnvironment.RunElevatedAsync(command, log, CancellationToken.None);
          } else await AndroidProcess.CaptureAsync(command.Executable, command.Arguments.Select(arg => arg.StartsWith("-p:JavaSdkDirectory=") ? "-p:JavaSdkDirectory=" + Java : arg), null, CancellationToken.None, log);

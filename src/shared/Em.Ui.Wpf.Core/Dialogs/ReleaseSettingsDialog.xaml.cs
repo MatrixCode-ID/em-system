@@ -46,6 +46,12 @@ public partial class ReleaseSettingsDialog : EmWindow {
       _android.Vm.Sdk = _preferences.AndroidSdkDirectory; _android.Vm.Java = _preferences.JavaSdkDirectory;
       _android.Vm.PlatformChanged = () => { foreach (var element in _windows) element.IsEnabled = _draft.Platform == ReleasePlatform.Windows; _hosts.ItemsSource = null; _android.Vm.Refresh(); };
       _form.Children.Add(_android);
+      _android.Vm.PropertyChanged += (_, args) => {
+         if (args.PropertyName == nameof(ReleaseAndroidSettingsVm.Busy)) {
+            _form.IsEnabled = !_busy && !_android.Vm.Busy;
+            _toolbar.IsEnabled = !_busy && !_android.Vm.Busy;
+         }
+      };
       Title = "Release settings · " + profile.Name; Width = 920; Height = 850; ShowMinimizeButton = false;
       Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml") });
       _hosts.SetResourceReference(StyleProperty, "fieldComboStyle");
@@ -140,7 +146,7 @@ public partial class ReleaseSettingsDialog : EmWindow {
       button.Click += async (_, _) => await Run(action); panel.Children.Add(button);
    }
    private async Task Run(Func<Task> action) {
-      if (_busy) return; _busy = true; _form.IsEnabled = false; _toolbar.IsEnabled = false;
+      if (_busy || _android.Vm.Busy) return; _busy = true; _form.IsEnabled = false; _toolbar.IsEnabled = false;
       // A long step announces itself through ShowStatus; quick buttons leave the line hidden.
       try { await action(); _status.Visibility = Visibility.Collapsed; }
       catch (Exception ex) { _message.Text = ex.Message; ShowStatus("Failed: " + ex.Message, false); }

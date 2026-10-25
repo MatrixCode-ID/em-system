@@ -113,7 +113,9 @@ public static class AndroidEnvironment {
 
    public static IReadOnlyList<AndroidCommand> PreparationCommands(IReadOnlyList<string> checks, string project, string tfm, string sdk, string java, string latestJava = "") {
       var commands = new List<AndroidCommand>();
-      if (checks.Any(r => r.Contains("Missing: maui"))) commands.Add(new("dotnet", ["workload", "install", "maui-android"], true));
+      var dotnet = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator).Select(path => Path.Combine(path, "dotnet.exe")).FirstOrDefault(File.Exists);
+      var elevated = dotnet?.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) == true;
+      if (checks.Any(r => r.Contains("Missing: maui"))) commands.Add(new("dotnet", ["workload", "install", "maui-android"], elevated));
       var version = int.TryParse(latestJava.Split('.')[0], out var v) ? v : 21;
       if (checks.Any(r => r.Contains("Missing: JDK") || r.Contains("Missing: supported JDK")))
          commands.Add(new("winget", ["install", "--id", "Microsoft.OpenJDK." + version, "--exact", "--accept-source-agreements"]));
