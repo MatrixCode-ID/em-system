@@ -1,5 +1,19 @@
 # CLAUDE.md
 
+## Urutan editor profile Release Manager (keputusan pengguna 2026-10-25)
+
+Editor profile mengikuti Material 3 yang sudah dipakai proyek dan urutan input:
+Application Source (platform, solution, host), Product Identity, Build Environment,
+Release Destination, lalu Release Signing. Field khusus platform ditampilkan sesuai
+platform aktif. Save/Cancel tetap terlihat saat form di-scroll. Penemuan SDK tidak
+dijalankan dari getter binding; gunakan snapshot async dengan indikator busy.
+Panduan: `doc/engine/engine-release-manager.md`.
+Verifikasi: 38 tes Release Manager serta render 38 kondisi terang/gelap, lebar sempit,
+bagian lanjutan dan busy. Source harness/log/gambar berada di
+`../.artefacts/em-system/scripts/release-settings-render/` dan log tes di
+`../.artefacts/em-system/scripts/release-settings-review/out/`; runner PowerShell
+tersimpan di action RunBay `review-release-settings` dan `render-release-settings`.
+
 ## Tes lewat RunBay (keputusan pengguna 2026-10-25)
 
 Artefak Data approval wrapper 2026-10-25:

@@ -20,6 +20,27 @@ Settings edits a draft; Save checks for an external edit and offers overwrite or
 Cancel discards the draft, including key edits. Duplicate preserves the product identity/key and gets a
 new profile id; it does not create a distinct installation identity.
 
+## Settings form order
+
+Complete the numbered groups from top to bottom:
+
+1. **Application Source:** choose and apply the platform, then choose the solution and host.
+2. **Product Identity:** review the product name, publisher and app_id read from the host.
+   Android additionally shows Application ID, APK filename and minimum version code;
+   Windows shows the executable and expandable branding previews.
+3. **Build Environment:** choose the local publish folder. Android shows SDK/JDK paths and
+   environment actions; Windows shows launcher build folders and expandable launcher options.
+4. **Release Destination:** choose CDN or Folder, then the release folder and public base address.
+   Target folder appears for Folder only; managed CDN actions appear for CDN only.
+5. **Release Signing:** create/import the manifest key and, for Android, configure its permanent
+   keystore. Expand Signing credentials for import before importing a keystore that needs alias/passwords.
+
+Save profile and Cancel remain above the scrolling form. Shared Material styles provide consistent
+labels, filled fields, button hierarchy and themed enabled/disabled states. Supporting text explains
+the important differences between local build output and release destination; detailed rules remain
+available in hover help. A progress line and wait overlay cover asynchronous source/SDK work.
+Unapplied platform changes disable Save until the platform is applied or restored to the active one.
+
 ## Read product identity
 
 Choose the .slnx with Browse, or press Check solution to read the selected one again. Both list the
@@ -62,9 +83,9 @@ address derives `<connection>/cdn/<release-folder>/`. When the server has a `rel
 folder but that address answers 404, Compare stops with an error: otherwise every Compare would see no
 release, every Sync would upload everything again, and the launcher would look in the wrong place.
 
-Browse CDN / select managed folder browses relative paths and creates/adopts a physically empty root.
+Under Managed CDN folder, Browse / select folder browses relative paths and creates/adopts a physically empty root.
 Selecting the same root for the same app_id is allowed; another owner, a nonempty root or nesting is
-refused. Release owned folder removes this product's ownership. CDN Manager access is not required.
+refused. Release ownership removes this product's ownership. CDN Manager access is not required.
 Only CDN administrators set quota. Sync preflight reports quota/expected final size before any writes.
 See [CDN storage](engine-cdn-storage.md) for ownership, quotas and recycle rules.
 
@@ -110,16 +131,19 @@ See [Launcher and updates](engine-launcher.md) for installation, in-app preparat
 
 Select Platform Android and Apply platform in Settings. Changing platform asks for confirmation
 and creates a separate P-256 manifest key. Old version-two JSON without platform remains Windows.
-Check solution filters hosts by platform. Read identity from the MAUI project (ApplicationTitle,
+Applying a different platform reloads compatible hosts from the current solution and reads the selected
+host identity. Check solution also reloads the hosts manually. Read identity from the MAUI project (ApplicationTitle,
 Company, EmAppId, ApplicationId, ApplicationVersion, Version and Android target framework).
 The product's title and MauiIcon stay in the host project; Android Prepare never overrides them.
 PNG icons can be previewed; SVG preview is not required.
 
 Use an independent EmAppId such as Contoso.Inventory.Mobile and the permanent applicationId
 com.contoso.inventory. APK file name defaults to the lowercase app_id with dots replaced by hyphens.
-Launcher controls remain visible but disabled for Android, and launcher menu commands are disabled.
+Launcher settings are hidden for Android, and launcher menu commands are disabled.
 
-Select the Android SDK and Java SDK for this machine. All existing candidates are listed, including
+Select or type the Android SDK and Java SDK for this machine. Find installed SDKs refreshes the lists
+asynchronously; opening an Android profile and applying Android also refresh them with a wait indicator.
+Candidates are cached for display, so opening a dropdown never scans the disk. All existing candidates are listed, including
 the Visual Studio SDK and LocalAppData/Android/Sdk. Rider android.xml/jdk.table.xml options
 under the user JetBrains configuration are inspected; Browse accepts other Rider locations. Machine preferences use the host BaseRegKey/ReleaseManager. Check environment reports
 platform-tools, build-tools with apksigner/aapt2, the target Android API, JDK and maui-android workload.
@@ -154,3 +178,15 @@ Sync refuses a publish folder changed after Prepare or anything except the one p
 Verify additionally checks Android applicationId and fileName. Copy install link copies the direct
 binaries/<apkFileName> URL for initial installation. Android uses no launcher or IT cabinet.
 See [Android updates](engine-android-updates.md) for runtime behavior and limitations.
+
+## Maintainer notes
+
+The settings form uses the project's desktop Material language and shared resources. Design references:
+[Material text fields](https://github.com/material-components/material-components-android/blob/master/docs/components/TextField.md)
+and [Material progress indicators](https://github.com/material-components/material-components-android/blob/master/docs/components/ProgressIndicator.md).
+This is a WPF adaptation; no new UI toolkit dependency is introduced.
+
+RunBay action `review-release-settings` builds and runs the Release Manager tests. Action
+`render-release-settings` checks both platforms and themes, expanded fields, narrow width and busy
+state. Render harness/output: `../.artefacts/em-system/scripts/release-settings-render/`;
+test logs: `../.artefacts/em-system/scripts/release-settings-review/out/`.

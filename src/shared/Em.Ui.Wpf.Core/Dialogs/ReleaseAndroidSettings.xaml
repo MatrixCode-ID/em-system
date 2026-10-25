@@ -3,45 +3,75 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs" xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls">
  <UserControl.DataContext><local:ReleaseAndroidSettingsVm/></UserControl.DataContext>
- <StackPanel>
-  <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
-   <TextBlock Text="Platform" Width="185" VerticalAlignment="Center"/>
-   <ComboBox ItemsSource="{Binding Platforms}" SelectedItem="{Binding SelectedPlatform}" Style="{DynamicResource fieldComboStyle}" Width="160"/>
-   <Button Content="Apply platform" Command="{Binding Commands[ChangePlatformCommand]}" Style="{DynamicResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+ <UserControl.Resources>
+  <ResourceDictionary>
+   <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/></ResourceDictionary.MergedDictionaries>
+   <Style x:Key="androidField" TargetType="StackPanel"><Setter Property="Margin" Value="0,0,0,16"/><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/></Style>
+  </ResourceDictionary>
+ </UserControl.Resources>
+ <Grid>
+  <StackPanel>
+   <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Section, RelativeSource={RelativeSource AncestorType=local:ReleaseAndroidSettings}}" Value="Identity"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+   <StackPanel Style="{StaticResource androidField}" ToolTip="Permanent lowercase reverse-domain package name. Published releases require the same identity.">
+    <TextBlock Text="Application ID" Style="{StaticResource fieldLabelStyle}"/>
+    <TextBox x:Name="applicationId" Text="{Binding Android.ApplicationId, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/>
+    <TextBlock Text="Read from the selected Android host. Keep this package name for all updates." Style="{StaticResource fieldHelpStyle}"/>
+   </StackPanel>
+   <StackPanel Style="{StaticResource androidField}" ToolTip="Lowercase .apk filename. Leave empty to derive it from the product app_id.">
+    <TextBlock Text="APK file name (optional)" Style="{StaticResource fieldLabelStyle}"/>
+    <TextBox Text="{Binding Android.ApkFileName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}" Tag="Derived from app_id when empty"/>
+   </StackPanel>
+   <StackPanel Style="{StaticResource androidField}" ToolTip="0 permits optional updates. Otherwise use 1 through the prepared versionCode, at most 2100000000.">
+    <TextBlock Text="Minimum version code" Style="{StaticResource fieldLabelStyle}"/>
+    <controls:NumericBox Value="{Binding Android.MinVersionCode}" Minimum="0" Maximum="2100000000" Style="{StaticResource fieldNumericBoxStyle}"/>
+    <TextBlock Text="0 allows users to postpone an update." Style="{StaticResource fieldHelpStyle}"/>
+   </StackPanel>
   </StackPanel>
-  <StackPanel IsEnabled="{Binding IsAndroid}">
-   <TextBlock Text="Android · APK arm64-v8a" Style="{DynamicResource typeLabelLargeStyle}"/>
-   <TextBlock Text="Export this profile as a backup. Losing the keystore or manifest key prevents existing installations from accepting updates." TextWrapping="Wrap" Margin="0,8"/>
-   <TextBlock Text="Application ID" ToolTip="Permanent lowercase reverse-domain package name. Locked after the first release."/>
-   <TextBox Text="{Binding Android.ApplicationId}" Style="{DynamicResource fieldTextBoxStyle}"/>
-   <TextBlock Text="APK file name" Margin="0,8,0,0" ToolTip="Lowercase .apk filename; empty derives it from app_id."/>
-   <TextBox Text="{Binding Android.ApkFileName}" Style="{DynamicResource fieldTextBoxStyle}"/>
-   <TextBlock Text="Minimum version code" Margin="0,8,0,0" ToolTip="0 means optional updates; otherwise 1 through the prepared versionCode."/>
-   <controls:NumericBox Value="{Binding Android.MinVersionCode}" Minimum="0" Maximum="2100000000"/>
-   <TextBlock Text="Android SDK" Margin="0,8,0,0"/>
-   <DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseSdkCommand]}" Style="{DynamicResource outlinedButtonStyle}"/>
-    <ComboBox ItemsSource="{Binding SdkCandidates}" IsEditable="True" Text="{Binding Sdk}" Style="{DynamicResource fieldComboStyle}"/></DockPanel>
-   <TextBlock Text="Java SDK" Margin="0,8,0,0"/>
-   <DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseJavaCommand]}" Style="{DynamicResource outlinedButtonStyle}"/>
-    <ComboBox ItemsSource="{Binding JavaCandidates}" IsEditable="True" Text="{Binding Java}" Style="{DynamicResource fieldComboStyle}"/></DockPanel>
-   <StackPanel Orientation="Horizontal" Margin="0,8">
-    <Button Content="Check environment" Command="{Binding Commands[CheckCommand]}" Style="{DynamicResource outlinedButtonStyle}"/>
-    <Button Content="Prepare Environment" Command="{Binding Commands[PrepareEnvironmentCommand]}" Style="{DynamicResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+  <StackPanel>
+   <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Section, RelativeSource={RelativeSource AncestorType=local:ReleaseAndroidSettings}}" Value="Environment"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+   <StackPanel Style="{StaticResource androidField}" ToolTip="Machine-local Android SDK root containing platform-tools, platforms and build-tools.">
+    <TextBlock Text="Android SDK" Style="{StaticResource fieldLabelStyle}"/>
+    <DockPanel>
+     <Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseSdkCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+     <ComboBox x:Name="sdkCombo" ItemsSource="{Binding SdkCandidates}" Text="{Binding Sdk, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldEditableComboStyle}" AutomationProperties.Name="Android SDK"/>
+    </DockPanel>
    </StackPanel>
-   <CheckBox Content="Set ANDROID_HOME and JAVA_HOME for this user" IsChecked="{Binding SetUserEnvironment}"/>
-   <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Margin="0,8"/>
-   <StackPanel Orientation="Horizontal">
-    <Button Content="Create keystore" Command="{Binding Commands[CreateKeystoreCommand]}" Style="{DynamicResource outlinedButtonStyle}"/>
-    <Button Content="Import keystore" Command="{Binding Commands[ImportKeystoreCommand]}" Style="{DynamicResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+   <StackPanel Style="{StaticResource androidField}" ToolTip="Machine-local JDK root containing bin/java.exe and bin/keytool.exe. The host determines the supported Java versions.">
+    <TextBlock Text="Java SDK" Style="{StaticResource fieldLabelStyle}"/>
+    <DockPanel>
+     <Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseJavaCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+     <ComboBox x:Name="javaCombo" ItemsSource="{Binding JavaCandidates}" Text="{Binding Java, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldEditableComboStyle}" AutomationProperties.Name="Java SDK"/>
+    </DockPanel>
+    <TextBlock Text="SDK paths are saved for this PC only." Style="{StaticResource fieldHelpStyle}"/>
    </StackPanel>
-   <TextBlock Text="{Binding Android.CertificateSha256}" TextWrapping="Wrap" Margin="0,8" ToolTip="Signing certificate SHA-256"/>
-   <Expander Header="Show signing credentials" Margin="0,8">
+   <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+    <StackPanel Orientation="Horizontal">
+     <Button Content="Find installed SDKs" Command="{Binding Commands[RefreshEnvironmentCommand]}" Style="{StaticResource outlinedButtonStyle}"/>
+     <Button Content="Check environment" Command="{Binding Commands[CheckCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+     <Button Content="Prepare environment" Command="{Binding Commands[PrepareEnvironmentCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+    </StackPanel>
+   </ScrollViewer>
+   <CheckBox Content="Also set ANDROID_HOME and JAVA_HOME for this user" IsChecked="{Binding SetUserEnvironment}" Style="{StaticResource checkBoxStyle}" Margin="0,0,0,12"/>
+   <TextBlock Text="Prepare environment asks before installing missing tools or accepting SDK licenses." Style="{StaticResource fieldHelpStyle}"/>
+  </StackPanel>
+  <StackPanel>
+   <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Section, RelativeSource={RelativeSource AncestorType=local:ReleaseAndroidSettings}}" Value="Signing"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+   <TextBlock Text="Android keystore" Style="{StaticResource fieldLabelStyle}" Margin="0,16,0,6"/>
+   <TextBlock Text="Create a keystore, or enter the credentials below before importing an existing one. Keep the same keystore for every update and export a protected profile backup." Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,12"/>
+   <Expander Header="Signing credentials for import" Style="{StaticResource sectionExpanderStyle}" Margin="0,12,0,0">
     <StackPanel>
-     <TextBlock Text="Key alias"/><TextBox Text="{Binding Android.KeystoreAlias}" Style="{DynamicResource fieldTextBoxStyle}"/>
-     <TextBlock Text="Keystore password"/><DockPanel><Button DockPanel.Dock="Right" Content="Copy" Command="{Binding Commands[CopyStorePasswordCommand]}" ToolTip="Copy keystore password"/><TextBox Text="{Binding Android.KeystorePassword}" Style="{DynamicResource fieldTextBoxStyle}"/></DockPanel>
-     <TextBlock Text="Key password"/><DockPanel><Button DockPanel.Dock="Right" Content="Copy" Command="{Binding Commands[CopyKeyPasswordCommand]}" ToolTip="Copy key password"/><TextBox Text="{Binding Android.KeyPassword}" Style="{DynamicResource fieldTextBoxStyle}"/></DockPanel>
+     <TextBlock Text="Required when importing a keystore. Credentials are included in exported profiles." Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,12"/>
+     <StackPanel Style="{StaticResource androidField}"><TextBlock Text="Key alias" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding Android.KeystoreAlias, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+     <StackPanel Style="{StaticResource androidField}"><TextBlock Text="Keystore password" Style="{StaticResource fieldLabelStyle}"/><DockPanel><Button DockPanel.Dock="Right" Content="Copy" Command="{Binding Commands[CopyStorePasswordCommand]}" ToolTip="Copy keystore password" AutomationProperties.Name="Copy keystore password" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding Android.KeystorePassword, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel></StackPanel>
+     <StackPanel Style="{StaticResource androidField}"><TextBlock Text="Key password" Style="{StaticResource fieldLabelStyle}"/><DockPanel><Button DockPanel.Dock="Right" Content="Copy" Command="{Binding Commands[CopyKeyPasswordCommand]}" ToolTip="Copy key password" AutomationProperties.Name="Copy key password" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding Android.KeyPassword, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel></StackPanel>
     </StackPanel>
    </Expander>
+   <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+    <Button Content="Create keystore" Command="{Binding Commands[CreateKeystoreCommand]}" Style="{StaticResource outlinedButtonStyle}"/>
+    <Button Content="Import keystore" Command="{Binding Commands[ImportKeystoreCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+   </StackPanel>
+   <TextBlock Text="Certificate SHA-256" Style="{StaticResource fieldLabelStyle}"/>
+   <TextBlock Text="{Binding Android.CertificateSha256}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"/>
   </StackPanel>
- </StackPanel>
+ </Grid>
 </UserControl>

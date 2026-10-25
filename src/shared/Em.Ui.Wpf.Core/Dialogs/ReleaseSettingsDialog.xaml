@@ -1,4 +1,149 @@
 <windows:EmWindow x:Class="Em.Ui.Wpf.Dialogs.ReleaseSettingsDialog"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows" />
+ xmlns:windows="clr-namespace:Em.Ui.Wpf.Windows"
+ xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs"
+ xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
+ xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
+ Title="{Binding Title}" Width="940" Height="850" MinWidth="680" MinHeight="520"
+ ShowMinimizeButton="False" ShowInTaskbar="False">
+ <windows:EmWindow.DataContext><local:ReleaseSettingsDialogVm/></windows:EmWindow.DataContext>
+ <windows:EmWindow.Resources>
+  <ResourceDictionary>
+   <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/></ResourceDictionary.MergedDictionaries>
+   <BooleanToVisibilityConverter x:Key="visible"/>
+   <Style x:Key="releaseField" TargetType="StackPanel"><Setter Property="Margin" Value="0,0,0,16"/><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/></Style>
+   <Style x:Key="releaseSection" TargetType="Border" BasedOn="{StaticResource cardStyle}"><Setter Property="Padding" Value="20"/><Setter Property="Margin" Value="0,0,0,16"/></Style>
+   <Style x:Key="releaseHeading" TargetType="TextBlock" BasedOn="{StaticResource sectionCaptionStyle}"><Setter Property="Margin" Value="0,0,0,16"/></Style>
+  </ResourceDictionary>
+ </windows:EmWindow.Resources>
+ <Grid Margin="22,12,22,16">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <StackPanel Orientation="Horizontal" IsEnabled="{Binding CanEdit}" Margin="0,0,0,12">
+   <Button x:Name="saveButton" Command="{Binding Commands[SaveCommand]}" IsDefault="True" Style="{StaticResource filledButtonStyle}">
+    <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save profile" VerticalAlignment="Center"/></StackPanel>
+   </Button>
+   <Button Content="Cancel" IsCancel="True" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+  </StackPanel>
+  <StackPanel Grid.Row="1">
+   <StackPanel Visibility="{Binding IsBusy, Converter={StaticResource visible}}" Margin="0,0,0,12">
+    <TextBlock Text="{Binding BusyText}" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,6"/>
+    <ProgressBar IsIndeterminate="True" Style="{StaticResource hairlineProgressStyle}"/>
+   </StackPanel>
+   <Border BorderBrush="{StaticResource dangerBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="{Binding HasError, Converter={StaticResource visible}}">
+    <TextBlock Text="{Binding Error}" TextWrapping="Wrap"/>
+   </Border>
+   <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+   <TextBlock Text="{Binding AndroidStatus}" TextWrapping="Wrap" Margin="0,0,0,12">
+    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource fieldHelpStyle}"><Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></TextBlock.Style>
+   </TextBlock>
+   </ScrollViewer>
+  </StackPanel>
+  <Grid Grid.Row="2">
+   <ScrollViewer x:Name="formScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsEnabled="{Binding CanEdit}" Padding="0,0,12,0">
+    <StackPanel x:Name="profileForm" MaxWidth="840" HorizontalAlignment="Stretch">
+     <Border x:Name="sourceSection" Style="{StaticResource releaseSection}">
+      <StackPanel>
+       <TextBlock Text="1  APPLICATION SOURCE" Style="{StaticResource releaseHeading}"/>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Apply a platform before choosing the solution. Changing platform creates a new manifest signing key after confirmation.">
+        <TextBlock Text="Platform" Style="{StaticResource fieldLabelStyle}"/>
+        <DockPanel>
+         <Button DockPanel.Dock="Right" Content="Apply platform" Command="{Binding Android.Commands[ChangePlatformCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/>
+         <ComboBox ItemsSource="{Binding Android.Platforms}" SelectedItem="{Binding Android.SelectedPlatform}" Style="{StaticResource fieldComboStyle}"/>
+        </DockPanel>
+        <TextBlock Text="Apply a platform to load compatible hosts and their application identity." Style="{StaticResource fieldHelpStyle}"/>
+       </StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="The .slnx containing the application host. Check solution reloads the compatible hosts.">
+        <TextBlock Text="Solution" Style="{StaticResource fieldLabelStyle}"/>
+        <DockPanel>
+         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0"><Button Content="Browse" Command="{Binding Commands[BrowseSolutionCommand]}" Style="{StaticResource outlinedButtonStyle}"/><Button Content="Check solution" Command="{Binding Commands[CheckSolutionCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/></StackPanel>
+         <TextBox Text="{Binding SolutionPath, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/>
+        </DockPanel>
+       </StackPanel>
+       <StackPanel ToolTip="Selecting a host reads evaluated MSBuild identity, including imported properties." ToolTipService.ShowOnDisabled="True">
+        <TextBlock Text="Host project" Style="{StaticResource fieldLabelStyle}"/>
+        <ComboBox x:Name="hostsCombo" ItemsSource="{Binding Hosts}" SelectedItem="{Binding SelectedHost}" Style="{StaticResource fieldComboStyle}"/>
+        <TextBlock Text="Choose the application to release. Its project supplies the identity below." Style="{StaticResource fieldHelpStyle}"/>
+       </StackPanel>
+      </StackPanel>
+     </Border>
+     <Border x:Name="identitySection" Style="{StaticResource releaseSection}">
+      <StackPanel>
+       <TextBlock Text="2  PRODUCT IDENTITY" Style="{StaticResource releaseHeading}"/>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="User-facing product name from Product or ApplicationTitle."><TextBlock Text="Product name" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding AppName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Publisher from the host Company property."><TextBlock Text="Publisher" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding Publisher, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="EmAppId: two or more alphanumeric segments separated by dots. Use a different identity per environment. MatrixCode.EmSystem is reserved.">
+        <TextBlock Text="Product app_id" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding AppId, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/>
+        <TextBlock Text="Identifies this product in the release system; read from EmAppId." Style="{StaticResource fieldHelpStyle}"/>
+       </StackPanel>
+       <local:ReleaseAndroidSettings x:Name="androidIdentity" Section="Identity" DataContext="{Binding Android}" Visibility="{Binding IsAndroid, Converter={StaticResource visible}}"/>
+       <StackPanel Visibility="{Binding IsWindows, Converter={StaticResource visible}}">
+        <StackPanel Style="{StaticResource releaseField}" ToolTip="AssemblyName plus .exe, with no directory."><TextBlock Text="Application executable" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding AppExe, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+        <Expander Header="Application branding" Style="{StaticResource sectionExpanderStyle}">
+         <StackPanel>
+          <TextBlock Text="{Binding BrandingStatus}" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,12"/>
+          <TextBlock Text="Application icon (ICO)" Style="{StaticResource fieldLabelStyle}"/>
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,12"><Image Source="{Binding IconPreview}" Width="16" Height="16" Stretch="Uniform" Margin="0,0,12,0"/><Image Source="{Binding IconPreview}" Width="32" Height="32" Stretch="Uniform" Margin="0,0,12,0"/><Image Source="{Binding IconPreview}" Width="48" Height="48" Stretch="Uniform" Margin="0,0,12,0"/><Button Content="Import ICO" Command="{Binding Commands[ImportIconCommand]}" Style="{StaticResource outlinedButtonStyle}"/></StackPanel>
+          <TextBlock Text="{Binding IconSizes}" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,12"/>
+          <TextBlock Text="Launcher logo (transparent PNG)" Style="{StaticResource fieldLabelStyle}"/>
+          <ScrollViewer Visibility="{Binding HasLogo, Converter={StaticResource visible}}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12"><StackPanel><TextBlock Text="100%" Style="{StaticResource fieldHelpStyle}"/><Image Source="{Binding LogoPreview}" Width="{Binding LogoWidth}" Height="{Binding LogoHeight}" Stretch="Uniform" HorizontalAlignment="Left"/><TextBlock Text="200%" Style="{StaticResource fieldHelpStyle}"/><Image Source="{Binding LogoPreview}" Width="{Binding LogoDoubleWidth}" Height="{Binding LogoDoubleHeight}" Stretch="Uniform" HorizontalAlignment="Left"/></StackPanel></ScrollViewer>
+          <TextBlock Text="{Binding LogoWarning}" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,12"/>
+          <StackPanel Orientation="Horizontal"><Button Content="Import PNG logo" Command="{Binding Commands[ImportLogoCommand]}" Style="{StaticResource outlinedButtonStyle}"/><Button Content="Clear logo" Command="{Binding Commands[ClearLogoCommand]}" Style="{StaticResource textButtonStyle}" Margin="8,0,0,0"/></StackPanel>
+         </StackPanel>
+        </Expander>
+       </StackPanel>
+      </StackPanel>
+     </Border>
+     <Border x:Name="buildSection" Style="{StaticResource releaseSection}">
+      <StackPanel>
+       <TextBlock Text="3  BUILD ENVIRONMENT" Style="{StaticResource releaseHeading}"/>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Local build output. Prepare asks before emptying this folder; keep it separate from the release destination.">
+        <TextBlock Text="Publish folder" Style="{StaticResource fieldLabelStyle}"/>
+        <DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowsePublishCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding PublishFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel>
+        <TextBlock Text="Prepare writes the local build here. The release destination is configured in step 4." Style="{StaticResource fieldHelpStyle}"/>
+       </StackPanel>
+       <local:ReleaseAndroidSettings x:Name="androidEnvironment" Section="Environment" DataContext="{Binding Android}" Visibility="{Binding IsAndroid, Converter={StaticResource visible}}"/>
+       <StackPanel Visibility="{Binding IsWindows, Converter={StaticResource visible}}">
+        <StackPanel Style="{StaticResource releaseField}" ToolTip="Machine-local Rust source with Cargo.toml and build.rs. Required only when rebuilding the launcher."><TextBlock Text="Launcher source folder" Style="{StaticResource fieldLabelStyle}"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseLauncherSourceCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding LauncherSource, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel></StackPanel>
+        <StackPanel Style="{StaticResource releaseField}" ToolTip="Machine-local build destination or IT share. Empty uses Documents/Em/ReleaseManager/Launchers/app_id/."><TextBlock Text="Launcher output folder (optional)" Style="{StaticResource fieldLabelStyle}"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseLauncherOutputCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding LauncherOutput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel></StackPanel>
+        <Expander Header="Launcher options" Style="{StaticResource sectionExpanderStyle}">
+         <StackPanel>
+          <StackPanel Style="{StaticResource releaseField}" ToolTip="Filename shared by installer and root runner; must end in .exe."><TextBlock Text="Launcher file name" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding LauncherFileName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+          <StackPanel Style="{StaticResource releaseField}" ToolTip="MAJOR.MINOR.PATCH, independent of the application version."><TextBlock Text="Launcher base version" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding LauncherVersion, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+          <StackPanel Style="{StaticResource releaseField}"><TextBlock Text="Release channel" Style="{StaticResource fieldLabelStyle}"/><ComboBox ItemsSource="{Binding Channels}" SelectedItem="{Binding LauncherChannel}" Style="{StaticResource fieldComboStyle}"/></StackPanel>
+          <StackPanel Style="{StaticResource releaseField}" ToolTip="automatic installs verified updates; ask offers Update now or Later."><TextBlock Text="Update at startup" Style="{StaticResource fieldLabelStyle}"/><ComboBox ItemsSource="{Binding UpdateBehaviors}" SelectedItem="{Binding LauncherUpdate}" Style="{StaticResource fieldComboStyle}"/></StackPanel>
+         </StackPanel>
+        </Expander>
+       </StackPanel>
+      </StackPanel>
+     </Border>
+     <Border x:Name="destinationSection" Style="{StaticResource releaseSection}">
+      <StackPanel>
+       <TextBlock Text="4  RELEASE DESTINATION" Style="{StaticResource releaseHeading}"/>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Cdn uses the active connection. Folder writes directly to a local or network folder."><TextBlock Text="Target" Style="{StaticResource fieldLabelStyle}"/><ComboBox ItemsSource="{Binding TargetKinds}" SelectedItem="{Binding TargetKind}" Style="{StaticResource fieldComboStyle}"/></StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" Visibility="{Binding IsFolder, Converter={StaticResource visible}}" ToolTip="Parent directory for a Folder release."><TextBlock Text="Target folder" Style="{StaticResource fieldLabelStyle}"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseTargetCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding TargetFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></DockPanel></StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Relative product folder inside the target. Nested managed CDN folders are forbidden."><TextBlock Text="Release folder" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding ReleaseFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Public CDN base address, e.g. https://host/cdn/. The release folder is appended. Empty derives from the active connection. Android Folder releases require a public address.">
+        <TextBlock Text="Public CDN base address" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding CdnAddress, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}" Tag="https://host/cdn/"/>
+        <TextBlock Text="Enter the base address only. The release folder is added automatically." Style="{StaticResource fieldHelpStyle}"/>
+       </StackPanel>
+       <Expander Header="Managed CDN folder" Style="{StaticResource sectionExpanderStyle}" Visibility="{Binding IsCdn, Converter={StaticResource visible}}">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal"><Button Content="Browse / select folder" Command="{Binding Commands[SelectManagedCommand]}" Style="{StaticResource outlinedButtonStyle}"/><Button Content="Release ownership" Command="{Binding Commands[ReleaseManagedCommand]}" Style="{StaticResource dangerOutlinedButtonStyle}" Margin="8,0,0,0"/></StackPanel></ScrollViewer>
+       </Expander>
+      </StackPanel>
+     </Border>
+     <Border x:Name="signingSection" Style="{StaticResource releaseSection}">
+      <StackPanel>
+       <TextBlock Text="5  RELEASE SIGNING" Style="{StaticResource releaseHeading}"/>
+       <TextBlock Text="Manifest signing key" Style="{StaticResource fieldLabelStyle}"/>
+       <TextBlock Text="{Binding KeyStatus}" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,12"/>
+       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal"><Button Content="Create key" Command="{Binding Commands[CreatePemCommand]}" Style="{StaticResource outlinedButtonStyle}"/><Button Content="Import private PEM" Command="{Binding Commands[ImportPemCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><Button Content="Export public PEM" Command="{Binding Commands[ExportPemCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/></StackPanel></ScrollViewer>
+       <local:ReleaseAndroidSettings x:Name="androidSigning" Section="Signing" DataContext="{Binding Android}" Visibility="{Binding IsAndroid, Converter={StaticResource visible}}"/>
+      </StackPanel>
+     </Border>
+    </StackPanel>
+   </ScrollViewer>
+   <controls:WaitOverlay IsWaiting="{Binding IsBusy}" Heading="Release profile" Caption="{Binding BusyText}"/>
+  </Grid>
+ </Grid>
+</windows:EmWindow>
