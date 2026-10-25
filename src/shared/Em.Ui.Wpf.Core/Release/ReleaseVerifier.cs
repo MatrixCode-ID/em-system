@@ -1,3 +1,4 @@
+using Em.Ui.Core.Release.Format;
 using System.Diagnostics;
 
 namespace Em.Ui.Wpf.Core.Release

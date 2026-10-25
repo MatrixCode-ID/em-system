@@ -1,4 +1,4 @@
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// One release file inside the manifest: its path relative to the <c>binaries/</c> folder, its size, and

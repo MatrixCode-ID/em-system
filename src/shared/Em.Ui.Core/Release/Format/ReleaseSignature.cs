@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>The result of checking the signature of <c>release.json</c>.</summary>
    public enum ReleaseSignatureStatus

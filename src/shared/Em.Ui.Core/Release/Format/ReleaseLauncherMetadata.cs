@@ -1,4 +1,4 @@
-namespace Em.Ui.Wpf.Core.Release;
+namespace Em.Ui.Core.Release.Format;
 
 /// <summary>Signed metadata of the product launcher included in a release.</summary>
 public sealed class ReleaseLauncherMetadata {

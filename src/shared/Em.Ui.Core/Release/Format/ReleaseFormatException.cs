@@ -1,4 +1,4 @@
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// Thrown when <c>release.json</c> or <c>release.json.sig</c> does not conform to

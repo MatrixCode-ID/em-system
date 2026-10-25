@@ -1,7 +1,7 @@
 using System.IO;
 using System.Security.Cryptography;
 
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// Computes the size and SHA-256 of the content of a release file (<c>doc/release-format.md</c> section

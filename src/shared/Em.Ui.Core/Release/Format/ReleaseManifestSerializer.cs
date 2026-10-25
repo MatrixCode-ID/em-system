@@ -3,7 +3,7 @@ using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// Writes and reads <c>release.json</c> and <c>release.json.sig</c> according to
@@ -32,6 +32,7 @@ namespace Em.Ui.Wpf.Core.Release
          var files = manifest.Files.OrderBy(r => r.Path, StringComparer.Ordinal).ToArray();
          ValidateFiles(files);
          ValidateLauncher(manifest.Launcher, files);
+         ValidateAndroid(manifest.Android, files, manifest.Launcher);
 
          using var buffer = new MemoryStream();
          using (var writer = new Utf8JsonWriter(buffer, WriterOptions)) {
@@ -43,6 +44,15 @@ namespace Em.Ui.Wpf.Core.Release
                writer.WriteString("fileName", launcher.FileName);
                writer.WriteString("version", launcher.Version);
                writer.WriteString("inputHash", launcher.InputHash);
+               writer.WriteEndObject();
+            }
+            if (manifest.Android is { } android) {
+               writer.WriteStartObject("android");
+               writer.WriteString("fileName", android.FileName);
+               writer.WriteString("applicationId", android.ApplicationId);
+               writer.WriteNumber("versionCode", android.VersionCode);
+               writer.WriteString("versionName", android.VersionName);
+               if (android.MinVersionCode is { } minimum) writer.WriteNumber("minVersionCode", minimum);
                writer.WriteEndObject();
             }
             writer.WriteStartArray("files");
@@ -105,7 +115,17 @@ namespace Em.Ui.Wpf.Core.Release
                launcher = new() { FileName = RequireString(metadata, "fileName"), Version = RequireString(metadata, "version"), InputHash = RequireString(metadata, "inputHash") };
                ValidateLauncher(launcher, files);
             }
-            return new ReleaseManifest { PublishedAtUtc = publishedAt, Files = files, Launcher = launcher };
+            ReleaseAndroidMetadata? android = null;
+            if (root.TryGetProperty("android", out var apk)) {
+               RequireKind(apk, JsonValueKind.Object, "android");
+               android = new() {
+                  FileName = RequireString(apk, "fileName"), ApplicationId = RequireString(apk, "applicationId"),
+                  VersionCode = RequireInt(apk, "versionCode"), VersionName = RequireString(apk, "versionName"),
+                  MinVersionCode = apk.TryGetProperty("minVersionCode", out _) ? RequireInt(apk, "minVersionCode") : null
+               };
+               ValidateAndroid(android, files, launcher);
+            }
+            return new ReleaseManifest { PublishedAtUtc = publishedAt, Files = files, Launcher = launcher, Android = android };
          }
          catch (JsonException x) {
             throw new ReleaseFormatException($"release.json is not valid JSON: {x.Message}", x);
@@ -195,6 +215,29 @@ namespace Em.Ui.Wpf.Core.Release
          if (!System.Text.RegularExpressions.Regex.IsMatch(launcher.Version, @"^\d+\.\d+\.\d+(?:-(?:prealpha|alpha|beta|rc)\.[1-9]\d*)?$"))
             throw new ReleaseFormatException("Invalid launcher.version.");
       }
+
+      public static bool IsApplicationId(string value) => System.Text.RegularExpressions.Regex.IsMatch(value,
+         @"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$");
+
+      public static bool IsSemanticVersion(string value) => System.Text.RegularExpressions.Regex.IsMatch(value,
+         @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?$");
+
+      private static void ValidateAndroid(ReleaseAndroidMetadata? android, IEnumerable<ReleaseFile> files, ReleaseLauncherMetadata? launcher) {
+         if (android is null) return;
+         if (launcher is not null) throw new ReleaseFormatException("launcher and android are mutually exclusive.");
+         var entries = files.ToArray();
+         if (entries.Length != 1 || CheckPath(android.FileName) is not null || android.FileName.Contains('/') ||
+             !android.FileName.EndsWith(".apk", StringComparison.Ordinal) || entries[0].Path != android.FileName)
+            throw new ReleaseFormatException("android.fileName must name the single APK in the binaries root.");
+         if (!IsApplicationId(android.ApplicationId)) throw new ReleaseFormatException("Invalid android.applicationId.");
+         if (android.VersionCode is < 1 or > 2100000000) throw new ReleaseFormatException("Invalid android.versionCode.");
+         if (!IsSemanticVersion(android.VersionName)) throw new ReleaseFormatException("Invalid android.versionName.");
+         if (android.MinVersionCode is { } minimum && (minimum < 1 || minimum > android.VersionCode))
+            throw new ReleaseFormatException("Invalid android.minVersionCode.");
+      }
+
+      private static int RequireInt(JsonElement element, string name) =>
+         RequireProperty(element, name).TryGetInt32(out var value) ? value : throw new ReleaseFormatException($"'{name}' must be an integer.");
 
       private static DateTime ToUtc(DateTime value) => value.Kind switch {
          DateTimeKind.Utc => value,

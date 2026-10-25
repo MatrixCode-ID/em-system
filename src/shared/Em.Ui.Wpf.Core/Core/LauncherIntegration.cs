@@ -1,3 +1,4 @@
+using Em.Ui.Core.Release.Format;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;

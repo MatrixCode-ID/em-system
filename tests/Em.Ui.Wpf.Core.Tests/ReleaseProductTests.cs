@@ -1,3 +1,4 @@
+using Em.Ui.Core.Release.Format;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;

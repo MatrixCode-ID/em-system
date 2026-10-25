@@ -1,4 +1,4 @@
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// The content of <c>release.json.sig</c>: the pointer to the signer's public key and the signature. Its

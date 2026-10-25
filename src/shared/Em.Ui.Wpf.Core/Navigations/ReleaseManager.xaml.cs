@@ -1,3 +1,4 @@
+using Em.Ui.Core.Release.Format;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Diagnostics;

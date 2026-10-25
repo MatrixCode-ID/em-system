@@ -1,4 +1,4 @@
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// The content of <c>release.json</c>: when the release was published and which files are part of it.
@@ -25,5 +25,7 @@ namespace Em.Ui.Wpf.Core.Release
       private Dictionary<string, ReleaseFile>? _index;
       /// <summary>Signed launcher identity, version and input hash.</summary>
       public ReleaseLauncherMetadata? Launcher { get; init; }
+      /// <summary>Signed Android APK identity and update policy.</summary>
+      public ReleaseAndroidMetadata? Android { get; init; }
    }
 }

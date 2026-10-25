@@ -1,4 +1,4 @@
-namespace Em.Ui.Wpf.Core.Release
+namespace Em.Ui.Core.Release.Format
 {
    /// <summary>
    /// The fixed names inside a desktop client release folder. The source of truth is

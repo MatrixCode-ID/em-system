@@ -1,3 +1,4 @@
+using Em.Ui.Core.Release.Format;
 namespace Em.Ui.Wpf.Core.Release
 {
    /// <summary>Status of one file compared with the release at the target.</summary>
