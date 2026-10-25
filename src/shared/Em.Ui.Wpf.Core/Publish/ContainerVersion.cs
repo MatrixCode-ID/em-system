@@ -9,6 +9,13 @@ namespace Em.Ui.Wpf.Publish;
 /// <c>A.B.C-channel.N</c>, and N is not typed but taken from the tags the registry already holds.
 /// </summary>
 public readonly record struct ContainerVersion(int Major,int Minor,int Patch,string Channel) {
+ /// <summary>Parses a complete standard release version, discarding build metadata.</summary>
+ public static bool TryParseFull(string? value,out ContainerReleaseVersion version) {
+  var text=(value??"").Split('+')[0];version=default;
+  if(!Em.Ui.Core.Release.Format.ReleaseManifestSerializer.IsStandardVersion(text))return false;
+  var parts=text.Split(['.','-']);
+  version=new(text,System.Numerics.BigInteger.Parse(parts[0]),System.Numerics.BigInteger.Parse(parts[1]),System.Numerics.BigInteger.Parse(parts[2]),parts.Length>3?parts[3]:Release,parts.Length>3?System.Numerics.BigInteger.Parse(parts[4]):0);return true;
+ }
  /// <summary>Name of the release channel.</summary>
  public const string Release="release";
  /// <summary>The channels in order from the least to the most stable.</summary>
@@ -52,5 +59,22 @@ public readonly record struct ContainerVersion(int Major,int Minor,int Patch,str
   var prefix=$"{Core}-{Channel}.";var highest=0;
   foreach(var tag in existing)if(tag.StartsWith(prefix,StringComparison.Ordinal)&&int.TryParse(tag.AsSpan(prefix.Length),out var n)&&n>highest)highest=n;
   return highest+1;
+ }
+}
+
+/// <summary>A complete standard version with unbounded numeric components, independent of the editable strip.</summary>
+/// <param name="Full">Normalized version without metadata.</param>
+/// <param name="Major">Major number.</param>
+/// <param name="Minor">Minor number.</param>
+/// <param name="Patch">Patch number.</param>
+/// <param name="Channel">Stability channel.</param>
+/// <param name="Number">Prerelease sequence, zero for stable releases.</param>
+public readonly record struct ContainerReleaseVersion(string Full,System.Numerics.BigInteger Major,System.Numerics.BigInteger Minor,System.Numerics.BigInteger Patch,string Channel,System.Numerics.BigInteger Number) : IComparable<ContainerReleaseVersion> {
+ /// <summary>Compares core numbers, channel stability and the numeric prerelease sequence.</summary>
+ public int CompareTo(ContainerReleaseVersion other) {
+  System.Numerics.BigInteger[] a=[Major,Minor,Patch,Array.IndexOf(ContainerVersion.Channels,Channel),Number];
+  System.Numerics.BigInteger[] b=[other.Major,other.Minor,other.Patch,Array.IndexOf(ContainerVersion.Channels,other.Channel),other.Number];
+  for(var i=0;i<a.Length;i++)if(a[i]!=b[i])return a[i].CompareTo(b[i]);
+  return 0;
  }
 }

@@ -45,6 +45,8 @@ namespace Em.Ui.Wpf.Core.Release
 
       /// <summary>The issue time according to <c>release.json</c>, when it can be read.</summary>
       public DateTime? PublishedAtUtc { get; init; }
+      /// <summary>The optional signed application version.</summary>
+      public string? Version { get; init; }
 
       /// <summary>The number of files listed in <c>release.json</c>.</summary>
       public int FileCount { get; init; }
@@ -67,7 +69,7 @@ namespace Em.Ui.Wpf.Core.Release
       public string Summary {
          get {
             if (!ManifestFound) return "No release.json at the target.";
-            if (IsSuccess) return $"Release verified: {FileCount:N0} files, signature valid.";
+            if (IsSuccess) return $"Release verified: {FileCount:N0} files, signature valid." + (Version is null ? "" : $" Version: {Version}.");
 
             var parts = new List<string>();
             if (!SignatureFound) parts.Add("release.json.sig is missing");
@@ -180,6 +182,7 @@ namespace Em.Ui.Wpf.Core.Release
             SignatureStatus = signatureStatus,
             FormatError = formatError,
             PublishedAtUtc = manifest.PublishedAtUtc,
+            Version = manifest.Version,
             FileCount = manifest.Files.Count,
             TotalSize = total,
             Issues = issues.OrderBy(r => r.Path, StringComparer.OrdinalIgnoreCase).ToArray()

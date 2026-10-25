@@ -43,7 +43,7 @@ public static class AndroidReleaseBuilder {
       return file;
    }
 
-   public static async Task PrepareAsync(ReleaseProfile profile, ReleaseTarget target, string address, string sdk, string java, IProgress<string> log, CancellationToken token) {
+   public static async Task PrepareAsync(ReleaseProfile profile, ReleaseTarget target, string address, string sdk, string java, IProgress<string> log, CancellationToken token, string? profileFolder = null) {
       var hostProject = Path.GetFullPath(profile.HostProject, Path.GetDirectoryName(Path.GetFullPath(profile.SolutionPath))!);
       var identity = await ReleaseProduct.ReadAsync(hostProject, token, ReleasePlatform.Android);
       profile.Product.Version = identity.Version;
@@ -51,6 +51,7 @@ public static class AndroidReleaseBuilder {
       profile.Product.AndroidTargetFramework = identity.AndroidTargetFramework;
       profile.Product.MinimumSupportedJavaVersion = identity.MinimumSupportedJavaVersion;
       profile.Product.LatestSupportedJavaVersion = identity.LatestSupportedJavaVersion;
+      await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, profileFolder ?? ReleaseManagerPreferences.DefaultProfilesFolder, token);
       profile.ValidateAndroidRelease();
       if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") || !address.EndsWith('/'))
          throw new InvalidDataException("Set the public CDN address before preparing an Android release.");

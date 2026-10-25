@@ -30,6 +30,19 @@ public sealed class PreparedPublish {
 }
 /// <summary>Runs publish: checks the profile, prepares the artifacts, pushes them, and verifies the result.</summary>
 public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,PublishSecretStore secrets,PublishTargets targets) {
+ /// <summary>Reads registry versions and the profile-relative note folder without changing the selected version.</summary>
+ public async Task<Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState> ReleaseNotesState(PublishProfile p,CancellationToken ct) {
+  var tags=Array.Empty<string>();var known=true;
+  try {var reference=await targets.ResolveContainer(p,ct);tags=await new OciClient(targets).Tags(reference,await targets.OciCredential(p,reference.Split('/')[0],ct),ct);}
+  catch(System.Net.Http.HttpRequestException ex) when(ex.StatusCode==System.Net.HttpStatusCode.NotFound) {}
+  catch(OperationCanceledException){throw;}
+  catch(Exception){known=false;}
+  return Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(Path.Combine(profiles.Root,p.Kind.ToString()),p.ReleaseNotesFolder,p.Container!.Target.VersionTag,tags,known,true);
+ }
+ private async Task GuardReleaseNotes(PublishProfile p,CancellationToken ct) {
+  if(!p.UsesReleaseNoteLock)return;
+  var state=await ReleaseNotesState(p,ct);if(!state.Allowed)throw new InvalidDataException(state.Message);
+ }
  private static readonly ConcurrentDictionary<string,byte> Busy=new();
  private readonly PublishProcessRunner _process=new();
  private PublishTargets? _operationTargets;
@@ -56,7 +69,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  public event Action<string>? Output;
  /// <summary>Computes a fingerprint of the parts of a profile that decide what is built.</summary>
  public static string Fingerprint(PublishProfile profile) {
-  var p=profile.Clone();p.Credentials=[];p.SensitiveDataStorage=SensitiveDataStorage.Separate;p.Name="";p.Description="";p.KeepWorkspace=false;p.RequireReleaseNotes=false;
+  var p=profile.Clone();p.Credentials=[];p.SensitiveDataStorage=SensitiveDataStorage.Separate;p.Name="";p.Description="";p.KeepWorkspace=false;p.RequireReleaseNotes=false;p.ReleaseNoteLock=false;p.ReleaseNotesFolder="";
   if(p.NuGet!=null)p.NuGet.Target=new();if(p.Container!=null) {p.Container.Target=new();p.Container.UseMyDockerLogin=false;p.Container.AutoDeploy=true;foreach(var service in p.Container.Compose.Services){service.Repository="";service.VersionTag="";}}
   return Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ProfileJson.Write(p))));
  }
@@ -126,7 +139,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
    _operationTargets=targets.Freeze();_effective=[];
    var mask=new SecretMasker();foreach(var c in p.Credentials)mask.AddCredential(c.Username,secrets.Get(c,c.ScopeHost));
    var snapshot=p.Clone();snapshot.Credentials=[];
-   var run=new PublishRun {ProfileId=p.Id,ProfileName=p.Name,Kind=p.Kind,Operation=operation,ReleaseNotes=notes,RetryOf=retry,Settings=JsonSerializer.SerializeToElement(snapshot,ProfileJson.Options)};
+   var run=new PublishRun {ProfileId=p.Id,ProfileName=p.Name,Kind=p.Kind,Operation=operation,ReleaseNotes=p.UsesReleaseNoteLock?"":notes,ReleaseNotesFile=p.UsesReleaseNoteLock?Path.Combine(p.ReleaseNotesFolder,p.Container!.Target.VersionTag+".md").Replace('\\','/'):"",RetryOf=retry,Settings=JsonSerializer.SerializeToElement(snapshot,ProfileJson.Options)};
    log=new(settings.Logs,run,mask);log.Output+=s=>Output?.Invoke(s);LastRun=run;LastRunDirectory=log.Directory;
    work=new(settings.Work,run.Id,p.KeepWorkspace);
    if(p.Container is {} container) {
@@ -137,7 +150,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
     }
     foreach(var child in children) {
      if(child.Container?.Mode==ContainerMode.Set)throw new InvalidDataException("Nested Sets are not supported.");
-     if(operation=="Push"&&child.RequireReleaseNotes&&string.IsNullOrWhiteSpace(notes))throw new InvalidDataException("Release notes required by "+child.Name);
+     if(operation=="Push"&&child.RequireReleaseNotes&&!p.UsesReleaseNoteLock&&string.IsNullOrWhiteSpace(notes))throw new InvalidDataException("Release notes required by "+child.Name);
      if(operation is "Prepare" or "Push")await ContainerTarget(child,ct);
      if(child.Container?.Mode==ContainerMode.Compose)foreach(var mapping in child.Container.Compose.Services)await Targets.ValidateComposeTarget(child,mapping);
     }
@@ -155,6 +168,7 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  }
  /// <summary>Builds the artifacts of a profile.</summary>
  public async Task Prepare(PublishProfile profile,CancellationToken ct) {
+  await GuardReleaseNotes(profile,ct);
   var p=profile.Clone();Prepared=null;
   await Execute(p,"Prepare","",async(log,work,token)=> {
    var prepared=new PreparedPublish {Profile=p,BuildFingerprint=Fingerprint(p),Connection=targets.Scope,RunId=log.Run.Id};
@@ -311,6 +325,10 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  private async Task<string> ImageId(string image,PublishProfile p,PublishLog log,CancellationToken ct)=> (await _process.RequireAsync("docker",["image","inspect","--format","{{.Id}}",image],p.Workspace,log,ct)).Trim();
  /// <summary>Validates the release notes of a profile.</summary>
  public void ValidateReleaseNotes(PublishProfile p,string notes) {
+  if(p.UsesReleaseNoteLock) {
+   var state=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(Path.Combine(profiles.Root,p.Kind.ToString()),p.ReleaseNotesFolder,p.Container!.Target.VersionTag,[],true);
+   if(!state.Allowed)throw new InvalidDataException(state.Message);return;
+  }
   if(!string.IsNullOrWhiteSpace(notes))return;
   if(p.RequireReleaseNotes)throw new InvalidDataException("Release notes are required.");
   if(p.Container?.Mode==ContainerMode.Set)foreach(var step in p.Container.Set.Steps)if(profiles.Load(step.ProfileId).RequireReleaseNotes)throw new InvalidDataException("Release notes are required by a Set step.");
@@ -318,6 +336,8 @@ public sealed class Publisher(PublisherSettings settings,ProfileStore profiles,P
  /// <summary>Pushes the prepared artifacts to the target.</summary>
  public async Task Push(PublishProfile profile,string notes,CancellationToken ct) {
   var prepared=Prepared??throw new InvalidOperationException("Prepare or add packages first.");
+  if(profile.UsesReleaseNoteLock&&prepared.Artifacts.Any(a=>a.Version!=profile.Container!.Target.VersionTag))throw new InvalidOperationException("The version strip changed after Build. Build again before Push.");
+  await GuardReleaseNotes(profile,ct);
   if(Fingerprint(profile)!=prepared.BuildFingerprint)throw new InvalidOperationException("Source/build settings changed; Prepare again.");
   if(profile.Container?.Mode==ContainerMode.Set)foreach(var step in profile.Container.Set.Steps) {
    var current=profiles.Load(step.ProfileId).Clone();

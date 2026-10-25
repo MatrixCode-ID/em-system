@@ -1,0 +1,3 @@
+keyId d31997ae491297cf
+version-valid accepted
+version-bad-format rejected-by-parser

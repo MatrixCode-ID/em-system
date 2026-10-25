@@ -336,11 +336,22 @@ it to apply, then run Check again. Nothing is removed automatically; delete the 
 | --- | --- | --- |
 | 1 | **Keep Workspace** | Keeps the run's work folder after the run, for inspection |
 | 2 | **Require Release Notes** | Push and Build & Push refuse to run with empty release notes |
+| — | **Release note lock / Release notes folder** | Requires a matching valid version note and a version newer than all standard registry tags before Build, Push or Build & Push. Choose the folder once in Advanced, relative to the profile JSON directory. |
 | 3 | **Use My Docker Login** | Uses the login already stored in your Docker (`docker login` or a credential helper) instead of the profile credential |
 | 4 | **Save** | Saves the profile |
 | 5 | **Save As** | Saves a copy with a new ID |
 
 ### History
+
+Release note lock supports Dockerfile, LocalImage and Template with Standard tagging only. Set, Compose
+and Manual disable the option; existing profiles in these modes ignore it. A single profile's lock does
+not apply when run as a Set step. The strip still supplies the version and registry-derived N. An
+unreadable registry blocks the lock; a missing repository (404) is empty. Push rechecks the note and
+registry and rejects artifacts whose version differs from the current strip: Build again.
+With the lock on, Release notes is a read-only matching-file preview, regardless of Require Release Notes.
+The release page adds status, refresh and a Released/Pending/Invalid history with From/To range preview.
+See [shared folder rules and template](engine-release-manager.md#shared-note-folder-and-file-rules).
+Prepare/Check are unchanged; the container Build action is guarded.
 
 ![Publish history](images/registry-guide/publish-history.png)
 
@@ -383,6 +394,8 @@ it to apply, then run Check again. Nothing is removed automatically; delete the 
 | "Source/build settings changed; Prepare again." | The profile changed after Build; run Build again |
 | "Version tag is required and must be a valid Docker tag." | Fill **Version Tag**: letters, digits, `_`, `.`, `-`, up to 128 characters |
 | "Release notes are required." | Fill **Release notes** or clear **Require Release Notes** |
+| "Blocked: ... not found / ... has no nonempty ## Summary" | Create the exact version.md in the profile's notes folder and add a nonempty Summary, then refresh. |
+| "Blocked: ... is not newer ... / The release target could not be read" | Raise the application/strip version, or fix registry access and refresh. The lock does not guess server state. |
 | "Registry storage disabled." | The registry is off on the server; see [3. Settings tab](#3-settings-tab) |
 
 ## Maintainer notes

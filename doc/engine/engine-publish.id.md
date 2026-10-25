@@ -35,6 +35,13 @@ pemiliknya.
 
 ## Profil dan berkas lokal
 
+Profil container dapat menyalakan **Release note lock** pada Advanced untuk Dockerfile, LocalImage,
+dan Template dengan Tagging Standard. Build/Push memerlukan `<versi-strip>.md` valid dan versi lebih
+tinggi dari registry; Set/Compose/Manual serta step Set tetap seperti sebelumnya. Release notes menjadi
+pratinjau baca saja, dengan status, refresh, dan riwayat versi. Run lock menyimpan path relatif direktori
+profil pada `ReleaseNotesFile` dan mengosongkan `ReleaseNotes`; run detail menampilkan path tersebut.
+Run lama tetap terbaca. Lihat [aturan folder, Summary dan template](engine-release-manager.md#shared-note-folder-and-file-rules).
+
 | Item | Lokasi bawaan |
 | --- | --- |
 | Profil | `Documents\Em\Publish\Profiles\NuGet` dan `...\Profiles\Container` |

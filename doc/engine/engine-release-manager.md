@@ -41,6 +41,71 @@ the important differences between local build output and release destination; de
 available in hover help. A progress line and wait overlay cover asynchronous source/SDK work.
 Unapplied platform changes disable Save until the platform is applied or restored to the active one.
 
+## Release note lock
+
+In **Product Identity**, immediately after Application version, enable **Release note lock** and choose
+one notes folder. The setting applies to Windows and Android. The release page shows this folder read-only;
+change it only in the profile editor. Old profiles default to lock off and retain format version 2.
+Prepare and Sync require a valid note for the application's current version and a version strictly newer
+than the target. Compare and Verify remain available. Refresh release notes reloads the folder and target.
+Android Prepare rereads host identity before checking the lock; Sync checks PreparedVersionName and
+requires Prepare again when it differs from the current Product.Version. Windows uses Product.Version,
+without adding an executable-version check or a separate prepared-version field.
+
+With the lock enabled, Sync signs the top-level `version` in `release.json`. With the lock disabled it
+omits this field. Verify displays it when present. Windows reads target `version`; Android prefers that
+field, falling back only to a standard `android.versionName` without build metadata. A missing release or
+usable version allows the first version; an unreadable target blocks release. The note and target are
+checked again before Sync. Launcher identity/version remains separate.
+
+### Shared note folder and file rules
+
+The folder directly contains `<version>.md` files for one profile, for example
+`doc/ReleaseNote/inventory-api/1.2.0-beta.3.md`. No app_id or container subfolder is created automatically.
+Versions are `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH-(prealpha|alpha|beta|rc).N`, with N starting at 1.
+The application supplies the version; notes never select or override it. Application build metadata is
+removed for matching. Stable releases follow prereleases, with channel order prealpha, alpha, beta, rc,
+then numeric N. Nonstandard application versions block release while the lock is enabled.
+
+The filename must match the application version exactly and contain a nonempty `## Summary` before the
+next heading. Other Markdown filenames, including README.md, are ignored; Date/Previous/Source are optional.
+Recommended template:
+
+```markdown
+# inventory-api 1.2.0-beta.3
+
+Date: 2026-10-23
+Previous: 1.2.0-beta.2
+Source: 0b18037
+
+## Summary
+One short paragraph.
+
+## New features
+- ...
+
+## Fixes
+- ...
+
+## Upgrade notes
+- ...
+```
+
+The stored folder path is always relative to the directory containing the profile JSON, using `/`.
+For Publish this includes the `Profiles/Container` directory; for Release Manager it is
+ReleaseProfileStore.Root. Reading also accepts `\`. Another drive cannot be selected, and manually entered
+absolute paths are invalid. The basis is independent of Workspace/SolutionPath. Export and Import copy the
+value unchanged; moving/importing a profile into a different directory can change the resolved folder.
+Commit the notes and optionally the profile to the product repository. The tool does not run git or
+check whether files are committed. Pull changes to see notes written by other developers.
+
+The Release notes history panel lists version files in descending order with Released/Pending/Invalid
+status. Invalid means a missing/empty Summary. Release Manager marks versions at or below the target as
+Released; Publish requires the exact registry tag. Select a note for raw read-only Markdown, or choose
+From/To to combine notes exclusively after From and inclusively through To, in ascending order.
+There is no database. A typical workflow is to ask an agent to create and commit the note in the product
+folder, then review it and run Push/Sync yourself.
+
 ## Read product identity
 
 Choose the .slnx with Browse, or press Check solution to read the selected one again. Both list the

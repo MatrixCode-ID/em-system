@@ -7,6 +7,8 @@ namespace Em.Ui.Core.Release.Format
    /// </summary>
    public sealed class ReleaseManifest
    {
+      /// <summary>Optional signed application version, without build metadata.</summary>
+      public string? Version { get; init; }
       /// <summary>The time the release was published, in UTC. Informational only.</summary>
       public required DateTime PublishedAtUtc { get; init; }
 

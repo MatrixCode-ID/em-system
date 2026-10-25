@@ -1,0 +1,11 @@
+{
+  "publishedAtUtc": "2026-10-26T00:00:00Z",
+  "version": "1.2.0-beta.3",
+  "files": [
+    {
+      "path": "inventory.txt",
+      "size": 41,
+      "sha256": "8a3d60d0ef5eb0f6df0cb931d57febb4dd2eef006fbe5d5347e31a7228822b85"
+    }
+  ]
+}

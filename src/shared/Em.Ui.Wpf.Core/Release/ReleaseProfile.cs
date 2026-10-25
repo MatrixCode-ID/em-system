@@ -62,6 +62,10 @@ namespace Em.Ui.Wpf.Core.Release
 
       /// <summary>Identity read from the host project and selected by the developer.</summary>
       public ReleaseProduct Product { get; set; } = new();
+      /// <summary>Requires a versioned release note before Prepare or Sync.</summary>
+      public bool ReleaseNoteLock { get; set; }
+      /// <summary>Notes folder relative to ReleaseProfileStore.Root.</summary>
+      public string ReleaseNotesFolder { get; set; } = "";
       /// <summary>Public CDN address used by clients; empty derives from the connection.</summary>
       public string CdnAddress { get; set; } = "";
       /// <summary>Unencrypted PKCS#8 P-256 private PEM.</summary>

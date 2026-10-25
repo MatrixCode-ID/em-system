@@ -63,6 +63,8 @@ public partial class PublishProfileDialog : EmWindow {
  private string? _optionsProject;
  private bool _busy;
  private Action? _modeChanged;
+ private Action? _updateNoteLock;
+ private string _profileFolder="";
  private Action? _targetTypeChanged;
  private readonly bool _isNew;
  /// <param name="profile">The profile being edited; the dialog works on a copy.</param>
@@ -70,7 +72,8 @@ public partial class PublishProfileDialog : EmWindow {
  /// <param name="secrets">The store of publish secrets.</param>
  /// <param name="logs">The folder of the publish logs.</param>
  /// <param name="isNew">True for a profile that has never been saved: only then can its Tagging be chosen.</param>
- public PublishProfileDialog(PublishProfile profile,PublishTargets targets,PublishSecretStore secrets,string logs,bool isNew=false) {
+ public PublishProfileDialog(PublishProfile profile,PublishTargets targets,PublishSecretStore secrets,string logs,bool isNew=false,string? profileFolder=null) {
+  _profileFolder=profileFolder??Path.Combine(new PublisherSettings().Profiles,profile.Kind.ToString());
   InitializeComponent();_isNew=isNew;Profile=profile.Clone();foreach(var c in Profile.Credentials)c.Remember=secrets.IsRemembered(c);_targets=targets;_secrets=secrets;_logs=logs;
   var source=Tab("Source");Fields(source,Profile,["Name","Description","Workspace"]);
   if(Profile.NuGet is {} n)Fields(source,n,["Sources"]);else {var c=Profile.Container!;Fields(source,c,["Mode"]);Fields(source,c.Template,SourceTemplateFields);}
@@ -90,7 +93,21 @@ public partial class PublishProfileDialog : EmWindow {
   Row(credentials,"",Help("Separate: DPAPI CurrentUser with optional Remember; otherwise session only. Plaintext: secrets are saved as ordinary text in this JSON file."));
   Fields(credentials,Profile,["Credentials"]);
   Loaded+=async(_,_)=>await LoadProjectOptions();
-  var advanced=Tab("Advanced");Fields(advanced,Profile,["KeepWorkspace","RequireReleaseNotes"]);if(Profile.Container!=null)Fields(advanced,Profile.Container,["UseMyDockerLogin","AutoDeploy"]);
+  var advanced=Tab("Advanced");Fields(advanced,Profile,["KeepWorkspace","RequireReleaseNotes"]);if(Profile.Container!=null) {NoteLockFields(advanced);Fields(advanced,Profile.Container,["UseMyDockerLogin","AutoDeploy"]);}
+ }
+ private void NoteLockFields(Panel panel) {
+  var toggle=new CheckBox {Content="Release note lock",IsChecked=Profile.ReleaseNoteLock};
+  toggle.Checked+=(_,_)=>Profile.ReleaseNoteLock=true;toggle.Unchecked+=(_,_)=>Profile.ReleaseNoteLock=false;
+  var folder=new TextBox {Text=Profile.ReleaseNotesFolder,IsReadOnly=true};
+  var browse=IconButton(EFontAwesomeIcon.Solid_FolderOpen,"Choose release notes folder",()=> {
+   try {var picker=new OpenFolderDialog();if(picker.ShowDialog()==true)folder.Text=Profile.ReleaseNotesFolder=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Relative(_profileFolder,picker.FolderName);}
+   catch(Exception ex){message.Text=ex.Message;}return Task.CompletedTask;
+  });
+  Row(panel,"",toggle,tip:"Requires a valid <version>.md with a nonempty ## Summary and a version newer than the registry. Only single-image Standard tagging supports this lock.");
+  Row(panel,"Release notes folder",folder,browse,tip:"Relative to the folder containing this profile JSON, including its Container subfolder. Another drive is not supported. Export/import preserves this path unchanged.");
+  var help=Help("");Row(panel,"",help);
+  _updateNoteLock=()=> {var supported=Profile.SupportsReleaseNoteLock;toggle.IsEnabled=folder.IsEnabled=browse.IsEnabled=supported;help.Text=supported?"Notes are read from this folder; change it only in the profile.":"Release note lock is ignored for Set, Compose and Manual tagging. Use Dockerfile, LocalImage or Template with Standard tagging.";};
+  _updateNoteLock();
  }
  /// <summary>
  /// Target tab, rebuilt when the target type changes. Built-in: the active server (read from the connection, never typed)
@@ -338,7 +355,8 @@ public partial class PublishProfileDialog : EmWindow {
     }
    } else if(type.IsEnum) {
     var combo=new ComboBox {ItemsSource=Enum.GetValues(type),SelectedItem=value};combo.SelectionChanged+=(_,_)=> {if(combo.SelectedItem!=null)property.SetValue(obj,combo.SelectedItem);};
-    if(obj is ContainerProfile&&property.Name=="Mode")combo.SelectionChanged+=(_,_)=>_modeChanged?.Invoke();
+    if(obj is ContainerProfile&&property.Name=="Mode")combo.SelectionChanged+=(_,_)=> {_modeChanged?.Invoke();_updateNoteLock?.Invoke();};
+    if(obj is ContainerTarget&&property.Name=="Tagging")combo.SelectionChanged+=(_,_)=>_updateNoteLock?.Invoke();
     if(obj is ContainerTarget or NuGetTarget&&property.Name=="Type")combo.SelectionChanged+=(_,_)=>_targetTypeChanged?.Invoke();
     if(obj is TemplateProfile&&property.Name=="PublishSource")combo.SelectionChanged+=(_,_)=>UpdateTemplateFields();
     _rows[key]=Row(panel,label,combo,tip:tip);

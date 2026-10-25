@@ -30,11 +30,17 @@ public partial class PublishView : UserControl {
  private readonly HashSet<string> _cards=[];
  private readonly DispatcherTimer _versionTimer=new() {Interval=TimeSpan.FromMilliseconds(400)};
  private bool _syncingVersion,_versionDirty,_resolvingVersion;
+ private readonly Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteHistory _noteHistory=new();
+ private readonly Button _notesRefresh=new() {Content="Refresh release notes",HorizontalAlignment=HorizontalAlignment.Left,Visibility=Visibility.Collapsed};
+ private int _noteRefresh;
  private ProfileEntry? Entry=>profileList.SelectedItem as ProfileEntry;
  private PublishProfile? Profile=>Entry?.Profile;
  /// <summary>Creates a new instance of <see cref="PublishView"/>.</summary>
  public PublishView() {
-  InitializeComponent();versionChannel.ItemsSource=ContainerVersion.Channels;_versionTimer.Tick+=VersionTick;
+  InitializeComponent();releaseNotesPanel.Children.Add(_noteHistory);
+  releaseNotesPanel.Children.Add(_notesRefresh);
+  _notesRefresh.Click+=async(_,_)=> {await ResolveVersion(false,false);await RefreshReleaseNotes();};
+  versionChannel.ItemsSource=ContainerVersion.Channels;_versionTimer.Tick+=VersionTick;
   foreach(var box in new[]{versionMajor,versionMinor,versionPatch})DependencyPropertyDescriptor.FromProperty(NumericBox.ValueProperty,typeof(NumericBox)).AddValueChanged(box,VersionEdited);
   Attach(null,PublishKind.NuGet);
  }
@@ -83,7 +89,7 @@ public partial class PublishView : UserControl {
   _resolvingVersion=true;
   try {
    if(announce&&versionGroup.Visibility==Visibility.Visible)message.Text="Reading the tags on the registry…";
-   await ApplyVersion(strict);return true;
+   await ApplyVersion(strict);await RefreshReleaseNotes();return true;
   }catch(Exception ex){message.Text=Mask(ex.Message);return false;}
   finally {_resolvingVersion=false;}
  }
@@ -139,12 +145,23 @@ public partial class PublishView : UserControl {
   finally {_reloadingProfiles=false;}
  }
  private void ReloadHistory() {history.ItemsSource=PublishLog.History(_settings.Logs,allHistory.IsChecked==true?null:Profile?.Id);}
+ private async Task RefreshReleaseNotes() {
+  var generation=++_noteRefresh;var p=Profile?.Clone();notes.IsReadOnly=p?.UsesReleaseNoteLock==true;
+  _notesRefresh.Visibility=p?.UsesReleaseNoteLock==true?Visibility.Visible:Visibility.Collapsed;
+  if(p?.UsesReleaseNoteLock!=true) {noteLockStatus.Text="";_noteHistory.Show(null,"");return;}
+  noteLockStatus.Text="Reading release notes and registry versions…";
+  var state=await _publisher.ReleaseNotesState(p,CancellationToken.None);
+  if(generation!=_noteRefresh||Profile?.Id!=p.Id)return;
+  noteLockStatus.Text=p.ReleaseNotesFolder+" · "+state.Message;notes.Text=state.Content;
+  try {var folder=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(Path.Combine(_store.Root,p.Kind.ToString()),p.ReleaseNotesFolder);_noteHistory.Show(Directory.Exists(folder)?state:null,p.Container!.Target.VersionTag);}
+  catch(Exception ex) when(ex is IOException or InvalidDataException or ArgumentException){_noteHistory.Show(null,"");}
+ }
  private async Task Operation(Func<PublishProfile,CancellationToken,Task> action) {
   if(_cancel!=null||Profile==null||_cards.Count>0)return;var p=Profile.Clone();_cancel=new();profilePanel.IsEnabled=profileList.IsEnabled=operations.IsEnabled=notes.IsEnabled=artifacts.IsEnabled=false;cancel.IsEnabled=true;message.Text="Operation in progress…";
   try {await action(p,_cancel.Token);message.Text="Operation completed. Review item results and history.";}
   catch(OperationCanceledException) {message.Text="Cancelled. Check partial results before retrying.";}
   catch(Exception ex) {message.Text=Mask(ex.Message);}
-  finally {_cancel.Dispose();_cancel=null;profilePanel.IsEnabled=profileList.IsEnabled=operations.IsEnabled=notes.IsEnabled=artifacts.IsEnabled=true;cancel.IsEnabled=false;BindArtifacts();ReloadHistory();}
+  finally {_cancel.Dispose();_cancel=null;profilePanel.IsEnabled=profileList.IsEnabled=operations.IsEnabled=notes.IsEnabled=artifacts.IsEnabled=true;cancel.IsEnabled=false;BindArtifacts();ReloadHistory();await RefreshReleaseNotes();}
  }
  private string Mask(string text) {var mask=new SecretMasker();if(Profile is {} p)foreach(var c in p.Credentials)mask.Add(Secrets.Get(c,c.ScopeHost));return mask.Mask(text);}
  private void BindArtifacts() {artifacts.ItemsSource=null;artifacts.ItemsSource=_publisher.Prepared?.Artifacts;}
@@ -154,12 +171,12 @@ public partial class PublishView : UserControl {
  }
  private void ProfileSelected(object sender,SelectionChangedEventArgs e) {
   if(_reloadingProfiles)return;
-  if(_publisherProfileId!=Profile?.Id)SetPublisher();BindArtifacts();LoadVersion(Profile);if(Profile is not {} p) {sourceText.Text=Entry?.Error??"Select a profile.";targetText.Text="";return;}
+  if(_publisherProfileId!=Profile?.Id)SetPublisher();BindArtifacts();LoadVersion(Profile);_ = RefreshReleaseNotes();if(Profile is not {} p) {sourceText.Text=Entry?.Error??"Select a profile.";targetText.Text="";return;}
   _settings.LastProfile=p.Id;sourceText.Text=p.Name+"\n"+p.Workspace;targetText.Text=p.Kind==PublishKind.NuGet?p.NuGet!.Target.Type+" · "+p.NuGet.Target.Feed+" "+p.NuGet.Target.ServiceIndex:p.Container!.Mode+" · "+p.Container.Target.Host+"/"+p.Container.Target.Repository+":"+p.Container.Target.VersionTag;
   lastVersion.Text="";message.Text="Profile loaded. Check before preparing.";ReloadHistory();
  }
  private void OpenEditor(PublishProfile draft,ProfileEntry? previous=null) {
-  var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs,isNew:previous==null) {Owner=Window.GetWindow(this)};
+  var dialog=new PublishProfileDialog(draft,_targets,Secrets,_settings.Logs,isNew:previous==null,profileFolder:Path.Combine(_store.Root,draft.Kind.ToString())) {Owner=Window.GetWindow(this)};
   if(dialog.ShowDialog()!=true)return;
   try {
    var result=dialog.Profile;

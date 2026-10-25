@@ -129,6 +129,16 @@ public sealed class PublishProfile
  public bool KeepWorkspace { get; set; }
  /// <summary>Indicates require release notes.</summary>
  public bool RequireReleaseNotes { get; set; }
+ /// <summary>Requires a valid versioned note before building or pushing a single standard-tagged image.</summary>
+ public bool ReleaseNoteLock { get; set; }
+ /// <summary>Notes folder relative to this profile file's directory.</summary>
+ public string ReleaseNotesFolder { get; set; }="";
+ /// <summary>Whether this mode and tagging scheme support the lock.</summary>
+ [JsonIgnore]
+ public bool SupportsReleaseNoteLock=>Kind==PublishKind.Container&&Container is {Mode:ContainerMode.Dockerfile or ContainerMode.LocalImage or ContainerMode.Template,Target.Tagging:TaggingMode.Standard};
+ /// <summary>The effective lock; legacy Set, Compose and Manual profiles retain their existing behavior.</summary>
+ [JsonIgnore]
+ public bool UsesReleaseNoteLock=>ReleaseNoteLock&&SupportsReleaseNoteLock;
  /// <summary>Creates a new profile of a kind with default values.</summary>
  public static PublishProfile Create(PublishKind kind) => new() { Kind=kind, NuGet=kind==PublishKind.NuGet?new():null, Container=kind==PublishKind.Container?new():null };
  /// <summary>Makes a deep copy of the profile.</summary>

@@ -338,11 +338,21 @@ hapus entri itu secara manual untuk membatalkannya.
 | --- | --- | --- |
 | 1 | **Keep Workspace** | Menyimpan folder kerja run setelah selesai, untuk diperiksa |
 | 2 | **Require Release Notes** | Push dan Build & Push menolak berjalan bila release notes kosong |
+| — | **Release note lock / Release notes folder** | Build, Push, dan Build & Push memerlukan berkas versi yang valid dan versi lebih tinggi dari seluruh tag versi standar registry. Folder dipilih sekali di Advanced, relatif direktori JSON profil. |
 | 3 | **Use My Docker Login** | Memakai login yang sudah tersimpan di Docker Anda (`docker login` atau credential helper) sebagai pengganti kredensial profil |
 | 4 | **Save** | Menyimpan profil |
 | 5 | **Save As** | Menyimpan salinan dengan ID baru |
 
 ### Riwayat
+
+Lock hanya tersedia untuk Dockerfile, LocalImage, dan Template dengan Tagging Standard. Set, Compose,
+dan Manual menonaktifkan opsi dan mengabaikan nilai lock profil lama. Lock profil tunggal tidak berlaku
+saat profil menjadi step Set. Versi tetap dari strip, termasuk N otomatis dari registry. Registry tak
+terbaca memblokir lock; repository 404 dianggap kosong. Push membaca ulang berkas dan registry, serta
+menolak artifact yang versinya berbeda dari strip: Build ulang. Release notes menjadi pratinjau berkas
+baca saja, terlepas nilai Require Release Notes. Halaman menampilkan status, refresh, dan riwayat
+Released/Pending/Invalid dengan gabungan rentang From/To. Lihat [aturan folder dan template bersama](engine-release-manager.md#shared-note-folder-and-file-rules).
+Prepare/Check tetap seperti sebelumnya; aksi Build container dijaga lock.
 
 ![Riwayat publish](images/registry-guide/publish-history.png)
 
@@ -385,6 +395,8 @@ hapus entri itu secara manual untuk membatalkannya.
 | "Source/build settings changed; Prepare again." | Profil berubah setelah Build; jalankan Build lagi |
 | "Version tag is required and must be a valid Docker tag." | Isi **Version Tag**: huruf, angka, `_`, `.`, `-`, maksimal 128 karakter |
 | "Release notes are required." | Isi **Release notes** atau matikan **Require Release Notes** |
+| "Blocked: ... not found / ... has no nonempty ## Summary" | Buat versi.md yang persis cocok pada folder profil, isi Summary, lalu refresh. |
+| "Blocked: ... is not newer ... / The release target could not be read" | Naikkan versi aplikasi/strip atau perbaiki akses registry lalu refresh; lock tidak menebak keadaan server. |
 | "Registry storage disabled." | Registry mati di server; lihat [3. Tab Settings](#3-tab-settings) |
 
 ## Catatan maintainer

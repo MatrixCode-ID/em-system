@@ -39,6 +39,7 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
 
    public ReleaseSettingsDialogVm() {
       RegisterCommand(nameof(SaveCommand), SaveCommand, SaveCommandAllowed);
+      RegisterCommand(nameof(BrowseReleaseNotesCommand), BrowseReleaseNotesCommand, () => CanEdit);
       RegisterCommand(nameof(BrowseSolutionCommand), BrowseSolutionCommand, BrowseSolutionCommandAllowed);
       RegisterCommand(nameof(CheckSolutionCommand), CheckSolutionCommand, CheckSolutionCommandAllowed);
       RegisterCommand(nameof(BrowsePublishCommand), BrowsePublishCommand, BrowsePublishCommandAllowed);
@@ -90,6 +91,17 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
    public string AppId { get => Get<string>() ?? ""; set { Set(value); _draft.Product.AppId = value; } }
    public string AppExe { get => Get<string>() ?? ""; set { Set(value); _draft.Product.AppExe = value; } }
    public string PublishFolder { get => Get<string>() ?? ""; set => Set(value); }
+   /// <summary>Requires a matching release note and a newer application version.</summary>
+   public bool ReleaseNoteLock { get => Get<bool>(); set => Set(value); }
+   /// <summary>Profile-relative notes folder selected once in this editor.</summary>
+   public string ReleaseNotesFolder { get => Get<string>() ?? ""; set => Set(value); }
+   /// <summary>The host's application version.</summary>
+   public string ProductVersion => _draft.Product.Version;
+   /// <summary>Selects a folder on the same drive as the profile store.</summary>
+   public void BrowseReleaseNotesCommand() => BrowseFolder(value => {
+      try { ReleaseNotesFolder = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Relative(_store!.Root, value); }
+      catch (Exception ex) { MainWindow?.ShowMboxError(ex.Message); }
+   });
    public ReleaseTargetKind TargetKind { get => Get<ReleaseTargetKind>(); set { Set(value); NotifyChanged(nameof(IsCdn)); NotifyChanged(nameof(IsFolder)); RaiseCommands(); } }
    public ReleaseTargetKind[] TargetKinds => Enum.GetValues<ReleaseTargetKind>();
    public bool IsCdn => TargetKind == ReleaseTargetKind.Cdn;
@@ -130,6 +142,7 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
       try { Hosts = profile.HostProject.Length > 0 ? [profile.HostProject] : []; SelectedHost = profile.HostProject; }
       finally { _loadingHosts = false; }
       ApplyProductFields(); PublishFolder = profile.PublishFolder; TargetKind = profile.TargetKind;
+      ReleaseNoteLock = profile.ReleaseNoteLock; ReleaseNotesFolder = profile.ReleaseNotesFolder;
       TargetFolder = profile.TargetFolder; ReleaseFolder = profile.ReleaseFolder; CdnAddress = profile.CdnAddress;
       LauncherFileName = profile.Launcher.FileName; LauncherVersion = profile.Launcher.BaseVersion;
       LauncherChannel = profile.Launcher.Channel; LauncherUpdate = profile.Launcher.UpdateBehavior;
@@ -204,6 +217,7 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
       return product;
    }
    private void ApplyProductFields() {
+      NotifyChanged(nameof(ProductVersion));
       AppName = _draft.Product.AppName; Publisher = _draft.Product.Publisher; AppId = _draft.Product.AppId; AppExe = _draft.Product.AppExe;
    }
    private async Task ReadIdentityAsync() {
@@ -227,6 +241,7 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
          Android.Refresh();
       }
       _draft.HostProject = host; _draft.SolutionPath = solution; Preview();
+      NotifyChanged(nameof(ProductVersion));
    }
    private void BrowseFolder(Action<string> apply) { var picker = new OpenFolderDialog(); if (picker.ShowDialog(MainWindow) == true) apply(picker.FolderName); }
    public void BrowsePublishCommand() => BrowseFolder(value => PublishFolder = value);
@@ -298,6 +313,8 @@ public sealed class ReleaseSettingsDialogVm : MvvmModelBase {
    public Task SaveCommand() => Run("Saving release profile…", async () => {
       if (Android.SelectedPlatform != _draft.Platform) throw new InvalidDataException("Apply the selected platform before saving.");
       _draft.Product = Product(); if (IsWindows) _draft.Product.Validate();
+      if (ReleaseNotesFolder.Length > 0) _ = Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Resolve(_store!.Root, ReleaseNotesFolder);
+      _draft.ReleaseNoteLock = ReleaseNoteLock; _draft.ReleaseNotesFolder = ReleaseNotesFolder;
       _draft.SolutionPath = SolutionPath.Trim(); _draft.HostProject = SelectedHost; _draft.PublishFolder = PublishFolder.Trim();
       _draft.TargetKind = TargetKind; _draft.TargetFolder = TargetFolder.Trim(); _draft.ReleaseFolder = ReleaseFolder.Trim(); _draft.CdnAddress = CdnAddress.Trim();
       if (_draft.CdnAddress.Length > 0 && (!Uri.TryCreate(_draft.CdnAddress, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) throw new InvalidDataException("CDN address must be an absolute HTTP(S) URL.");

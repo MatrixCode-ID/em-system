@@ -62,6 +62,7 @@ persis.
 | --- | --- | --- |
 | `publishedAtUtc` | string | Waktu rilis diterbitkan, ISO 8601 dalam UTC dengan akhiran `Z` (mis. `2026-09-27T10:15:00Z`). Penulis menulis presisi detik; pembaca menerima pecahan detik. Hanya informasi, tidak dipakai untuk memutuskan apa pun. |
 | `files` | array | Seluruh file rilis. Boleh kosong. |
+| `version` | string, opsional | Versi aplikasi `MAJOR.MINOR.PATCH[-(prealpha|alpha|beta|rc).N]`, tanpa build metadata; N ≥ 1, angka tanpa nol awal. Ikut ditandatangani. Ditulis Release Manager hanya saat Release note lock aktif. Parser menolak format salah; pembaca lama boleh mengabaikannya tanpa nomor format baru. |
 | `files[].path` | string | Path file relatif terhadap `binaries/` (aturan di 2.3). Sekaligus membawa nama file. |
 | `files[].size` | integer | Ukuran file dalam byte, ≥ 0. |
 | `files[].sha256` | string | SHA-256 isi file (aturan di 2.4). |
@@ -114,6 +115,10 @@ SHA-256 atas **isi file** (byte apa adanya), ditulis sebagai **64 karakter hex h
 (`0-9a-f`). Hash dengan huruf besar atau panjang lain membuat manifest tidak sah.
 
 ### 2.5 Metadata Android
+
+Field tingkat atas `version` opsional sama dengan `android.versionName` tanpa build metadata saat
+Release note lock aktif. Parser tidak memeriksa kesamaan keduanya. Client Android tetap memakai
+`android.versionCode` untuk update dan mengabaikan field tambahan ini.
 
 Rilis Android memakai layout yang sama dengan tepat satu APK arm64-v8a di root
 binaries/. Objek opsional berikut ikut ditandatangani, sejajar launcher:
@@ -254,6 +259,10 @@ itu sudah dibuang dan tidak pernah menjadi kunci rilis; yang tersimpan hanya pub
 | Folder / file | Isi | Hasil yang diharapkan |
 | --- | --- | --- |
 | `public-key.pem` | Public key kunci contoh uji (dengan baris `keyId: ...` di atasnya). | — |
+| `version-public-key.pem` | Public key baru khusus vektor version; private key hanya di memori saat generator berjalan lalu dibuang. | — |
+| `version-valid/` | Manifest bertanda tangan dengan `version: 1.2.0-beta.3`. | Signature, parser dan hash file sah. |
+| `version-bad-format/` | Manifest bertanda tangan dengan `version: 1.2`. | Signature sah, parser menolak format version. |
+| `version-expected.txt` | keyId dan hasil vektor version. `expected.txt` tetap berformat mesin untuk pembaca launcher lama; keterangan Android ada di 2.5. | — |
 | `valid/` | Folder rilis sah: `binaries/` berisi beberapa file kecil, termasuk satu di subfolder dan satu berukuran 0 byte. | Tanda tangan **sah**, manifest **sah**, setiap file **cocok** ukuran dan SHA-256. |
 | `tampered-manifest/` | Sama dengan `valid/`, tetapi satu byte `release.json` diubah (`.sig` tetap). | **Ditolak** di langkah 3: tanda tangan gagal. |
 | `tampered-file/` | Sama dengan `valid/`, tetapi satu byte satu file di `binaries/` diubah (`release.json` dan `.sig` tetap). | Tanda tangan **sah**, lalu **ditolak** di langkah 5: SHA-256 file itu tidak cocok. |

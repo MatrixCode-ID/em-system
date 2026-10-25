@@ -62,6 +62,11 @@ installed; the `publish` job installs it before packing.
 
 ## Product version {#product-version}
 
+Release Manager's optional Release note lock requires a standard application version
+`MAJOR.MINOR.PATCH[-(prealpha|alpha|beta|rc).N]` and a matching `<version>.md` with a nonempty
+`## Summary`. Build metadata is removed for matching; the lock does not change where the version comes
+from. The container publisher uses its existing version strip. See [shared release note rules](engine-release-manager.md#shared-note-folder-and-file-rules).
+
 A host shows the version baked into its entry assembly (`AssemblyInformationalVersion`). The version is
 set in MSBuild, by hand, and release automation overrides it with `-p:Version`:
 

@@ -1,6 +1,9 @@
 # Android application updates
 
 MAUI hosts use their own EmAppId, a permanent Android ApplicationId and a SemVer Version.
+Release note lock optionally adds a signed top-level `version`, equal to `android.versionName` without
+build metadata. Clients ignore it and continue comparing versionCode; the parser does not require the
+two version strings to match. See [release note rules](engine-release-manager.md#release-note-lock).
 Release Manager Platform Android publishes one signed arm64-v8a APK and a P-256-signed
 release manifest. It embeds EmReleaseAddress (full release folder URL with trailing slash)
 and EmReleasePublicKey (Base64 SPKI DER) in the host assembly, scoped to that host only.

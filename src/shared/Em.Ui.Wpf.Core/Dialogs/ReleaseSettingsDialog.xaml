@@ -77,6 +77,16 @@
         <TextBlock Text="Identifies this product in the release system; read from EmAppId." Style="{StaticResource fieldHelpStyle}"/>
        </StackPanel>
        <local:ReleaseAndroidSettings x:Name="androidIdentity" Section="Identity" DataContext="{Binding Android}" Visibility="{Binding IsAndroid, Converter={StaticResource visible}}"/>
+       <StackPanel Style="{StaticResource releaseField}">
+        <TextBlock Text="Application version" Style="{StaticResource fieldLabelStyle}"/>
+        <TextBox Text="{Binding ProductVersion, Mode=OneWay}" IsReadOnly="True" Style="{StaticResource fieldBoxStyle}"/>
+       </StackPanel>
+       <StackPanel Style="{StaticResource releaseField}" ToolTip="Requires a matching version.md with a nonempty ## Summary and an application version newer than the target." ToolTipService.ShowOnDisabled="True">
+        <CheckBox Content="Release note lock" IsChecked="{Binding ReleaseNoteLock}"/>
+        <TextBlock Text="Release notes folder" Style="{StaticResource fieldLabelStyle}"/>
+        <DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseReleaseNotesCommand]}" Style="{StaticResource outlinedButtonStyle}" Margin="8,0,0,0"/><TextBox Text="{Binding ReleaseNotesFolder, Mode=OneWay}" IsReadOnly="True" Style="{StaticResource fieldBoxStyle}"/></DockPanel>
+        <TextBlock Text="Relative to the folder containing this profile JSON. Choose a folder on the same drive. Export/import preserves the relative path; moving a profile can change its destination." Style="{StaticResource fieldHelpStyle}"/>
+       </StackPanel>
        <StackPanel Visibility="{Binding IsWindows, Converter={StaticResource visible}}">
         <StackPanel Style="{StaticResource releaseField}" ToolTip="AssemblyName plus .exe, with no directory."><TextBlock Text="Application executable" Style="{StaticResource fieldLabelStyle}"/><TextBox Text="{Binding AppExe, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource fieldBoxStyle}"/></StackPanel>
         <Expander Header="Application branding" Style="{StaticResource sectionExpanderStyle}">

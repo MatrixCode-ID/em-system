@@ -33,10 +33,12 @@ namespace Em.Ui.Core.Release.Format
          ValidateFiles(files);
          ValidateLauncher(manifest.Launcher, files);
          ValidateAndroid(manifest.Android, files, manifest.Launcher);
+         ValidateVersion(manifest.Version);
 
          using var buffer = new MemoryStream();
          using (var writer = new Utf8JsonWriter(buffer, WriterOptions)) {
             writer.WriteStartObject();
+            if (manifest.Version is { } version) writer.WriteString("version", version);
             writer.WriteString("publishedAtUtc", ToUtc(manifest.PublishedAtUtc)
                .ToString(TimeFormat, CultureInfo.InvariantCulture));
             if (manifest.Launcher is { } launcher) {
@@ -85,6 +87,8 @@ namespace Em.Ui.Core.Release.Format
          try {
             using var document = JsonDocument.Parse(bytes.ToArray());
             var root = RequireKind(document.RootElement, JsonValueKind.Object, "release.json");
+            var version = root.TryGetProperty("version", out _) ? RequireString(root, "version") : null;
+            ValidateVersion(version);
 
             var published = RequireString(root, "publishedAtUtc");
             if (!published.EndsWith('Z') || !DateTime.TryParse(published, CultureInfo.InvariantCulture,
@@ -125,7 +129,7 @@ namespace Em.Ui.Core.Release.Format
                };
                ValidateAndroid(android, files, launcher);
             }
-            return new ReleaseManifest { PublishedAtUtc = publishedAt, Files = files, Launcher = launcher, Android = android };
+            return new ReleaseManifest { PublishedAtUtc = publishedAt, Files = files, Launcher = launcher, Android = android, Version = version };
          }
          catch (JsonException x) {
             throw new ReleaseFormatException($"release.json is not valid JSON: {x.Message}", x);
@@ -203,6 +207,14 @@ namespace Em.Ui.Core.Release.Format
                throw new ReleaseFormatException($"'{file.Path}' has an invalid sha256 '{file.Sha256}'.");
             }
          }
+      }
+
+      /// <summary>Checks the standard application version used by release note locks.</summary>
+      public static bool IsStandardVersion(string value) => System.Text.RegularExpressions.Regex.IsMatch(value,
+         @"\A(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-(?:prealpha|alpha|beta|rc)\.[1-9][0-9]*)?\z", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+      private static void ValidateVersion(string? version) {
+         if (version is not null && !IsStandardVersion(version)) throw new ReleaseFormatException("Invalid application version.");
       }
 
       private static void ValidateLauncher(ReleaseLauncherMetadata? launcher, IEnumerable<ReleaseFile> files) {

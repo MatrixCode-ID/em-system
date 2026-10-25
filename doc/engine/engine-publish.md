@@ -37,6 +37,13 @@ rights.
 
 ## Profiles and local files
 
+Container profiles can enable **Release note lock** in Advanced for Dockerfile, LocalImage and Template
+with Standard tagging. Build/Push require a valid `<strip-version>.md` and a version newer than the
+registry; Set/Compose/Manual and Set steps retain their existing behavior. Release notes becomes a
+read-only matching preview with status, refresh and version history. Locked runs store the profile-relative
+note path in `ReleaseNotesFile`, leaving `ReleaseNotes` empty; run detail displays that path. Old runs
+remain readable. See [folder, Summary and template rules](engine-release-manager.md#shared-note-folder-and-file-rules).
+
 | Item | Default location |
 | --- | --- |
 | Profiles | `Documents\Em\Publish\Profiles\NuGet` and `...\Profiles\Container` |
