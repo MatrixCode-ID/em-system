@@ -5,6 +5,10 @@ Release Manager Platform Android publishes one signed arm64-v8a APK and a P-256-
 release manifest. It embeds EmReleaseAddress (full release folder URL with trailing slash)
 and EmReleasePublicKey (Base64 SPKI DER) in the host assembly, scoped to that host only.
 Builds without both attributes, including ordinary debug builds, have no update source.
+ProjectReference hosts import Em.Ui.Maui.Core/buildTransitive/EmSys.Ui.Maui.Identity.targets;
+NuGet hosts receive it transitively. It emits EmAppId assembly metadata for settings/log isolation.
+The composition callback's declaring assembly supplies that identity at BuildApp; old hosts without
+it keep ApplicationName storage paths, without automatic migration.
 
 Before login (including session restore), EmApp reads the metadata from
 Application.Current.GetType().Assembly. The shared ReleaseUpdateChecker downloads release.json

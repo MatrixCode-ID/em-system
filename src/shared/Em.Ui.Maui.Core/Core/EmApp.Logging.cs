@@ -28,8 +28,8 @@ namespace Em.Ui.Maui.Core
       // Called at the end of BuildApp's registration phase, once ApplicationName is known.
       private static void InitClientLog(EmApp app) {
          var options = new ClientLogOptions {
-            Folder = Path.Combine(FileSystem.AppDataDirectory, "Logs", "outbox"),
-            App = app.ApplicationName,
+            Folder = app.AppId.Length > 0 ? Path.Combine(FileSystem.AppDataDirectory, app.AppId, "Logs", "outbox") : Path.Combine(FileSystem.AppDataDirectory, "Logs", "outbox"),
+            App = app.AppId.Length > 0 ? app.AppId : app.ApplicationName,
             AppVersion = AppVersion.Current
          };
          app._logFolder = new ClientLogFolder(options);

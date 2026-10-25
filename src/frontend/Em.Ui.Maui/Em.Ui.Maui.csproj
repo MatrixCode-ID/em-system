@@ -69,4 +69,5 @@
 	  <EmbeddedResource Include="$(ArtefactsPath)debugkey/debug-token.key" LogicalName="DevelopmentToken" Visible="false" />
 	</ItemGroup>
 
+	<Import Project="..\..\shared\Em.Ui.Maui.Core\buildTransitive\EmSys.Ui.Maui.Identity.targets" />
 </Project>

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace Em.Ui.Wpf.Core.Release;
 
@@ -10,17 +11,41 @@ public sealed record AndroidCommand(string Executable, IReadOnlyList<string> Arg
 
 /// <summary>Detects machine-local tools without installing or changing user environment variables.</summary>
 public static class AndroidEnvironment {
-   public static IReadOnlyList<string> SdkCandidates(string preferred) => Candidates([
+   public static IReadOnlyList<string> SdkCandidates(string preferred) => Candidates(new[] {
       preferred, Environment.GetEnvironmentVariable("ANDROID_HOME") ?? "",
-      Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Android", "android-sdk"),
-      Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Android", "Sdk")]);
+      Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Android", "android-sdk") }
+      .Concat(RiderPaths("android"))
+      .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Android", "Sdk")));
 
    public static IReadOnlyList<string> JavaCandidates(string preferred) {
       var microsoft = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft");
       var jetbrains = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JetBrains");
       return Candidates(new[] { preferred, Environment.GetEnvironmentVariable("JAVA_HOME") ?? "" }
          .Concat(Directories(microsoft, "jdk-*"))
+         .Concat(Directories(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Android", "openjdk"), "jdk*"))
+         .Concat(Directories(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Android", "openjdk"), "jdk*"))
+         .Concat(RiderPaths("jdk"))
          .Concat(Directories(jetbrains, "*", true).Where(d => File.Exists(Path.Combine(d, "bin", "keytool.exe")))));
+   }
+
+   private static IEnumerable<string> RiderPaths(string kind) {
+      var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "JetBrains");
+      var paths = new List<string>();
+      foreach (var rider in Directories(root, "Rider*")) {
+         var options = Path.Combine(rider, "options");
+         foreach (var name in new[] { "android.xml", "jdk.table.xml" }) {
+            var file = Path.Combine(options, name);
+            if (!File.Exists(file)) continue;
+            try {
+               var xml = System.Xml.Linq.XDocument.Load(file);
+               foreach (var attribute in xml.Descendants().Attributes("value")) {
+                  var value = attribute.Value.Replace("$USER_HOME$", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+                  if (kind == "jdk" ? File.Exists(Path.Combine(value, "bin", "keytool.exe")) : Directory.Exists(Path.Combine(value, "platform-tools"))) paths.Add(value);
+               }
+            } catch (Exception ex) when (ex is IOException or System.Xml.XmlException or ArgumentException) { }
+         }
+      }
+      return paths;
    }
 
    public static IReadOnlyList<string> Candidates(IEnumerable<string> paths) => paths.Where(p => !string.IsNullOrWhiteSpace(p))
@@ -45,16 +70,45 @@ public static class AndroidEnvironment {
       if (!File.Exists(Path.Combine(java, "bin", "java.exe")) || !File.Exists(Path.Combine(java, "bin", "keytool.exe"))) result.Add("Missing: JDK java/keytool");
       else {
          var output = await AndroidProcess.CaptureAsync(Path.Combine(java, "bin", "java.exe"), ["-version"], null, token);
-         var major = Regex.Match(output, "version \\\"(\\d+)").Groups[1].Value;
+         var major = JavaMajorVersion(output);
          var minimum = int.TryParse(product.MinimumSupportedJavaVersion.Split('.')[0], out var min) ? min : 17;
          var maximum = int.TryParse(product.LatestSupportedJavaVersion.Split('.')[0], out var max) ? max : int.MaxValue;
-         result.Add(int.TryParse(major, out var installed) && installed >= minimum && installed <= maximum ? "OK: JDK " + major : $"Missing: supported JDK ({minimum}..{maximum})");
+         result.Add(major >= minimum && major <= maximum ? "OK: JDK " + major : $"Missing: supported JDK ({minimum}..{maximum}; detected {major})");
       }
       var workloads = await AndroidProcess.CaptureAsync("dotnet", ["workload", "list"], null, token);
-      result.Add(Regex.IsMatch(workloads, @"(?m)^maui(?:-android)?\s") ? "OK: maui-android workload" : "Missing: maui-android workload");
+      result.Add(Regex.IsMatch(workloads, @"(?m)^\s*maui(?:-android)?\s") ? "OK: maui-android workload" : "Missing: maui-android workload");
       if (result.Any(r => r.StartsWith("Missing")) && sdk.Contains("Program Files", StringComparison.OrdinalIgnoreCase))
          result.Add("Use the SDK under LocalAppData/Android/Sdk to avoid administrator permissions.");
       return result;
+   }
+
+   public static int JavaMajorVersion(string output) => int.TryParse(Regex.Match(output, @"\bversion\s+""(\d+)").Groups[1].Value, out var major) ? major : 0;
+
+   /// <summary>Runs an elevated installer with captured output, without changing the caller's environment.</summary>
+   public static async Task RunElevatedAsync(AndroidCommand command, IProgress<string> log, CancellationToken token) {
+      var temporary = Path.Combine(Path.GetTempPath(), "EmAndroidEnvironment-" + Guid.NewGuid().ToString("N"));
+      Directory.CreateDirectory(temporary);
+      try {
+         var output = Path.Combine(temporary, "install.log");
+         var script = Path.Combine(temporary, "install.ps1");
+         static string Literal(string value) => "'" + value.Replace("'", "''") + "'";
+         await File.WriteAllTextAsync(script, "$ErrorActionPreference='Stop'\ntry { & " + Literal(command.Executable) + " " +
+            string.Join(" ", command.Arguments.Select(Literal)) + " *> " + Literal(output) + "; exit $LASTEXITCODE } catch { $_ | Out-File -Append " + Literal(output) + "; exit 1 }", token);
+         var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden };
+         foreach (var arg in new[] { "-NoProfile", "-File", script }) start.ArgumentList.Add(arg);
+         using var process = Process.Start(start) ?? throw new IOException("Cannot start elevated environment preparation.");
+         var linesRead = 0;
+         void ReadOutput() {
+            if (!File.Exists(output)) return;
+            try { var lines = File.ReadAllLines(output); foreach (var line in lines.Skip(linesRead)) log.Report(line); linesRead = lines.Length; }
+            catch (IOException) { }
+         }
+         while (!process.HasExited) { ReadOutput(); await Task.Delay(250, CancellationToken.None); }
+         ReadOutput();
+         if (process.ExitCode != 0) throw new IOException("Environment preparation failed with exit code " + process.ExitCode);
+         token.ThrowIfCancellationRequested();
+      }
+      finally { Directory.Delete(temporary, true); }
    }
 
    public static IReadOnlyList<AndroidCommand> PreparationCommands(IReadOnlyList<string> checks, string project, string tfm, string sdk, string java, string latestJava = "") {

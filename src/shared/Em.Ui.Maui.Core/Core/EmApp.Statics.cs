@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
 using Em.Api.Core;
@@ -57,6 +58,8 @@ namespace Em.Ui.Maui.Core
       /// <returns>The <see cref="EmApp"/> instance, ready to be run through <see cref="Run{TApp}"/>.</returns>
       public static EmApp BuildApp(string[] args, Action<EmAppBuilder> builder) {
          var app = new EmApp(args);
+         app.AppId = builder.Method.DeclaringType?.Assembly.GetCustomAttributes<System.Reflection.AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "EmAppId")?.Value ?? "";
 
          InitInternalServices(app);
          InitBuilder(app, builder);
@@ -148,7 +151,7 @@ namespace Em.Ui.Maui.Core
          app.ApplicationName = pars.ApplicationName ?? "Set ApplicationName to change!";
          // Created after the application name is known, because that name is the prefix of every setting key -
          // creating it earlier would mean writing to the wrong prefix.
-         app.Settings = new AppSettings(app.ApplicationName);
+         app.Settings = new AppSettings(app.AppId.Length > 0 ? app.AppId : app.ApplicationName);
 
          var home = pars.CustomHomeNavigation ?? new Navigation {
             Name = HomeNavigationName,

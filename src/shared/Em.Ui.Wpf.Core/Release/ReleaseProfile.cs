@@ -81,6 +81,7 @@ namespace Em.Ui.Wpf.Core.Release
          Launcher.InputHash = Launcher.Version = "";
       }
 
+      [JsonIgnore]
       public string AndroidApkFileName => string.IsNullOrEmpty(Android.ApkFileName)
          ? Product.AppId.ToLowerInvariant().Replace('.', '-') + ".apk" : Android.ApkFileName;
 

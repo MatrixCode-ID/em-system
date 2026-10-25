@@ -80,11 +80,8 @@ public sealed class ReleaseAndroidSettingsVm : MvvmModelBase {
       Status = "Preparing Android environment…";
       foreach (var command in commands) {
          if (command.Elevated) {
-            var start = new ProcessStartInfo(command.Executable) { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden };
-            foreach (var arg in command.Arguments) start.ArgumentList.Add(arg);
-            using var process = Process.Start(start) ?? throw new IOException("Cannot start elevated environment preparation.");
-            await process.WaitForExitAsync(); if (process.ExitCode != 0) throw new IOException("Environment preparation failed with exit code " + process.ExitCode);
-         } else await AndroidProcess.CaptureAsync(command.Executable, command.Arguments, null, CancellationToken.None, log);
+            await AndroidEnvironment.RunElevatedAsync(command, log, CancellationToken.None);
+         } else await AndroidProcess.CaptureAsync(command.Executable, command.Arguments.Select(arg => arg.StartsWith("-p:JavaSdkDirectory=") ? "-p:JavaSdkDirectory=" + Java : arg), null, CancellationToken.None, log);
          if (command.Executable == "winget") { Java = AndroidEnvironment.JavaCandidates("").LastOrDefault() ?? Java; }
       }
       if (SetUserEnvironment) { Environment.SetEnvironmentVariable("ANDROID_HOME", Sdk, EnvironmentVariableTarget.User); Environment.SetEnvironmentVariable("JAVA_HOME", Java, EnvironmentVariableTarget.User); }

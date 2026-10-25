@@ -120,8 +120,8 @@ com.contoso.inventory. APK file name defaults to the lowercase app_id with dots 
 Launcher controls remain visible but disabled for Android, and launcher menu commands are disabled.
 
 Select the Android SDK and Java SDK for this machine. All existing candidates are listed, including
-the Visual Studio SDK and LocalAppData/Android/Sdk; Browse also accepts manually configured Rider
-locations. Machine preferences use the host BaseRegKey/ReleaseManager. Check environment reports
+the Visual Studio SDK and LocalAppData/Android/Sdk. Rider android.xml/jdk.table.xml options
+under the user JetBrains configuration are inspected; Browse accepts other Rider locations. Machine preferences use the host BaseRegKey/ReleaseManager. Check environment reports
 platform-tools, build-tools with apksigner/aapt2, the target Android API, JDK and maui-android workload.
 The default target API for an unversioned net10.0-android TFM is 36; Java requires the evaluated
 MinimumSupportedJavaVersion/LatestSupportedJavaVersion when supplied, otherwise at least 17.

@@ -1,0 +1,8 @@
+<Project>
+  <Target Name="EmMauiHostIdentity" BeforeTargets="GetAssemblyAttributes" Condition="'$(UseMaui)' == 'true' And '$(EmAppId)' != ''">
+    <ItemGroup>
+      <AssemblyMetadata Remove="EmAppId" />
+      <AssemblyMetadata Include="EmAppId" Value="$(EmAppId)" />
+    </ItemGroup>
+  </Target>
+</Project>

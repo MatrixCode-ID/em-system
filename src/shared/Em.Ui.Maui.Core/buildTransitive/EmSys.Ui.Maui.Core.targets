@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="EmSys.Ui.Maui.Identity.targets" />
   <!-- Imported from the EmSys.Ui.Maui.Core package only. A ProjectReference already hands the library's MauiFont and
        MauiImage items to the app; a PackageReference does not, so the package carries the files and registers them
        here for the app's Resizetizer (Font Awesome 7 for FontIcons, em_logo for the default branding). -->

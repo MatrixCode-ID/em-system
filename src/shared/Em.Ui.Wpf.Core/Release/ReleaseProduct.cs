@@ -38,7 +38,7 @@ public sealed class ReleaseProduct {
       if (string.IsNullOrWhiteSpace(AppName) || string.IsNullOrWhiteSpace(Publisher))
          throw new InvalidDataException("Product name and publisher are required.");
       if (platform == ReleasePlatform.Android) {
-         if (!ReleaseManifestSerializer.IsSemanticVersion(Version) || !AndroidTargetFramework.EndsWith("-android", StringComparison.Ordinal))
+         if (!ReleaseManifestSerializer.IsSemanticVersion(Version) || !Regex.IsMatch(AndroidTargetFramework, @"-android(?:\d+(?:\.\d+)*)?$"))
             throw new InvalidDataException("Android host requires a SemVer Version and an Android target framework.");
          return;
       }
@@ -61,10 +61,12 @@ public sealed class ReleaseProduct {
    }
 
    /// <summary>Reads evaluated MSBuild properties and references, including imported values.</summary>
-   public static async Task<ReleaseProduct> ReadAsync(string project, CancellationToken token, ReleasePlatform platform = ReleasePlatform.Windows) {
+   public static async Task<ReleaseProduct> ReadAsync(string project, CancellationToken token, ReleasePlatform platform = ReleasePlatform.Windows, string? evaluationFramework = null) {
       var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true,
          RedirectStandardOutput = true, RedirectStandardError = true };
       foreach (var arg in new[] { "msbuild", project, "-nologo", "-getProperty:Product,Company,EmAppId,AssemblyName,ApplicationIcon,EmAppLogo,ApplicationTitle,ApplicationId,ApplicationVersion,Version,TargetFramework,TargetFrameworks,MinimumSupportedJavaVersion,LatestSupportedJavaVersion", "-getItem:ProjectReference,PackageReference,MauiIcon" }) start.ArgumentList.Add(arg);
+      if (evaluationFramework is not null) start.ArgumentList.Add("-p:TargetFramework=" + evaluationFramework);
+      start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
       using var process = Process.Start(start) ?? throw new IOException("Cannot start MSBuild.");
       var output = process.StandardOutput.ReadToEndAsync(token); var errors = process.StandardError.ReadToEndAsync(token);
       await process.WaitForExitAsync(token);
@@ -72,12 +74,16 @@ public sealed class ReleaseProduct {
       using var doc = JsonDocument.Parse(await output);
       var props = doc.RootElement.GetProperty("Properties");
       string Get(string name) => props.GetProperty(name).GetString() ?? "";
+      if (platform == ReleasePlatform.Android && evaluationFramework is null) {
+         var target = (Get("TargetFramework") + ";" + Get("TargetFrameworks")).Split(';').FirstOrDefault(f => Regex.IsMatch(f, @"-android(?:\d+(?:\.\d+)*)?$"));
+         if (target is not null && Get("TargetFramework") != target) return await ReadAsync(project, token, platform, target);
+      }
       string Asset(string name) {
          var file = Get(name); if (file.Length == 0) return "";
          return Convert.ToBase64String(File.ReadAllBytes(Path.GetFullPath(file, Path.GetDirectoryName(Path.GetFullPath(project))!)));
       }
       var android = platform == ReleasePlatform.Android;
-      var framework = (Get("TargetFramework") + ";" + Get("TargetFrameworks")).Split(';').FirstOrDefault(f => f.EndsWith("-android", StringComparison.Ordinal)) ?? "";
+      var framework = (Get("TargetFramework") + ";" + Get("TargetFrameworks")).Split(';').FirstOrDefault(f => Regex.IsMatch(f, @"-android(?:\d+(?:\.\d+)*)?$")) ?? "";
       var references = doc.RootElement.GetProperty("Items").ToString();
       var logo = android ? "" : Asset("EmAppLogo");
       if (android && doc.RootElement.GetProperty("Items").TryGetProperty("MauiIcon", out var icons)) {

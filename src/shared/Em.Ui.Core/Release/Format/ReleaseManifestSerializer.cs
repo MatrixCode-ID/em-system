@@ -237,7 +237,7 @@ namespace Em.Ui.Core.Release.Format
       }
 
       private static int RequireInt(JsonElement element, string name) =>
-         RequireProperty(element, name).TryGetInt32(out var value) ? value : throw new ReleaseFormatException($"'{name}' must be an integer.");
+         RequireKind(RequireProperty(element, name), JsonValueKind.Number, name).TryGetInt32(out var value) ? value : throw new ReleaseFormatException($"'{name}' must be an integer.");
 
       private static DateTime ToUtc(DateTime value) => value.Kind switch {
          DateTimeKind.Utc => value,

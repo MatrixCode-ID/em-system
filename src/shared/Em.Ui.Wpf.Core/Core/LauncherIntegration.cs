@@ -95,11 +95,11 @@ namespace Em.Ui.Wpf.Core
          // update installs.
          string name;
          try {
-            var manifest = Release.ReleaseManifestSerializer.Deserialize(File.ReadAllBytes(Path.Combine(baseDirectory, ReleaseMarkerFileName)));
+            var manifest = ReleaseManifestSerializer.Deserialize(File.ReadAllBytes(Path.Combine(baseDirectory, ReleaseMarkerFileName)));
             if (manifest.Launcher is null) return;
             name = manifest.Launcher.FileName;
          }
-         catch (Exception ex) when (ex is IOException or Release.ReleaseFormatException) { return; }
+         catch (Exception ex) when (ex is IOException or ReleaseFormatException) { return; }
          var rootLauncher = Path.GetFullPath(Path.Combine(baseDirectory, "..", name));
          if (!File.Exists(rootLauncher)) return;
          if (StartLauncher(rootLauncher, args)) Environment.Exit(0);

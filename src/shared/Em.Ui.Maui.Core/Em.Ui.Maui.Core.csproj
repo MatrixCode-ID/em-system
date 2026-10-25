@@ -35,6 +35,7 @@
       <None Include="Resources\Fonts\*" Pack="true" PackagePath="mauiresources\Fonts\" Visible="false" />
       <None Include="Resources\Images\*" Pack="true" PackagePath="mauiresources\Images\" Visible="false" />
       <None Include="buildTransitive\EmSys.Ui.Maui.Core.targets" Pack="true" PackagePath="buildTransitive\" />
+      <None Include="buildTransitive\EmSys.Ui.Maui.Identity.targets" Pack="true" PackagePath="buildTransitive\" />
     </ItemGroup>
 
 </Project>

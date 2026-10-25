@@ -87,6 +87,8 @@ namespace Em.Ui.Maui.Core
       /// settings storage where application settings (e.g. API connections, theme) are kept.
       /// </summary>
       public string ApplicationName { get; private set; } = null!;
+      /// <summary>Technical host identity used for local settings and log storage.</summary>
+      public string AppId { get; private set; } = "";
 
       /// <summary>
       /// The command-line arguments the application received at startup.

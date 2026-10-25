@@ -101,8 +101,18 @@ namespace Em.Ui.Wpf.Core.Release
 
       public static IReadOnlyList<ReleasePlatform> ReadHostPlatforms(string projectPath) {
          var values = XDocument.Load(projectPath).Descendants().Where(e => e.Name.LocalName is "TargetFramework" or "TargetFrameworks").SelectMany(e => e.Value.Split(';')).ToArray();
+         if (values.Length == 0 || values.Any(value => value.Contains("$(", StringComparison.Ordinal))) {
+            var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            start.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+            foreach (var arg in new[] { "msbuild", projectPath, "-nologo", "-getProperty:TargetFramework,TargetFrameworks" }) start.ArgumentList.Add(arg);
+            using var process = Process.Start(start) ?? throw new IOException("Cannot evaluate host target frameworks.");
+            var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync(); process.WaitForExit();
+            if (process.ExitCode != 0) throw new IOException("Cannot evaluate host target frameworks: " + error.GetAwaiter().GetResult());
+            using var doc = System.Text.Json.JsonDocument.Parse(output.GetAwaiter().GetResult());
+            values = doc.RootElement.GetProperty("Properties").EnumerateObject().SelectMany(property => (property.Value.GetString() ?? "").Split(';')).Where(value => value.Length > 0).ToArray();
+         }
          var platforms = new List<ReleasePlatform>();
-         if (values.Any(f => f.EndsWith("-android", StringComparison.Ordinal))) platforms.Add(ReleasePlatform.Android);
+         if (values.Any(f => System.Text.RegularExpressions.Regex.IsMatch(f, @"-android(?:\d+(?:\.\d+)*)?$"))) platforms.Add(ReleasePlatform.Android);
          if (values.Length == 0 || values.Any(f => f.Contains("-windows", StringComparison.Ordinal) || !f.Contains('-'))) platforms.Add(ReleasePlatform.Windows);
          return platforms;
       }

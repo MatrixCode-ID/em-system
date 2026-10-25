@@ -1,4 +1,4 @@
-# Format rilis client desktop
+# Format rilis client desktop dan Android
 
 Dokumen ini adalah **kontrak** antara pihak yang menerbitkan rilis client WPF (Release Manager di
 `Em.Ui.Wpf.Core/Release/`) dan pihak yang membacanya (launcher, tahap 2). Kalau kode dan dokumen ini
@@ -112,6 +112,37 @@ Manifest dengan satu saja path yang tidak sah harus ditolak seluruhnya.
 
 SHA-256 atas **isi file** (byte apa adanya), ditulis sebagai **64 karakter hex huruf kecil**
 (`0-9a-f`). Hash dengan huruf besar atau panjang lain membuat manifest tidak sah.
+
+### 2.5 Metadata Android
+
+Rilis Android memakai layout yang sama dengan tepat satu APK arm64-v8a di root
+binaries/. Objek opsional berikut ikut ditandatangani, sejajar launcher:
+
+```json
+"android": {
+  "fileName": "inventory.apk",
+  "applicationId": "com.contoso.inventory",
+  "versionCode": 12,
+  "versionName": "1.2.0",
+  "minVersionCode": 10
+}
+```
+
+fileName harus menunjuk satu-satunya file dalam files, di root binaries/, dan
+berakhiran .apk. applicationId mengikuti ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$.
+versionCode integer 1..2100000000; versionName SemVer MAJOR.MINOR.PATCH dengan
+prerelease/build metadata opsional (identifier numerik tidak boleh memiliki nol awal).
+minVersionCode opsional, integer 1..versionCode. launcher dan android saling
+eksklusif. Tidak ada signingCertSha256; Android memeriksa sertifikat pemasangan.
+
+Client Android menolak manifest tanpa android setelah verifikasi signature.
+Kunci tiap profile Android berbeda dari Windows; launcher Windows tidak diubah
+dan menolak keyId yang tidak dikenal. Tidak ada nomor versi format baru.
+
+Vektor android-valid diterima; android-missing-object ditolak hanya oleh client
+Android; android-bad-file dan android-and-launcher ditolak parser. Vektor Android
+memakai android-public-key.pem: private key sampel lama sudah dibuang, sehingga
+vektor lama dipertahankan byte-identik dan kunci sampel Android dibuat terpisah.
 
 ## 3. `release.json.sig`
 
@@ -232,33 +263,3 @@ itu sudah dibuang dan tidak pernah menjadi kunci rilis; yang tersimpan hanya pub
 
 Folder itu punya `.gitattributes` sendiri (`* -text`), supaya git tidak mengubah akhir baris file-filenya
 saat checkout. Tanpa itu, hash dan tanda tangannya tidak cocok lagi.
-### 2.5 Metadata Android
-
-Rilis Android memakai layout yang sama dengan tepat satu APK arm64-v8a di root
-binaries/. Objek opsional berikut ikut ditandatangani, sejajar launcher:
-
-```json
-"android": {
-  "fileName": "inventory.apk",
-  "applicationId": "com.contoso.inventory",
-  "versionCode": 12,
-  "versionName": "1.2.0",
-  "minVersionCode": 10
-}
-```
-
-fileName harus menunjuk satu-satunya file dalam files, di root binaries/, dan
-berakhiran .apk. applicationId mengikuti ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$.
-versionCode integer 1..2100000000; versionName SemVer MAJOR.MINOR.PATCH dengan
-prerelease/build metadata opsional (identifier numerik tidak boleh memiliki nol awal).
-minVersionCode opsional, integer 1..versionCode. launcher dan android saling
-eksklusif. Tidak ada signingCertSha256; Android memeriksa sertifikat pemasangan.
-
-Client Android menolak manifest tanpa android setelah verifikasi signature.
-Kunci tiap profile Android berbeda dari Windows; launcher Windows tidak diubah
-dan menolak keyId yang tidak dikenal. Tidak ada nomor versi format baru.
-
-Vektor android-valid diterima; android-missing-object ditolak hanya oleh client
-Android; android-bad-file dan android-and-launcher ditolak parser. Vektor Android
-memakai android-public-key.pem: private key sampel lama sudah dibuang, sehingga
-vektor lama dipertahankan byte-identik dan kunci sampel Android dibuat terpisah.

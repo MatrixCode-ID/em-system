@@ -20,8 +20,8 @@ public sealed class ReleaseUpdatePage : ContentPage {
       if (!vm.Mandatory) actions.Add(Action("Later", nameof(vm.LaterCommand)));
       actions.Add(Action("Exit", nameof(vm.ExitCommand)));
       Content = new ScrollView { Content = actions };
-      SetAppThemeColor(BackgroundColorProperty, Color.FromArgb("#FAF9FD"), Color.FromArgb("#1C1B1F"));
-      foreach (var label in actions.Children.OfType<Label>()) label.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#1C1B1F"), Color.FromArgb("#E6E1E5"));
+      foreach (var label in actions.Children.OfType<Label>()) label.SetDynamicResource(StyleProperty, "labelTextStyle");
+      foreach (var button in actions.Children.OfType<Button>()) button.SetDynamicResource(StyleProperty, button.Text == "Update now" ? "filledButtonStyle" : "tonalButtonStyle");
    }
    protected override bool OnBackButtonPressed() => true;
 }
@@ -42,14 +42,15 @@ public sealed class ReleaseUpdatePageVm : MvvmModelBase {
    public double Progress { get => Get<double>(); set => Set(value); }
    public bool Busy { get => Get<bool>(); set { Set(value); foreach (var command in Commands) command.RaiseCanExecuteChanged(); } }
    private CancellationTokenSource? _cancel;
+   private bool _downloading;
    public bool UpdateCommandAllowed() => !Busy;
-   public bool CancelCommandAllowed() => Busy && _cancel is { IsCancellationRequested: false };
+   public bool CancelCommandAllowed() => Busy && _downloading && _cancel is { IsCancellationRequested: false };
    public bool LaterCommandAllowed() => !Mandatory && !Busy;
    public void CancelCommand() => _cancel?.Cancel();
    public void LaterCommand() => Completion.TrySetResult(true);
    public void ExitCommand() { Application.Current?.Quit(); Completion.TrySetResult(false); }
    public async Task UpdateCommand() {
-      using var cancel = new CancellationTokenSource(); _cancel = cancel; Busy = true;
+      using var cancel = new CancellationTokenSource(); _cancel = cancel; _downloading = true; Busy = true;
       var folder = Path.Combine(FileSystem.CacheDirectory, "updates"); Directory.CreateDirectory(folder);
       var apk = Path.Combine(folder, Guid.NewGuid().ToString("N") + ".apk");
       try {
@@ -57,12 +58,13 @@ public sealed class ReleaseUpdatePageVm : MvvmModelBase {
          using var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
          await new ReleaseUpdateChecker(client).DownloadAsync(Source, Result.Manifest!, apk, new Progress<double>(value => Progress = value), cancel.Token);
          Status = "Confirm installation in Android…";
+         _downloading = false; Commands[nameof(CancelCommand)]?.RaiseCanExecuteChanged();
 #if ANDROID
          await AndroidUpdateInstaller.InstallAsync(apk, cancel.Token);
 #endif
          Status = "Update installed. Reopen the application.";
       } catch (OperationCanceledException) { Status = "Download cancelled. You can retry."; }
       catch (Exception ex) { Status = ex.Message; }
-      finally { if (File.Exists(apk)) File.Delete(apk); _cancel = null; Busy = false; }
+      finally { if (File.Exists(apk)) File.Delete(apk); _cancel = null; _downloading = false; Busy = false; }
    }
 }

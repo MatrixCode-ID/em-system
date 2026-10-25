@@ -1,7 +1,7 @@
 <UserControl x:Class="Em.Ui.Wpf.Dialogs.ReleaseAndroidSettings"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs" xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared">
+ xmlns:local="clr-namespace:Em.Ui.Wpf.Dialogs" xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls">
  <UserControl.DataContext><local:ReleaseAndroidSettingsVm/></UserControl.DataContext>
  <StackPanel>
   <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
@@ -17,7 +17,7 @@
    <TextBlock Text="APK file name" Margin="0,8,0,0" ToolTip="Lowercase .apk filename; empty derives it from app_id."/>
    <TextBox Text="{Binding Android.ApkFileName}" Style="{DynamicResource fieldTextBoxStyle}"/>
    <TextBlock Text="Minimum version code" Margin="0,8,0,0" ToolTip="0 means optional updates; otherwise 1 through the prepared versionCode."/>
-   <TextBox Text="{Binding Android.MinVersionCode}" shared:NumericInput.Kind="Integer" Style="{DynamicResource fieldTextBoxStyle}"/>
+   <controls:NumericBox Value="{Binding Android.MinVersionCode}" Minimum="0" Maximum="2100000000"/>
    <TextBlock Text="Android SDK" Margin="0,8,0,0"/>
    <DockPanel><Button DockPanel.Dock="Right" Content="Browse" Command="{Binding Commands[BrowseSdkCommand]}" Style="{DynamicResource outlinedButtonStyle}"/>
     <ComboBox ItemsSource="{Binding SdkCandidates}" IsEditable="True" Text="{Binding Sdk}" Style="{DynamicResource fieldComboStyle}"/></DockPanel>
