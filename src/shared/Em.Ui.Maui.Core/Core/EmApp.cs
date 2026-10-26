@@ -687,6 +687,11 @@ namespace Em.Ui.Maui.Core
          _suspendedDebugToken = connection.DebugToken;
          connection.DebugToken = null;
 
+         // A debug build starts as the debugger account. Without the debug token the server takes a request
+         // that still names that account as forged, so the identity is dropped before the session user loads.
+         var previousUser = ActiveUser;
+         SetActiveUser(null);
+
          try {
             SetActiveUser(await LoadSessionUserAsync(token.cUserId));
             // Failing here deliberately fails the login (still inside the same try): signing in with unknown rights
@@ -699,6 +704,7 @@ namespace Em.Ui.Maui.Core
             connection.DebugToken = _suspendedDebugToken;
             _suspendedDebugToken = null;
             client.ClearSession();
+            SetActiveUser(previousUser);
             SessionStorage.Clear(connection.ProfileName);
             throw;
          }
