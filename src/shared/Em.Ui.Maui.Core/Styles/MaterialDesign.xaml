@@ -11,6 +11,7 @@
 
    <ResourceDictionary.MergedDictionaries>
       <styles:Palette />
+      <ResourceDictionary Source="/Styles/Dimensions.xaml" />
       <ResourceDictionary Source="/Styles/Typography.xaml" />
       <ResourceDictionary Source="/Styles/Buttons.xaml" />
       <ResourceDictionary Source="/Styles/Cards.xaml" />

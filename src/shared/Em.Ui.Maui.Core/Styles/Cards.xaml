@@ -91,9 +91,13 @@
    <Style x:Key="countBadgeTextStyle" TargetType="Label">
       <Setter Property="FontFamily" Value="OpenSansSemibold" />
       <Setter Property="FontSize" Value="10" />
-      <Setter Property="TextColor" Value="White" />
+      <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource onErrorLight}, Dark={StaticResource onErrorDark}}" />
       <Setter Property="HorizontalOptions" Value="Center" />
       <Setter Property="VerticalOptions" Value="Center" />
+   </Style>
+
+   <Style x:Key="accentChipTextStyle" TargetType="Label" BasedOn="{StaticResource chipTextStyle}">
+      <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource onPrimaryContainerLight}, Dark={StaticResource onPrimaryContainerDark}}" />
    </Style>
 
    <!-- A circle holding initials, standing in for a photo that does not exist. -->

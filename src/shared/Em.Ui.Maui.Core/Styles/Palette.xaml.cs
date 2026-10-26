@@ -42,6 +42,15 @@ namespace Em.Ui.Maui.Styles
             var color = (ThemeColor)property.GetValue(theme)!;
             this[key] = Color.FromRgba(color.R, color.G, color.B, color.A);
          }
+         // Branding may replace the error fill. Choose a foreground against its actual composite.
+         var fill = (Color)this["error" + suffix];
+         var surface = (Color)this["surface" + suffix];
+         double Channel(float value) => value <= .04045 ? value / 12.92 : Math.Pow((value + .055) / 1.055, 2.4);
+         var r = fill.Red * fill.Alpha + surface.Red * (1 - fill.Alpha);
+         var g = fill.Green * fill.Alpha + surface.Green * (1 - fill.Alpha);
+         var b = fill.Blue * fill.Alpha + surface.Blue * (1 - fill.Alpha);
+         var luminance = .2126 * Channel(r) + .7152 * Channel(g) + .0722 * Channel(b);
+         this["onError" + suffix] = luminance > .179 ? Colors.Black : Colors.White;
       }
    }
 }

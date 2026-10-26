@@ -16,9 +16,10 @@
    <Style x:Key="buttonBaseStyle" TargetType="Button">
       <Setter Property="FontFamily" Value="OpenSansSemibold" />
       <Setter Property="FontSize" Value="14" />
-      <Setter Property="HeightRequest" Value="48" />
+      <Setter Property="MinimumHeightRequest" Value="48" />
+      <Setter Property="MinimumWidthRequest" Value="48" />
       <Setter Property="CornerRadius" Value="24" />
-      <Setter Property="Padding" Value="24,0" />
+      <Setter Property="Padding" Value="24,12" />
       <Setter Property="BorderWidth" Value="0" />
       <Setter Property="VisualStateManager.VisualStateGroups">
          <VisualStateGroupList>

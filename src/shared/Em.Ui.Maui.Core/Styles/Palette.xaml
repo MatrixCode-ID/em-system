@@ -64,6 +64,8 @@
    <!-- Errors, and the dark curtain behind an open side menu. -->
    <Color x:Key="errorLight">#BA1A1A</Color>
    <Color x:Key="errorDark">#FFB4AB</Color>
+   <Color x:Key="onErrorLight">#FFFFFF</Color>
+   <Color x:Key="onErrorDark">#000000</Color>
    <Color x:Key="errorContainerLight">#FFDAD6</Color>
    <Color x:Key="errorContainerDark">#93000A</Color>
    <Color x:Key="onErrorContainerLight">#410002</Color>

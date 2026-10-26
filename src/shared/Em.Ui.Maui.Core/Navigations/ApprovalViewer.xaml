@@ -28,7 +28,7 @@
                             IsVisible="{Binding HasSubSummary}" />
                      <FlexLayout Wrap="Wrap" AlignItems="Center">
                         <Border Style="{StaticResource accentChipStyle}" Margin="0,0,6,4">
-                           <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
+                           <Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" />
                         </Border>
                         <Border Style="{StaticResource chipStyle}" Margin="0,0,6,4">
                            <Label Text="{Binding LevelText}" Style="{StaticResource chipTextStyle}" />
@@ -90,7 +90,7 @@
                                  <Label Grid.Column="1" Text="{Binding Heading}" Style="{StaticResource titleTextStyle}"
                                         FontSize="14" />
                                  <Border Grid.Column="2" Style="{StaticResource accentChipStyle}" IsVisible="{Binding IsMyTurn}">
-                                    <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
+                                    <Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" />
                                  </Border>
                                  <Border Grid.Column="2" Style="{StaticResource chipStyle}" IsVisible="{Binding IsNotMyTurn}">
                                     <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
