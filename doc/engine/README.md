@@ -61,3 +61,9 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [Android updates](engine-android-updates.md) | Embedded release source, verified APK download, mandatory update gate and PackageInstaller |
 
 | [MAUI experience](engine-maui-experience.md) | Adaptive shell, My Tasks, catalogue search, fields, feedback and accessibility contracts |
+
+## Standards
+
+| Standard | Covers |
+| --- | --- |
+| [UI/UX module development](../standard/ui-ux-module-spec.md) | Discovery, screen and action contracts, manager/editor patterns, bulk actions, pickers, states, acceptance and Definition of Done for module UI |

@@ -681,3 +681,12 @@ shared fields/feedback. API migration and lifecycle contracts are documented in
 `doc/engine/engine-maui-experience.md`. Independent console verification passed;
 native build is blocked by missing workload support and device validation is
 pending. No GUI tests or workload installation were authorized for this execution.
+
+## Standar UI/UX pengembangan modul (keputusan pengguna 2026-10-27)
+
+Standar generik UI/UX modul berada di `doc/standard/ui-ux-module-spec.md`
+(bahasa Inggris, netral produk). Baca sebelum menyusun desain/spesifikasi atau
+membuat/mengubah UI modul, terutama MAUI. Resource yang tersedia didokumentasikan di
+`doc/engine/engine-maui-experience.md`; pola yang belum ada di engine tetap target.
+Repo produk boleh menyimpan salinan dengan aturan bisnisnya sendiri; aturan bisnis
+produk tidak ditulis di sini.
