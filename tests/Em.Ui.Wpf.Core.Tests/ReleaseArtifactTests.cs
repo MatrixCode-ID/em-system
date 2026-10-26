@@ -103,10 +103,7 @@ public sealed class ReleaseArtifactTests : IDisposable {
       var vm = new ReleaseManagerVm();
       typeof(ReleaseManagerVm).GetProperty(nameof(vm.Profile))!.SetValue(vm, profile);
       typeof(ReleaseManagerVm).GetProperty(nameof(vm.NoteState))!.SetValue(vm, state);
-      vm.SelectedNoteFile = state.Entries.Single(e => e.Version == "1.2.0-rc.8");
-      Assert.Equal("1.2.0-rc.8", profile.ReleaseNoteVersion);
-      vm.SelectedNoteFile = state.Entries.Single(e => e.Version == "1.2.0-rc.7");
-      Assert.Equal("1.2.0-rc.7", profile.ReleaseNoteVersion);
+      Assert.Equal("1.2.0-rc.8.md · Pending", vm.ActiveNoteDisplay);
       File.Delete(state.File!);
       Assert.False(Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Evaluate(root, profile.ReleaseNoteVersion, [], true).Allowed);
       profile.ReleaseNoteLock = false;

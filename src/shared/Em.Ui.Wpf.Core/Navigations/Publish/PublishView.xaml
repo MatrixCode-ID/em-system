@@ -221,16 +221,12 @@
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
                <ScrollViewer.Resources><Style TargetType="ScrollBar" BasedOn="{StaticResource stripScrollBar}"/></ScrollViewer.Resources>
                <StackPanel x:Name="operations" Orientation="Horizontal">
-                  <!-- Locked profiles select their exact version from a release note file. Otherwise Standard uses
+                  <!-- Locked profiles take their exact version from the highest unreleased release note file. Otherwise Standard uses
                        A.B.C plus the channel with registry-derived N, while Manual shows one free tag box. -->
                   <StackPanel x:Name="versionGroup" Orientation="Horizontal" Visibility="Collapsed" VerticalAlignment="Center">
-                     <ComboBox x:Name="releaseFile" Style="{StaticResource fieldComboStyle}" Height="38" MinWidth="260" MaxWidth="420" Visibility="Collapsed"
-                               SelectionChanged="ReleaseFileChanged" ToolTip="Choose a release note file. Its filename supplies the exact version tag; the build number is not changed automatically."
-                               AutomationProperties.Name="Release note file">
-                        <ComboBox.ItemTemplate>
-                           <DataTemplate><TextBlock Text="{Binding FileDisplay}" TextTrimming="CharacterEllipsis"/></DataTemplate>
-                        </ComboBox.ItemTemplate>
-                     </ComboBox>
+                     <TextBox x:Name="releaseFile" Style="{StaticResource fieldBoxStyle}" Height="38" MinWidth="260" MaxWidth="420" Visibility="Collapsed" IsReadOnly="True"
+                              ToolTip="The highest release note not yet on the registry. Its filename sets the exact version tag; after Push the next note is created empty."
+                              AutomationProperties.Name="Release note file"/>
                      <Button x:Name="openReleaseNotesFolder" Style="{StaticResource outlinedButtonStyle}" Width="38" Height="38" Padding="0" Margin="8,0,0,0"
                              Visibility="Collapsed" Click="OpenReleaseNotesFolder" ToolTip="Open the release notes folder configured in this profile"
                              AutomationProperties.Name="Open release notes folder"><fa:FontAwesome Icon="Solid_FolderOpen" FontSize="14"/></Button>

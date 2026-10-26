@@ -13,6 +13,8 @@ public sealed record ReleaseNoteEntry(ContainerReleaseVersion ParsedVersion, str
    public string Display => $"{Version} · {Status}";
    /// <summary>The release filename and status shown by the container version selector.</summary>
    public string FileDisplay => $"{Path.GetFileName(File)} · {Status}";
+   /// <summary>Whether the target already holds this version (or a newer one), whatever the note content.</summary>
+   public bool Released { get; init; }
 }
 
 /// <summary>The result of evaluating a release note lock.</summary>
@@ -54,7 +56,7 @@ public static class ReleaseNoteFolder {
             if (!ReleaseManifestSerializer.IsStandardVersion(name) || !ContainerVersion.TryParseFull(name, out var parsed)) continue;
             var content = File.ReadAllText(file); var valid = HasSummary(content);
             var released = exactReleased ? versions.Contains(parsed) : highest is { } h && parsed.CompareTo(h) <= 0;
-            entries.Add(new(parsed, file, content, valid, !valid ? "Invalid" : released ? "Released" : "Pending"));
+            entries.Add(new(parsed, file, content, valid, !valid ? "Invalid" : released ? "Released" : "Pending") { Released = released });
          }
          var sorted = entries.OrderByDescending(e => e.ParsedVersion).ToArray();
          if (!ContainerVersion.TryParseFull(appVersion, out var app)) return new(false, "Blocked: release note lock requires a standard application version.", null, "", sorted) { FolderValid = true };
@@ -67,6 +69,49 @@ public static class ReleaseNoteFolder {
       catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or NotSupportedException or System.Security.SecurityException) {
          return new(false, $"Blocked: Cannot read release notes folder '{notesFolder}': {ex.Message} Open profile settings and update Release notes folder.", null, "", []);
       }
+   }
+   /// <summary>The note to release next: the highest one the target does not hold yet, an unfilled one included.</summary>
+   public static ReleaseNoteEntry? Active(IEnumerable<ReleaseNoteEntry> entries) =>
+      entries.Where(e => !e.Released).OrderByDescending(e => e.ParsedVersion).FirstOrDefault();
+   /// <summary>The version after a released one: N + 1 on a prerelease channel, the next patch after a stable release.</summary>
+   public static string Next(ContainerReleaseVersion released) =>
+      released.Channel == ContainerVersion.Release ? $"{released.Major}.{released.Minor}.{released.Patch + 1}"
+         : $"{released.Major}.{released.Minor}.{released.Patch}-{released.Channel}.{released.Number + 1}";
+   /// <summary>
+   /// When every note in a readable folder is released, creates the empty note of the next version so there is
+   /// always one note to fill. Returns the created file, or <c>null</c> when nothing was created.
+   /// </summary>
+   public static string? EnsureNext(string notesFolder, ReleaseNoteState state) {
+      if (!state.FolderValid || state.Entries.Count == 0 || state.Entries.Any(e => !e.Released)) return null;
+      var released = state.Entries.Max(e => e.ParsedVersion);
+      var file = Path.Combine(Resolve(notesFolder), Next(released) + ".md");
+      if (File.Exists(file)) return null;
+      var source = state.Entries.First(e => e.ParsedVersion.Equals(released));
+      using (var stream = new FileStream(file, FileMode.CreateNew, FileAccess.Write))
+      using (var writer = new StreamWriter(stream)) writer.Write(Template(source.Content, released.Full, Next(released)));
+      return file;
+   }
+   /// <summary>
+   /// An empty note shaped like the previous one: its title with the new version, its metadata keys (Subject kept,
+   /// Previous set to the released version, the rest empty) and its second-level headings without content.
+   /// The Summary stays empty, so the note is Invalid until it is written.
+   /// </summary>
+   public static string Template(string previousNote, string previous, string next) {
+      var nl = Environment.NewLine; var title = $"# {next}"; var meta = new List<string>(); var headings = new List<string>();
+      var lines = previousNote.Replace("\r\n", "\n").Split('\n');
+      var titled = false;
+      foreach (var line in lines) {
+         if (!titled && line.StartsWith("# ")) { title = line.Contains(previous) ? line.Replace(previous, next) : title; titled = true; }
+         else if (line.StartsWith("## ")) headings.Add(line.TrimEnd());
+         else if (headings.Count == 0 && Regex.Match(line, @"^(?<key>[A-Za-z][A-Za-z ]*):(?<value>.*)$") is { Success: true } m) {
+            var key = m.Groups["key"].Value;
+            meta.Add(key + ":" + (key == "Subject" ? m.Groups["value"].Value.TrimEnd() : key == "Previous" ? " " + previous : ""));
+         }
+      }
+      if (!headings.Contains("## Summary")) headings.Insert(0, "## Summary");
+      var text = title + nl + nl;
+      if (meta.Count > 0) text += string.Join(nl, meta) + nl + nl;
+      return text + string.Join(nl + nl, headings) + nl;
    }
    /// <summary>Combines notes in ascending order, excluding From and including To.</summary>
    public static string Range(IEnumerable<ReleaseNoteEntry> entries, ContainerReleaseVersion from, ContainerReleaseVersion to) =>

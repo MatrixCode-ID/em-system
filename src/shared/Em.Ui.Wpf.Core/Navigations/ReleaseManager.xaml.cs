@@ -209,27 +209,10 @@ namespace Em.Ui.Wpf.Navigations
       public Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState? NoteState { get => Get<Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState?>(); private set => Set(value); }
       /// <summary>The current application version for note selection.</summary>
       public string NoteVersion => Profile is { } profile ? Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.Version(profile) : "";
-      private bool _loadingNotes;
-      /// <summary>Versioned note files with their release status.</summary>
-      public IReadOnlyList<Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry> NoteFiles => NoteState?.Entries ?? [];
-      /// <summary>The exact persisted release note selection.</summary>
-      public Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry? SelectedNoteFile {
-         get => NoteFiles.FirstOrDefault(e => e.Version == NoteVersion.Split('+')[0]);
-         set {
-            if (_loadingNotes || IsRunning || value is null || Profile is not { ReleaseNoteLock: true } profile) return;
-            if (profile.ReleaseNoteVersion == value.Version) return;
-            var previous = profile.ReleaseNoteVersion;
-            try {
-               if (_store is not null && File.GetLastWriteTimeUtc(_store.FileOf(profile.Id)) != _profileLastWriteUtc)
-                  throw new IOException("The profile changed outside this screen. Refresh the profile before selecting a release note.");
-               profile.ReleaseNoteVersion = value.Version;
-               if (_store is not null) _profileLastWriteUtc = _store.Save(profile).LastWriteUtc;
-            }
-            catch (Exception ex) { profile.ReleaseNoteVersion = previous; NotifyChanged(nameof(SelectedNoteFile)); AlertError(ex); return; }
-            ResetComparison();
-            _ = RefreshReleaseNotesCommand();
-         }
-      }
+      /// <summary>The note released next: the highest note the target does not hold yet.</summary>
+      public Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry? ActiveNote => NoteState is { } state ? Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Active(state.Entries) : null;
+      /// <summary>Read-only filename and status of <see cref="ActiveNote"/>.</summary>
+      public string ActiveNoteDisplay => ActiveNote?.FileDisplay ?? (NoteState is null ? "" : "No unreleased release note");
 
       /// <summary>Opens the configured note folder without creating a replacement.</summary>
       public void OpenReleaseNotesFolderCommand() {
@@ -244,7 +227,10 @@ namespace Em.Ui.Wpf.Navigations
       public bool HasNoteLock => Profile?.ReleaseNoteLock == true;
       /// <summary>Read-only machine-local notes folder and current lock status.</summary>
       public string NoteCaption => Profile?.ReleaseNoteLock == true ? Profile.ReleaseNotesFolder + " · " + (NoteState?.Message ?? "Reading release notes and target…") : "";
-      /// <summary>Reloads notes and target versions without changing the application version.</summary>
+      /// <summary>
+      /// Reloads notes and target versions. Creates the next empty note when every note is released, and moves the
+      /// profile to the highest unreleased note.
+      /// </summary>
       public async Task RefreshReleaseNotesCommand() {
          var generation = ++_noteRefresh; var profile = Profile;
          NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion)); NotifyChanged(nameof(HasNoteLock));
@@ -252,14 +238,28 @@ namespace Em.Ui.Wpf.Navigations
          Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteState state;
          try {
             var target = CreateTarget();
-            state = target is null ? new(false, "Blocked: " + TargetBlockedReason, null, "", []) :
-               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
+            if (target is null) state = new(false, "Blocked: " + TargetBlockedReason, null, "", []);
+            else {
+               state = await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
+               if (generation != _noteRefresh || Profile != profile) return;
+               if (Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.EnsureNext(profile.ReleaseNotesFolder, state) is { } created) {
+                  Log($"Release note {Path.GetFileName(created)} created for the next release. Write its Summary before Prepare.");
+                  state = await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
+               }
+               if (generation != _noteRefresh || Profile != profile) return;
+               if (!IsRunning && Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Active(state.Entries) is { } active && active.Version != profile.ReleaseNoteVersion) {
+                  if (File.GetLastWriteTimeUtc(_store.FileOf(profile.Id)) != _profileLastWriteUtc)
+                     throw new IOException("The profile changed outside this screen. Refresh the profile to select the next release note.");
+                  profile.ReleaseNoteVersion = active.Version;
+                  _profileLastWriteUtc = _store.Save(profile).LastWriteUtc;
+                  Log($"Release note {Path.GetFileName(active.File)} selected.");
+                  state = await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
+               }
+            }
          }
          catch (Exception ex) { state = new(false, "Blocked: " + ex.Message, null, "", []); }
          if (generation != _noteRefresh || Profile != profile) return;
-         _loadingNotes = true;
-         try { NoteState = state; NotifyChanged(nameof(NoteFiles)); NotifyChanged(nameof(SelectedNoteFile)); NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion)); }
-         finally { _loadingNotes = false; }
+         NoteState = state; NotifyChanged(nameof(ActiveNote)); NotifyChanged(nameof(ActiveNoteDisplay)); NotifyChanged(nameof(NoteCaption)); NotifyChanged(nameof(NoteVersion));
       }
 
       /// <summary>Creates a new view model and registers all commands of the screen.</summary>
@@ -965,7 +965,7 @@ namespace Em.Ui.Wpf.Navigations
       private void ApplySettings() {
          ++_noteRefresh;
          NoteState = null;
-         NotifyChanged(nameof(NoteFiles)); NotifyChanged(nameof(SelectedNoteFile));
+         NotifyChanged(nameof(ActiveNote)); NotifyChanged(nameof(ActiveNoteDisplay));
          SolutionPath = Profile?.SolutionPath ?? "";
          HostProject = Profile?.HostProject ?? "";
          PublishFolder = Profile?.PublishFolder ?? "";

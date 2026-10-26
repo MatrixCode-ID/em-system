@@ -31,7 +31,7 @@ public partial class PublishView : UserControl {
  private readonly HashSet<string> _cards=[];
  private readonly DispatcherTimer _versionTimer=new() {Interval=TimeSpan.FromMilliseconds(400)};
  private bool _syncingVersion,_versionDirty,_resolvingVersion;
- private bool _syncingNoteSelection;
+ private Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry? _activeNote;
  private readonly Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteHistory _noteHistory=new() {IsExpanded=true,PreviewMaxHeight=double.PositiveInfinity};
  private int _noteRefresh;
  private ProfileEntry? Entry=>profileList.SelectedItem as ProfileEntry;
@@ -95,21 +95,7 @@ public partial class PublishView : UserControl {
   try {versionMajor.Value=v.Major;versionMinor.Value=v.Minor;versionPatch.Value=v.Patch;versionChannel.SelectedItem=v.Channel;manualTag.Text=manual?tag:"";}
   finally {_syncingVersion=false;}
   ShowVersionMode(manual,p.UsesReleaseNoteLock);floatingText.Text=manual?"":FloatingText(tag);
-  _syncingNoteSelection=true;
-  try {releaseFile.ItemsSource=null;releaseFile.SelectedItem=null;}
-  finally {_syncingNoteSelection=false;}
- }
- private async void ReleaseFileChanged(object sender,SelectionChangedEventArgs e) {
-  if(_syncingNoteSelection||_cancel!=null||_resolvingVersion||Entry is not {Profile: {UsesReleaseNoteLock:true} p} entry||releaseFile.SelectedItem is not Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry selected)return;
-  if(p.Container!.Target.VersionTag!=selected.Version)SaveVersionTag(entry,p,selected.Version);
-  floatingText.Text=FloatingText(selected.Version);
-  try {
-   var reference=await _targets.ResolveContainer(p.Clone(),CancellationToken.None);
-   if(Profile?.Id!=p.Id||Profile.Container!.Target.VersionTag!=selected.Version)return;
-   targetText.Text=reference;
-  }
-  catch(Exception ex){if(Profile?.Id==p.Id)message.Text=Mask(ex.Message);}
-  await RefreshReleaseNotes();
+  _activeNote=null;releaseFile.Text="";
  }
  private void VersionEdited(object? s,EventArgs e) {if(_syncingVersion)return;_versionDirty=true;_versionTimer.Stop();_versionTimer.Start();}
  private void VersionChannelChanged(object s,SelectionChangedEventArgs e)=>VersionEdited(s,e);
@@ -146,10 +132,13 @@ public partial class PublishView : UserControl {
   if(Entry is not {Profile: {} stored} entry||!UsesVersionStrip(stored))return;
   var current=stored.Container!.Target.VersionTag;
   if(stored.UsesReleaseNoteLock) {
-   if(releaseFile.SelectedItem is not Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteEntry selected||selected.Version!=current)
-    throw new InvalidDataException("Choose a release note file above. If the list is empty, check the notes folder in the profile and refresh release notes.");
-   var state=await _publisher.ReleaseNotesState(stored,CancellationToken.None);
-   if(Entry!=entry)throw new InvalidOperationException("The selected profile changed. Try again.");
+   await RefreshReleaseNotes(); // moves the profile to the highest unreleased note
+   if(Entry?.Profile is not {} locked||locked.Id!=stored.Id)throw new InvalidOperationException("The selected profile changed. Try again.");
+   current=locked.Container!.Target.VersionTag;
+   if(_activeNote is not {} active||active.Version!=current)
+    throw new InvalidDataException("No unreleased release note file is available. Check the notes folder in the profile and refresh release notes.");
+   var state=await _publisher.ReleaseNotesState(locked,CancellationToken.None);
+   if(Entry?.Profile?.Id!=locked.Id)throw new InvalidOperationException("The selected profile changed. Try again.");
    if(!state.Allowed)throw new InvalidDataException(state.Message);
    floatingText.Text=FloatingText(current);
    return;
@@ -189,23 +178,34 @@ public partial class PublishView : UserControl {
   finally {_reloadingProfiles=false;}
  }
  private void ReloadHistory() {history.ItemsSource=PublishLog.History(_settings.Logs,allHistory.IsChecked==true?null:Profile?.Id);}
+ // Locked profiles follow the highest note the registry does not hold yet; when all are released, the next
+ // empty note is created first so there is always one to fill.
  private async Task RefreshReleaseNotes() {
   var generation=++_noteRefresh;var p=Profile?.Clone();notes.IsReadOnly=p?.UsesReleaseNoteLock==true;
   refreshReleaseNotes.Visibility=p?.UsesReleaseNoteLock==true?Visibility.Visible:Visibility.Collapsed;
   notes.Visibility=p?.UsesReleaseNoteLock==true?Visibility.Collapsed:Visibility.Visible;
   if(p?.UsesReleaseNoteLock!=true) {noteLockStatus.Text="";_noteHistory.Show(null,"");return;}
-  releaseFile.IsEnabled=false;
   noteLockStatus.Text="Reading release notes and registry versions…";
   var state=await _publisher.ReleaseNotesState(p,CancellationToken.None);
   if(generation!=_noteRefresh||Profile?.Id!=p.Id)return;
-  noteLockStatus.Text=p.ReleaseNotesFolder+" · "+state.Message;notes.Text=state.Content;
-  _syncingNoteSelection=true;
   try {
-   releaseFile.ItemsSource=state.Entries;
-   releaseFile.SelectedItem=state.Entries.FirstOrDefault(note=>note.Version==p.Container!.Target.VersionTag);
-   releaseFile.IsEnabled=state.FolderValid;
+   if(Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.EnsureNext(p.ReleaseNotesFolder,state) is {} created) {
+    message.Text="Release note "+Path.GetFileName(created)+" created for the next version. Write its Summary before Build.";
+    state=await _publisher.ReleaseNotesState(p,CancellationToken.None);
+    if(generation!=_noteRefresh||Profile?.Id!=p.Id)return;
+   }
   }
-  finally {_syncingNoteSelection=false;}
+  catch(Exception ex) {message.Text=Mask("Cannot create the next release note: "+ex.Message);}
+  var active=Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.Active(state.Entries);
+  if(active!=null&&active.Version!=p.Container!.Target.VersionTag&&_cancel==null&&Entry is {Profile:{} stored} entry&&stored.Id==p.Id) {
+   SaveVersionTag(entry,stored,active.Version);
+   p=Profile!.Clone();state=await _publisher.ReleaseNotesState(p,CancellationToken.None);
+   if(generation!=_noteRefresh||Profile?.Id!=p.Id)return;
+   try {targetText.Text=await _targets.ResolveContainer(p,CancellationToken.None);}catch(Exception){}
+   if(generation!=_noteRefresh||Profile?.Id!=p.Id)return;
+  }
+  noteLockStatus.Text=p.ReleaseNotesFolder+" · "+state.Message;notes.Text=state.Content;
+  _activeNote=active;releaseFile.Text=active?.FileDisplay??(state.FolderValid?"No unreleased release note":"");
   _noteHistory.Show(state,p.Container!.Target.VersionTag);
  }
  private async Task Operation(Func<PublishProfile,CancellationToken,Task> action) {

@@ -287,12 +287,12 @@
          </WrapPanel>
          <StackPanel Grid.Row="2" Grid.ColumnSpan="5" Margin="0,8,0,0" Visibility="{Binding HasNoteLock, Converter={StaticResource boolToVisibility}}">
             <WrapPanel>
-               <ComboBox Width="300" Style="{StaticResource fieldComboStyle}" IsEnabled="{Binding CanChangeProfile}"
-                         ItemsSource="{Binding NoteFiles}" SelectedItem="{Binding SelectedNoteFile, Mode=TwoWay}"
-                         ToolTip="Select the exact release note file; its version and channel are used without incrementing">
-                  <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding FileDisplay}"/></DataTemplate></ComboBox.ItemTemplate>
-               </ComboBox>
-               <Button Content="Open folder" Margin="8,0,0,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[OpenReleaseNotesFolderCommand]}"/>
+               <TextBox Width="300" Style="{StaticResource fieldBoxStyle}" IsReadOnly="True" Text="{Binding ActiveNoteDisplay, Mode=OneWay}"
+                        AutomationProperties.Name="Release note file"
+                        ToolTip="The highest release note not yet on the target. Its filename sets the exact version; after Sync the next note is created empty."/>
+               <Button Style="{StaticResource outlinedButtonStyle}" Width="38" Height="38" Padding="0" Margin="8,0,0,0"
+                       Command="{Binding Commands[OpenReleaseNotesFolderCommand]}" ToolTip="Open the release notes folder configured in this profile"
+                       AutomationProperties.Name="Open release notes folder"><fa:FontAwesome Icon="Solid_FolderOpen" FontSize="14"/></Button>
                <ToggleButton x:Name="releaseNotesToggle" Style="{StaticResource sheetToggleStyle}" Margin="8,0,0,0" Checked="OpenReleaseNotes"
                              ToolTip="Show release notes and version history" AutomationProperties.Name="Release notes">
                   <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FileLines" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Release Notes" VerticalAlignment="Center"/></StackPanel>

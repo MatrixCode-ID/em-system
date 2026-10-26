@@ -38,12 +38,13 @@ rights.
 ## Profiles and local files
 
 Container profiles can enable **Release note lock** in Advanced for Dockerfile, LocalImage and Template
-with Standard tagging. The version strip becomes a **Release note file** ComboBox listing version files
-and their Pending/Released/Invalid status. Selecting a file sets the exact version from its filename;
-refresh and Build/Push never increment N or select another file automatically. The saved selection is
-restored if its file is still present. Build/Push require a valid selected note and a version newer than the
-registry. The folder icon beside the selector opens the configured notes folder, even when no file is
-selected. An unavailable location reports an error and asks the user to update the profile; no folder is created.
+with Standard tagging. The version strip becomes a read-only **Release note file** field showing the highest version file the
+registry does not hold yet (filename and Pending/Invalid status). That file sets the exact version tag and is
+saved to the profile. When every file is released (after Push, or on refresh), the next note is created as an
+empty template (N + 1 on the channel, or the next patch after a stable release) shaped like the previous note,
+and becomes the active one; existing files are never overwritten. Build/Push require the active note to have a
+nonempty Summary and a version newer than the registry. The folder icon beside the field opens the configured
+notes folder, even when no file is active. An unavailable location reports an error and asks the user to update the profile; no folder is created.
 Set/Compose/Manual and Set steps retain their existing behavior. The **Release notes** button opens a
 Material side sheet on the right, keeping the artifact table and log free of note content. With the
 lock enabled it shows status, refresh, version history and one read-only preview. From/To range controls

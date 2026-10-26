@@ -150,4 +150,31 @@ public sealed class ReleaseNoteLockTests : IDisposable {
       File.Delete(Path.Combine(_root, "notes", "1.2.0-beta.3.md"));
       await Assert.ThrowsAsync<InvalidDataException>(() => ReleaseNoteGuard.RequireAsync(profile, target, CancellationToken.None, syncing: true));
    }
+   [Fact] public void ActiveNoteIsTheHighestUnreleasedFileIncludingAnUnfilledOne() {
+      Note("1.2.0-beta.3"); Note("1.2.0-beta.4", "## Summary\n"); Note("1.2.0-beta.2");
+      Assert.Equal("1.2.0-beta.4", ReleaseNoteFolder.Active(State(remote: ["1.2.0-beta.3"]).Entries)!.Version);
+      Assert.Null(ReleaseNoteFolder.Active(State(remote: ["1.2.0-beta.4"]).Entries));
+   }
+   [Theory] [InlineData("1.0.0-beta.8", "1.0.0-beta.9")] [InlineData("1.0.0-rc.1", "1.0.0-rc.2")] [InlineData("1.2.0", "1.2.1")]
+   public void NextRaisesTheChannelNumberOrThePatch(string released, string next) {
+      Assert.True(ContainerVersion.TryParseFull(released, out var v)); Assert.Equal(next, ReleaseNoteFolder.Next(v));
+   }
+   [Fact] public void AllReleasedCreatesTheNextEmptyNoteOnceShapedLikeThePreviousOne() {
+      Note("1.0.0-beta.8", "# app 1.0.0-beta.8\n\nSubject: app\nDate: 2026-01-02\nPrevious: 1.0.0-beta.7\nSource: main abc\n\n## Summary\nShipped.\n\n## Fixes\n\n### Orders\n- Fixed.\n\n## Engine update\nNone.");
+      var folder = Path.Combine(_root, "notes");
+      var created = ReleaseNoteFolder.EnsureNext(folder, State(remote: ["1.0.0-beta.8"]));
+      Assert.EndsWith("1.0.0-beta.9.md", created!);
+      var text = File.ReadAllText(created!).Replace("\r\n", "\n");
+      Assert.Equal("# app 1.0.0-beta.9\n\nSubject: app\nDate:\nPrevious: 1.0.0-beta.8\nSource:\n\n## Summary\n\n## Fixes\n\n## Engine update\n", text);
+      var state = State(app: "1.0.0-beta.9", remote: ["1.0.0-beta.8"]);
+      Assert.Equal("1.0.0-beta.9.md · Invalid", ReleaseNoteFolder.Active(state.Entries)!.FileDisplay);
+      Assert.False(state.Allowed);
+      Assert.Null(ReleaseNoteFolder.EnsureNext(folder, state));
+   }
+   [Fact] public void NoNoteIsCreatedWhileOneIsUnreleased() {
+      Note("1.0.0-beta.8");
+      var folder = Path.Combine(_root, "notes");
+      Assert.Null(ReleaseNoteFolder.EnsureNext(folder, State(remote: [])));
+      Assert.Single(Directory.GetFiles(folder));
+   }
 }

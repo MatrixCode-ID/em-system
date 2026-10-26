@@ -43,20 +43,25 @@ Unapplied platform changes disable Save until the platform is applied or restore
 
 ## Release note lock
 
-With the lock enabled, select an exact `<version>.md` file through the release page's
-ComboBox. Items show filename and release status. Selection is persisted per profile;
-refresh, Prepare and Sync never select a newer file or increment its suffix. The selected
+With the lock enabled, the release page always uses the **highest `<version>.md` file the target
+does not hold yet**, including one whose Summary is still empty, and saves it to the profile. A
+read-only field shows its filename and status; the folder icon beside it opens the notes folder.
+When every file is released (after Sync, or on refresh), the next note is created as an empty
+template: N + 1 on the same channel, or the next patch after a stable release. The template keeps
+the previous note's title (with the new version), metadata keys (Subject kept, Previous set to the
+released version, others empty) and its `##` headings without content. An existing file is never
+overwritten. Its empty Summary makes it Invalid, so Prepare is blocked until the note is written;
+write release notes into that newest file instead of creating another version file. The
 filename supplies the exact release version/channel/N. Windows Prepare stamps that version
 on the host and launcher; Android stamps its display version. Sync rejects an artifact
 prepared for a different selection. Missing/invalid/already released notes block release.
-Legacy profiles initially match their stored application version until a file is selected.
 With lock off, the source application version and automatic launcher rules remain active.
 
 **Release Notes** opens the same Material side sheet pattern as Container Manager: history
 and note content, refresh, maximize/restore, and close through the button, scrim or Escape.
-The main page has no duplicate preview. **Open folder** uses the configured note folder.
-The file-selection behavior above supersedes the earlier source-version-only matching
-described below; selecting a note does not edit the source project.
+The main page has no duplicate preview. The folder icon uses the configured note folder.
+The note behavior above supersedes the earlier source-version-only matching described below;
+the active note does not edit the source project.
 
 In **Product Identity**, immediately after Application version, enable **Release note lock** and choose
 one notes folder. The setting applies to Windows and Android. The release page shows this folder read-only;
@@ -82,7 +87,7 @@ The folder directly contains `<version>.md` files for one profile, for example
 `doc/ReleaseNote/inventory-api/1.2.0-beta.3.md`. No app_id or container subfolder is created automatically.
 Versions are `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH-(prealpha|alpha|beta|rc).N`, with N starting at 1.
 Release Manager takes its version from the application and matches the note to it. Container Manager
-with the lock enabled instead selects the exact version through its release note file ComboBox.
+with the lock enabled takes the exact version from the highest unreleased note file in the same way.
 Application build metadata is removed for matching in Release Manager. Stable releases follow prereleases, with channel order prealpha, alpha, beta, rc,
 then numeric N. Nonstandard application versions block release while the lock is enabled.
 

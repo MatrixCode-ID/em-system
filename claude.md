@@ -1,5 +1,19 @@
 # CLAUDE.md
 
+## Release note aktif otomatis di RM dan CM (keputusan pengguna 2026-10-26, lanjutan)
+
+Menggantikan pemilihan berkas manual pada dua bagian pemilih di bawah. Saat release
+note lock aktif, Release Manager dan Container Manager **selalu memakai berkas tertinggi
+yang belum dirilis** ke target (termasuk yang Summary-nya masih kosong) dan menyimpannya
+ke profil. ComboBox diganti field baca saja (nama berkas · status); Open folder berupa
+tombol ikon saja. Bila semua berkas sudah dirilis (setelah Sync/Push atau saat refresh),
+engine membuat berkas versi berikutnya (channel N+1, atau patch+1 untuk stabil) sebagai
+template kosong: judul versi baru, kunci metadata (Subject dipertahankan, Previous =
+versi yang dirilis) dan heading `##` note sebelumnya tanpa isi. Berkas yang sudah ada
+tidak ditimpa. Summary kosong berstatus Invalid dan memblokir Prepare/Build sampai diisi.
+Agen yang menulis release note mengisi berkas terbaru tersebut, tidak membuat berkas
+versi baru sendiri. Panduan: `doc/engine/engine-release-manager.md`, `engine-publish.md`.
+
 ## Pemilih release note Release Manager (keputusan pengguna 2026-10-26)
 
 Saat release note lock aktif, Release Manager memakai ComboBox nama berkas dan
