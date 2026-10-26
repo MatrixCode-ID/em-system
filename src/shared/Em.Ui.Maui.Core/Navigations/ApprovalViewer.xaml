@@ -95,7 +95,7 @@
                                     <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
                                  </Border>
                                  <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SignerName}"
-                                        Style="{StaticResource supportTextStyle}" />
+                                        Style="{StaticResource bodyLargeTextStyle}" />
                                  <Label Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SignatureText}"
                                         Style="{StaticResource supportTextStyle}"
                                         IsVisible="{Binding HasSignature}" />
@@ -144,7 +144,7 @@
       <Border Grid.Row="1" StrokeThickness="0" Padding="16,10,16,14" IsVisible="{Binding CanDecide}"
               BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}">
          <VerticalStackLayout Spacing="8">
-            <Label Text="{Binding DecisionCaption}" Style="{StaticResource supportTextStyle}" />
+            <Label Text="{Binding DecisionCaption}" Style="{StaticResource bodyLargeTextStyle}" />
             <VerticalStackLayout Spacing="8">
                <Button Grid.Column="0" Text="Reject" Style="{StaticResource outlinedButtonStyle}"
                        Command="{Binding Commands[RejectCommand]}" />

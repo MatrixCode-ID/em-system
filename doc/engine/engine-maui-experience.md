@@ -60,3 +60,17 @@ field errors locally, keeps credential failures general, and preserves simulatio
 exit. Signer selection and account actions have explicit native buttons. These
 contracts still require device verification for TalkBack focus, actual hit bounds,
 large text, animation scale zero, IME and insets.
+
+## Maintainer notes
+
+On 27 October 2026, independent compilation of the controls and 80 UI core,
+319 WPF core, 20 source-linked mobile logic and 34 source/contrast checks passed
+through RunBay. The native project reported NETSDK1147 (wasm-tools missing).
+No workload was installed. This does not certify Android compilation or native
+accessibility. Engine harnesses/output are retained under
+`../.artefacts/em-system/scripts/maui-ui-ux-smoke/` and
+`../.artefacts/em-system/scripts/maui-ui-ux-controls/`.
+
+The default solid error/onError contrast is 6.461:1 light and 12.369:1 dark.
+Primary/secondary container pairs also exceed 4.5:1. Revalidate custom branding,
+composited states and device rendering; these ratios alone do not certify a UI.

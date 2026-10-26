@@ -67,14 +67,14 @@
 
    <Style x:Key="chipTextStyle" TargetType="Label">
       <Setter Property="FontFamily" Value="OpenSansSemibold" />
-      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontSize" Value="12" />
       <Setter Property="TextColor"
               Value="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
    </Style>
 
    <!-- A small count bubble on the top-right corner of an icon button, e.g. the work waiting for the user. -->
    <Style x:Key="countBadgeStyle" TargetType="Border">
-      <Setter Property="HeightRequest" Value="18" />
+      <Setter Property="MinimumHeightRequest" Value="20" />
       <Setter Property="MinimumWidthRequest" Value="18" />
       <Setter Property="Padding" Value="5,0" />
       <Setter Property="Margin" Value="0,6,2,0" />
@@ -90,7 +90,7 @@
 
    <Style x:Key="countBadgeTextStyle" TargetType="Label">
       <Setter Property="FontFamily" Value="OpenSansSemibold" />
-      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontSize" Value="12" />
       <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource onErrorLight}, Dark={StaticResource onErrorDark}}" />
       <Setter Property="HorizontalOptions" Value="Center" />
       <Setter Property="VerticalOptions" Value="Center" />

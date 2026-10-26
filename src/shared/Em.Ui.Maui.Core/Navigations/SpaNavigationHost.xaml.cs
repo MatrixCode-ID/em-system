@@ -15,6 +15,10 @@ namespace Em.Ui.Maui.Navigations
       private Window? _window;
       private bool _detached;
       private VisualElement? _opener;
+#if ANDROID
+      private Android.Views.View? _nativeRoot, _keyTarget;
+      private Android.Views.ViewTreeObserver? _focusObserver;
+#endif
       public SpaNavigationHost(EmApp app) {
          InitializeComponent();
          Vm.EmApp = app; Vm.HostPage = this; Vm.PropertyChanged += VmOnPropertyChanged; Vm.Stack = app.MainStack;
@@ -29,14 +33,35 @@ namespace Em.Ui.Maui.Navigations
       public SpaNavigationHostVm Vm => (SpaNavigationHostVm)BindingContext;
       protected override void OnHandlerChanged() {
          base.OnHandlerChanged();
+#if ANDROID
+         ClearNativeKeys();
+#endif
+         if (_detached) return;
          if (_window is not null) { _window.Resumed -= OnWindowResumed; _window.Stopped -= OnWindowStopped; }
          _window = Window;
          if (_window is not null) { _window.Resumed += OnWindowResumed; _window.Stopped += OnWindowStopped; }
 #if ANDROID
-         if (Handler?.PlatformView is Android.Views.View native) { native.KeyPress -= OnNativeKey; native.KeyPress += OnNativeKey; }
+         if (Handler?.PlatformView is Android.Views.View native) {
+            _nativeRoot = native; native.KeyPress += OnNativeKey;
+            _focusObserver = native.ViewTreeObserver;
+            if (_focusObserver is not null) _focusObserver.GlobalFocusChange += OnNativeFocusChanged;
+            SetKeyTarget(native.FindFocus());
+         }
 #endif
       }
 #if ANDROID
+      private void SetKeyTarget(Android.Views.View? target) {
+         if (_keyTarget is not null && _keyTarget != _nativeRoot) _keyTarget.KeyPress -= OnNativeKey;
+         _keyTarget = target;
+         if (_keyTarget is not null && _keyTarget != _nativeRoot) _keyTarget.KeyPress += OnNativeKey;
+      }
+      private void OnNativeFocusChanged(object? sender, Android.Views.ViewTreeObserver.GlobalFocusChangeEventArgs e) => SetKeyTarget(e.NewFocus);
+      private void ClearNativeKeys() {
+         SetKeyTarget(null);
+         if (_nativeRoot is not null) _nativeRoot.KeyPress -= OnNativeKey;
+         if (_focusObserver is { IsAlive: true }) _focusObserver.GlobalFocusChange -= OnNativeFocusChanged;
+         _focusObserver = null; _nativeRoot = null;
+      }
       private void OnNativeKey(object? sender, Android.Views.View.KeyEventArgs e) {
          if (e.KeyCode == Android.Views.Keycode.Escape && Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; e.Handled = true; }
       }
@@ -74,11 +99,12 @@ namespace Em.Ui.Maui.Navigations
          AccountPanelView.Vm.CloseRequested -= CloseRequested; TasksPanel.Vm.CloseRequested -= CloseRequested;
          SizeChanged -= OnSizeChanged; Vm.PropertyChanged -= VmOnPropertyChanged; Vm.Stack = null;
 #if ANDROID
-         if (Handler?.PlatformView is Android.Views.View native) native.KeyPress -= OnNativeKey;
+         ClearNativeKeys();
 #endif
       }
       private void VmOnPropertyChanged(object? sender, PropertyChangedEventArgs e) {
          if (_detached) return;
+         if (Dispatcher.IsDispatchRequired) { Dispatcher.Dispatch(() => VmOnPropertyChanged(sender, e)); return; }
          if (e.PropertyName == nameof(SpaNavigationHostVm.Entry)) BodyHost.Content = Vm.Entry?.Body as View;
          else if (e.PropertyName == nameof(SpaNavigationHostVm.Overlay)) ApplyOverlay();
       }

@@ -54,7 +54,7 @@ public sealed class MaterialField : ContentView
       SemanticProperties.SetDescription(_entry, string.Join(". ", new[] { Label, Help, Error }.Where(x => !string.IsNullOrWhiteSpace(x))));
       var palette = new Styles.Palette();
       var role = !string.IsNullOrWhiteSpace(Error) ? "error" : _entry.IsFocused ? "primary" : "outline";
-      _outline.SetAppThemeColor(Border.StrokeProperty, (Color)palette[role + "Light"], (Color)palette[role + "Dark"]);
+      _outline.SetAppTheme<Brush>(Border.StrokeProperty, new SolidColorBrush((Color)palette[role + "Light"]), new SolidColorBrush((Color)palette[role + "Dark"]));
       _error.SetAppThemeColor(Microsoft.Maui.Controls.Label.TextColorProperty, (Color)palette["errorLight"], (Color)palette["errorDark"]);
       Associate();
    }

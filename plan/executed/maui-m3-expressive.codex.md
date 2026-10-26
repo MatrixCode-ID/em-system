@@ -1,7 +1,7 @@
 # Perbaikan fondasi UI MAUI dan panel My Tasks
 
 Tanggal: 26 Oktober 2026 (Asia/Jakarta).
-Status: **siap ditinjau; belum disetujui untuk eksekusi**.
+Status: **implementasi selesai; validasi perangkat tertunda**.
 Repo: engine publik; branch kerja `work-bench`.
 Baseline source saat penyusunan: `a4a6788`; working tree engine bersih.
 Sumber: [ide fondasi MAUI](../../doc/ideas/maui-m3-expressive.md).
@@ -144,14 +144,14 @@ build, tes, render atau review integrasi. Jangan menjalankan tes di sela tahap.
 Penelusuran source untuk menulis kode tetap boleh; persetujuan plan lintas repo
 mencakup urutan ini. Setelah seluruh kode selesai, lakukan verifikasi dan perbaikan.
 
-- [ ] **E1:** palette/on roles, typography, spacing/shape/button aliases, field
+- [x] **E1:** palette/on roles, typography, spacing/shape/button aliases, field
   bersama serta status/result presentation yang diperlukan; dokumentasikan API baru.
-- [ ] **E2:** kontrol aksesibel, target hit, motion policy dan guard transisi.
-- [ ] **E3:** panel My Tasks, overlay/fokus/back, app bar/overflow, Home tanpa
+- [x] **E2:** kontrol aksesibel, target hit, motion policy dan guard transisi.
+- [x] **E3:** panel My Tasks, overlay/fokus/back, app bar/overflow, Home tanpa
   tugas serta search/katalog virtual; lifecycle refresh dan pergantian akun.
-- [ ] **E4:** login, account dan viewer mengonsumsi komponen baru; tulis tes
+- [x] **E4:** login, account dan viewer mengonsumsi komponen baru; tulis tes
   fungsi bermakna dan guide. Jangan mengubah navigasi WPF secara tidak sengaja.
-- [ ] **E5:** setelah kode konsumen selesai, build/regresi, review hasil dan
+- [x] **E5:** setelah kode konsumen selesai, build/regresi, review hasil dan
   koreksi; catat bagian GUI/perangkat yang belum diotorisasi.
 
 ## 6. Verifikasi dan acceptance
@@ -212,3 +212,23 @@ Pemeriksaan dokumentasi melalui RunBay pada 26 Oktober 2026 lulus (exit 0):
 tautan lokal, code fence dan whitespace; `git diff --check` engine juga lulus.
 Tidak ada build aplikasi, render, tes native atau klaim runtime yang dijalankan
 untuk penyusunan plan. Eksekusi menunggu persetujuan pengguna.
+
+## Execution — 27 October 2026
+
+Execution was approved on 26 October and scheduled for 01:30 Asia/Jakarta.
+E1–E4 were committed before consumer implementation; verification ran afterward.
+E5 completed console review and corrections. Native build was attempted but blocked
+by NETSDK1147 (missing wasm-tools); no workload was installed. The consuming host
+also lacks its pinned SDK. Android compilation and device criteria remain pending.
+
+RunBay `em-system / verify-maui-ui-ux`, run
+`20261027-020153-verify-maui-ui-ux-df1c`: 80 core tests, 319 WPF tests,
+20 source-linked mobile logic checks and 34 source/contrast checks passed.
+Controls also compiled independently against the installed MAUI references;
+this is not an Android build. Earlier runner/fixture corrections are retained
+in RunBay history. No GUI, package release, installation or deployment ran.
+
+Guide: [MAUI experience](../../doc/engine/engine-maui-experience.md).
+Temporary harnesses/logs: `../.artefacts/em-system/scripts/maui-ui-ux-smoke/`
+and `maui-ui-ux-controls/`. Device focus, keyboard, bounds, large text, insets,
+IME, animation scale zero and performance remain unverified.

@@ -1,6 +1,6 @@
 # Penguatan fondasi UI MAUI untuk Material 3 Expressive
 
-Tanggal: 26 Oktober 2026. Status: **jadi plan**; menunggu persetujuan eksekusi.
+Tanggal: 26 Oktober 2026. Status: **jadi plan**; execution approved; implementation complete, device validation pending.
 
 ## Konteks dan keputusan yang jelas
 
@@ -56,7 +56,7 @@ pada katalog modul dan pencarian destinasi berizin. Refresh/jumlah/routing
 tugas tetap memakai sumber bersama dan wrapper catalog existing.
 
 Pengguna memilih langsung UI asli sebagai pengecualian mockup, memakai
-spesifikasi audit. [Plan fondasi MAUI](../../plan/unexecuted/maui-m3-expressive.codex.md)
+spesifikasi audit. [Plan fondasi MAUI](../../plan/executed/maui-m3-expressive.codex.md)
 memuat kontrak panel adaptif, aksesibilitas, input, tokens dan motion; belum
 diotorisasi untuk implementasi. Default tanpa dependency baru, tanpa perubahan
 aturan server/WPF, dan tanpa pengujian GUI/perangkat otomatis.
@@ -85,3 +85,11 @@ kandidat sebagai resource/API yang sudah tersedia.
 - [Material motion](https://m3.material.io/styles/motion)
 - [Android accessibility](https://developer.android.com/guide/topics/ui/accessibility/apps)
 - [MAUI semantics](https://learn.microsoft.com/en-us/dotnet/maui/fundamentals/accessibility?view=net-maui-10.0)
+
+## Execution status — 27 October 2026
+
+Source implementation and independent console verification are complete. Native
+build is blocked by missing workload support, and device validation remains
+pending. The original findings above record the pre-change source. See the
+[executed plan](../../plan/executed/maui-m3-expressive.codex.md) and
+[component guide](../engine/engine-maui-experience.md) for current behavior.
