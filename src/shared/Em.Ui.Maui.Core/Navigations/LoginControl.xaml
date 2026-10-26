@@ -79,7 +79,7 @@
                                           Glyph="{x:Static controls:FontIcons.CircleHalfStroke}" IconSize="20"
                                           VerticalOptions="Center"
                                           Command="{Binding Commands[ToggleThemeCommand]}"
-                                          TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+                                          TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Toggle Theme" />
                      <Button Grid.Column="1" Margin="10,0,0,0" Text="Sign in" Style="{StaticResource filledButtonStyle}"
                              Command="{Binding Commands[SignInCommand]}" />
                      <!-- Debug only: a real session as the typed account, without its password. -->

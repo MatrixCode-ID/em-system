@@ -28,13 +28,13 @@
                                  Glyph="{x:Static controls:FontIcons.ArrowLeft}"
                                  IsVisible="{Binding IsBackVisible}"
                                  Command="{Binding Commands[LeadingCommand]}"
-                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}"  SemanticProperties.Description="Leading" />
 
             <controls:IconButton Grid.Column="1"
                                  Glyph="{x:Static controls:FontIcons.House}"
                                  IsVisible="{Binding IsHomeVisible}"
                                  Command="{Binding Commands[HomeCommand]}"
-                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}"  SemanticProperties.Description="Home" />
 
             <VerticalStackLayout Grid.Column="2" Padding="8,0" Spacing="1" VerticalOptions="Center"
                                  IsVisible="{Binding IsTitleVisible}">
@@ -47,7 +47,7 @@
             <Grid Grid.Column="3" IsVisible="{Binding HasHubTasks}">
                <controls:IconButton Glyph="{x:Static controls:FontIcons.Inbox}"
                                     Command="{Binding Commands[HubTasksCommand]}"
-                                    TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+                                    TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Hub Tasks" />
                <Border Style="{StaticResource countBadgeStyle}" InputTransparent="True">
                   <Label Text="{Binding HubTaskBadge}" Style="{StaticResource countBadgeTextStyle}" />
                </Border>
@@ -57,7 +57,7 @@
                                  Glyph="{x:Static controls:FontIcons.RotateRight}"
                                  IsVisible="{Binding IsReloadVisible}"
                                  Command="{Binding Commands[ReloadCommand]}"
-                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Reload" />
 
             <!-- The account badge, which opens the account panel. It is on every screen, not only home: it is the one
                  and only way to the account, server, theme, and sign-out once the side menu has been dropped. -->

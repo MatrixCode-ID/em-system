@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!-- The parts of the navigation frame: the top bar, the account panel entering from the right, and the
      rows inside it.
 
@@ -22,7 +22,7 @@
    <!-- The top bar: height 64, the same color as the page, and separated from the content only by one thin
         line. -->
    <Style x:Key="appBarStyle" TargetType="Grid">
-      <Setter Property="HeightRequest" Value="64" />
+      <Setter Property="MinimumHeightRequest" Value="64" />
       <Setter Property="ColumnSpacing" Value="4" />
       <Setter Property="Padding" Value="4,0,8,0" />
       <Setter Property="BackgroundColor"
@@ -33,8 +33,8 @@
         same color as the primary surface, so it reads as a user photo even though its content is only an
         icon for now. -->
    <Style x:Key="accountBadgeStyle" TargetType="Border">
-      <Setter Property="WidthRequest" Value="36" />
-      <Setter Property="HeightRequest" Value="36" />
+      <Setter Property="MinimumWidthRequest" Value="48" />
+      <Setter Property="MinimumHeightRequest" Value="48" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="StrokeThickness" Value="0" />
       <Setter Property="VerticalOptions" Value="Center" />
@@ -76,7 +76,7 @@
         It has no selected state at all - not one row in the account panel represents the screen that is
         open; all are actions that are run and then done. -->
    <Style x:Key="accountPanelItemStyle" TargetType="Border">
-      <Setter Property="HeightRequest" Value="56" />
+      <Setter Property="MinimumHeightRequest" Value="56" />
       <Setter Property="Padding" Value="16,0" />
       <Setter Property="StrokeThickness" Value="0" />
       <Setter Property="BackgroundColor" Value="Transparent" />
@@ -151,7 +151,7 @@
    <!-- The search box at the head of the home screen. Its shape is a full pill, following the desktop client. -->
    <Style x:Key="searchFieldStyle" TargetType="Border">
       <Setter Property="Padding" Value="16,0" />
-      <Setter Property="HeightRequest" Value="46" />
+      <Setter Property="MinimumHeightRequest" Value="48" />
       <Setter Property="StrokeThickness" Value="1" />
       <Setter Property="BackgroundColor"
               Value="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}" />

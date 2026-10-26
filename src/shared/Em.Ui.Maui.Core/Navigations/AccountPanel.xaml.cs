@@ -16,10 +16,7 @@ namespace Em.Ui.Maui.Navigations
    /// </summary>
    public partial class AccountPanel : ContentView
    {
-      // Exactly the same as the duration of the curtain animation on its owning page: the two are one
-      // movement, and a movement whose panel finishes before its curtain reads as two unrelated things.
-      private const uint OpenDuration = 260;
-      private const uint CloseDuration = 200;
+      private readonly MotionPolicy _motion = new();
 
       public AccountPanel() {
          InitializeComponent();
@@ -48,11 +45,7 @@ namespace Em.Ui.Maui.Navigations
             IsVisible = true;
          }
 
-         var duration = open ? OpenDuration : CloseDuration;
-         var easing = open ? Easing.CubicOut : Easing.CubicIn;
-         await this.TranslateToAsync(open ? 0 : WidthRequest, 0, duration, easing);
-
-         if (!open) IsVisible = false;
+         await _motion.SetOpenAsync(this, open, Math.Max(0, WidthRequest));
       }
    }
 
