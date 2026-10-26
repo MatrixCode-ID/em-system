@@ -1,5 +1,17 @@
 # CLAUDE.md
 
+## Home dan panel My Tasks MAUI (keputusan pengguna 2026-10-26)
+
+My Tasks harus berada pada panel tersendiri dan tidak ditampilkan pada Home.
+Home berfokus pada katalog modul agar banyak tugas dan banyak modul tidak
+bersaing dalam area scroll yang sama. Komponen panel, routing tugas dan shell
+ditangani engine; perubahan ini tidak mengubah Home WPF atau aturan approval.
+
+Pengguna menyetujui langsung UI asli sebagai pengecualian mockup, memakai
+spesifikasi audit, untuk topik [perbaikan fondasi MAUI](plan/unexecuted/maui-m3-expressive.codex.md)
+pada 26 Oktober 2026. Pengecualian hanya untuk lingkup plan tersebut;
+persetujuan eksekusi serta pengujian GUI/perangkat tetap terpisah.
+
 ## Keluar simulasi login lintas platform (keputusan pengguna 2026-10-26)
 
 MAUI menyediakan jalan keluar dari simulasi aktif untuk kembali ke SYSTEM DEBUGGER

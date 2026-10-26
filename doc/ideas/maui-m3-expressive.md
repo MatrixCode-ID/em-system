@@ -1,6 +1,6 @@
 # Penguatan fondasi UI MAUI untuk Material 3 Expressive
 
-Tanggal: 26 Oktober 2026. Status: **dipertimbangkan**.
+Tanggal: 26 Oktober 2026. Status: **jadi plan**; menunggu persetujuan eksekusi.
 
 ## Konteks dan keputusan yang jelas
 
@@ -48,7 +48,20 @@ fokus; command tidak menunggu efek kosmetik dan animasi sistem off tetap berfung
 Build/test melalui RunBay; GUI sesuai persetujuan proyek. Hasil console/shim
 tidak disebut bukti runtime Android.
 
-## Pertanyaan terbuka
+## Keputusan lanjutan dan plan — 26 Oktober 2026
+
+Pengguna meminta My Tasks mempunyai panel tersendiri, tanpa daftar tugas pada
+Home, karena banyak tugas dan modul tidak nyaman bila digabung. Home berfokus
+pada katalog modul dan pencarian destinasi berizin. Refresh/jumlah/routing
+tugas tetap memakai sumber bersama dan wrapper catalog existing.
+
+Pengguna memilih langsung UI asli sebagai pengecualian mockup, memakai
+spesifikasi audit. [Plan fondasi MAUI](../../plan/unexecuted/maui-m3-expressive.codex.md)
+memuat kontrak panel adaptif, aksesibilitas, input, tokens dan motion; belum
+diotorisasi untuk implementasi. Default tanpa dependency baru, tanpa perubahan
+aturan server/WPF, dan tanpa pengujian GUI/perangkat otomatis.
+
+## Pertanyaan awal dan default plan
 
 - Kontrak komponen/handler aksesibilitas dan alias token mana yang dipertahankan
   untuk kompatibilitas konsumen existing?
@@ -56,9 +69,14 @@ tidak disebut bukti runtime Android.
   engine apa, dan bagaimana fallback-nya dibuktikan?
 - Bentuk/host mockup dan matrix perangkat apa yang dipakai pada plan berikutnya?
 
-Plan turunan: **belum dibuat**. Perubahan kode dan validasi perangkat: **belum
-dijalankan**. Review implementasi harus membaca instruksi repo terbaru dan tidak
-menganggap angka/token kandidat sebagai resource/API yang sudah tersedia.
+Pertanyaan awal dipertahankan sebagai riwayat. Plan menetapkan kompatibilitas
+alias existing, native semantics/handler sesuai platform, policy reduced motion
+dengan fallback easing tanpa physics library, serta pengecualian mockup pengguna.
+Matriks perangkat ditulis di plan; native bounds/fokus/TalkBack tetap membutuhkan
+bukti runtime sesudah diotorisasi. Tidak ada pertanyaan desain wajib lain sebelum
+penulisan kode. Perubahan kode dan validasi perangkat **belum dijalankan**.
+Review implementasi membaca instruksi repo terbaru dan tidak menganggap token
+kandidat sebagai resource/API yang sudah tersedia.
 
 ## Rujukan primer
 
