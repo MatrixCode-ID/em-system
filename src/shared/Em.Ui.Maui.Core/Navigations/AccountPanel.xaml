@@ -115,7 +115,7 @@
          <controls:IconButton Grid.Row="0" HorizontalOptions="End" Margin="0,8,8,0"
                               Glyph="{x:Static controls:FontIcons.Xmark}" IconSize="16"
                               MinimumWidthRequest="48" MinimumHeightRequest="48"
-                              Command="{Binding Commands[CloseCommand]}"
+                              x:Name="CloseButton" Command="{Binding Commands[CloseCommand]}"
                               TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Close" />
 
          <ScrollView Grid.Row="1">

@@ -127,6 +127,7 @@ namespace Em.Ui.Maui.Core
          get;
          set {
             field = value;
+            ResetHubTasks();
             ActiveConnectionChanged?.Invoke(this, EventArgs.Empty);
          }
       }
@@ -348,6 +349,7 @@ namespace Em.Ui.Maui.Core
             client.ActiveUserAccount = user?.cUserAccount;
          }
 
+         ResetHubTasks();
          ActiveUserChanged?.Invoke(this, EventArgs.Empty);
       }
 

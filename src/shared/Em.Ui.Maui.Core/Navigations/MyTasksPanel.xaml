@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
+ x:Class="Em.Ui.Maui.Navigations.MyTasksPanel" IsVisible="False" HorizontalOptions="End"
+ BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}">
+ <ContentView.BindingContext><local:MyTasksPanelVm /></ContentView.BindingContext>
+ <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+   <Label Text="My Tasks" Style="{StaticResource titleLargeTextStyle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
+   <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.RotateRight}" SemanticProperties.Description="Refresh my tasks"
+    Command="{Binding Commands[RefreshCommand]}" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+   <controls:IconButton Grid.Column="2" x:Name="CloseButton" Glyph="{x:Static controls:FontIcons.Xmark}" SemanticProperties.Description="Close my tasks"
+    Command="{Binding Commands[CloseCommand]}" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+  </Grid>
+  <Label Grid.Row="1" Text="{Binding CountAndTime}" Style="{StaticResource bodyMediumTextStyle}" />
+  <controls:FeedbackView Grid.Row="2" Message="{Binding StatusText}" Kind="{Binding StatusKind}" IsBusy="{Binding IsLoading}" />
+  <CollectionView Grid.Row="3" ItemsSource="{Binding Tasks}" SelectionMode="None">
+   <CollectionView.ItemTemplate><DataTemplate>
+    <VerticalStackLayout Spacing="4" Padding="0,8">
+     <Button Text="{Binding Caption}" SemanticProperties.Description="{Binding Caption}" Style="{StaticResource tonalButtonStyle}"
+      Command="{Binding Path=BindingContext.Commands[OpenCommand], Source={RelativeSource AncestorType={x:Type local:MyTasksPanel}}}" CommandParameter="{Binding .}" />
+     <Label Text="{Binding Detail}" Style="{StaticResource bodyMediumTextStyle}" />
+    </VerticalStackLayout>
+   </DataTemplate></CollectionView.ItemTemplate>
+  </CollectionView>
+ </Grid>
+</ContentView>

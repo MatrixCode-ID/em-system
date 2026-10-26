@@ -1,100 +1,42 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
-             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
-             x:Class="Em.Ui.Maui.Navigations.SpaNavigationHost">
-
-   <ContentPage.BindingContext>
-      <local:SpaNavigationHostVm />
-   </ContentPage.BindingContext>
-
-   <Grid>
-
-      <!-- ==== page content ==== -->
-      <Grid RowDefinitions="Auto,Auto,Auto,*">
-
-         <!-- Top bar: back and home on the left, the title in the middle, reload and the account badge on the
-              right. The forward button is deliberately not here - on Android there is no natural gesture for going
-              forward, and a button without a companion gesture only adds clutter to a narrow bar. The path itself
-              stays intact: CanGoForward and ForwardCommand are still alive in the view model, ready to be attached
-              again if this host is used on MAUI desktop. -->
-         <Grid Grid.Row="0"
-               Style="{StaticResource appBarStyle}"
-               ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
-               IsVisible="{Binding IsToolbarVisible}">
-
-            <controls:IconButton Grid.Column="0"
-                                 Glyph="{x:Static controls:FontIcons.ArrowLeft}"
-                                 IsVisible="{Binding IsBackVisible}"
-                                 Command="{Binding Commands[LeadingCommand]}"
-                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}"  SemanticProperties.Description="Leading" />
-
-            <controls:IconButton Grid.Column="1"
-                                 Glyph="{x:Static controls:FontIcons.House}"
-                                 IsVisible="{Binding IsHomeVisible}"
-                                 Command="{Binding Commands[HomeCommand]}"
-                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}"  SemanticProperties.Description="Home" />
-
-            <VerticalStackLayout Grid.Column="2" Padding="8,0" Spacing="1" VerticalOptions="Center"
-                                 IsVisible="{Binding IsTitleVisible}">
-               <Label Text="{Binding Title}" Style="{StaticResource headlineTextStyle}"
-                      FontSize="19" LineBreakMode="TailTruncation" />
-               <Label Text="{Binding Subtitle}" Style="{StaticResource supportTextStyle}"
-                      LineBreakMode="TailTruncation" IsVisible="{Binding HasSubtitle}" />
-            </VerticalStackLayout>
-
-            <Grid Grid.Column="3" IsVisible="{Binding HasHubTasks}">
-               <controls:IconButton Glyph="{x:Static controls:FontIcons.Inbox}"
-                                    Command="{Binding Commands[HubTasksCommand]}"
-                                    TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Hub Tasks" />
-               <Border Style="{StaticResource countBadgeStyle}" InputTransparent="True">
-                  <Label Text="{Binding HubTaskBadge}" Style="{StaticResource countBadgeTextStyle}" />
-               </Border>
-            </Grid>
-
-            <controls:IconButton Grid.Column="4"
-                                 Glyph="{x:Static controls:FontIcons.RotateRight}"
-                                 IsVisible="{Binding IsReloadVisible}"
-                                 Command="{Binding Commands[ReloadCommand]}"
-                                 TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Reload" />
-
-            <!-- The account badge, which opens the account panel. It is on every screen, not only home: it is the one
-                 and only way to the account, server, theme, and sign-out once the side menu has been dropped. -->
-            <Border Grid.Column="5" Style="{StaticResource accountBadgeStyle}"
-                    IsVisible="{Binding IsUserVisible}">
-               <Border.GestureRecognizers>
-                  <TapGestureRecognizer Command="{Binding Commands[AccountPanelCommand]}" />
-               </Border.GestureRecognizers>
-               <!-- Initials, not the same person silhouette for everyone: this badge tells whose account is signed in,
-                    without having to spell out the whole name in a narrow bar. This is where a profile photo will later
-                    be placed - the picture simply replaces this Label, and the Border is still what rounds it. -->
-               <Label Text="{Binding AccountInitials}" FontFamily="OpenSansSemibold" FontSize="13"
-                      HorizontalOptions="Center" VerticalOptions="Center"
-                      TextColor="{AppThemeBinding Light={StaticResource onPrimaryContainerLight}, Dark={StaticResource onPrimaryContainerDark}}" />
-            </Border>
-         </Grid>
-
-         <Grid Grid.Row="1" Padding="16,4" ColumnDefinitions="*,Auto" IsVisible="{Binding IsSimulationVisible}">
-            <Label Text="SIMULATED" Style="{StaticResource supportTextStyle}" VerticalOptions="Center" />
-            <Button Grid.Column="1" Text="Return to SD" Style="{StaticResource tonalButtonStyle}"
-                    Command="{Binding Commands[ExitSimulationCommand]}"
-                    SemanticProperties.Description="Exit simulation and return to SYSTEM DEBUGGER" />
-         </Grid>
-
-         <BoxView Grid.Row="2" Style="{StaticResource dividerStyle}" IsVisible="{Binding IsToolbarVisible}" />
-
-         <ContentView Grid.Row="3" x:Name="BodyHost" />
-      </Grid>
-
-      <!-- ==== tirai ==== -->
-      <BoxView x:Name="Scrim" Style="{StaticResource scrimStyle}" InputTransparent="True">
-         <BoxView.GestureRecognizers>
-            <TapGestureRecognizer Command="{Binding Commands[CloseAccountPanelCommand]}" />
-         </BoxView.GestureRecognizers>
-      </BoxView>
-
-      <!-- ==== panel account ==== -->
-      <local:AccountPanel x:Name="AccountPanelView" />
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" xmlns:controls="clr-namespace:Em.Ui.Maui.Controls" x:Class="Em.Ui.Maui.Navigations.SpaNavigationHost">
+ <ContentPage.BindingContext><local:SpaNavigationHostVm /></ContentPage.BindingContext>
+ <Grid>
+  <Grid x:Name="MainContent" RowDefinitions="Auto,Auto,Auto,*">
+   <Grid Style="{StaticResource appBarStyle}" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" IsVisible="{Binding IsToolbarVisible}">
+    <controls:IconButton Glyph="{x:Static controls:FontIcons.ArrowLeft}" IsVisible="{Binding IsBackVisible}" Command="{Binding Commands[LeadingCommand]}" SemanticProperties.Description="Back" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+    <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.House}" IsVisible="{Binding ShowHomeAction}" Command="{Binding Commands[HomeCommand]}" SemanticProperties.Description="Home" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+    <VerticalStackLayout Grid.Column="2" Padding="8,0" Spacing="2" VerticalOptions="Center" IsVisible="{Binding IsTitleVisible}">
+     <Label Text="{Binding Title}" Style="{StaticResource titleMediumTextStyle}" LineBreakMode="TailTruncation" />
+     <Label Text="{Binding Subtitle}" Style="{StaticResource bodyMediumTextStyle}" LineBreakMode="TailTruncation" IsVisible="{Binding HasSubtitle}" />
+    </VerticalStackLayout>
+    <Grid Grid.Column="3" IsVisible="{Binding HasHubTasks}">
+     <controls:IconButton x:Name="TasksButton" Glyph="{x:Static controls:FontIcons.Inbox}" Command="{Binding Commands[HubTasksCommand]}" SemanticProperties.Description="{Binding HubTaskAccessibleName}" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+     <Border Style="{StaticResource countBadgeStyle}" InputTransparent="True" IsVisible="{Binding HasTaskBadge}" AutomationProperties.IsInAccessibleTree="False"><Label Text="{Binding HubTaskBadge}" Style="{StaticResource countBadgeTextStyle}" /></Border>
+    </Grid>
+    <controls:IconButton Grid.Column="4" Glyph="{x:Static controls:FontIcons.RotateRight}" IsVisible="{Binding ShowReloadAction}" Command="{Binding Commands[ReloadCommand]}" SemanticProperties.Description="Reload current screen" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+    <controls:IconButton x:Name="OverflowButton" Grid.Column="5" Glyph="{x:Static controls:FontIcons.ChevronDown}" IsVisible="{Binding ShowOverflowAction}" Command="{Binding Commands[OverflowCommand]}" SemanticProperties.Description="More actions" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+    <Button x:Name="AccountButton" Grid.Column="6" Text="{Binding AccountInitials}" Style="{StaticResource tonalButtonStyle}" Padding="8" IsVisible="{Binding IsUserVisible}" Command="{Binding Commands[AccountPanelCommand]}" SemanticProperties.Description="Open account" />
    </Grid>
+   <VerticalStackLayout Grid.Row="1" Padding="16,4" IsVisible="{Binding IsSimulationVisible}">
+    <Label Text="SIMULATED" Style="{StaticResource supportTextStyle}" />
+    <Button Text="Return to SD" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[ExitSimulationCommand]}" />
+   </VerticalStackLayout>
+   <BoxView Grid.Row="2" Style="{StaticResource dividerStyle}" IsVisible="{Binding IsToolbarVisible}" />
+   <ContentView Grid.Row="3" x:Name="BodyHost" />
+  </Grid>
+  <BoxView x:Name="Scrim" BackgroundColor="{StaticResource scrimColor}" IsVisible="False" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False">
+   <BoxView.GestureRecognizers><TapGestureRecognizer Command="{Binding Commands[CloseAccountPanelCommand]}" /></BoxView.GestureRecognizers>
+  </BoxView>
+  <local:AccountPanel x:Name="AccountPanelView" />
+  <local:MyTasksPanel x:Name="TasksPanel" />
+  <Border x:Name="OverflowPanel" IsVisible="False" HorizontalOptions="End" VerticalOptions="Start" Padding="16" StrokeThickness="0" BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}">
+   <VerticalStackLayout Spacing="8">
+    <Button x:Name="OverflowClose" Text="Close actions" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[CloseAccountPanelCommand]}" />
+    <Button Text="Home" Style="{StaticResource tonalButtonStyle}" IsVisible="{Binding IsHomeVisible}" Command="{Binding Commands[HomeCommand]}" />
+    <Button Text="Reload current screen" Style="{StaticResource tonalButtonStyle}" IsVisible="{Binding IsReloadVisible}" Command="{Binding Commands[ReloadCommand]}" />
+   </VerticalStackLayout>
+  </Border>
+ </Grid>
 </ContentPage>

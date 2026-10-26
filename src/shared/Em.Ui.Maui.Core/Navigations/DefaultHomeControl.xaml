@@ -1,85 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
-             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
-             x:Class="Em.Ui.Maui.Navigations.DefaultHomeControl">
-
-   <ContentView.BindingContext>
-      <local:DefaultHomeControlVm />
-   </ContentView.BindingContext>
-
-   <ScrollView>
-      <VerticalStackLayout Padding="20,20,20,32" Spacing="16">
-
-         <!-- The search box. Only its shape for now - just like on the desktop client, it is not connected to
-              anything yet. Its filter will be done later, when there are enough module screens to make it useful,
-              and preferably on both clients at once. -->
-         <Border Style="{StaticResource searchFieldStyle}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-               <controls:FontIcon Grid.Column="0" Glyph="{x:Static controls:FontIcons.MagnifyingGlass}"
-                                  IconSize="14" VerticalOptions="Center" Opacity="0.6"
-                                  TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-               <Entry Grid.Column="1" Placeholder="Search" FontSize="14" VerticalOptions="Center" />
-            </Grid>
-         </Border>
-
-         <!-- ==== my tasks ==== -->
-         <VerticalStackLayout Spacing="10" IsVisible="{Binding HasHubSection}">
-            <Label Text="MY TASKS" Style="{StaticResource sectionCaptionStyle}" />
-            <Label Text="Could not load your tasks. Tap reload to try again."
-                   Style="{StaticResource errorTextStyle}" IsVisible="{Binding HubTaskLoadFailed}" />
-            <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding HubTasks}">
-               <BindableLayout.ItemTemplate>
-                  <DataTemplate>
-                     <Border Style="{StaticResource actionCardStyle}">
-                        <Border.GestureRecognizers>
-                           <TapGestureRecognizer Command="{Binding Commands[OpenCommand]}" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                           <Border Grid.Column="0" Style="{StaticResource accentChipStyle}" MinimumWidthRequest="40"
-                                   Padding="8,6">
-                              <Label Text="{Binding CountText}" Style="{StaticResource chipTextStyle}" FontSize="15"
-                                     HorizontalOptions="Center" />
-                           </Border>
-                           <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
-                              <Label Text="{Binding SourceCaption}" Style="{StaticResource sectionCaptionStyle}" FontSize="10" />
-                              <Label Text="{Binding Title}" Style="{StaticResource titleTextStyle}" FontSize="15" />
-                              <Label Text="{Binding Detail}" Style="{StaticResource supportTextStyle}" />
-                           </VerticalStackLayout>
-                           <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.ArrowRight}" IconSize="18"
-                                              VerticalOptions="Center" Opacity="0.55"
-                                              TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-                        </Grid>
-                     </Border>
-                  </DataTemplate>
-               </BindableLayout.ItemTemplate>
-            </VerticalStackLayout>
-         </VerticalStackLayout>
-
-         <Border Style="{StaticResource outlinedCardStyle}" IsVisible="{Binding IsModuleListEmpty}">
-            <VerticalStackLayout Spacing="8">
-               <controls:FontIcon Glyph="{x:Static controls:FontIcons.TableCellsLarge}" IconSize="24"
-                                  HorizontalOptions="Start"
-                                  TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-               <Label Text="No module yet" Style="{StaticResource titleTextStyle}" />
-               <Label Text="Screens registered by a module will appear here as shortcuts."
-                      Style="{StaticResource supportTextStyle}" />
-            </VerticalStackLayout>
-         </Border>
-
-         <!-- A screen without a MenuPath stands on top of the tree, not inside one of its groups. -->
-         <VerticalStackLayout Spacing="10"
-                              BindableLayout.ItemsSource="{Binding RootAppMenus}"
-                              BindableLayout.ItemTemplate="{StaticResource navigationTileTemplate}" />
-
-         <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding AppMenuGroups}">
-            <BindableLayout.ItemTemplate>
-               <DataTemplate>
-                  <local:MenuGroupView />
-               </DataTemplate>
-            </BindableLayout.ItemTemplate>
-         </VerticalStackLayout>
-      </VerticalStackLayout>
-   </ScrollView>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" x:Class="Em.Ui.Maui.Navigations.DefaultHomeControl">
+ <ContentView.BindingContext><local:DefaultHomeControlVm /></ContentView.BindingContext>
+ <Grid Padding="16" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+   <Entry Text="{Binding SearchText}" Placeholder="Search modules" MinimumHeightRequest="48" SemanticProperties.Description="Search modules by title, subtitle or group" />
+   <Button Grid.Column="1" Text="Clear" Command="{Binding Commands[ClearSearchCommand]}" Style="{StaticResource textButtonStyle}" />
+  </Grid>
+  <VerticalStackLayout Grid.Row="1" Spacing="8">
+   <Label Text="No modules available for this account." IsVisible="{Binding IsModuleListEmpty}" />
+   <Label Text="No modules match your search. Clear the search to see all modules." IsVisible="{Binding HasNoResults}" />
+  </VerticalStackLayout>
+  <CollectionView Grid.Row="2" ItemsSource="{Binding VisibleRows}" SelectionMode="None">
+   <CollectionView.ItemTemplate><DataTemplate>
+    <VerticalStackLayout Spacing="4" Padding="0,4">
+     <Label Text="{Binding Header}" IsVisible="{Binding IsHeader}" Style="{StaticResource titleMediumTextStyle}" SemanticProperties.HeadingLevel="Level2" />
+     <Button Text="{Binding Menu.Title}" IsVisible="{Binding IsDestination}" Command="{Binding Menu.Commands[OpenCommand]}"
+      SemanticProperties.Description="{Binding Menu.Title}" Style="{StaticResource tonalButtonStyle}" HorizontalOptions="Fill" />
+     <Label Text="{Binding Menu.Subtitle}" IsVisible="{Binding Menu.HasSubtitle}" Style="{StaticResource bodyMediumTextStyle}" />
+    </VerticalStackLayout>
+   </DataTemplate></CollectionView.ItemTemplate>
+  </CollectionView>
+ </Grid>
 </ContentView>

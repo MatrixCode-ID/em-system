@@ -29,34 +29,51 @@ namespace Em.Ui.Maui.Core
       /// Reloads <see cref="HubTasks"/> from the server. Calls made while a load is running share it. Without an
       /// active user the list is emptied instead. Never throws: a failure only sets <see cref="HubTaskLoadFailed"/>.
       /// </summary>
+      /// <summary>Whether a refresh is in progress, without treating unknown as zero.</summary>
+      public bool HubTaskIsLoading { get; private set; }
+      /// <summary>The time of the last successful refresh; null until a response is accepted.</summary>
+      public DateTimeOffset? HubTaskRefreshedAt { get; private set; }
+
+      internal void ResetHubTasks() {
+         _hubEpoch++;
+         _hubRefresh = null;
+         HubTasks = [];
+         HubTaskIsLoading = false;
+         HubTaskLoadFailed = false;
+         HubTaskRefreshedAt = null;
+         PublishHubTasks();
+      }
+
       public Task RefreshHubTasksAsync() {
-         if (ActiveUser is null || GetActiveApiClient() is null) {
-            _hubEpoch++;
-            _hubRefresh = null;
-            ApplyHubTasks([], false);
-            return Task.CompletedTask;
-         }
-
-         return _hubRefresh ??= LoadHubTasksAsync(_hubEpoch);
+         if (!MainThread.IsMainThread) return MainThread.InvokeOnMainThreadAsync(RefreshHubTasksAsync);
+         if (ActiveUser is null || GetActiveApiClient() is null) { ResetHubTasks(); return Task.CompletedTask; }
+         if (_hubRefresh is not null) return _hubRefresh;
+         // Install the shared task before invoking the service, which may complete synchronously.
+         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+         _hubRefresh = completion.Task;
+         HubTaskIsLoading = true;
+         PublishHubTasks();
+         _ = LoadHubTasksAsync(_hubEpoch, ActiveUser, ActiveConnection, completion);
+         return completion.Task;
       }
 
-      private async Task LoadHubTasksAsync(int epoch) {
-         try {
-            var tasks = await ServiceProvider.GetRequiredService<IApprovalServices>().GetMeta_UserHubTasks();
-            // A sign-out or user switch during the call makes the answer belong to somebody else.
-            if (epoch == _hubEpoch) ApplyHubTasks(tasks, false);
-         }
-         catch {
-            if (epoch == _hubEpoch) ApplyHubTasks(HubTasks, true);
-         }
-         finally {
-            if (epoch == _hubEpoch) _hubRefresh = null;
-         }
+      private async Task LoadHubTasksAsync(int epoch, object user, object? connection, TaskCompletionSource completion) {
+         IReadOnlyList<HubTaskInfo>? tasks = null;
+         try { tasks = await ServiceProvider.GetRequiredService<IApprovalServices>().GetMeta_UserHubTasks(); }
+         catch { /* The old snapshot remains readable and is marked stale. */ }
+         await MainThread.InvokeOnMainThreadAsync(() => {
+            if (epoch == _hubEpoch && ReferenceEquals(user, ActiveUser) && ReferenceEquals(connection, ActiveConnection)) {
+               HubTaskIsLoading = false;
+               HubTaskLoadFailed = tasks is null;
+               if (tasks is not null) { HubTasks = tasks; HubTaskRefreshedAt = DateTimeOffset.Now; }
+               _hubRefresh = null;
+               PublishHubTasks();
+            }
+         });
+         completion.TrySetResult();
       }
 
-      private void ApplyHubTasks(IReadOnlyList<HubTaskInfo> tasks, bool failed) {
-         HubTasks = tasks;
-         HubTaskLoadFailed = failed;
+      private void PublishHubTasks() {
          if (MainThread.IsMainThread) HubTasksChanged?.Invoke(this, EventArgs.Empty);
          else MainThread.BeginInvokeOnMainThread(() => HubTasksChanged?.Invoke(this, EventArgs.Empty));
       }

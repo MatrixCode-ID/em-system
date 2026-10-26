@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Microsoft.Maui.Controls;
 using Em.Api.Core.Models;
 using Em.Ui.Core.Shared;
@@ -29,7 +29,7 @@ namespace Em.Ui.Maui.Navigations
       public DefaultHomeControlVm Vm => (DefaultHomeControlVm)BindingContext;
 
       /// <inheritdoc />
-      public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
+      public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) => Vm.ReloadAsync();
 
       /// <inheritdoc />
       public Task OnNavigatingAway(INavigation sender, NavigatingEventArgs args) => Task.CompletedTask;
@@ -127,157 +127,65 @@ namespace Em.Ui.Maui.Navigations
       public void ToggleCommand() => IsExpanded = !IsExpanded;
    }
 
-   /// <summary>One MY TASKS card on the home screen: a kind of work waiting for the user.</summary>
-   public sealed class HomeHubTaskVm : MvvmModelBase
+   /// <summary>A visible catalogue row. Group headings share one bounded virtual list with destinations.</summary>
+   public sealed class CatalogRow
    {
-      public HomeHubTaskVm(EmApp app, HubTaskInfo task) {
-         EmApp = app;
-         Info = task;
-         RegisterCommand(nameof(OpenCommand), OpenCommand);
-      }
-
-      /// <summary>The row as the server returned it.</summary>
-      public HubTaskInfo Info { get; }
-
-      /// <summary>The kind of work, e.g. the approval name.</summary>
-      public string Title => Info.Title;
-
-      /// <summary>The source of the row in words.</summary>
-      public string SourceCaption => Info.Source switch {
-         "approval.system" => "SYSTEM APPROVAL",
-         "approval.data" => "DATA APPROVAL",
-         _ => Info.Source.ToUpperInvariant()
-      };
-
-      /// <summary>The number of items, capped like the top bar badge.</summary>
-      public string CountText => Info.Count > 99 ? "99+" : Info.Count.ToString();
-
-      /// <summary>"3 waiting · oldest 2 d", or the server's own description when it sent one.</summary>
-      public string Detail {
-         get {
-            if (!string.IsNullOrWhiteSpace(Info.Description)) return Info.Description;
-            var text = $"{Info.Count} waiting";
-            return Info.OldestAge is { } age ? $"{text} · oldest {FormatAge(age)}" : text;
-         }
-      }
-
-      private static string FormatAge(TimeSpan age) =>
-         age.TotalDays >= 1 ? $"{(int)age.TotalDays} d" :
-         age.TotalHours >= 1 ? $"{(int)age.TotalHours} h" :
-         $"{Math.Max(1, (int)age.TotalMinutes)} min";
-
-      public Task OpenCommand() => EmApp!.OpenHubTaskAsync(Info);
+      public string Header { get; init; } = "";
+      public bool IsHeader => Menu is null;
+      public bool IsDestination => Menu is not null;
+      public MenuNavigationVm? Menu { get; init; }
    }
 
-   /// <summary>View model <see cref="DefaultHomeControl"/>.</summary>
+   /// <summary>The home catalogue, filtered only after access has been checked.</summary>
    public class DefaultHomeControlVm : MvvmModelBase
    {
-      /// <summary>
-      /// The flat list of all screens shown in the menu. Just fill this collection:
-      /// <see cref="RootAppMenus"/> and <see cref="AppMenuGroups"/> are rebuilt by themselves from
-      /// <c>Navigation.MenuPath</c> every time its content changes.
-      /// </summary>
       public ObservableCollection<MenuNavigationVm> AppMenus { get; } = [];
-
-      /// <summary>Screens without a <c>MenuPath</c>, drawn directly at the top without a group.</summary>
       public ObservableCollection<MenuNavigationVm> RootAppMenus { get; } = [];
-
-      /// <summary>
-      /// The top level menu groups resulting from splitting <c>MenuPath</c>; each group holds its own
-      /// sub-groups and menus.
-      /// </summary>
       public ObservableCollection<MenuGroup> AppMenuGroups { get; } = [];
-
-      /// <summary><c>true</c> when no module screen is shown yet.</summary>
+      public ObservableCollection<CatalogRow> VisibleRows { get; } = [];
+      private object? _user, _connection;
+      public DefaultHomeControlVm() { RegisterCommand(nameof(ClearSearchCommand), ClearSearchCommand); }
+      public string SearchText { get => Get<string>() ?? ""; set => Set(value, _ => RebuildMenuTree()); }
       public bool IsModuleListEmpty => AppMenus.Count == 0;
-
-      private bool _hubAttached;
-
-      /// <summary>The MY TASKS cards, one per kind of work waiting for the user.</summary>
-      public ObservableCollection<HomeHubTaskVm> HubTasks { get; } = [];
-
-      /// <summary>The MY TASKS section is drawn while there is work, or while its last load failed.</summary>
-      public bool HasHubSection => HubTasks.Count > 0 || HubTaskLoadFailed;
-
-      /// <summary><c>true</c> when the last MY TASKS load failed.</summary>
-      public bool HubTaskLoadFailed => EmApp?.HubTaskLoadFailed == true;
-
-      /// <summary>
-      /// Rebuilds the content of the screen: the list of screens and the menu tree. Called every time this
-      /// screen is opened or asked to reload.
-      /// </summary>
+      public bool HasNoResults => AppMenus.Count > 0 && VisibleRows.Count == 0;
+      public void ClearSearchCommand() => SearchText = "";
       public Task ReloadAsync() {
          if (EmApp is not { } app) return Task.CompletedTask;
-
+         if (!ReferenceEquals(_user, app.ActiveUser) || !ReferenceEquals(_connection, app.ActiveConnection)) {
+            _user = app.ActiveUser; _connection = app.ActiveConnection; SearchText = "";
+         }
          AppMenus.Clear();
-         app.Navigations
-            .Where(r => r.IsMenuVisible && app.CanOpen(r))
-            .OrderBy(r => r.OrderIndex)
-            .Select(r => new MenuNavigationVm(app, r))
-            .EachOf(AppMenus.Add);
-
-         RebuildMenuTree();
-         NotifyChanged(nameof(IsModuleListEmpty));
-
-         // Home is built once and never released, so it follows the application's MY TASKS for good.
-         if (!_hubAttached) {
-            _hubAttached = true;
-            app.HubTasksChanged += (_, _) => RebuildHubTasks();
-         }
-
-         RebuildHubTasks();
-         return app.RefreshHubTasksAsync();
+         foreach (var nav in app.Navigations.Where(x => x.IsMenuVisible && app.CanOpen(x)).OrderBy(x => x.OrderIndex))
+            AppMenus.Add(new MenuNavigationVm(app, nav));
+         RebuildMenuTree(); NotifyChanged(nameof(IsModuleListEmpty));
+         return Task.CompletedTask;
       }
-
-      private void RebuildHubTasks() {
-         if (EmApp is not { } app) return;
-         HubTasks.Clear();
-         foreach (var task in app.HubTasks.Where(x => x.Count > 0)) HubTasks.Add(new HomeHubTaskVm(app, task));
-         NotifyChanged(nameof(HasHubSection));
-         NotifyChanged(nameof(HubTaskLoadFailed));
-      }
-
       private void RebuildMenuTree() {
-         RootAppMenus.Clear();
-         AppMenuGroups.Clear();
-
+         RootAppMenus.Clear(); AppMenuGroups.Clear(); VisibleRows.Clear();
+         var query = SearchText.Trim();
          foreach (var menu in AppMenus) {
-            var segments = SplitMenuPath(menu.Navigation.MenuPath);
-            // A navigation without a usable path is not an error - it simply sits above the tree.
-            if (segments.Length == 0) {
-               RootAppMenus.Add(menu);
-               continue;
+            var path = menu.Navigation.MenuPath;
+            var segments = path is null || path.IsEmptyPath ? Array.Empty<string>() : path.Path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (query.Length > 0 && !string.Join(" ", menu.Title, menu.Subtitle, string.Join(" / ", segments)).Contains(query, StringComparison.OrdinalIgnoreCase)) continue;
+            if (segments.Length == 0) { RootAppMenus.Add(menu); continue; }
+            var groups = AppMenuGroups;
+            MenuGroup? group = null;
+            for (var i = 0; i < segments.Length; i++) {
+               group = groups.FirstOrDefault(x => string.Equals(x.Header, segments[i], StringComparison.OrdinalIgnoreCase));
+               if (group is null) { group = new MenuGroup { Header = segments[i], Level = i + 1 }; groups.Add(group); }
+               groups = group.Groups;
             }
-
-            ResolveGroup(segments).Items.Add(menu);
+            group!.Items.Add(menu);
          }
+         foreach (var menu in RootAppMenus) VisibleRows.Add(new CatalogRow { Menu = menu });
+         foreach (var group in AppMenuGroups) AddGroup(group, "");
+         NotifyChanged(nameof(HasNoResults));
       }
-
-      // "SALES/Administration" -> ["SALES", "Administration"]. Empty segments are dropped so a separator that
-      // is doubled or left dangling never produces a group without a name.
-      private static string[] SplitMenuPath(MenuPath? path) {
-         if (path == null || path.IsEmptyPath) return [];
-         return path.Path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-      }
-
-      // Walks the path segment by segment, creating the groups that do not exist yet, and returns
-      // the deepest one. Matching is case-insensitive so "Sales" and "SALES" stay one group.
-      private MenuGroup ResolveGroup(string[] segments) {
-         var groups = AppMenuGroups;
-         MenuGroup? current = null;
-
-         for (var level = 0; level < segments.Length; level++) {
-            var header = segments[level];
-            current = groups.FirstOrDefault(r => string.Equals(r.Header, header, StringComparison.OrdinalIgnoreCase));
-            if (current == null) {
-               current = new MenuGroup { Header = header, Level = level + 1 };
-               groups.Add(current);
-            }
-
-            groups = current.Groups;
-         }
-
-         return current!;
+      private void AddGroup(MenuGroup group, string parent) {
+         var path = parent.Length == 0 ? group.Header : parent + " / " + group.Header;
+         VisibleRows.Add(new CatalogRow { Header = path });
+         foreach (var menu in group.Items) VisibleRows.Add(new CatalogRow { Menu = menu });
+         foreach (var child in group.Groups) AddGroup(child, path);
       }
    }
 }

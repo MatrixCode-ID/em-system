@@ -5,167 +5,108 @@ using Em.Ui.Maui.Shared;
 
 namespace Em.Ui.Maui.Navigations
 {
-   /// <summary>
-   /// The main page of the application: the top bar, the account panel entering from the right, and one
-   /// empty place that is filled with the body of the screen being opened. This is the one and only page of
-   /// the application - changing screen means replacing the content of that place, not stacking a new page.
-   /// </summary>
+   /// <summary>The exclusive modal layer displayed by the shell.</summary>
+   public enum ShellOverlay { None, Account, Tasks, Overflow }
+
+   /// <summary>Adaptive single-page host with one modal overlay and a shared task cache.</summary>
    public partial class SpaNavigationHost : ContentPage
    {
-      // The duration of the account panel's curtain animation, and how dark it is when the panel is fully
-      // open. The numbers follow standard Material motion: opening is slightly slower than closing.
-      private const uint OpenDuration = 260;
-      private const uint CloseDuration = 200;
-      private const double ScrimOpacity = 0.4;
-
-      // How often MY TASKS is asked again while the application is in front, the same as the desktop client.
-      private static readonly TimeSpan HubInterval = TimeSpan.FromSeconds(60);
-
       private readonly IDispatcherTimer _hubTimer;
       private Window? _window;
-
+      private bool _detached;
+      private VisualElement? _opener;
       public SpaNavigationHost(EmApp app) {
          InitializeComponent();
-         Vm.EmApp = app;
-         Vm.HostPage = this;
-         Vm.PropertyChanged += VmOnPropertyChanged;
-         Vm.Stack = app.MainStack;
-
-         AccountPanelView.Vm.EmApp = app;
-         AccountPanelView.Vm.HostPage = this;
-         // A panel that closes itself would only slide out without its curtain fading with it: that curtain
-         // belongs to this page. So the panel asks for it, and this page does the work.
-         AccountPanelView.Vm.CloseRequested += (_, _) => Vm.IsAccountPanelOpen = false;
-
-         app.ActiveUserChanged += OnAccountChanged;
-         app.ActiveConnectionChanged += OnAccountChanged;
-         app.ThemeChanged += OnThemeChanged;
-         // A session can end without anyone pressing the sign-out button - its lifetime ran out, or it was
-         // revoked from elsewhere. Both must land on the login screen through exactly the same way.
-         app.SessionEnded += OnSessionEnded;
-         app.HubTasksChanged += OnHubTasksChanged;
-
-         _hubTimer = Dispatcher.CreateTimer();
-         _hubTimer.Interval = HubInterval;
-         _hubTimer.Tick += OnHubTimerTick;
-         _hubTimer.Start();
-
-         // The badge binding was evaluated inside InitializeComponent, before EmApp was set. A host built for
-         // an already signed-in user (Android recreating the activity) gets no ActiveUserChanged to fix it.
-         Vm.RefreshAccount();
-         _ = app.RefreshHubTasksAsync();
+         Vm.EmApp = app; Vm.HostPage = this; Vm.PropertyChanged += VmOnPropertyChanged; Vm.Stack = app.MainStack;
+         AccountPanelView.Vm.EmApp = app; AccountPanelView.Vm.HostPage = this;
+         AccountPanelView.Vm.CloseRequested += CloseRequested;
+         TasksPanel.Vm.EmApp = app; TasksPanel.Vm.HostPage = this; TasksPanel.Vm.CloseRequested += CloseRequested;
+         app.ActiveUserChanged += OnAccountChanged; app.ActiveConnectionChanged += OnAccountChanged;
+         app.ThemeChanged += OnThemeChanged; app.SessionEnded += OnSessionEnded; app.HubTasksChanged += OnHubTasksChanged;
+         _hubTimer = Dispatcher.CreateTimer(); _hubTimer.Interval = TimeSpan.FromSeconds(60); _hubTimer.Tick += OnHubTimerTick; _hubTimer.Start();
+         SizeChanged += OnSizeChanged; Vm.RefreshAccount(); TasksPanel.Vm.Update(); _ = app.RefreshHubTasksAsync();
       }
-
-      // The window is only known once the page is attached to it; it tells when the application goes to the
-      // background and comes back, so MY TASKS is not polled while nobody can see it.
+      public SpaNavigationHostVm Vm => (SpaNavigationHostVm)BindingContext;
       protected override void OnHandlerChanged() {
          base.OnHandlerChanged();
-         if (_window is not null) {
-            _window.Resumed -= OnWindowResumed;
-            _window.Stopped -= OnWindowStopped;
-         }
-
+         if (_window is not null) { _window.Resumed -= OnWindowResumed; _window.Stopped -= OnWindowStopped; }
          _window = Window;
-         if (_window is not null) {
-            _window.Resumed += OnWindowResumed;
-            _window.Stopped += OnWindowStopped;
-         }
+         if (_window is not null) { _window.Resumed += OnWindowResumed; _window.Stopped += OnWindowStopped; }
+#if ANDROID
+         if (Handler?.PlatformView is Android.Views.View native) { native.KeyPress -= OnNativeKey; native.KeyPress += OnNativeKey; }
+#endif
       }
-
-      private void OnWindowResumed(object? sender, EventArgs e) {
-         _hubTimer.Start();
-         _ = Vm.EmApp?.RefreshHubTasksAsync();
+#if ANDROID
+      private void OnNativeKey(object? sender, Android.Views.View.KeyEventArgs e) {
+         if (e.KeyCode == Android.Views.Keycode.Escape && Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; e.Handled = true; }
       }
-
+#endif
+      private void OnSizeChanged(object? sender, EventArgs e) {
+         Vm.IsCompact = Width < 600;
+         var width = Math.Max(0, Width);
+         TasksPanel.WidthRequest = width < 600 ? width : Math.Min(400, width);
+         AccountPanelView.WidthRequest = Math.Min(400, width);
+         OverflowPanel.WidthRequest = Math.Min(320, width);
+      }
+      private void CloseRequested(object? sender, EventArgs e) => Vm.Overlay = ShellOverlay.None;
+      private void OnWindowResumed(object? sender, EventArgs e) { _hubTimer.Start(); _ = Vm.EmApp?.RefreshHubTasksAsync(); }
       private void OnWindowStopped(object? sender, EventArgs e) => _hubTimer.Stop();
-
       private void OnHubTimerTick(object? sender, EventArgs e) => _ = Vm.EmApp?.RefreshHubTasksAsync();
-
-      private void OnHubTasksChanged(object? sender, EventArgs e) => Vm.RefreshHubTasks();
-
-      /// <summary>
-      /// Disconnects this host from the application and its main stack, so a replaced host no longer reacts
-      /// to their events and releases the body of the screen it was showing. Called when Android recreates
-      /// the activity and a new host takes over.
-      /// </summary>
+      private void OnHubTasksChanged(object? sender, EventArgs e) => Dispatcher.Dispatch(() => { if (_detached) return; Vm.RefreshHubTasks(); TasksPanel.Vm.Update(); });
+      private void OnAccountChanged(object? sender, EventArgs e) => Dispatcher.Dispatch(() => {
+         if (_detached) return;
+         Vm.Overlay = ShellOverlay.None; Vm.RefreshAccount();
+         if (Vm.Stack?.Home?.Body is DefaultHomeControl home) _ = home.Vm.ReloadAsync();
+         TasksPanel.Vm.Update(); _ = Vm.EmApp?.RefreshHubTasksAsync();
+      });
+      private void OnThemeChanged(object? sender, EventArgs e) => Dispatcher.Dispatch(() => { if (!_detached) AccountPanelView.Vm.RefreshTheme(); });
+      private void OnSessionEnded(object? sender, SessionEndedEventArgs e) => Dispatcher.Dispatch(() => {
+         if (_detached) return;
+         Vm.EmApp!.ResetHubTasks(); Vm.Overlay = ShellOverlay.None; _ = Vm.EmApp.ShowLoginScreen(e.Reason);
+      });
       internal void Detach() {
+         _detached = true; Vm.Overlay = ShellOverlay.None;
          var app = Vm.EmApp!;
-         app.ActiveUserChanged -= OnAccountChanged;
-         app.ActiveConnectionChanged -= OnAccountChanged;
-         app.ThemeChanged -= OnThemeChanged;
-         app.SessionEnded -= OnSessionEnded;
-         app.HubTasksChanged -= OnHubTasksChanged;
-         _hubTimer.Stop();
-         _hubTimer.Tick -= OnHubTimerTick;
-         if (_window is not null) {
-            _window.Resumed -= OnWindowResumed;
-            _window.Stopped -= OnWindowStopped;
-            _window = null;
-         }
-
-         Vm.Stack = null;
+         app.ActiveUserChanged -= OnAccountChanged; app.ActiveConnectionChanged -= OnAccountChanged;
+         app.ThemeChanged -= OnThemeChanged; app.SessionEnded -= OnSessionEnded; app.HubTasksChanged -= OnHubTasksChanged;
+         _hubTimer.Stop(); _hubTimer.Tick -= OnHubTimerTick;
+         if (_window is not null) { _window.Resumed -= OnWindowResumed; _window.Stopped -= OnWindowStopped; _window = null; }
+         AccountPanelView.Vm.CloseRequested -= CloseRequested; TasksPanel.Vm.CloseRequested -= CloseRequested;
+         SizeChanged -= OnSizeChanged; Vm.PropertyChanged -= VmOnPropertyChanged; Vm.Stack = null;
+#if ANDROID
+         if (Handler?.PlatformView is Android.Views.View native) native.KeyPress -= OnNativeKey;
+#endif
       }
-
-      private void OnAccountChanged(object? sender, EventArgs e) {
-         Vm.RefreshAccount();
-         _ = Vm.EmApp?.RefreshHubTasksAsync();
-      }
-
-      private void OnThemeChanged(object? sender, EventArgs e) => AccountPanelView.Vm.RefreshTheme();
-
-      /// <summary>The view model of this page, read back from the BindingContext set in XAML.</summary>
-      public SpaNavigationHostVm Vm => (SpaNavigationHostVm)BindingContext;
-
-      // The two things below are indeed display business, not the view model's: attaching a control to a slot
-      // moves its instance, not a value, and sliding the panel together with its curtain is an animation on
-      // concrete elements. Neither can be expressed as a binding.
       private void VmOnPropertyChanged(object? sender, PropertyChangedEventArgs e) {
-         switch (e.PropertyName) {
-            case nameof(SpaNavigationHostVm.Entry):
-               BodyHost.Content = Vm.Entry?.Body as View;
-               break;
-            case nameof(SpaNavigationHostVm.IsAccountPanelOpen):
-               _ = AnimateAccountPanelAsync(Vm.IsAccountPanelOpen);
-               break;
+         if (_detached) return;
+         if (e.PropertyName == nameof(SpaNavigationHostVm.Entry)) BodyHost.Content = Vm.Entry?.Body as View;
+         else if (e.PropertyName == nameof(SpaNavigationHostVm.Overlay)) ApplyOverlay();
+      }
+      private void ApplyOverlay() {
+         var overlay = Vm.Overlay;
+         var open = overlay != ShellOverlay.None;
+         if (open) _opener = overlay switch { ShellOverlay.Tasks => TasksButton, ShellOverlay.Account => AccountButton, _ => OverflowButton };
+         // Modal state changes synchronously. Cosmetic transitions never delay commands or scrim cleanup.
+         AccountPanelView.CancelAnimations(); AccountPanelView.TranslationX = 0;
+         AccountPanelView.IsVisible = overlay == ShellOverlay.Account;
+         TasksPanel.IsVisible = overlay == ShellOverlay.Tasks; OverflowPanel.IsVisible = overlay == ShellOverlay.Overflow;
+         Scrim.IsVisible = open; Scrim.InputTransparent = !open; Scrim.Opacity = open ? .4 : 0;
+         MainContent.InputTransparent = open;
+#if ANDROID
+         if (MainContent.Handler?.PlatformView is Android.Views.ViewGroup background) {
+            background.ImportantForAccessibility = open ? Android.Views.ImportantForAccessibility.NoHideDescendants : Android.Views.ImportantForAccessibility.Auto;
+            background.DescendantFocusability = open ? Android.Views.DescendantFocusability.BlockDescendants : Android.Views.DescendantFocusability.AfterDescendants;
          }
+#endif
+         if (overlay == ShellOverlay.Account) { AccountPanelView.Vm.Reload(Vm.Navigation); AccountPanelView.FindByName<Controls.IconButton>("CloseButton")?.Focus(); }
+         else if (overlay == ShellOverlay.Tasks) { TasksPanel.Vm.Update(); TasksPanel.FocusFirst(); _ = Vm.EmApp?.RefreshHubTasksAsync(); }
+         else if (overlay == ShellOverlay.Overflow) OverflowClose.Focus();
+         else { _opener?.Focus(); _opener = null; }
       }
-
-      private async Task AnimateAccountPanelAsync(bool open) {
-         // The curtain is made touchable first when opening, and only released after it is fully closed when
-         // closing - so there is never a moment where the panel is still visible but touches already pass
-         // through to the page content behind it.
-         if (open) Scrim.InputTransparent = false;
-
-         var duration = open ? OpenDuration : CloseDuration;
-         var easing = open ? Easing.CubicOut : Easing.CubicIn;
-
-         await Task.WhenAll(
-            AccountPanelView.AnimateAsync(open, Vm.Navigation),
-            Scrim.FadeToAsync(open ? ScrimOpacity : 0, duration, easing));
-
-         if (!open) Scrim.InputTransparent = true;
-      }
-
-      // The device's back button is the exit used most often on Android, so it must understand the state of
-      // the screen: close the account panel if it is open, go back one screen if there is still a path to
-      // walk, and only give up to the default behavior otherwise.
       protected override bool OnBackButtonPressed() {
-         if (Vm.IsAccountPanelOpen) {
-            Vm.IsAccountPanelOpen = false;
-            return true;
-         }
-
+         if (Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; return true; }
          if (Vm.Stack is not { CanGoBack: true } stack) return base.OnBackButtonPressed();
-
-         _ = stack.Backward();
-         return true;
-      }
-
-      private void OnSessionEnded(object? sender, SessionEndedEventArgs e) {
-         Dispatcher.Dispatch(() => {
-            Vm.IsAccountPanelOpen = false;
-            _ = Vm.EmApp!.ShowLoginScreen(e.Reason);
-         });
+         _ = stack.Backward(); return true;
       }
    }
 
@@ -179,6 +120,7 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(ReloadCommand), ReloadCommand, ReloadCommandAllowed);
          RegisterCommand(nameof(AccountPanelCommand), AccountPanelCommand, AccountPanelCommandAllowed);
          RegisterCommand(nameof(CloseAccountPanelCommand), CloseAccountPanelCommand);
+         RegisterCommand(nameof(OverflowCommand), OverflowCommand);
          RegisterCommand(nameof(HubTasksCommand), HubTasksCommand, HubTasksCommandAllowed);
          RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand, ExitSimulationCommandAllowed);
       }
@@ -208,32 +150,27 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>The number of work items waiting for the user, shown on the inbox button.</summary>
       public int HubTaskCount => EmApp?.HubTaskCount ?? 0;
 
-      /// <summary>The inbox button is only drawn while something waits for the user.</summary>
-      public bool HasHubTasks => HubTaskCount > 0 && (Navigation?.IsUserVisible ?? false);
-
-      /// <summary>The count on the inbox button; large numbers are capped so the bubble keeps its size.</summary>
-      public string HubTaskBadge => HubTaskCount > 99 ? "99+" : HubTaskCount.ToString();
-
-      /// <summary>Redraws the inbox button after MY TASKS changed.</summary>
+      /// <summary>Task access is available after sign-in even when the count is unknown or zero.</summary>
+      public bool HasHubTasks => IsUserVisible && EmApp?.ActiveUser is not null;
+      public bool HasTaskBadge => HasHubTasks && HubTaskCount > 0;
+      public string HubTaskBadge => HubTaskCount > 99 ? "99+" : HubTaskCount.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+      public string HubTaskAccessibleName => EmApp?.HubTaskRefreshedAt is null ? "My Tasks, count not loaded" : $"My Tasks, {HubTaskCount} waiting";
       public void RefreshHubTasks() {
-         NotifyChanged(nameof(HubTaskCount));
-         NotifyChanged(nameof(HasHubTasks));
-         NotifyChanged(nameof(HubTaskBadge));
+         foreach (var name in new[] { nameof(HubTaskCount), nameof(HasHubTasks), nameof(HasTaskBadge), nameof(HubTaskBadge), nameof(HubTaskAccessibleName) }) NotifyChanged(name);
       }
-
-      /// <summary>Opens the approval manager on the requests waiting for the user.</summary>
-      public Task HubTasksCommand() =>
-         EmApp!.IsDebugBypass || EmApp.ActiveUser?.cUserIsAdmin == true
-            ? EmApp.NavigateTo(Em.Ui.Core.Shared.ApprovalManagerNavigationPayload.NavigationName, new Em.Ui.Core.Shared.ApprovalManagerNavigationPayload { WaitingForMeOnly = true })
-            : EmApp.MainStack.NavigateHome();
-
-      public bool HubTasksCommandAllowed() => EmApp is not null;
-
-      /// <summary>Whether the account panel is open. The page animates the change.</summary>
-      public bool IsAccountPanelOpen {
-         get => Get<bool>();
-         set => Set(value);
+      public Task HubTasksCommand() { Overlay = Overlay == ShellOverlay.Tasks ? ShellOverlay.None : ShellOverlay.Tasks; return Task.CompletedTask; }
+      public bool HubTasksCommandAllowed() => HasHubTasks;
+      public ShellOverlay Overlay {
+         get => Get<ShellOverlay>();
+         set => Set(value, _ => { NotifyChanged(nameof(IsAccountPanelOpen)); NotifyChanged(nameof(IsOverflowOpen)); });
       }
+      public bool IsAccountPanelOpen { get => Overlay == ShellOverlay.Account; set { if (value) Overlay = ShellOverlay.Account; else if (IsAccountPanelOpen) Overlay = ShellOverlay.None; } }
+      public bool IsOverflowOpen => Overlay == ShellOverlay.Overflow;
+      public void OverflowCommand() => Overlay = IsOverflowOpen ? ShellOverlay.None : ShellOverlay.Overflow;
+      public bool IsCompact { get => Get<bool>(); set => Set(value, _ => RefreshNavigationCommands()); }
+      public bool ShowHomeAction => !IsCompact && IsHomeVisible;
+      public bool ShowReloadAction => !IsCompact && IsReloadVisible;
+      public bool ShowOverflowAction => IsCompact && (IsHomeVisible || IsReloadVisible);
 
       /// <summary>
       /// The stack shown by this host. The host follows that stack itself - the entry being shown and the
@@ -263,6 +200,7 @@ namespace Em.Ui.Maui.Navigations
          private set {
             if (field == value) return;
 
+            Overlay = ShellOverlay.None;
             // The title belongs to the entry and may be renamed while it is shown, so the page has to
             // stop listening to the one it is leaving - an entry that stays alive in the stack keeps
             // raising changes, and an old subscription would let it repaint a bar it no longer owns.
@@ -325,7 +263,7 @@ namespace Em.Ui.Maui.Navigations
 
       // Every top bar switch is owned by its navigation. Without a navigation at all there is nothing to draw,
       // so the answer is false - not a default value owned by Navigation.
-      public bool IsToolbarVisible => Navigation?.IsToolbarVisible ?? false;
+      public bool IsToolbarVisible => EmApp?.ActiveUser is not null && (Navigation?.IsToolbarVisible ?? false);
       public bool IsTitleVisible => Navigation?.IsTitleVisible ?? false;
       public bool IsReloadVisible => Navigation?.IsReloadVisible ?? false;
 
@@ -342,7 +280,7 @@ namespace Em.Ui.Maui.Navigations
       /// Whether the account badge needs to be drawn. Unlike back and home, this badge is on every screen
       /// including home - it is the one and only way to the account panel.
       /// </summary>
-      public bool IsUserVisible => Navigation?.IsUserVisible ?? false;
+      public bool IsUserVisible => EmApp?.ActiveUser is not null && (Navigation?.IsUserVisible ?? false);
 
       /// <summary>
       /// The initials of the signed-in account, the content of the badge circle. The only account information
@@ -358,6 +296,7 @@ namespace Em.Ui.Maui.Navigations
       /// content of the navigation path changes.
       /// </summary>
       public void RefreshNavigationCommands() {
+         NotifyChanged(nameof(ShowHomeAction)); NotifyChanged(nameof(ShowReloadAction)); NotifyChanged(nameof(ShowOverflowAction));
          NotifyChanged(nameof(CanGoForward));
          NotifyChanged(nameof(IsBackVisible));
          NotifyChanged(nameof(IsHomeVisible));
@@ -374,29 +313,30 @@ namespace Em.Ui.Maui.Navigations
 
       /// <summary>Redraws the account badge after the user or the server changed.</summary>
       public void RefreshAccount() {
+         NotifyChanged(nameof(IsToolbarVisible)); NotifyChanged(nameof(IsUserVisible)); RefreshHubTasks();
          NotifyChanged(nameof(AccountInitials));
          NotifyChanged(nameof(IsSimulationVisible));
          Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
       }
 
       /// <summary>The leftmost button of the top bar: go back one screen.</summary>
-      public Task LeadingCommand() => Stack!.Backward();
+      public Task LeadingCommand() { if (Overlay != ShellOverlay.None) { Overlay = ShellOverlay.None; return Task.CompletedTask; } return Stack!.Backward(); }
       public bool LeadingCommandAllowed() => Stack?.CanGoBack == true;
 
       /// <summary>Go home from any screen, without having to go back step by step.</summary>
-      public Task HomeCommand() => Stack!.NavigateHome();
+      public Task HomeCommand() { Overlay = ShellOverlay.None; return Stack!.NavigateHome(); }
       public bool HomeCommandAllowed() => Stack?.Home is not null && !IsAtHome;
 
       public Task ForwardCommand() => Stack!.Forward();
       public bool ForwardCommandAllowed() => CanGoForward;
 
-      public Task ReloadCommand() => Entry?.Reload() ?? Task.CompletedTask;
+      public Task ReloadCommand() { Overlay = ShellOverlay.None; return Entry?.Reload() ?? Task.CompletedTask; }
       public bool ReloadCommandAllowed() => Entry is not null;
 
       /// <summary>Opens - or closes again - the account panel through the badge in the top bar.</summary>
       public void AccountPanelCommand() => IsAccountPanelOpen = !IsAccountPanelOpen;
       public bool AccountPanelCommandAllowed() => EmApp is not null;
 
-      public void CloseAccountPanelCommand() => IsAccountPanelOpen = false;
+      public void CloseAccountPanelCommand() => Overlay = ShellOverlay.None;
    }
 }
