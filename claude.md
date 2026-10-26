@@ -10,7 +10,9 @@ tombol ikon saja. Bila semua berkas sudah dirilis (setelah Sync/Push atau saat r
 engine membuat berkas versi berikutnya (channel N+1, atau patch+1 untuk stabil) sebagai
 template kosong: judul versi baru, kunci metadata (Subject dipertahankan, Previous =
 versi yang dirilis) dan heading `##` note sebelumnya tanpa isi. Berkas yang sudah ada
-tidak ditimpa. Summary kosong berstatus Invalid dan memblokir Prepare/Build sampai diisi.
+tidak ditimpa. Summary kosong berstatus Invalid. Di Release Manager, Invalid tidak memblokir
+Prepare/Build launcher, tetapi memblokir Sync (push) sampai Summary diisi (keputusan pengguna
+2026-10-26, lanjutan). Di Container Manager, Invalid tetap memblokir Build dan Push.
 Agen yang menulis release note mengisi berkas terbaru tersebut, tidak membuat berkas
 versi baru sendiri. Panduan: `doc/engine/engine-release-manager.md`, `engine-publish.md`.
 

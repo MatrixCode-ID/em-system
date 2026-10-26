@@ -50,7 +50,8 @@ When every file is released (after Sync, or on refresh), the next note is create
 template: N + 1 on the same channel, or the next patch after a stable release. The template keeps
 the previous note's title (with the new version), metadata keys (Subject kept, Previous set to the
 released version, others empty) and its `##` headings without content. An existing file is never
-overwritten. Its empty Summary makes it Invalid, so Prepare is blocked until the note is written;
+overwritten. Its empty Summary makes it Invalid: Prepare and Build launcher still run, but Sync is
+blocked until the note is written, so a release is never published without a Summary;
 write release notes into that newest file instead of creating another version file. The
 filename supplies the exact release version/channel/N. Windows Prepare stamps that version
 on the host and launcher; Android stamps its display version. Sync rejects an artifact
@@ -66,8 +67,8 @@ the active note does not edit the source project.
 In **Product Identity**, immediately after Application version, enable **Release note lock** and choose
 one notes folder. The setting applies to Windows and Android. The release page shows this folder read-only;
 change it only in the profile editor. Old profiles default to lock off and retain format version 2.
-Prepare and Sync require a valid note for the application's current version and a version strictly newer
-than the target. Compare and Verify remain available. Refresh release notes reloads the folder and target.
+Prepare and Sync require the note file of the application's current version and a version strictly newer
+than the target; only Sync also requires its nonempty Summary. Compare and Verify remain available. Refresh release notes reloads the folder and target.
 Android Prepare rereads host identity before checking the lock; Sync checks PreparedVersionName and
 requires Prepare again when it differs from the current Product.Version. Windows uses Product.Version,
 without adding an executable-version check or a separate prepared-version field.
@@ -92,7 +93,7 @@ Application build metadata is removed for matching in Release Manager. Stable re
 then numeric N. Nonstandard application versions block release while the lock is enabled.
 
 The filename must match the application version exactly and contain a nonempty `## Summary` before the
-next heading. Other Markdown filenames, including README.md, are ignored; Date/Previous/Source are optional.
+next heading by the time of Sync. Other Markdown filenames, including README.md, are ignored; Date/Previous/Source are optional.
 Recommended template:
 
 ```markdown

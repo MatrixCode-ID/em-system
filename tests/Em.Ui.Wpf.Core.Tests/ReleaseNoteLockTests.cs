@@ -150,6 +150,15 @@ public sealed class ReleaseNoteLockTests : IDisposable {
       File.Delete(Path.Combine(_root, "notes", "1.2.0-beta.3.md"));
       await Assert.ThrowsAsync<InvalidDataException>(() => ReleaseNoteGuard.RequireAsync(profile, target, CancellationToken.None, syncing: true));
    }
+   [Fact] public async Task EmptySummaryAllowsPrepareButBlocksSync() {
+      Note("1.2.0-beta.3", "# 1.2.0-beta.3\n\n## Summary\n\n## Fixes\n"); var profile = new ReleaseProfile { Name = "Contoso.Inventory", ReleaseNoteLock = true, ReleaseNotesFolder = Path.Combine(_root, "notes") }; profile.Product.Version = "1.2.0-beta.3";
+      var target = new FolderReleaseTarget(Path.Combine(_root, "target"), "inventory");
+      await ReleaseNoteGuard.RequireAsync(profile, target, CancellationToken.None, requireSummary: false);
+      var sync = await Assert.ThrowsAsync<InvalidDataException>(() => ReleaseNoteGuard.RequireAsync(profile, target, CancellationToken.None, syncing: true));
+      Assert.Contains("Summary", sync.Message);
+      File.Delete(Path.Combine(_root, "notes", "1.2.0-beta.3.md"));
+      await Assert.ThrowsAsync<InvalidDataException>(() => ReleaseNoteGuard.RequireAsync(profile, target, CancellationToken.None, requireSummary: false));
+   }
    [Fact] public void ActiveNoteIsTheHighestUnreleasedFileIncludingAnUnfilledOne() {
       Note("1.2.0-beta.3"); Note("1.2.0-beta.4", "## Summary\n"); Note("1.2.0-beta.2");
       Assert.Equal("1.2.0-beta.4", ReleaseNoteFolder.Active(State(remote: ["1.2.0-beta.3"]).Entries)!.Version);

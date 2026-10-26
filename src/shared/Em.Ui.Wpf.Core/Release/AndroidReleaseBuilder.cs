@@ -51,7 +51,7 @@ public static class AndroidReleaseBuilder {
       profile.Product.AndroidTargetFramework = identity.AndroidTargetFramework;
       profile.Product.MinimumSupportedJavaVersion = identity.MinimumSupportedJavaVersion;
       profile.Product.LatestSupportedJavaVersion = identity.LatestSupportedJavaVersion;
-      await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, token);
+      await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(profile, target, token, requireSummary: false);
       profile.ValidateAndroidRelease();
       if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") || !address.EndsWith('/'))
          throw new InvalidDataException("Set the public CDN address before preparing an Android release.");

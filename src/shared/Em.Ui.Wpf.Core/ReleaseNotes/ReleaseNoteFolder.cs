@@ -42,9 +42,13 @@ public static class ReleaseNoteFolder {
       var fallback = android ? manifest?.Android?.VersionName : null;
       return fallback is not null && ReleaseManifestSerializer.IsStandardVersion(fallback) ? fallback : null;
    }
-   /// <summary>Reads version notes and evaluates one application version against a known target.</summary>
+   /// <summary>
+   /// Reads version notes and evaluates one application version against a known target. With
+   /// <paramref name="requireSummary"/> off, a note without a Summary still allows the operation (Release Manager
+   /// Prepare); the release itself always requires it.
+   /// </summary>
    public static ReleaseNoteState Evaluate(string notesFolder, string appVersion, IEnumerable<string> serverVersions,
-      bool serverKnown, bool exactReleased = false) {
+      bool serverKnown, bool exactReleased = false, bool requireSummary = true) {
       try {
          var folder = Resolve(notesFolder);
          var versions = serverVersions.Where(v => ReleaseManifestSerializer.IsStandardVersion(v)).Select(v => ContainerVersion.TryParseFull(v, out var p) ? (ContainerReleaseVersion?)p : null)
@@ -61,7 +65,7 @@ public static class ReleaseNoteFolder {
          var sorted = entries.OrderByDescending(e => e.ParsedVersion).ToArray();
          if (!ContainerVersion.TryParseFull(appVersion, out var app)) return new(false, "Blocked: release note lock requires a standard application version.", null, "", sorted) { FolderValid = true };
          var note = sorted.FirstOrDefault(e => e.Version == app.Full);
-         var error = note is null ? $"{app.Full}.md not found in {folder}" : !note.Valid ? $"{app.Full}.md has no nonempty ## Summary" :
+         var error = note is null ? $"{app.Full}.md not found in {folder}" : !note.Valid && requireSummary ? $"{app.Full}.md has no nonempty ## Summary" :
             !serverKnown ? "The release target could not be read." : highest is { } top && app.CompareTo(top) <= 0 ? $"{app.Full} is not newer than {top.Full} on the server" : null;
          return new(error is null, error is null ? $"Release note {app.Full}.md found" : "Blocked: " + error,
             note?.File, note?.Content ?? "", sorted) { FolderValid = true };

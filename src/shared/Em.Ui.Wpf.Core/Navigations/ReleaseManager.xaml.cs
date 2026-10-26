@@ -243,7 +243,7 @@ namespace Em.Ui.Wpf.Navigations
                state = await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
                if (generation != _noteRefresh || Profile != profile) return;
                if (Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteFolder.EnsureNext(profile.ReleaseNotesFolder, state) is { } created) {
-                  Log($"Release note {Path.GetFileName(created)} created for the next release. Write its Summary before Prepare.");
+                  Log($"Release note {Path.GetFileName(created)} created for the next release. Write its Summary before Sync.");
                   state = await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.ReadAsync(profile, target, CancellationToken.None);
                }
                if (generation != _noteRefresh || Profile != profile) return;
@@ -639,7 +639,7 @@ namespace Em.Ui.Wpf.Navigations
                Profile.Product.Version = Profile.ReleaseNoteLock && Profile.ReleaseNoteVersion.Length > 0 ? Profile.ReleaseNoteVersion : identity.Version;
             }
             if (Profile!.Platform == ReleasePlatform.Windows && Profile.ReleaseNoteLock)
-               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason), token);
+               await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason), token, requireSummary: false);
             ResetComparison();
             if (Profile!.Platform == ReleasePlatform.Android) {
                var androidTarget = CreateTarget() ?? throw new InvalidOperationException(TargetBlockedReason);
@@ -682,7 +682,7 @@ namespace Em.Ui.Wpf.Navigations
       /// </summary>
       public Task BuildLauncherCommand() => RunAsync("Build launcher", async token => {
          var target = CreateTarget();
-         if (Profile!.ReleaseNoteLock) await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, target ?? throw new InvalidOperationException(TargetBlockedReason), token);
+         if (Profile!.ReleaseNoteLock) await Em.Ui.Wpf.Core.ReleaseNotes.ReleaseNoteGuard.RequireAsync(Profile, target ?? throw new InvalidOperationException(TargetBlockedReason), token, requireSummary: false);
          var remote = target is null ? null : LauncherBuild.Remote(await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token));
          await LauncherBuild.BuildAsync(_preferences!.LauncherSourceFolder, LauncherOutput, Profile!, DefaultReleaseSource, remote, new Progress<string>(Log), token, force: true);
          _profileLastWriteUtc = _store!.Save(Profile!).LastWriteUtc;
