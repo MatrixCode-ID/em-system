@@ -8,7 +8,7 @@ bersaing dalam area scroll yang sama. Komponen panel, routing tugas dan shell
 ditangani engine; perubahan ini tidak mengubah Home WPF atau aturan approval.
 
 Pengguna menyetujui langsung UI asli sebagai pengecualian mockup, memakai
-spesifikasi audit, untuk topik [perbaikan fondasi MAUI](plan/unexecuted/maui-m3-expressive.codex.md)
+spesifikasi audit, untuk topik [perbaikan fondasi MAUI](plan/executed/maui-m3-expressive.codex.md)
 pada 26 Oktober 2026. Pengecualian hanya untuk lingkup plan tersebut;
 persetujuan eksekusi serta pengujian GUI/perangkat tetap terpisah.
 
@@ -672,3 +672,12 @@ Verifikasi eksekusi 2026-10-25: WPF/MAUI build dan 294 tes console lulus; izin i
 tergabung dari library. Create/Import keystore nyata lulus, APK nyata tertunda karena workload
 maui-android belum terpasang. Laporan: doc/report/release-manager-maui-android.md.
 Plan berada di plan/executed/release-manager-maui-android.codex.md.
+
+## MAUI experience implementation — 27 October 2026
+
+The executed plan `plan/executed/maui-m3-expressive.codex.md` provides a separate
+My Tasks panel, permission-checked catalogue search, native icon actions and
+shared fields/feedback. API migration and lifecycle contracts are documented in
+`doc/engine/engine-maui-experience.md`. Independent console verification passed;
+native build is blocked by missing workload support and device validation is
+pending. No GUI tests or workload installation were authorized for this execution.
