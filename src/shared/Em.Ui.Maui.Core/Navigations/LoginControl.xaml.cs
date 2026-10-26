@@ -227,7 +227,15 @@ namespace Em.Ui.Maui.Navigations
 
       // The part both sign ins share. Debug Sign In only asks for the token differently and, like Simulate
       // Login on the desktop, keeps nothing: the stored sign-in belongs to the runs without it.
+      private bool _validateFields;
+      public string ServerError => _validateFields && string.IsNullOrWhiteSpace(ServerUrl) ? "Enter the API server." : "";
+      public string AccountError => _validateFields && string.IsNullOrWhiteSpace(UserName) ? "Enter your account." : "";
+      public string PasswordError => _validateFields && string.IsNullOrWhiteSpace(Password) ? "Enter your password." : "";
       private async Task RunSignInAsync(bool debug) {
+         if (IsBusy) return;
+         _validateFields = true;
+         NotifyChanged(nameof(ServerError)); NotifyChanged(nameof(AccountError)); NotifyChanged(nameof(PasswordError));
+         if (ServerError.Length > 0 || AccountError.Length > 0 || (!debug && PasswordError.Length > 0)) return;
          SignInError = null;
 
          try {
@@ -349,13 +357,10 @@ namespace Em.Ui.Maui.Navigations
       /// Sign in may only run after the server address is filled in: the server where the credentials are
       /// checked is that address itself, so without an address there is nothing to contact.
       /// </summary>
-      public bool SignInCommandAllowed() =>
-         IsNotBusy
-         && !string.IsNullOrWhiteSpace(ServerUrl)
-         && !string.IsNullOrWhiteSpace(UserName)
-         && !string.IsNullOrWhiteSpace(Password);
+      public bool SignInCommandAllowed() => IsNotBusy;
 
       private void RaiseSignInCommandChanged() {
+         NotifyChanged(nameof(ServerError)); NotifyChanged(nameof(AccountError)); NotifyChanged(nameof(PasswordError));
          Commands[nameof(SignInCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(DebugSignInCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();

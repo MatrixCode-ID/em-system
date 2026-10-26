@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="../../src/shared/Em.Ui.Maui.Core/Controls/UiFeedback.cs" Link="Mobile/UiFeedback.cs" />
         <ProjectReference Include="..\..\src\shared\Em.Ui.Core\Em.Ui.Core.csproj" />
     </ItemGroup>
 

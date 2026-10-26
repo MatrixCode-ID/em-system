@@ -1,115 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
-             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
-             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
-             x:Class="Em.Ui.Maui.Navigations.LoginControl">
-
-   <ContentView.BindingContext>
-      <local:LoginControlVm />
-   </ContentView.BindingContext>
-
-   <Grid RowDefinitions="Auto,*">
-
-      <Border Grid.Row="0" Padding="24,36,24,28" StrokeThickness="0"
-              BackgroundColor="{AppThemeBinding Light={StaticResource brandLight}, Dark={StaticResource brandDark}}">
-         <Border.StrokeShape>
-            <shapes:RoundRectangle CornerRadius="0,0,28,28" />
-         </Border.StrokeShape>
-         <VerticalStackLayout Spacing="14" HorizontalOptions="Center">
-            <Image Source="{Binding LogoImage}" HeightRequest="64" Aspect="AspectFit" />
-            <VerticalStackLayout Spacing="2">
-               <Label Text="{Binding BrandTitle}" Style="{StaticResource headlineTextStyle}"
-                      TextColor="White" HorizontalOptions="Center" />
-               <Label Text="{Binding BrandTagline}" Style="{StaticResource supportTextStyle}"
-                      TextColor="White" Opacity="0.75" HorizontalOptions="Center" />
-            </VerticalStackLayout>
-         </VerticalStackLayout>
-      </Border>
-
-      <ScrollView Grid.Row="1">
-         <VerticalStackLayout Padding="20,20,20,32" Spacing="16">
-
-            <Border Style="{StaticResource cardStyle}" IsVisible="{Binding HasSessionEndedNotice}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}"
-                    Padding="16">
-               <Label Text="{Binding SessionEndedNotice}" Style="{StaticResource supportTextStyle}"
-                      TextColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
-            </Border>
-
-            <Border Style="{StaticResource cardStyle}">
-               <VerticalStackLayout Spacing="16">
-
-                  <Label Text="SIGN IN" Style="{StaticResource sectionCaptionStyle}" />
-
-                  <!-- The server address is typed, not chosen from a list: outside debug there is no list to choose from at
-                       all. In debug this field is locked - the server is decided at compile time, and what applies is the
-                       one currently selected in the account panel. -->
-                  <VerticalStackLayout Spacing="6">
-                     <Label Text="API Server" Style="{StaticResource labelTextStyle}" />
-                     <Border Style="{StaticResource inputFieldStyle}">
-                        <Entry Text="{Binding ServerUrl}" Placeholder="https://server.example.com"
-                               IsReadOnly="{Binding IsServerLocked}"
-                               Keyboard="Url" ReturnType="Next" />
-                     </Border>
-                  </VerticalStackLayout>
-
-                  <VerticalStackLayout Spacing="6">
-                     <Label Text="Account" Style="{StaticResource labelTextStyle}" />
-                     <Border Style="{StaticResource inputFieldStyle}">
-                        <Entry Text="{Binding UserName}" Placeholder="Account name" ReturnType="Next" />
-                     </Border>
-                  </VerticalStackLayout>
-
-                  <VerticalStackLayout Spacing="6">
-                     <Label Text="Password" Style="{StaticResource labelTextStyle}" />
-                     <Border Style="{StaticResource inputFieldStyle}">
-                        <Entry Text="{Binding Password}" IsPassword="True" Placeholder="Password"
-                               ReturnType="Go" ReturnCommand="{Binding Commands[SignInCommand]}" />
-                     </Border>
-                  </VerticalStackLayout>
-
-                  <!-- The theme switch sits beside the sign-in button, not in the top bar: that bar is deliberately hidden
-                       until someone signs in, and the account panel - where the theme switch row lives on another screen -
-                       is opened from there. -->
-                  <!-- Spacing comes from margins, not ColumnSpacing: a hidden Debug Sign In must not leave a gap. -->
-                  <Grid ColumnDefinitions="Auto,*,Auto">
-                     <controls:IconButton Grid.Column="0"
-                                          Glyph="{x:Static controls:FontIcons.CircleHalfStroke}" IconSize="20"
-                                          VerticalOptions="Center"
-                                          Command="{Binding Commands[ToggleThemeCommand]}"
-                                          TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}"  SemanticProperties.Description="Toggle Theme" />
-                     <Button Grid.Column="1" Margin="10,0,0,0" Text="Sign in" Style="{StaticResource filledButtonStyle}"
-                             Command="{Binding Commands[SignInCommand]}" />
-                     <!-- Debug only: a real session as the typed account, without its password. -->
-                     <Button Grid.Column="2" Margin="10,0,0,0" Text="Debug Sign In" Style="{StaticResource tonalButtonStyle}"
-                             Command="{Binding Commands[DebugSignInCommand]}"
-                             IsVisible="{Binding IsDebugSignInVisible}" />
-                  </Grid>
-
-                  <Button Text="Cancel simulation · Return to SD" Style="{StaticResource tonalButtonStyle}"
-                          Command="{Binding Commands[ExitSimulationCommand]}"
-                          IsVisible="{Binding IsDebugSignInVisible}"
-                          SemanticProperties.Description="Cancel simulation and return to SYSTEM DEBUGGER" />
-
-                  <HorizontalStackLayout Spacing="8" IsVisible="{Binding HasSignInError}">
-                     <controls:FontIcon Glyph="{x:Static controls:FontIcons.LockOpen}" IconSize="18"
-                                            VerticalOptions="Start"
-                                            TintColor="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" />
-                     <Label Text="{Binding SignInError}" Style="{StaticResource errorTextStyle}" />
-                  </HorizontalStackLayout>
-
-                  <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
-                                     HorizontalOptions="Center" />
-               </VerticalStackLayout>
-            </Border>
-
-            <Label Text="{Binding InstalledVersion}" Style="{StaticResource labelTextStyle}" HorizontalOptions="Center"/>
-            <Button Text="Check for updates" Command="{Binding Commands[CheckForUpdatesCommand]}" Style="{StaticResource tonalButtonStyle}"/>
-            <Label Text="{Binding BrandCopyright}" Style="{StaticResource labelTextStyle}"
-                   FontSize="10.5" Opacity="0.6" HorizontalOptions="Center" />
-         </VerticalStackLayout>
-      </ScrollView>
-   </Grid>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" xmlns:controls="clr-namespace:Em.Ui.Maui.Controls" x:Class="Em.Ui.Maui.Navigations.LoginControl">
+ <ContentView.BindingContext><local:LoginControlVm /></ContentView.BindingContext>
+ <ScrollView><VerticalStackLayout Padding="16,24" Spacing="24" MaximumWidthRequest="600" HorizontalOptions="Fill">
+  <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+   <Image Source="{Binding LogoImage}" HeightRequest="64" Aspect="AspectFit" />
+   <Label Text="{Binding BrandTitle}" Style="{StaticResource headlineSmallTextStyle}" SemanticProperties.HeadingLevel="Level1" />
+   <Label Text="{Binding BrandTagline}" Style="{StaticResource bodyMediumTextStyle}" />
+  </VerticalStackLayout>
+  <controls:FeedbackView Message="{Binding SessionEndedNotice}" Kind="Info" />
+  <VerticalStackLayout Spacing="16" IsEnabled="{Binding IsNotBusy}">
+   <controls:MaterialField Label="API server" Text="{Binding ServerUrl}" IsReadOnly="{Binding IsServerLocked}" Error="{Binding ServerError}" />
+   <controls:MaterialField Label="Account" Text="{Binding UserName}" Help="Enter your account name" Error="{Binding AccountError}" />
+   <controls:MaterialField Label="Password" Text="{Binding Password}" IsPassword="True" Error="{Binding PasswordError}" />
+   <Button Text="Sign in" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SignInCommand]}" />
+   <Button Text="Debug Sign In" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[DebugSignInCommand]}" IsVisible="{Binding IsDebugSignInVisible}" />
+   <Button Text="Cancel simulation · Return to SD" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[ExitSimulationCommand]}" IsVisible="{Binding IsDebugSignInVisible}" SemanticProperties.Description="Cancel simulation and return to SYSTEM DEBUGGER" />
+  </VerticalStackLayout>
+  <controls:FeedbackView Message="{Binding SignInError}" Kind="Error" />
+  <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+  <Button Text="Switch theme" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[ToggleThemeCommand]}" />
+  <Label Text="{Binding InstalledVersion}" Style="{StaticResource bodyMediumTextStyle}" HorizontalOptions="Center" />
+  <Button Text="Check for updates" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[CheckForUpdatesCommand]}" />
+  <Label Text="{Binding BrandCopyright}" Style="{StaticResource bodyMediumTextStyle}" HorizontalOptions="Center" />
+ </VerticalStackLayout></ScrollView>
 </ContentView>

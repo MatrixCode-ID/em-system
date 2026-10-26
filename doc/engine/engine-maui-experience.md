@@ -29,3 +29,34 @@ internal identifiers as user-facing labels.
 
 Native semantics, focus, IME, insets, large fonts and touch bounds require Android
 validation; console checks do not establish device accessibility compliance.
+
+## Shell and lifecycle
+
+Home contains a permission-checked catalogue only. Search matches trimmed title,
+subtitle and group path without case sensitivity. Clear restores the hierarchy;
+query survives returning within the same identity. A new account/connection clears
+that state. Group headings and destinations occupy one bounded CollectionView.
+
+My Tasks is available after sign-in even at zero or after a refresh error. Its
+badge caps visual counts at 99+; the action name contains the actual known count.
+The shared cache coalesces concurrent refreshes, retains the old snapshot on error,
+records only successful times and rejects responses from a previous identity.
+The shell polls only while foregrounded and refreshes on resume. Recreated hosts
+unsubscribe from app/window/timer events.
+
+Tasks, account and overflow are mutually exclusive. Compact windows below 600
+logical units give Tasks the available width; larger windows cap it at 400.
+Home/Reload move into labelled overflow in compact windows. Back, Escape and the
+scrim close the modal first. The Android background subtree excludes accessibility
+and keyboard descendants while modal; focus returns to its invoking button.
+Shell modal visibility is synchronous so animation interruption cannot strand a
+scrim. MotionPolicy uses interruptible easing and reads Android animation scale.
+IconButton now derives from native Button; Glyph, TintColor, IconSize, Command and
+CommandParameter remain compatible. It supplies native role and activation; all
+consumers must supply a semantic action description rather than reading the glyph.
+
+Login uses permanent labelled fields and a scrolling form/brand/CTA, reports empty
+field errors locally, keeps credential failures general, and preserves simulation
+exit. Signer selection and account actions have explicit native buttons. These
+contracts still require device verification for TalkBack focus, actual hit bounds,
+large text, animation scale zero, IME and insets.

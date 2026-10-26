@@ -59,3 +59,5 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | Guide | Covers |
 | --- | --- |
 | [Android updates](engine-android-updates.md) | Embedded release source, verified APK download, mandatory update gate and PackageInstaller |
+
+| [MAUI experience](engine-maui-experience.md) | Adaptive shell, My Tasks, catalogue search, fields, feedback and accessibility contracts |

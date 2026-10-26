@@ -42,25 +42,8 @@
 
       <!-- One static navigation row. Its whole area is the tap target, not only its text. -->
       <DataTemplate x:Key="accountPanelItemTemplate">
-         <VerticalStackLayout>
-            <BoxView Style="{StaticResource dividerStyle}" Margin="16,0"
-                     IsVisible="{Binding HasDividerAbove}" />
-            <Border Style="{StaticResource accountPanelItemRowStyle}"
-                    IsEnabled="{Binding IsEnabled}">
-               <Border.GestureRecognizers>
-                  <TapGestureRecognizer
-                     Command="{Binding Path=BindingContext.Commands[OpenItemCommand],
-                                       Source={RelativeSource AncestorType={x:Type local:AccountPanel}}}"
-                     CommandParameter="{Binding .}" />
-               </Border.GestureRecognizers>
-               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                  <controls:FontIcon Grid.Column="0" Glyph="{Binding Glyph}"
-                                     Style="{StaticResource accountPanelItemIconStyle}" />
-                  <Label Grid.Column="1" Text="{Binding Title}"
-                         Style="{StaticResource accountPanelItemLabelStyle}" />
-               </Grid>
-            </Border>
-         </VerticalStackLayout>
+         <Button Text="{Binding Title}" Style="{StaticResource textButtonStyle}" IsEnabled="{Binding IsEnabled}"
+          Command="{Binding Path=BindingContext.Commands[OpenItemCommand], Source={RelativeSource AncestorType={x:Type local:AccountPanel}}}" CommandParameter="{Binding .}" />
       </DataTemplate>
 
       <!-- The outer circle of the radio dot. Its color follows the selected state of its own row through a
@@ -85,27 +68,9 @@
            Content of a MAUI RadioButton only accepts text, and a view handed to it ends up drawn as its type
            name. Drawing it itself also makes the whole row the tap target, not just a small dot at the far left. -->
       <DataTemplate x:Key="accountPanelConnectionTemplate">
-         <Border Style="{StaticResource accountPanelItemStyle}">
-            <Border.GestureRecognizers>
-               <TapGestureRecognizer
-                  Command="{Binding Path=BindingContext.Commands[SelectConnectionCommand],
-                                    Source={RelativeSource AncestorType={x:Type local:AccountPanel}}}"
-                  CommandParameter="{Binding .}" />
-            </Border.GestureRecognizers>
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-               <Grid Grid.Column="0" WidthRequest="20" HeightRequest="20" VerticalOptions="Center">
-                  <shapes:Ellipse Style="{StaticResource connectionMarkStyle}" />
-                  <shapes:Ellipse WidthRequest="10" HeightRequest="10" IsVisible="{Binding IsChecked}"
-                                  HorizontalOptions="Center" VerticalOptions="Center"
-                                  Fill="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
-               </Grid>
-               <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                  <Label Text="{Binding ProfileName}" Style="{StaticResource accountPanelItemLabelStyle}" />
-                  <Label Text="{Binding Host}" Style="{StaticResource supportTextStyle}"
-                         FontSize="11" LineBreakMode="TailTruncation" />
-               </VerticalStackLayout>
-            </Grid>
-         </Border>
+         <Button Text="{Binding AccessibleCaption}" Style="{StaticResource textButtonStyle}"
+          SemanticProperties.Description="{Binding AccessibleCaption}"
+          Command="{Binding Path=BindingContext.Commands[SelectConnectionCommand], Source={RelativeSource AncestorType={x:Type local:AccountPanel}}}" CommandParameter="{Binding .}" />
       </DataTemplate>
    </ContentView.Resources>
 
@@ -195,17 +160,7 @@
                </Border>
                <!-- ==== theme switch ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}" IsVisible="{Binding IsThemeVisible}">
-                  <Border Style="{StaticResource accountPanelItemStyle}">
-                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding Commands[ToggleThemeCommand]}" />
-                     </Border.GestureRecognizers>
-                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                        <controls:FontIcon Grid.Column="0" Glyph="{Binding ThemeGlyph}"
-                                           Style="{StaticResource accountPanelItemIconStyle}" />
-                        <Label Grid.Column="1" Text="{Binding ThemeCaption}"
-                               Style="{StaticResource accountPanelItemLabelStyle}" />
-                     </Grid>
-                  </Border>
+                  <Button Text="Switch theme" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[ToggleThemeCommand]}" />
                </Border>
             </VerticalStackLayout>
          </ScrollView>
@@ -213,21 +168,7 @@
          <!-- ==== sign out ==== -->
          <VerticalStackLayout Grid.Row="2" Padding="0,0,0,12" IsVisible="{Binding CanSignOut}">
             <BoxView Style="{StaticResource dividerStyle}" Margin="16,0,16,6" />
-            <Border Style="{StaticResource signOutRowStyle}" Margin="12,0"
-                    IsEnabled="{Binding IsSignOutEnabled}">
-               <Border.GestureRecognizers>
-                  <TapGestureRecognizer Command="{Binding Commands[SignOutCommand]}" />
-               </Border.GestureRecognizers>
-               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                  <controls:FontIcon Grid.Column="0"
-                                     Glyph="{x:Static controls:FontIcons.RightFromBracket}" IconSize="22"
-                                     VerticalOptions="Center"
-                                     TintColor="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" />
-                  <Label Grid.Column="1" Text="Sign out" FontFamily="OpenSansSemibold" FontSize="14"
-                         VerticalOptions="Center"
-                         TextColor="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" />
-               </Grid>
-            </Border>
+            <Button Text="Sign out" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[SignOutCommand]}" />
          </VerticalStackLayout>
       </Grid>
    </Border>

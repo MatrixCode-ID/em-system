@@ -88,6 +88,7 @@ namespace Em.Ui.Maui.Navigations
 
       /// <summary>The server address of this profile.</summary>
       public string Host => Connection.Host;
+      public string AccessibleCaption => $"{(IsChecked ? "Selected · " : "")}{ProfileName} · {Host}";
 
       /// <summary>
       /// Whether this row is the selected one. It is always the panel that turns it on - only the panel knows
@@ -95,7 +96,7 @@ namespace Em.Ui.Maui.Navigations
       /// </summary>
       public bool IsChecked {
          get => Get<bool>();
-         set => Set(value);
+         set => Set(value, _ => NotifyChanged(nameof(AccessibleCaption)));
       }
    }
 

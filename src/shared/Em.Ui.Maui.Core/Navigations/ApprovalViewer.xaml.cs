@@ -57,6 +57,8 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(SelectCommand), SelectCommand);
       }
 
+      public string SelectionCaption => $"{(IsSelected ? "Selected · " : "Select · ")}{Heading} · {Status}";
+
       /// <summary>The step this card shows.</summary>
       public ta_ApprovalRequestStep Step { get; }
 
