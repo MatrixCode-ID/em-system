@@ -100,6 +100,17 @@ releases its navigation history, restores the debug token and the previously sel
 and makes SYSTEM DEBUGGER active again. Simulated password and debug sign-ins never save or clear the
 ordinary remembered session. Recreating the Android activity preserves the active simulation.
 
+When a real session is installed, both clients use its user ID for request identity while the user's
+profile is loading. The old debugger identity must not accompany a Bearer request without a debug token:
+the API deliberately refuses that combination. The account name is attached once the matching user has
+loaded. This avoids reporting a successful simulated sign-in as an unreachable server during bootstrap.
+The identity refresh happens inside `BeginSessionAsync`, before the first profile lookup, because
+credential services may already hold the API client and do not reacquire it for every call.
+
+MAUI currently has no separate Connection Manager screen. Debug server choices are declared by the host
+and selected in the account panel; the server field on Simulate Login follows that choice. In a normal
+build, the login screen accepts the server address and retains the profile after successful sign-in.
+
 ## Sign out in debug mode
 
 While debug is active, **Sign Out** is hidden from the account menu of both layouts and `SignOutAsync`
@@ -109,6 +120,8 @@ the simulation Sign Out is shown and works as without debug.
 ## Maintainer notes
 
 - Unit tests: `tests/Em.Ui.Wpf.Core.Tests/DebugStateTests.cs` (the three switches).
+- Session bootstrap identity regression: `tests/Em.Ui.Wpf.Core.Tests/SessionCallerIdentityTests.cs`.
+  Local test logs are in `../.artefacts/em-system/scripts/session-caller-smoke/out/`.
 - Render harness for the dialog and the simulated login screens:
   `dotnet run --project ..\.artefacts\em-system\scripts\user-roles-render`.
 - Live smoke (impersonation, suspended account, simulated sign in and sign out against a local `Em.Api`):

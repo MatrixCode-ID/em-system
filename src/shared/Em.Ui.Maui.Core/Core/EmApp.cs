@@ -217,7 +217,7 @@ namespace Em.Ui.Maui.Core
       // Until a server has been asked, module presence is unknown and must not hide anything.
       private bool _serverClaimsLoaded;
 
-      /// <summary>Gets the API client of the active connection, with the active user attached to its requests.</summary>
+      /// <summary>Gets the active connection's client, using its session owner or the current debug identity for requests.</summary>
       public ApiClient? GetActiveApiClient() {
          if (ActiveConnection == null)
             return null;
@@ -227,12 +227,16 @@ namespace Em.Ui.Maui.Core
             _apiClients.Add(ActiveConnection, result);
          }
 
-         // Set here, not once when the client is created: a client lives longer than one user, and what must
-         // accompany every request is the user who is active at that time. Both are filled together - the
-         // identity header carries both, and filling only half would send a header naming a different person
-         // from the one meant.
-         result.ActiveUserId = ActiveUser?.cUserId;
-         result.ActiveUserAccount = ActiveUser?.cUserAccount;
+         // A newly issued session already belongs to its real user while the UI may still show the
+         // debugger. Never send that stale identity without its debug token during session bootstrap.
+         if (result.HasSession && string.IsNullOrWhiteSpace(ActiveConnection.DebugToken)) {
+            result.ActiveUserId = result.SessionUserId;
+            result.ActiveUserAccount = ActiveUser?.cUserId == result.SessionUserId ? ActiveUser?.cUserAccount : null;
+         }
+         else {
+            result.ActiveUserId = ActiveUser?.cUserId;
+            result.ActiveUserAccount = ActiveUser?.cUserAccount;
+         }
          return result;
       }
 
@@ -693,6 +697,9 @@ namespace Em.Ui.Maui.Core
          // that still names that account as forged, so the identity is dropped before the session user loads.
          var previousUser = ActiveUser;
          SetActiveUser(null);
+
+         // Services keep this client between calls, so refresh its caller before the first profile load.
+         GetActiveApiClient();
 
          try {
             SetActiveUser(await LoadSessionUserAsync(token.cUserId));
