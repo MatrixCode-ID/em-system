@@ -171,7 +171,7 @@ namespace Em.Ui.Maui.Navigations
       /// server - the one typed on the login screen - so the row would only repeat the caption above it, and a
       /// radio button with no other choice promises something that does not exist.
       /// </summary>
-      public bool HasConnectionChoice => EmApp?.IsDebugMode ?? false;
+      public bool HasConnectionChoice => EmApp?.IsDebugActive ?? false;
 
       /// <summary>A caption of the server in use, a twin of the similar chip on the login screen.</summary>
       public string ConnectionStatus => EmApp?.ActiveConnection is { } connection
@@ -196,7 +196,7 @@ namespace Em.Ui.Maui.Navigations
       /// would only leave the application with nobody in it and no way back in. What is available in debug is
       /// Simulate Login, not sign out.
       /// </summary>
-      public bool IsSignOutEnabled => EmApp is { IsDebugMode: false, ActiveUser: not null };
+      public bool IsSignOutEnabled => EmApp is { IsDebugActive: false, ActiveUser: not null };
 
       /// <summary>
       /// Rebuilds the whole content of the panel. Called right before the panel enters the screen, not once
@@ -247,8 +247,11 @@ namespace Em.Ui.Maui.Navigations
             () => app.NavigateTo(EmApp.ChangePasswordNavigationName),
             isEnabled: app.ActiveUser?.cUserId != Defaults.DebuggerUserId);
 
-         if (app.IsDebugMode) {
-            AddStaticItem("Simulate Login", FontIcons.RightToBracket, () => app.ShowLoginScreen(null));
+         if (app.IsDebugActive) {
+            AddStaticItem("Simulate Login", FontIcons.RightToBracket, BeginSimulationAsync);
+         }
+         if (app.IsSimulatingLogin) {
+            AddStaticItem("Exit simulation · Return to SD", FontIcons.ArrowLeft, EndSimulationAsync);
          }
 
          // Engine management tools get a card of their own, apart from the account's own rows.
@@ -260,6 +263,16 @@ namespace Em.Ui.Maui.Navigations
          MarkDividers(ManagementItems);
          NotifyChanged(nameof(HasStaticItems));
          NotifyChanged(nameof(HasManagementItems));
+      }
+
+      private async Task BeginSimulationAsync() {
+         try { await EmApp!.BeginLoginSimulationAsync(); }
+         catch (Exception x) { AlertError(x); }
+      }
+
+      private async Task EndSimulationAsync() {
+         try { await EmApp!.EndLoginSimulationAsync(); }
+         catch (Exception x) { AlertError(x); }
       }
 
       private static void MarkDividers(ObservableCollection<AccountPanelItemVm> items) {

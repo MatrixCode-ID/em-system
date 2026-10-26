@@ -1,4 +1,4 @@
-# WPF debug mode: Switch User, Simulate Login and Debug Sign In
+# Debug mode: Switch User, Simulate Login and Debug Sign In
 
 A WPF host enters debug mode when it is built with `builder.AddDebug(...)` and at least one debug
 connection. The application then starts signed in as the **SYSTEM DEBUGGER** account, and every request
@@ -18,7 +18,8 @@ home screen (single page) help test what a real user sees, without restarting th
 
 Code that hides or refuses something by permission should check `IsDebugBypass` (for example
 `EmApp.CanOpen`, the Approval Manager and Business Task Manager checks); code that shows a debug-only
-feature should check `IsDebugActive`. `DebugStateChanged` is raised whenever Simulate Login starts or ends.
+feature should check `IsDebugActive`. WPF raises `DebugStateChanged` whenever Simulate Login starts or ends;
+MAUI refreshes the host through its active-user notifications.
 
 ## Switch User
 
@@ -87,9 +88,17 @@ ignored:
 A holder of the debug key can therefore open a session for any account that may sign in. That is no more
 than Switch User already allows; the debug token stays outside `#if DEBUG` on the server by design.
 
-The MAUI login screen offers the same button whenever the build is in debug mode, because there the login
-screen only appears through Simulate Login. MAUI has no `IsSimulatingLogin` state of its own and does not
-take the debug token off its connections the way WPF does.
+MAUI also tracks `IsSimulatingLogin` and removes the debug token from all known connections during
+simulation. Open **Simulate Login** from the account panel. The login screen pairs **Debug Sign In**
+with **Cancel simulation · Return to SD**; neither cancellation nor returning to SD requires an account,
+password, or successful sign-in. Both WPF login styles use the same cancellation label.
+
+After signing in on MAUI, a **SIMULATED** strip with **Return to SD** remains visible above the screen;
+the account panel also offers **Exit simulation · Return to SD**. Sign out works during simulation and
+returns to login, where cancellation remains available. Returning to SD ends the simulated server session,
+releases its navigation history, restores the debug token and the previously selected debug connection,
+and makes SYSTEM DEBUGGER active again. Simulated password and debug sign-ins never save or clear the
+ordinary remembered session. Recreating the Android activity preserves the active simulation.
 
 ## Sign out in debug mode
 

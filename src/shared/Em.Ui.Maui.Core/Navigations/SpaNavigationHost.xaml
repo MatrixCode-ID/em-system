@@ -12,7 +12,7 @@
    <Grid>
 
       <!-- ==== page content ==== -->
-      <Grid RowDefinitions="Auto,Auto,*">
+      <Grid RowDefinitions="Auto,Auto,Auto,*">
 
          <!-- Top bar: back and home on the left, the title in the middle, reload and the account badge on the
               right. The forward button is deliberately not here - on Android there is no natural gesture for going
@@ -75,9 +75,16 @@
             </Border>
          </Grid>
 
-         <BoxView Grid.Row="1" Style="{StaticResource dividerStyle}" IsVisible="{Binding IsToolbarVisible}" />
+         <Grid Grid.Row="1" Padding="16,4" ColumnDefinitions="*,Auto" IsVisible="{Binding IsSimulationVisible}">
+            <Label Text="SIMULATED" Style="{StaticResource supportTextStyle}" VerticalOptions="Center" />
+            <Button Grid.Column="1" Text="Return to SD" Style="{StaticResource tonalButtonStyle}"
+                    Command="{Binding Commands[ExitSimulationCommand]}"
+                    SemanticProperties.Description="Exit simulation and return to SYSTEM DEBUGGER" />
+         </Grid>
 
-         <ContentView Grid.Row="2" x:Name="BodyHost" />
+         <BoxView Grid.Row="2" Style="{StaticResource dividerStyle}" IsVisible="{Binding IsToolbarVisible}" />
+
+         <ContentView Grid.Row="3" x:Name="BodyHost" />
       </Grid>
 
       <!-- ==== tirai ==== -->

@@ -287,6 +287,17 @@ namespace Em.Ui.Maui.Core
          return true;
       }
 
+      internal Task<bool> AskCurrentToLeave() =>
+         Current is { } current && current != Home ? AskToLeave(current) : Task.FromResult(true);
+
+      internal async Task ReleaseAll() {
+         var released = _entries.ToList();
+         _entries.Clear();
+         SetCurrent(null);
+         RaiseChanged();
+         await ReleaseEntries(released);
+      }
+
       private static async Task<bool> AskToLeave(NavigationEntry entry) {
          var away = new NavigatingEventArgs {
             NavigationItem = entry.Navigation,

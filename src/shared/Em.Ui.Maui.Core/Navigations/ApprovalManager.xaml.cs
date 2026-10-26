@@ -178,7 +178,7 @@ namespace Em.Ui.Maui.Navigations
          _configuring = true;
          try {
             _payload = payload ?? new ApprovalManagerNavigationPayload {
-               WaitingForMeOnly = !(EmApp?.IsDebugMode == true || EmApp?.ActiveUser?.cUserIsAdmin == true)
+               WaitingForMeOnly = !(EmApp?.IsDebugBypass == true || EmApp?.ActiveUser?.cUserIsAdmin == true)
             };
             WaitingForMe = _payload.WaitingForMeOnly;
             Page = 1;

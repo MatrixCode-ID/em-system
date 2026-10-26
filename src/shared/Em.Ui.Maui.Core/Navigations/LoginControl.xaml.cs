@@ -68,6 +68,7 @@ namespace Em.Ui.Maui.Navigations
       public LoginControlVm() {
          RegisterCommand(nameof(SignInCommand), SignInCommand, SignInCommandAllowed);
          RegisterCommand(nameof(DebugSignInCommand), DebugSignInCommand, DebugSignInCommandAllowed);
+         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand, ExitSimulationCommandAllowed);
          RegisterCommand(nameof(ToggleThemeCommand), ToggleThemeCommand);
          RegisterCommand(nameof(CheckForUpdatesCommand), CheckForUpdatesCommand);
       }
@@ -158,7 +159,7 @@ namespace Em.Ui.Maui.Navigations
          // account panel, so its switch is always turned on here. The switch itself still exists and is still
          // written - the session restoration path reads it - there is just nothing left on screen that can turn
          // it off.
-         app.RememberSignIn = true;
+         if (!app.IsSimulatingLogin) app.RememberSignIn = true;
          UserName = app.RememberedUserName ?? string.Empty;
 
          // In debug the address follows the connection currently selected. Outside debug, what is filled back in
@@ -195,10 +196,27 @@ namespace Em.Ui.Maui.Navigations
       public Task DebugSignInCommand() => RunSignInAsync(debug: true);
 
       /// <summary>
-      /// Whether Debug Sign In is offered. In debug mode this screen only comes up through Simulate Login or
-      /// after a simulated session ended, so the debug build is the whole condition.
+      /// Whether simulated sign-in and its paired cancellation action are offered.
       /// </summary>
-      public bool IsDebugSignInVisible => EmApp?.IsDebugMode ?? false;
+      public bool IsDebugSignInVisible => EmApp?.IsSimulatingLogin == true;
+
+      /// <summary>Cancels simulated sign-in and returns to SYSTEM DEBUGGER.</summary>
+      public async Task ExitSimulationCommand() {
+         if (!ExitSimulationCommandAllowed()) return;
+         try {
+            IsBusy = true;
+            RaiseSignInCommandChanged();
+            await EmApp!.EndLoginSimulationAsync();
+         }
+         catch (Exception x) { SignInError = x.SerializedMessagesDefault(); }
+         finally {
+            IsBusy = false;
+            RaiseSignInCommandChanged();
+         }
+      }
+
+      /// <summary>Allows cancellation without requiring an account, password or working server.</summary>
+      public bool ExitSimulationCommandAllowed() => IsNotBusy && IsDebugSignInVisible;
 
       /// <summary>Debug Sign In needs an account name; the password is not needed.</summary>
       public bool DebugSignInCommandAllowed() =>
@@ -231,7 +249,7 @@ namespace Em.Ui.Maui.Navigations
             // what went wrong is not the pair that was typed.
             await app.BeginSessionAsync(token, remember: !debug);
 
-            if (debug) {
+            if (app.IsSimulatingLogin || debug) {
                SignInSucceeded?.Invoke();
                return;
             }
@@ -340,6 +358,7 @@ namespace Em.Ui.Maui.Navigations
       private void RaiseSignInCommandChanged() {
          Commands[nameof(SignInCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(DebugSignInCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
       }
    }
 }

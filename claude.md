@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+## Keluar simulasi login lintas platform (keputusan pengguna 2026-10-26)
+
+MAUI menyediakan jalan keluar dari simulasi aktif untuk kembali ke SYSTEM DEBUGGER
+(SD). Selama Debug Sign In terlihat pada layar login MAUI/WPF, aksi batal simulasi
+dan kembali ke SD juga harus terlihat. Sesi simulasi tidak menyimpan atau menghapus
+sesi login biasa; keluar mengakhiri sesi simulasi dan memulihkan identitas debugger.
+
 ## Release note aktif otomatis di RM dan CM (keputusan pengguna 2026-10-26, lanjutan)
 
 Menggantikan pemilihan berkas manual pada dua bagian pemilih di bawah. Saat release

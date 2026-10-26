@@ -104,13 +104,13 @@
                              Visibility="{Binding IsSimulatingLogin, Converter={StaticResource boolToVisibility}}" />
                   </Grid>
                   <!-- Simulate Login only: the way back to the debugger without restarting. -->
-                  <Button TabIndex="5" Margin="0,8,0,0" HorizontalAlignment="Center" Style="{StaticResource textButtonStyle}"
+                  <Button TabIndex="5" Margin="0,8,0,0" HorizontalAlignment="Center" Style="{StaticResource tonalButtonStyle}"
                           Command="{Binding Commands[ExitSimulationCommand]}"
                           ToolTip="Leave Simulate Login and go back to the debugger account"
                           Visibility="{Binding IsSimulatingLogin, Converter={StaticResource boolToVisibility}}">
                      <StackPanel Orientation="Horizontal">
                         <fa:FontAwesome Icon="Solid_ArrowLeft" FontSize="11" Margin="0,0,7,0" VerticalAlignment="Center" />
-                        <TextBlock Text="Exit simulation (back to debugger)" VerticalAlignment="Center" />
+                        <TextBlock Text="Cancel simulation · Return to SD" VerticalAlignment="Center" />
                      </StackPanel>
                   </Button>
                   <StackPanel x:Name="busyPanel" Margin="0,16,0,16">

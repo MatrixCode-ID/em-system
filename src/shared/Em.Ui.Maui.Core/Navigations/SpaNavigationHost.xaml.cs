@@ -180,7 +180,30 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(AccountPanelCommand), AccountPanelCommand, AccountPanelCommandAllowed);
          RegisterCommand(nameof(CloseAccountPanelCommand), CloseAccountPanelCommand);
          RegisterCommand(nameof(HubTasksCommand), HubTasksCommand, HubTasksCommandAllowed);
+         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand, ExitSimulationCommandAllowed);
       }
+
+      /// <summary>Shows the return action throughout an authenticated simulation.</summary>
+      public bool IsSimulationVisible => EmApp is { IsSimulatingLogin: true, ActiveUser: not null };
+
+      /// <summary>Returns to SYSTEM DEBUGGER after closing the simulated workspace.</summary>
+      public async Task ExitSimulationCommand() {
+         if (!ExitSimulationCommandAllowed()) return;
+         try {
+            IsBusy = true;
+            Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
+            IsAccountPanelOpen = false;
+            await EmApp!.EndLoginSimulationAsync();
+         }
+         catch (Exception x) { AlertError(x); }
+         finally {
+            IsBusy = false;
+            Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
+         }
+      }
+
+      /// <summary>Prevents repeated requests while the simulation is ending.</summary>
+      public bool ExitSimulationCommandAllowed() => IsNotBusy && IsSimulationVisible;
 
       /// <summary>The number of work items waiting for the user, shown on the inbox button.</summary>
       public int HubTaskCount => EmApp?.HubTaskCount ?? 0;
@@ -350,7 +373,11 @@ namespace Em.Ui.Maui.Navigations
       }
 
       /// <summary>Redraws the account badge after the user or the server changed.</summary>
-      public void RefreshAccount() => NotifyChanged(nameof(AccountInitials));
+      public void RefreshAccount() {
+         NotifyChanged(nameof(AccountInitials));
+         NotifyChanged(nameof(IsSimulationVisible));
+         Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
+      }
 
       /// <summary>The leftmost button of the top bar: go back one screen.</summary>
       public Task LeadingCommand() => Stack!.Backward();

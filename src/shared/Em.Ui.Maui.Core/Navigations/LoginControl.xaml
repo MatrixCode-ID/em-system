@@ -88,6 +88,11 @@
                              IsVisible="{Binding IsDebugSignInVisible}" />
                   </Grid>
 
+                  <Button Text="Cancel simulation · Return to SD" Style="{StaticResource tonalButtonStyle}"
+                          Command="{Binding Commands[ExitSimulationCommand]}"
+                          IsVisible="{Binding IsDebugSignInVisible}"
+                          SemanticProperties.Description="Cancel simulation and return to SYSTEM DEBUGGER" />
+
                   <HorizontalStackLayout Spacing="8" IsVisible="{Binding HasSignInError}">
                      <controls:FontIcon Glyph="{x:Static controls:FontIcons.LockOpen}" IconSize="18"
                                             VerticalOptions="Start"

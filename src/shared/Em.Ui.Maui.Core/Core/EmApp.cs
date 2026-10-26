@@ -42,7 +42,7 @@ namespace Em.Ui.Maui.Core
          // really available is when an active connection is attached - that is, when the connection card on the
          // home screen selects DefaultDebugConnection.
          ActiveConnectionChanged += (_, _) => {
-            if (IsDebugMode && ActiveConnection is not null) {
+            if (IsDebugActive && ActiveConnection is not null) {
                _claimsRefresh = RefreshClaimsAsync();
             }
          };
@@ -199,7 +199,7 @@ namespace Em.Ui.Maui.Core
          _allClaims = NavigationAccess.MergeClaimCatalogs(_internalClaims, _serverClaims, _serverClaimsLoaded);
 
       /// <summary>Whether the active debugger identity may bypass user permissions.</summary>
-      public bool IsDebugBypass => IsDebugMode && ActiveUser?.cUserId == Defaults.DebuggerUserId;
+      public bool IsDebugBypass => IsDebugActive && ActiveUser?.cUserId == Defaults.DebuggerUserId;
 
       /// <summary>
       /// Whether <paramref name="navigation"/> may be opened by the active user - used by both the home menu
@@ -376,7 +376,7 @@ namespace Em.Ui.Maui.Core
       private async Task ShowFirstScreenAsync() {
          try {
             if (!await CheckForUpdatesAsync()) return;
-            if (IsDebugMode) {
+            if (IsDebugActive || IsSimulatingLogin && ActiveUser is not null) {
                // Debug mode skips the login screen, so no screen got the chance to choose its server. It is chosen
                // here, right before home stands up: the active connection is what opens the way to the claim catalog
                // (see the constructor), and home draws itself from the rights that exist. The account panel may
@@ -393,7 +393,7 @@ namespace Em.Ui.Maui.Core
             // succeeds, the login screen is left right away - NavigateHome releases it together with the whole
             // navigation path.
             await ShowLoginScreen(null);
-            if (await TryRestoreRememberedSessionAsync()) await GoHomeAsync();
+            if (!IsSimulatingLogin && await TryRestoreRememberedSessionAsync()) await GoHomeAsync();
          }
          catch (Exception x) {
             if (RootPage is { } page) await page.DisplayAlertAsync("Error", x.SerializedMessagesDefault(), "OK");
@@ -414,6 +414,7 @@ namespace Em.Ui.Maui.Core
       /// </summary>
       /// <returns><c>true</c> when the session really is restored.</returns>
       public Task<bool> TryRestoreRememberedSessionAsync() {
+         if (IsSimulatingLogin) return Task.FromResult(false);
          if (!RememberSignIn) return Task.FromResult(false);
          if (RememberedProfileName is not { Length: > 0 } profileName) return Task.FromResult(false);
 
@@ -481,7 +482,7 @@ namespace Em.Ui.Maui.Core
          // The same object may come in through UpdateApiConnection (edited in place, so it is already in the
          // collection); Contains uses reference equality because ApiConnection does not override Equals.
          if (!UIConnections.Contains(apiConnection)) {
-            apiConnection.DebugToken = _debugToken;
+            apiConnection.DebugToken = IsDebugActive ? _debugToken : null;
             UIConnections.Add(apiConnection);
          }
       }
@@ -636,11 +637,11 @@ namespace Em.Ui.Maui.Core
       /// <param name="connection">The connection the login screen signs in on.</param>
       /// <param name="account">The account name typed on the login screen.</param>
       /// <returns>The session's tokens, to be opened with <see cref="BeginSessionAsync"/>.</returns>
-      /// <exception cref="InvalidOperationException">When this is not a debug build.</exception>
+      /// <exception cref="InvalidOperationException">When login simulation is not running.</exception>
       internal async Task<TokenResult> RequestDebugSignInAsync(ApiConnection connection, string account) {
          ArgumentNullException.ThrowIfNull(connection);
-         if (!IsDebugMode || _debugToken is null) {
-            throw new InvalidOperationException("Debug Sign In is only available in debug mode.");
+         if (!IsSimulatingLogin || _debugToken is null) {
+            throw new InvalidOperationException("Debug Sign In is only available while Simulate Login is running.");
          }
 
          // A copy, not the connection itself, so whether the connection carries the token stays as it was.
@@ -674,6 +675,7 @@ namespace Em.Ui.Maui.Core
       /// </remarks>
       public async Task BeginSessionAsync(TokenResult token, bool remember) {
          ArgumentNullException.ThrowIfNull(token);
+         remember &= !IsSimulatingLogin;
 
          var connection = ActiveConnection
             ?? throw new InvalidOperationException("There is no active API connection to open a session on.");
@@ -705,7 +707,7 @@ namespace Em.Ui.Maui.Core
             _suspendedDebugToken = null;
             client.ClearSession();
             SetActiveUser(previousUser);
-            SessionStorage.Clear(connection.ProfileName);
+            if (!IsSimulatingLogin) SessionStorage.Clear(connection.ProfileName);
             throw;
          }
 
@@ -718,7 +720,7 @@ namespace Em.Ui.Maui.Core
          // Storing once at login is not enough: every renewal issues a new refresh token and kills the old one,
          // so what is stored must be overwritten as well - see OnApiClientSessionChanged.
          if (remember) StoreSession();
-         else SessionStorage.Clear(connection.ProfileName);
+         else if (!IsSimulatingLogin) SessionStorage.Clear(connection.ProfileName);
       }
 
       /// <summary>
@@ -736,7 +738,10 @@ namespace Em.Ui.Maui.Core
       /// <param name="reason">
       /// The sentence shown by the login screen, or <c>null</c> when the user signed out by themselves.
       /// </param>
-      public async Task EndSessionAsync(bool notifyServer, string? reason) {
+      public Task EndSessionAsync(bool notifyServer, string? reason) =>
+         EndSessionCoreAsync(notifyServer, reason, raiseEnded: true);
+
+      private async Task EndSessionCoreAsync(bool notifyServer, string? reason, bool raiseEnded) {
          var client = _sessionClient;
          var connection = _sessionConnection;
 
@@ -760,7 +765,7 @@ namespace Em.Ui.Maui.Core
          client?.ClearSession();
 
          if (connection is not null) {
-            SessionStorage.Clear(connection.ProfileName);
+            if (!IsSimulatingLogin) SessionStorage.Clear(connection.ProfileName);
             if (_suspendedDebugToken is not null) connection.DebugToken = _suspendedDebugToken;
          }
 
@@ -770,7 +775,7 @@ namespace Em.Ui.Maui.Core
          _rememberSession = false;
 
          SetActiveUser(null);
-         SessionEnded?.Invoke(this, new SessionEndedEventArgs(reason));
+         if (raiseEnded) SessionEnded?.Invoke(this, new SessionEndedEventArgs(reason));
       }
 
       /// <summary>
@@ -788,7 +793,7 @@ namespace Em.Ui.Maui.Core
       // token dies as soon as it is exchanged, so what is stored must always be the latest - otherwise the
       // next restart uses a dead token and the user is thrown to the login screen for no visible reason.
       private void OnApiClientSessionChanged(object? sender, EventArgs e) {
-         if (_rememberSession && _sessionClient is { HasSession: true }) StoreSession();
+         if (_rememberSession && !IsSimulatingLogin && _sessionClient is { HasSession: true }) StoreSession();
       }
 
       // The session died on its own midway - the refresh failed, or the session was revoked from elsewhere.
@@ -833,6 +838,7 @@ namespace Em.Ui.Maui.Core
       /// stored is no longer valid - and that is an ordinary answer, not a failure.
       /// </returns>
       public async Task<bool> TryRestoreSessionAsync(string profileName) {
+         if (IsSimulatingLogin) return false;
          if (UIConnections.FirstOrDefault(r => r.ProfileName == profileName) is not { } connection) {
             return false;
          }

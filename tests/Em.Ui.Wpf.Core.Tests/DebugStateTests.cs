@@ -61,6 +61,18 @@ namespace Em.Ui.Wpf.Core.Tests
       }
 
       [Theory]
+      [InlineData(false, false, false)]
+      [InlineData(true, false, true)]
+      [InlineData(true, true, false)]
+      public void LoginCancellationRequiresSimulationAndIdleButNoCredentials(bool simulating, bool busy, bool expected) {
+         var vm = new LoginControlVm();
+         typeof(LoginControlVm).GetProperty(nameof(vm.EmApp))!.SetValue(vm, NewApp(true, simulating));
+         vm.IsBusy = busy;
+         Assert.Equal(expected, vm.ExitSimulationCommandAllowed());
+         Assert.Equal(expected, vm.Commands[nameof(vm.ExitSimulationCommand)]!.CanExecute(null));
+      }
+
+      [Theory]
       [InlineData(true, false, Defaults.DebuggerUserId, false, false)]
       [InlineData(false, false, Defaults.AdminUserId, true, false)]
       [InlineData(true, false, "ordinary-user", false, true)]

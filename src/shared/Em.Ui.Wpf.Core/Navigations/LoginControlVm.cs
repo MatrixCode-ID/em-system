@@ -46,7 +46,7 @@ namespace Em.Ui.Wpf.Navigations
          RegisterCommand(nameof(DebugSignInCommand), DebugSignInCommand, DebugSignInCommandAllowed);
          RegisterCommand<ThemeVariant>(nameof(ChangeThemeCommand), ChangeThemeCommand);
          RegisterCommand(nameof(ConnectionConfigCommand), ConnectionConfigCommand);
-         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand);
+         RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand, ExitSimulationCommandAllowed);
       }
 
       /// <summary>
@@ -64,15 +64,24 @@ namespace Em.Ui.Wpf.Navigations
       /// <summary>Leaves Simulate Login and goes back to the debugger account.</summary>
       public async Task ExitSimulationCommand() {
          // Guarded the same way as ChangeThemeCommand: XAML builds this VM before the host injects EmApp.
-         if (EmApp is null) return;
+         if (!ExitSimulationCommandAllowed()) return;
 
          try {
-            await EmApp.EndLoginSimulationAsync();
+            IsBusy = true;
+            RaiseSignInCommandChanged();
+            await EmApp!.EndLoginSimulationAsync();
          }
          catch (Exception x) {
             AlertError(x);
          }
+         finally {
+            IsBusy = false;
+            RaiseSignInCommandChanged();
+         }
       }
+
+      /// <summary>Allows returning to SYSTEM DEBUGGER without sign-in fields or a server connection.</summary>
+      public bool ExitSimulationCommandAllowed() => IsNotBusy && IsSimulatingLogin;
 
       /// <summary>
       /// Raised after a successful sign in. Used by the application (<see cref="Core.EmApp"/>) to move from
@@ -263,6 +272,7 @@ namespace Em.Ui.Wpf.Navigations
          && !string.IsNullOrWhiteSpace(Password);
 
       private void RaiseSignInCommandChanged() {
+         Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(SignInCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(DebugSignInCommand)]?.RaiseCanExecuteChanged();
       }
