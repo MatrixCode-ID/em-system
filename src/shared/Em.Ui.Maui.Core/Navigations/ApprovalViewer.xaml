@@ -126,6 +126,9 @@
     </FlexLayout>
    </VerticalStackLayout>
   </Border>
-  <ActivityIndicator Grid.Row="0" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" VerticalOptions="Center" />
+  <VerticalStackLayout Grid.Row="0" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" VerticalOptions="Center" Spacing="8" InputTransparent="True">
+   <ActivityIndicator IsRunning="{Binding IsBusy}" />
+   <Label Text="{Binding BusyText}" Style="{StaticResource bodyMediumTextStyle}" />
+  </VerticalStackLayout>
  </Grid>
 </ContentView>

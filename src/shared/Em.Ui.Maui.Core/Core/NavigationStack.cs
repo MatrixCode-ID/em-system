@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Em.Ui.Core.Shared;
+using Em.Ui.Maui.Shared;
 // Both namespaces have an INavigation, and the one meant here is always Em's.
 using INavigation = Em.Ui.Core.Shared.INavigation;
 using NavigationEventArgs = Em.Ui.Core.Shared.NavigationEventArgs;
@@ -152,17 +153,18 @@ namespace Em.Ui.Maui.Core
          return _entries.FirstOrDefault(r => string.Equals(r.Title, title, TitleComparison));
       }
 
-      // Moves the position to an entry that is already in this stack. Nothing is dropped from the path
-      // and the entry keeps both its data and whatever the user left on it, so there is no reload.
-      internal async Task<bool> MoveTo(NavigationEntry target) {
-         if (target == Current) return true;
+      // Existing bodies keep their lifecycle unless they opt into loading after mounting.
+      // Explicit routes can then reconfigure the current entry without a second hub refresh.
+      internal async Task<bool> MoveTo(NavigationEntry target, object? data = null, bool reconfigure = false) {
+         var reloadAfterMount = typeof(IReloadAfterNavigation).IsAssignableFrom(target.Navigation.BodyType.Type);
+         if (target == Current && !(reconfigure && reloadAfterMount)) return true;
 
          var source = Current;
          var sender = source?.Navigation ?? target.Navigation;
 
          // The body being left is the one that gets to object to the move. Home never does: every
          // way out of the stack lands on it, so it must never be able to refuse being left.
-         if (source != null && source != Home) {
+         if (source != null && source != Home && source != target) {
             var away = new NavigatingEventArgs {
                NavigationItem = target.Navigation,
                Entry = source,
@@ -175,13 +177,15 @@ namespace Em.Ui.Maui.Core
          var into = new NavigatingEventArgs {
             NavigationItem = target.Navigation,
             Entry = target,
-            Data = target.Data
+            Data = reconfigure && reloadAfterMount ? data : target.Data
          };
          await target.Body.OnNavigatingIn(sender, into);
          if (into.Cancel) return false;
 
+         if (reconfigure && reloadAfterMount) target.Data = data;
          SetCurrent(target);
          RaiseNavigated(sender, target);
+         if (reloadAfterMount) await target.Reload();
          return true;
       }
 

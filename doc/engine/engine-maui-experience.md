@@ -103,6 +103,32 @@ results in the maintainer notes below describe the earlier verification run.
 
 ## Shell and lifecycle
 
+Approval screens opt into `IReloadAfterNavigation`: their navigation callback
+only validates/configures, and the stack loads through `OnReloadRequested` after
+mounting on both new and existing entries. Other bodies retain their lifecycle.
+Explicit routing to an existing opted-in entry accepts its latest payload only
+after successful validation, then reloads once, even if already current. My Tasks
+does not add a second filter refresh for these bodies. Progress is visible before
+network I/O. Busy text distinguishes loading from processing a decision;
+load timeouts and connection failures explain how to refresh safely. Decision
+errors keep their existing handling and never trigger an automatic retry.
+
+The general approval inbox binds its busy message/progress for programmatic loads
+and guards navigation across its cards. My Tasks includes opening in its progress
+state; switching the current entry still closes the panel immediately. Modules
+can use the same post-mount contract without changing their access checks or
+approval query scope. No global navigation lock prevents leaving a slow load.
+
+Queue empty states stay hidden during loading, and an unloaded viewer does not
+claim that its comments are empty. Android connection failures can arrive as
+`WebException`, including `WebExceptionStatus.Timeout`; both these and HTTP
+exceptions use the recoverable loading message without exposing server details.
+Android emulator checks on 27 October 2026 verified delayed loading, offline
+recovery, returning to a cached approval queue and general inbox progress.
+Native task-group opening still needs an eligible account; source-linked router
+regressions cover its single-reload contract. These checks do not certify TalkBack
+or large-text behavior.
+
 Summary and queue cards keep each subject on one line with tail ellipsis,
 including address, identity and metadata. Keep the original value intact and
 retain the relevant full accessible name/context. This does not truncate

@@ -93,7 +93,7 @@ namespace Em.Ui.Maui.Core
          if (!CanOpen(targetNav)) return Task.FromResult(false);
 
          var title = ResolveTitle(targetNav, data);
-         if (FindEntry(title) is { } existing) return existing.Stack.MoveTo(existing);
+         if (FindEntry(title) is { } existing) return existing.Stack.MoveTo(existing, data, reconfigure: true);
 
          return origin.Open(targetNav, data, title);
       }

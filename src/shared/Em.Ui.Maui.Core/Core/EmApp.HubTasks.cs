@@ -90,6 +90,7 @@ namespace Em.Ui.Maui.Core
          if (navigation is null || !CanOpen(navigation)) return false;
          var existing = FindEntry((target.Payload as NavigationPayloadBase)?.Title ?? navigation.Title);
          if (!await NavigateTo(target.NavigationName, target.Payload)) return false;
+         if (existing?.Body is Em.Ui.Maui.Shared.IReloadAfterNavigation) return true;
          if (existing?.Body is IApprovalWrapperNavigationTarget wrapper && target.Payload is ApprovalWrapperNavigationPayload filter)
             await wrapper.ApplyApprovalFilterAsync(filter);
          else if (existing?.Body is Em.Ui.Maui.Navigations.ApprovalViewer viewer && target.Payload is ApprovalManagerNavigationPayload engineFilter) {

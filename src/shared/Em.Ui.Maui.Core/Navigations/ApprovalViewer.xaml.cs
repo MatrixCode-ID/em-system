@@ -18,7 +18,7 @@ namespace Em.Ui.Maui.Navigations
    /// <see cref="ApprovalManagerNavigationPayload"/> carrying the request ID. System requests show the view
    /// the module registered through <c>AddSystemApproval</c>; Data requests show their proposed changes.
    /// </summary>
-   public partial class ApprovalViewer : ContentView, INavigationBody
+   public partial class ApprovalViewer : ContentView, INavigationBody, IReloadAfterNavigation
    {
       public ApprovalViewer() {
          InitializeComponent();
@@ -30,7 +30,7 @@ namespace Em.Ui.Maui.Navigations
       /// <inheritdoc />
       public Task OnNavigatingIn(INavigation sender, NavigatingEventArgs args) {
          Vm.Configure(args.Data as ApprovalManagerNavigationPayload);
-         return Vm.RefreshAsync();
+         return Task.CompletedTask;
       }
 
       /// <inheritdoc />
@@ -177,6 +177,8 @@ namespace Em.Ui.Maui.Navigations
       private IEmApprovalSystemEditor? _editor;
       private bool _released;
       private int _version;
+      /// <summary>The current loading or processing status shown with progress.</summary>
+      public string BusyText { get => Get(string.Empty); private set => Set(value); }
 
       public ApprovalViewerVm() {
          RegisterCommand(nameof(NextCommand), NextCommand, NextCommandAllowed);
@@ -280,7 +282,7 @@ namespace Em.Ui.Maui.Navigations
       public bool HasFields => Fields.Count > 0;
 
       /// <summary><c>true</c> when nothing has been said yet.</summary>
-      public bool HasNoComments => Comments.Count == 0;
+      public bool HasNoComments => !IsBusy && Detail is not null && Comments.Count == 0;
 
       /// <summary>Whether the viewer was opened as a pageable work queue.</summary>
       public bool HasPaging => _filter is { ApprovalRequestId: null };
@@ -362,10 +364,10 @@ namespace Em.Ui.Maui.Navigations
       public bool PreviewCommandAllowed() => !IsBusy && HasPreview;
 
       /// <summary>Reloads the request from the server.</summary>
-      public Task RefreshAsync() => RunAsync(LoadAsync);
+      public Task RefreshAsync() => RunAsync(LoadAsync, loading: true);
 
       // Never throws: it runs from commands, whose async void execution has nothing above it to catch.
-      private async Task RunAsync(Func<Task> work) {
+      private async Task RunAsync(Func<Task> work, bool loading = false) {
          if (EmApp is null || _released) return;
          if (IsBusy) {
             IsRefreshing = false;
@@ -373,16 +375,22 @@ namespace Em.Ui.Maui.Navigations
          }
 
          IsBusy = true;
+         BusyText = loading ? "Loading approval…" : "Processing approval…";
          Error = string.Empty;
          RaiseState();
          try {
             await work();
          }
          catch (Exception x) {
-            Error = x.SerializedMessagesDefault();
+            Error = loading ? x switch {
+               OperationCanceledException or TimeoutException or System.Net.WebException { Status: System.Net.WebExceptionStatus.Timeout } => "Loading timed out. Check your connection, then refresh to try again.",
+               System.Net.Http.HttpRequestException or System.Net.WebException => "Could not load the approval. Check your connection, then refresh to try again.",
+               _ => x.SerializedMessagesDefault()
+            } : x.SerializedMessagesDefault();
          }
          finally {
             IsBusy = false;
+            BusyText = string.Empty;
             IsRefreshing = false;
             RaiseState();
          }

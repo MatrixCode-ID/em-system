@@ -16,7 +16,7 @@ namespace Em.Ui.Maui.Navigations
    /// The mobile approval inbox: the requests the server lets the user see, as one column of cards. A card
    /// opens the request in <see cref="ApprovalViewer"/>.
    /// </summary>
-   public partial class ApprovalManager : ContentView, INavigationBody
+   public partial class ApprovalManager : ContentView, INavigationBody, IReloadAfterNavigation
    {
       public ApprovalManager() {
          InitializeComponent();
@@ -31,7 +31,7 @@ namespace Em.Ui.Maui.Navigations
          if (args.Data is string text && ApprovalManagerFilter.TryParse(text, out var kind, out var name))
             payload = new ApprovalManagerNavigationPayload { Kind = kind, Name = name, WaitingForMeOnly = true };
          Vm.Configure(payload);
-         return Vm.RefreshAsync();
+         return Task.CompletedTask;
       }
 
       /// <inheritdoc />
@@ -55,7 +55,7 @@ namespace Em.Ui.Maui.Navigations
       public ApprovalRowVm(ApprovalManagerVm owner, ta_ApprovalRequest row) {
          _owner = owner;
          Row = row;
-         RegisterCommand(nameof(OpenCommand), OpenCommand);
+         RegisterCommand(nameof(OpenCommand), OpenCommand, () => !_owner.IsBusy);
       }
 
       /// <summary>The request this card shows.</summary>
@@ -98,6 +98,8 @@ namespace Em.Ui.Maui.Navigations
       private bool _configuring;
       private bool _released;
       private int _version;
+      /// <summary>The operation currently shown with indeterminate progress.</summary>
+      public string BusyText { get => Get(string.Empty); private set => Set(value); }
 
       public ApprovalManagerVm() {
          RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
@@ -233,6 +235,7 @@ namespace Em.Ui.Maui.Navigations
 
          var version = ++_version;
          IsBusy = true;
+         BusyText = "Loading approvals…";
          Error = string.Empty;
          RaiseCommands();
          try {
@@ -246,17 +249,25 @@ namespace Em.Ui.Maui.Navigations
             NotifyChanged(nameof(PageLabel));
          }
          catch (Exception x) {
-            Error = x.SerializedMessagesDefault();
+            Error = x switch {
+               OperationCanceledException or TimeoutException or System.Net.WebException { Status: System.Net.WebExceptionStatus.Timeout } => "Loading timed out. Check your connection, then refresh to try again.",
+               System.Net.Http.HttpRequestException or System.Net.WebException => "Could not load approvals. Check your connection, then refresh to try again.",
+               _ => x.SerializedMessagesDefault()
+            };
          }
          finally {
             IsBusy = false;
+            BusyText = string.Empty;
             IsRefreshing = false;
             RaiseCommands();
          }
       }
 
       /// <summary>Opens one request in the viewer.</summary>
-      public Task OpenAsync(ta_ApprovalRequest row) {
+      public async Task OpenAsync(ta_ApprovalRequest row) {
+         if (IsBusy || _released || EmApp is null) return;
+         var version = _version;
+         IsBusy = true; BusyText = "Opening approval…"; Error = string.Empty; RaiseCommands();
          var payload = new ApprovalManagerNavigationPayload {
             Kind = row.cApprovalRequestKind,
             Name = row.cApprovalName,
@@ -264,12 +275,18 @@ namespace Em.Ui.Maui.Navigations
             WaitingForMeOnly = false,
             SystemViewer = true
          };
-         return NavigationEntry?.NavigateTo(EmApp.ApprovalViewerNavigationName, payload)
-                ?? EmApp!.NavigateTo(EmApp.ApprovalViewerNavigationName, payload);
+         try {
+            var opened = await (NavigationEntry?.NavigateTo(EmApp.ApprovalViewerNavigationName, payload)
+                ?? EmApp.NavigateTo(EmApp.ApprovalViewerNavigationName, payload));
+            if (!opened && !_released && version == _version) Error = "Could not open the approval. Refresh and try again.";
+         }
+         catch (Exception) { if (!_released && version == _version) Error = "Could not open the approval. Check your connection and try again."; }
+         finally { if (!_released && version == _version) { IsBusy = false; BusyText = string.Empty; RaiseCommands(); } }
       }
 
       private void RaiseCommands() {
          foreach (var command in Commands) command.RaiseCanExecuteChanged();
+         foreach (var row in Rows) row.Commands[nameof(ApprovalRowVm.OpenCommand)]?.RaiseCanExecuteChanged();
       }
    }
 

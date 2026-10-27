@@ -116,7 +116,7 @@ public sealed class MyTasksPanelVm : MvvmModelBase
    public string CountAndTime => EmApp?.HubTaskRefreshedAt is { } time
       ? $"{EmApp.HubTaskCount.ToString(CultureInfo.GetCultureInfo("en-US"))} waiting · updated {time.ToString("dd-MMM-yyyy HH:mm:ss zzz", CultureInfo.GetCultureInfo("en-US"))}"
       : "Task count not loaded yet";
-   public bool IsLoading => EmApp?.HubTaskIsLoading == true;
+   public bool IsLoading => _opening || EmApp?.HubTaskIsLoading == true;
    public string StatusText { get => Get<string>() ?? ""; private set => Set(value); }
    public FeedbackKind StatusKind { get => Get<FeedbackKind>(); private set => Set(value); }
    public void Update() {
@@ -223,6 +223,6 @@ public sealed class MyTasksPanelVm : MvvmModelBase
       }
       finally { _opening = false; RefreshOpenCommands(); }
    }
-   private void RefreshOpenCommands() { Commands[nameof(OpenCommand)]?.RaiseCanExecuteChanged(); Commands[nameof(OpenRequestCommand)]?.RaiseCanExecuteChanged(); }
+   private void RefreshOpenCommands() { NotifyChanged(nameof(IsLoading)); Commands[nameof(OpenCommand)]?.RaiseCanExecuteChanged(); Commands[nameof(OpenRequestCommand)]?.RaiseCanExecuteChanged(); }
    public void CloseCommand() => CloseRequested?.Invoke(this, EventArgs.Empty);
 }

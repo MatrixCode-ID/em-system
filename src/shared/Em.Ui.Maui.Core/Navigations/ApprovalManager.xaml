@@ -30,6 +30,7 @@
          </Grid>
 
          <Label Text="{Binding Error}" Style="{StaticResource errorTextStyle}" IsVisible="{Binding HasError}" />
+         <controls:FeedbackView Message="{Binding BusyText}" IsBusy="{Binding IsBusy}" />
       </VerticalStackLayout>
 
       <RefreshView Grid.Row="1" IsRefreshing="{Binding IsRefreshing}" Command="{Binding Commands[RefreshCommand]}">
@@ -39,7 +40,7 @@
             </CollectionView.ItemsLayout>
 
             <CollectionView.EmptyView>
-               <Border Style="{StaticResource outlinedCardStyle}" Margin="0,8">
+               <Border Style="{StaticResource outlinedCardStyle}" Margin="0,8" IsVisible="{Binding IsNotBusy}">
                   <VerticalStackLayout Spacing="8">
                      <controls:FontIcon Glyph="{x:Static controls:FontIcons.Inbox}" IconSize="24"
                                         HorizontalOptions="Start"

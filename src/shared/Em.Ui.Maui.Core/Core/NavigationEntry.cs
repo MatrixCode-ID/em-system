@@ -49,7 +49,7 @@ namespace Em.Ui.Maui.Core
       public string Title { get; private set; }
 
       /// <summary>The parameter used when this entry was opened, or <c>null</c> when there is none.</summary>
-      public object? Data { get; }
+      public object? Data { get; internal set; }
 
       /// <summary>
       /// The body owned by this entry. An entry opened through navigation already built it when it was
