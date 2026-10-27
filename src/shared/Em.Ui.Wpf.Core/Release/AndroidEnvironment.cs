@@ -76,11 +76,14 @@ public static class AndroidEnvironment {
          result.Add(major >= minimum && major <= maximum ? "OK: JDK " + major : $"Missing: supported JDK ({minimum}..{maximum}; detected {major})");
       }
       var workloads = await AndroidProcess.CaptureAsync("dotnet", ["workload", "list"], null, token);
-      result.Add(Regex.IsMatch(workloads, @"(?m)^\s*maui(?:-android)?\s") ? "OK: maui-android workload" : "Missing: maui-android workload");
+      result.Add(HasAndroidWorkload(workloads) ? "OK: Android workload" : "Missing: maui-android workload");
       if (result.Any(r => r.StartsWith("Missing")) && sdk.Contains("Program Files", StringComparison.OrdinalIgnoreCase))
          result.Add("Use the SDK under LocalAppData/Android/Sdk to avoid administrator permissions.");
       return result;
    }
+
+   // MAUI controls are supplied by the project's NuGet references; the Android workload supplies the SDK packs.
+   public static bool HasAndroidWorkload(string output) => Regex.IsMatch(output, @"(?m)^\s*(?:android|maui(?:-android)?)\s+\d");
 
    public static int JavaMajorVersion(string output) => int.TryParse(Regex.Match(output, @"\bversion\s+""(\d+)").Groups[1].Value, out var major) ? major : 0;
 

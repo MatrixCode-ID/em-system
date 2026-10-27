@@ -57,7 +57,9 @@ public static class AndroidReleaseBuilder {
          throw new InvalidDataException("Set the public CDN address before preparing an Android release.");
       var checks = await AndroidEnvironment.CheckAsync(sdk, java, profile.Product, token);
       foreach (var check in checks) log.Report(check);
-      if (checks.Any(r => r.StartsWith("Missing:"))) throw new InvalidDataException("Prepare the missing Android environment components in Settings first.");
+      var missing = checks.Where(r => r.StartsWith("Missing:")).ToArray();
+      if (missing.Length > 0) throw new InvalidDataException("Prepare the missing Android environment components in Settings first." +
+         Environment.NewLine + string.Join(Environment.NewLine, missing));
       var bytes = await target.ReadFileAsync(ReleaseLayout.ManifestFileName, token);
       var previous = bytes is null ? null : ReleaseManifestSerializer.Deserialize(bytes);
       if (previous is not null) {

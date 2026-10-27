@@ -71,6 +71,16 @@ public sealed class AndroidReleaseTests : IDisposable {
       var first=Path.Combine(_root,"sdk1"); var second=Path.Combine(_root,"sdk2"); Directory.CreateDirectory(first); Directory.CreateDirectory(second);
       Assert.Equal(new[] { first,second },AndroidEnvironment.Candidates([first,second,first,Path.Combine(_root,"missing")]));
    }
+   [Theory]
+   [InlineData("android                    36.1.118/10.0.100        SDK 10.0.400", true)]
+   [InlineData("maui-android               10.0.110/10.0.100        SDK 10.0.400", true)]
+   [InlineData("  maui                     10.0.110/10.0.100        SDK 10.0.400\r\n", true)]
+   [InlineData("maui-windows               10.0.110/10.0.100        SDK 10.0.400", false)]
+   [InlineData("android-tools              36.1.118/10.0.100", false)]
+   [InlineData("No workloads installed. Try maui-android or android.", false)]
+   [InlineData("", false)]
+   public void AndroidWorkloadAcceptsInstalledSdkWithoutMauiUmbrella(string output, bool expected) =>
+      Assert.Equal(expected, AndroidEnvironment.HasAndroidWorkload(output));
    [Theory] [InlineData("openjdk version \"21.0.8\" 2025-07-15",21)] [InlineData("java version \"17.0.1\"",17)] [InlineData("garbage",0)]
    public void JavaVersionParsesRealToolOutput(string output,int expected) => Assert.Equal(expected,AndroidEnvironment.JavaMajorVersion(output));
    [Fact]

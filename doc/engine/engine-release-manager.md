@@ -272,7 +272,10 @@ asynchronously; opening an Android profile and applying Android also refresh the
 Candidates are cached for display, so opening a dropdown never scans the disk. All existing candidates are listed, including
 the Visual Studio SDK and LocalAppData/Android/Sdk. Rider android.xml/jdk.table.xml options
 under the user JetBrains configuration are inspected; Browse accepts other Rider locations. Machine preferences use the host BaseRegKey/ReleaseManager. Check environment reports
-platform-tools, build-tools with apksigner/aapt2, the target Android API, JDK and maui-android workload.
+platform-tools, build-tools with apksigner/aapt2, the target Android API, JDK and an installed
+`android`, `maui-android` or `maui` workload. Projects that reference MAUI controls through NuGet
+can use the standalone `android` workload; the `maui-android` umbrella is not required by this check.
+Prepare errors include the missing components so they can be identified without opening the log.
 The default target API for an unversioned net10.0-android TFM is 36; Java requires the evaluated
 MinimumSupportedJavaVersion/LatestSupportedJavaVersion when supplied, otherwise at least 17.
 
