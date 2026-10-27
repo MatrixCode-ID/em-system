@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+ xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:styles="clr-namespace:Em.Ui.Maui.Styles"
+ xmlns:controls="clr-namespace:Em.Ui.Maui.Controls">
+ <ResourceDictionary.MergedDictionaries>
+  <styles:Palette />
+  <ResourceDictionary Source="/Styles/Cards.xaml" />
+  <ResourceDictionary Source="/Styles/Typography.xaml" />
+ </ResourceDictionary.MergedDictionaries>
+ <Style x:Key="approvalSectionStyle" TargetType="Border" BasedOn="{StaticResource cardStyle}">
+  <Setter Property="Padding" Value="16" />
+ </Style>
+ <Style x:Key="approvalQueueCardStyle" TargetType="Border" BasedOn="{StaticResource actionCardStyle}">
+  <Setter Property="Padding" Value="0" />
+  <Setter Property="StrokeThickness" Value="1" />
+  <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" />
+ </Style>
+ <Style x:Key="approvalSectionTitleStyle" TargetType="Label" BasedOn="{StaticResource labelLargeTextStyle}">
+  <Setter Property="FontFamily" Value="OpenSansSemibold" />
+  <Setter Property="Margin" Value="0" />
+  <Setter Property="LineHeight" Value="1" />
+ </Style>
+ <Style x:Key="approvalNavigationCircleStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+  <Setter Property="Padding" Value="8" />
+  <Setter Property="WidthRequest" Value="36" />
+  <Setter Property="HeightRequest" Value="36" />
+  <Setter Property="HorizontalOptions" Value="End" />
+  <Setter Property="StrokeShape"><RoundRectangle CornerRadius="18" /></Setter>
+ </Style>
+ <DataTemplate x:Key="approvalDetailRowTemplate">
+  <Grid ColumnDefinitions="24,*" ColumnSpacing="12">
+   <controls:FontIcon Glyph="{Binding Glyph}" IconSize="20" VerticalOptions="Start" Margin="0,2,0,0" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False"
+    TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+   <VerticalStackLayout Grid.Column="1" Spacing="0">
+    <Label Text="{Binding Label}" Style="{StaticResource bodyMediumParagraphStyle}"
+     TextColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+    <Label Text="{Binding Value}" Style="{StaticResource bodyLargeParagraphStyle}">
+     <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding IsWarning}" Value="True">
+      <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" />
+     </DataTrigger></Label.Triggers>
+    </Label>
+   </VerticalStackLayout>
+  </Grid>
+ </DataTemplate>
+</ResourceDictionary>

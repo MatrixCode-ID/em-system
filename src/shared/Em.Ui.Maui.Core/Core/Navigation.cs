@@ -23,6 +23,9 @@ namespace Em.Ui.Maui.Core
       /// <summary>The description.</summary>
       public string Description { get; set; } = string.Empty;
 
+      /// <summary>Optional decorative Font Awesome glyph used when no menu image is registered.</summary>
+      public string MenuGlyph { get; set; } = Controls.FontIcons.WindowMaximize;
+
       /// <summary>The menu path.</summary>
       public MenuPath? MenuPath { get; set; }
 

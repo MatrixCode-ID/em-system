@@ -1,25 +1,152 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
- xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" x:Class="Em.Ui.Maui.Navigations.DefaultHomeControl">
+ xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" xmlns:controls="clr-namespace:Em.Ui.Maui.Controls" x:Class="Em.Ui.Maui.Navigations.DefaultHomeControl">
+ <ContentView.Resources>
+  <DataTemplate x:Key="taskSummaryRowTemplate">
+   <ContentView Padding="0,8">
+<Border x:Name="TaskSummaryCard" Style="{StaticResource outlinedCardStyle}" Padding="0">
+   <Grid RowDefinitions="*,Auto">
+    <Grid>
+     <VerticalStackLayout Padding="16,12" Spacing="12" InputTransparent="True" CascadeInputTransparent="True">
+      <Grid ColumnDefinitions="28,*,Auto" ColumnSpacing="12">
+       <controls:FontIcon Glyph="{x:Static controls:FontIcons.ClipboardCheck}" IconSize="24" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource secondaryLight}, Dark={StaticResource secondaryDark}}" />
+       <Label Grid.Column="1" Text="My Tasks" Style="{StaticResource titleMediumTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+       <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.ChevronRight}" IconSize="16" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+      </Grid>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+       <VerticalStackLayout Spacing="2"><Label Text="{Binding TaskSummary.TaskCountText}" Style="{StaticResource titleLargeTextStyle}" HorizontalTextAlignment="Center" AutomationProperties.IsInAccessibleTree="False" /><Label Text="Assigned" Style="{StaticResource supportTextStyle}" HorizontalTextAlignment="Center" AutomationProperties.IsInAccessibleTree="False" /></VerticalStackLayout>
+       <VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="{Binding TaskSummary.TaskGroupText}" Style="{StaticResource titleLargeTextStyle}" HorizontalTextAlignment="Center" AutomationProperties.IsInAccessibleTree="False" /><Label Text="Task groups" Style="{StaticResource supportTextStyle}" HorizontalTextAlignment="Center" AutomationProperties.IsInAccessibleTree="False" /></VerticalStackLayout>
+      </Grid>
+      <Label Text="{Binding TaskSummary.TaskStatusText}" IsVisible="{Binding TaskSummary.HasTaskStatus}" Style="{StaticResource supportTextStyle}" AutomationProperties.IsInAccessibleTree="False" />
+     </VerticalStackLayout>
+     <controls:HoldDragButton AutomationId="HomeTaskSummary" CanReorder="{Binding TaskSummary.CanMoveTaskCard}" InteractionScope="{Binding TaskSummary.TaskInteractionScope}" MoveBeforeCommand="{Binding TaskSummary.Commands[MoveTaskCardBeforeCommand]}" MoveAfterCommand="{Binding TaskSummary.Commands[MoveTaskCardAfterCommand]}" DragTarget="{x:Reference TaskSummaryCard}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Command="{Binding TaskSummary.Commands[OpenTasksCommand]}" SemanticProperties.Description="{Binding TaskSummary.TaskCountText, StringFormat='Open My Tasks, {0} assigned'}" SemanticProperties.Hint="Touch and hold, then drag up or down and release to move this card before or after Pin App List" Padding="0">
+     </controls:HoldDragButton>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="20,*,Auto" ColumnSpacing="8" Padding="16,0,8,4">
+     <controls:FontIcon Glyph="{x:Static controls:FontIcons.Clock}" IconSize="16" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+     <Label Grid.Column="1" Text="{Binding TaskSummary.TaskUpdatedText}" Style="{StaticResource supportTextStyle}" VerticalOptions="Center" MaxLines="1" LineBreakMode="TailTruncation" />
+
+     <Grid Grid.Column="2" WidthRequest="48" HeightRequest="48">
+      <controls:IconButton IsVisible="{Binding TaskSummary.IsTaskRefreshIdle}" Glyph="{x:Static controls:FontIcons.RotateRight}" IconSize="20" Command="{Binding TaskSummary.Commands[RefreshTasksCommand]}" SemanticProperties.Description="Refresh task summary" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+      <ActivityIndicator IsRunning="{Binding TaskSummary.IsTaskRefreshing}" IsVisible="{Binding TaskSummary.IsTaskRefreshing}" WidthRequest="20" HeightRequest="20" HorizontalOptions="Center" VerticalOptions="Center" SemanticProperties.Description="Refreshing task summary" Color="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+     </Grid>
+    </Grid>
+   </Grid>
+  </Border>
+   </ContentView>
+  </DataTemplate>
+  <DataTemplate x:Key="catalogueRowTemplate">
+<VerticalStackLayout Spacing="{StaticResource space4}" Padding="0,4">
+     <Border IsVisible="{Binding IsHeader}" Style="{StaticResource cardStyle}" Padding="0" Margin="0,4,0,0">
+      <Grid>
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="12" InputTransparent="True" CascadeInputTransparent="True">
+       <Border WidthRequest="40" HeightRequest="40" StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}">
+        <controls:FontIcon Glyph="{x:Static controls:FontIcons.LayerGroup}" IconSize="20" HorizontalOptions="Center" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+       </Border>
+       <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+        <Label Text="{Binding Caption}" Style="{StaticResource titleMediumTextStyle}" LineBreakMode="WordWrap" AutomationProperties.IsInAccessibleTree="False" />
+        <Label Text="Application modules" Style="{StaticResource supportTextStyle}" AutomationProperties.IsInAccessibleTree="False" />
+       </VerticalStackLayout>
+       <controls:FontIcon Grid.Column="2" Glyph="{Binding ChevronGlyph}" IconSize="{StaticResource space16}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False"
+        TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+      </Grid>
+      <Button Command="{Binding Commands[ToggleCommand]}" SemanticProperties.Description="{Binding GroupAccessibleName}"
+       Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" HorizontalOptions="Fill" VerticalOptions="Fill" />
+      </Grid>
+     </Border>
+     <Border IsVisible="{Binding IsDestination}" Style="{StaticResource actionCardStyle}" Padding="0" Margin="{Binding Indent}">
+      <Grid ColumnDefinitions="*,Auto">
+       <Grid Padding="{Binding ContentPadding}" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+        <Border WidthRequest="{Binding IconTileSize}" HeightRequest="{Binding IconTileSize}" Padding="{Binding IconPadding}" StrokeThickness="0" VerticalOptions="Center"
+         BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}">
+         <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+         <Grid>
+          <Image Source="{Binding Menu.Icon}" IsVisible="{Binding Menu.HasIcon}" Aspect="AspectFit" AutomationProperties.IsInAccessibleTree="False" />
+          <controls:FontIcon Glyph="{Binding Menu.Glyph}" IsVisible="{Binding Menu.HasNoIcon}" IconSize="{Binding GlyphSize}" AutomationProperties.IsInAccessibleTree="False"
+           TintColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+         </Grid>
+        </Border>
+        <VerticalStackLayout Grid.Column="1" Spacing="{StaticResource space4}" VerticalOptions="Center">
+         <Label Text="{Binding Menu.Title}" Style="{StaticResource titleMediumTextStyle}" FontSize="{Binding TitleSize}" MaxLines="1" LineBreakMode="TailTruncation" AutomationProperties.IsInAccessibleTree="False" />
+         <Label Text="{Binding Menu.Subtitle}" IsVisible="{Binding Menu.HasSubtitle}" Style="{StaticResource supportTextStyle}" MaxLines="1" LineBreakMode="TailTruncation" AutomationProperties.IsInAccessibleTree="False"
+          TextColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+        </VerticalStackLayout>
+        <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.Thumbtack}" IsVisible="{Binding Menu.IsPinned}" IconSize="16" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource secondaryLight}, Dark={StaticResource secondaryDark}}" />
+        <controls:FontIcon Grid.Column="3" Glyph="{x:Static controls:FontIcons.ChevronRight}" IconSize="{StaticResource space16}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False"
+         TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+       </Grid>
+       <Button Command="{Binding Menu.Commands[OpenCommand]}" SemanticProperties.Description="{Binding Menu.Title}" SemanticProperties.Hint="{Binding Menu.Subtitle}"
+        Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" CornerRadius="16" HorizontalOptions="Fill" VerticalOptions="Fill" />
+       <controls:IconButton x:Name="ModuleMenuButton" Grid.Column="1" Glyph="{x:Static controls:FontIcons.EllipsisVertical}" IconSize="16" Command="{Binding Menu.Commands[MoreCommand]}" CommandParameter="{x:Reference ModuleMenuButton}" IsVisible="{Binding ShowActions}" SemanticProperties.Description="{Binding Menu.Title, StringFormat='Open and pin actions for {0}'}" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+      </Grid>
+     </Border>
+    </VerticalStackLayout>
+  </DataTemplate>
+  <local:HomeRowTemplateSelector x:Key="homeRowTemplateSelector" TaskSummaryTemplate="{StaticResource taskSummaryRowTemplate}" CatalogueTemplate="{StaticResource catalogueRowTemplate}" />
+ </ContentView.Resources>
  <ContentView.BindingContext><local:DefaultHomeControlVm /></ContentView.BindingContext>
- <Grid Padding="16" RowDefinitions="Auto,Auto,*" RowSpacing="12">
-  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-   <Entry Text="{Binding SearchText}" Placeholder="Search modules" MinimumHeightRequest="48" SemanticProperties.Description="Search modules by title, subtitle or group" />
-   <Button Grid.Column="1" Text="Clear" Command="{Binding Commands[ClearSearchCommand]}" Style="{StaticResource textButtonStyle}" />
+ <Grid>
+ <Grid x:Name="CatalogContent" InputTransparent="{Binding IsContextMenuOpen}" Padding="16,12" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+  <VerticalStackLayout Spacing="8">
+   <VerticalStackLayout IsVisible="{Binding IsHomeView}" Spacing="4" Margin="0,0,0,8">
+    <Label Text="{Binding Greeting}" Style="{StaticResource bodyLargeTextStyle}" />
+    <Label Text="{Binding AccountName}" Style="{StaticResource titleLargeTextStyle}" />
+   </VerticalStackLayout>
+   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+    <controls:IconButton IsVisible="{Binding IsCatalogueOpen}" Glyph="{x:Static controls:FontIcons.ArrowLeft}" Command="{Binding Commands[BackToHomeCommand]}" SemanticProperties.Description="Back to Home" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+    <Label Grid.Column="1" Text="{Binding PageTitle}" Style="{StaticResource titleMediumTextStyle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
+    <Grid Grid.Column="2" IsVisible="{Binding IsHomeView}" MinimumHeightRequest="48" MinimumWidthRequest="96">
+     <Border Stroke="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="12,6" VerticalOptions="Center" InputTransparent="True">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+       <Label Text="View all" Style="{StaticResource labelMediumTextStyle}" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+       <controls:FontIcon Grid.Column="1" Glyph="{x:Static controls:FontIcons.ChevronRight}" IconSize="12" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+      </Grid>
+     </Border>
+     <Button Command="{Binding Commands[ViewAllCommand]}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" SemanticProperties.Description="View all modules" />
+    </Grid>
+   </Grid>
+   <Label Text="{Binding FilterCaption}" IsVisible="{Binding IsCatalogueOpen}" Style="{StaticResource supportTextStyle}" />
+  </VerticalStackLayout>
+  <Grid Grid.Row="1" IsVisible="{Binding IsCatalogueOpen}" ColumnDefinitions="*" ColumnSpacing="8">
+  <Border Style="{StaticResource searchFieldStyle}">
+   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource space8}">
+    <controls:FontIcon Glyph="{x:Static controls:FontIcons.MagnifyingGlass}" IconSize="{StaticResource space20}" VerticalOptions="Center" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False"
+     TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+    <Entry Grid.Column="1" Text="{Binding SearchText}" Placeholder="Search module name or code…" MinimumHeightRequest="{StaticResource touchTarget}" BackgroundColor="Transparent" SemanticProperties.Description="Search modules by title, subtitle or group" />
+    <controls:IconButton Grid.Column="2" Glyph="{x:Static controls:FontIcons.Xmark}" IconSize="16" Command="{Binding Commands[ClearSearchCommand]}" SemanticProperties.Description="Clear module search" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+   </Grid>
+  </Border>
   </Grid>
-  <VerticalStackLayout Grid.Row="1" Spacing="8">
+  <VerticalStackLayout Grid.Row="2" Spacing="8">
+   <controls:FeedbackView Message="{Binding Notice}" Kind="Info" />
    <Label Text="No modules available for this account." IsVisible="{Binding IsModuleListEmpty}" />
    <Label Text="No modules match your search. Clear the search to see all modules." IsVisible="{Binding HasNoResults}" />
+   <Button Text="Reset filters" Command="{Binding Commands[ResetFiltersCommand]}" Style="{StaticResource textButtonStyle}" IsVisible="{Binding HasNoResults}" />
   </VerticalStackLayout>
-  <CollectionView Grid.Row="2" ItemsSource="{Binding VisibleRows}" SelectionMode="None">
-   <CollectionView.ItemTemplate><DataTemplate>
-    <VerticalStackLayout Spacing="4" Padding="0,4">
-     <Label Text="{Binding Header}" IsVisible="{Binding IsHeader}" Style="{StaticResource titleMediumTextStyle}" SemanticProperties.HeadingLevel="Level2" />
-     <Button Text="{Binding Menu.Title}" IsVisible="{Binding IsDestination}" Command="{Binding Menu.Commands[OpenCommand]}"
-      SemanticProperties.Description="{Binding Menu.Title}" Style="{StaticResource tonalButtonStyle}" HorizontalOptions="Fill" />
-     <Label Text="{Binding Menu.Subtitle}" IsVisible="{Binding Menu.HasSubtitle}" Style="{StaticResource bodyMediumTextStyle}" />
-    </VerticalStackLayout>
-   </DataTemplate></CollectionView.ItemTemplate>
-  </CollectionView>
+  <CollectionView Grid.Row="3" ItemsSource="{Binding DisplayedRows}" ItemTemplate="{StaticResource homeRowTemplateSelector}" SelectionMode="None" ItemSizingStrategy="MeasureAllItems" />
+ </Grid>
+ <BoxView IsVisible="{Binding IsContextMenuOpen}" BackgroundColor="{StaticResource scrimColor}" Opacity="0.2" AutomationProperties.IsInAccessibleTree="False">
+  <BoxView.GestureRecognizers><TapGestureRecognizer Command="{Binding Commands[CloseMenuCommand]}" /></BoxView.GestureRecognizers>
+ </BoxView>
+ <Border x:Name="ContextPopover" IsVisible="{Binding IsContextMenuOpen}" Style="{StaticResource contextMenuStyle}" HorizontalOptions="Start" VerticalOptions="Start">
+  <VerticalStackLayout Spacing="4">
+   <Grid MinimumHeightRequest="48">
+    <Grid Padding="12,8" ColumnDefinitions="24,*" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+     <controls:FontIcon Glyph="{x:Static controls:FontIcons.RightToBracket}" IconSize="18" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+     <Label Grid.Column="1" Text="Open" Style="{StaticResource bodyMediumTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+    </Grid>
+    <Button x:Name="MenuOpenButton" Command="{Binding Commands[OpenMenuCommand]}" SemanticProperties.Description="{Binding ContextModuleName, StringFormat='Open {0}'}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" />
+   </Grid>
+   <Border BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}" StrokeThickness="0" StrokeShape="RoundRectangle 12">
+    <Grid MinimumHeightRequest="48">
+     <Grid Padding="12,8" ColumnDefinitions="24,*" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+      <controls:FontIcon Glyph="{x:Static controls:FontIcons.Thumbtack}" IconSize="18" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+      <Label Grid.Column="1" Text="{Binding PinMenuCaption}" Style="{StaticResource bodyMediumTextStyle}" TextColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+     </Grid>
+     <Button Command="{Binding Commands[PinMenuCommand]}" SemanticProperties.Description="{Binding PinMenuCaption}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" />
+    </Grid>
+   </Border>
+  </VerticalStackLayout>
+ </Border>
  </Grid>
 </ContentView>

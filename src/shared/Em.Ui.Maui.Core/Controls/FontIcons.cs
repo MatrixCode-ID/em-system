@@ -113,5 +113,44 @@
 
       /// <summary>A tray, the mark of an inbox of requests.</summary>
       public const string Inbox = "";
+
+      /// <summary>A document with text lines.</summary>
+      public const string FileLines = "\uf15c";
+      /// <summary>A calendar date.</summary>
+      public const string Calendar = "\uf073";
+      /// <summary>A location marker.</summary>
+      public const string LocationDot = "\uf3c5";
+      /// <summary>A telephone contact.</summary>
+      public const string Phone = "\uf095";
+      /// <summary>A group of people.</summary>
+      public const string Users = "\uf0c0";
+      /// <summary>A payment or commercial value.</summary>
+      public const string MoneyBill = "\uf0d6";
+      /// <summary>A vertical menu of secondary actions.</summary>
+      public const string EllipsisVertical = "\uf142";
+      /// <summary>A send action.</summary>
+      public const string PaperPlane = "\uf1d8";
+      /// <summary>Supporting information.</summary>
+      public const string CircleInfo = "\uf05a";
+      /// <summary>A closed padlock for a concealed credential.</summary>
+      public const string Lock = "\uf023";
+      /// <summary>An eye indicating that a credential is visible.</summary>
+      public const string Eye = "\uf06e";
+      /// <summary>A crossed eye indicating that a credential is concealed.</summary>
+      public const string EyeSlash = "\uf070";
+      /// <summary>A bug marking a developer-only action.</summary>
+      public const string Bug = "\uf188";
+      /// <summary>A notification bell; its presence alone does not imply an unread count.</summary>
+      public const string Bell = "\uf0f3";
+      /// <summary>A pin marking a preferred destination.</summary>
+      public const string Thumbtack = "\uf08d";
+      /// <summary>An upward disclosure mark for an expanded group.</summary>
+      public const string ChevronUp = "\uf077";
+      /// <summary>Layers marking a group of destinations.</summary>
+      public const string LayerGroup = "\uf5fd";
+      /// <summary>A filter action.</summary>
+      public const string Filter = "\uf0b0";
+      /// <summary>A clipboard with a completed check.</summary>
+      public const string ClipboardCheck = "\uf46c";
    }
 }

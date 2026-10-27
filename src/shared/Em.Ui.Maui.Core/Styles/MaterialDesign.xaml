@@ -17,6 +17,7 @@
       <ResourceDictionary Source="/Styles/Cards.xaml" />
       <ResourceDictionary Source="/Styles/Inputs.xaml" />
       <ResourceDictionary Source="/Styles/Navigation.xaml" />
+      <ResourceDictionary Source="/Styles/Approval.xaml" />
    </ResourceDictionary.MergedDictionaries>
 
    <!-- The background of every page, set once here so no screen forgets to name it and ends up white in the

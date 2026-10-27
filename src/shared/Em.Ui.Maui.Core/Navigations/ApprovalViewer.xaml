@@ -1,160 +1,131 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:Em.Ui.Maui.Navigations"
-             xmlns:controls="clr-namespace:Em.Ui.Maui.Controls"
-             x:Class="Em.Ui.Maui.Navigations.ApprovalViewer">
-
-   <ContentView.BindingContext>
-      <local:ApprovalViewerVm />
-   </ContentView.BindingContext>
-
-   <Grid RowDefinitions="*,Auto">
-
-      <RefreshView Grid.Row="0" IsRefreshing="{Binding IsRefreshing}" Command="{Binding Commands[RefreshCommand]}">
-         <ScrollView>
-            <VerticalStackLayout Padding="16,12,16,24" Spacing="14">
-
-               <HorizontalStackLayout Spacing="8">
-                  <Button Text="Previous" Command="{Binding Commands[PreviousCommand]}" Style="{StaticResource tonalButtonStyle}"/>
-                  <Button Text="Next" Command="{Binding Commands[NextCommand]}" Style="{StaticResource tonalButtonStyle}"/>
-               </HorizontalStackLayout>
-               <!-- ==== header ==== -->
-               <Border Style="{StaticResource cardStyle}" Padding="16">
-                  <VerticalStackLayout Spacing="8">
-                     <Label Text="{Binding Caption}" Style="{StaticResource sectionCaptionStyle}" />
-                     <Label Text="{Binding Summary}" Style="{StaticResource titleTextStyle}" />
-                     <Label Text="{Binding SubSummary}" Style="{StaticResource supportTextStyle}"
-                            IsVisible="{Binding HasSubSummary}" />
-                     <FlexLayout Wrap="Wrap" AlignItems="Center">
-                        <Border Style="{StaticResource accentChipStyle}" Margin="0,0,6,4">
-                           <Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" />
-                        </Border>
-                        <Border Style="{StaticResource chipStyle}" Margin="0,0,6,4">
-                           <Label Text="{Binding LevelText}" Style="{StaticResource chipTextStyle}" />
-                        </Border>
-                        <Label Text="{Binding RequestedText}" Style="{StaticResource supportTextStyle}"
-                               VerticalOptions="Center" Margin="0,0,0,4" />
-                     </FlexLayout>
-                     <Button Text="View document (PDF)" Style="{StaticResource tonalButtonStyle}"
-                             IsVisible="{Binding HasPreview}" Command="{Binding Commands[PreviewCommand]}" />
-                  </VerticalStackLayout>
-               </Border>
-
-               <controls:FeedbackView Message="{Binding Error}" Kind="Error" />
-               <controls:FeedbackView Message="{Binding Notice}" Kind="Info" />
-
-               <!-- ==== module view ==== -->
-               <ContentView Content="{Binding ModuleView}" IsVisible="{Binding HasModuleView}" />
-
-               <!-- ==== data fields ==== -->
-               <VerticalStackLayout Spacing="8" IsVisible="{Binding HasFields}">
-                  <Label Text="PROPOSED CHANGES" Style="{StaticResource sectionCaptionStyle}" />
-                  <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Fields}">
-                     <BindableLayout.ItemTemplate>
-                        <DataTemplate>
-                           <Border Style="{StaticResource outlinedCardStyle}" Padding="12">
-                              <VerticalStackLayout Spacing="2">
-                                 <Label Text="{Binding Column}" Style="{StaticResource labelTextStyle}" FontAttributes="Bold" />
-                                 <Label Text="{Binding Change}" Style="{StaticResource bodyTextStyle}" />
-                                 <Label Text="{Binding ConflictText}" Style="{StaticResource errorTextStyle}"
-                                        IsVisible="{Binding Conflict}" />
-                              </VerticalStackLayout>
-                           </Border>
-                        </DataTemplate>
-                     </BindableLayout.ItemTemplate>
-                  </VerticalStackLayout>
-               </VerticalStackLayout>
-
-               <!-- ==== signers ==== -->
-               <VerticalStackLayout Spacing="8" IsVisible="{Binding HasSteps}">
-                  <Label Text="SIGNERS" Style="{StaticResource sectionCaptionStyle}" />
-                  <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Steps}">
-                     <BindableLayout.ItemTemplate>
-                        <DataTemplate>
-                           <Border Style="{StaticResource actionCardStyle}" Padding="14">
-                              <Border.Triggers>
-                                 <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                                    <Setter Property="StrokeThickness" Value="2" />
-                                    <Setter Property="Stroke"
-                                            Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
-                                 </DataTrigger>
-                              </Border.Triggers>
-
-                              <VerticalStackLayout Spacing="8">
-                                 <Button Text="{Binding SelectionCaption}" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[SelectCommand]}" />
-                                 <controls:FontIcon Grid.RowSpan="2" Glyph="{Binding Glyph}" IconSize="20"
-                                                    VerticalOptions="Start" Margin="0,2,0,0"
-                                                    TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
-                                 <Label Grid.Column="1" Text="{Binding Heading}" Style="{StaticResource titleTextStyle}"
-                                        />
-                                 <Border Grid.Column="2" Style="{StaticResource accentChipStyle}" IsVisible="{Binding IsMyTurn}">
-                                    <Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" />
-                                 </Border>
-                                 <Border Grid.Column="2" Style="{StaticResource chipStyle}" IsVisible="{Binding IsNotMyTurn}">
-                                    <Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" />
-                                 </Border>
-                                 <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SignerName}"
-                                        Style="{StaticResource bodyLargeTextStyle}" />
-                                 <Label Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding SignatureText}"
-                                        Style="{StaticResource supportTextStyle}"
-                                        IsVisible="{Binding HasSignature}" />
-                                 <Label Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding DecisionNote}"
-                                        Style="{StaticResource bodyTextStyle}" FontAttributes="Italic"
-                                        IsVisible="{Binding HasNote}" />
-                              </VerticalStackLayout>
-                           </Border>
-                        </DataTemplate>
-                     </BindableLayout.ItemTemplate>
-                  </VerticalStackLayout>
-               </VerticalStackLayout>
-
-               <!-- ==== comments ==== -->
-               <VerticalStackLayout Spacing="8">
-                  <Label Text="COMMENTS" Style="{StaticResource sectionCaptionStyle}" />
-                  <Label Text="No comment yet." Style="{StaticResource supportTextStyle}" IsVisible="{Binding HasNoComments}" />
-                  <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Comments}">
-                     <BindableLayout.ItemTemplate>
-                        <DataTemplate>
-                           <Border Style="{StaticResource outlinedCardStyle}" Padding="12">
-                              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" RowDefinitions="Auto,Auto">
-                                 <controls:FontIcon Grid.RowSpan="2" Glyph="{Binding Glyph}" IconSize="14"
-                                                    VerticalOptions="Start" Margin="0,3,0,0" Opacity="0.7"
-                                                    TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-                                 <Label Grid.Column="1" Text="{Binding Header}" Style="{StaticResource supportTextStyle}" />
-                                 <Label Grid.Row="1" Grid.Column="1" Text="{Binding Text}" Style="{StaticResource bodyTextStyle}"
-                                        IsVisible="{Binding HasText}" />
-                              </Grid>
-                           </Border>
-                        </DataTemplate>
-                     </BindableLayout.ItemTemplate>
-                  </VerticalStackLayout>
-                  <Border Style="{StaticResource inputFieldStyle}">
-                     <Editor Text="{Binding Comment}" Placeholder="Write a comment" AutoSize="TextChanges"
-                             MinimumHeightRequest="48" />
-                  </Border>
-                  <Button Text="Send comment" Style="{StaticResource outlinedButtonStyle}" HorizontalOptions="End"
-                          Command="{Binding Commands[CommentCommand]}" />
-               </VerticalStackLayout>
-            </VerticalStackLayout>
-         </ScrollView>
-      </RefreshView>
-
-      <!-- ==== action bar ==== -->
-      <Border Grid.Row="1" StrokeThickness="0" Padding="16,10,16,14" IsVisible="{Binding CanDecide}"
-              BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}">
-         <VerticalStackLayout Spacing="8">
-            <Label Text="{Binding DecisionCaption}" Style="{StaticResource bodyLargeTextStyle}" />
-            <VerticalStackLayout Spacing="8">
-               <Button Grid.Column="0" Text="Reject" Style="{StaticResource outlinedButtonStyle}"
-                       Command="{Binding Commands[RejectCommand]}" />
-               <Button Grid.Column="1" Text="{Binding ApproveText}" Style="{StaticResource filledButtonStyle}"
-                       Command="{Binding Commands[ApproveCommand]}" />
-            </VerticalStackLayout>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+ xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" xmlns:controls="clr-namespace:Em.Ui.Maui.Controls" x:Class="Em.Ui.Maui.Navigations.ApprovalViewer">
+ <ContentView.BindingContext><local:ApprovalViewerVm /></ContentView.BindingContext>
+ <Grid RowDefinitions="*,Auto,Auto">
+  <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding Commands[RefreshCommand]}">
+   <ScrollView>
+    <VerticalStackLayout Padding="16,12,16,24" Spacing="12">
+     <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding HasPaging}">
+      <Button Text="Previous" Command="{Binding Commands[PreviousCommand]}" Style="{StaticResource textButtonStyle}" />
+      <Button Grid.Column="1" Text="Next" Command="{Binding Commands[NextCommand]}" Style="{StaticResource textButtonStyle}" />
+     </Grid>
+     <VerticalStackLayout Spacing="8">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+       <Label Text="{Binding Caption}" Style="{StaticResource sectionCaptionStyle}" VerticalOptions="Center" />
+       <Border Grid.Column="1" Style="{StaticResource accentChipStyle}"><Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" /></Border>
+      </Grid>
+      <Label Text="{Binding Summary}" Style="{StaticResource titleLargeTextStyle}" LineHeight="1" LineBreakMode="WordWrap">
+       <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding HasModuleView}" Value="True"><Setter Property="IsVisible" Value="False" /></DataTrigger></Label.Triggers>
+      </Label>
+      <Label Text="{Binding SubSummary}" Style="{StaticResource bodyMediumParagraphStyle}" IsVisible="{Binding HasSubSummary}">
+       <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding HasModuleView}" Value="True"><Setter Property="IsVisible" Value="False" /></DataTrigger></Label.Triggers>
+      </Label>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+       <VerticalStackLayout Spacing="4" VerticalOptions="Center">
+        <Label Text="{Binding LevelText}" Style="{StaticResource bodyMediumTextStyle}" />
+        <Label Text="{Binding RequestedText}" Style="{StaticResource supportTextStyle}" />
+       </VerticalStackLayout>
+       <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.FilePdf}" IsVisible="{Binding HasPreview}" Command="{Binding Commands[PreviewCommand]}"
+        SemanticProperties.Description="View document PDF" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+      </Grid>
+     </VerticalStackLayout>
+     <controls:FeedbackView Message="{Binding Error}" Kind="Error" />
+     <controls:FeedbackView Message="{Binding Notice}" Kind="Info" />
+     <ContentView Content="{Binding ModuleView}" IsVisible="{Binding HasModuleView}" />
+     <Border Style="{StaticResource approvalSectionStyle}" IsVisible="{Binding HasFields}">
+      <VerticalStackLayout Spacing="12">
+       <Label Text="Proposed changes" Style="{StaticResource approvalSectionTitleStyle}" SemanticProperties.HeadingLevel="Level2" />
+       <VerticalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Fields}">
+        <BindableLayout.ItemTemplate><DataTemplate>
+         <VerticalStackLayout Spacing="0">
+          <Label Text="{Binding Column}" Style="{StaticResource labelLargeTextStyle}" LineHeight="1" />
+          <Label Text="{Binding Change}" Style="{StaticResource bodyLargeParagraphStyle}" />
+          <Label Text="{Binding ConflictText}" IsVisible="{Binding Conflict}" Style="{StaticResource errorTextStyle}" />
+          <BoxView Style="{StaticResource dividerStyle}" Margin="0,8,0,0" />
          </VerticalStackLayout>
-      </Border>
-
-      <ActivityIndicator Grid.Row="0" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
-                         HorizontalOptions="Center" VerticalOptions="Center" />
+        </DataTemplate></BindableLayout.ItemTemplate>
+       </VerticalStackLayout>
+      </VerticalStackLayout>
+     </Border>
+     <Border Style="{StaticResource approvalSectionStyle}" IsVisible="{Binding HasSteps}">
+      <VerticalStackLayout Spacing="12">
+       <Label Text="Approval route" Style="{StaticResource approvalSectionTitleStyle}" SemanticProperties.HeadingLevel="Level2" />
+       <VerticalStackLayout Spacing="0" BindableLayout.ItemsSource="{Binding Steps}">
+        <BindableLayout.ItemTemplate><DataTemplate>
+         <Grid ColumnDefinitions="28,*" ColumnSpacing="12">
+          <BoxView WidthRequest="1" HorizontalOptions="Center" Color="{AppThemeBinding Light={StaticResource outlineVariantLight}, Dark={StaticResource outlineVariantDark}}" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False" />
+          <controls:FontIcon Glyph="{Binding Glyph}" IconSize="20" VerticalOptions="Start" Margin="0,12,0,0" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False"
+           TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+          <Border Grid.Column="1" Padding="8,8,0,12" BackgroundColor="Transparent" StrokeThickness="0">
+           <Border.StrokeShape><RoundRectangle CornerRadius="12" /></Border.StrokeShape>
+           <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+            <Setter Property="StrokeThickness" Value="1" /><Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+           </DataTrigger></Border.Triggers>
+           <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding Commands[SelectCommand]}" /></Border.GestureRecognizers>
+           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <VerticalStackLayout Spacing="6">
+             <Label Text="{Binding Heading}" Style="{StaticResource titleMediumTextStyle}" LineBreakMode="WordWrap" />
+             <Label Text="{Binding SignerName}" Style="{StaticResource bodyMediumTextStyle}" />
+             <Border Style="{StaticResource accentChipStyle}" IsVisible="{Binding IsMyTurn}"><Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" /></Border>
+             <Border Style="{StaticResource chipStyle}" IsVisible="{Binding IsNotMyTurn}"><Label Text="{Binding Status}" Style="{StaticResource chipTextStyle}" /></Border>
+             <Label Text="{Binding SignatureText}" IsVisible="{Binding HasSignature}" Style="{StaticResource supportTextStyle}" />
+             <Label Text="{Binding DecisionNote}" IsVisible="{Binding HasNote}" Style="{StaticResource bodyMediumTextStyle}" LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+            <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.Check}" IsVisible="{Binding IsMyTurn}" VerticalOptions="Start" Command="{Binding Commands[SelectCommand]}"
+             SemanticProperties.Description="{Binding SelectionCaption}" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
+           </Grid>
+          </Border>
+         </Grid>
+        </DataTemplate></BindableLayout.ItemTemplate>
+       </VerticalStackLayout>
+      </VerticalStackLayout>
+     </Border>
+     <Border Style="{StaticResource approvalSectionStyle}">
+      <VerticalStackLayout Spacing="12">
+       <Label Text="{Binding CommentsCaption}" Style="{StaticResource approvalSectionTitleStyle}" SemanticProperties.HeadingLevel="Level2" />
+       <Label Text="No comment yet." IsVisible="{Binding HasNoComments}" Style="{StaticResource bodyMediumTextStyle}" />
+       <VerticalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Comments}">
+        <BindableLayout.ItemTemplate><DataTemplate>
+         <VerticalStackLayout Spacing="8">
+          <Grid ColumnDefinitions="40,*" ColumnSpacing="12">
+           <Border WidthRequest="40" HeightRequest="40" Padding="0" StrokeThickness="0" BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}" VerticalOptions="Start">
+            <Border.StrokeShape><RoundRectangle CornerRadius="20" /></Border.StrokeShape>
+            <Label Text="{Binding Initials}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" AutomationProperties.IsInAccessibleTree="False"
+             TextColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+           </Border>
+           <VerticalStackLayout Grid.Column="1" Spacing="4">
+            <Label Text="{Binding Author}" Style="{StaticResource labelLargeTextStyle}" />
+            <Label Text="{Binding WhenText}" Style="{StaticResource supportTextStyle}" />
+            <Label Text="{Binding Text}" IsVisible="{Binding HasText}" Style="{StaticResource bodyMediumParagraphStyle}" />
+           </VerticalStackLayout>
+          </Grid>
+          <BoxView Style="{StaticResource dividerStyle}" />
+         </VerticalStackLayout>
+        </DataTemplate></BindableLayout.ItemTemplate>
+       </VerticalStackLayout>
+      </VerticalStackLayout>
+     </Border>
+    </VerticalStackLayout>
+   </ScrollView>
+  </RefreshView>
+  <Border Grid.Row="1" Style="{StaticResource outlinedCardStyle}" Padding="12,4" Margin="16,4" IsVisible="{Binding HasDetail}">
+   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+    <Editor Text="{Binding Comment}" Placeholder="Add a comment…" AutoSize="TextChanges" MinimumHeightRequest="48" MaximumHeightRequest="120" SemanticProperties.Description="Comment text" />
+    <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.PaperPlane}" Command="{Binding Commands[CommentCommand]}" SemanticProperties.Description="Send comment" VerticalOptions="End"
+     TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" />
    </Grid>
+  </Border>
+  <Border Grid.Row="2" StrokeThickness="0" Padding="12,8,12,12" IsVisible="{Binding CanDecide}"
+   BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLight}, Dark={StaticResource surfaceContainerDark}}">
+   <VerticalStackLayout Spacing="4">
+    <Label Text="{Binding DecisionCaption}" Style="{StaticResource bodyMediumTextStyle}" Margin="4,0" />
+    <FlexLayout Direction="Row" Wrap="Wrap">
+     <Button Text="Reject" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RejectCommand]}" Margin="4" FlexLayout.Basis="140" FlexLayout.Grow="1" />
+     <Button Text="{Binding ApproveText}" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[ApproveCommand]}" Margin="4" FlexLayout.Basis="140" FlexLayout.Grow="1" />
+    </FlexLayout>
+   </VerticalStackLayout>
+  </Border>
+  <ActivityIndicator Grid.Row="0" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" VerticalOptions="Center" />
+ </Grid>
 </ContentView>

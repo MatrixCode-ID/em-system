@@ -42,8 +42,15 @@
 
       <!-- One static navigation row. Its whole area is the tap target, not only its text. -->
       <DataTemplate x:Key="accountPanelItemTemplate">
-         <Button Text="{Binding Title}" Style="{StaticResource textButtonStyle}" IsEnabled="{Binding IsEnabled}"
+         <Grid MinimumHeightRequest="56" IsEnabled="{Binding IsEnabled}">
+          <Grid Padding="16,12" ColumnDefinitions="24,*,Auto" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+           <controls:FontIcon Glyph="{Binding Glyph}" IconSize="20" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+           <Label Grid.Column="1" Text="{Binding Title}" Style="{StaticResource bodyMediumTextStyle}" VerticalOptions="Center" LineBreakMode="WordWrap" AutomationProperties.IsInAccessibleTree="False" />
+           <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.ChevronRight}" IsVisible="{Binding CanNavigate}" IconSize="16" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+          </Grid>
+          <Button SemanticProperties.Description="{Binding Title}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" HorizontalOptions="Fill" VerticalOptions="Fill"
           Command="{Binding Path=BindingContext.Commands[OpenItemCommand], Source={RelativeSource AncestorType={x:Type local:AccountPanel}}}" CommandParameter="{Binding .}" />
+         </Grid>
       </DataTemplate>
 
       <!-- The outer circle of the radio dot. Its color follows the selected state of its own row through a
@@ -68,7 +75,7 @@
            Content of a MAUI RadioButton only accepts text, and a view handed to it ends up drawn as its type
            name. Drawing it itself also makes the whole row the tap target, not just a small dot at the far left. -->
       <DataTemplate x:Key="accountPanelConnectionTemplate">
-         <Button Text="{Binding AccessibleCaption}" Style="{StaticResource textButtonStyle}"
+         <Button Text="{Binding AccessibleCaption}" Style="{StaticResource textButtonStyle}" LineBreakMode="WordWrap"
           SemanticProperties.Description="{Binding AccessibleCaption}"
           Command="{Binding Path=BindingContext.Commands[SelectConnectionCommand], Source={RelativeSource AncestorType={x:Type local:AccountPanel}}}" CommandParameter="{Binding .}" />
       </DataTemplate>
@@ -89,14 +96,14 @@
                <!-- The application logo. It lives here, not on the home screen: home is a list of ways to other
                     screens, while the application identity - together with the account, server, and theme - is all
                     gathered in this panel. -->
-               <Image Source="{Binding LogoImage}" HeightRequest="40" Aspect="AspectFit"
+               <Image Source="{Binding LogoImage}" HeightRequest="64" WidthRequest="136" Aspect="AspectFit"
                       HorizontalOptions="Center" Margin="16,4,16,12" />
 
                <!-- ==== account header ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="16,14">
                      <Border Grid.Column="0" Style="{StaticResource avatarStyle}"
-                             WidthRequest="44" HeightRequest="44">
+                             WidthRequest="56" HeightRequest="56" StrokeShape="RoundRectangle 28" VerticalOptions="Center">
                         <Label Text="{Binding Initials}" FontFamily="OpenSansSemibold" FontSize="16"
                                HorizontalOptions="Center" VerticalOptions="Center"
                                TextColor="{AppThemeBinding Light={StaticResource onPrimaryContainerLight}, Dark={StaticResource onPrimaryContainerDark}}" />
@@ -104,14 +111,14 @@
 
                      <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
                         <Label Text="{Binding FullName}" Style="{StaticResource titleTextStyle}"
-                               LineBreakMode="TailTruncation" />
-                        <HorizontalStackLayout Spacing="6">
+                               LineBreakMode="WordWrap" />
+                        <Grid ColumnDefinitions="16,*" ColumnSpacing="6">
                            <controls:FontIcon Glyph="{x:Static controls:FontIcons.Envelope}" IconSize="11"
                                               VerticalOptions="Center"
                                               TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-                           <Label Text="{Binding EmailAddress}" Style="{StaticResource supportTextStyle}"
-                                  FontSize="11" VerticalOptions="Center" LineBreakMode="TailTruncation" />
-                        </HorizontalStackLayout>
+                           <Label Grid.Column="1" Text="{Binding DisplayEmail}" Style="{StaticResource supportTextStyle}"
+                                  VerticalOptions="Center" LineBreakMode="WordWrap" />
+                        </Grid>
                      </VerticalStackLayout>
                   </Grid>
                </Border>
@@ -135,32 +142,72 @@
                <!-- ==== server ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}">
                   <VerticalStackLayout Padding="0,12" Spacing="10">
-                     <HorizontalStackLayout Spacing="10" Margin="16,0">
+                     <Grid ColumnDefinitions="24,*" ColumnSpacing="12" Margin="16,0">
                         <controls:FontIcon Glyph="{x:Static controls:FontIcons.Server}" IconSize="16"
                                            VerticalOptions="Center"
                                            TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
-                        <Label Text="{Binding ConnectionStatus}" Style="{StaticResource supportTextStyle}"
-                               VerticalOptions="Center" LineBreakMode="TailTruncation" />
-                     </HorizontalStackLayout>
+                        <Label Grid.Column="1" Text="{Binding ConnectionStatus}" Style="{StaticResource supportTextStyle}"
+                               VerticalOptions="Center" LineBreakMode="WordWrap" />
+                     </Grid>
 
                      <VerticalStackLayout Spacing="10" IsVisible="{Binding HasConnectionChoice}">
                         <BoxView Style="{StaticResource dividerStyle}" Margin="16,0" />
-
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Connections}"
+                        <Grid MinimumHeightRequest="48">
+                         <Grid Padding="16,8" ColumnDefinitions="24,*,Auto" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+                          <controls:FontIcon Glyph="{x:Static controls:FontIcons.WindowMaximize}" IconSize="20" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                          <Label Grid.Column="1" Text="{Binding SelectedConnectionCaption}" Style="{StaticResource bodyMediumTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+                          <controls:FontIcon Grid.Column="2" Glyph="{Binding ConnectionDisclosure}" IconSize="16" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                         </Grid>
+                         <Button Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Command="{Binding Commands[ToggleConnectionsCommand]}" SemanticProperties.Description="Choose connection profile" />
+                        </Grid>
+                        <VerticalStackLayout IsVisible="{Binding IsConnectionsExpanded}" BindableLayout.ItemsSource="{Binding Connections}"
                                              BindableLayout.ItemTemplate="{StaticResource accountPanelConnectionTemplate}" />
                      </VerticalStackLayout>
                   </VerticalStackLayout>
                </Border>
 
                <Border Style="{StaticResource accountPanelCardStyle}">
-                  <VerticalStackLayout Padding="16,12" Spacing="8">
-                     <Label Text="{Binding InstalledVersion}" Style="{StaticResource supportTextStyle}"/>
-                     <Button Text="Check for updates" Command="{Binding Commands[CheckForUpdatesCommand]}" Style="{StaticResource tonalButtonStyle}"/>
-                  </VerticalStackLayout>
+                  <Grid MinimumHeightRequest="64">
+                   <Grid Padding="16,12" ColumnDefinitions="24,*" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+                    <controls:FontIcon Glyph="{x:Static controls:FontIcons.RotateRight}" IconSize="20" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource secondaryLight}, Dark={StaticResource secondaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                     <Label Text="{Binding InstalledVersion}" Style="{StaticResource supportTextStyle}" AutomationProperties.IsInAccessibleTree="False" />
+                     <Label Text="Check for updates" Style="{StaticResource bodyMediumTextStyle}" AutomationProperties.IsInAccessibleTree="False" />
+                    </VerticalStackLayout>
+                   </Grid>
+                   <Button Command="{Binding Commands[CheckForUpdatesCommand]}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" SemanticProperties.Description="Check for updates" />
+                  </Grid>
                </Border>
                <!-- ==== theme switch ==== -->
                <Border Style="{StaticResource accountPanelCardStyle}" IsVisible="{Binding IsThemeVisible}">
-                  <Button Text="Switch theme" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[ToggleThemeCommand]}" />
+                  <VerticalStackLayout>
+                   <Grid MinimumHeightRequest="56">
+                    <Grid Padding="16,12" ColumnDefinitions="24,*,Auto" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+                     <controls:FontIcon Glyph="{x:Static controls:FontIcons.CircleHalfStroke}" IconSize="20" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                     <Label Grid.Column="1" Text="Switch theme" Style="{StaticResource bodyMediumTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+                     <controls:FontIcon Grid.Column="2" Glyph="{Binding ThemeDisclosure}" IconSize="16" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+                    <Button Style="{StaticResource textButtonStyle}" Command="{Binding Commands[ToggleThemeCommand]}" BackgroundColor="Transparent" SemanticProperties.Description="Choose light or dark theme" />
+                   </Grid>
+                   <VerticalStackLayout IsVisible="{Binding IsThemeExpanded}" Padding="0,0,0,8" Spacing="0">
+                    <Grid MinimumHeightRequest="48">
+                     <Grid Padding="16,8" ColumnDefinitions="24,*,24" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+                      <controls:FontIcon Glyph="{x:Static controls:FontIcons.Sun}" IconSize="20" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                      <Label Grid.Column="1" Text="Light" Style="{StaticResource bodyMediumTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+                      <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.Check}" IsVisible="{Binding IsLightThemeSelected}" IconSize="16" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                     </Grid>
+                     <Button Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Command="{Binding Commands[SelectThemeCommand]}" CommandParameter="Light" SemanticProperties.Description="{Binding LightThemeCaption}" />
+                    </Grid>
+                    <Grid MinimumHeightRequest="48">
+                     <Grid Padding="16,8" ColumnDefinitions="24,*,24" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+                      <controls:FontIcon Glyph="{x:Static controls:FontIcons.Moon}" IconSize="20" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                      <Label Grid.Column="1" Text="Dark" Style="{StaticResource bodyMediumTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+                      <controls:FontIcon Grid.Column="2" Glyph="{x:Static controls:FontIcons.Check}" IsVisible="{Binding IsDarkThemeSelected}" IconSize="16" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+                     </Grid>
+                     <Button Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Command="{Binding Commands[SelectThemeCommand]}" CommandParameter="Dark" SemanticProperties.Description="{Binding DarkThemeCaption}" />
+                    </Grid>
+                   </VerticalStackLayout>
+                  </VerticalStackLayout>
                </Border>
             </VerticalStackLayout>
          </ScrollView>
@@ -168,7 +215,9 @@
          <!-- ==== sign out ==== -->
          <VerticalStackLayout Grid.Row="2" Padding="0,0,0,12" IsVisible="{Binding CanSignOut}">
             <BoxView Style="{StaticResource dividerStyle}" Margin="16,0,16,6" />
-            <Button Text="Sign out" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[SignOutCommand]}" />
+            <Button Text="Sign out" Style="{StaticResource textButtonStyle}" TextColor="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" Command="{Binding Commands[SignOutCommand]}" ContentLayout="Left,12">
+             <Button.ImageSource><FontImageSource FontFamily="{x:Static controls:FontIcons.FontFamily}" Glyph="{x:Static controls:FontIcons.RightFromBracket}" Size="20" Color="{AppThemeBinding Light={StaticResource errorLight}, Dark={StaticResource errorDark}}" /></Button.ImageSource>
+            </Button>
          </VerticalStackLayout>
       </Grid>
    </Border>

@@ -4,24 +4,86 @@
  x:Class="Em.Ui.Maui.Navigations.MyTasksPanel" IsVisible="False" HorizontalOptions="End"
  BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}">
  <ContentView.BindingContext><local:MyTasksPanelVm /></ContentView.BindingContext>
- <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+ <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" RowSpacing="12">
   <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
-   <Label Text="My Tasks" Style="{StaticResource titleLargeTextStyle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
+   <VerticalStackLayout Spacing="4">
+    <Label Text="My Tasks" Style="{StaticResource headlineSmallTextStyle}" SemanticProperties.HeadingLevel="Level1" />
+    <Label Text="Tasks assigned to me" Style="{StaticResource bodyMediumTextStyle}" />
+   </VerticalStackLayout>
    <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.RotateRight}" SemanticProperties.Description="Refresh my tasks"
     Command="{Binding Commands[RefreshCommand]}" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
    <controls:IconButton Grid.Column="2" x:Name="CloseButton" Glyph="{x:Static controls:FontIcons.Xmark}" SemanticProperties.Description="Close my tasks"
     Command="{Binding Commands[CloseCommand]}" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
   </Grid>
-  <Label Grid.Row="1" Text="{Binding CountAndTime}" Style="{StaticResource bodyMediumTextStyle}" />
-  <controls:FeedbackView Grid.Row="2" Message="{Binding StatusText}" Kind="{Binding StatusKind}" IsBusy="{Binding IsLoading}" />
-  <CollectionView Grid.Row="3" ItemsSource="{Binding Tasks}" SelectionMode="None">
+  <Border Grid.Row="1" Style="{StaticResource chipStyle}"><Label Text="{Binding AssignedCaption}" Style="{StaticResource chipTextStyle}" /></Border>
+  <Border Grid.Row="2" Style="{StaticResource searchFieldStyle}">
+   <Grid ColumnDefinitions="20,*" ColumnSpacing="12">
+    <controls:FontIcon Glyph="{x:Static controls:FontIcons.MagnifyingGlass}" IconSize="20" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+    <Entry Grid.Column="1" Text="{Binding SearchText}" Placeholder="Search task groups…" MinimumHeightRequest="48" SemanticProperties.Description="Search task groups by name or description" />
+   </Grid>
+  </Border>
+  <VerticalStackLayout Grid.Row="3" Spacing="4">
+   <Button Text="{Binding SortCaption, StringFormat='Sort by: {0}'}" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[SortCommand]}" HorizontalOptions="Start" />
+   <Label Text="{Binding CountAndTime}" Style="{StaticResource supportTextStyle}" />
+  </VerticalStackLayout>
+  <VerticalStackLayout Grid.Row="4" Spacing="4">
+   <controls:FeedbackView Message="{Binding StatusText}" Kind="{Binding StatusKind}" IsBusy="{Binding IsLoading}" />
+   <Label Text="No task groups match your search." Style="{StaticResource bodyMediumTextStyle}" IsVisible="{Binding HasNoMatches}" />
+  </VerticalStackLayout>
+  <CollectionView Grid.Row="5" ItemsSource="{Binding VisibleTasks}" SelectionMode="None" ItemSizingStrategy="MeasureAllItems">
    <CollectionView.ItemTemplate><DataTemplate>
-    <VerticalStackLayout Spacing="4" Padding="0,8">
-     <Button Text="{Binding Caption}" SemanticProperties.Description="{Binding Caption}" Style="{StaticResource tonalButtonStyle}"
-      Command="{Binding Path=BindingContext.Commands[OpenCommand], Source={RelativeSource AncestorType={x:Type local:MyTasksPanel}}}" CommandParameter="{Binding .}" />
-     <Label Text="{Binding Detail}" Style="{StaticResource bodyMediumTextStyle}" />
-    </VerticalStackLayout>
+    <Border Style="{StaticResource cardStyle}" Padding="0" Margin="0,0,0,12">
+     <VerticalStackLayout Spacing="8">
+      <Grid>
+       <Grid Padding="12" ColumnDefinitions="48,*,Auto" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
+        <Border WidthRequest="48" HeightRequest="48" StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light={StaticResource secondaryContainerLight}, Dark={StaticResource secondaryContainerDark}}">
+         <controls:FontIcon Glyph="{x:Static controls:FontIcons.ClipboardCheck}" IconSize="24" HorizontalOptions="Center" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" />
+        </Border>
+        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+         <Label Text="{Binding Caption}" Style="{StaticResource titleMediumTextStyle}" AutomationProperties.IsInAccessibleTree="False" MaxLines="1" LineBreakMode="TailTruncation" />
+         <Label Text="{Binding Detail}" Style="{StaticResource supportTextStyle}" AutomationProperties.IsInAccessibleTree="False" MaxLines="1" LineBreakMode="TailTruncation" />
+        </VerticalStackLayout>
+        <controls:FontIcon Grid.Column="2" Glyph="{Binding Disclosure}" IsVisible="{Binding CanPreview}" IconSize="16" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
+       </Grid>
+       <Button Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Command="{Binding Path=BindingContext.Commands[ToggleGroupCommand], Source={RelativeSource AncestorType={x:Type local:MyTasksPanel}}}" CommandParameter="{Binding .}" IsEnabled="{Binding CanPreview}" SemanticProperties.Description="{Binding Caption, StringFormat='Expand or collapse {0}'}" />
+      </Grid>
+      <VerticalStackLayout IsVisible="{Binding IsExpanded}" Spacing="8" Padding="8,0,8,8">
+       <controls:FeedbackView Message="{Binding PreviewStatus}" Kind="Info" IsBusy="{Binding IsLoading}" />
+       <VerticalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Requests}">
+        <BindableLayout.ItemTemplate><DataTemplate>
+         <Border Style="{StaticResource actionCardStyle}" Padding="0">
+          <Grid ColumnDefinitions="4,*">
+           <BoxView Color="{AppThemeBinding Light={StaticResource secondaryLight}, Dark={StaticResource secondaryDark}}" Margin="0,12" InputTransparent="True" AutomationProperties.IsInAccessibleTree="False" />
+           <Grid Grid.Column="1" Padding="12" ColumnDefinitions="*,Auto" ColumnSpacing="8" InputTransparent="True" CascadeInputTransparent="True">
+            <VerticalStackLayout Spacing="4">
+             <HorizontalStackLayout Spacing="12">
+              <Border Style="{StaticResource accentChipStyle}"><Label Text="{Binding Status}" Style="{StaticResource accentChipTextStyle}" AutomationProperties.IsInAccessibleTree="False" /></Border>
+              <Label Text="{Binding Age}" Style="{StaticResource supportTextStyle}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" MaxLines="1" LineBreakMode="TailTruncation" />
+             </HorizontalStackLayout>
+             <Label Text="{Binding Summary}" Style="{StaticResource titleMediumTextStyle}" AutomationProperties.IsInAccessibleTree="False" MaxLines="1" LineBreakMode="TailTruncation" />
+             <Label Text="{Binding Context}" Style="{StaticResource bodyMediumTextStyle}" AutomationProperties.IsInAccessibleTree="False" MaxLines="1" LineBreakMode="TailTruncation" />
+             <Label Text="{Binding Metadata}" Style="{StaticResource supportTextStyle}" AutomationProperties.IsInAccessibleTree="False" MaxLines="1" LineBreakMode="TailTruncation" />
+            </VerticalStackLayout>
+            <controls:FontIcon Grid.Column="1" Glyph="{x:Static controls:FontIcons.ChevronRight}" IsVisible="{Binding CanNavigate}" IconSize="16" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+           </Grid>
+           <Button Grid.ColumnSpan="2" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" IsVisible="{Binding CanNavigate}" Command="{Binding Path=BindingContext.Commands[OpenRequestCommand], Source={RelativeSource AncestorType={x:Type local:MyTasksPanel}}}" CommandParameter="{Binding .}" SemanticProperties.Description="{Binding AccessibleName}" Padding="0" />
+          </Grid>
+         </Border>
+        </DataTemplate></BindableLayout.ItemTemplate>
+       </VerticalStackLayout>
+      </VerticalStackLayout>
+      <Button Text="{Binding ViewAllCaption}" IsVisible="{Binding ShowViewAll}" SemanticProperties.Description="{Binding Caption}" Style="{StaticResource outlinedButtonStyle}" Margin="12,0,12,12" ContentLayout="Right,12"
+       Command="{Binding Path=BindingContext.Commands[OpenCommand], Source={RelativeSource AncestorType={x:Type local:MyTasksPanel}}}" CommandParameter="{Binding .}">
+       <Button.ImageSource><FontImageSource Glyph="{x:Static controls:FontIcons.ChevronRight}" FontFamily="{x:Static controls:FontIcons.FontFamily}" Size="16" Color="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" /></Button.ImageSource>
+      </Button>
+     </VerticalStackLayout>
+    </Border>
    </DataTemplate></CollectionView.ItemTemplate>
   </CollectionView>
+  <Grid Grid.Row="6" ColumnDefinitions="*,*,*" ColumnSpacing="8" Padding="16,8" Margin="-16,0,-16,-16" BackgroundColor="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}">
+   <controls:WorkspaceTab Caption="Home" Glyph="{x:Static controls:FontIcons.House}" Command="{Binding Commands[HomeCommand]}" />
+   <controls:WorkspaceTab Grid.Column="1" Caption="All Modules" Glyph="{x:Static controls:FontIcons.LayerGroup}" Command="{Binding Commands[AllModulesCommand]}" />
+   <controls:WorkspaceTab Grid.Column="2" Caption="My Tasks" Glyph="{x:Static controls:FontIcons.ClipboardCheck}" IsSelected="True" IsInteractive="False" />
+  </Grid>
  </Grid>
 </ContentView>

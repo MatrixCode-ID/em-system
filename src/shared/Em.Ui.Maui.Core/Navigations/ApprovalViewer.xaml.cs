@@ -117,7 +117,7 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>Whether the action bar decides this step.</summary>
       public bool IsSelected {
          get => Get(false);
-         set => Set(value);
+         set => Set(value, _ => NotifyChanged(nameof(SelectionCaption)));
       }
 
       public void SelectCommand() {
@@ -144,6 +144,10 @@ namespace Em.Ui.Maui.Navigations
    /// <summary>A comment or recorded decision, in time order.</summary>
    public sealed record ApprovalCommentItemVm(string Author, DateTime When, string Text, string Decision)
    {
+      /// <summary>The author initials displayed by the activity avatar.</summary>
+      public string Initials => Author.ToInitials();
+      /// <summary>The decision and timestamp supporting the author line.</summary>
+      public string WhenText => string.IsNullOrEmpty(Decision) ? ApprovalTexts.Time(When) : Decision + " · " + ApprovalTexts.Time(When);
       /// <summary>"Name · Signed · 24-Oct-2026 10:15".</summary>
       public string Header => string.IsNullOrEmpty(Decision)
          ? $"{Author} · {ApprovalTexts.Time(When)}"
@@ -277,6 +281,15 @@ namespace Em.Ui.Maui.Navigations
 
       /// <summary><c>true</c> when nothing has been said yet.</summary>
       public bool HasNoComments => Comments.Count == 0;
+
+      /// <summary>Whether the viewer was opened as a pageable work queue.</summary>
+      public bool HasPaging => _filter is { ApprovalRequestId: null };
+
+      /// <summary>Whether a request has been loaded for the comment composer.</summary>
+      public bool HasDetail => Detail is not null;
+
+      /// <summary>The activity heading and its item count.</summary>
+      public string CommentsCaption => "Comments (" + Comments.Count.ToString(System.Globalization.CultureInfo.GetCultureInfo("en-US")) + ")";
 
       /// <summary>Whether the module offers a document preview.</summary>
       public bool HasPreview => _editor?.HasPreview == true;
@@ -474,7 +487,8 @@ namespace Em.Ui.Maui.Navigations
          foreach (var property in new[] {
                      nameof(Caption), nameof(Summary), nameof(SubSummary), nameof(HasSubSummary), nameof(Status),
                      nameof(LevelText), nameof(RequestedText), nameof(HasSteps), nameof(HasFields), nameof(HasNoComments),
-                     nameof(HasPreview), nameof(CanDecide), nameof(DecisionCaption), nameof(ApproveText)
+                     nameof(HasPreview), nameof(CanDecide), nameof(DecisionCaption), nameof(ApproveText),
+                     nameof(HasPaging), nameof(HasDetail), nameof(CommentsCaption)
                   })
             NotifyChanged(property);
          foreach (var command in Commands) command.RaiseCanExecuteChanged();

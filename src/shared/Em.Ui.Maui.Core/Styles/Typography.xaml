@@ -110,4 +110,15 @@
       <Setter Property="LineHeight" Value="1.3333" />
       <Setter Property="CharacterSpacing" Value="0.5" />
    </Style>
+   <!-- A paragraph keeps its own lines together. Layout spacing belongs between subjects, not lines. -->
+   <Style x:Key="bodyMediumParagraphStyle" TargetType="Label" BasedOn="{StaticResource bodyMediumTextStyle}">
+      <Setter Property="LineHeight" Value="1" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="LineBreakMode" Value="WordWrap" />
+   </Style>
+   <Style x:Key="bodyLargeParagraphStyle" TargetType="Label" BasedOn="{StaticResource bodyLargeTextStyle}">
+      <Setter Property="LineHeight" Value="1" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="LineBreakMode" Value="WordWrap" />
+   </Style>
 </ResourceDictionary>

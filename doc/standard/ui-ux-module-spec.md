@@ -65,6 +65,15 @@ design; a desktop mockup does not prove Android reflow.
 
 ## 4. UI architecture and ownership — UX-M03
 
+Module control spacing baseline (27 October 2026): keep one paragraph at natural
+line spacing (`LineHeight=1`) with no per-line margins. Labels and their values
+use `Spacing=0`; separate subjects by 8 logical units and sections by 12, with
+16-unit card insets. Use `bodyMediumParagraphStyle` or `bodyLargeParagraphStyle`
+for full wrapping descriptions, addresses and notes. Queue metadata, including
+multiple roles, remains one line with tail ellipsis; retain full source/detail
+and accessible text. Do not use paragraph leading as subject spacing or apply
+this as an unsolicited migration of every existing screen.
+
 - The host provides chrome, account, theme and root navigation; modules do not recreate them.
 - Modules register services and navigation through the engine builder pattern, never through ad hoc routes
   that bypass lifecycle or claims.

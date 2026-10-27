@@ -42,11 +42,11 @@ namespace Em.Ui.Maui.Navigations
             // Hidden while closed, not merely slid out: a panel that has slid away still occupies a strip as wide as
             // itself at the right edge of the screen, and on some devices that strip still catches touches meant for
             // the page content behind it.
-            IsVisible = true;
          }
 
          await _motion.SetOpenAsync(this, open, Math.Max(0, WidthRequest));
       }
+      internal void StopMotion() { _motion.Cancel(this); IsVisible = false; InputTransparent = true; }
    }
 
    /// <summary>
@@ -69,6 +69,10 @@ namespace Em.Ui.Maui.Navigations
       /// make the panel look different in content for no readable reason.
       /// </summary>
       public bool IsEnabled { get; init; } = true;
+      /// <summary>Whether this enabled row opens a destination instead of performing an immediate action.</summary>
+      public bool CanNavigate => IsNavigation && IsEnabled;
+      /// <summary>Whether the action represents navigation.</summary>
+      public bool IsNavigation { get; init; } = true;
 
       /// <summary>
       /// Whether this row needs a divider line above it. Filled when the list is built, so the first row has
@@ -117,6 +121,8 @@ namespace Em.Ui.Maui.Navigations
          RegisterCommand(nameof(ToggleThemeCommand), ToggleThemeCommand);
          RegisterCommand(nameof(CheckForUpdatesCommand), CheckForUpdatesCommand);
          RegisterCommand(nameof(SignOutCommand), SignOutCommand, SignOutCommandAllowed);
+         RegisterCommand(nameof(ToggleConnectionsCommand), ToggleConnectionsCommand);
+         RegisterCommand(nameof(SelectThemeCommand), SelectThemeCommand);
       }
 
       /// <summary>The static navigation rows, rebuilt every time the panel is opened.</summary>
@@ -159,6 +165,35 @@ namespace Em.Ui.Maui.Navigations
 
       /// <summary>The e-mail address of the signed-in account.</summary>
       public string EmailAddress => EmApp?.ActiveUser?.cCommValue ?? string.Empty;
+      /// <summary>A readable fallback when the account has no email address.</summary>
+      public string DisplayEmail => string.IsNullOrWhiteSpace(EmailAddress) ? "N/A" : EmailAddress;
+      /// <summary>The selected profile, separate from the connected address.</summary>
+      public string SelectedConnectionCaption => "Selected · " + (EmApp?.ActiveConnection?.ProfileName ?? "None");
+      /// <summary>Whether actual configured connection choices are exposed.</summary>
+      public bool IsConnectionsExpanded { get => Get<bool>(); set => Set(value, _ => NotifyChanged(nameof(ConnectionDisclosure))); }
+      /// <summary>Disclosure state, distinct from a navigation arrow.</summary>
+      public string ConnectionDisclosure => IsConnectionsExpanded ? FontIcons.ChevronUp : FontIcons.ChevronDown;
+      /// <summary>Whether the supported theme choices are exposed.</summary>
+      public bool IsThemeExpanded { get => Get<bool>(); set => Set(value, _ => NotifyChanged(nameof(ThemeDisclosure))); }
+      /// <summary>The theme disclosure state.</summary>
+      public string ThemeDisclosure => IsThemeExpanded ? FontIcons.ChevronUp : FontIcons.ChevronDown;
+      /// <summary>The Light selection indicator, separate from its visible label.</summary>
+      public bool IsLightThemeSelected => EmApp?.IsLightTheme == true;
+      /// <summary>The Dark selection indicator, separate from its visible label.</summary>
+      public bool IsDarkThemeSelected => EmApp?.IsLightTheme == false;
+      /// <summary>The accessible name and selection state of Light.</summary>
+      public string LightThemeCaption => IsLightThemeSelected ? "Light, selected" : "Light";
+      /// <summary>The accessible name and selection state of Dark.</summary>
+      public string DarkThemeCaption => IsDarkThemeSelected ? "Dark, selected" : "Dark";
+      /// <summary>Expands or collapses connection choices without changing the connection.</summary>
+      public void ToggleConnectionsCommand() => IsConnectionsExpanded = !IsConnectionsExpanded;
+      /// <summary>Applies only supported theme variants and closes their chooser.</summary>
+      public void SelectThemeCommand(object? value) {
+         if (EmApp is not { } app || value is not string mode) return;
+         if (mode == "Light") app.CurrentTheme = ThemeVariant.Light;
+         else if (mode == "Dark") app.CurrentTheme = ThemeVariant.Dark;
+         IsThemeExpanded = false; RefreshTheme();
+      }
 
       /// <summary>
       /// Whether the server choice list is drawn too. Only in debug mode: otherwise there is exactly one
@@ -200,6 +235,7 @@ namespace Em.Ui.Maui.Navigations
       public void Reload(Navigation? navigation) {
          _navigation = navigation;
          if (EmApp is not { } app) return;
+         IsConnectionsExpanded = false; IsThemeExpanded = false;
 
          RebuildStaticItems(app);
 
@@ -213,6 +249,7 @@ namespace Em.Ui.Maui.Navigations
          NotifyChanged(nameof(FullName));
          NotifyChanged(nameof(Initials));
          NotifyChanged(nameof(EmailAddress));
+         NotifyChanged(nameof(DisplayEmail)); NotifyChanged(nameof(SelectedConnectionCaption));
          NotifyChanged(nameof(ConnectionStatus));
          NotifyChanged(nameof(HasConnectionChoice));
          NotifyChanged(nameof(CanSignOut));
@@ -226,6 +263,8 @@ namespace Em.Ui.Maui.Navigations
       public void RefreshTheme() {
          NotifyChanged(nameof(ThemeCaption));
          NotifyChanged(nameof(ThemeGlyph));
+         NotifyChanged(nameof(LightThemeCaption)); NotifyChanged(nameof(DarkThemeCaption));
+         NotifyChanged(nameof(IsLightThemeSelected)); NotifyChanged(nameof(IsDarkThemeSelected));
       }
 
       // The static navigation list follows the same pattern as the desktop client, but its content belongs to
@@ -242,10 +281,10 @@ namespace Em.Ui.Maui.Navigations
             isEnabled: app.ActiveUser?.cUserId != Defaults.DebuggerUserId);
 
          if (app.IsDebugActive) {
-            AddStaticItem("Simulate Login", FontIcons.RightToBracket, BeginSimulationAsync);
+            AddStaticItem("Simulate Login", FontIcons.RightToBracket, BeginSimulationAsync, isNavigation: false);
          }
          if (app.IsSimulatingLogin) {
-            AddStaticItem("Exit simulation · Return to SD", FontIcons.ArrowLeft, EndSimulationAsync);
+            AddStaticItem("Exit simulation · Return to SD", FontIcons.ArrowLeft, EndSimulationAsync, isNavigation: false);
          }
 
          // Engine management tools get a card of their own, apart from the account's own rows.
@@ -275,13 +314,13 @@ namespace Em.Ui.Maui.Navigations
          }
       }
 
-      private void AddStaticItem(string title, string glyph, Func<Task> action, bool isEnabled = true) =>
-         AddStaticItem(StaticItems, title, glyph, action, isEnabled);
+      private void AddStaticItem(string title, string glyph, Func<Task> action, bool isEnabled = true, bool isNavigation = true) =>
+         AddStaticItem(StaticItems, title, glyph, action, isEnabled, isNavigation);
 
       private static void AddStaticItem(ObservableCollection<AccountPanelItemVm> items, string title, string glyph,
-         Func<Task> action, bool isEnabled = true) =>
+         Func<Task> action, bool isEnabled = true, bool isNavigation = true) =>
          items.Add(new AccountPanelItemVm {
-            Title = title, Glyph = glyph, Action = action, IsEnabled = isEnabled
+            Title = title, Glyph = glyph, Action = action, IsEnabled = isEnabled, IsNavigation = isNavigation
          });
 
       /// <summary>
@@ -311,6 +350,7 @@ namespace Em.Ui.Maui.Navigations
 
          app.ActiveConnection = selected.Connection;
          NotifyChanged(nameof(ConnectionStatus));
+         NotifyChanged(nameof(SelectedConnectionCaption)); IsConnectionsExpanded = false;
       }
 
       public void CloseCommand() => CloseRequested?.Invoke(this, EventArgs.Empty);
@@ -327,8 +367,7 @@ namespace Em.Ui.Maui.Navigations
       }
 
       public void ToggleThemeCommand() {
-         if (EmApp is not { } app) return;
-         app.CurrentTheme = app.IsLightTheme ? ThemeVariant.Dark : ThemeVariant.Light;
+         IsThemeExpanded = !IsThemeExpanded;
       }
 
       public Task SignOutCommand() {

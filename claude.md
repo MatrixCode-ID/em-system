@@ -1,5 +1,118 @@
 # CLAUDE.md
 
+## Posisi summary My Tasks pada Home MAUI (2026-10-27)
+
+Pin App List berarti seluruh shortlist app yang dipin. Kartu summary My Tasks
+dapat berada sebelum atau sesudah shortlist melalui tap-hold pada kartu lalu
+geser atas/bawah dan lepaskan, tanpa bergantung pada drop target app pin.
+Koreksi pengguna: hapus tombol panah pemindah; tap biasa
+tetap membuka workspace. Summary menjadi satu row nyata dalam daftar virtual,
+bukan dua header/footer yang disembunyikan. Posisi disimpan per akun/server pada perangkat, default
+sesudah pin; perubahan pin tidak mereset posisi. Katalog penuh tidak menampilkan
+summary. Gesture dari akun/server lama atau di luar Home ditolak.
+Tap-hold/drag mengonsumsi aktivasi tap dan tidak membuka workspace. Assigned
+dan Task groups tetap memperlihatkan 0 ketika snapshot sukses memang kosong.
+
+## Baseline spacing teks modul MAUI (2026-10-27)
+
+Summary card mengelompokkan identitas rapat dengan Spacing=0 dan LineHeight=1;
+metadata peran tetap satu baris dengan tail ellipsis. Untuk detail yang dibaca
+lengkap, gunakan bodyMediumParagraphStyle/bodyLargeParagraphStyle: wrapping,
+LineHeight=1, Margin=0. Pisahkan subject dengan layout spacing 8 dan section 12,
+bukan dengan tinggi baris berlebih. Label/isi dalam satu subject Spacing=0.
+Font scaling dan teks sumber tetap utuh. Ini baseline control modul, tanpa
+perintah migrasi massal layar di luar cakupan. Guide engine-maui-experience.md.
+
+## Satu subject pada summary card (2026-10-27)
+
+Setiap subject summary/queue card memakai satu baris dan tail ellipsis, termasuk
+alamat dan metadata. Simpan nilai penuh; jangan memotong string sumber atau
+mematikan font scaling. Detail dokumen, proposed changes, komentar dan error
+yang harus dibaca lengkap tetap boleh wrapping. Aksi/tab tidak boleh berada
+di header scroll yang terpotong atau tertindih daftar.
+
+## Koreksi shell dan Home MAUI (2026-10-27)
+
+Theme choices use aligned Sun/Light and Moon/Dark rows with a separate fixed
+check slot and accessible selected state. Animate modal entry/exit and page
+changes through MotionPolicy, respecting Android animation scale zero.
+Input/focus changes remain immediate; interrupted motion must never strand a
+scrim or reveal a stale surface after account changes or shell disposal.
+
+Page transitions use a simple horizontal swipe only: enter from the right on
+forward navigation and from the left on Back/Home. Do not fade page content or
+move it vertically. Start after the first native layout/pre-draw, and cancel
+pending frame readiness when the destination changes or the shell is disposed.
+
+Bottom navigation uses Home, All Modules, My Tasks in that order, including
+inside the task workspace. All Modules opens the existing permission-checked
+catalogue. Keep Home's View all button; either entry updates the selected tab.
+
+Home shows only explicitly pinned destinations for the current account/server.
+Without pins, keep the My Tasks summary card and View all catalogue access;
+never fall back to all available modules. Catalogue searches and filters do not
+change the Home shortlist. This supersedes the earlier empty-pin fallback.
+
+Refresh summary My Tasks tidak menyisipkan label busy sementara pada kartu.
+Gunakan progress kecil di slot refresh tetap; cache dan aksi buka tetap tersedia,
+refresh ganda dicegah. Pesan stale/error tetap eksplisit, tanpa memajukan waktu
+sukses saat refresh gagal. Guide engine-maui-experience.md.
+
+Header Modules di Home tidak memakai caption katalog/filter seperti "Available
+application modules". Caption konteks filter hanya tampil di katalog lengkap.
+
+Penegasan terakhir: menu modul berupa popover bertema yang di-anchor ke pemicu,
+dengan Open dan Pin/Unpin to home saja. Pemicu tiga-dot modul hanya di katalog;
+aturan ini menggantikan label Actions di bawah. Overflow app bar tetap dihapus.
+Preferensi hide/order lama tidak menyembunyikan atau mengurutkan katalog baru.
+
+Avatar akun tetap di kanan, tanpa overflow tiga-dot app bar. Workspace tabs
+memakai satu komponen agar glyph, label dan indikator pilihan konsisten.
+Home boleh mempunyai summary card yang membuka My Tasks, dengan data cache
+existing dan refresh, bukan daftar request atau angka status contoh. Ini
+menggantikan larangan summary Home sebelumnya. Kartu destinasi Home hanya
+chevron; menu berlabel Actions pada katalog. Item grup katalog lebih kecil,
+terinden dan dua baris (judul/deskripsi) dengan ellipsis; jangan ulang kode
+departemen yang sudah ada di header. View all memakai bentuk visual compact.
+
+## Katalog, task workspace dan account drawer MAUI (2026-10-27)
+
+Home menampilkan pin perangkat dengan akses ke katalog lengkap. Katalog bergrup
+tetap virtual, dengan ikon dan context actions nyata. Preferensi per akun/server
+tidak dapat mengalahkan izin navigasi. Tidak ada hamburger baru. Arrow kanan
+hanya untuk card navigasi yang tersedia; info/aksi langsung tidak memakai arrow.
+Disclosure grup/pilihan memakai atas/bawah. Task workspace menampilkan sumber
+server existing dan preview terbatas dengan akses ke daftar lengkap, tanpa
+status/due date contoh. Ikon notifikasi belum mempunyai aksi atau badge.
+Guide: `doc/engine/engine-maui-experience.md`.
+
+## Visual login MAUI (keputusan pengguna 2026-10-27)
+
+Login menempatkan branding host di tengah, label permanen dan field berikon,
+visibility password di dalam field, satu Sign in utama dan aksi pendamping.
+Gunakan palette light/dark bersama dan native input/button; bukan gambar form
+statis. Status simulasi, server read-only, error, versi dan update mengikuti
+kontrak existing. Guide: `doc/engine/engine-maui-experience.md`.
+
+## Layout review approval MAUI (keputusan pengguna 2026-10-27)
+
+UI review mengelompokkan data utama, proposed changes, route signer dan komentar;
+composer dan keputusan tetap pada area bawah. Style bersama berada di
+`Styles/Approval.xaml`. Pemilihan signer bukan keputusan; tidak ada tombol Open
+berulang pada kartu satu aksi. Tata letak tidak menambah kemampuan bisnis yang
+belum tersedia pada modul pemakai. Guide: `doc/engine/engine-maui-experience.md`.
+
+## Subtitle katalog Home MAUI (keputusan pengguna 2026-10-27)
+
+Judul modul dan deskripsi/subtitle pada katalog Home berada di dalam satu
+permukaan tombol yang dapat ditap seluruhnya. Jangan memisahkan subtitle sebagai
+teks di luar tombol. Perbaikan aksesibilitas mempertahankan hierarki konten ini;
+MD3 tidak dijadikan alasan untuk memisahkan informasi yang satu tujuan navigasi.
+
+Kartu Home menampilkan ikon aplikasi (ikon registrasi bila ada, glyph default
+bila tidak) dan panah kecil di kanan sebagai penanda navigasi. Pemisah grup dapat
+dibuka/ditutup melalui seluruh header; katalog tetap memakai satu daftar virtual.
+
 ## Home dan panel My Tasks MAUI (keputusan pengguna 2026-10-26)
 
 My Tasks harus berada pada panel tersendiri dan tidak ditampilkan pada Home.

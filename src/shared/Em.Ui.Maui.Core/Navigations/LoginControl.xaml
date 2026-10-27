@@ -2,26 +2,38 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
  xmlns:local="clr-namespace:Em.Ui.Maui.Navigations" xmlns:controls="clr-namespace:Em.Ui.Maui.Controls" x:Class="Em.Ui.Maui.Navigations.LoginControl">
  <ContentView.BindingContext><local:LoginControlVm /></ContentView.BindingContext>
- <ScrollView><VerticalStackLayout Padding="16,24" Spacing="24" MaximumWidthRequest="600" HorizontalOptions="Fill">
-  <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
-   <Image Source="{Binding LogoImage}" HeightRequest="64" Aspect="AspectFit" />
-   <Label Text="{Binding BrandTitle}" Style="{StaticResource headlineSmallTextStyle}" SemanticProperties.HeadingLevel="Level1" />
-   <Label Text="{Binding BrandTagline}" Style="{StaticResource bodyMediumTextStyle}" />
+ <ContentView.Background>
+  <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+   <GradientStop Offset="0" Color="{AppThemeBinding Light={StaticResource surfaceLight}, Dark={StaticResource surfaceDark}}" />
+   <GradientStop Offset="1" Color="{AppThemeBinding Light={StaticResource surfaceContainerLowLight}, Dark={StaticResource surfaceContainerLowDark}}" />
+  </LinearGradientBrush>
+ </ContentView.Background>
+ <ScrollView><VerticalStackLayout Padding="24,32,24,24" Spacing="16" MaximumWidthRequest="480" HorizontalOptions="Fill">
+  <VerticalStackLayout Spacing="8" Margin="0,8,0,8">
+   <Image Source="{Binding LogoImage}" HeightRequest="72" WidthRequest="144" Aspect="AspectFit" HorizontalOptions="Center" AutomationProperties.IsInAccessibleTree="False" />
+   <Label Text="{Binding BrandTitle}" Style="{StaticResource headlineSmallTextStyle}" HorizontalTextAlignment="Center" SemanticProperties.HeadingLevel="Level1" />
+   <Label Text="{Binding BrandTagline}" Style="{StaticResource bodyLargeTextStyle}" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
   </VerticalStackLayout>
   <controls:FeedbackView Message="{Binding SessionEndedNotice}" Kind="Info" />
   <VerticalStackLayout Spacing="16" IsEnabled="{Binding IsNotBusy}">
-   <controls:MaterialField Label="API server" Text="{Binding ServerUrl}" IsReadOnly="{Binding IsServerLocked}" Error="{Binding ServerError}" />
-   <controls:MaterialField Label="Account" Text="{Binding UserName}" Help="Enter your account name" Error="{Binding AccountError}" />
-   <controls:MaterialField Label="Password" Text="{Binding Password}" IsPassword="True" Error="{Binding PasswordError}" />
-   <Button Text="Sign in" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SignInCommand]}" />
-   <Button Text="Debug Sign In" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[DebugSignInCommand]}" IsVisible="{Binding IsDebugSignInVisible}" />
-   <Button Text="Cancel simulation · Return to SD" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[ExitSimulationCommand]}" IsVisible="{Binding IsDebugSignInVisible}" SemanticProperties.Description="Cancel simulation and return to SYSTEM DEBUGGER" />
+   <controls:MaterialField Label="API server" IconGlyph="{x:Static controls:FontIcons.Server}" Text="{Binding ServerUrl}" IsReadOnly="{Binding IsServerLocked}" Error="{Binding ServerError}" />
+   <controls:MaterialField Label="Account" IconGlyph="{x:Static controls:FontIcons.User}" Text="{Binding UserName}" Placeholder="Enter your account name" Error="{Binding AccountError}" />
+   <controls:MaterialField Label="Password" IconGlyph="{x:Static controls:FontIcons.Lock}" Text="{Binding Password}" Placeholder="Enter your password" IsPassword="True" Error="{Binding PasswordError}" />
+   <Button Text="Sign in" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SignInCommand]}" Margin="0,4,0,0" FontSize="16" MinimumHeightRequest="52" ContentLayout="Left,12">
+    <Button.ImageSource><FontImageSource FontFamily="{x:Static controls:FontIcons.FontFamily}" Glyph="{x:Static controls:FontIcons.RightToBracket}" Size="20" Color="{AppThemeBinding Light={StaticResource onPrimaryLight}, Dark={StaticResource onPrimaryDark}}" /></Button.ImageSource>
+   </Button>
+   <Button Text="Debug Sign In" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[DebugSignInCommand]}" IsVisible="{Binding IsDebugSignInVisible}" MinimumHeightRequest="52" ContentLayout="Left,12">
+    <Button.ImageSource><FontImageSource FontFamily="{x:Static controls:FontIcons.FontFamily}" Glyph="{x:Static controls:FontIcons.Bug}" Size="20" Color="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" /></Button.ImageSource>
+   </Button>
+   <Button Text="Cancel simulation · Return to SD" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[ExitSimulationCommand]}" IsVisible="{Binding IsDebugSignInVisible}" SemanticProperties.Description="Cancel simulation and return to SYSTEM DEBUGGER" MinimumHeightRequest="52" ContentLayout="Left,12" LineBreakMode="WordWrap">
+    <Button.ImageSource><FontImageSource FontFamily="{x:Static controls:FontIcons.FontFamily}" Glyph="{x:Static controls:FontIcons.ArrowLeft}" Size="20" Color="{AppThemeBinding Light={StaticResource onSecondaryContainerLight}, Dark={StaticResource onSecondaryContainerDark}}" /></Button.ImageSource>
+   </Button>
   </VerticalStackLayout>
   <controls:FeedbackView Message="{Binding SignInError}" Kind="Error" />
   <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
   <Button Text="Switch theme" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[ToggleThemeCommand]}" />
-  <Label Text="{Binding InstalledVersion}" Style="{StaticResource bodyMediumTextStyle}" HorizontalOptions="Center" />
-  <Button Text="Check for updates" Style="{StaticResource tonalButtonStyle}" Command="{Binding Commands[CheckForUpdatesCommand]}" />
-  <Label Text="{Binding BrandCopyright}" Style="{StaticResource bodyMediumTextStyle}" HorizontalOptions="Center" />
+  <Label Text="{Binding InstalledVersion}" Style="{StaticResource supportTextStyle}" HorizontalTextAlignment="Center" />
+  <Button Text="Check for updates" Style="{StaticResource textButtonStyle}" Command="{Binding Commands[CheckForUpdatesCommand]}" />
+  <Label Text="{Binding BrandCopyright}" Style="{StaticResource supportTextStyle}" HorizontalTextAlignment="Center" />
  </VerticalStackLayout></ScrollView>
 </ContentView>

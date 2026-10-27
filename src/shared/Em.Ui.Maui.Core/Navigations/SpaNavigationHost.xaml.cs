@@ -6,7 +6,7 @@ using Em.Ui.Maui.Shared;
 namespace Em.Ui.Maui.Navigations
 {
    /// <summary>The exclusive modal layer displayed by the shell.</summary>
-   public enum ShellOverlay { None, Account, Tasks, Overflow }
+   public enum ShellOverlay { None, Account, Tasks }
 
    /// <summary>Adaptive single-page host with one modal overlay and a shared task cache.</summary>
    public partial class SpaNavigationHost : ContentPage
@@ -15,6 +15,9 @@ namespace Em.Ui.Maui.Navigations
       private Window? _window;
       private bool _detached;
       private VisualElement? _opener;
+      private readonly Controls.MotionPolicy _taskMotion = new(), _bodyMotion = new(), _scrimMotion = new();
+      private NavigationEntry? _presentedEntry;
+      private bool _presentedCatalogue;
 #if ANDROID
       private Android.Views.View? _nativeRoot, _keyTarget;
       private Android.Views.ViewTreeObserver? _focusObserver;
@@ -64,14 +67,14 @@ namespace Em.Ui.Maui.Navigations
       }
       private void OnNativeKey(object? sender, Android.Views.View.KeyEventArgs e) {
          if (e.KeyCode == Android.Views.Keycode.Escape && Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; e.Handled = true; }
+         else if (e.KeyCode == Android.Views.Keycode.Escape && BodyHost.Content is DefaultHomeControl { Vm.IsContextMenuOpen: true } home) { home.Vm.CloseMenuCommand(); e.Handled = true; }
       }
 #endif
       private void OnSizeChanged(object? sender, EventArgs e) {
          Vm.IsCompact = Width < 600;
          var width = Math.Max(0, Width);
          TasksPanel.WidthRequest = width < 600 ? width : Math.Min(400, width);
-         AccountPanelView.WidthRequest = Math.Min(400, width);
-         OverflowPanel.WidthRequest = Math.Min(320, width);
+         AccountPanelView.WidthRequest = Math.Min(400, Math.Max(0, width - 48));
       }
       private void CloseRequested(object? sender, EventArgs e) => Vm.Overlay = ShellOverlay.None;
       private void OnWindowResumed(object? sender, EventArgs e) { _hubTimer.Start(); _ = Vm.EmApp?.RefreshHubTasksAsync(); }
@@ -80,6 +83,7 @@ namespace Em.Ui.Maui.Navigations
       private void OnHubTasksChanged(object? sender, EventArgs e) => Dispatcher.Dispatch(() => { if (_detached) return; Vm.RefreshHubTasks(); TasksPanel.Vm.Update(); });
       private void OnAccountChanged(object? sender, EventArgs e) => Dispatcher.Dispatch(() => {
          if (_detached) return;
+         ResetMotion();
          Vm.Overlay = ShellOverlay.None; Vm.RefreshAccount();
          if (Vm.Stack?.Home?.Body is DefaultHomeControl home) _ = home.Vm.ReloadAsync();
          TasksPanel.Vm.Update(); _ = Vm.EmApp?.RefreshHubTasksAsync();
@@ -91,12 +95,14 @@ namespace Em.Ui.Maui.Navigations
       });
       internal void Detach() {
          _detached = true; Vm.Overlay = ShellOverlay.None;
+         ResetMotion();
          var app = Vm.EmApp!;
          app.ActiveUserChanged -= OnAccountChanged; app.ActiveConnectionChanged -= OnAccountChanged;
          app.ThemeChanged -= OnThemeChanged; app.SessionEnded -= OnSessionEnded; app.HubTasksChanged -= OnHubTasksChanged;
          _hubTimer.Stop(); _hubTimer.Tick -= OnHubTimerTick;
          if (_window is not null) { _window.Resumed -= OnWindowResumed; _window.Stopped -= OnWindowStopped; _window = null; }
          AccountPanelView.Vm.CloseRequested -= CloseRequested; TasksPanel.Vm.CloseRequested -= CloseRequested;
+         TasksPanel.Vm.Release();
          SizeChanged -= OnSizeChanged; Vm.PropertyChanged -= VmOnPropertyChanged; Vm.Stack = null;
 #if ANDROID
          ClearNativeKeys();
@@ -105,18 +111,55 @@ namespace Em.Ui.Maui.Navigations
       private void VmOnPropertyChanged(object? sender, PropertyChangedEventArgs e) {
          if (_detached) return;
          if (Dispatcher.IsDispatchRequired) { Dispatcher.Dispatch(() => VmOnPropertyChanged(sender, e)); return; }
-         if (e.PropertyName == nameof(SpaNavigationHostVm.Entry)) BodyHost.Content = Vm.Entry?.Body as View;
+         if (e.PropertyName == nameof(SpaNavigationHostVm.Entry)) {
+            BodyHost.Content = Vm.Entry?.Body as View;
+            AnimateBody();
+         }
+         else if (e.PropertyName == nameof(SpaNavigationHostVm.IsAllModulesWorkspace)) AnimateBody();
          else if (e.PropertyName == nameof(SpaNavigationHostVm.Overlay)) ApplyOverlay();
+      }
+      private void AnimateBody() {
+         if (_presentedEntry == Vm.Entry && _presentedCatalogue == Vm.IsAllModulesWorkspace) return;
+         var animate = _presentedEntry is not null && BodyHost.Content is not null;
+         var entries = Vm.Stack?.Entries.ToList();
+         var sourceIndex = _presentedEntry is null ? -1 : entries?.IndexOf(_presentedEntry) ?? -1;
+         var targetIndex = Vm.Entry is null ? -1 : entries?.IndexOf(Vm.Entry) ?? -1;
+         var backward = (_presentedEntry != Vm.Entry && Vm.Entry == Vm.Stack?.Home)
+            || (_presentedEntry == Vm.Entry && _presentedCatalogue && !Vm.IsAllModulesWorkspace)
+            || (sourceIndex >= 0 && targetIndex >= 0 && targetIndex < sourceIndex);
+         _presentedEntry = Vm.Entry; _presentedCatalogue = Vm.IsAllModulesWorkspace;
+         if (animate) _ = _bodyMotion.SwipeAsync(BodyHost, backward);
+         else { _bodyMotion.Cancel(BodyHost); BodyHost.TranslationX = 0; BodyHost.TranslationY = 0; BodyHost.Opacity = 1; }
+      }
+      private void ResetMotion() {
+         AccountPanelView.StopMotion(); _taskMotion.Cancel(TasksPanel); TasksPanel.IsVisible = false;
+         _scrimMotion.Cancel(Scrim); Scrim.IsVisible = false; Scrim.InputTransparent = true; Scrim.Opacity = 0;
+         _bodyMotion.Cancel(BodyHost); BodyHost.TranslationX = 0; BodyHost.TranslationY = 0; BodyHost.Opacity = 1;
+         MainContent.InputTransparent = false;
+      }
+      private static void SetSurfaceAccess(VisualElement view, bool active) {
+         view.InputTransparent = !active;
+#if ANDROID
+         if (view.Handler?.PlatformView is Android.Views.ViewGroup native) {
+            native.ImportantForAccessibility = active ? Android.Views.ImportantForAccessibility.Auto : Android.Views.ImportantForAccessibility.NoHideDescendants;
+            native.DescendantFocusability = active ? Android.Views.DescendantFocusability.AfterDescendants : Android.Views.DescendantFocusability.BlockDescendants;
+         }
+#endif
       }
       private void ApplyOverlay() {
          var overlay = Vm.Overlay;
          var open = overlay != ShellOverlay.None;
-         if (open) _opener = overlay switch { ShellOverlay.Tasks => TasksButton, ShellOverlay.Account => AccountButton, _ => OverflowButton };
-         // Modal state changes synchronously. Cosmetic transitions never delay commands or scrim cleanup.
-         AccountPanelView.CancelAnimations(); AccountPanelView.TranslationX = 0;
-         AccountPanelView.IsVisible = overlay == ShellOverlay.Account;
-         TasksPanel.IsVisible = overlay == ShellOverlay.Tasks; OverflowPanel.IsVisible = overlay == ShellOverlay.Overflow;
-         Scrim.IsVisible = open; Scrim.InputTransparent = !open; Scrim.Opacity = open ? .4 : 0;
+         if (open && BodyHost.Content is DefaultHomeControl home) home.Vm.CloseMenuCommand();
+         if (open) _opener = overlay == ShellOverlay.Tasks ? TasksButton.FocusTarget : AccountButton;
+         // Logical input/focus state changes immediately; motion only affects presentation.
+         SetSurfaceAccess(AccountPanelView, overlay == ShellOverlay.Account);
+         SetSurfaceAccess(TasksPanel, overlay == ShellOverlay.Tasks);
+         _ = AccountPanelView.AnimateAsync(overlay == ShellOverlay.Account, Vm.Navigation);
+         _ = _taskMotion.SetOpenAsync(TasksPanel, overlay == ShellOverlay.Tasks, Math.Max(0, TasksPanel.WidthRequest));
+         TasksPanel.Vm.IsActive = overlay == ShellOverlay.Tasks;
+         Scrim.IsVisible = open; Scrim.InputTransparent = !open;
+         if (open) _ = _scrimMotion.EnterAsync(Scrim, 0, .4);
+         else { _scrimMotion.Cancel(Scrim); Scrim.Opacity = 0; }
          MainContent.InputTransparent = open;
 #if ANDROID
          if (MainContent.Handler?.PlatformView is Android.Views.ViewGroup background) {
@@ -124,13 +167,14 @@ namespace Em.Ui.Maui.Navigations
             background.DescendantFocusability = open ? Android.Views.DescendantFocusability.BlockDescendants : Android.Views.DescendantFocusability.AfterDescendants;
          }
 #endif
-         if (overlay == ShellOverlay.Account) { AccountPanelView.Vm.Reload(Vm.Navigation); AccountPanelView.FindByName<Controls.IconButton>("CloseButton")?.Focus(); }
+         if (overlay == ShellOverlay.Account) { AccountPanelView.FindByName<Controls.IconButton>("CloseButton")?.Focus(); }
          else if (overlay == ShellOverlay.Tasks) { TasksPanel.Vm.Update(); TasksPanel.FocusFirst(); _ = Vm.EmApp?.RefreshHubTasksAsync(); }
-         else if (overlay == ShellOverlay.Overflow) OverflowClose.Focus();
          else { _opener?.Focus(); _opener = null; }
       }
       protected override bool OnBackButtonPressed() {
          if (Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; return true; }
+         if (BodyHost.Content is DefaultHomeControl { Vm.IsContextMenuOpen: true } menuHome) { menuHome.Vm.CloseMenuCommand(); return true; }
+         if (BodyHost.Content is DefaultHomeControl { Vm.IsCatalogueOpen: true } home) { home.Vm.BackToHomeCommand(); return true; }
          if (Vm.Stack is not { CanGoBack: true } stack) return base.OnBackButtonPressed();
          _ = stack.Backward(); return true;
       }
@@ -142,11 +186,11 @@ namespace Em.Ui.Maui.Navigations
       public SpaNavigationHostVm() {
          RegisterCommand(nameof(LeadingCommand), LeadingCommand, LeadingCommandAllowed);
          RegisterCommand(nameof(HomeCommand), HomeCommand, HomeCommandAllowed);
+         RegisterCommand(nameof(AllModulesCommand), AllModulesCommand, AllModulesCommandAllowed);
          RegisterCommand(nameof(ForwardCommand), ForwardCommand, ForwardCommandAllowed);
          RegisterCommand(nameof(ReloadCommand), ReloadCommand, ReloadCommandAllowed);
          RegisterCommand(nameof(AccountPanelCommand), AccountPanelCommand, AccountPanelCommandAllowed);
          RegisterCommand(nameof(CloseAccountPanelCommand), CloseAccountPanelCommand);
-         RegisterCommand(nameof(OverflowCommand), OverflowCommand);
          RegisterCommand(nameof(HubTasksCommand), HubTasksCommand, HubTasksCommandAllowed);
          RegisterCommand(nameof(ExitSimulationCommand), ExitSimulationCommand, ExitSimulationCommandAllowed);
       }
@@ -183,20 +227,32 @@ namespace Em.Ui.Maui.Navigations
       public string HubTaskAccessibleName => EmApp?.HubTaskRefreshedAt is null ? "My Tasks, count not loaded" : $"My Tasks, {HubTaskCount} waiting";
       public void RefreshHubTasks() {
          foreach (var name in new[] { nameof(HubTaskCount), nameof(HasHubTasks), nameof(HasTaskBadge), nameof(HubTaskBadge), nameof(HubTaskAccessibleName) }) NotifyChanged(name);
+         Commands[nameof(HubTasksCommand)]?.RaiseCanExecuteChanged();
       }
       public Task HubTasksCommand() { Overlay = Overlay == ShellOverlay.Tasks ? ShellOverlay.None : ShellOverlay.Tasks; return Task.CompletedTask; }
       public bool HubTasksCommandAllowed() => HasHubTasks;
       public ShellOverlay Overlay {
          get => Get<ShellOverlay>();
-         set => Set(value, _ => { NotifyChanged(nameof(IsAccountPanelOpen)); NotifyChanged(nameof(IsOverflowOpen)); });
+         set => Set(value, _ => NotifyChanged(nameof(IsAccountPanelOpen)));
       }
       public bool IsAccountPanelOpen { get => Overlay == ShellOverlay.Account; set { if (value) Overlay = ShellOverlay.Account; else if (IsAccountPanelOpen) Overlay = ShellOverlay.None; } }
-      public bool IsOverflowOpen => Overlay == ShellOverlay.Overflow;
-      public void OverflowCommand() => Overlay = IsOverflowOpen ? ShellOverlay.None : ShellOverlay.Overflow;
       public bool IsCompact { get => Get<bool>(); set => Set(value, _ => RefreshNavigationCommands()); }
       public bool ShowHomeAction => !IsCompact && IsHomeVisible;
       public bool ShowReloadAction => !IsCompact && IsReloadVisible;
-      public bool ShowOverflowAction => IsCompact && (IsHomeVisible || IsReloadVisible);
+      /// <summary>The home workspace uses host branding instead of a second screen title.</summary>
+      public bool IsHomeWorkspace => IsAtHome;
+      /// <summary>Marks Home only while the pinned shortlist is displayed.</summary>
+      public bool IsHomeTabSelected => IsAtHome && !IsAllModulesWorkspace;
+      /// <summary>Marks the complete catalogue, including when opened through View all.</summary>
+      public bool IsAllModulesWorkspace => IsAtHome && Entry?.Body is DefaultHomeControl { Vm.IsCatalogueOpen: true };
+      /// <summary>The title area used for ordinary module pages.</summary>
+      public bool ShowScreenTitle => !IsAtHome && IsTitleVisible;
+      /// <summary>The account stays at the right edge on every workspace screen.</summary>
+      public int AccountColumn => 6;
+      /// <summary>The host's logo, without a product-specific dependency.</summary>
+      public Microsoft.Maui.Controls.ImageSource? LogoImage => EmApp is { } app ? BrandingImages.LoadLogo(app.Branding) : null;
+      /// <summary>Bottom navigation is only present in an authenticated workspace.</summary>
+      public bool ShowBottomNavigation => HasHubTasks && IsToolbarVisible;
 
       /// <summary>
       /// The stack shown by this host. The host follows that stack itself - the entry being shown and the
@@ -231,8 +287,10 @@ namespace Em.Ui.Maui.Navigations
             // stop listening to the one it is leaving - an entry that stays alive in the stack keeps
             // raising changes, and an old subscription would let it repaint a bar it no longer owns.
             if (field != null) field.PropertyChanged -= EntryPropertyChanged;
+            if (field?.Body is DefaultHomeControl previousHome) previousHome.Vm.PropertyChanged -= HomePropertyChanged;
             field = value;
             if (field != null) field.PropertyChanged += EntryPropertyChanged;
+            if (field?.Body is DefaultHomeControl currentHome) currentHome.Vm.PropertyChanged += HomePropertyChanged;
 
             NotifyChanged();
             NotifyChanged(nameof(Navigation));
@@ -254,6 +312,11 @@ namespace Em.Ui.Maui.Navigations
 
       private void EntryPropertyChanged(object? sender, PropertyChangedEventArgs e) {
          if (e.PropertyName == nameof(NavigationEntry.Title)) NotifyChanged(nameof(Title));
+      }
+
+      private void HomePropertyChanged(object? sender, PropertyChangedEventArgs e) {
+         if (e.PropertyName != nameof(DefaultHomeControlVm.IsCatalogueOpen)) return;
+         NotifyChanged(nameof(IsHomeTabSelected)); NotifyChanged(nameof(IsAllModulesWorkspace));
       }
 
       // Home is never an entry of the navigation path, so "being at home" means that what is shown is the
@@ -322,7 +385,7 @@ namespace Em.Ui.Maui.Navigations
       /// content of the navigation path changes.
       /// </summary>
       public void RefreshNavigationCommands() {
-         NotifyChanged(nameof(ShowHomeAction)); NotifyChanged(nameof(ShowReloadAction)); NotifyChanged(nameof(ShowOverflowAction));
+         NotifyChanged(nameof(ShowHomeAction)); NotifyChanged(nameof(ShowReloadAction));
          NotifyChanged(nameof(CanGoForward));
          NotifyChanged(nameof(IsBackVisible));
          NotifyChanged(nameof(IsHomeVisible));
@@ -331,18 +394,26 @@ namespace Em.Ui.Maui.Navigations
          NotifyChanged(nameof(Title));
          NotifyChanged(nameof(Subtitle));
          NotifyChanged(nameof(HasSubtitle));
+         foreach (var name in new[] { nameof(IsHomeWorkspace), nameof(ShowScreenTitle), nameof(AccountColumn), nameof(LogoImage), nameof(ShowBottomNavigation) }) NotifyChanged(name);
+         NotifyChanged(nameof(IsHomeTabSelected)); NotifyChanged(nameof(IsAllModulesWorkspace));
          Commands[nameof(LeadingCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(HomeCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(AllModulesCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(ForwardCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(ReloadCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(HubTasksCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(AccountPanelCommand)]?.RaiseCanExecuteChanged();
       }
 
       /// <summary>Redraws the account badge after the user or the server changed.</summary>
       public void RefreshAccount() {
          NotifyChanged(nameof(IsToolbarVisible)); NotifyChanged(nameof(IsUserVisible)); RefreshHubTasks();
+         NotifyChanged(nameof(ShowBottomNavigation)); NotifyChanged(nameof(LogoImage));
          NotifyChanged(nameof(AccountInitials));
          NotifyChanged(nameof(IsSimulationVisible));
          Commands[nameof(ExitSimulationCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(AccountPanelCommand)]?.RaiseCanExecuteChanged();
+         Commands[nameof(AllModulesCommand)]?.RaiseCanExecuteChanged();
       }
 
       /// <summary>The leftmost button of the top bar: go back one screen.</summary>
@@ -350,8 +421,23 @@ namespace Em.Ui.Maui.Navigations
       public bool LeadingCommandAllowed() => Stack?.CanGoBack == true;
 
       /// <summary>Go home from any screen, without having to go back step by step.</summary>
-      public Task HomeCommand() { Overlay = ShellOverlay.None; return Stack!.NavigateHome(); }
-      public bool HomeCommandAllowed() => Stack?.Home is not null && !IsAtHome;
+      public Task HomeCommand() {
+         Overlay = ShellOverlay.None;
+         if (Stack?.Home?.Body is DefaultHomeControl home) home.Vm.BackToHomeCommand();
+         return Stack!.NavigateHome();
+      }
+      public bool HomeCommandAllowed() => Stack?.Home is not null;
+
+      /// <summary>Opens the existing catalogue after navigation home has completed.</summary>
+      public async Task AllModulesCommand() {
+         if (!AllModulesCommandAllowed()) return;
+         Overlay = ShellOverlay.None;
+         var stack = Stack!; var user = EmApp!.ActiveUser; var connection = EmApp.ActiveConnection;
+         await stack.NavigateHome();
+         if (Stack == stack && stack.Current == stack.Home && ReferenceEquals(user, EmApp?.ActiveUser)
+             && ReferenceEquals(connection, EmApp?.ActiveConnection) && stack.Home?.Body is DefaultHomeControl home) home.Vm.ViewAllCommand();
+      }
+      public bool AllModulesCommandAllowed() => HasHubTasks && Stack?.Home?.Body is DefaultHomeControl;
 
       public Task ForwardCommand() => Stack!.Forward();
       public bool ForwardCommandAllowed() => CanGoForward;
