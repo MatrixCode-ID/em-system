@@ -38,10 +38,15 @@ public class HoldDragButton : Button
    private VisualElement? _feedbackTarget;
    private double _originalOpacity, _originalY;
 
+   // A virtualized row can keep receiving binding updates after its handler has
+   // disconnected and disposed the Java peer. A cached view is not proof of life.
+   private Android.Views.View? CurrentNative => _native is { Handle: var handle } native
+      && handle != IntPtr.Zero && ReferenceEquals(Handler?.PlatformView, native) ? native : null;
+
    /// <inheritdoc />
    protected override void OnHandlerChanging(HandlerChangingEventArgs args) {
       CancelInteraction();
-      if (_native is not null) _native.Touch -= OnNativeTouch;
+      if (_native is { Handle: var handle } native && handle != IntPtr.Zero) native.Touch -= OnNativeTouch;
       _native = null;
       base.OnHandlerChanging(args);
    }
@@ -51,7 +56,7 @@ public class HoldDragButton : Button
       if (Handler?.PlatformView is Android.Views.View native) { _native = native; native.Touch += OnNativeTouch; }
    }
    private void OnNativeTouch(object? sender, Android.Views.View.TouchEventArgs args) {
-      if (args.Event is not { } touch || _native is not { } native) return;
+      if (args.Event is not { } touch || CurrentNative is not { } native || !ReferenceEquals(sender, native)) return;
       args.Handled = true;
       switch (touch.ActionMasked) {
          case Android.Views.MotionEventActions.Down:
@@ -92,10 +97,10 @@ public class HoldDragButton : Button
       }
    }
    private void BeginHolding() {
-      if (!_tracking || !_tapCandidate || !CanReorder || _native?.IsAttachedToWindow != true || !ReferenceEquals(_scopeAtDown, InteractionScope)) return;
+      if (!_tracking || !_tapCandidate || !CanReorder || CurrentNative is not { IsAttachedToWindow: true } native || !ReferenceEquals(_scopeAtDown, InteractionScope)) return;
       _holding = true; _tapCandidate = false;
-      _native?.Parent?.RequestDisallowInterceptTouchEvent(true);
-      _native?.PerformHapticFeedback(Android.Views.FeedbackConstants.LongPress);
+      native.Parent?.RequestDisallowInterceptTouchEvent(true);
+      native.PerformHapticFeedback(Android.Views.FeedbackConstants.LongPress);
       _feedbackTarget = DragTarget;
       if (_feedbackTarget is { } target) { _originalOpacity = target.Opacity; _originalY = target.TranslationY; target.Opacity *= 0.75; }
    }
@@ -103,7 +108,7 @@ public class HoldDragButton : Button
    private void CancelInteraction() {
 #if ANDROID
       _holdTimer?.Stop();
-      if (_native is { } native) { native.Pressed = false; native.Parent?.RequestDisallowInterceptTouchEvent(false); }
+      if (CurrentNative is { } native) { native.Pressed = false; native.Parent?.RequestDisallowInterceptTouchEvent(false); }
       if (_feedbackTarget is { } target) { target.Opacity = _originalOpacity; target.TranslationY = _originalY; }
       _feedbackTarget = null; _tracking = _holding = _tapCandidate = false; _scopeAtDown = null;
 #endif

@@ -39,6 +39,12 @@ Summary bindings keep the catalogue row as their context and read its live
 TaskSummary properties; they do not replace a recycled row's BindingContext.
 Successful empty snapshots display 0 for both Assigned and Task groups.
 
+Held-input controls must validate that their cached Android peer still has a
+live handle and belongs to the current handler before accessing native state.
+Virtualized rows can receive binding changes after native disposal, including
+when Home switches to the catalogue. Cancellation must still stop the hold timer
+and reset gesture feedback when the native peer is no longer usable.
+
 The Home task summary keeps its cached counts and success time while refreshing.
 A native 20-unit progress indicator replaces the refresh action inside the same
 reserved 48-unit slot; temporary loading text never inserts a new card row.
