@@ -6,7 +6,7 @@ namespace Em.Ui.Maui.Controls;
 public sealed class MaterialField : ContentView
 {
    /// <summary>The editable value.</summary>
-   public static readonly BindableProperty TextProperty = BindableProperty.Create(nameof(Text), typeof(string), typeof(MaterialField), "", BindingMode.TwoWay, propertyChanged: Changed);
+   public static readonly BindableProperty TextProperty = BindableProperty.Create(nameof(Text), typeof(string), typeof(MaterialField), "", BindingMode.TwoWay, propertyChanged: TextChanged);
    /// <summary>The permanent field label.</summary>
    public static readonly BindableProperty LabelProperty = BindableProperty.Create(nameof(Label), typeof(string), typeof(MaterialField), "", propertyChanged: Changed);
    /// <summary>Supporting instructions.</summary>
@@ -40,7 +40,10 @@ public sealed class MaterialField : ContentView
       _help.SetDynamicResource(StyleProperty, "supportTextStyle");
       _error.SetDynamicResource(StyleProperty, "supportTextStyle");
       Content = new VerticalStackLayout { Spacing = 8, Children = { _label, _outline, _help, _error } };
-      _entry.TextChanged += (_, _) => { if (Text != _entry.Text) Text = _entry.Text ?? ""; };
+      _entry.TextChanged += (_, args) => {
+         var value = args.NewTextValue ?? "";
+         if (!string.Equals(Text ?? "", value, StringComparison.Ordinal)) Text = value;
+      };
       _entry.Focused += (_, _) => Update(); _entry.Unfocused += (_, _) => Update();
       _visibility.Clicked += (_, _) => { _shown = !_shown; Update(); };
       _entry.HandlerChanged += (_, _) => Associate(); _label.HandlerChanged += (_, _) => Associate();
@@ -63,8 +66,13 @@ public sealed class MaterialField : ContentView
    /// <inheritdoc cref="PlaceholderProperty"/>
    public string Placeholder { get => (string)GetValue(PlaceholderProperty); set => SetValue(PlaceholderProperty, value); }
    private static void Changed(BindableObject b, object o, object n) => ((MaterialField)b).Update();
+   private static void TextChanged(BindableObject b, object o, object n) => ((MaterialField)b).UpdateText();
+   private void UpdateText() {
+      // Native edits already own the text, selection and IME composition. Do not echo
+      // them back or reconfigure the editor while its TextChanged event is running.
+      if (!string.Equals(_entry.Text ?? "", Text ?? "", StringComparison.Ordinal)) _entry.Text = Text ?? "";
+   }
    private void Update() {
-      if (_entry.Text != Text) _entry.Text = Text;
       _label.Text = Label; _help.Text = Help; _help.IsVisible = !string.IsNullOrWhiteSpace(Help);
       _error.Text = string.IsNullOrWhiteSpace(Error) ? "" : "Error: " + Error; _error.IsVisible = !string.IsNullOrWhiteSpace(Error);
       _entry.IsReadOnly = IsReadOnly; _entry.IsPassword = IsPassword && !_shown; _entry.Placeholder = Placeholder;

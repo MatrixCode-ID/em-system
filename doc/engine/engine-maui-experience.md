@@ -68,6 +68,10 @@ visibility action is a native 48-unit icon button inside the outline, with
 changing Show/Hide password semantics. The permanent label and error remain
 associated with the Android editor. The outline supplies focus/error feedback
 instead of a second native underline.
+Text synchronization is separate from presentation updates: native edits must not
+reapply theme resources, editor configuration or Android label/error associations.
+Treat null and empty native text as equivalent when synchronizing, so clearing
+the final character does not write text back into the editor during its event.
 
 Login centres the consuming host's logo/title/tagline above outlined fields,
 uses one primary sign-in button with a decorative icon, then conditional debug
