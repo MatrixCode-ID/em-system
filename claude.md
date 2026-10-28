@@ -1,5 +1,14 @@
 # CLAUDE.md
 
+## Compact MAUI Home header (2026-10-29)
+
+Home uses one header row: compact greeting and account name on the left, and
+the outlined Modules catalogue action on the right. Remove the separate Modules
+heading and View all row. Preserve native font scaling and one-line identity
+labels with tail ellipsis; full account text remains bound for accessibility.
+This supersedes the earlier Home heading/View all layout.
+
+
 ## Posisi summary My Tasks pada Home MAUI (2026-10-27)
 
 Pin App List berarti seluruh shortlist app yang dipin. Kartu summary My Tasks

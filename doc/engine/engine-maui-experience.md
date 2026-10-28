@@ -11,15 +11,17 @@ its full value remains accessible. These are module control defaults, not a
 global change to every typography role. Approval detail rows, proposed changes,
 comments and consuming module paragraphs use the compact paragraph styles.
 
-Home shows its Modules heading and View all without a catalogue/filter subtitle.
+Home places a compact greeting/account block beside an outlined Modules action
+in one header row, without a separate Modules heading. Identity labels use
+one line with tail ellipsis and preserve native font scaling.
 Filter context captions belong to the full catalogue.
 The bottom bar provides Home, All Modules and My Tasks in that order, using
 the same icon/label tab geometry in the shell and task workspace. All Modules
 opens this existing catalogue after returning home; refused navigation or an
-identity change cannot open it. Home's View all button remains available and
+identity change cannot open it. Home's Modules button remains available and
 updates the same selected indicator. Home restores the pinned shortlist.
 Its destination cards contain only modules explicitly pinned for the current
-account/server. With no pins, only the My Tasks summary card remains; View all
+account/server. With no pins, only the My Tasks summary card remains; Modules
 still opens the catalogue for pinning. Catalogue searches and filters do not
 alter the Home shortlist. Unpinning the last module restores this empty state.
 

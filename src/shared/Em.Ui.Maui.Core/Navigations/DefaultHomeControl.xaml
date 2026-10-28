@@ -88,22 +88,24 @@
  <Grid>
  <Grid x:Name="CatalogContent" InputTransparent="{Binding IsContextMenuOpen}" Padding="16,12" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
   <VerticalStackLayout Spacing="8">
-   <VerticalStackLayout IsVisible="{Binding IsHomeView}" Spacing="4" Margin="0,0,0,8">
-    <Label Text="{Binding Greeting}" Style="{StaticResource bodyLargeTextStyle}" />
-    <Label Text="{Binding AccountName}" Style="{StaticResource titleLargeTextStyle}" />
-   </VerticalStackLayout>
-   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-    <controls:IconButton IsVisible="{Binding IsCatalogueOpen}" Glyph="{x:Static controls:FontIcons.ArrowLeft}" Command="{Binding Commands[BackToHomeCommand]}" SemanticProperties.Description="Back to Home" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
-    <Label Grid.Column="1" Text="{Binding PageTitle}" Style="{StaticResource titleMediumTextStyle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
-    <Grid Grid.Column="2" IsVisible="{Binding IsHomeView}" MinimumHeightRequest="48" MinimumWidthRequest="96">
+   <Grid IsVisible="{Binding IsHomeView}" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+    <VerticalStackLayout Spacing="0" VerticalOptions="Center">
+     <Label Text="{Binding Greeting}" Style="{StaticResource bodyMediumTextStyle}" MaxLines="1" LineBreakMode="TailTruncation" />
+     <Label Text="{Binding AccountName}" Style="{StaticResource titleMediumTextStyle}" MaxLines="1" LineBreakMode="TailTruncation" SemanticProperties.HeadingLevel="Level1" />
+    </VerticalStackLayout>
+    <Grid Grid.Column="1" MinimumHeightRequest="48" MinimumWidthRequest="96">
      <Border Stroke="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="12,6" VerticalOptions="Center" InputTransparent="True">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-       <Label Text="View all" Style="{StaticResource labelMediumTextStyle}" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
+       <Label Text="Modules" Style="{StaticResource labelMediumTextStyle}" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
        <controls:FontIcon Grid.Column="1" Glyph="{x:Static controls:FontIcons.ChevronRight}" IconSize="12" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource primaryLight}, Dark={StaticResource primaryDark}}" AutomationProperties.IsInAccessibleTree="False" />
       </Grid>
      </Border>
      <Button Command="{Binding Commands[ViewAllCommand]}" Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" SemanticProperties.Description="View all modules" />
     </Grid>
+   </Grid>
+   <Grid IsVisible="{Binding IsCatalogueOpen}" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+    <controls:IconButton Glyph="{x:Static controls:FontIcons.ArrowLeft}" Command="{Binding Commands[BackToHomeCommand]}" SemanticProperties.Description="Back to Home" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
+    <Label Grid.Column="1" Text="{Binding PageTitle}" Style="{StaticResource titleMediumTextStyle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
    </Grid>
    <Label Text="{Binding FilterCaption}" IsVisible="{Binding IsCatalogueOpen}" Style="{StaticResource supportTextStyle}" />
   </VerticalStackLayout>
