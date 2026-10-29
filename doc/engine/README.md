@@ -37,6 +37,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [User Manager roles](engine-user-manager.md) | The Roles tab of the user editor: giving roles, periods, saving |
 | [Debug mode](engine-debug-mode.md) | Switch User, Simulate Login, Debug Sign In and the debug switches of `EmApp` |
 | [Tab strip](engine-tab-strip.md) | Reorderable panel tabs, optional leading content and cascading menu styles |
+| [Image composer](engine-image-composer.md) | Millimeter canvas, image layout, permanent crop, arrows and PNG export |
 
 ## Reference module
 
