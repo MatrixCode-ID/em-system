@@ -62,7 +62,14 @@ public sealed partial class ImageComposerVm : MvvmModelBase
       get => Get<ComposerItem?>();
       set {
          if (value != null && !Items.Contains(value)) return;
-         if (Set(value)) { EndPointer(); ResetTool(); RefreshState(); }
+         if (Set(value)) {
+            EndPointer(); ResetTool();
+            if (value is ComposerArrowItem arrow) {
+               Set(arrow.Color, propertyName: nameof(ArrowColor));
+               Set(arrow.ThicknessMm, propertyName: nameof(ArrowThicknessMm));
+            }
+            RefreshState();
+         }
       }
    }
    /// <summary>The active interaction tool. Crop requires a selected image.</summary>
@@ -204,7 +211,7 @@ public sealed partial class ImageComposerVm : MvvmModelBase
    private void InsertFiles(IEnumerable<string> files) {
       foreach (var path in files.Where(ComposerInput.IsImageFile)) {
          try { using var stream = File.OpenRead(path); InsertImage(stream); }
-         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException or System.Runtime.InteropServices.ExternalException) {
+         catch (Exception ex) when (ex is IOException or FileFormatException or UnauthorizedAccessException or NotSupportedException or ArgumentException or System.Runtime.InteropServices.ExternalException) {
             _input.Error(DialogOwner, $"Could not load image '{Path.GetFileName(path)}'. {ex.Message}");
          }
       }
@@ -214,7 +221,7 @@ public sealed partial class ImageComposerVm : MvvmModelBase
          if (_input.ClipboardImage() is { } source) InsertImage(source);
          else InsertFiles(_input.ClipboardFiles());
       }
-      catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException or NotSupportedException or ArgumentException or IOException) {
+      catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException or NotSupportedException or ArgumentException or IOException or FileFormatException) {
          _input.Error(DialogOwner, $"Could not paste the image. {ex.Message}");
       }
    }

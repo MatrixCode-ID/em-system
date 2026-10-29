@@ -1,7 +1,7 @@
 # Plan: Control penyusun gambar di canvas (`ImageComposer`)
 
 - **Tanggal:** 2026-10-29
-- **Status:** belum dieksekusi; keputusan sudah final, menunggu perintah eksekusi pengguna.
+- **Status:** dieksekusi 2026-10-29; implementasi dan tes console selesai, verifikasi visual tertunda sesuai K13.
 - **Agent:** Codex (Claude Code boleh memakai file yang sama).
 - **Repo:** hanya em-system. Catatan ide asal disimpan sementara di repo turunan privat (keputusan
   pengguna 2026-10-19: ide engine sementara di repo turunan). Konsumen pertama adalah editor dokumen
@@ -250,7 +250,57 @@ alur mockup repo itu. Agent pelaksana tetap memeriksa ulang folder mockup repo t
 
 ## 6. Laporan eksekusi
 
-(Diisi saat eksekusi: commit per fase, nama action/run id RunBay, hasil build dan tes, temuan review dan
-perbaikannya, keputusan cadangan yang dipakai di luar daftar, tindakan manual bila ada.
-**Verifikasi visual: tertunda** sesuai K13; sebutkan bagian yang belum dilihat secara visual, yaitu tampilan
-toolbar terang/gelap, handle seleksi/rotasi/crop, panah, dan skala canvas.)
+### Hasil (2026-10-29)
+
+- Fase 1 selesai: model item, geometri mm, command/state VM, sumber clipboard/dialog yang dapat
+  diganti pada tes, crop permanen dan ekspor PNG. Commit `914e329`
+  (`Add image composer model, geometry and editing view model`). Plan awal ikut dilacak pada commit ini;
+  checkout awal berada di `work-bench`, tanpa perubahan lain.
+- Fase 2 selesai: control/DP, toolbar Material, preview berskala dan berlapis, interaksi pointer/keyboard,
+  serta [guide](../../doc/engine/engine-image-composer.md) dan indeksnya. Commit `fbb7ec0`
+  (`Add image composer control, themed toolbar and usage guide`).
+- Fase 3 selesai: 19 tes console, build solution WPF, review dan perbaikan, serta pemindahan plan ke
+  `executed`. Commit penutup bernama `Verify image composer and close execution plan` memuat fase ini.
+  Seluruh commit di `work-bench`; tidak ada push atau release note paket.
+
+### Verifikasi RunBay
+
+Menggunakan app `em-system` yang sudah terdaftar. Dua custom action baru ditambahkan:
+`build-image-composer` (Build WPF ImageComposer) dan `test-image-composer`
+(Test WPF ImageComposer console). Script PowerShell disimpan pada action; log lengkap di
+`../.artefacts/em-system/scripts/image-composer-smoke/out/`.
+
+| Run id | Hasil |
+| --- | --- |
+| `20261029-190809-build-image-composer-833f` | Gagal: operator pembagian Point; diperbaiki dengan menghitung koordinat pusat kepala panah. |
+| `20261029-190831-build-image-composer-1c2e` | Build lulus; review menemukan warning baru dari inisialisasi statis yang tidak dipakai, lalu dihapus. |
+| `20261029-190857-test-image-composer-53f3` | 16 tes lulus; exit 8 karena filter solution menghasilkan nol tes pada project UI core lain. Action dipersempit ke project WPF tests. |
+| `20261029-191052-build-image-composer-046e` | Build lulus setelah perbaikan review; tanpa warning baru pada ImageComposer. |
+| `20261029-191115-test-image-composer-52da` | 19 tes lulus, 0 gagal, 0 skipped. |
+| `20261029-191404-build-image-composer-8ce2` | Build final solution WPF lulus: 0 error; 404 warning pada kode di luar berkas ImageComposer. |
+| `20261029-191432-test-image-composer-cc36` | Tes final lulus: 19/19, 0 gagal, 0 skipped. |
+
+Tes mencakup ukuran/DPI PNG, canvas putih, tinta panah dan clipping, resize/rotasi/hit-test,
+crop sumber dan posisi berotasi, Cancel, z-order/Delete/Fit, penguncian isi awal dan Clear,
+read-only/dirty flag, resolusi efektif, clamp, gesture panah, paste/insert melalui abstraksi,
+kelanjutan setelah file rusak, pelepasan stream serta binding/DP/template XAML tanpa render GUI.
+Suite lain tidak dijalankan; filter ImageComposer mengikuti C19.
+
+Review memeriksa MVVM/command Allowed, namespace, XML doc dan teks Inggris, netralitas produk,
+token chrome dan Font Awesome 6. Perbaikan mencakup resize sudut saat mengecil satu sumbu,
+batas handle crop tanpa menggeser sisi lawan, penanganan format gambar rusak, sinkronisasi ink
+panah terpilih, serta swatch radio agar warna aktif tidak dapat dilepas tanpa memilih pengganti.
+`git diff --check` lulus. Tidak ada tindakan terblokir policy atau skrip manual.
+
+### Keputusan implementasi di luar rincian eksplisit
+
+- Pada gambar yang sangat tipis, ukuran item minimum 1 mm diprioritaskan atas batas penempatan awal
+  80% canvas; rasio tetap dipertahankan. Hal ini dijelaskan dalam guide.
+- Tool panah kembali ke Select setelah satu gesture. Memilih panah yang sudah ada menampilkan
+  warna/tebalnya sebagai default berikutnya; perubahan seleksi sendiri tidak menandai dirty.
+- Saat mengganti Composer, DP yang secara eksplisit diatur/bind pada control mengalahkan setting VM;
+  setting yang tidak diatur mempertahankan nilai VM. Sinkronisasi mempertahankan binding TwoWay.
+
+**Verifikasi visual: tertunda** sesuai K13: toolbar terang/gelap dan disabled, handle seleksi/rotasi/crop,
+panah serta skala canvas belum diperiksa melalui GUI atau render. Tidak ada mockup atau harness GUI
+yang dibuat/dijalankan. Catatan ide asal tidak diubah; plan ini tidak meminta pembaruan status ide.

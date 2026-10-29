@@ -11,7 +11,6 @@ public partial class ImageComposer : UserControl
 {
    private bool _syncing;
    private readonly HashSet<DependencyProperty> _explicit = [];
-   private static readonly DependencyProperty[] Settings = [CanvasWidthMmProperty, CanvasHeightMmProperty, OutputDpiProperty, IsReadOnlyProperty, IsCanvasSizeEditableProperty];
 
    /// <summary>Identifies the view model supplied by the containing screen.</summary>
    public static readonly DependencyProperty ComposerProperty = DependencyProperty.Register(nameof(Composer), typeof(ImageComposerVm), typeof(ImageComposer),

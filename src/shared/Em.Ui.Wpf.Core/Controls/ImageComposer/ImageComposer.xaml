@@ -69,10 +69,10 @@
                <Border Style="{StaticResource divider}"/>
                <ToggleButton Style="{StaticResource toggle}" ToolTip="Draw arrow" IsChecked="{Binding IsArrowTool, Mode=OneWay}" Command="{Binding Commands[ArrowToolCommand]}"><fa:FontAwesome Icon="Solid_ArrowRightLong"/></ToggleButton>
                <StackPanel Orientation="Horizontal" IsEnabled="{Binding CanEdit}">
-                  <ToggleButton Style="{StaticResource toggle}" ToolTip="Red arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Red}"><fa:FontAwesome Icon="Solid_Square" Foreground="#D32F2F"/></ToggleButton>
-                  <ToggleButton Style="{StaticResource toggle}" ToolTip="Black arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Black}"><fa:FontAwesome Icon="Solid_Square" Foreground="#000000"/></ToggleButton>
-                  <ToggleButton Style="{StaticResource toggle}" ToolTip="Blue arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Blue}"><fa:FontAwesome Icon="Solid_Square" Foreground="#1565C0"/></ToggleButton>
-                  <ToggleButton Style="{StaticResource toggle}" ToolTip="Yellow arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Yellow}"><fa:FontAwesome Icon="Solid_Square" Foreground="#F9A825"/></ToggleButton>
+                  <RadioButton Style="{StaticResource toggle}" ToolTip="Red arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Red}"><fa:FontAwesome Icon="Solid_Square" Foreground="#D32F2F"/></RadioButton>
+                  <RadioButton Style="{StaticResource toggle}" ToolTip="Black arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Black}"><fa:FontAwesome Icon="Solid_Square" Foreground="#000000"/></RadioButton>
+                  <RadioButton Style="{StaticResource toggle}" ToolTip="Blue arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Blue}"><fa:FontAwesome Icon="Solid_Square" Foreground="#1565C0"/></RadioButton>
+                  <RadioButton Style="{StaticResource toggle}" ToolTip="Yellow arrow ink" IsChecked="{Binding ArrowColor, Converter={StaticResource choice}, ConverterParameter=Yellow}"><fa:FontAwesome Icon="Solid_Square" Foreground="#F9A825"/></RadioButton>
                   <ComboBox Width="84" Height="38" Margin="0,0,8,0" Style="{StaticResource fieldComboStyle}" SelectedItem="{Binding ArrowThicknessMm}"
                             ToolTip="Arrow shaft thickness in millimeters" AutomationProperties.Name="Arrow thickness">
                      <ComboBox.ItemsSource><x:Array Type="{x:Type sys:Double}"><sys:Double>0.5</sys:Double><sys:Double>1</sys:Double><sys:Double>2</sys:Double></x:Array></ComboBox.ItemsSource>

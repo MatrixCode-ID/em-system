@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using FontAwesome6;
+using FontAwesome6.Fonts.Extensions;
 
 namespace Em.Ui.Wpf.Controls;
 
@@ -74,8 +76,7 @@ internal sealed class ComposerOverlay : FrameworkElement
          var iconSize = 14 / scale;
          dc.PushClip(new RectangleGeometry(new Rect(0, 0, vm.CanvasWidthMm, vm.CanvasHeightMm)));
          dc.DrawRoundedRectangle(Surface, new Pen(Warning, 1 / scale), new Rect(p, new Size(iconSize, iconSize)), 2 / scale, 2 / scale);
-         dc.DrawText(new FormattedText("!", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-            new Typeface("Segoe UI"), 12 / scale, Warning, VisualTreeHelper.GetDpi(this).PixelsPerDip), p + new Vector(4 / scale, -1 / scale));
+         dc.DrawText(EFontAwesomeIcon.Solid_TriangleExclamation.CreateFormattedText(Warning, 12 / scale), p + new Vector(1 / scale, 0));
          dc.Pop();
       }
       if (vm.SelectedItem is not { } item || vm.IsReadOnly) return;

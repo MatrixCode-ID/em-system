@@ -86,7 +86,7 @@ public sealed partial class ImageComposerVm
       if (IsCropping) {
          CropBounds = _handle == ComposerHandle.Move
             ? new Rect(_originalBox.TopLeft + localDelta, _originalBox.Size)
-            : ComposerGeometry.Resize(_originalBox, _handle, localDelta, false);
+            : Rect.Intersect(ComposerGeometry.Resize(_originalBox, _handle, localDelta, false), new Rect(0, 0, item.WidthMm, item.HeightMm));
          return;
       }
       if (_handle == ComposerHandle.Move) { MoveSelected(delta); return; }

@@ -37,7 +37,9 @@ internal static class ComposerGeometry
       var w = Math.Max(1, box.Width + (left ? -delta.X : right ? delta.X : 0));
       var h = Math.Max(1, box.Height + (top ? -delta.Y : bottom ? delta.Y : 0));
       if (keepRatio && (left || right) && (top || bottom)) {
-         var scale = Math.Max(w / box.Width, h / box.Height);
+         var horizontalChange = (w - box.Width) / box.Width;
+         var verticalChange = (h - box.Height) / box.Height;
+         var scale = 1 + (Math.Abs(horizontalChange) >= Math.Abs(verticalChange) ? horizontalChange : verticalChange);
          scale = Math.Max(scale, Math.Max(1 / box.Width, 1 / box.Height));
          w = box.Width * scale;
          h = box.Height * scale;
@@ -81,7 +83,8 @@ internal static class ComposerGeometry
       else if (item is ComposerArrowItem arrow) {
          var ink = Ink(arrow.Color);
          var head = ArrowHead(arrow);
-         dc.DrawLine(new Pen(ink, arrow.ThicknessMm), new Point(arrow.StartXMm, arrow.StartYMm), (head[1] + (Vector)head[2]) / 2);
+         var headBase = new Point((head[1].X + head[2].X) / 2, (head[1].Y + head[2].Y) / 2);
+         dc.DrawLine(new Pen(ink, arrow.ThicknessMm), new Point(arrow.StartXMm, arrow.StartYMm), headBase);
          var path = new StreamGeometry();
          using (var context = path.Open()) { context.BeginFigure(head[0], true, true); context.PolyLineTo([head[1], head[2]], true, false); }
          path.Freeze();

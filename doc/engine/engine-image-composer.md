@@ -60,6 +60,8 @@ The Arrow tool creates an arrow by dragging at least two mm. Drag its body to
 move it or its endpoints individually. Four fixed printing inks are available:
 red (#D32F2F), black (#000000), blue (#1565C0), yellow (#F9A825). Thickness is 0.5,
 1 or 2 mm. A toolbar change updates the selected arrow and the next arrow's default.
+Selecting an existing arrow shows its ink and thickness as the current defaults.
+After drawing an arrow, the control returns to selection mode.
 
 Image warnings indicate effective resolution below 150 dpi, computed from source
 pixels and current physical size. They are advisory and never block export.
