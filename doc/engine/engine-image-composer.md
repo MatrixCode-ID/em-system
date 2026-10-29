@@ -68,6 +68,14 @@ pixels and current physical size. They are advisory and never block export.
 Chrome uses the shared Material theme; the canvas stays white in both themes.
 Selection, rotation, crop and warning overlays are preview-only.
 
+The zoom bar below the canvas scales the preview from 25% to 800%, where 100%
+fits the canvas to the workspace. Ctrl+mouse wheel zooms around the pointer, and
+dragging with the middle mouse button pans the view. The fit button or Ctrl+0
+returns to 100% without panning. Zoom and pan (`ZoomPercent`, `PanX`, `PanY` on the
+view model) are view state only: they never set `HasChanges` and do not affect
+`FlattenPng`. They remain available when the control is read-only or the toolbar is
+hidden.
+
 ## Load and save
 
 ```csharp

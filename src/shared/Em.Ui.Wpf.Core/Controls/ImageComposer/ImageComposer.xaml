@@ -50,7 +50,7 @@
       </ResourceDictionary>
    </UserControl.Resources>
    <Grid DataContext="{Binding Composer, ElementName=Root}" Background="{DynamicResource themeWindowBackgroundBrush}">
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <WrapPanel Margin="8,8,0,8" Visibility="{Binding ShowToolbar, ElementName=Root, Converter={StaticResource visibility}}">
          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxWidth="{Binding ActualWidth, ElementName=Workspace}">
             <StackPanel Orientation="Horizontal">
@@ -91,8 +91,15 @@
          </StackPanel>
          <Button Style="{StaticResource icon}" ToolTip="Clear canvas" Command="{Binding Commands[ClearCommand]}"><fa:FontAwesome Icon="Solid_Eraser"/></Button>
       </WrapPanel>
-      <Border x:Name="Workspace" Grid.Row="1" Background="{DynamicResource surfaceBrush}" Padding="18" SizeChanged="OnWorkspaceSizeChanged">
-         <Viewbox Stretch="Uniform">
+      <Border x:Name="Workspace" Grid.Row="1" Background="{DynamicResource surfaceBrush}" Padding="18" ClipToBounds="True" SizeChanged="OnWorkspaceSizeChanged"
+              PreviewMouseWheel="OnWorkspaceWheel" MouseDown="OnPanDown" MouseMove="OnPanMove" MouseUp="OnPanUp" LostMouseCapture="OnPanLostCapture">
+         <Viewbox x:Name="Zoomer" Stretch="Uniform">
+            <Viewbox.RenderTransform>
+               <TransformGroup>
+                  <ScaleTransform ScaleX="{Binding ZoomScale}" ScaleY="{Binding ZoomScale}"/>
+                  <TranslateTransform X="{Binding PanX}" Y="{Binding PanY}"/>
+               </TransformGroup>
+            </Viewbox.RenderTransform>
             <Grid x:Name="CanvasHost" Width="{Binding CanvasWidthMm}" Height="{Binding CanvasHeightMm}"
                   Background="Transparent" MouseLeftButtonDown="OnPointerDown" MouseMove="OnPointerMove" MouseLeftButtonUp="OnPointerUp" LostMouseCapture="OnLostCapture">
                <Grid ClipToBounds="True" Background="White">
@@ -105,5 +112,15 @@
             </Grid>
          </Viewbox>
       </Border>
+      <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8,4,8,4"
+                  ToolTip="Zoom: Ctrl+mouse wheel. Pan: drag with the middle mouse button.">
+         <fa:FontAwesome Icon="Solid_MagnifyingGlassMinus" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource themeWindowForegroundBrush}"/>
+         <Slider Width="160" VerticalAlignment="Center" Minimum="{x:Static local:ImageComposerVm.MinZoomPercent}" Maximum="{x:Static local:ImageComposerVm.MaxZoomPercent}"
+                 Value="{Binding ZoomPercent}" SmallChange="5" LargeChange="25" IsMoveToPointEnabled="True" AutomationProperties.Name="Zoom"/>
+         <fa:FontAwesome Icon="Solid_MagnifyingGlassPlus" Margin="8,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource themeWindowForegroundBrush}"/>
+         <TextBlock Width="44" TextAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource themeWindowForegroundBrush}"
+                    Text="{Binding ZoomPercent, StringFormat={}{0:0}%}"/>
+         <Button Style="{StaticResource icon}" Margin="8,0,0,0" ToolTip="Fit canvas to view (Ctrl+0)" Command="{Binding Commands[ResetZoomCommand]}"><fa:FontAwesome Icon="Solid_Compress"/></Button>
+      </StackPanel>
    </Grid>
 </UserControl>

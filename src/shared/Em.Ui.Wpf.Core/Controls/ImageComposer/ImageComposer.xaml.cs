@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace Em.Ui.Wpf.Controls;
 
@@ -11,6 +12,11 @@ public partial class ImageComposer : UserControl
 {
    private bool _syncing;
    private readonly HashSet<DependencyProperty> _explicit = [];
+   private double _shownZoom = 1;
+   private Point? _zoomAnchor;
+   private bool _panning;
+   private Point _panStart;
+   private Vector _panOrigin;
 
    /// <summary>Identifies the view model supplied by the containing screen.</summary>
    public static readonly DependencyProperty ComposerProperty = DependencyProperty.Register(nameof(Composer), typeof(ImageComposerVm), typeof(ImageComposer),
@@ -68,7 +74,7 @@ public partial class ImageComposer : UserControl
       var view = (ImageComposer)d;
       if (e.OldValue is ImageComposerVm old) PropertyChangedEventManager.RemoveHandler(old, view.VmChanged, "");
       if (e.NewValue is not ImageComposerVm vm) { view.SetCurrentValue(ComposerProperty, new ImageComposerVm()); return; }
-      view.Observe();
+      view.Observe(); view._shownZoom = vm.ZoomScale;
       foreach (var property in view._explicit) view.ApplySetting(vm, property);
       view.SyncFromVm();
    }
@@ -89,7 +95,13 @@ public partial class ImageComposer : UserControl
       if (property == IsReadOnlyProperty) vm.IsReadOnly = (bool)GetValue(property);
       if (property == IsCanvasSizeEditableProperty) vm.IsCanvasSizeEditable = (bool)GetValue(property);
    }
-   private void VmChanged(object? sender, PropertyChangedEventArgs e) { SyncFromVm(); UpdateScale(); }
+   private void VmChanged(object? sender, PropertyChangedEventArgs e) {
+      if (e.PropertyName == nameof(ImageComposerVm.ZoomPercent)) ZoomChanged();
+      SyncFromVm(); UpdateScale();
+      // Transform bindings may update after this handler; measure the overlay scale once they have.
+      if (e.PropertyName is nameof(ImageComposerVm.ZoomPercent) or nameof(ImageComposerVm.PanX) or nameof(ImageComposerVm.PanY))
+         Dispatcher.InvokeAsync(UpdateScale, DispatcherPriority.Render);
+   }
    private void SyncFromVm() {
       if (_syncing || GetValue(ComposerProperty) is not ImageComposerVm vm) return;
       _syncing = true;
@@ -117,6 +129,43 @@ public partial class ImageComposer : UserControl
       Overlay.PreviewScale = Scale(); Overlay.InvalidateVisual();
    }
    private void OnWorkspaceSizeChanged(object sender, SizeChangedEventArgs e) => UpdateScale();
+   // Keeps the canvas point under the anchor (in the unzoomed workspace frame) fixed while the zoom changes.
+   private void ZoomChanged() {
+      var scale = Composer.ZoomScale;
+      if (scale == _shownZoom) return;
+      var anchor = _zoomAnchor ?? new Point(Zoomer.ActualWidth / 2, Zoomer.ActualHeight / 2);
+      var ratio = scale / _shownZoom;
+      _shownZoom = scale; _zoomAnchor = null;
+      Composer.PanX = anchor.X - ratio * (anchor.X - Composer.PanX);
+      Composer.PanY = anchor.Y - ratio * (anchor.Y - Composer.PanY);
+   }
+   private void OnWorkspaceWheel(object sender, MouseWheelEventArgs e) {
+      if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) return;
+      var local = e.GetPosition(Zoomer);
+      _zoomAnchor = new Point(Composer.PanX + local.X * _shownZoom, Composer.PanY + local.Y * _shownZoom);
+      Composer.ZoomPercent *= Math.Pow(1.1, e.Delta / 120d);
+      _zoomAnchor = null; e.Handled = true;
+   }
+   private void OnPanDown(object sender, MouseButtonEventArgs e) {
+      if (e.ChangedButton != MouseButton.Middle || CanvasHost.IsMouseCaptured) return;
+      _panStart = e.GetPosition(Workspace); _panOrigin = new Vector(Composer.PanX, Composer.PanY);
+      _panning = Workspace.CaptureMouse();
+      if (_panning) Workspace.Cursor = Cursors.SizeAll;
+      e.Handled = true;
+   }
+   private void OnPanMove(object sender, MouseEventArgs e) {
+      if (!_panning) return;
+      var offset = _panOrigin + (e.GetPosition(Workspace) - _panStart);
+      Composer.PanX = offset.X; Composer.PanY = offset.Y; e.Handled = true;
+   }
+   private void OnPanUp(object sender, MouseButtonEventArgs e) {
+      if (e.ChangedButton != MouseButton.Middle || !_panning) return;
+      Workspace.ReleaseMouseCapture(); e.Handled = true;
+   }
+   private void OnPanLostCapture(object sender, MouseEventArgs e) {
+      if (!_panning || Workspace.IsMouseCaptured) return;
+      _panning = false; Workspace.Cursor = null;
+   }
    private void OnPointerDown(object sender, MouseButtonEventArgs e) {
       Focus(); UpdateScale();
       if (!Composer.BeginPointer(e.GetPosition(CanvasHost), 6 / Scale())) return;
@@ -151,6 +200,11 @@ public partial class ImageComposer : UserControl
       if (command != null) {
          var action = Composer.Commands[command];
          if (action?.CanExecute(null) == true) action.Execute(null);
+         e.Handled = true; return;
+      }
+      if (e.Key is Key.D0 or Key.NumPad0 && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) {
+         var reset = Composer.Commands["ResetZoomCommand"];
+         if (reset?.CanExecute(null) == true) reset.Execute(null);
          e.Handled = true; return;
       }
       if (e.Key == Key.Escape) { Composer.Escape(); ReleaseCapture(); e.Handled = true; return; }

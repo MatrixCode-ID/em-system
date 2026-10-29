@@ -33,6 +33,7 @@ public sealed partial class ImageComposerVm : MvvmModelBase
       RegisterCommand(nameof(CancelCropCommand), CancelCropCommand, CancelCropCommandAllowed);
       RegisterCommand(nameof(ArrowToolCommand), ArrowToolCommand, ArrowToolCommandAllowed);
       RegisterCommand(nameof(ClearCommand), ClearCommand, ClearCommandAllowed);
+      RegisterCommand(nameof(ResetZoomCommand), ResetZoomCommand, ResetZoomCommandAllowed);
       Items.CollectionChanged += (_, _) => {
          foreach (var item in _observed.Where(i => !Items.Contains(i)).ToArray()) {
             item.PropertyChanged -= ItemChanged; _observed.Remove(item);

@@ -305,6 +305,19 @@ public class ImageComposerTests
       Assert.Equal(60, other.CanvasHeightMm);
       other.CanvasHeightMm = 90; Assert.Equal(90, host.Height);
    }
+   [WpfFact]
+   public void ZoomAndPanClampWithoutMarkingChangesAndResetToFit() {
+      var vm = Vm();
+      Assert.False(vm.Commands["ResetZoomCommand"]!.CanExecute(null));
+      vm.ZoomPercent = 5000; Assert.Equal(ImageComposerVm.MaxZoomPercent, vm.ZoomPercent);
+      vm.ZoomPercent = 1; Assert.Equal(ImageComposerVm.MinZoomPercent, vm.ZoomPercent);
+      vm.ZoomPercent = 250; vm.PanX = 40; vm.PanY = -12;
+      Assert.Equal(2.5, vm.ZoomScale);
+      Assert.False(vm.HasChanges);
+      Run(vm, "ResetZoomCommand");
+      Assert.Equal(100, vm.ZoomPercent); Assert.Equal(0, vm.PanX); Assert.Equal(0, vm.PanY);
+      Assert.False(vm.Commands["ResetZoomCommand"]!.CanExecute(null));
+   }
    private sealed class Host : MvvmModelBase
    {
       public double Height { get => Get(60d); set => Set(value); }
