@@ -192,6 +192,12 @@ namespace Em.Api.Core.Models
       /// <summary>Number of roles holding each claim.</summary>
       Task<ClaimUsage[]> GetMeta_ClaimUsage();
 
+      /// <summary>
+      /// One page of the user list after searching, filtering and sorting, with the roles each user on the page
+      /// holds in effect now and the number of users that match across every page.
+      /// </summary>
+      Task<UserListPage> PostGetMeta_UserListPage(UserListQuery query);
+
       #endregion
    }
 }

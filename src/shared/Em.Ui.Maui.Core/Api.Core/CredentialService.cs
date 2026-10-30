@@ -215,6 +215,9 @@ namespace Em.Api.Core
       public Task<ClaimUsage[]> GetMeta_ClaimUsage() =>
          GetAsync<ClaimUsage[]>(nameof(GetMeta_ClaimUsage));
 
+      public Task<UserListPage> PostGetMeta_UserListPage(UserListQuery query) =>
+         PostAsync<UserListPage>(nameof(PostGetMeta_UserListPage), query);
+
       #endregion
 
       #region Helpers

@@ -1083,9 +1083,117 @@ namespace Em.Api.Core
          return [.. rows.Select(r => new ClaimUsage { ClaimKey = r.ClaimKey, RoleCount = r.RoleCount })];
       }
 
+      /// <inheritdoc />
+      [PostAction]
+      public async Task<UserListPage> PostGetMeta_UserListPage(UserListQuery query) {
+         Request.RequireUserId();
+
+         var page = query.Page < 1 ? 1 : query.Page;
+         var pageSize = query.PageSize < 1 ? 10 : query.PageSize;
+         var filter = query.Filter ?? new();
+
+         // The role filter and the role chips must agree on what "holds a role" means, and both mean what the
+         // gate means - see UserClaimLoader - so the time comes from the server here as well.
+         var now = await App.GetDateStampAsync();
+         var rows = FilterUsers(filter, now);
+
+         var total = await rows.CountAsync(AbortToken);
+
+         // "All" on the page size combo is int.MaxValue: past the first page the skip would no longer fit an
+         // int, and there is nothing out there anyway.
+         var skip = (long)(page - 1) * pageSize;
+         vi_User[] users = skip >= total
+            ? []
+            : await SortUsers(rows, query.SortField, query.SortDescending)
+               .Skip((int)skip)
+               .Take(pageSize)
+               .ToArrayAsync(AbortToken);
+
+         var ids = users.Select(u => u.cUserId).ToArray();
+         UserListRole[] roles = ids.Length == 0
+            ? []
+            : await (
+                  from assignment in EffectiveAssignments(now)
+                  join role in ctx.ta_Roles on assignment.cRoleId equals role.cRoleId
+                  where ids.Contains(assignment.cUserId)
+                  orderby role.cRoleName, role.cRoleId
+                  select new UserListRole {
+                     cUserId = assignment.cUserId,
+                     cRoleId = role.cRoleId,
+                     cRoleName = role.cRoleName
+                  })
+               .ToArrayAsync(AbortToken);
+
+         return new UserListPage { Rows = users, Roles = roles, TotalRecords = total };
+      }
+
       #endregion
 
       #region Meta helpers
+
+      // Role assignments that grant something right now: the role is active and the moment falls inside the
+      // assignment's period. The same window as UserClaimLoader.QueryRoleNames, without its join to claims, so
+      // a role carrying no claim yet still shows up on its members.
+      private IQueryable<ta_UserRole> EffectiveAssignments(DateTime now) =>
+         from assignment in ctx.ta_UserRoles
+         join role in ctx.ta_Roles on assignment.cRoleId equals role.cRoleId
+         where role.cRoleState == RoleState.Active
+               && (assignment.cUserRoleStart == null || assignment.cUserRoleStart <= now)
+               && (assignment.cUserRoleExpiry == null || assignment.cUserRoleExpiry >= now)
+         select assignment;
+
+      private IQueryable<vi_User> FilterUsers(UserListFilter filter, DateTime now) {
+         var rows = ctx.vi_Users.AsNoTracking();
+
+         var search = filter.Search?.Trim();
+         if (!string.IsNullOrEmpty(search)) {
+            rows = rows.Where(u => u.cUserAccount.Contains(search)
+                                   || u.cContactFullName.Contains(search)
+                                   || u.cCommValue.Contains(search));
+         }
+
+         // Deleted accounts stay out unless asked for, whether or not states were picked: a pick of "Active"
+         // plus "include deleted" reads as both, not as "Active" alone.
+         var states = filter.States ?? [];
+         if (states.Length > 0) {
+            UserState[] allowed = filter.IncludeDeleted ? [.. states, UserState.Deleted] : states;
+            rows = rows.Where(u => allowed.Contains(u.cUserState));
+         }
+         else if (!filter.IncludeDeleted) {
+            rows = rows.Where(u => u.cUserState != UserState.Deleted);
+         }
+
+         if (filter.AdminOnly)
+            rows = rows.Where(u => u.cUserIsAdmin);
+
+         var roleIds = filter.RoleIds ?? [];
+         if (roleIds.Length > 0) {
+            var holders = EffectiveAssignments(now).Where(a => roleIds.Contains(a.cRoleId));
+            rows = rows.Where(u => holders.Any(a => a.cUserId == u.cUserId));
+         }
+
+         return rows;
+      }
+
+      // Every order ends on the key: a page is a slice of an order, and an order with ties lets the server put a
+      // tied row on two pages or on none.
+      private static IQueryable<vi_User> SortUsers(IQueryable<vi_User> rows, UserListSortField field, bool descending) {
+         var sorted = field switch {
+            UserListSortField.Account => Order(rows, u => u.cUserAccount, descending),
+            UserListSortField.FullName => Order(rows, u => u.cContactFullName, descending),
+            UserListSortField.Email => Order(rows, u => u.cCommValue, descending),
+            UserListSortField.Address => Order(rows, u => u.cAddressLocation, descending),
+            UserListSortField.Zip => Order(rows, u => u.cAddressZip, descending),
+            UserListSortField.State => Order(rows, u => u.cUserState, descending),
+            _ => null
+         };
+
+         return sorted?.ThenBy(u => u.cUserId) ?? rows.OrderBy(u => u.cUserId);
+      }
+
+      private static IOrderedQueryable<vi_User> Order<TKey>(IQueryable<vi_User> rows,
+         System.Linq.Expressions.Expression<Func<vi_User, TKey>> key, bool descending) =>
+         descending ? rows.OrderByDescending(key) : rows.OrderBy(key);
 
       // Resolved on use rather than taken in the constructor: the token service is engine-internal
       // and this class is part of the published surface, so naming it in a public constructor would

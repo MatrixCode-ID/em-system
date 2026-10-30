@@ -7,6 +7,7 @@
              xmlns:controls="clr-namespace:Em.Ui.Wpf.Controls"
              xmlns:conv="clr-namespace:Em.Ui.Wpf.Converters"
              xmlns:shared="clr-namespace:Em.Ui.Wpf.Shared"
+             xmlns:models="clr-namespace:Em.Api.Core.Models;assembly=Em.Libs"
              xmlns:fa="http://schemas.fontawesome.com/icons/fonts"
              mc:Ignorable="d"
              d:DesignHeight="720" d:DesignWidth="1180">
@@ -19,9 +20,11 @@
       user list. There is no screen title here on purpose - the host draws the title and
       subtitle in its own navigation bar directly above this control.
 
-      The list and the pager are bound to UserManagerVm; one row is one User, and the
-      columns are the fields of vi_User the screen shows. The filter sheet and the filter
-      strip are still markup only - see the region at the end of the code behind.
+      Everything is bound to UserManagerVm: one row is one User, and the columns are the
+      fields of vi_User the screen shows plus the roles the user holds in effect now. The
+      search box, the status segments, the filter sheet and the column headers all end up
+      in one server query, so searching, filtering and sorting work across every page,
+      not only the one on screen.
 
       Two rules keep the design working on both the light and the dark theme:
 
@@ -50,6 +53,8 @@
               ============================================================ -->
          <conv:InitialsConverter x:Key="initialsConverter" />
          <conv:AvatarPaletteConverter x:Key="avatarPaletteConverter" />
+         <conv:RoleBadgeConverter x:Key="roleBadgeConverter" MaxVisible="2" />
+         <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter" />
 
          <!-- ============================================================
               PALETTE
@@ -87,7 +92,67 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
          </Style>
 
+         <!-- A sortable column header: the caption is a flat button, and the arrow beside it
+              says which way the column is sorted. The arrow reads the column's own entry of
+              UserManagerVm.Sort through Tag, so one style serves every column; an unsorted
+              column shows a faint double arrow only under the pointer, as a hint that the
+              caption can be clicked. -->
+         <Style x:Key="columnHeaderButtonStyle" TargetType="Button">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Command"
+                    Value="{Binding DataContext.Commands[SortCommand],
+                                    RelativeSource={RelativeSource AncestorType=UserControl}}" />
+            <Setter Property="ToolTip" Value="Sort by this column" />
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                     <!-- Transparent background makes the whole cell the click target, not just
+                          the letters of the caption. -->
+                     <Grid Background="{TemplateBinding Background}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                           <TextBlock x:Name="caption"
+                                      Text="{TemplateBinding Content}"
+                                      Style="{StaticResource columnHeaderStyle}" />
+                           <fa:FontAwesome x:Name="arrow"
+                                           Icon="Solid_Sort"
+                                           FontSize="9"
+                                           Margin="6,0,0,0"
+                                           Opacity="0"
+                                           VerticalAlignment="Center" />
+                        </StackPanel>
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="caption" Property="Opacity" Value="0.85" />
+                           <Setter TargetName="arrow" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Ascending">
+                           <Setter TargetName="arrow" Property="Icon" Value="Solid_ArrowUp" />
+                           <Setter TargetName="arrow" Property="Opacity" Value="1" />
+                           <Setter TargetName="arrow" Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="caption" Property="Opacity" Value="1" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Descending">
+                           <Setter TargetName="arrow" Property="Icon" Value="Solid_ArrowDown" />
+                           <Setter TargetName="arrow" Property="Opacity" Value="1" />
+                           <Setter TargetName="arrow" Property="Foreground" Value="{DynamicResource themeAccentBrush}" />
+                           <Setter TargetName="caption" Property="Opacity" Value="1" />
+                        </DataTrigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
+
+         <!-- The right margin is the gap between two cells: the Auto columns are as wide as
+              their widest cell, so without it a long value runs straight into the next column. -->
          <Style x:Key="primaryCellStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,16,0" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -316,6 +381,21 @@
                     Value="{DynamicResource themeAccentBrush}" />
          </Style>
 
+         <!-- Role chip in a row: the neutral chip, so the accented ADMIN chip ahead of it stays
+              the one that stands out. Capped in width, a long role name ends in an ellipsis and
+              the full name is in the tooltip. -->
+         <Style x:Key="roleChipStyle" TargetType="Border" BasedOn="{StaticResource chipStyle}">
+            <Setter Property="Margin" Value="0,2,6,2" />
+            <Setter Property="MaxWidth" Value="124" />
+            <Setter Property="TextElement.FontWeight" Value="Normal" />
+         </Style>
+
+         <!-- The ADMIN chip ahead of the roles: the accent chip, spaced like a role chip so the
+              two wrap together. -->
+         <Style x:Key="roleAdminChipStyle" TargetType="Border" BasedOn="{StaticResource chipAccentStyle}">
+            <Setter Property="Margin" Value="0,2,6,2" />
+         </Style>
+
          <!-- ============================================================
               PAGE SIZE SELECTOR
               How many records one page shows. It is a plain ComboBox with
@@ -366,10 +446,12 @@
                  leaves alone keep taking the theme's setters and triggers. The theme's
                  ToggleButton turns Foreground black while IsChecked, which is meant for its
                  own accent-filled chrome and is unreadable over ours, so every ToggleButton
-                 here pins Foreground back to the colour it would have inherited. RadioButton
-                 and CheckBox carry no such trigger and are left alone. -->
+                 here pins Foreground to the theme's window text. The token, not the
+                 UserControl's own Foreground: that one is not themed until a window above
+                 passes it down, and a dark theme would get black text. RadioButton and
+                 CheckBox carry no such trigger and are left alone. -->
             <Setter Property="Foreground"
-                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    Value="{DynamicResource themeWindowForegroundBrush}" />
             <Setter Property="Template">
                <Setter.Value>
                   <ControlTemplate TargetType="ToggleButton">
@@ -525,7 +607,7 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle. -->
             <Setter Property="Foreground"
-                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    Value="{DynamicResource themeWindowForegroundBrush}" />
             <Setter Property="Template">
                <Setter.Value>
                   <ControlTemplate TargetType="ToggleButton">
@@ -763,7 +845,7 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle. -->
             <Setter Property="Foreground"
-                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    Value="{DynamicResource themeWindowForegroundBrush}" />
             <Setter Property="Template">
                <Setter.Value>
                   <ControlTemplate TargetType="ToggleButton">
@@ -854,10 +936,9 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle.
-                 This style is also worn by RadioButtons, which the binding leaves as they were. -->
+            <!-- Keeps the theme's checked-state Foreground off the label; see pageSizeToggleStyle. -->
             <Setter Property="Foreground"
-                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    Value="{DynamicResource themeWindowForegroundBrush}" />
             <Setter Property="Template">
                <Setter.Value>
                   <ControlTemplate TargetType="ToggleButton">
@@ -1056,16 +1137,6 @@
             </Setter>
          </Style>
 
-         <!-- Date box: the frame around the editor, matching the search field's shape. -->
-         <Style x:Key="dateFieldStyle" TargetType="Border">
-            <Setter Property="Height" Value="34" />
-            <Setter Property="CornerRadius" Value="9" />
-            <Setter Property="Padding" Value="11,0" />
-            <Setter Property="Background" Value="{StaticResource surfaceStrongBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource outlineBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-         </Style>
-
       </ResourceDictionary>
    </UserControl.Resources>
 
@@ -1134,7 +1205,8 @@
                </Button>
             </StackPanel>
 
-            <!-- Search sits with the list it filters, not with the actions. -->
+            <!-- Search sits with the list it filters, not with the actions. The list follows
+                 a moment after typing stops; the cross empties the box at once. -->
             <Border Grid.Column="4"
                     Width="300"
                     Height="38"
@@ -1143,10 +1215,11 @@
                     Background="{StaticResource surfaceStrongBrush}"
                     BorderBrush="{StaticResource outlineBrush}"
                     BorderThickness="1">
-               <Grid Margin="16,0">
+               <Grid Margin="16,0,6,0">
                   <Grid.ColumnDefinitions>
                      <ColumnDefinition Width="Auto" />
                      <ColumnDefinition Width="*" />
+                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
 
                   <fa:FontAwesome Grid.Column="0"
@@ -1159,21 +1232,36 @@
                            Grid.Column="1"
                            Margin="12,0,0,0"
                            Tag="Search account, name or email"
+                           Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                            Style="{StaticResource searchBoxStyle}" />
+
+                  <!-- Collapsed while the box is empty rather than disabled: a greyed cross next
+                       to an empty box would only be noise. -->
+                  <Button Grid.Column="2"
+                          Style="{StaticResource chipCloseButtonStyle}"
+                          Width="24"
+                          Height="24"
+                          Margin="6,0,0,0"
+                          Command="{Binding Commands[ClearSearchCommand]}"
+                          Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Self},
+                                               Converter={StaticResource booleanToVisibilityConverter}}"
+                          ToolTip="Clear the search" />
                </Grid>
             </Border>
 
             <StackPanel Grid.Column="5" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
-               <!-- Opens the filter sheet. The badge counts the conditions that are set in
-                    there, so nothing stays hidden behind the button. -->
+               <!-- Opens the filter sheet. The badge counts the chips under the toolbar, so
+                    nothing stays hidden behind the button. -->
                <ToggleButton x:Name="filterToggle"
                              Style="{StaticResource filterToggleStyle}"
+                             IsChecked="{Binding IsFilterSheetOpen}"
                              ToolTip="Filter the list">
                   <StackPanel Orientation="Horizontal">
                      <fa:FontAwesome Icon="Solid_Filter" Style="{StaticResource buttonIconStyle}" />
                      <TextBlock Text="Filter" VerticalAlignment="Center" />
-                     <Border x:Name="filterBadge" Style="{StaticResource filterBadgeStyle}">
-                        <TextBlock x:Name="filterCountText" Text="2" VerticalAlignment="Center" />
+                     <Border Style="{StaticResource filterBadgeStyle}"
+                             Visibility="{Binding HasActiveFilters, Converter={StaticResource booleanToVisibilityConverter}}">
+                        <TextBlock Text="{Binding ActiveFilterCount}" VerticalAlignment="Center" />
                      </Border>
                   </StackPanel>
                </ToggleButton>
@@ -1192,10 +1280,11 @@
 
          <!-- =========================================================
               FILTER STRIP
-              Left: the quick filter, the one facet worth a permanent
-              control. Right: whatever the sheet has set, one chip per
-              condition, each removable on its own, plus a way to drop all
-              of them at once. A filtered list that cannot say what it is
+              Left: the status segments, the one facet worth a permanent
+              control; they and the sheet's status chips edit the same
+              condition. Right: whatever the segments cannot show, one chip
+              per condition, each removable on its own, plus a way to drop
+              all of them at once. A filtered list that cannot say what it is
               filtered by is the failure mode this strip exists to prevent.
               ========================================================= -->
          <Grid Grid.Row="1" Margin="22,0,22,10">
@@ -1211,52 +1300,61 @@
                     Background="{StaticResource surfaceBrush}"
                     BorderBrush="{StaticResource outlineBrush}"
                     BorderThickness="1">
-               <StackPanel Orientation="Horizontal">
-                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}"
-                               Content="All" IsChecked="True" />
-                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Active" />
-                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Pending" />
-                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Suspended" />
-                  <RadioButton GroupName="userQuickFilter" Style="{StaticResource quickFilterStyle}" Content="Inactive" />
-               </StackPanel>
+               <!-- When several states are picked in the sheet no segment is on: none of
+                    them alone tells the truth, and the status chip on the right does. -->
+               <ItemsControl ItemsSource="{Binding QuickStates}">
+                  <ItemsControl.ItemsPanel>
+                     <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                     </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                     <DataTemplate>
+                        <RadioButton GroupName="userQuickFilter"
+                                     Style="{StaticResource quickFilterStyle}"
+                                     Content="{Binding Caption}"
+                                     IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                     </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+               </ItemsControl>
             </Border>
 
-            <StackPanel x:Name="activeFilterGroup"
-                        Grid.Column="1"
+            <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
-                        VerticalAlignment="Center">
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasActiveFilters, Converter={StaticResource booleanToVisibilityConverter}}">
                <Border Width="1" Height="20" Margin="16,0" Background="{StaticResource outlineBrush}" />
 
-               <StackPanel x:Name="activeFilterPanel" Orientation="Horizontal" VerticalAlignment="Center">
-                  <!-- One chip per condition. The close button carries its own chip in Tag, so
-                       removing one is a single line in the handler. -->
-                  <Border x:Name="chipRoleFilter" Style="{StaticResource activeFilterChipStyle}">
-                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Role: Administrator" VerticalAlignment="Center" />
-                        <Button Style="{StaticResource chipCloseButtonStyle}"
-                                Tag="{Binding ElementName=chipRoleFilter}"
-                                Click="ActiveFilterRemove_Click"
-                                ToolTip="Remove this condition" />
-                     </StackPanel>
-                  </Border>
-
-                  <Border x:Name="chipDepartmentFilter" Style="{StaticResource activeFilterChipStyle}">
-                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Department: Sales &amp; Marketing" VerticalAlignment="Center" />
-                        <Button Style="{StaticResource chipCloseButtonStyle}"
-                                Tag="{Binding ElementName=chipDepartmentFilter}"
-                                Click="ActiveFilterRemove_Click"
-                                ToolTip="Remove this condition" />
-                     </StackPanel>
-                  </Border>
-               </StackPanel>
+               <!-- One chip per condition; every chip knows how to take its own condition
+                    back, so a single command removes whichever one is clicked. -->
+               <ItemsControl ItemsSource="{Binding ActiveFilters}" VerticalAlignment="Center">
+                  <ItemsControl.ItemsPanel>
+                     <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                     </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="{x:Type shared:ActiveFilterChip}">
+                        <Border Style="{StaticResource activeFilterChipStyle}">
+                           <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding Caption}" VerticalAlignment="Center" />
+                              <Button Style="{StaticResource chipCloseButtonStyle}"
+                                      Command="{Binding DataContext.Commands[RemoveFilterCommand],
+                                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                      CommandParameter="{Binding}"
+                                      ToolTip="Remove this condition" />
+                           </StackPanel>
+                        </Border>
+                     </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+               </ItemsControl>
             </StackPanel>
 
-            <Button x:Name="clearAllFiltersButton"
-                    Grid.Column="2"
+            <Button Grid.Column="2"
                     Style="{StaticResource textButtonStyle}"
                     Content="Clear all"
-                    Click="ActiveFilterClearAll_Click"
+                    Command="{Binding Commands[ClearAllFiltersCommand]}"
+                    Visibility="{Binding HasActiveFilters, Converter={StaticResource booleanToVisibilityConverter}}"
                     ToolTip="Remove every condition" />
          </Grid>
 
@@ -1291,31 +1389,54 @@
                   <!-- Left margin 24 = the row template's 3px selection bar plus its 21px
                        content margin, which is what keeps a caption over its own column. -->
                   <Grid Margin="24,0,20,0" Height="38">
-                     <!-- Only the two columns that carry free text are given the leftover width:
-                          an address and a note have no length to speak of, while every other
-                          column holds something short and known - a name, an email, a state.
-                          The rest are Auto and shared with the row template, which is what keeps
-                          a caption sitting over its own column; a star column cannot be shared,
-                          so the two that fill agree by being declared the same on both sides. -->
+                     <!-- Only the three columns with no length to speak of are given the leftover
+                          width: an address, the roles and a note. Every other column holds
+                          something short and known - a name, an email, a state - and is capped.
+                          Those are Auto and shared with the row template, which is what keeps a
+                          caption sitting over its own column; a star column cannot be shared, so
+                          the three that fill agree by being declared the same on both sides.
+                          Their minimums are what lets the row fit a laptop-width window without
+                          pushing the action buttons out of sight. -->
                      <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="colAccount" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="colFullName" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="colEmail" />
-                        <ColumnDefinition Width="*" MinWidth="150" />
+                        <ColumnDefinition Width="*" MinWidth="100" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="colZip" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="colStatus" />
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="colRole" />
-                        <ColumnDefinition Width="*" MinWidth="130" />
+                        <ColumnDefinition Width="2*" MinWidth="180" />
+                        <ColumnDefinition Width="*" MinWidth="60" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="colActions" />
                      </Grid.ColumnDefinitions>
 
-                     <TextBlock Grid.Column="0" Text="ACCOUNT NAME" MinWidth="190" Style="{StaticResource columnHeaderStyle}" />
-                     <TextBlock Grid.Column="1" Text="FULL NAME" MinWidth="160" Style="{StaticResource columnHeaderStyle}" />
-                     <TextBlock Grid.Column="2" Text="EMAIL" MinWidth="200" Style="{StaticResource columnHeaderStyle}" />
-                     <TextBlock Grid.Column="3" Text="ADDRESS" Style="{StaticResource columnHeaderStyle}" />
-                     <TextBlock Grid.Column="4" Text="ZIP" MinWidth="66" Style="{StaticResource columnHeaderStyle}" />
-                     <TextBlock Grid.Column="5" Text="STATUS" MinWidth="110" Style="{StaticResource columnHeaderStyle}" />
-                     <TextBlock Grid.Column="6" Text="ROLE" MinWidth="104" Style="{StaticResource columnHeaderStyle}" />
+                     <!-- Every column that holds one comparable value sorts on the server, so the
+                          order runs across all pages. Roles (several per row) and the note (free
+                          text) have no single value to order by and keep a plain caption. -->
+                     <Button Grid.Column="0" Content="ACCOUNT NAME" MinWidth="170"
+                             Style="{StaticResource columnHeaderButtonStyle}"
+                             CommandParameter="{x:Static models:UserListSortField.Account}"
+                             Tag="{Binding Sort[Account]}" />
+                     <Button Grid.Column="1" Content="FULL NAME" MinWidth="150"
+                             Style="{StaticResource columnHeaderButtonStyle}"
+                             CommandParameter="{x:Static models:UserListSortField.FullName}"
+                             Tag="{Binding Sort[FullName]}" />
+                     <Button Grid.Column="2" Content="EMAIL" MinWidth="200"
+                             Style="{StaticResource columnHeaderButtonStyle}"
+                             CommandParameter="{x:Static models:UserListSortField.Email}"
+                             Tag="{Binding Sort[Email]}" />
+                     <Button Grid.Column="3" Content="ADDRESS"
+                             Style="{StaticResource columnHeaderButtonStyle}"
+                             CommandParameter="{x:Static models:UserListSortField.Address}"
+                             Tag="{Binding Sort[Address]}" />
+                     <Button Grid.Column="4" Content="ZIP" MinWidth="66"
+                             Style="{StaticResource columnHeaderButtonStyle}"
+                             CommandParameter="{x:Static models:UserListSortField.Zip}"
+                             Tag="{Binding Sort[Zip]}" />
+                     <Button Grid.Column="5" Content="STATUS" MinWidth="110"
+                             Style="{StaticResource columnHeaderButtonStyle}"
+                             CommandParameter="{x:Static models:UserListSortField.State}"
+                             Tag="{Binding Sort[State]}" />
+                     <TextBlock Grid.Column="6" Text="ROLES" MinWidth="104" Style="{StaticResource columnHeaderStyle}" />
                      <TextBlock Grid.Column="7" Text="NOTE" Style="{StaticResource columnHeaderStyle}" />
                      <!-- Empty caption over the action buttons; the MinWidth is what reserves
                           their column. -->
@@ -1348,11 +1469,11 @@
                               <ColumnDefinition Width="Auto" SharedSizeGroup="colAccount" />
                               <ColumnDefinition Width="Auto" SharedSizeGroup="colFullName" />
                               <ColumnDefinition Width="Auto" SharedSizeGroup="colEmail" />
-                              <ColumnDefinition Width="*" MinWidth="150" />
+                              <ColumnDefinition Width="*" MinWidth="100" />
                               <ColumnDefinition Width="Auto" SharedSizeGroup="colZip" />
                               <ColumnDefinition Width="Auto" SharedSizeGroup="colStatus" />
-                              <ColumnDefinition Width="Auto" SharedSizeGroup="colRole" />
-                              <ColumnDefinition Width="*" MinWidth="130" />
+                              <ColumnDefinition Width="2*" MinWidth="180" />
+                              <ColumnDefinition Width="*" MinWidth="60" />
                               <ColumnDefinition Width="Auto" SharedSizeGroup="colActions" />
                            </Grid.ColumnDefinitions>
 
@@ -1378,10 +1499,17 @@
                                          ToolTip="{Binding cUserAccount}" />
                            </StackPanel>
 
+                           <!-- Capped for the same reason as the account: one long name or email
+                                must not take the width the free text columns are meant to have.
+                                The full value is in the tooltip. -->
                            <TextBlock Grid.Column="1" Style="{StaticResource primaryCellStyle}"
-                                      Text="{Binding cContactFullName}" />
+                                      MaxWidth="220"
+                                      Text="{Binding cContactFullName}"
+                                      ToolTip="{Binding cContactFullName}" />
                            <TextBlock Grid.Column="2" Style="{StaticResource secondaryCellStyle}"
-                                      Text="{Binding cCommValue}" />
+                                      MaxWidth="240"
+                                      Text="{Binding cCommValue}"
+                                      ToolTip="{Binding cCommValue}" />
                            <TextBlock Grid.Column="3" Style="{StaticResource primaryCellStyle}"
                                       Text="{Binding cAddressLocation}" />
                            <TextBlock Grid.Column="4" Style="{StaticResource secondaryCellStyle}"
@@ -1393,22 +1521,62 @@
                               <TextBlock Text="{Binding cUserState}" />
                            </Border>
 
-                           <!-- Only an administrator is marked. An ordinary account leaves the
-                                cell empty on purpose: the column is there to be scanned for the
-                                few rows that carry the privilege, and printing a caption on
-                                every other row would bury exactly those. -->
-                           <Border x:Name="roleChip" Grid.Column="6"
-                                   Style="{StaticResource chipAccentStyle}"
-                                   Visibility="Collapsed"
-                                   ToolTip="This account has administrator privileges">
-                              <StackPanel Orientation="Horizontal">
-                                 <fa:FontAwesome Icon="Solid_ShieldHalved"
-                                                 FontSize="10"
-                                                 VerticalAlignment="Center"
-                                                 Margin="0,0,6,0" />
-                                 <TextBlock Text="ADMIN" VerticalAlignment="Center" />
-                              </StackPanel>
-                           </Border>
+                           <!-- The privilege first, in the accent, then the roles in effect now
+                                as neutral chips: two by name, the rest folded into "+N" whose
+                                tooltip names them all. A row with neither leaves the cell empty
+                                on purpose - printing "none" on every such row would bury the
+                                rows the column is scanned for. The column takes a share of the
+                                leftover width; when that is short the chips move to a second line
+                                one by one, and a chip wider than the cell ends in an ellipsis,
+                                instead of pushing the columns after them out of view. Bound to
+                                the admin flag as well, so a change saved in the editor shows on
+                                the row straight away. -->
+                           <ItemsControl Grid.Column="6"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,10,0"
+                                         Focusable="False"
+                                         ToolTip="{Binding RoleNames, Converter={StaticResource roleBadgeConverter}}">
+                              <ItemsControl.ItemsSource>
+                                 <MultiBinding Converter="{StaticResource roleBadgeConverter}">
+                                    <Binding Path="RoleNames" />
+                                    <Binding Path="cUserIsAdmin" />
+                                 </MultiBinding>
+                              </ItemsControl.ItemsSource>
+                              <ItemsControl.ItemsPanel>
+                                 <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                 </ItemsPanelTemplate>
+                              </ItemsControl.ItemsPanel>
+                              <ItemsControl.ItemTemplate>
+                                 <DataTemplate DataType="{x:Type conv:RoleBadge}">
+                                    <Border x:Name="chip" Style="{StaticResource roleChipStyle}">
+                                       <!-- DockPanel, not a horizontal StackPanel: the caption must be
+                                            handed the width left in the chip to end in an ellipsis. -->
+                                       <DockPanel>
+                                          <fa:FontAwesome x:Name="shield"
+                                                          DockPanel.Dock="Left"
+                                                          Icon="Solid_ShieldHalved"
+                                                          FontSize="10"
+                                                          Margin="0,0,6,0"
+                                                          VerticalAlignment="Center"
+                                                          Visibility="Collapsed" />
+                                          <TextBlock Text="{Binding Caption}"
+                                                     TextTrimming="CharacterEllipsis"
+                                                     VerticalAlignment="Center" />
+                                       </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                       <DataTrigger Binding="{Binding Kind}" Value="Admin">
+                                          <Setter TargetName="chip" Property="Style"
+                                                  Value="{StaticResource roleAdminChipStyle}" />
+                                          <Setter TargetName="chip" Property="ToolTip"
+                                                  Value="This account has administrator privileges" />
+                                          <Setter TargetName="shield" Property="Visibility" Value="Visible" />
+                                       </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                 </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                           </ItemsControl>
 
                            <TextBlock Grid.Column="7" Style="{StaticResource secondaryCellStyle}"
                                       Text="{Binding cContactNote}"
@@ -1429,9 +1597,6 @@
                         </Grid>
 
                         <DataTemplate.Triggers>
-                           <DataTrigger Binding="{Binding cUserIsAdmin}" Value="True">
-                              <Setter TargetName="roleChip" Property="Visibility" Value="Visible" />
-                           </DataTrigger>
 
                            <DataTrigger Binding="{Binding cUserState}" Value="Active">
                               <Setter TargetName="statusChip" Property="Style"
@@ -1453,6 +1618,24 @@
                      </DataTemplate>
                   </ListBox.ItemTemplate>
                </ListBox>
+
+               <!-- Empty state, in place of the rows: a list narrowed down to nothing says so,
+                    rather than looking like a list that failed to load. -->
+               <StackPanel Grid.Row="1"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource booleanToVisibilityConverter}}">
+                  <fa:FontAwesome Icon="Solid_UserSlash"
+                                  FontSize="28"
+                                  Opacity="0.35"
+                                  HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding EmptyCaption}"
+                             Margin="0,12,0,0"
+                             FontSize="13"
+                             Opacity="0.6"
+                             HorizontalAlignment="Center" />
+               </StackPanel>
 
                <!-- ==== card footer: range on the left, pager on the right ==== -->
                <Grid Grid.Row="2" Margin="20,12,20,14">
@@ -1519,31 +1702,46 @@
                      </Button>
                   </StackPanel>
                </Grid>
+
+               <!-- Over the rows only: the toolbar stays usable while the list is read, so the
+                    search box keeps its focus and its caret as the list follows the typing,
+                    and the header and the pager keep their place. A change made meanwhile is
+                    not lost - the view model reads once more when the current read ends. Bare:
+                    the rows are only dimmed under the wait dots, without a card, which is what
+                    a list being read again needs. -->
+               <controls:WaitOverlay Grid.Row="1"
+                                     IsBare="True"
+                                     IsWaiting="{Binding InWaiting}"
+                                     Caption="{Binding WaiterText}" />
             </Grid>
          </Border>
       </Grid>
 
       <!-- =========================================================
            FILTER SHEET
-           Everything the quick filter does not cover. It is a side sheet
-           rather than a dialog: it slides in over the list, keeps the
-           toolbar reachable, and leaves the page underneath untouched
-           until Apply is pressed.
+           Every condition, the status included. It is a side sheet rather
+           than a dialog: it slides in over the list and leaves the page
+           underneath untouched until Apply is pressed - the sheet edits a
+           draft that opening it fills from the conditions in force, so
+           closing it any other way changes nothing.
 
            The panel is always in the tree and simply parked off the right
            edge, which is what lets the slide be two animations on one
-           trigger instead of code. The Filter button owns the state:
-           everything here reacts to its IsChecked.
+           trigger instead of code. IsFilterSheetOpen owns the state: the
+           Filter button, the scrim, the close button and Escape all move
+           it, and everything here reacts to it.
            ========================================================= -->
       <Border x:Name="filterScrim"
               Background="#33000000"
               Opacity="0"
-              Visibility="Collapsed"
-              MouseLeftButtonDown="FilterScrim_MouseDown">
+              Visibility="Collapsed">
+         <Border.InputBindings>
+            <MouseBinding Gesture="LeftClick" Command="{Binding Commands[CloseFilterSheetCommand]}" />
+         </Border.InputBindings>
          <Border.Style>
             <Style TargetType="Border">
                <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsChecked, ElementName=filterToggle}" Value="True">
+                  <DataTrigger Binding="{Binding IsFilterSheetOpen}" Value="True">
                      <Setter Property="Visibility" Value="Visible" />
                      <DataTrigger.EnterActions>
                         <BeginStoryboard>
@@ -1573,6 +1771,9 @@
               Background="{DynamicResource themeWindowBackgroundBrush}"
               BorderBrush="{StaticResource outlineBrush}"
               BorderThickness="1,0,0,0">
+         <Border.InputBindings>
+            <KeyBinding Key="Escape" Command="{Binding Commands[CloseFilterSheetCommand]}" />
+         </Border.InputBindings>
          <Border.RenderTransform>
             <TranslateTransform X="380" />
          </Border.RenderTransform>
@@ -1584,7 +1785,7 @@
                <!-- Parked: no clicks reach a panel the user cannot see. -->
                <Setter Property="IsHitTestVisible" Value="False" />
                <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsChecked, ElementName=filterToggle}" Value="True">
+                  <DataTrigger Binding="{Binding IsFilterSheetOpen}" Value="True">
                      <Setter Property="IsHitTestVisible" Value="True" />
                      <DataTrigger.EnterActions>
                         <BeginStoryboard>
@@ -1639,8 +1840,8 @@
 
                <Button Grid.Column="1"
                        Style="{StaticResource rowActionButtonStyle}"
-                       Click="FilterSheetClose_Click"
-                       ToolTip="Close">
+                       Command="{Binding Commands[CloseFilterSheetCommand]}"
+                       ToolTip="Close without applying">
                   <fa:FontAwesome Icon="Solid_Xmark" />
                </Button>
             </Grid>
@@ -1650,80 +1851,61 @@
 
             <!-- ==== sheet body ====
                  One section per field, in the order they are asked for. Each section is a
-                 caption plus one editor kind - chips for a short exclusive-ish set,
-                 check boxes for a list that is picked from, a switch for a plain yes/no.
-                 A declarative filter definition later maps onto exactly these three. -->
+                 caption plus one editor kind - chips for a short set where several may be
+                 picked, check boxes for a longer list that is picked from, a switch for a
+                 plain yes/no. A declarative filter definition later maps onto exactly these
+                 three; nothing here is offered that the server cannot filter on. -->
             <ScrollViewer Grid.Row="1"
                           Padding="22,0"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
-               <StackPanel x:Name="filterSheetContent" Margin="0,0,0,20">
+               <StackPanel Margin="0,0,0,20">
 
+                  <!-- The same condition as the segments beside the list: one state picked here
+                       lights its segment, several leave a status chip instead. None picked means
+                       every state but deleted. -->
                   <TextBlock Text="STATUS" Style="{StaticResource sheetSectionStyle}" Margin="0,16,0,9" />
-                  <WrapPanel>
-                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Active" IsChecked="True" />
-                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Pending" />
-                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Suspended" />
-                     <ToggleButton Style="{StaticResource filterChipStyle}" Content="Inactive" />
-                  </WrapPanel>
+                  <ItemsControl ItemsSource="{Binding SheetStates}">
+                     <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                           <WrapPanel />
+                        </ItemsPanelTemplate>
+                     </ItemsControl.ItemsPanel>
+                     <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                           <ToggleButton Style="{StaticResource filterChipStyle}"
+                                         Content="{Binding Caption}"
+                                         IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                        </DataTemplate>
+                     </ItemsControl.ItemTemplate>
+                  </ItemsControl>
 
+                  <!-- Active roles on the server. A user matches when it holds at least one of
+                       the picked roles in effect now - the same roles its chips show. -->
                   <TextBlock Text="ROLE" Style="{StaticResource sheetSectionStyle}" />
-                  <StackPanel>
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Administrator" IsChecked="True" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Sales Manager" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Warehouse Supervisor" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Finance Officer" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Internal Auditor" />
-                  </StackPanel>
-
-                  <TextBlock Text="DEPARTMENT" Style="{StaticResource sheetSectionStyle}" />
-                  <StackPanel>
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Information Technology" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Sales &amp; Marketing" IsChecked="True" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Logistics" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Finance &amp; Accounting" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Operations" />
-                     <CheckBox Style="{StaticResource filterCheckBoxStyle}" Content="Compliance" />
-                  </StackPanel>
-
-                  <!-- Presets first, the two date boxes second: most of the time a preset is
-                       the answer, and the boxes only matter when none of them is. The chip
-                       style is reused on RadioButtons here, which makes the set exclusive
-                       without a second template. -->
-                  <TextBlock Text="LAST ACTIVE" Style="{StaticResource sheetSectionStyle}" />
-                  <WrapPanel>
-                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}"
-                                  Content="Any time" IsChecked="True" />
-                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Today" />
-                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Last 7 days" />
-                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Last 30 days" />
-                     <RadioButton GroupName="userLastActive" Style="{StaticResource filterChipStyle}" Content="Custom" />
-                  </WrapPanel>
-
-                  <Grid Margin="0,4,0,0">
-                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                     </Grid.ColumnDefinitions>
-
-                     <Border Grid.Column="0" Style="{StaticResource dateFieldStyle}">
-                        <DatePicker x:Name="dateFromEdit"
-                                    Style="{StaticResource inlineDatePickerStyle}"
-                                    FontSize="12"
-                                    Tag="From" />
-                     </Border>
-
-                     <TextBlock Grid.Column="1" Text="to" Margin="10,0" Opacity="0.5"
-                                FontSize="12" VerticalAlignment="Center" />
-
-                     <Border Grid.Column="2" Style="{StaticResource dateFieldStyle}">
-                        <DatePicker x:Name="dateToEdit"
-                                    Style="{StaticResource inlineDatePickerStyle}"
-                                    FontSize="12"
-                                    Tag="To" />
-                     </Border>
-                  </Grid>
+                  <ItemsControl ItemsSource="{Binding SheetRoles}">
+                     <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                           <CheckBox Style="{StaticResource filterCheckBoxStyle}"
+                                     Content="{Binding Caption}"
+                                     IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                        </DataTemplate>
+                     </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="No active role on the server"
+                             FontSize="12"
+                             Opacity="0.55"
+                             Margin="0,4,0,0">
+                     <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                           <Style.Triggers>
+                              <DataTrigger Binding="{Binding HasSheetRoles}" Value="True">
+                                 <Setter Property="Visibility" Value="Collapsed" />
+                              </DataTrigger>
+                           </Style.Triggers>
+                        </Style>
+                     </TextBlock.Style>
+                  </TextBlock>
 
                   <TextBlock Text="OPTIONS" Style="{StaticResource sheetSectionStyle}" />
                   <Grid>
@@ -1732,11 +1914,30 @@
                         <ColumnDefinition Width="Auto" />
                      </Grid.ColumnDefinitions>
                      <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="Include archived accounts" FontSize="12.5" />
-                        <TextBlock Text="Off by default; archived accounts are rarely wanted"
+                        <TextBlock Text="Administrators only" FontSize="12.5" />
+                        <TextBlock Text="Only accounts with administrator privileges"
                                    FontSize="11" Opacity="0.55" Margin="0,2,0,0" TextWrapping="Wrap" />
                      </StackPanel>
-                     <ToggleButton Grid.Column="1" Style="{StaticResource filterSwitchStyle}" Margin="12,0,0,0" />
+                     <ToggleButton Grid.Column="1"
+                                   Style="{StaticResource filterSwitchStyle}"
+                                   Margin="12,0,0,0"
+                                   IsChecked="{Binding SheetAdminOnly}" />
+                  </Grid>
+
+                  <Grid Margin="0,14,0,0">
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="Include deleted accounts" FontSize="12.5" />
+                        <TextBlock Text="Off by default; deleted accounts are rarely wanted"
+                                   FontSize="11" Opacity="0.55" Margin="0,2,0,0" TextWrapping="Wrap" />
+                     </StackPanel>
+                     <ToggleButton Grid.Column="1"
+                                   Style="{StaticResource filterSwitchStyle}"
+                                   Margin="12,0,0,0"
+                                   IsChecked="{Binding SheetIncludeDeleted}" />
                   </Grid>
                </StackPanel>
             </ScrollViewer>
@@ -1754,22 +1955,16 @@
                           Style="{StaticResource outlinedButtonStyle}"
                           Margin="0,0,6,0"
                           Content="Reset"
-                          Click="FilterReset_Click" />
+                          Command="{Binding Commands[ResetFilterCommand]}" />
                   <Button Grid.Column="1"
                           Style="{StaticResource filledButtonStyle}"
                           Margin="6,0,0,0"
                           Content="Apply"
-                          Click="FilterApply_Click" />
+                          Command="{Binding Commands[ApplyFilterCommand]}" />
                </Grid>
             </Border>
          </Grid>
       </Border>
-
-      <!-- Last child of the outer grid, so it covers the card, the toolbar and the filter
-           sheet alike: the list is read from the server, and until that comes back there is
-           nothing on this screen worth touching. -->
-      <controls:WaitOverlay IsWaiting="{Binding InWaiting}"
-                         Caption="{Binding WaiterText}" />
    </Grid>
       </TabItem>
       <TabItem Foreground="{DynamicResource themeWindowForegroundBrush}">

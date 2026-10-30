@@ -35,6 +35,25 @@ namespace Em.Api.Core.Models
          return [.. rows.Select(r => Build(app, r))];
       }
 
+      /// <summary>
+      /// Gets one page of the searched, filtered and sorted user list, each user carrying the names of the roles
+      /// it holds in effect now in <see cref="RoleNames"/>, together with the number of users matching across
+      /// every page.
+      /// </summary>
+      public static async Task<(User[] Users, int TotalRecords)> GetUserListPageAsync(IEmApp app, UserListQuery query) {
+         var svc = app.ServiceProvider.GetRequiredService<ICredentialServices>();
+         var page = await svc.PostGetMeta_UserListPage(query);
+
+         var rolesByUser = page.Roles.ToLookup(r => r.cUserId, StringComparer.OrdinalIgnoreCase);
+         var users = page.Rows.Select(row => {
+            var user = Build(app, row);
+            user.RoleNames = [.. rolesByUser[row.cUserId].Select(r => r.cRoleName)];
+            return user;
+         });
+
+         return ([.. users], page.TotalRecords);
+      }
+
       /// <summary>Gets one user by its id.</summary>
       public static async Task<User> GetUser_ByIdAsync(IEmApp app, string cUserId) {
          EnsureNotSystemAccount(cUserId);
@@ -179,6 +198,20 @@ namespace Em.Api.Core.Models
          get;
          set => SetField(ref field, value);
       }
+
+      /// <summary>
+      /// Names of the roles the user holds in effect now, ordered by name, as read with the user list. Not part
+      /// of the record: it is never saved and never marks the model changed, and it stays as read until the
+      /// list is read again.
+      /// </summary>
+      public IReadOnlyList<string> RoleNames {
+         get;
+         set {
+            if (ReferenceEquals(field, value)) return;
+            field = value;
+            OnPropertyChanged();
+         }
+      } = [];
 
       #endregion
 
