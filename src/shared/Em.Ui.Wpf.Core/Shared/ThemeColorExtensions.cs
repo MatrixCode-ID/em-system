@@ -32,6 +32,8 @@ namespace Em.Ui.Wpf.Shared
 
       public const string PrimaryContainerBrush = "themePrimaryContainerBrush";
       public const string OnPrimaryContainerBrush = "themeOnPrimaryContainerBrush";
+      public const string SecondaryContainerBrush = "themeSecondaryContainerBrush";
+      public const string OnSecondaryContainerBrush = "themeOnSecondaryContainerBrush";
       public const string SurfaceContainerLowBrush = "themeSurfaceContainerLowBrush";
       public const string SurfaceContainerBrush = "themeSurfaceContainerBrush";
       public const string OnSurfaceVariantBrush = "themeOnSurfaceVariantBrush";
@@ -48,6 +50,8 @@ namespace Em.Ui.Wpf.Shared
       public static void Apply(ResourceDictionary resources, ThemeBase theme) {
          resources[PrimaryContainerBrush] = theme.PrimaryContainer.ToBrush();
          resources[OnPrimaryContainerBrush] = theme.OnPrimaryContainer.ToBrush();
+         resources[SecondaryContainerBrush] = theme.SecondaryContainer.ToBrush();
+         resources[OnSecondaryContainerBrush] = theme.OnSecondaryContainer.ToBrush();
          resources[SurfaceContainerLowBrush] = theme.SurfaceContainerLow.ToBrush();
          resources[SurfaceContainerBrush] = theme.SurfaceContainer.ToBrush();
          resources[OnSurfaceVariantBrush] = theme.OnSurfaceVariant.ToBrush();
