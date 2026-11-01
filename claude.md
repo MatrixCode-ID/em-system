@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+## Urutan Pin App List MAUI (permintaan pengguna 2026-11-01)
+
+Modul yang di-pin di Home dapat diurutkan dengan tap-hold lalu geser atas/bawah.
+Geseran hanya di dalam batas Pin App List: kartu tidak bisa keluar dari pin
+pertama/terakhir atau melewati summary My Tasks. Tap biasa tetap membuka modul.
+Urutan disimpan per akun/server pada perangkat; sebelum diurutkan pertama kali
+tetap memakai urutan menu, pin baru ditambah di akhir. Guide engine-maui-experience.md.
+
 ## Compact MAUI Home header (2026-10-29)
 
 Home uses one header row: compact greeting and account name on the left, and

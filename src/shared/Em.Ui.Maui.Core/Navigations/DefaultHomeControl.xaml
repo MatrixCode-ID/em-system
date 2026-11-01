@@ -36,7 +36,7 @@
    </ContentView>
   </DataTemplate>
   <DataTemplate x:Key="catalogueRowTemplate">
-<VerticalStackLayout Spacing="{StaticResource space4}" Padding="0,4">
+<VerticalStackLayout x:Name="CatalogueRowRoot" Spacing="{StaticResource space4}" Padding="0,4">
      <Border IsVisible="{Binding IsHeader}" Style="{StaticResource cardStyle}" Padding="0" Margin="0,4,0,0">
       <Grid>
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="12" InputTransparent="True" CascadeInputTransparent="True">
@@ -54,7 +54,7 @@
        Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" HorizontalOptions="Fill" VerticalOptions="Fill" />
       </Grid>
      </Border>
-     <Border IsVisible="{Binding IsDestination}" Style="{StaticResource actionCardStyle}" Padding="0" Margin="{Binding Indent}">
+     <Border x:Name="DestinationCard" IsVisible="{Binding IsDestination}" Style="{StaticResource actionCardStyle}" Padding="0" Margin="{Binding Indent}">
       <Grid ColumnDefinitions="*,Auto">
        <Grid Padding="{Binding ContentPadding}" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" InputTransparent="True" CascadeInputTransparent="True">
         <Border WidthRequest="{Binding IconTileSize}" HeightRequest="{Binding IconTileSize}" Padding="{Binding IconPadding}" StrokeThickness="0" VerticalOptions="Center"
@@ -75,7 +75,9 @@
         <controls:FontIcon Grid.Column="3" Glyph="{x:Static controls:FontIcons.ChevronRight}" IconSize="{StaticResource space16}" VerticalOptions="Center" AutomationProperties.IsInAccessibleTree="False"
          TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
        </Grid>
-       <Button Command="{Binding Menu.Commands[OpenCommand]}" SemanticProperties.Description="{Binding Menu.Title}" SemanticProperties.Hint="{Binding Menu.Subtitle}"
+       <controls:HoldDragButton Command="{Binding Menu.Commands[OpenCommand]}" SemanticProperties.Description="{Binding Menu.Title}" SemanticProperties.Hint="{Binding Menu.Subtitle}"
+        CanReorder="{Binding CanReorderPin}" InteractionScope="{Binding PinOwner.TaskInteractionScope}" ReorderIndex="{Binding PinIndex}" ReorderCount="{Binding PinCount}"
+        ReorderCommand="{Binding Commands[MovePinCommand]}" DragTarget="{x:Reference DestinationCard}" ReorderItem="{x:Reference CatalogueRowRoot}"
         Style="{StaticResource textButtonStyle}" BackgroundColor="Transparent" Padding="0" CornerRadius="16" HorizontalOptions="Fill" VerticalOptions="Fill" />
        <controls:IconButton x:Name="ModuleMenuButton" Grid.Column="1" Glyph="{x:Static controls:FontIcons.EllipsisVertical}" IconSize="16" Command="{Binding Menu.Commands[MoreCommand]}" CommandParameter="{x:Reference ModuleMenuButton}" IsVisible="{Binding ShowActions}" SemanticProperties.Description="{Binding Menu.Title, StringFormat='Open and pin actions for {0}'}" VerticalOptions="Center" TintColor="{AppThemeBinding Light={StaticResource onSurfaceVariantLight}, Dark={StaticResource onSurfaceVariantDark}}" />
       </Grid>

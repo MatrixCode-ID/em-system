@@ -41,6 +41,22 @@ Summary bindings keep the catalogue row as their context and read its live
 TaskSummary properties; they do not replace a recycled row's BindingContext.
 Successful empty snapshots display 0 for both Assigned and Task groups.
 
+Pinned destinations can be reordered inside the Pin App List. Touch and hold a
+pinned card, drag up or down and release; the card follows the finger but is
+clamped between the first and last pin, so it can never cross the My Tasks
+summary or leave the list. The pins it passes move aside by one row to show the
+landing position, and the drop is applied after the touch event returns. A tap
+still opens the module and a hold without movement does nothing. Dragging needs
+at least two pins, is refused in the catalogue and for a stale account/server.
+Until the first reorder the pins keep menu order; afterwards the saved pin order
+is used and new pins are appended at the end. Pins that are not shown because
+the module is not available keep their place after the visible ones.
+`HoldDragButton` provides this list mode through `ReorderIndex`, `ReorderCount`,
+`ReorderItem` (the row whose height is the pitch) and `ReorderCommand`, which
+receives a `HoldDragReorder` with the target index. Rows are moved on the list's
+own item views, because a child moved past its row wrapper would be clipped.
+Without reordering, a long press on `HoldDragButton` activates like a plain button.
+
 Held-input controls must validate that their cached Android peer still has a
 live handle and belongs to the current handler before accessing native state.
 Virtualized rows can receive binding changes after native disposal, including

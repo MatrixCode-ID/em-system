@@ -218,7 +218,20 @@ namespace Em.Ui.Maui.Navigations
       public CatalogRow(Action? toggle = null) {
          _toggle = toggle;
          RegisterCommand(nameof(ToggleCommand), ToggleCommand, ToggleCommandAllowed);
+         RegisterCommand(nameof(MovePinCommand), MovePinCommand, MovePinCommandAllowed);
       }
+      /// <summary>The Home that owns this pinned row; null for catalogue rows and the summary.</summary>
+      public DefaultHomeControlVm? PinOwner { get; init; }
+      /// <summary>The position of this row inside the Pin App List.</summary>
+      public int PinIndex { get; init; }
+      /// <summary>The number of rows in the Pin App List, which bounds the held drag.</summary>
+      public int PinCount { get; init; }
+      /// <summary>Whether a held drag may reorder this pinned row.</summary>
+      public bool CanReorderPin => PinOwner is not null && PinCount > 1;
+      /// <summary>Moves this pinned row to the dropped position.</summary>
+      public void MovePinCommand(object? drop) { if (drop is HoldDragReorder value) PinOwner?.MovePin(this, value.Target); }
+      /// <summary>Only pinned rows of the current Home identity can be reordered.</summary>
+      public bool MovePinCommandAllowed(object? drop) => drop is HoldDragReorder && PinOwner?.MovePinAllowed() == true;
       /// <summary>The complete group path displayed by a heading.</summary>
       public string Header { get; init; } = "";
       /// <summary>Whether this row is a group heading.</summary>
@@ -395,6 +408,20 @@ namespace Em.Ui.Maui.Navigations
          Commands[nameof(MoveTaskCardBeforeCommand)]?.RaiseCanExecuteChanged();
          Commands[nameof(MoveTaskCardAfterCommand)]?.RaiseCanExecuteChanged();
       }
+      /// <summary>Refuses pin moves outside Home, with fewer than two pins or for a stale account/server.</summary>
+      public bool MovePinAllowed() => IsHomeView && HomeRows.Count > 1 && _preferenceKey.Length > 0 &&
+         EmApp?.ActiveUser is not null && ReferenceEquals(_user, EmApp.ActiveUser) && ReferenceEquals(_connection, EmApp.ActiveConnection);
+      /// <summary>Moves a pinned row inside the Pin App List and persists the order for the account/server.</summary>
+      internal void MovePin(CatalogRow row, int target) {
+         var index = HomeRows.IndexOf(row);
+         if (!MovePinAllowed() || EmApp is not { } app || index < 0 || target < 0 || target >= HomeRows.Count || target == index) return;
+         var names = HomeRows.Select(x => x.Menu!.Navigation.Name).ToList();
+         names.RemoveAt(index); names.Insert(target, row.Menu!.Navigation.Name);
+         // Pins that are not shown now (no access on this server) keep their place after the visible ones.
+         _preferences = _preferences with { Pinned = names.Concat(_preferences.Pinned.Where(x => !names.Contains(x))).ToArray(), PinsOrdered = true };
+         app.Settings.SetString(_preferenceKey, JsonSerializer.Serialize(_preferences));
+         RebuildMenuTree();
+      }
       /// <summary>Restricts the permitted catalogue to preferred modules.</summary>
       public bool OnlyPinned { get => Get<bool>(); private set => Set(value, _ => { NotifyChanged(nameof(FilterCaption)); RebuildMenuTree(); }); }
       /// <summary>Reveals locally hidden modules so they can be restored.</summary>
@@ -486,7 +513,11 @@ namespace Em.Ui.Maui.Navigations
          }
          RebuildVisibleRows();
          HomeRows.Clear();
-         foreach (var menu in AppMenus.Where(x => x.IsPinned && !x.IsHidden)) HomeRows.Add(new CatalogRow { Menu = menu });
+         // Menu order until the user reorders the pins once; from then on the saved pin order.
+         var pins = AppMenus.Where(x => x.IsPinned && !x.IsHidden);
+         if (_preferences.PinsOrdered) pins = pins.OrderBy(x => Array.IndexOf(_preferences.Pinned, x.Navigation.Name));
+         var pinList = pins.ToList();
+         for (var i = 0; i < pinList.Count; i++) HomeRows.Add(new CatalogRow { Menu = pinList[i], PinOwner = this, PinIndex = i, PinCount = pinList.Count });
          HomeDisplayRows.Clear();
          if (TasksBeforePins) HomeDisplayRows.Add(_taskSummaryRow);
          foreach (var row in HomeRows) HomeDisplayRows.Add(row);
@@ -516,5 +547,5 @@ namespace Em.Ui.Maui.Navigations
       private static int CountGroup(MenuGroup group) => group.Items.Count + group.Groups.Sum(CountGroup);
    }
 
-   internal sealed record CataloguePreferences(string[] Pinned, string[] Hidden, string[] Order, bool TasksBeforePins = false);
+   internal sealed record CataloguePreferences(string[] Pinned, string[] Hidden, string[] Order, bool TasksBeforePins = false, bool PinsOrdered = false);
 }
