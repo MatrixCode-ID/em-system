@@ -111,6 +111,7 @@ namespace Em.Api.Core
       /// </summary>
       private static void InitInternalServices(EmAppBuilder builder) {
          builder.Services.AddSingleton<IStringHasher, Argon2Hashing>();
+         builder.Services.AddSingleton<IQrCodeService>(QrCodeService.Default);
 
          // Every credential type the engine knows is registered here, one entry each. What is
          // registered is the way to build one, not the credential itself: a credential belongs to a

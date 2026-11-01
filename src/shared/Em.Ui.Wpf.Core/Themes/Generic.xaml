@@ -153,6 +153,31 @@
    </Style>
 
    <!-- ============================================================
+        QR CODE VIEW
+        Background/Foreground only feed the colors: QrCodeView picks
+        the lighter one as the tile, so the code stays dark on light.
+        ============================================================ -->
+   <Style TargetType="{x:Type controls:QrCodeView}">
+      <Setter Property="Background" Value="{DynamicResource themeWindowBackgroundBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="IsTabStop" Value="False" />
+      <Setter Property="SnapsToDevicePixels" Value="True" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="{x:Type controls:QrCodeView}">
+               <Border Width="{TemplateBinding Size}" Height="{TemplateBinding Size}"
+                       CornerRadius="8" ClipToBounds="True"
+                       Background="{TemplateBinding TileBrush}">
+                  <Image Source="{TemplateBinding ImageSource}" Stretch="Uniform"
+                         RenderOptions.BitmapScalingMode="NearestNeighbor" />
+               </Border>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
+   <!-- ============================================================
         WAIT DOTS
         ============================================================ -->
    <Style TargetType="{x:Type controls:WaitDots}">

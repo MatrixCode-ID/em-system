@@ -8,7 +8,7 @@
         <RootNamespace>Em</RootNamespace>
         <Description>Shared types and utilities for Em System.</Description>
         <Title>Em System shared library</Title>
-        <PackageTags>em-system;shared;contracts;argon2</PackageTags>
+        <PackageTags>em-system;shared;contracts;argon2;qrcode</PackageTags>
     </PropertyGroup>
     <ItemGroup>
       <Folder Include="Services\" />
@@ -16,6 +16,7 @@
     <ItemGroup>
       <PackageReference Include="Isopoh.Cryptography.Argon2" Version="2.0.0" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+      <PackageReference Include="QRCoder" Version="1.8.1" />
       <PackageReference Include="Ulid" Version="1.4.1" />
     </ItemGroup>
 

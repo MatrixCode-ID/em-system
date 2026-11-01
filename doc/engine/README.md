@@ -38,6 +38,7 @@ solutions, tests and NuGet packaging are covered in [Build and packaging](build.
 | [Debug mode](engine-debug-mode.md) | Switch User, Simulate Login, Debug Sign In and the debug switches of `EmApp` |
 | [Tab strip](engine-tab-strip.md) | Reorderable panel tabs, optional leading content and cascading menu styles |
 | [Image composer](engine-image-composer.md) | Millimeter canvas, image layout, permanent crop, arrows and PNG export |
+| [QR codes](engine-qr-code.md) | `IQrCodeService` on server, WPF and MAUI, image helpers and the themed `QrCodeView` control |
 
 ## Reference module
 

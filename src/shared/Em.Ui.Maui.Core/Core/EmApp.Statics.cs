@@ -111,12 +111,13 @@ namespace Em.Ui.Maui.Core
       }
 
       /// <summary>
-      /// Registers the application's built-in core services into the DI container: hashing, the
+      /// Registers the application's built-in core services into the DI container: hashing, QR code images, the
       /// <see cref="EmApp"/> instance itself (through its three contracts), and the core data services used
       /// across modules - currently contact data and user credential data.
       /// </summary>
       private static void InitInternalServices(EmApp app) {
          app.Services.AddSingleton<IStringHasher, Argon2Hashing>();
+         app.Services.AddSingleton<IQrCodeService>(QrCodeService.Default);
          app.Services.AddSingleton(app);
          app.Services.AddSingleton<IEmApp>(app);
          app.Services.AddSingleton<IEmAppUi>(app);

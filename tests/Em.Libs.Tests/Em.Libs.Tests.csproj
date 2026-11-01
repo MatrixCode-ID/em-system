@@ -5,6 +5,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- QR decoder for the QR code tests only; the engine itself only encodes. -->
+        <PackageReference Include="ZXing.Net" Version="0.16.10" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\..\src\shared\Em.Libs\Em.Libs.csproj" />
     </ItemGroup>
 
