@@ -6,6 +6,18 @@ the API host, a WPF desktop host and a .NET MAUI (Android) host.
 The project is under active development (alpha). The code is released under the [MIT](LICENSE) license,
 and the engine libraries are published to nuget.org as `EmSys.*` prerelease packages.
 
+## Engineering approach and real-world use
+
+Em System is developed with AI assistance, but it is not entirely a "vibe coding" project.
+We at Matrix Code deliberately design the architecture, engine structure, module boundaries and
+development conventions. AI helps us implement and iterate; the engineering direction and structural
+decisions come from our team.
+
+We use this engine to develop ERP applications for an actively operating factory with real operational
+data. Its development is shaped by actual manufacturing workflows, business requirements and the
+responsibility of handling real data. This practical use informs the engine's design while the public
+engine continues to evolve in alpha.
+
 ## Project layout
 
 | Location | Contents |
