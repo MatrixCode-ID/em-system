@@ -886,7 +886,7 @@ namespace Em.Ui.Wpf.Windows
          // Like the home screen: navigations without a path sit above the groups.
          var roots = new List<TabbedMainWindowMenuItem>();
          var groups = new List<TabbedMainWindowMenuItem>();
-         foreach (var nav in app.Navigations.Where(r => r.IsMenuVisible && app.CanOpen(r))) {
+         foreach (var nav in app.Navigations.Where(r => r.IsMenuVisible && app.CanOpen(r)).InMenuOrder()) {
             var item = new TabbedMainWindowMenuItem {
                Title = nav.Title,
                Subtitle = string.IsNullOrWhiteSpace(nav.Subtitle) ? null : nav.Subtitle,
@@ -924,7 +924,7 @@ namespace Em.Ui.Wpf.Windows
                r.IsBranch && string.Equals(r.Title, header, MenuPaths.SegmentComparison));
             if (current == null) {
                current = new TabbedMainWindowMenuItem { Title = header };
-               level.Add(current);
+               level.Insert(MenuOrder.GroupInsertIndex(level, header, r => r.IsBranch ? r.Title : null), current);
             }
 
             level = current.Items;

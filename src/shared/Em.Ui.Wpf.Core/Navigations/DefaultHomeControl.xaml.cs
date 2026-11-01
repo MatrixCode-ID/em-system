@@ -135,6 +135,7 @@ namespace Em.Ui.Wpf.Navigations
          Vm.AppMenus.Clear();
          _app.Navigations
             .Where(r => r.IsMenuVisible && _app.CanOpen(r))
+            .InMenuOrder()
             .EachOf(AddMenuItems);
       }
 
@@ -406,7 +407,7 @@ namespace Em.Ui.Wpf.Navigations
             current = groups.FirstOrDefault(r => string.Equals(r.Header, header, MenuPaths.SegmentComparison));
             if (current == null) {
                current = new MenuGroup { Header = header, Level = level + 1 };
-               groups.Add(current);
+               groups.Insert(MenuOrder.GroupInsertIndex(groups, header, r => r.Header), current);
             }
 
             groups = current.Groups;

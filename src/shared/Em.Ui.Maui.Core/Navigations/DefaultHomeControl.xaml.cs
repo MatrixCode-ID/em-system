@@ -458,7 +458,7 @@ namespace Em.Ui.Maui.Navigations
          if (_preferences.Pinned is null || _preferences.Hidden is null || _preferences.Order is null) _preferences = new([], [], []);
          _preferences = _preferences with { Hidden = [], Order = [] };
          AppMenus.Clear();
-         foreach (var nav in app.Navigations.Where(x => x.IsMenuVisible && app.CanOpen(x)).OrderBy(x => x.OrderIndex))
+         foreach (var nav in app.Navigations.Where(x => x.IsMenuVisible && app.CanOpen(x)).InMenuOrder())
             AppMenus.Add(new MenuNavigationVm(app, nav, ShowMenuAsync) { IsPinned = _preferences.Pinned.Contains(nav.Name), IsHidden = _preferences.Hidden.Contains(nav.Name) });
          RebuildMenuTree(); NotifyChanged(nameof(IsModuleListEmpty));
          NotifyChanged(nameof(AccountName)); NotifyChanged(nameof(Greeting));
@@ -468,7 +468,8 @@ namespace Em.Ui.Maui.Navigations
       private void RebuildMenuTree() {
          RootAppMenus.Clear(); AppMenuGroups.Clear(); VisibleRows.Clear();
          var query = SearchText.Trim();
-         foreach (var menu in AppMenus.OrderBy(x => x.IsPinned ? 0 : 1).ThenBy(x => { var index = Array.IndexOf(_preferences.Order, x.Navigation.Name); return index < 0 ? int.MaxValue : index; })) {
+         // AppMenus is already in menu order; pinning does not move a module within the catalogue.
+         foreach (var menu in AppMenus) {
             if ((!ShowHidden && menu.IsHidden) || (OnlyPinned && !menu.IsPinned)) continue;
             var path = menu.Navigation.MenuPath;
             var segments = path is null || path.IsEmptyPath ? Array.Empty<string>() : path.Path.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -478,7 +479,7 @@ namespace Em.Ui.Maui.Navigations
             MenuGroup? group = null;
             for (var i = 0; i < segments.Length; i++) {
                group = groups.FirstOrDefault(x => string.Equals(x.Header, segments[i], StringComparison.OrdinalIgnoreCase));
-               if (group is null) { group = new MenuGroup { Header = segments[i], Level = i + 1 }; groups.Add(group); }
+               if (group is null) { group = new MenuGroup { Header = segments[i], Level = i + 1 }; groups.Insert(MenuOrder.GroupInsertIndex(groups, group.Header, x => x.Header), group); }
                groups = group.Groups;
             }
             group!.Items.Add(menu);
