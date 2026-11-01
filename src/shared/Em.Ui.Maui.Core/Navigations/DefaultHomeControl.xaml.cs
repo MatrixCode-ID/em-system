@@ -222,8 +222,8 @@ namespace Em.Ui.Maui.Navigations
       }
       /// <summary>The Home that owns this pinned row; null for catalogue rows and the summary.</summary>
       public DefaultHomeControlVm? PinOwner { get; init; }
-      /// <summary>The position of this row inside the Pin App List.</summary>
-      public int PinIndex { get; init; }
+      /// <summary>The position of this row inside the Pin App List; updated in place when the pins are reordered.</summary>
+      public int PinIndex { get => Get<int>(); set => Set(value); }
       /// <summary>The number of rows in the Pin App List, which bounds the held drag.</summary>
       public int PinCount { get; init; }
       /// <summary>Whether a held drag may reorder this pinned row.</summary>
@@ -420,7 +420,11 @@ namespace Em.Ui.Maui.Navigations
          // Pins that are not shown now (no access on this server) keep their place after the visible ones.
          _preferences = _preferences with { Pinned = names.Concat(_preferences.Pinned.Where(x => !names.Contains(x))).ToArray(), PinsOrdered = true };
          app.Settings.SetString(_preferenceKey, JsonSerializer.Serialize(_preferences));
-         RebuildMenuTree();
+         // The existing rows are moved rather than rebuilt: a rebuild redraws every card and flashes the labels.
+         var offset = TasksBeforePins ? 1 : 0;
+         HomeRows.Move(index, target);
+         HomeDisplayRows.Move(index + offset, target + offset);
+         for (var i = 0; i < HomeRows.Count; i++) HomeRows[i].PinIndex = i;
       }
       /// <summary>Restricts the permitted catalogue to preferred modules.</summary>
       public bool OnlyPinned { get => Get<bool>(); private set => Set(value, _ => { NotifyChanged(nameof(FilterCaption)); RebuildMenuTree(); }); }

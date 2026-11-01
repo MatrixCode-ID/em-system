@@ -140,12 +140,20 @@ public class HoldDragButton : Button
             var move = held && !listMode && Math.Abs(released) >= 32 ? released < 0 ? MoveBeforeCommand : MoveAfterCommand : null;
             // Without reordering a long press is still an ordinary activation, as on a plain button.
             var tap = _tracking && _tapCandidate && !_holding && sameScope && (!CanReorder || Environment.TickCount64 - _startedAt < Android.Views.ViewConfiguration.LongPressTimeout);
-            CancelInteraction();
-            if (held && listMode) {
-               // The drop rebuilds the list and recycles this row, so it runs after the touch event returns.
-               if (drop.Target != listIndex && ReorderCommand is { } reorder) Dispatcher.Dispatch(() => Execute(reorder, drop));
+            if (held && listMode && drop.Target != listIndex && ReorderCommand is { } reorder && reorder.CanExecute(drop)) {
+               // The rows already show the new order. Resetting them and moving the items in the same message
+               // lets the next frame draw the final order directly, without a frame of the old order and
+               // without the item animator sliding the rows back from their old slots.
+               var list = Alive(_list); var animator = list?.GetItemAnimator();
+               list?.SetItemAnimator(null);
+               CancelInteraction();
+               reorder.Execute(drop);
+               if (list is not null) list.PostDelayed(() => { if (Alive(list) is { } live && live.GetItemAnimator() is null) live.SetItemAnimator(animator); }, 300);
+               break;
             }
-            else if (move?.CanExecute(null) == true) move.Execute(null);
+            CancelInteraction();
+            if (held && listMode) break;
+            if (move?.CanExecute(null) == true) move.Execute(null);
             else if (tap && Command?.CanExecute(CommandParameter) == true) Command.Execute(CommandParameter);
             break;
          case Android.Views.MotionEventActions.Cancel:
@@ -193,7 +201,6 @@ public class HoldDragButton : Button
       _shifted.Clear();
    }
    private static T? Alive<T>(T? view) where T : Java.Lang.Object => view is { Handle: var handle } && handle != IntPtr.Zero ? view : null;
-   private static void Execute(ICommand? command, HoldDragReorder value) { if (command?.CanExecute(value) == true) command.Execute(value); }
 #endif
    private void CancelInteraction() {
 #if ANDROID

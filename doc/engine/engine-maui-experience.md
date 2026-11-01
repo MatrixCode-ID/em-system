@@ -45,7 +45,10 @@ Pinned destinations can be reordered inside the Pin App List. Touch and hold a
 pinned card, drag up or down and release; the card follows the finger but is
 clamped between the first and last pin, so it can never cross the My Tasks
 summary or leave the list. The pins it passes move aside by one row to show the
-landing position, and the drop is applied after the touch event returns. A tap
+landing position. On release the drop is applied in the same touch event that
+resets the drag offsets, with the list's item animator suspended, and the
+existing rows are moved rather than rebuilt, so the next frame shows the final
+order without flashing the old labels or sliding rows back. A tap
 still opens the module and a hold without movement does nothing. Dragging needs
 at least two pins, is refused in the catalogue and for a stale account/server.
 Until the first reorder the pins keep menu order; afterwards the saved pin order
