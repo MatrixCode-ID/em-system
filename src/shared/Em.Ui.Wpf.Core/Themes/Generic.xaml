@@ -168,7 +168,8 @@
             <ControlTemplate TargetType="{x:Type controls:QrCodeView}">
                <Border Width="{TemplateBinding Size}" Height="{TemplateBinding Size}"
                        CornerRadius="8" ClipToBounds="True"
-                       Background="{TemplateBinding TileBrush}">
+                       Background="{TemplateBinding TileBrush}"
+                       Padding="{TemplateBinding TilePadding}">
                   <Image Source="{TemplateBinding ImageSource}" Stretch="Uniform"
                          RenderOptions.BitmapScalingMode="NearestNeighbor" />
                </Border>

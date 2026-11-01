@@ -75,6 +75,32 @@ namespace Em.Ui.Wpf.Controls
          set => SetValue(ErrorCorrectionProperty, value);
       }
 
+      /// <summary>Identifies the <see cref="QuietZoneSize"/> property.</summary>
+      public static readonly DependencyProperty QuietZoneSizeProperty =
+         DependencyProperty.Register(nameof(QuietZoneSize), typeof(double?), typeof(QrCodeView),
+            new FrameworkPropertyMetadata(null, Redraw));
+
+      /// <summary>
+      /// Width of the light border around the code, in device-independent units. <c>null</c> (default)
+      /// draws the standard quiet zone of 4 modules; a number replaces it with a border of that width, for example
+      /// 6 (about 1 mm) when the area around the tile is already light and empty. The code then fills more of
+      /// <see cref="Size"/>.
+      /// </summary>
+      public double? QuietZoneSize {
+         get => (double?)GetValue(QuietZoneSizeProperty);
+         set => SetValue(QuietZoneSizeProperty, value);
+      }
+
+      private static readonly DependencyPropertyKey TilePaddingPropertyKey =
+         DependencyProperty.RegisterReadOnly(nameof(TilePadding), typeof(Thickness), typeof(QrCodeView),
+            new FrameworkPropertyMetadata(default(Thickness)));
+
+      /// <summary>Identifies the read-only <see cref="TilePadding"/> property.</summary>
+      public static readonly DependencyProperty TilePaddingProperty = TilePaddingPropertyKey.DependencyProperty;
+
+      /// <summary>The border between the tile edge and the code, from <see cref="QuietZoneSize"/>; used by the template.</summary>
+      public Thickness TilePadding => (Thickness)GetValue(TilePaddingProperty);
+
       private static readonly DependencyPropertyKey ImageSourcePropertyKey =
          DependencyProperty.RegisterReadOnly(nameof(ImageSource), typeof(ImageSource), typeof(QrCodeView),
             new FrameworkPropertyMetadata(null));
@@ -105,6 +131,9 @@ namespace Em.Ui.Wpf.Controls
          var b = QrCodeImage.ToQrColor(Foreground, QrColor.Black);
          var (light, dark) = a.Luminance >= b.Luminance ? (a, b) : (b, a);
          SetValue(TileBrushPropertyKey, Frozen(light));
+         // A custom border replaces the quiet zone drawn into the image with padding of the tile's own color.
+         var border = QuietZoneSize is { } custom ? Math.Clamp(custom, 0, Size / 2) : 0;
+         SetValue(TilePaddingPropertyKey, new Thickness(border));
          Error = null;
 
          var text = Text;
@@ -113,12 +142,12 @@ namespace Em.Ui.Wpf.Controls
             return;
          }
          try {
-            var options = new QrCodeOptions { ErrorCorrection = ErrorCorrection, PixelsPerModule = 1, Dark = dark, Light = light };
+            var options = new QrCodeOptions { ErrorCorrection = ErrorCorrection, PixelsPerModule = 1, Dark = dark, Light = light, QuietZone = QuietZoneSize is null };
             // One pixel per module gives the module count; the real image is then drawn just large enough
             // for the size on this screen, so the template only scales it down a little.
             var modules = QrCodeImage.Create(text, options).PixelWidth;
             var scale = IsLoaded ? VisualTreeHelper.GetDpi(this).DpiScaleX : 1.0;
-            var perModule = Math.Clamp((int)Math.Ceiling(Size * scale / modules),
+            var perModule = Math.Clamp((int)Math.Ceiling((Size - 2 * border) * scale / modules),
                QrCodeOptions.MinPixelsPerModule, QrCodeOptions.MaxPixelsPerModule);
             SetValue(ImageSourcePropertyKey, QrCodeImage.Create(text, options with { PixelsPerModule = perModule }));
          } catch (ArgumentException ex) {

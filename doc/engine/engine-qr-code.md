@@ -63,12 +63,23 @@ when the text, the level or the theme changes.
 
 `Em.Ui.Maui.Shared.QrCodeImage.Create(text, options, service)` returns an `ImageSource`.
 
-`Em.Ui.Maui.Controls.QrCodeView` has the same `Text`, `Size`, `ErrorCorrection` and `Error`. Its
+`Em.Ui.Maui.Controls.QrCodeView` has the same `Text`, `Size`, `ErrorCorrection`, `QuietZoneSize` and `Error`. Its
 colors are the palette `surface` and `onSurface` roles of the current theme, with the same
 dark-on-light rule; it follows `Application.RequestedThemeChanged` and draws at the display density.
 
 ```xml
 <controls:QrCodeView Text="{Binding Serial}" Size="160" />
+```
+
+## Quiet zone
+
+Both controls draw the standard quiet zone of 4 modules by default (`QuietZoneSize` is `null`). Set
+`QuietZoneSize` to a width in device-independent units to replace it with a thinner border in the tile
+color, for example `6` (about 1 mm on Android) when the area around the tile is already light and empty;
+the code then fills more of `Size`. Check scanning with the real scanners before going much thinner.
+
+```xml
+<controls:QrCodeView Text="{Binding Serial}" Size="180" QuietZoneSize="6" />
 ```
 
 ## Limits

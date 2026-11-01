@@ -28,6 +28,13 @@ namespace Em.Ui.Maui.Controls
       public static readonly BindableProperty SizeProperty = BindableProperty.Create(nameof(Size), typeof(double), typeof(QrCodeView), 160.0, propertyChanged: Changed);
       /// <summary>Error correction level of the code. Default <see cref="QrErrorCorrection.M"/>.</summary>
       public static readonly BindableProperty ErrorCorrectionProperty = BindableProperty.Create(nameof(ErrorCorrection), typeof(QrErrorCorrection), typeof(QrCodeView), QrErrorCorrection.M, propertyChanged: Changed);
+      /// <summary>
+      /// Width of the light border around the code, in device-independent units. <c>null</c> (default)
+      /// draws the standard quiet zone of 4 modules; a number replaces it with a border of that width, for example
+      /// 6 (about 1 mm) when the area around the tile is already light and empty. The code then fills more of
+      /// <see cref="Size"/>.
+      /// </summary>
+      public static readonly BindableProperty QuietZoneSizeProperty = BindableProperty.Create(nameof(QuietZoneSize), typeof(double?), typeof(QrCodeView), null, propertyChanged: Changed);
 
       private static readonly Lazy<Styles.Palette> SharedPalette = new(() => new Styles.Palette());
       private readonly Image _image = new() { Aspect = Aspect.AspectFit };
@@ -58,6 +65,8 @@ namespace Em.Ui.Maui.Controls
       public double Size { get => (double)GetValue(SizeProperty); set => SetValue(SizeProperty, value); }
       /// <inheritdoc cref="ErrorCorrectionProperty"/>
       public QrErrorCorrection ErrorCorrection { get => (QrErrorCorrection)GetValue(ErrorCorrectionProperty); set => SetValue(ErrorCorrectionProperty, value); }
+      /// <inheritdoc cref="QuietZoneSizeProperty"/>
+      public double? QuietZoneSize { get => (double?)GetValue(QuietZoneSizeProperty); set => SetValue(QuietZoneSizeProperty, value); }
 
       /// <summary>Why the last text could not be drawn (for example too long), or <c>null</c> when it was.</summary>
       public string? Error { get; private set; }
@@ -73,7 +82,10 @@ namespace Em.Ui.Maui.Controls
          var b = QrCodeImage.ToQrColor(palette["onSurface" + variant] as Color, QrColor.Black);
          var (light, dark) = a.Luminance >= b.Luminance ? (a, b) : (b, a);
 
+         // A custom border replaces the quiet zone drawn into the image with padding of the tile's own color.
+         var border = QuietZoneSize is { } custom ? Math.Clamp(custom, 0, Size / 2) : 0;
          _tile.WidthRequest = _tile.HeightRequest = Size;
+         _tile.Padding = border;
          _tile.BackgroundColor = Color.FromRgb(light.R, light.G, light.B);
          Error = null;
 
@@ -83,12 +95,12 @@ namespace Em.Ui.Maui.Controls
             return;
          }
          try {
-            var options = new QrCodeOptions { ErrorCorrection = ErrorCorrection, PixelsPerModule = 1, Dark = dark, Light = light };
+            var options = new QrCodeOptions { ErrorCorrection = ErrorCorrection, PixelsPerModule = 1, Dark = dark, Light = light, QuietZone = QuietZoneSize is null };
             // One pixel per module gives the module count; the real image is then drawn just large enough
             // for the size on this screen, so the image view only scales it down a little.
             var modules = QrCodeImage.PngWidth(QrCodeService.Default.CreatePng(text, options));
             var density = DeviceDisplay.Current.MainDisplayInfo.Density is > 0 and var d ? d : 1.0;
-            var perModule = Math.Clamp((int)Math.Ceiling(Size * density / modules),
+            var perModule = Math.Clamp((int)Math.Ceiling((Size - 2 * border) * density / modules),
                QrCodeOptions.MinPixelsPerModule, QrCodeOptions.MaxPixelsPerModule);
             _image.Source = QrCodeImage.Create(text, options with { PixelsPerModule = perModule });
          } catch (ArgumentException ex) {
