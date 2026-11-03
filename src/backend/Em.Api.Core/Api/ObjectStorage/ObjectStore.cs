@@ -468,6 +468,7 @@ public sealed class ObjectStore(ObjectStorageDbContext db, ObjectStorageRuntime 
          foreach (var r in batch) {
             if (objects.Count + prefixes.Count == limit) break;
             var key = r.o.cStoreObjectKey;
+            if (cursor is not null && string.CompareOrdinal(key, cursor) <= 0) continue;
             var at = delimiter is null ? -1 : key.IndexOf(delimiter, prefix.Length, StringComparison.Ordinal);
             if (at >= 0) {
                var common = key[..(at + delimiter!.Length)];
@@ -476,7 +477,7 @@ public sealed class ObjectStore(ObjectStorageDbContext db, ObjectStorageRuntime 
                // binary collation of the key column.
                cursor = common + '￿';
                regrouped = true;
-               break;
+               continue;
             }
             objects.Add(Info(r.o, r.v));
             cursor = key;
