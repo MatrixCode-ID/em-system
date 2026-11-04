@@ -26,6 +26,8 @@ filter, laporan, atau aturan.
 - 2026-11-05 (pengguna): **kolom teks jabatan employee diganti kolom id posisi** (referensi ke daftar posisi).
   Kolom teks lama tidak dipertahankan.
 - 2026-11-05 (pengguna): daftar posisi **bisa disalin dari tenant lain**.
+- 2026-11-05 (pengguna): contact employee terkunci setelah disimpan, tetapi **Full Name contact bisa diubah
+  dari Employee Editor** (lihat "Contact pada Employee Editor").
 - Garis proyek (peran employee per dokumen/transaksi) bukan bagian data employee; itu ranah peran employee
   di transaksi bisnis atau modul pemakai.
 
@@ -75,8 +77,27 @@ filter, laporan, atau aturan.
   employee lalu membuat yang baru; contact ganda untuk orang yang sama menjadi bahan ide alat gabung contact.
 - Keputusan (pengguna): **Full Name contact boleh diubah dari Employee Editor.** Perubahan berlaku pada
   contact itu sendiri, jadi ikut terlihat di tenant dan akun lain yang memakai contact yang sama.
+- Keputusan (pengguna): **user name (akun user yang tertaut ke contact) tidak bisa diubah dari Employee
+  Editor.** Editor hanya menampilkannya sebagai informasi baca saja; perubahan akun tetap lewat User Manager.
+  Yang bisa diubah dari sisi contact hanya Full Name.
 - Kondisi engine saat ini: server sudah menolak perubahan tenant/contact pada employee tersimpan, tetapi
   penyimpanan employee belum memperbarui nama lengkap contact yang sudah ada (hanya contact baru). Ini perlu
   masuk plan implementasi.
+- Kebutuhan implementasi update Full Name (usulan untuk plan):
+  - Editor employee menampilkan nama lengkap contact sebagai input biasa, baik saat employee baru maupun
+    tersimpan; kolom ini ikut tanda "unsaved changes" dan Revert.
+  - Save employee mengirim nama lengkap, dan server memperbarui nama contact pada transaksi yang sama dengan
+    data employee, komunikasi dan alamat, memakai pemeriksaan versi contact yang sudah ada.
+  - Nama tidak boleh kosong (di-trim); panjang mengikuti batas kolom nama contact.
+  - Perubahan masuk audit employee/contact yang sudah ada.
+  - Hak yang dibutuhkan sama dengan menyimpan employee (claim BMM); tidak ada claim terpisah.
 - Desain: `doc/design/BusinessModuleManager.figcraft`, page `20 Employee Editor` (field Contact full name dan
   frame New employee).
+
+## Note pada Employee Editor (2026-11-05)
+
+- Pengguna menanyakan Note di Employee Editor. Aplikasi sudah punya field **Note** (catatan employee, maks.
+  500 karakter) setelah Position; yang belum ada adalah di mockup.
+- Mockup diperbaiki: field Note multi-baris ditambahkan setelah Department, sebelum Active employee, di semua
+  frame Employee Editor (Communications, Addresses, New employee; Light/Dark). Note ini milik employee per
+  tenant, bukan catatan contact.

@@ -57,7 +57,9 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
   - **Addresses**: entry list (label, location with ZIP below, DEFAULT chip), Add address, and the
     selected address's Label, ZIP and multi-line Address. Save needs an active default address with a location.
   - **Contact** (2026-11-05): a saved employee keeps its tenant and contact; there is no Search contact
-    button. The field is **Contact full name**, editable, with the linked user below it. **New employee**
+    button. The field is **Contact full name**, editable, with the linked user below it as read-only
+    text (the user name is changed in User Manager, not here). **New employee**
     (Light/Dark) is the only state with **Search contact**, to pick an existing person or create a contact
     before the first save.
+  - **Note**: the employee's own multi-line note (per tenant, not the contact's), after Department.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
