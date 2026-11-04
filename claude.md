@@ -1,5 +1,11 @@
 # CLAUDE.md
 
+## Library desain Em (keputusan pengguna 2026-11-05)
+
+Desain layout/mockup engine disimpan di `doc/design/` (FigCraft), dengan baseline Em sendiri di
+`doc/design/_BASELINE/em-wpf.figcraft`, bukan baseline produk konsumen. Baca `doc/design/CLAUDE.md`
+sebelum mendesain. Desain pertama: `doc/design/BusinessModuleManager.figcraft`.
+
 ## Urutan Pin App List MAUI (permintaan pengguna 2026-11-01)
 
 Modul yang di-pin di Home dapat diurutkan dengan tap-hold lalu geser atas/bawah.
