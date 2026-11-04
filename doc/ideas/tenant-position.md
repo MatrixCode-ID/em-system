@@ -67,3 +67,16 @@ filter, laporan, atau aturan.
    generik, atau cukup daftar posisi?
 8. Data yang sudah terpasang: kolom teks jabatan employee masih kosong di instalasi yang ada, jadi
    penggantian kolom tidak butuh migrasi data. Perlu dipastikan lagi saat menyusun plan.
+
+## Contact pada Employee Editor (2026-11-05)
+
+- Keputusan (pengguna, menyetujui usulan): **contact employee tidak bisa diganti** setelah employee disimpan.
+  Search contact hanya ada saat membuat employee baru. Salah pilih orang diatasi dengan menonaktifkan
+  employee lalu membuat yang baru; contact ganda untuk orang yang sama menjadi bahan ide alat gabung contact.
+- Keputusan (pengguna): **Full Name contact boleh diubah dari Employee Editor.** Perubahan berlaku pada
+  contact itu sendiri, jadi ikut terlihat di tenant dan akun lain yang memakai contact yang sama.
+- Kondisi engine saat ini: server sudah menolak perubahan tenant/contact pada employee tersimpan, tetapi
+  penyimpanan employee belum memperbarui nama lengkap contact yang sudah ada (hanya contact baru). Ini perlu
+  masuk plan implementasi.
+- Desain: `doc/design/BusinessModuleManager.figcraft`, page `20 Employee Editor` (field Contact full name dan
+  frame New employee).
