@@ -6,6 +6,19 @@ Desain layout/mockup engine disimpan di `doc/design/` (FigCraft), dengan baselin
 `doc/design/_BASELINE/em-wpf.figcraft`, bukan baseline produk konsumen. Baca `doc/design/CLAUDE.md`
 sebelum mendesain. Desain pertama: `doc/design/BusinessModuleManager.figcraft`.
 
+## Cakupan BMM dan modul wrapper (keputusan pengguna 2026-11-05)
+
+Business Module Manager (BMM) **hanya untuk setup dan update info dasar**: tenant, department, posisi,
+employee beserta contact dasarnya (nama lengkap, tipe, comm, address). BMM tetap satu alat admin di Tools
+dengan satu claim BMM; jangan menambah alur kerja bisnis, claim per peran, atau entri menu Apps ke BMM.
+
+Pengguna library yang membutuhkan fitur pada data ini membangun **modul "Wrapper"** sendiri (mis. HR,
+Customer, Vendor). Wrapper mendefinisikan claim yang proper untuk perannya, mendaftarkan navigasinya
+sehingga **masuk ke menu Apps** modul, dan memakai data dasar BMM lewat service/lookup engine (di
+dalam proses, dengan otorisasi oleh wrapper sendiri). Data tambahan milik wrapper disimpan di tabel
+wrapper itu dengan kunci id engine (mis. id employee), bukan kolom baru di tabel BMM. Panduan:
+`doc/engine/engine-business-module-manager.md` bagian "Scope and wrapper modules".
+
 ## Urutan Pin App List MAUI (permintaan pengguna 2026-11-01)
 
 Modul yang di-pin di Home dapat diurutkan dengan tap-hold lalu geser atas/bawah.

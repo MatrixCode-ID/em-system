@@ -4,6 +4,23 @@ The Business Module Manager provides a small shared tenant directory, a departme
 employee records connecting a person to a tenant. It is available to administrators and users with
 `core.business:Business Module Manager Access`.
 
+## Scope and wrapper modules
+
+The Business Module Manager is a **setup tool for basic information only**: tenants, departments and
+employees with their basic contact data (type, communications, addresses). It
+stays one administrator tool under Tools behind one claim. It is not where business workflows, per-role
+claims or Apps menu entries live.
+
+A library consumer that needs features on top of this data builds its own **wrapper module** (for example
+a personnel, customer or vendor module). The wrapper:
+
+- defines the claims that fit its roles, instead of reusing the Business Module Manager claim;
+- registers its own navigation so it appears in the **Apps** menu like any other module;
+- reads and writes the basic data through the engine services and lookups (in-process calls are not
+  claim-gated, so the wrapper authorizes its own operations, see [Use from another module](#use-from-another-module));
+- keeps its own extra data in its own tables keyed by the engine ids (for example the employee id), not in
+  new columns of the Business Module Manager tables.
+
 ## Enable it
 
 Call `builder.AddBusinessModuleManager()` in the API host. The example host enables it by default;

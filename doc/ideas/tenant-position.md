@@ -28,6 +28,9 @@ filter, laporan, atau aturan.
 - 2026-11-05 (pengguna): daftar posisi **bisa disalin dari tenant lain**.
 - 2026-11-05 (pengguna): contact employee terkunci setelah disimpan, tetapi **Full Name contact bisa diubah
   dari Employee Editor** (lihat "Contact pada Employee Editor").
+- 2026-11-05 (pengguna): **BMM hanya untuk setup dan update info dasar.** Fitur bisnis di atas data ini
+  (claim yang proper, layar di menu Apps) dibangun pengguna library sebagai **modul wrapper**. Aturan
+  kanonis ada di `CLAUDE.md` root ("Cakupan BMM dan modul wrapper") dan panduan engine BMM.
 - Garis proyek (peran employee per dokumen/transaksi) bukan bagian data employee; itu ranah peran employee
   di transaksi bisnis atau modul pemakai.
 
@@ -93,6 +96,22 @@ filter, laporan, atau aturan.
   - Hak yang dibutuhkan sama dengan menyimpan employee (claim BMM); tidak ada claim terpisah.
 - Desain: `doc/design/BusinessModuleManager.figcraft`, page `20 Employee Editor` (field Contact full name dan
   frame New employee).
+
+## Head of department dari Employee Editor (2026-11-05)
+
+- Keputusan (pengguna): **kepala department juga bisa ditetapkan dari Employee Editor**, selain dari field
+  Head di halaman Departments.
+- Desain: checkbox **Head of department** di bawah Department, dengan keterangan kepala saat ini (mis.
+  "current head: Rina Halim (EMP-0042)"). Dicentang lalu Save = employee ini menjadi kepala department yang
+  dipilih, menggantikan kepala sebelumnya. Centang dilepas lalu Save = kepala department dikosongkan.
+- Usulan aturan untuk plan:
+  - Checkbox hanya aktif bila department terisi dan employee aktif (sama dengan syarat kepala yang ada).
+  - Mengganti kepala lain menampilkan konfirmasi sebelum Save, seperti konfirmasi pindah department kepala.
+  - Pindah department sambil mencentang: kepala department lama dikosongkan dan employee menjadi kepala
+    department baru, dalam satu transaksi.
+  - Daftar Employees tetap menampilkan chip HEAD dari data department; tidak ada sumber kedua.
+- Pertanyaan: chip HEAD di kolom STATUS daftar Employees dipindah ke kolom Department (usulan), atau diganti
+  label DEPT HEAD?
 
 ## Note pada Employee Editor (2026-11-05)
 

@@ -61,5 +61,7 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
     text (the user name is changed in User Manager, not here). **New employee**
     (Light/Dark) is the only state with **Search contact**, to pick an existing person or create a contact
     before the first save.
+  - **Head of department**: a checkbox below Department that shows the current head; saving it checked makes
+    this employee the head of the selected department (replacing the current head), unchecked clears it.
   - **Note**: the employee's own multi-line note (per tenant, not the contact's), after Department.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
