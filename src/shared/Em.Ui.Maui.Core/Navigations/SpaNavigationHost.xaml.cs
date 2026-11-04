@@ -183,7 +183,10 @@ namespace Em.Ui.Maui.Navigations
    /// <summary>View model of the single-page navigation host.</summary>
    public class SpaNavigationHostVm : MvvmModelBase
    {
+      private readonly NavigationPresentationObserver _presentation = new(Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread);
+
       public SpaNavigationHostVm() {
+         _presentation.Changed += RefreshPresentation;
          RegisterCommand(nameof(LeadingCommand), LeadingCommand, LeadingCommandAllowed);
          RegisterCommand(nameof(HomeCommand), HomeCommand, HomeCommandAllowed);
          RegisterCommand(nameof(AllModulesCommand), AllModulesCommand, AllModulesCommandAllowed);
@@ -237,8 +240,8 @@ namespace Em.Ui.Maui.Navigations
       }
       public bool IsAccountPanelOpen { get => Overlay == ShellOverlay.Account; set { if (value) Overlay = ShellOverlay.Account; else if (IsAccountPanelOpen) Overlay = ShellOverlay.None; } }
       public bool IsCompact { get => Get<bool>(); set => Set(value, _ => RefreshNavigationCommands()); }
-      public bool ShowHomeAction => !IsCompact && IsHomeVisible;
-      public bool ShowReloadAction => !IsCompact && IsReloadVisible;
+      public bool ShowHomeAction => !IsCompact && !UseCompactAppBar && IsHomeVisible;
+      public bool ShowReloadAction => !IsCompact && !UseCompactAppBar && IsReloadVisible;
       /// <summary>The home workspace uses host branding instead of a second screen title.</summary>
       public bool IsHomeWorkspace => IsAtHome;
       /// <summary>Marks Home only while the pinned shortlist is displayed.</summary>
@@ -252,7 +255,15 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>The host's logo, without a product-specific dependency.</summary>
       public Microsoft.Maui.Controls.ImageSource? LogoImage => EmApp is { } app ? BrandingImages.LoadLogo(app.Branding) : null;
       /// <summary>Bottom navigation is only present in an authenticated workspace.</summary>
-      public bool ShowBottomNavigation => HasHubTasks && IsToolbarVisible;
+      public bool ShowBottomNavigation => HasHubTasks && IsToolbarVisible && !(_presentation.Source?.HideBottomNavigation ?? false);
+
+      /// <summary>Only the active body can opt into compact shell chrome.</summary>
+      public bool UseCompactAppBar => _presentation.Source?.UseCompactAppBar ?? false;
+
+      private void RefreshPresentation() {
+         foreach (var name in new[] { nameof(Title), nameof(Subtitle), nameof(HasSubtitle), nameof(UseCompactAppBar),
+                     nameof(ShowBottomNavigation), nameof(ShowHomeAction), nameof(ShowReloadAction) }) NotifyChanged(name);
+      }
 
       /// <summary>
       /// The stack shown by this host. The host follows that stack itself - the entry being shown and the
@@ -289,6 +300,7 @@ namespace Em.Ui.Maui.Navigations
             if (field != null) field.PropertyChanged -= EntryPropertyChanged;
             if (field?.Body is DefaultHomeControl previousHome) previousHome.Vm.PropertyChanged -= HomePropertyChanged;
             field = value;
+            _presentation.Observe((field?.Body as INavigationPresentation)?.Presentation);
             if (field != null) field.PropertyChanged += EntryPropertyChanged;
             if (field?.Body is DefaultHomeControl currentHome) currentHome.Vm.PropertyChanged += HomePropertyChanged;
 
@@ -326,12 +338,12 @@ namespace Em.Ui.Maui.Navigations
       /// <summary>The title in the top bar: the application name at home, the title of its entry on another screen.</summary>
       public string Title => IsAtHome
          ? EmApp?.Branding.DisplayTitle ?? string.Empty
-         : Entry?.Title ?? string.Empty;
+         : _presentation.Source?.Title ?? Entry?.Title ?? string.Empty;
 
       /// <summary>The caption below the title.</summary>
       public string Subtitle => IsAtHome
          ? EmApp?.Branding.DisplayTagline ?? string.Empty
-         : Navigation?.Subtitle ?? string.Empty;
+         : _presentation.Source?.Subtitle ?? Navigation?.Subtitle ?? string.Empty;
 
       /// <summary><c>true</c> when there is a caption to draw below the title.</summary>
       public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);

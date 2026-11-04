@@ -6,6 +6,9 @@
 
     <ItemGroup>
         <Compile Include="../../src/shared/Em.Ui.Maui.Core/Controls/UiFeedback.cs" Link="Mobile/UiFeedback.cs" />
+        <Compile Include="../../src/shared/Em.Ui.Maui.Core/Shared/INavigationPresentation.cs" Link="Mobile/INavigationPresentation.cs" />
+        <Compile Include="../../src/shared/Em.Ui.Maui.Core/Shared/NavigationPresentation.cs" Link="Mobile/NavigationPresentation.cs" />
+        <Compile Include="../../src/shared/Em.Ui.Maui.Core/Shared/NavigationPresentationObserver.cs" Link="Mobile/NavigationPresentationObserver.cs" />
         <ProjectReference Include="..\..\src\shared\Em.Ui.Core\Em.Ui.Core.csproj" />
     </ItemGroup>
 

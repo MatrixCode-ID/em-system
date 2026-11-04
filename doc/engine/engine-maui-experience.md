@@ -134,6 +134,38 @@ results in the maintainer notes below describe the earlier verification run.
 
 ## Shell and lifecycle
 
+### Entry-local shell presentation
+
+A MAUI navigation body may implement `INavigationPresentation` from
+`Em.Ui.Maui.Shared` and return a stable `NavigationPresentation` object for its
+lifetime. A body without the interface keeps the existing shell behaviour.
+The body can delegate the object to its view model; do not replace it after the
+host has mounted the entry.
+
+- `Title` overrides only the visible title. Null uses `NavigationEntry.Title`;
+  the entry's unique key, payload, permission and navigation path remain intact.
+- `Subtitle` overrides the context line. Null uses the registered subtitle;
+  an empty string deliberately hides it.
+- `UseCompactAppBar` opts into a minimum 48-unit app bar with one-line title and
+  context, native font scaling and space to grow vertically. Back, notifications
+  and account remain host-owned; redundant Home/Reload actions are hidden.
+- `HideBottomNavigation` temporarily hides workspace tabs while the body's
+  manual input or local modal needs room. The body supplies real IME/modal state,
+  and clears the flag when it closes. The shell never infers it from pixel height.
+
+The host observes only the current body's object. Switching to another entry or
+recreating/detaching the host removes the previous subscription and restores
+that entry's own defaults. Notifications are dispatched to the UI thread and
+queued callbacks from an earlier visit are rejected by generation, including
+when the same body is revisited. Keep normal module mutations on the UI thread.
+No screen is opted in globally and no access checks are changed.
+
+`NavigationPresentationTests` exercises default isolation, switching bodies,
+keyboard/modal restoration, detach/revisit and background notifications through
+an owner-thread dispatch loop. These console tests and an Android compilation
+do not certify native IME behaviour, insets, large text or accessibility; run
+those checks under the consuming host's device-testing authorization.
+
 Approval screens opt into `IReloadAfterNavigation`: their navigation callback
 only validates/configures, and the stack loads through `OnReloadRequested` after
 mounting on both new and existing entries. Other bodies retain their lifecycle.

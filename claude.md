@@ -820,3 +820,11 @@ membuat/mengubah UI modul, terutama MAUI. Resource yang tersedia didokumentasika
 `doc/engine/engine-maui-experience.md`; pola yang belum ada di engine tetap target.
 Repo produk boleh menyimpan salinan dengan aturan bisnisnya sendiri; aturan bisnis
 produk tidak ditulis di sini.
+
+## Presentasi shell MAUI per entry (persetujuan pengguna 2026-11-04)
+
+Chrome compact dan perubahan visibilitas navigasi bawah wajib opt-in pada body
+entry melalui `INavigationPresentation`. Page lain tetap memakai default existing;
+state tidak boleh terbawa saat pindah entry atau host dilepas. Display title tidak
+mengubah kunci Title navigasi. Hook generik, lifecycle, UI-thread dan batas bukti
+perangkat dijelaskan pada `doc/engine/engine-maui-experience.md`.

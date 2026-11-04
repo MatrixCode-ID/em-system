@@ -5,11 +5,22 @@
  <Grid IsClippedToBounds="True">
   <Grid x:Name="MainContent" RowDefinitions="Auto,Auto,Auto,*,Auto">
    <Grid Style="{StaticResource appBarStyle}" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" IsVisible="{Binding IsToolbarVisible}">
+    <Grid.Triggers><DataTrigger TargetType="Grid" Binding="{Binding UseCompactAppBar}" Value="True">
+     <Setter Property="MinimumHeightRequest" Value="48" />
+    </DataTrigger></Grid.Triggers>
     <controls:IconButton Glyph="{x:Static controls:FontIcons.ArrowLeft}" IsVisible="{Binding IsBackVisible}" Command="{Binding Commands[LeadingCommand]}" SemanticProperties.Description="Back" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
     <controls:IconButton Grid.Column="1" Glyph="{x:Static controls:FontIcons.House}" IsVisible="{Binding ShowHomeAction}" Command="{Binding Commands[HomeCommand]}" SemanticProperties.Description="Home" TintColor="{AppThemeBinding Light={StaticResource onSurfaceLight}, Dark={StaticResource onSurfaceDark}}" />
     <VerticalStackLayout Grid.Column="2" Padding="8,0" Spacing="2" VerticalOptions="Center" IsVisible="{Binding ShowScreenTitle}">
-     <Label Text="{Binding Title}" Style="{StaticResource titleMediumTextStyle}" LineBreakMode="TailTruncation" />
-     <Label Text="{Binding Subtitle}" Style="{StaticResource bodyMediumTextStyle}" LineBreakMode="TailTruncation" IsVisible="{Binding HasSubtitle}" />
+     <Label Text="{Binding Title}" Style="{StaticResource titleMediumTextStyle}" LineBreakMode="TailTruncation">
+      <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding UseCompactAppBar}" Value="True">
+       <Setter Property="MaxLines" Value="1" /><Setter Property="LineHeight" Value="1" />
+      </DataTrigger></Label.Triggers>
+     </Label>
+     <Label Text="{Binding Subtitle}" Style="{StaticResource bodyMediumTextStyle}" LineBreakMode="TailTruncation" IsVisible="{Binding HasSubtitle}">
+      <Label.Triggers><DataTrigger TargetType="Label" Binding="{Binding UseCompactAppBar}" Value="True">
+       <Setter Property="MaxLines" Value="1" /><Setter Property="FontSize" Value="12" /><Setter Property="LineHeight" Value="1" />
+      </DataTrigger></Label.Triggers>
+     </Label>
     </VerticalStackLayout>
     <Image Grid.Column="2" Source="{Binding LogoImage}" IsVisible="{Binding IsHomeWorkspace}" HeightRequest="40" WidthRequest="112" HorizontalOptions="Start" Margin="12,0,0,0" Aspect="AspectFit" AutomationProperties.IsInAccessibleTree="False" />
     <Grid Grid.Column="3" IsVisible="{Binding HasHubTasks}" MinimumWidthRequest="48" MinimumHeightRequest="48">
