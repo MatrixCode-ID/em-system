@@ -19,8 +19,8 @@ namespace Em.Ui.Maui.Navigations
       private NavigationEntry? _presentedEntry;
       private bool _presentedCatalogue;
 #if ANDROID
-      private Android.Views.View? _nativeRoot, _keyTarget;
-      private Android.Views.ViewTreeObserver? _focusObserver;
+      private Android.Views.View? _nativeRoot;
+      private ShellKeyListener? _keyListener;
 #endif
       public SpaNavigationHost(EmApp app) {
          InitializeComponent();
@@ -45,29 +45,29 @@ namespace Em.Ui.Maui.Navigations
          if (_window is not null) { _window.Resumed += OnWindowResumed; _window.Stopped += OnWindowStopped; }
 #if ANDROID
          if (Handler?.PlatformView is Android.Views.View native) {
-            _nativeRoot = native; native.KeyPress += OnNativeKey;
-            _focusObserver = native.ViewTreeObserver;
-            if (_focusObserver is not null) _focusObserver.GlobalFocusChange += OnNativeFocusChanged;
-            SetKeyTarget(native.FindFocus());
+            _nativeRoot = native;
+            _keyListener = new ShellKeyListener(this);
+            AndroidX.Core.View.ViewCompat.AddOnUnhandledKeyEventListener(native, _keyListener);
          }
 #endif
       }
 #if ANDROID
-      private void SetKeyTarget(Android.Views.View? target) {
-         if (_keyTarget is not null && _keyTarget != _nativeRoot) _keyTarget.KeyPress -= OnNativeKey;
-         _keyTarget = target;
-         if (_keyTarget is not null && _keyTarget != _nativeRoot) _keyTarget.KeyPress += OnNativeKey;
-      }
-      private void OnNativeFocusChanged(object? sender, Android.Views.ViewTreeObserver.GlobalFocusChangeEventArgs e) => SetKeyTarget(e.NewFocus);
       private void ClearNativeKeys() {
-         SetKeyTarget(null);
-         if (_nativeRoot is not null) _nativeRoot.KeyPress -= OnNativeKey;
-         if (_focusObserver is { IsAlive: true }) _focusObserver.GlobalFocusChange -= OnNativeFocusChanged;
-         _focusObserver = null; _nativeRoot = null;
+         if (_nativeRoot is not null && _keyListener is not null)
+            AndroidX.Core.View.ViewCompat.RemoveOnUnhandledKeyEventListener(_nativeRoot, _keyListener);
+         _keyListener?.Dispose();
+         _keyListener = null; _nativeRoot = null;
       }
-      private void OnNativeKey(object? sender, Android.Views.View.KeyEventArgs e) {
-         if (e.KeyCode == Android.Views.Keycode.Escape && Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; e.Handled = true; }
-         else if (e.KeyCode == Android.Views.Keycode.Escape && BodyHost.Content is DefaultHomeControl { Vm.IsContextMenuOpen: true } home) { home.Vm.CloseMenuCommand(); e.Handled = true; }
+      private bool OnNativeKey(Android.Views.Keycode keyCode) {
+         if (keyCode != Android.Views.Keycode.Escape) return false;
+         if (Vm.Overlay != ShellOverlay.None) { Vm.Overlay = ShellOverlay.None; return true; }
+         if (BodyHost.Content is DefaultHomeControl { Vm.IsContextMenuOpen: true } home) { home.Vm.CloseMenuCommand(); return true; }
+         return false;
+      }
+      // Observe keys only after the focused editor/scanner has had the chance to handle them.
+      private sealed class ShellKeyListener(SpaNavigationHost owner) : Java.Lang.Object, AndroidX.Core.View.ViewCompat.IOnUnhandledKeyEventListenerCompat
+      {
+         public bool OnUnhandledKeyEvent(Android.Views.View? view, Android.Views.KeyEvent? keyEvent) => keyEvent is not null && owner.OnNativeKey(keyEvent.KeyCode);
       }
 #endif
       private void OnSizeChanged(object? sender, EventArgs e) {

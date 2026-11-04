@@ -269,6 +269,12 @@ logical units give Tasks the available width; larger windows cap it at 400.
 Home/Reload move into labelled overflow in compact windows. Back, Escape and the
 scrim close the modal first. The Android background subtree excludes accessibility
 and keyboard descendants while modal; focus returns to its invoking button.
+Android Escape handling uses an AndroidX unhandled-key listener on the shell root.
+Focused editors and scanner handlers process their keys first; the shell consumes
+only Escape when it closes a modal or the Home context menu. It does not install
+`KeyPress` handlers on focused children: Android key event arguments start with
+`Handled=true`, so leaving an unrelated key untouched would suppress native input.
+The shell removes and disposes its listener when its handler changes or it detaches.
 The account initials button uses a centred 48-by-48 target with no content padding,
 so its circular tonal background does not stretch to the app bar height.
 Shell modal input, accessibility and focus state changes synchronously so
