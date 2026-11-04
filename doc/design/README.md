@@ -6,7 +6,7 @@ in this folder; screens of engine-owned modules sit at the top level as `<Subjec
 | File | Contents |
 | --- | --- |
 | `_BASELINE/em-wpf.figcraft` | **Em WPF Baseline**: assets (page `00 Assets`), `Em Palette` variables (Light/Dark), Main Window, Login, Context Menu, Buttons & Toolbar |
-| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Employees, Employee Editor |
+| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor |
 
 ## Baseline
 
@@ -41,10 +41,19 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
   subtitle). App nodes have **no arrow, pin or overflow (three-dot) button**.
 - Icon colours: glyph `secondary` on a `secondaryContainer` tile. The selected App node uses
   `primaryContainer` with an `onPrimary` glyph on a `primary` tile.
-- Current tree: **Organization** → Tenants, Departments; **People** → Employees.
-- Page `10 Business Module Manager`: Tenants, Departments and Employees, Light/Dark. Toolbar order:
+- Current tree: **Organization** → Tenants, Departments, Positions; **People** → Employees.
+- Page `10 Business Module Manager`: Tenants, Departments, Employees and Positions, Light/Dark. Toolbar order:
   tenant selector and Refresh on the left, page tools in the middle, the primary New action on the right.
   The Departments/Employees tenant combo shows the tenant name with its code as a subtitle.
+- **Positions** (2026-11-05): the position list a tenant offers (e.g. CEO, Engineer), without level or rank.
+  Left: positions with active employee count, code and INACTIVE chip; right: Code, Name and Note. Toolbar:
+  tenant, Refresh, **Copy from tenant**, Save, Deactivate, New position. The **Copy from tenant** dialog
+  (Light/Dark frames) picks a source tenant and checks the positions to copy; codes that already exist in
+  the target are marked EXISTS and cannot be checked. Discussion: [tenant-position idea](../ideas/tenant-position.md).
 - Page `20 Employee Editor`: the dedicated editor navigation, main data panel | splitter | sub detail tabs
-  (Communications, Addresses) with independent default selection, Light/Dark.
+  with independent default selection, Light/Dark, one state per tab. **Position** is a combo of the
+  tenant's active positions (no free text):
+  - **Communications**: entry list (kind, value, DEFAULT/INACTIVE chips) and the selected entry's Kind and Value.
+  - **Addresses**: entry list (label, location with ZIP below, DEFAULT chip), Add address, and the
+    selected address's Label, ZIP and multi-line Address. Save needs an active default address with a location.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
