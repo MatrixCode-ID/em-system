@@ -6,7 +6,7 @@ in this folder; screens of engine-owned modules sit at the top level as `<Subjec
 | File | Contents |
 | --- | --- |
 | `_BASELINE/em-wpf.figcraft` | **Em WPF Baseline**: assets (page `00 Assets`), `Em Palette` variables (Light/Dark), Main Window, Login, Context Menu, Buttons & Toolbar |
-| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor |
+| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments) |
 
 ## Baseline
 
@@ -63,5 +63,9 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
     before the first save.
   - **Head of department**: a checkbox below Department that shows the current head; saving it checked makes
     this employee the head of the selected department (replacing the current head), unchecked clears it.
+  - **Attachments** (third sub detail tab, own Light/Dark frames): the attachment list (kind, name, type ·
+    size · upload date), Add attachment, and the selected attachment's Kind, File and Note with Open,
+    Replace file and Remove. Attachments, with their kind, name and note, belong to the contact and are
+    shared across tenants and accounts, like communications and addresses. Discussion: [contact-attachments idea](../ideas/contact-attachments.md).
   - **Note**: the employee's own multi-line note (per tenant, not the contact's), after Department.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
