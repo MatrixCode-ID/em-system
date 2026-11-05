@@ -126,6 +126,16 @@
   terpicu. (d) Layar setelan memakai combobox, template memakai spin edit untuk jam per hari (0 jam = libur).
   Ini keputusan **layout** (page `30 Attendance`); bentuk tabel rotasi di engine masih usulan (bagian Pola
   rotasi). Pertanyaan yang tersisa: no. 38 dan 39; hak akses per department masuk no. 34 dan 37.
+- 2026-11-06 (pengguna): **tidak ada kelompok dalam department saat ini**: seluruh karyawan satu department
+  berotasi bersamaan (satu pola, satu Day 1), tanpa offset per grup. Alasan: kelompok menambah kompleksitas;
+  tim dalam department mungkin dibahas terpisah nanti. Menjawab pertanyaan no. 38.
+- 2026-11-06 (pengguna): **override manual pada roster menang.** Penugasan yang diproses ulang atau dihasilkan
+  ulang tidak menimpa baris roster yang sudah di-override (selaras prinsip roster di bagian Roster). Menjawab
+  pertanyaan no. 39; cara konflik ditampilkan belum dirancang.
+- 2026-11-06 (pengguna): **hak akses harus ada per department**: orang yang menyusun penugasan dan mengubah
+  roster dibatasi pada department yang menjadi tanggung jawabnya. Engine perlu menyediakan lingkup department
+  pada interface/fondasi alur kerja, sedangkan penegakannya di layar dan claim milik host. Bentuk lingkup
+  (daftar department per user, atau mengikuti kepala department) belum diputuskan: pertanyaan no. 40.
 
 ## Contoh kebutuhan lapangan (pengguna, 2026-11-05)
 
@@ -473,14 +483,15 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
     menandai "tanggal ini libur nasional"; masuk atau tidaknya ditentukan roster/penugasan jadwal. Engine
     tidak menaruh tanda "regu X tetap masuk" di kalender. Jadwal bawaan yang menutup tanggal (enable tenant
     aktif) mengikuti libur nasional kecuali ditimpa. Setuju?
-39. Override manual pada roster (sakit, tukar shift) lalu penugasan diproses ulang: yang menang yang mana?
-    Usulan agent mengikuti prinsip roster di atas: generate ulang hanya menimpa baris bersumber pola/penugasan,
-    override manual tidak tersentuh; perlu dipastikan berlaku juga saat penugasan diproses ulang, dan bagaimana
-    konflik ditampilkan.
-38. Rotasi per department: semua karyawan satu department berotasi bersamaan (satu pola, satu Day 1), atau
+40. Lingkup hak akses per department (keputusan 2026-11-06: harus ada): daftar department yang boleh diatur
+    tiap user (termasuk sub-department di bawahnya), atau mengikuti kepala department pada data department?
+    Apa yang dijaga: penugasan, roster, log kehadiran, atau semuanya? Dan apa yang disediakan engine
+    (service lookup lingkup, atau hanya parameter department pada tiap interface) dibanding yang dijaga host?
+39. (Dijawab 2026-11-06, lihat Keputusan: override manual menang) Override manual pada roster (sakit, tukar
+    shift) lalu penugasan diproses ulang: yang menang yang mana? Sisa: cara menampilkan konflik.
+38. (Dijawab 2026-11-06, lihat Keputusan: tanpa kelompok saat ini) Rotasi per department: semua karyawan satu department berotasi bersamaan (satu pola, satu Day 1), atau
     dibagi **grup dengan offset** (mis. grup A mulai di langkah 1, grup B di langkah 2, agar tiap shift selalu
-    terisi)? Bila ada grup, offset disimpan di mana: pada grup/regu atau pada penugasan karyawan (lihat bagian
-    Regu dan Penugasan pola)?
+    terisi)? Tim dalam department mungkin dibahas terpisah nanti.
 37. Tempat akhir layar setup absensi (setelan penjadwalan, template jadwal, kode status kehadiran, Public
     Holiday): tetap di BMM (setup info dasar, sesuai cakupan BMM yang tidak diperluas), atau ikut dibuat di
     ConNexa bersama layar alur kerja? Dan interface apa saja yang disediakan engine untuk layar alur kerja

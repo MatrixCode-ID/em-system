@@ -100,9 +100,10 @@ to the host's design. Decisions and open questions are in the
 - New assets in `00 Assets`: `Chip/Status`, `Chip/Primary`, `Chip/Warning`, `Field/Text`, `Field/Combo`
   (label above a box with a drop-down chevron), `Field/Spin` (label above a box with spin buttons).
 - Review input (2026-11-06) behind the rotation, department scope and spin edits: shifts rotate on a regular
-  cycle (two weeks per step) and schedules are assigned per department. Still open: whether employees of one
-  department rotate together or in groups with an offset, what wins when a manual Roster override meets a
-  re-processed assignment, and per-department permissions (see the interface question in the
-  [attendance idea](../ideas/tenant-attendance-schedule.md)).
+  cycle (two weeks per step) and schedules are assigned per department. Decided in the same review: employees
+  of one department rotate together (no groups or teams inside a department for now), and a manual Roster
+  override wins over a re-processed assignment. Per-department permissions are required, so the host screens
+  scope assignments and the roster to the departments a user may manage; the form of that scope is still open
+  (see the [attendance idea](../ideas/tenant-attendance-schedule.md)).
 - Device integration (attendance machines) is **not** part of this design; integrations have their own place.
 - Sample data is fictitious.
