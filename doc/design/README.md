@@ -6,7 +6,7 @@ in this folder; screens of engine-owned modules sit at the top level as `<Subjec
 | File | Contents |
 | --- | --- |
 | `_BASELINE/em-wpf.figcraft` | **Em WPF Baseline**: assets (page `00 Assets`), `Em Palette` variables (Light/Dark), Main Window, Login, Context Menu, Buttons & Toolbar |
-| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments) |
+| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments), Attendance (page `30 Attendance`) |
 
 ## Baseline
 
@@ -69,3 +69,28 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
     shared across tenants and accounts, like communications and addresses. Discussion: [contact-attachments idea](../ideas/contact-attachments.md).
   - **Note**: the employee's own multi-line note (per tenant, not the contact's), after Department.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
+
+## Attendance in Business Module Manager (2026-11-06)
+
+Page `30 Attendance` of `BusinessModuleManager.figcraft`: seven screens, Light and Dark, in a new drawer folder
+**Attendance (7)** (Organization and People are collapsed in these frames). The user decided that these
+screens become part of BMM; this conflicts with the current BMM scope rule (setup only), which is **not**
+changed by this design. The decision and the open questions (scope wording, one claim or separate claims) are
+in the [attendance idea](../ideas/tenant-attendance-schedule.md). Whether BMM owns the work-flow screens
+(assignments, roster, log) or only the setup screens is an assumption for review.
+
+- **Scheduling settings**: tenant and department tree with the effective enable and default schedule; editor
+  for Enable (Inherit, Enabled, Disabled) and the default schedule.
+- **Schedule templates**: list and editor with start time, break, days off and hours per weekday (a short last
+  day is one row).
+- **Attendance codes**: per-tenant code list (code, name, category) in the Positions pattern, with Copy from tenant.
+- **Public holidays**: one global calendar (year selector instead of the tenant combo); fixed and dated entries,
+  a collective-leave marker, and a warning when the next year has no dated entries.
+- **Schedule assignments**: header (number, start date, period, end date, DRAFT chip), employee x date grid, a
+  warning about overlap with a processed assignment, Copy from previous, Save draft, Process.
+- **Roster**: employee x date grid for one period (OFC, S1-S3, SEC, HOL, OFF, no schedule) and a warning about
+  dates without a schedule.
+- **Attendance log**: tap list with an UNMAPPED chip, a tap editor, Remap identity, Cancel tap and Add manual tap.
+- New assets in `00 Assets`: `Chip/Status`, `Chip/Primary`, `Chip/Warning`, `Field/Text`.
+- Device integration (attendance machines) is **not** part of this design; integrations have their own place.
+- Sample data is fictitious.

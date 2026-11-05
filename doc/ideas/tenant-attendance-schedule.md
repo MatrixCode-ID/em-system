@@ -88,8 +88,27 @@
 - 2026-11-05 (pengguna): **tap yang employee-nya tidak ditemukan tetap disimpan** di log kehadiran sebagai
   "tidak terpetakan" (employee kosong, identitas asli dari mesin disimpan), agar data tidak hilang diam-diam
   dan bisa dikoreksi lalu dipakai setelah employee diperbaiki. Konsekuensi untuk rancangan log: kolom employee
-  boleh kosong, ditambah kolom identitas asli; cara memetakan ulang diatur di pertanyaan no. 33. **Pembahasan cuti ditunda**: jatah cuti, kode status cuti, dan status roster untuk cuti bersama
+  boleh kosong, ditambah kolom identitas asli; cara memetakan ulang diatur di pertanyaan no. 33.
+- 2026-11-06 (pengguna): **pemetaan tap mesin berbentuk interface yang diimplementasikan pengguna library**
+  (seperti connector pada integration system), sedangkan **engine membangun fondasinya**. Pembagian: engine
+  menyediakan kerangka (kontrak interface, penyimpanan log termasuk status "tidak terpetakan", dan penegakan
+  prinsip log tidak di-update); implementasi pengguna menentukan cara mencocokkan identitas mesin ke employee
+  dan cara menentukan masuk atau pulang. Rincian isi fondasi: pertanyaan no. 34. **Pembahasan cuti ditunda**: jatah cuti, kode status cuti, dan status roster untuk cuti bersama
   tidak dibahas sekarang. Pertanyaan no. 31 ditunda.
+- 2026-11-06 (pengguna): **layar-layar engine absensi/jadwal menjadi bagian Business Module Manager (BMM)**:
+  setelan penjadwalan, template jadwal, kode status kehadiran, Public Holiday, penugasan jadwal, roster, dan
+  log kehadiran (tujuh layar). Layoutnya didesain pada `doc/design/BusinessModuleManager.figcraft`
+  (page `30 Attendance`) sebagai grup drawer baru **Attendance (7)**. **Device integration (bagian absensi pada
+  Integration Manager) tidak ikut BMM:** pengguna menegaskan 2026-11-06 bahwa integrasi punya tempat sendiri
+  (Integration Manager); layarnya tidak didesain di sini. **Benturan dengan aturan yang ada:**
+  `CLAUDE.md` root em-system (bagian Cakupan BMM dan modul wrapper) dan panduan engine BMM (bagian Scope and
+  wrapper modules) menyatakan BMM hanya untuk setup dan update info dasar dan melarang alur kerja bisnis masuk
+  BMM; penugasan jadwal, roster, dan log kehadiran adalah alur kerja. Aturan tersebut belum diubah; pengguna
+  yang memutuskan pembaruannya (pertanyaan no. 35). Desain di file `.figcraft` hanya untuk review.
+- 2026-11-06 (pengguna): **cakupan BMM diperluas** dengan grup Attendance (setup dan alur kerja absensi/jadwal),
+  pilihan (a) pada pertanyaan no. 35. `CLAUDE.md` em-system (Cakupan BMM dan modul wrapper) dan panduan engine
+  BMM (Scope and wrapper modules) diperbarui dengan pengecualian ini. Satu claim BMM atau claim terpisah
+  tetap terbuka (no. 36).
 
 ## Contoh kebutuhan lapangan (pengguna, 2026-11-05)
 
@@ -436,7 +455,22 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
     menandai "tanggal ini libur nasional"; masuk atau tidaknya ditentukan roster/penugasan jadwal. Engine
     tidak menaruh tanda "regu X tetap masuk" di kalender. Jadwal bawaan yang menutup tanggal (enable tenant
     aktif) mengikuti libur nasional kecuali ditimpa. Setuju?
-33. Karena log tidak di-update (koreksi = batalkan lalu tambah baris baru), memetakan ulang tap yang
+36. Claim: satu claim BMM untuk seluruh grup Attendance (asumsi pada desain, mengikuti "satu claim BMM"
+    yang berlaku), atau claim terpisah untuk absensi (mis. setup, penugasan, log) karena alur kerjanya
+    dipakai orang HR yang bukan admin setup? Belum diputuskan.
+35. (Dijawab 2026-11-06: pilihan (a), cakupan BMM diperluas; lihat Keputusan) Aturan scope BMM: karena layar absensi menjadi bagian BMM (keputusan 2026-11-06), bagaimana aturan
+    "BMM hanya setup dan update info dasar" diperbarui? Pilihan: (a) cakupan BMM diperluas dengan grup
+    Attendance (setup dan alur kerja absensi); (b) hanya setup absensi (setelan, template, kode status,
+    Public Holiday) di BMM, sedangkan penugasan, roster, dan log tetap layar wrapper; (c) lainnya. Perubahan
+    `CLAUDE.md` dan panduan engine BMM menunggu keputusan pengguna.
+34. Isi fondasi dari engine (usulan agent, sketsa): (a) kontrak interface pemetaan: masukan tap mentah
+    (identitas mesin, waktu kejadian, perangkat, jenis dari mesin bila ada), keluaran id employee (kosong bila
+    tidak ditemukan) dan jenis tap (boleh 0 = tidak diketahui); (b) aksi bawaan engine "petakan ulang"
+    (batalkan baris lama + tambah baris baru) yang dipanggil implementasi, per identitas; (c) daftar tap
+    "tidak terpetakan" yang bisa dibaca; (d) pemanggilan implementasi dijalankan lewat integration system.
+    Cukupkah isi fondasi ini, atau ada yang perlu ditambah atau dikurangi?
+33. (Sebagian dijawab 2026-11-06: cara memetakan diserahkan ke implementasi; sisa: penegakan batalkan + tambah
+    oleh engine, lihat no. 34) Karena log tidak di-update (koreksi = batalkan lalu tambah baris baru), memetakan ulang tap yang
     "tidak terpetakan" mengikuti prinsip itu: baris lama dibatalkan dan baris baru berisi employee dibuat?
     Atau pengecualian: kolom employee pada baris tidak terpetakan boleh diisi sekali? Usulan agent: mengikuti
     prinsip batalkan + tambah, agar jejak audit utuh. Siapa yang boleh memetakan ulang?
