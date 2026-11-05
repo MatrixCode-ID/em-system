@@ -73,11 +73,11 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
 ## Attendance in Business Module Manager (2026-11-06)
 
 Page `30 Attendance` of `BusinessModuleManager.figcraft`: seven screens, Light and Dark, in a new drawer folder
-**Attendance (7)** (Organization and People are collapsed in these frames). The user decided that these
-screens become part of BMM; this conflicts with the current BMM scope rule (setup only), which is **not**
-changed by this design. The decision and the open questions (scope wording, one claim or separate claims) are
-in the [attendance idea](../ideas/tenant-attendance-schedule.md). Whether BMM owns the work-flow screens
-(assignments, roster, log) or only the setup screens is an assumption for review.
+**Attendance (7)** (Organization and People are collapsed in these frames). The BMM scope rule (setup only)
+is **not** widened: assignments, roster and attendance log are workflows, so the engine provides the
+interfaces and the UI is built in the host application. These layouts stay here temporarily, until they move
+to the host's design. Decisions and open questions are in the
+[attendance idea](../ideas/tenant-attendance-schedule.md).
 
 - **Scheduling settings**: tenant and department tree with the effective enable and default schedule; editor
   for Enable (Inherit, Enabled, Disabled) and the default schedule.

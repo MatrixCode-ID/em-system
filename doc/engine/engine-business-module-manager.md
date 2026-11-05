@@ -11,14 +11,6 @@ employees with their basic contact data (type, communications, addresses). It
 stays one administrator tool under Tools behind one claim. It is not where business workflows, per-role
 claims or Apps menu entries live.
 
-**Exception (decision 2026-11-06):** the scope is extended with an **Attendance** group: setup and workflow
-for employee schedules and attendance (scheduling settings, schedule templates, attendance codes, public
-holidays, schedule assignments, roster and attendance log). Only this group is exempt from the rule above;
-other business needs still go through wrapper modules, and device integrations stay in the Integration
-Manager. Whether the group uses the Business Module Manager claim or its own claims is not decided yet (for
-now: one claim). This is a design decision, not implemented yet; the layouts are in
-`doc/design/BusinessModuleManager.figcraft` (page `30 Attendance`).
-
 A library consumer that needs features on top of this data builds its own **wrapper module** (for example
 a personnel, customer or vendor module). The wrapper:
 

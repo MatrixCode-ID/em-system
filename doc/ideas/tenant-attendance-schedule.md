@@ -105,10 +105,14 @@
   wrapper modules) menyatakan BMM hanya untuk setup dan update info dasar dan melarang alur kerja bisnis masuk
   BMM; penugasan jadwal, roster, dan log kehadiran adalah alur kerja. Aturan tersebut belum diubah; pengguna
   yang memutuskan pembaruannya (pertanyaan no. 35). Desain di file `.figcraft` hanya untuk review.
-- 2026-11-06 (pengguna): **cakupan BMM diperluas** dengan grup Attendance (setup dan alur kerja absensi/jadwal),
-  pilihan (a) pada pertanyaan no. 35. `CLAUDE.md` em-system (Cakupan BMM dan modul wrapper) dan panduan engine
-  BMM (Scope and wrapper modules) diperbarui dengan pengecualian ini. Satu claim BMM atau claim terpisah
-  tetap terbuka (no. 36).
+- 2026-11-06 (pengguna): **keputusan pengguna sebelumnya (cakupan BMM diperluas) dibatalkan setelah
+  dipikirkan ulang.** Penugasan jadwal, roster, dan log kehadiran adalah alur kerja: engine hanya membuat
+  **interface dan fondasinya**, sedangkan **UI dibuat di ConNexa** (host). **Cakupan BMM tidak diperluas** dan
+  panduan engine BMM (`engine-business-module-manager.md`) tidak diubah; `CLAUDE.md` em-system hanya mencatat
+  keputusan ini. Layout layar di `BusinessModuleManager.figcraft` (page `30 Attendance`) dibiarkan di BMM
+  sementara, sampai dipindahkan ke ConNexa. Menggantikan butir keputusan "layar absensi menjadi bagian BMM"
+  di atas dan menjawab pertanyaan no. 35; no. 36 (claim) menjadi tanggungan host. Layar setup (setelan,
+  template, kode status, Public Holiday) belum ditetapkan tempat akhirnya: pertanyaan no. 37.
 
 ## Contoh kebutuhan lapangan (pengguna, 2026-11-05)
 
@@ -455,10 +459,15 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
     menandai "tanggal ini libur nasional"; masuk atau tidaknya ditentukan roster/penugasan jadwal. Engine
     tidak menaruh tanda "regu X tetap masuk" di kalender. Jadwal bawaan yang menutup tanggal (enable tenant
     aktif) mengikuti libur nasional kecuali ditimpa. Setuju?
-36. Claim: satu claim BMM untuk seluruh grup Attendance (asumsi pada desain, mengikuti "satu claim BMM"
+37. Tempat akhir layar setup absensi (setelan penjadwalan, template jadwal, kode status kehadiran, Public
+    Holiday): tetap di BMM (setup info dasar, sesuai cakupan BMM yang tidak diperluas), atau ikut dibuat di
+    ConNexa bersama layar alur kerja? Dan interface apa saja yang disediakan engine untuk layar alur kerja
+    (penugasan, roster, log): lanjutan pertanyaan no. 34.
+36. (Gugur 2026-11-06: UI alur kerja di host, claim ditentukan host; layar setup belum ditetapkan, lihat no.
+    37) Claim: satu claim BMM untuk seluruh grup Attendance (asumsi pada desain, mengikuti "satu claim BMM"
     yang berlaku), atau claim terpisah untuk absensi (mis. setup, penugasan, log) karena alur kerjanya
     dipakai orang HR yang bukan admin setup? Belum diputuskan.
-35. (Dijawab 2026-11-06: pilihan (a), cakupan BMM diperluas; lihat Keputusan) Aturan scope BMM: karena layar absensi menjadi bagian BMM (keputusan 2026-11-06), bagaimana aturan
+35. (Dijawab 2026-11-06: cakupan BMM tidak diperluas, UI alur kerja di ConNexa; lihat Keputusan) Aturan scope BMM: karena layar absensi menjadi bagian BMM (keputusan 2026-11-06), bagaimana aturan
     "BMM hanya setup dan update info dasar" diperbarui? Pilihan: (a) cakupan BMM diperluas dengan grup
     Attendance (setup dan alur kerja absensi); (b) hanya setup absensi (setelan, template, kode status,
     Public Holiday) di BMM, sedangkan penugasan, roster, dan log tetap layar wrapper; (c) lainnya. Perubahan
