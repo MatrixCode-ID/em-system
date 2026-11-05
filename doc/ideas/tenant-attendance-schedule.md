@@ -113,6 +113,19 @@
   sementara, sampai dipindahkan ke ConNexa. Menggantikan butir keputusan "layar absensi menjadi bagian BMM"
   di atas dan menjawab pertanyaan no. 35; no. 36 (claim) menjadi tanggungan host. Layar setup (setelan,
   template, kode status, Public Holiday) belum ditetapkan tempat akhirnya: pertanyaan no. 37.
+- 2026-11-06 (pengguna, saat review layout): **rotasi shift di pabrik teratur, berganti tiap 2 minggu**, dan
+  **penugasan jadwal diatur per department.** Akibatnya: (a) **pola rotasi masuk layout** sebagai urutan template
+  (satu template per langkah), **jumlah minggu per langkah** dan **Day 1 (awal siklus)**, diatur per tingkat
+  (tenant, department, sub-department) dan diwarisi seperti setelan lain; siklus berulang dari Day 1. Ini
+  menggeser keputusan 2026-11-05 "pola rotasi dan generator otomatis ditunda" (no. 18): penyusunan manual dan
+  salin tetap berlaku, tetapi penugasan periode berikutnya dapat dihasilkan dari rotasi (**Generate next
+  period**), dan Override manual per sel tetap untuk pengecualian. (b) **Day 1 milik rotasi**, bukan template:
+  template berbasis hari dalam minggu dan tidak punya hari ke-1; penugasan tetap punya tanggal mulai (hari ke-1
+  periodenya). (c) Layar penugasan dan roster mendapat filter **Department**; satu penugasan milik satu
+  department sehingga grid hanya berisi karyawan department itu, dan aturan tumpang tindih lebih jarang
+  terpicu. (d) Layar setelan memakai combobox, template memakai spin edit untuk jam per hari (0 jam = libur).
+  Ini keputusan **layout** (page `30 Attendance`); bentuk tabel rotasi di engine masih usulan (bagian Pola
+  rotasi). Pertanyaan yang tersisa: no. 38 dan 39; hak akses per department masuk no. 34 dan 37.
 
 ## Contoh kebutuhan lapangan (pengguna, 2026-11-05)
 
@@ -418,7 +431,8 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
 19. ~~Panjang periode penugasan dan aturan antarpenugasan~~ Dijawab 2026-11-05: panjang bawaan per tenant yang
     bisa ditimpa; tumpang tindih ditolak bila keduanya diproses (draft boleh); celah diizinkan dengan status
     "tanpa jadwal" dan daftar peringatan.
-18. ~~Karena rotasi dipelihara manual:~~ Dijawab 2026-11-05: ditunda; manual + salin sebagai jalur utama. Pembantu penyusunan yang
+18. ~~Karena rotasi dipelihara manual:~~ Dijawab 2026-11-05: ditunda; manual + salin sebagai jalur utama.
+    Digeser 2026-11-06 (lihat Keputusan): rotasi teratur per 2 minggu masuk layout, dengan Generate next period. Pembantu penyusunan yang
     mungkin berguna selanjutnya: geser seluruh regu satu langkah, isi satu template ke banyak orang sekaligus.
 20. (Dijawab 2026-11-05, lihat Keputusan) Arti **enable** per tingkat: apakah penjadwalan/absensi berlaku untuk tenant/department/orang itu (mis.
     direksi atau pekerja lepas tidak dijadwalkan)? Usulan: tingkat bawah punya tiga nilai (ikut atas, aktif,
@@ -459,6 +473,14 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
     menandai "tanggal ini libur nasional"; masuk atau tidaknya ditentukan roster/penugasan jadwal. Engine
     tidak menaruh tanda "regu X tetap masuk" di kalender. Jadwal bawaan yang menutup tanggal (enable tenant
     aktif) mengikuti libur nasional kecuali ditimpa. Setuju?
+39. Override manual pada roster (sakit, tukar shift) lalu penugasan diproses ulang: yang menang yang mana?
+    Usulan agent mengikuti prinsip roster di atas: generate ulang hanya menimpa baris bersumber pola/penugasan,
+    override manual tidak tersentuh; perlu dipastikan berlaku juga saat penugasan diproses ulang, dan bagaimana
+    konflik ditampilkan.
+38. Rotasi per department: semua karyawan satu department berotasi bersamaan (satu pola, satu Day 1), atau
+    dibagi **grup dengan offset** (mis. grup A mulai di langkah 1, grup B di langkah 2, agar tiap shift selalu
+    terisi)? Bila ada grup, offset disimpan di mana: pada grup/regu atau pada penugasan karyawan (lihat bagian
+    Regu dan Penugasan pola)?
 37. Tempat akhir layar setup absensi (setelan penjadwalan, template jadwal, kode status kehadiran, Public
     Holiday): tetap di BMM (setup info dasar, sesuai cakupan BMM yang tidak diperluas), atau ikut dibuat di
     ConNexa bersama layar alur kerja? Dan interface apa saja yang disediakan engine untuk layar alur kerja

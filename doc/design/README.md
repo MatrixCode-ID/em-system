@@ -80,17 +80,29 @@ to the host's design. Decisions and open questions are in the
 [attendance idea](../ideas/tenant-attendance-schedule.md).
 
 - **Scheduling settings**: tenant and department tree with the effective enable and default schedule; editor
-  for Enable (Inherit, Enabled, Disabled) and the default schedule.
+  with combo boxes for Enable (Inherit, Enabled, Disabled) and the default schedule (one template, or
+  Rotation). A **Rotation** section holds the ordered steps (a template per step, Step 1-3), **Weeks per step**
+  (spin edit, 2 weeks in the sample) and **Day 1 (cycle start)**; the cycle repeats from Day 1. A rotation is
+  set per level (tenant, department, sub-department) and inherited like the other settings.
 - **Schedule templates**: list and editor with start time, break, days off and hours per weekday (a short last
-  day is one row).
+  day is one row). Hours per weekday are spin edits; 0 h is a day off. Templates have no day 1: the cycle
+  start belongs to the rotation in Scheduling settings.
 - **Attendance codes**: per-tenant code list (code, name, category) in the Positions pattern, with Copy from tenant.
 - **Public holidays**: one global calendar (year selector instead of the tenant combo); fixed and dated entries,
   a collective-leave marker, and a warning when the next year has no dated entries.
-- **Schedule assignments**: header (number, start date, period, end date, DRAFT chip), employee x date grid, a
-  warning about overlap with a processed assignment, Copy from previous, Save draft, Process.
-- **Roster**: employee x date grid for one period (OFC, S1-S3, SEC, HOL, OFF, no schedule) and a warning about
-  dates without a schedule.
+- **Schedule assignments**: a **Department** combo next to Tenant (an assignment belongs to one department, so
+  the grid lists only its employees), header (number, start date, period, end date, DRAFT chip), employee x
+  date grid, a warning about overlap with a processed assignment, Generate next period (builds the next
+  period from the rotation), Save draft, Process.
+- **Roster**: a **Department** combo (All departments or one), employee x date grid for one period (OFC, S1-S3,
+  SEC, HOL, OFF, no schedule) and a warning about dates without a schedule.
 - **Attendance log**: tap list with an UNMAPPED chip, a tap editor, Remap identity, Cancel tap and Add manual tap.
-- New assets in `00 Assets`: `Chip/Status`, `Chip/Primary`, `Chip/Warning`, `Field/Text`.
+- New assets in `00 Assets`: `Chip/Status`, `Chip/Primary`, `Chip/Warning`, `Field/Text`, `Field/Combo`
+  (label above a box with a drop-down chevron), `Field/Spin` (label above a box with spin buttons).
+- Review input (2026-11-06) behind the rotation, department scope and spin edits: shifts rotate on a regular
+  cycle (two weeks per step) and schedules are assigned per department. Still open: whether employees of one
+  department rotate together or in groups with an offset, what wins when a manual Roster override meets a
+  re-processed assignment, and per-department permissions (see the interface question in the
+  [attendance idea](../ideas/tenant-attendance-schedule.md)).
 - Device integration (attendance machines) is **not** part of this design; integrations have their own place.
 - Sample data is fictitious.
