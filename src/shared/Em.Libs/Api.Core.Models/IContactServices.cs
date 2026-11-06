@@ -133,6 +133,8 @@ namespace Em.Api.Core.Models
       #region Meta's
       /// <summary>Searches contact names and usernames, applying caller filters before paging fifty results.</summary>
       Task<ContactSearchPage> PostGetMeta_ContactSearchPage(ContactSearchQuery query);
+      /// <summary>Creates or updates a contact with its communication and address entries in one transaction. Entries that are not sent stay as they are.</summary>
+      Task<vi_Contact> PostGetMeta_Contact_Save(ContactSave save);
       #endregion
    }
 }

@@ -8,6 +8,8 @@ public interface ITenantEmpServices : IServices
    #region Views
    /// <summary>Lists employees of one tenant, ordered by person and employee code.</summary>
    Task<vi_TenantEmp[]> GetVi_TenantEmps(string tenantId);
+   /// <summary>Gets one employee by ID, or null when it does not exist.</summary>
+   Task<vi_TenantEmp?> GetVi_TenantEmp_ById(string tenantEmpId);
    #endregion
    #region Meta's
    /// <summary>Reads contact type, communication/address entries, defaults and stamps for the employee editor.</summary>
