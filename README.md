@@ -60,9 +60,10 @@ dotnet test src/frontend/Em.Ui.Wpf.slnx
 
 ## Configure and run the API
 
-1. Create the database by running the SQL Server scripts in `doc/sqlscript/mssql/` in order: `sets/`, then
-   `tables/` by number, then `views/`. The `updates/` folder only migrates older databases. Scripts are
-   provided for SQL Server only; `900-emtest.sql` is needed only for the sample test module.
+1. Create the database using the SQL Server scripts in `doc/sqlscript/mssql/` in order: `sets/`, then
+   `tables/` by number, then `views/`. MySQL table scripts and installation instructions are in
+   [`doc/sqlscript/mysql/`](doc/sqlscript/mysql/README.md); verify application features separately.
+   `updates/` migrates older databases, and `900-emtest.sql` is needed only for the sample test module.
 2. Copy [`emapi-config.example.json`](src/backend/Em.Api/emapi-config.example.json) to
    `..\.artefacts\em-system\config\emapi-config.json` (a folder next to the repository; change it with the
    MSBuild property `ArtefactsPath`), then fill in `database.connectionString` and
