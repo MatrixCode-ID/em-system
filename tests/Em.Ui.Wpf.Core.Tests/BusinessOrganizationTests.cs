@@ -215,6 +215,7 @@ public class BusinessOrganizationTests
       public Func<string, Task<TenantEmpPerson>>? PersonLoader { get; set; }
       public TenantEmpSave? LastSave { get; private set; }
       public Task<TenantEmpPerson> GetMeta_TenantEmpPerson(string contactId) => PersonLoader?.Invoke(contactId) ?? Task.FromResult(new TenantEmpPerson { ContactId = contactId, Comm = new() { cCommValue = contactId + "@example.test" }, Address = new() { cAddressLocation = contactId + " address" } });
+      public Task<vi_TenantEmp?> GetVi_TenantEmp_ById(string tenantEmpId) => throw new NotSupportedException();
       public Task<vi_TenantEmp[]> GetVi_TenantEmps(string tenantId) => Task.FromResult<vi_TenantEmp[]>([
          new() { cTenantEmpId = "E", cContactId = "P", cTenantId = tenantId, cTenantDeptId = "D", cvContactFullName = "Person One", cvTenantDeptName = "Root" },
          new() { cTenantEmpId = "I", cContactId = "I", cTenantId = tenantId, cTenantDeptId = "D", cvContactFullName = "Person Inactive", cvTenantDeptName = "Root", cTenantEmpState = -1 },

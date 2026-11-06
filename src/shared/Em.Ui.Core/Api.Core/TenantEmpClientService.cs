@@ -12,6 +12,8 @@ public sealed class TenantEmpClientService(IEmApp app, Func<ApiClient?> activeCl
    /// <inheritdoc />
    public Task<vi_TenantEmp[]> GetVi_TenantEmps(string tenantId) { Prepare(); return GetAsync<vi_TenantEmp[]>(nameof(GetVi_TenantEmps), tenantId); }
    /// <inheritdoc />
+   public Task<vi_TenantEmp?> GetVi_TenantEmp_ById(string tenantEmpId) { Prepare(); return GetAsync<vi_TenantEmp?>(nameof(GetVi_TenantEmp_ById), tenantEmpId); }
+   /// <inheritdoc />
    public Task<TenantEmpContactCandidate[]> GetMeta_TenantEmpContacts(string tenantId, string? search) { Prepare(); return GetAsync<TenantEmpContactCandidate[]>(nameof(GetMeta_TenantEmpContacts), tenantId, search!); }
    /// <inheritdoc />
    public Task<vi_TenantEmp> PostGetMeta_TenantEmpSave(TenantEmpSave save) { Prepare(); return PostAsync<vi_TenantEmp>(nameof(PostGetMeta_TenantEmpSave), save); }

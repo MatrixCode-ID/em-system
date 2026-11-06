@@ -19,7 +19,15 @@ a personnel, customer or vendor module). The wrapper:
 - reads and writes the basic data through the engine services and lookups (in-process calls are not
   claim-gated, so the wrapper authorizes its own operations, see [Use from another module](#use-from-another-module));
 - keeps its own extra data in its own tables keyed by the engine ids (for example the employee id), not in
-  new columns of the Business Module Manager tables.
+  new columns of the Business Module Manager tables. Extra attributes of one employee may instead live in the
+  `json_object` of that employee.
+
+The UI model `TenantEmp` (`Em.Ui.Core`) is the base for such a wrapper. Derive from it, lift `json_object`
+fields to properties with `GetJson<T>` in `ReadFrom`, and write them in `BuildJson(patch)`, always calling
+`base` first; fields the model does not know are preserved. Because the employee actions need the Business
+Module Manager claim over HTTP, a wrapper with its own claim overrides `FetchAsync`, `UpdateAsync` and
+`InsertAsync` to go through its own service and ends both saves with `ApplySaved(entity, saved)`, which carries
+the returned key and stamp. `WriteTo` sends the last-read stamp, not the server time `SaveAsync` puts in `ustamp`.
 
 ## Enable it
 
@@ -79,6 +87,7 @@ engine administrator bypass. Inject these interfaces on the server or resolve th
 | | `PostGetTa_TenantDept_New` | Create a department; ignore head until saved |
 | | `PostGetTa_TenantDept_Update` | Update hierarchy, fields and active head |
 | `ITenantEmpServices` | `GetVi_TenantEmps(tenantId)` | All employees, ordered by person name and code |
+| | `GetVi_TenantEmp_ById(tenantEmpId)` | One employee, or null |
 | | `GetMeta_TenantEmpContacts(tenantId, search)` | Up to 50 contacts of all types/states, linked accounts and existing employee marker |
 | | `GetMeta_TenantEmpPerson(contactId)` | Contact type, all communication/address entries, default links and update stamps |
 | | `PostGetMeta_TenantEmpSave(save)` | Save an employee and optionally create a person atomically |

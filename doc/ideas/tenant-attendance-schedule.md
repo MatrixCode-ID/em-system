@@ -88,8 +88,54 @@
 - 2026-11-05 (pengguna): **tap yang employee-nya tidak ditemukan tetap disimpan** di log kehadiran sebagai
   "tidak terpetakan" (employee kosong, identitas asli dari mesin disimpan), agar data tidak hilang diam-diam
   dan bisa dikoreksi lalu dipakai setelah employee diperbaiki. Konsekuensi untuk rancangan log: kolom employee
-  boleh kosong, ditambah kolom identitas asli; cara memetakan ulang diatur di pertanyaan no. 33. **Pembahasan cuti ditunda**: jatah cuti, kode status cuti, dan status roster untuk cuti bersama
+  boleh kosong, ditambah kolom identitas asli; cara memetakan ulang diatur di pertanyaan no. 33.
+- 2026-11-06 (pengguna): **pemetaan tap mesin berbentuk interface yang diimplementasikan pengguna library**
+  (seperti connector pada integration system), sedangkan **engine membangun fondasinya**. Pembagian: engine
+  menyediakan kerangka (kontrak interface, penyimpanan log termasuk status "tidak terpetakan", dan penegakan
+  prinsip log tidak di-update); implementasi pengguna menentukan cara mencocokkan identitas mesin ke employee
+  dan cara menentukan masuk atau pulang. Rincian isi fondasi: pertanyaan no. 34. **Pembahasan cuti ditunda**: jatah cuti, kode status cuti, dan status roster untuk cuti bersama
   tidak dibahas sekarang. Pertanyaan no. 31 ditunda.
+- 2026-11-06 (pengguna): **layar-layar engine absensi/jadwal menjadi bagian Business Module Manager (BMM)**:
+  setelan penjadwalan, template jadwal, kode status kehadiran, Public Holiday, penugasan jadwal, roster, dan
+  log kehadiran (tujuh layar). Layoutnya didesain pada `doc/design/BusinessModuleManager.figcraft`
+  (page `30 Attendance`) sebagai grup drawer baru **Attendance (7)**. **Device integration (bagian absensi pada
+  Integration Manager) tidak ikut BMM:** pengguna menegaskan 2026-11-06 bahwa integrasi punya tempat sendiri
+  (Integration Manager); layarnya tidak didesain di sini. **Benturan dengan aturan yang ada:**
+  `CLAUDE.md` root em-system (bagian Cakupan BMM dan modul wrapper) dan panduan engine BMM (bagian Scope and
+  wrapper modules) menyatakan BMM hanya untuk setup dan update info dasar dan melarang alur kerja bisnis masuk
+  BMM; penugasan jadwal, roster, dan log kehadiran adalah alur kerja. Aturan tersebut belum diubah; pengguna
+  yang memutuskan pembaruannya (pertanyaan no. 35). Desain di file `.figcraft` hanya untuk review.
+- 2026-11-06 (pengguna): **keputusan pengguna sebelumnya (cakupan BMM diperluas) dibatalkan setelah
+  dipikirkan ulang.** Penugasan jadwal, roster, dan log kehadiran adalah alur kerja: engine hanya membuat
+  **interface dan fondasinya**, sedangkan **UI dibuat di ConNexa** (host). **Cakupan BMM tidak diperluas** dan
+  panduan engine BMM (`engine-business-module-manager.md`) tidak diubah; `CLAUDE.md` em-system hanya mencatat
+  keputusan ini. Layout layar di `BusinessModuleManager.figcraft` (page `30 Attendance`) dibiarkan di BMM
+  sementara, sampai dipindahkan ke ConNexa. Menggantikan butir keputusan "layar absensi menjadi bagian BMM"
+  di atas dan menjawab pertanyaan no. 35; no. 36 (claim) menjadi tanggungan host. Layar setup (setelan,
+  template, kode status, Public Holiday) belum ditetapkan tempat akhirnya: pertanyaan no. 37.
+- 2026-11-06 (pengguna, saat review layout): **rotasi shift di pabrik teratur, berganti tiap 2 minggu**, dan
+  **penugasan jadwal diatur per department.** Akibatnya: (a) **pola rotasi masuk layout** sebagai urutan template
+  (satu template per langkah), **jumlah minggu per langkah** dan **Day 1 (awal siklus)**, diatur per tingkat
+  (tenant, department, sub-department) dan diwarisi seperti setelan lain; siklus berulang dari Day 1. Ini
+  menggeser keputusan 2026-11-05 "pola rotasi dan generator otomatis ditunda" (no. 18): penyusunan manual dan
+  salin tetap berlaku, tetapi penugasan periode berikutnya dapat dihasilkan dari rotasi (**Generate next
+  period**), dan Override manual per sel tetap untuk pengecualian. (b) **Day 1 milik rotasi**, bukan template:
+  template berbasis hari dalam minggu dan tidak punya hari ke-1; penugasan tetap punya tanggal mulai (hari ke-1
+  periodenya). (c) Layar penugasan dan roster mendapat filter **Department**; satu penugasan milik satu
+  department sehingga grid hanya berisi karyawan department itu, dan aturan tumpang tindih lebih jarang
+  terpicu. (d) Layar setelan memakai combobox, template memakai spin edit untuk jam per hari (0 jam = libur).
+  Ini keputusan **layout** (page `30 Attendance`); bentuk tabel rotasi di engine masih usulan (bagian Pola
+  rotasi). Pertanyaan yang tersisa: no. 38 dan 39; hak akses per department masuk no. 34 dan 37.
+- 2026-11-06 (pengguna): **tidak ada kelompok dalam department saat ini**: seluruh karyawan satu department
+  berotasi bersamaan (satu pola, satu Day 1), tanpa offset per grup. Alasan: kelompok menambah kompleksitas;
+  tim dalam department mungkin dibahas terpisah nanti. Menjawab pertanyaan no. 38.
+- 2026-11-06 (pengguna): **override manual pada roster menang.** Penugasan yang diproses ulang atau dihasilkan
+  ulang tidak menimpa baris roster yang sudah di-override (selaras prinsip roster di bagian Roster). Menjawab
+  pertanyaan no. 39; cara konflik ditampilkan belum dirancang.
+- 2026-11-06 (pengguna): **hak akses harus ada per department**: orang yang menyusun penugasan dan mengubah
+  roster dibatasi pada department yang menjadi tanggung jawabnya. Engine perlu menyediakan lingkup department
+  pada interface/fondasi alur kerja, sedangkan penegakannya di layar dan claim milik host. Bentuk lingkup
+  (daftar department per user, atau mengikuti kepala department) belum diputuskan: pertanyaan no. 40.
 
 ## Contoh kebutuhan lapangan (pengguna, 2026-11-05)
 
@@ -395,7 +441,8 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
 19. ~~Panjang periode penugasan dan aturan antarpenugasan~~ Dijawab 2026-11-05: panjang bawaan per tenant yang
     bisa ditimpa; tumpang tindih ditolak bila keduanya diproses (draft boleh); celah diizinkan dengan status
     "tanpa jadwal" dan daftar peringatan.
-18. ~~Karena rotasi dipelihara manual:~~ Dijawab 2026-11-05: ditunda; manual + salin sebagai jalur utama. Pembantu penyusunan yang
+18. ~~Karena rotasi dipelihara manual:~~ Dijawab 2026-11-05: ditunda; manual + salin sebagai jalur utama.
+    Digeser 2026-11-06 (lihat Keputusan): rotasi teratur per 2 minggu masuk layout, dengan Generate next period. Pembantu penyusunan yang
     mungkin berguna selanjutnya: geser seluruh regu satu langkah, isi satu template ke banyak orang sekaligus.
 20. (Dijawab 2026-11-05, lihat Keputusan) Arti **enable** per tingkat: apakah penjadwalan/absensi berlaku untuk tenant/department/orang itu (mis.
     direksi atau pekerja lepas tidak dijadwalkan)? Usulan: tingkat bawah punya tiga nilai (ikut atas, aktif,
@@ -436,7 +483,36 @@ penilaian kosong (atau menolak hitung; ini masih perlu diputuskan).
     menandai "tanggal ini libur nasional"; masuk atau tidaknya ditentukan roster/penugasan jadwal. Engine
     tidak menaruh tanda "regu X tetap masuk" di kalender. Jadwal bawaan yang menutup tanggal (enable tenant
     aktif) mengikuti libur nasional kecuali ditimpa. Setuju?
-33. Karena log tidak di-update (koreksi = batalkan lalu tambah baris baru), memetakan ulang tap yang
+40. Lingkup hak akses per department (keputusan 2026-11-06: harus ada): daftar department yang boleh diatur
+    tiap user (termasuk sub-department di bawahnya), atau mengikuti kepala department pada data department?
+    Apa yang dijaga: penugasan, roster, log kehadiran, atau semuanya? Dan apa yang disediakan engine
+    (service lookup lingkup, atau hanya parameter department pada tiap interface) dibanding yang dijaga host?
+39. (Dijawab 2026-11-06, lihat Keputusan: override manual menang) Override manual pada roster (sakit, tukar
+    shift) lalu penugasan diproses ulang: yang menang yang mana? Sisa: cara menampilkan konflik.
+38. (Dijawab 2026-11-06, lihat Keputusan: tanpa kelompok saat ini) Rotasi per department: semua karyawan satu department berotasi bersamaan (satu pola, satu Day 1), atau
+    dibagi **grup dengan offset** (mis. grup A mulai di langkah 1, grup B di langkah 2, agar tiap shift selalu
+    terisi)? Tim dalam department mungkin dibahas terpisah nanti.
+37. Tempat akhir layar setup absensi (setelan penjadwalan, template jadwal, kode status kehadiran, Public
+    Holiday): tetap di BMM (setup info dasar, sesuai cakupan BMM yang tidak diperluas), atau ikut dibuat di
+    ConNexa bersama layar alur kerja? Dan interface apa saja yang disediakan engine untuk layar alur kerja
+    (penugasan, roster, log): lanjutan pertanyaan no. 34.
+36. (Gugur 2026-11-06: UI alur kerja di host, claim ditentukan host; layar setup belum ditetapkan, lihat no.
+    37) Claim: satu claim BMM untuk seluruh grup Attendance (asumsi pada desain, mengikuti "satu claim BMM"
+    yang berlaku), atau claim terpisah untuk absensi (mis. setup, penugasan, log) karena alur kerjanya
+    dipakai orang HR yang bukan admin setup? Belum diputuskan.
+35. (Dijawab 2026-11-06: cakupan BMM tidak diperluas, UI alur kerja di ConNexa; lihat Keputusan) Aturan scope BMM: karena layar absensi menjadi bagian BMM (keputusan 2026-11-06), bagaimana aturan
+    "BMM hanya setup dan update info dasar" diperbarui? Pilihan: (a) cakupan BMM diperluas dengan grup
+    Attendance (setup dan alur kerja absensi); (b) hanya setup absensi (setelan, template, kode status,
+    Public Holiday) di BMM, sedangkan penugasan, roster, dan log tetap layar wrapper; (c) lainnya. Perubahan
+    `CLAUDE.md` dan panduan engine BMM menunggu keputusan pengguna.
+34. Isi fondasi dari engine (usulan agent, sketsa): (a) kontrak interface pemetaan: masukan tap mentah
+    (identitas mesin, waktu kejadian, perangkat, jenis dari mesin bila ada), keluaran id employee (kosong bila
+    tidak ditemukan) dan jenis tap (boleh 0 = tidak diketahui); (b) aksi bawaan engine "petakan ulang"
+    (batalkan baris lama + tambah baris baru) yang dipanggil implementasi, per identitas; (c) daftar tap
+    "tidak terpetakan" yang bisa dibaca; (d) pemanggilan implementasi dijalankan lewat integration system.
+    Cukupkah isi fondasi ini, atau ada yang perlu ditambah atau dikurangi?
+33. (Sebagian dijawab 2026-11-06: cara memetakan diserahkan ke implementasi; sisa: penegakan batalkan + tambah
+    oleh engine, lihat no. 34) Karena log tidak di-update (koreksi = batalkan lalu tambah baris baru), memetakan ulang tap yang
     "tidak terpetakan" mengikuti prinsip itu: baris lama dibatalkan dan baris baru berisi employee dibuat?
     Atau pengecualian: kolom employee pada baris tidak terpetakan boleh diisi sekali? Usulan agent: mengikuti
     prinsip batalkan + tambah, agar jejak audit utuh. Siapa yang boleh memetakan ulang?

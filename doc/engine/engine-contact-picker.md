@@ -29,6 +29,27 @@ Defaults allow all types and states, with or without users, and include inactive
 combine with AND. An invalid page returns 400. Pages are separate requests, so concurrent changes can
 shift results between requests.
 
+## Saving a contact
+
+`PostGetMeta_Contact_Save(ContactSave)` creates or updates a contact and its communication and address entries
+in one serializable transaction, and returns the combined contact row. It needs authentication only, like the
+rest of `core.contact`; a consuming module applies its own rules before calling it.
+
+| Case | Result |
+| --- | --- |
+| Empty `ContactId` | The server issues the id |
+| Unknown `ContactId`, default `ContactUstamp` | Created with that id, so a client can keep a stable draft id |
+| Known `ContactId` | `ContactUstamp` must match the last-read stamp, otherwise 409 |
+| Missing name, invalid type or invalid id | 400 |
+| Entry of another contact | 400 |
+| Stale entry stamp | 409 |
+
+Entries that are not sent stay as they are. Sent entries carry their last-read stamp, so a client that repeats a
+save reads the contact and its entries first. `DefaultCommId` and `DefaultAddressId` are optional: when set, the
+entry must be sent or already belong to the contact, active and non-empty (400 otherwise). When empty, the
+current default stays. An entry sent to deactivate or empty the current default is refused unless another
+default is chosen.
+
 ## WPF usage
 
 ```csharp

@@ -6,7 +6,7 @@ in this folder; screens of engine-owned modules sit at the top level as `<Subjec
 | File | Contents |
 | --- | --- |
 | `_BASELINE/em-wpf.figcraft` | **Em WPF Baseline**: assets (page `00 Assets`), `Em Palette` variables (Light/Dark), Main Window, Login, Context Menu, Buttons & Toolbar |
-| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments) |
+| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments), Attendance (page `30 Attendance`) |
 
 ## Baseline
 
@@ -69,3 +69,41 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
     shared across tenants and accounts, like communications and addresses. Discussion: [contact-attachments idea](../ideas/contact-attachments.md).
   - **Note**: the employee's own multi-line note (per tenant, not the contact's), after Department.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
+
+## Attendance in Business Module Manager (2026-11-06)
+
+Page `30 Attendance` of `BusinessModuleManager.figcraft`: seven screens, Light and Dark, in a new drawer folder
+**Attendance (7)** (Organization and People are collapsed in these frames). The BMM scope rule (setup only)
+is **not** widened: assignments, roster and attendance log are workflows, so the engine provides the
+interfaces and the UI is built in the host application. These layouts stay here temporarily, until they move
+to the host's design. Decisions and open questions are in the
+[attendance idea](../ideas/tenant-attendance-schedule.md).
+
+- **Scheduling settings**: tenant and department tree with the effective enable and default schedule; editor
+  with combo boxes for Enable (Inherit, Enabled, Disabled) and the default schedule (one template, or
+  Rotation). A **Rotation** section holds the ordered steps (a template per step, Step 1-3), **Weeks per step**
+  (spin edit, 2 weeks in the sample) and **Day 1 (cycle start)**; the cycle repeats from Day 1. A rotation is
+  set per level (tenant, department, sub-department) and inherited like the other settings.
+- **Schedule templates**: list and editor with start time, break, days off and hours per weekday (a short last
+  day is one row). Hours per weekday are spin edits; 0 h is a day off. Templates have no day 1: the cycle
+  start belongs to the rotation in Scheduling settings.
+- **Attendance codes**: per-tenant code list (code, name, category) in the Positions pattern, with Copy from tenant.
+- **Public holidays**: one global calendar (year selector instead of the tenant combo); fixed and dated entries,
+  a collective-leave marker, and a warning when the next year has no dated entries.
+- **Schedule assignments**: a **Department** combo next to Tenant (an assignment belongs to one department, so
+  the grid lists only its employees), header (number, start date, period, end date, DRAFT chip), employee x
+  date grid, a warning about overlap with a processed assignment, Generate next period (builds the next
+  period from the rotation), Save draft, Process.
+- **Roster**: a **Department** combo (All departments or one), employee x date grid for one period (OFC, S1-S3,
+  SEC, HOL, OFF, no schedule) and a warning about dates without a schedule.
+- **Attendance log**: tap list with an UNMAPPED chip, a tap editor, Remap identity, Cancel tap and Add manual tap.
+- New assets in `00 Assets`: `Chip/Status`, `Chip/Primary`, `Chip/Warning`, `Field/Text`, `Field/Combo`
+  (label above a box with a drop-down chevron), `Field/Spin` (label above a box with spin buttons).
+- Review input (2026-11-06) behind the rotation, department scope and spin edits: shifts rotate on a regular
+  cycle (two weeks per step) and schedules are assigned per department. Decided in the same review: employees
+  of one department rotate together (no groups or teams inside a department for now), and a manual Roster
+  override wins over a re-processed assignment. Per-department permissions are required, so the host screens
+  scope assignments and the roster to the departments a user may manage; the form of that scope is still open
+  (see the [attendance idea](../ideas/tenant-attendance-schedule.md)).
+- Device integration (attendance machines) is **not** part of this design; integrations have their own place.
+- Sample data is fictitious.

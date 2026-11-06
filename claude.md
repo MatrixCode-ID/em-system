@@ -12,6 +12,12 @@ Business Module Manager (BMM) **hanya untuk setup dan update info dasar**: tenan
 employee beserta contact dasarnya (nama lengkap, tipe, comm, address). BMM tetap satu alat admin di Tools
 dengan satu claim BMM; jangan menambah alur kerja bisnis, claim per peran, atau entri menu Apps ke BMM.
 
+**Absensi dan jadwal (keputusan pengguna 2026-11-06):** penugasan jadwal, roster, dan log kehadiran adalah
+alur kerja, jadi **cakupan BMM tidak diperluas**. Engine hanya menyediakan interface dan fondasinya; UI alur
+kerja itu dibuat di host (ConNexa). Layout layarnya sementara tetap di
+`doc/design/BusinessModuleManager.figcraft` (page `30 Attendance`) sampai dipindahkan ke ConNexa. Panduan
+engine BMM tidak diubah. Rincian: `doc/ideas/tenant-attendance-schedule.md`.
+
 Pengguna library yang membutuhkan fitur pada data ini membangun **modul "Wrapper"** sendiri (mis. HR,
 Customer, Vendor). Wrapper mendefinisikan claim yang proper untuk perannya, mendaftarkan navigasinya
 sehingga **masuk ke menu Apps** modul, dan memakai data dasar BMM lewat service/lookup engine (di

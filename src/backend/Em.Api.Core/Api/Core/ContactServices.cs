@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data;
+using System.Linq.Expressions;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Em.Api.Core.Models;
@@ -474,6 +475,64 @@ namespace Em.Api.Core
             UserAccounts = users.Where(u => string.Equals(u.cContactId, c.cContactId, StringComparison.OrdinalIgnoreCase)).Select(u => u.cUserAccount).ToArray()
          }).ToArray() };
       }
+
+      /// <inheritdoc />
+      [PostAction]
+      public async Task<vi_Contact> PostGetMeta_Contact_Save(ContactSave save) {
+         if (string.IsNullOrWhiteSpace(save.FullName)) throw new ActionException("Enter the contact name.", 400);
+         if (!Enum.IsDefined(save.ContactType)) throw new ActionException("Choose a contact type.", 400);
+         var contactId = string.IsNullOrWhiteSpace(save.ContactId) ? Ulid.NewUlid().ToString() : save.ContactId;
+         if (!Ulid.TryParse(contactId, out _)) throw new ActionException("The contact ID is not valid.", 400);
+         var comms = save.Comms ?? [];
+         var addresses = save.Addresses ?? [];
+         ContactDetails.Prepare(comms, addresses);
+
+         await using var tx = await ctx.Database.BeginTransactionAsync(IsolationLevel.Serializable, AbortToken);
+         var current = await ctx.ta_Contacts.AsNoTracking().SingleOrDefaultAsync(x => x.cContactId == contactId, AbortToken);
+         if (current is null && save.ContactUstamp != default) throw new ActionException("The contact was not found.", 404);
+         if (current is not null && current.ustamp != save.ContactUstamp) throw new ActionException("The contact changed. Refresh before saving.", 409);
+
+         var commId = await ResolveDefaultCommAsync(save, current, comms, contactId);
+         var addressId = await ResolveDefaultAddressAsync(save, current, addresses, contactId);
+         var now = DateTime.UtcNow;
+         if (current is null) {
+            ctx.ta_Contacts.Add(new ta_Contact {
+               cContactId = contactId, cContactFullName = save.FullName, cContactType = save.ContactType, cContactNote = save.Note,
+               cContactState = ContactState.Active, ustamp = now, datestamp = now
+            });
+            await ctx.SaveChangesAsync(AbortToken);
+         }
+         await ContactDetails.WriteAsync(ctx, contactId, comms, addresses, commId, addressId, current is null, AbortToken);
+         await ctx.ta_Contacts.Where(x => x.cContactId == contactId).ExecuteUpdateAsync(s => s
+            .SetProperty(x => x.cContactFullName, save.FullName).SetProperty(x => x.cContactType, save.ContactType)
+            .SetProperty(x => x.cContactNote, save.Note).SetProperty(x => x.cContactDefaultComm_cCommId, commId)
+            .SetProperty(x => x.cContactDefaultAddress_cAddressId, addressId).SetProperty(x => x.ustamp, TenantOrg.Stamp(current?.ustamp ?? now)), AbortToken);
+         await tx.CommitAsync(AbortToken);
+         return await ctx.vi_Contacts.AsNoTracking().SingleAsync(x => x.cContactId == contactId, AbortToken);
+      }
       #endregion
+
+      // A default the caller did not choose stays what it was, unless this save deactivates or empties it.
+      private async Task<string?> ResolveDefaultCommAsync(ContactSave save, ta_Contact? current, ta_Comm[] comms, string contactId) {
+         var chosen = TenantOrg.Optional(save.DefaultCommId);
+         var commId = chosen ?? current?.cContactDefaultComm_cCommId;
+         var sent = comms.SingleOrDefault(x => TenantOrg.Same(x.cCommId, commId));
+         if (commId is null || chosen is null && sent is null) return commId;
+         var entry = sent ?? await ctx.ta_Comms.AsNoTracking().SingleOrDefaultAsync(x => x.cCommId == commId && x.cContactId == contactId, AbortToken);
+         if (entry is null || entry.cCommState == ContactCommunicationState.Inactive || string.IsNullOrWhiteSpace(entry.cCommValue))
+            throw new ActionException("The default communication must be an active non-empty entry of this contact.", 400);
+         return commId;
+      }
+
+      private async Task<string?> ResolveDefaultAddressAsync(ContactSave save, ta_Contact? current, ta_Address[] addresses, string contactId) {
+         var chosen = TenantOrg.Optional(save.DefaultAddressId);
+         var addressId = chosen ?? current?.cContactDefaultAddress_cAddressId;
+         var sent = addresses.SingleOrDefault(x => TenantOrg.Same(x.cAddressId, addressId));
+         if (addressId is null || chosen is null && sent is null) return addressId;
+         var entry = sent ?? await ctx.ta_Addresses.AsNoTracking().SingleOrDefaultAsync(x => x.cAddressId == addressId && x.cContactId == contactId, AbortToken);
+         if (entry is null || entry.cAddressState == AddressState.Inactive || string.IsNullOrWhiteSpace(entry.cAddressLocation))
+            throw new ActionException("The default address must be an active non-empty entry of this contact.", 400);
+         return addressId;
+      }
    }
 }

@@ -178,6 +178,9 @@ namespace Em.Api.Core
       /// <inheritdoc />
       public Task<ContactSearchPage> PostGetMeta_ContactSearchPage(ContactSearchQuery query) =>
          PostAsync<ContactSearchPage>(nameof(PostGetMeta_ContactSearchPage), query);
+      /// <inheritdoc />
+      public Task<vi_Contact> PostGetMeta_Contact_Save(ContactSave save) =>
+         PostAsync<vi_Contact>(nameof(PostGetMeta_Contact_Save), save);
       #endregion
    }
 }
