@@ -1,11 +1,11 @@
 using System.Data.Common;
 using System.Runtime.CompilerServices;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 
 namespace Em.Api.Core.Approval
 {
@@ -23,7 +23,7 @@ namespace Em.Api.Core.Approval
    /// </remarks>
    internal sealed class ApprovalDatabaseSwitch : DbCommandInterceptor
    {
-      /// <summary>The single instance; attached to every SQL Server context created by the engine.</summary>
+      /// <summary>The single instance; attached to every context whose provider has a dialect.</summary>
       public static ApprovalDatabaseSwitch Instance { get; } = new();
 
       // Weak: a context lives as long as its request scope, and nothing here may keep it alive longer.
@@ -120,15 +120,15 @@ namespace Em.Api.Core.Approval
 
    /// <summary>
    /// Transaction of one approval decision spanning the core database and the module's database: one
-   /// connection, one SQL Server transaction, no MSDTC.
+   /// connection, one database transaction, no distributed coordinator.
    /// </summary>
    /// <remarks>
    /// Without this, a module hook that writes to its module tables runs on its own connection: a failure
    /// midway leaves the document changed while the request is still waiting, or the request completed
    /// while its change never went in. The contexts that take part are those the module's service asks for
    /// through its constructor (see <see cref="IEmApprovalDataContext.DbContext"/>); module
-   /// authors do not deal with connections at all. The limit is SQL Server only, and all databases taking
-   /// part must be on one server with one login; <see cref="ApprovalStartupChecks"/> refuses an
+   /// authors do not deal with connections at all. All databases taking part must use one provider, on one
+   /// server with one login, because a transaction cannot span more than that without a coordinator; <see cref="ApprovalStartupChecks"/> refuses an
    /// application that violates this before it accepts the first request.
    /// <para>
    /// Module contexts keep using that shared connection until the end of the call, including for hooks
@@ -160,22 +160,23 @@ namespace Em.Api.Core.Approval
          var enlisted = new List<DbContext>();
 
          try {
-            if (core.Database.GetDbConnection() is SqlConnection connection) {
-               var coreDatabase = CatalogOf(connection.ConnectionString);
+            if (EmSqlDialects.TryFor(core) is { } dialect) {
+               var connection = core.Database.GetDbConnection();
+               var coreDatabase = dialect.DatabaseName(connection.ConnectionString!);
                ApprovalDatabaseSwitch.Attach(core, coreDatabase, connection);
 
                foreach (var type in contextTypes) {
                   if (provider.GetRequiredService(type) is not DbContext module || ReferenceEquals(module, core)) continue;
 
-                  if (!module.Database.IsSqlServer()) {
+                  if (EmSqlDialects.TryFor(module)?.Provider != dialect.Provider) {
                      throw new InvalidOperationException(
-                        $"Context {type.Name} of approval flow 'Data' is not on SQL Server, so it cannot share the approval transaction.");
+                        $"Context {type.Name} of approval flow 'Data' does not use {dialect.Provider}, so it cannot share the approval transaction.");
                   }
 
                   // Seen before in this request: its connection string is the shared one by now, so the
                   // database it owns is the one written down the first time.
                   var own = ApprovalDatabaseSwitch.Find(module)?.Database ??
-                            CatalogOf(module.Database.GetConnectionString() ?? string.Empty);
+                            dialect.DatabaseName(module.Database.GetConnectionString() ?? string.Empty);
 
                   if (!ReferenceEquals(ApprovalDatabaseSwitch.Find(module)?.Connection, connection)) {
                      module.Database.SetDbConnection(connection);
@@ -229,8 +230,5 @@ namespace Em.Api.Core.Approval
             await module.Database.UseTransactionAsync(null);
          }
       }
-
-      private static string CatalogOf(string connectionString) =>
-         new SqlConnectionStringBuilder(connectionString).InitialCatalog;
    }
 }

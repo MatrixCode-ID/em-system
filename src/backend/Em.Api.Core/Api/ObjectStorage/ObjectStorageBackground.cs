@@ -1,5 +1,6 @@
 using Em.Api.Core.Log.Audit;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -28,13 +29,10 @@ internal sealed class ObjectStorageBackground(IServiceProvider services, ObjectS
       using (var scope = services.CreateScope()) {
          var db = scope.ServiceProvider.GetRequiredService<ObjectStorageDbContext>();
          try {
-            await db.Database.ExecuteSqlRawAsync("""
-               IF OBJECT_ID('dbo.ta_StoreVolume','U') IS NULL OR OBJECT_ID('dbo.ta_StorePolicy','U') IS NULL
-               OR OBJECT_ID('dbo.ta_StorePolicyVolume','U') IS NULL OR OBJECT_ID('dbo.ta_StoreBucket','U') IS NULL
-               OR OBJECT_ID('dbo.ta_StoreObject','U') IS NULL OR OBJECT_ID('dbo.ta_StoreObjectVersion','U') IS NULL
-               OR OBJECT_ID('dbo.ta_StoreObjectBlob','U') IS NULL OR OBJECT_ID('dbo.ta_StoreObjectBlobVol','U') IS NULL
-               THROW 51000,'Object storage tables are missing.',1;
-               """, ct);
+            await EmSqlDialects.For(db).VerifySchemaAsync(db, new EmSchemaRequirement {
+               Tables = ["ta_StoreVolume", "ta_StorePolicy", "ta_StorePolicyVolume", "ta_StoreBucket", "ta_StoreObject",
+                  "ta_StoreObjectVersion", "ta_StoreObjectBlob", "ta_StoreObjectBlobVol"]
+            }, "Object storage tables are missing.", ct);
             var version = await db.Meta.Where(m => m.cMetaKey == "ObjectStoreSchemaVersion").Select(m => m.cMetaValue).SingleOrDefaultAsync(ct);
             if (version != "1") throw new InvalidOperationException("Object storage schema version 1 is required.");
             await db.Volumes.OrderBy(v => v.cStoreVolumeId).FirstOrDefaultAsync(ct);
@@ -42,7 +40,7 @@ internal sealed class ObjectStorageBackground(IServiceProvider services, ObjectS
             await db.Copies.OrderBy(c => c.cStoreVolumeId).FirstOrDefaultAsync(ct);
          }
          catch (Exception ex) {
-            throw new InvalidOperationException("Object storage schema is unavailable. Run doc/sqlscript/mssql/tables/060-objectstore.sql and " +
+            throw new InvalidOperationException($"Object storage schema is unavailable. Run {EmSqlDialects.TryFor(db)?.ScriptFolder}/tables/060-objectstore.sql and " +
                "views/vi_Store*.sql on the core database, or remove AddObjectStorage() from the host.", ex);
          }
          await RenewLeaseAsync(db, true, ct);

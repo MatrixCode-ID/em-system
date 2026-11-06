@@ -3,7 +3,7 @@ using Em.Api.Core.Log.Audit;
 using Em.Api.Core.Models;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
+using Em.Api.Shared;
 
 namespace Em.Api.Core;
 
@@ -14,7 +14,7 @@ internal static class TenantOrg
    internal static DateTime Stamp(DateTime previous) => DateTime.UtcNow > previous.AddMilliseconds(10) ? DateTime.UtcNow : previous.AddMilliseconds(10);
    internal static async Task Save(Func<Task> action, string message) {
       try { await action(); }
-      catch (Exception ex) when ((ex as SqlException ?? ex.InnerException as SqlException) is { Number: 2601 or 2627 }) {
+      catch (Exception ex) when (EmDbErrors.IsUniqueConflict(ex)) {
          throw new ActionException(message, 409);
       }
    }

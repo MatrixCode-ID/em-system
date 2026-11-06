@@ -853,3 +853,59 @@ entry melalui `INavigationPresentation`. Page lain tetap memakai default existin
 state tidak boleh terbawa saat pindah entry atau host dilepas. Display title tidak
 mengubah kunci Title navigasi. Hook generik, lifecycle, UI-thread dan batas bukti
 perangkat dijelaskan pada `doc/engine/engine-maui-experience.md`.
+
+## MySQL sebagai pilihan database Em System (keputusan pengguna 2026-11-06)
+
+Skema MySQL Em System disiapkan sebagai pilihan database bagi pengguna engine,
+termasuk instalasi baru dan kompatibilitas runtime aplikasi yang relevan. Skrip
+upgrade hanya untuk instalasi MySQL lama yang memerlukannya; tidak dijalankan
+pada pemasangan baru. Jangan menganggap konversi DDL saja sebagai bukti dukungan
+runtime MySQL. Status dan verifikasi pekerjaan ada di plan konversi MySQL.
+
+## MySQL: kapitalisasi nama objek (keputusan pengguna 2026-11-06)
+
+Nama tabel dan objek MySQL Em System harus mempertahankan ejaan dan kapitalisasi
+objek sumber SQL Server, misalnya `ta_Meta`, termasuk saat ditampilkan oleh server.
+Ini mengatur nama objek, bukan aturan case-sensitive untuk nilai data. Pada MySQL
+Windows, periksa konfigurasi `lower_case_table_names` saat inisialisasi server;
+jangan mengubah data directory existing tanpa migrasi dan verifikasi.
+
+Klarifikasi pengguna 2026-11-06: pekerjaan saat ini berfokus pada pembuatan
+skema tabel MySQL dengan nama yang benar. Pengguna akan melakukan pengujian
+aplikasi secara bertahap melalui EF Core; perubahan runtime aplikasi bukan
+cakupan pekerjaan ini. Kebutuhan kompatibilitas runtime tetap dicatat sebagai
+batas yang harus diverifikasi, bukan bukti bahwa runtime sudah didukung.
+
+Klarifikasi pengguna 2026-11-06: pertahankan instance MySQL development yang
+sudah ada pada port 3306 dan direktori datanya; jangan menggantinya dengan
+instance/direktori data lain untuk memenuhi kapitalisasi nama. Instance lama
+memakai lower_case_table_names=1, yang tidak dapat diubah setelah inisialisasi.
+Pengguna juga meminta menghapus data dan entri RunBay khusus port 3307; entri
+RunBay telah dihapus, sedangkan penghapusan datanya ditolak policy otomatis dan
+harus dilakukan manual melalui plan/mysql-3307-cleanup-manual/.
+
+## Standar MySQL: kapitalisasi nama tabel (keputusan pengguna 2026-11-06)
+
+Untuk database MySQL standar Em System, server wajib menggunakan
+`lower_case_table_names=2`. Inisialisasi data directory baru dan jalankan server
+dengan nilai tersebut agar ejaan nama tabel, misalnya `ta_Meta`, dipertahankan.
+Ini menggantikan pilihan nilai `0` sebagai standar pada bagian sebelumnya.
+Nilai ini ditentukan ketika data directory diinisialisasi; jangan mengubahnya
+pada data directory yang sudah ada. Bila platform tidak mendukung nilai `2`,
+laporkan keterbatasannya dan jangan diam-diam memakai nilai lain sebagai standar.
+
+## Skema database wajib dual: MSSQL dan MySQL (keputusan pengguna 2026-11-06)
+
+Setiap pembuatan atau perubahan skema database di em-system wajib dikerjakan untuk
+**dua database sekaligus**, MSSQL dan MySQL, dalam pekerjaan yang sama: tabel, view,
+function/set, dan script update di `doc/sqlscript/mssql/` beserta padanannya di
+`doc/sqlscript/mysql/`. Nama objek, kapitalisasi, nama berkas dan urutan nomor harus
+sama pada keduanya. Skema tidak dianggap selesai bila baru ada untuk satu database.
+
+Engine berjalan pada SQL Server dan MySQL. SQL yang tidak bisa dihasilkan EF Core
+ditulis lewat dialect (`IEmSqlDialect`, `LockRows`, `EmDbErrors`), bukan ditulis
+langsung dengan sintaks satu database di kode fitur. Data Approval mengikuti provider
+database core: core dan modul harus satu provider, satu server dan satu login; campuran
+provider ditolak saat startup. PostgreSQL belum termasuk; skemanya baru tabel log.
+Rancangan dan status: `doc/ideas/multi-database-runtime.md`,
+`plan/executed/multi-database-runtime.md`.

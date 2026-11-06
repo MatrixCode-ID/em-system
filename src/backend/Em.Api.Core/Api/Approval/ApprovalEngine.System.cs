@@ -1,7 +1,7 @@
 using System.Data;
 using Em.Api.Core.Models;
 using Em.Shared;
-using Microsoft.Data.SqlClient;
+using Em.Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -20,7 +20,7 @@ internal sealed partial class ApprovalEngine {
          await NotifySystemFinishedAsync(request, ct);
          return request.cApprovalRequestId;
       }
-      catch (DbUpdateException e) when (e.InnerException is SqlException { Number: 2601 or 2627 }) {
+      catch (DbUpdateException e) when (EmDbErrors.IsUniqueConflict(e)) {
          await transaction.RollbackAsync(CancellationToken.None); db.ChangeTracker.Clear();
          throw new ActionException("This subject already has a System approval request. Open it or reinstate it.", 409);
       }

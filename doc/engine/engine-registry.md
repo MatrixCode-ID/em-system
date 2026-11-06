@@ -329,7 +329,7 @@ It creates and deletes data with random suffixes; run it only against a test ser
 
 ## Known limitations
 
-- DDL scripts exist for SQL Server only. The code itself is provider-agnostic (EF Core).
+- DDL scripts exist for SQL Server and MySQL. The registry has been tested on SQL Server only.
 - Not implemented yet: scheduled garbage collection, filtered purge, tag retention, immutable
   tags, quotas, audit, base/derived relations, Docker-style Bearer tokens, `_catalog`.
 - Garbage collection assumes a single API instance per registry storage folder.

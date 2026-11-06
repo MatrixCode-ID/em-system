@@ -1,5 +1,6 @@
 using System.Data;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,7 @@ namespace Em.Api.Core.ObjectStorage;
 public sealed partial class ObjectStorageServices
 {
    private static bool IsUniqueConflict(DbUpdateException ex) =>
-      ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
+      EmDbErrors.IsUniqueConflict(ex);
 
    /// <summary>
    /// Managed bucket name per policy ID, for every policy a managed bucket uses (or only <paramref name="policyId"/>).
@@ -271,7 +272,7 @@ public sealed partial class ObjectStorageServices
             db.Buckets.Add(row);
          }
          else {
-            row = await db.Buckets.FromSql($"SELECT * FROM dbo.ta_StoreBucket WITH (UPDLOCK, ROWLOCK) WHERE cStoreBucketId = {request.Id}")
+            row = await db.Buckets.LockRows(EmRowLock.Row, (nameof(ta_StoreBucket.cStoreBucketId), request.Id))
                .AsTracking().SingleOrDefaultAsync(AbortToken) ?? throw new ActionException("Bucket not found.", 404);
             if (!string.IsNullOrEmpty(request.Name) && request.Name != row.cStoreBucketName)
                throw new ActionException("A bucket name cannot change.", 400);
@@ -307,7 +308,7 @@ public sealed partial class ObjectStorageServices
    [PostAction(claim: IObjectStorageServices.SettingsClaim)]
    public async Task PostMeta_StoreBucketDelete(string bucketId) {
       await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, AbortToken);
-      var bucket = await db.Buckets.FromSql($"SELECT * FROM dbo.ta_StoreBucket WITH (UPDLOCK, ROWLOCK) WHERE cStoreBucketId = {bucketId}")
+      var bucket = await db.Buckets.LockRows(EmRowLock.Row, (nameof(ta_StoreBucket.cStoreBucketId), bucketId))
          .SingleOrDefaultAsync(AbortToken) ?? throw new ActionException("Bucket not found.", 404);
       if (ManagedBucketJson.Owner(bucket.json_object) is { } owner)
          throw ManagedConflict(bucket.cStoreBucketName, owner, runtime.ManagedBuckets.IsDeclared(bucket.cStoreBucketName)
@@ -331,7 +332,7 @@ public sealed partial class ObjectStorageServices
    internal async Task<(string Name, string Owner)> ReleaseBucketCoreAsync(string bucketId) {
       try {
          await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, AbortToken);
-         var bucket = await db.Buckets.FromSql($"SELECT * FROM dbo.ta_StoreBucket WITH (UPDLOCK, ROWLOCK) WHERE cStoreBucketId = {bucketId}")
+         var bucket = await db.Buckets.LockRows(EmRowLock.Row, (nameof(ta_StoreBucket.cStoreBucketId), bucketId))
             .AsTracking().SingleOrDefaultAsync(AbortToken) ?? throw new ActionException("Bucket not found.", 404);
          var (owner, description) = ManagedBucketJson.Read(bucket.json_object);
          if (owner is null) throw new ActionException($"Bucket '{bucket.cStoreBucketName}' is not a managed bucket.", 409);

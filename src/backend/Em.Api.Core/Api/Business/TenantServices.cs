@@ -1,7 +1,7 @@
 using System.Data;
 using Em.Api.Core.Models;
 using Em.Shared;
-using Microsoft.Data.SqlClient;
+using Em.Api.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Em.Api.Core;
@@ -114,13 +114,10 @@ public sealed class TenantServices(ApiCoreContext ctx) : ServicesBase, ITenantSe
       try {
          await save();
       }
-      catch (Exception ex) when (IsUniqueConflict(ex)) {
+      catch (Exception ex) when (EmDbErrors.IsUniqueConflict(ex)) {
          throw new ActionException("The tenant code is already in use.", 409);
       }
    }
-
-   private static bool IsUniqueConflict(Exception ex) =>
-      (ex as SqlException ?? ex.InnerException as SqlException) is { Number: 2601 or 2627 };
 
    // Called without an application when a test constructs the service directly.
    private Task AuditAsync(string id, string kind, string summary) =>

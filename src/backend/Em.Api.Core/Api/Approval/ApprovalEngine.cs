@@ -1,4 +1,5 @@
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,7 +32,7 @@ internal sealed partial class ApprovalEngine(ApiCoreContext db, ApprovalRegistry
    }
    private async Task<ta_ApprovalRequest> LoadAsync(string id, bool locked, CancellationToken ct) {
       IQueryable<ta_ApprovalRequest> query = locked
-         ? db.ta_ApprovalRequests.FromSqlInterpolated($"SELECT * FROM dbo.ta_ApprovalRequest WITH (UPDLOCK,HOLDLOCK) WHERE cApprovalRequestId = {id}")
+         ? db.ta_ApprovalRequests.LockRows(EmRowLock.Range, (nameof(ta_ApprovalRequest.cApprovalRequestId), id))
          : db.ta_ApprovalRequests;
       var row = await query.AsNoTracking().SingleOrDefaultAsync(x => x.cApprovalRequestId == id, ct) ?? throw new ActionException("Approval request was not found.", 404);
       var tracked = db.ta_ApprovalRequests.Local.FirstOrDefault(x => x.cApprovalRequestId == id);

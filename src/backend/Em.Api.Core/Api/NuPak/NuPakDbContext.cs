@@ -39,7 +39,8 @@ public sealed class NuPakDbContext(DbContextOptions<NuPakDbContext> options) : E
       b.Entity<ta_NuPakPackage>().Property(p=>p.cNuPakPackageName).HasMaxLength(128);
       b.Entity<ta_NuPakVersion>().Property(v=>v.cNuPakVersionNumber).HasMaxLength(64);
       b.Entity<ta_NuPakVersion>().Property(v=>v.cNuPakVersionOriginal).HasMaxLength(64);
-      b.Entity<ta_NuPakFeed>().Property(f=>f.cNuPakFeedSlug).HasMaxLength(64).UseCollation("Latin1_General_100_CI_AS");
+      var feedSlug = b.Entity<ta_NuPakFeed>().Property(f=>f.cNuPakFeedSlug).HasMaxLength(64);
+      if (Database.IsSqlServer()) feedSlug.UseCollation("Latin1_General_100_CI_AS");
       b.Entity<ta_NuPakFeed>().Property(f=>f.cNuPakFeedName).HasMaxLength(100);
       b.Entity<ta_NuPakFeed>().Property(f=>f.cNuPakFeedDescription).HasMaxLength(500);
       b.Entity<ta_NuPakFeed>().HasIndex(f=>f.cNuPakFeedSlug).IsUnique();
