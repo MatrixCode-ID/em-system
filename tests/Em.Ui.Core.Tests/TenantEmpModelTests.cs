@@ -46,11 +46,11 @@ public sealed class TenantEmpModelTests
       var app = new StubApp(); var model = TenantEmp.Build(app, Row());
       model.cTenantEmpCode = "002";
       await model.SaveAsync();
-      Assert.Equal(ReadStamp, app.Service.Saved!.Row.ustamp);
+      Assert.Equal(ReadStamp, app.Service.SentStamp);
       Assert.Equal(app.Service.Returned, model.ustamp); Assert.False(model.IsDirty);
       model.cTenantEmpCode = "003";
       await model.SaveAsync();
-      Assert.Equal(StubService.First, app.Service.Saved!.Row.ustamp);
+      Assert.Equal(StubService.First, app.Service.SentStamp);
    }
 
    [Fact]
@@ -81,9 +81,10 @@ public sealed class TenantEmpModelTests
    {
       public static readonly DateTime First = new(2026, 11, 2, 8, 0, 0, DateTimeKind.Utc);
       public TenantEmpSave? Saved { get; private set; }
+      public DateTime SentStamp { get; private set; }
       public DateTime Returned { get; private set; }
       public Task<vi_TenantEmp> PostGetMeta_TenantEmpSave(TenantEmpSave save) {
-         Saved = save;
+         Saved = save; SentStamp = save.Row.ustamp;
          Returned = Returned == default ? First : Returned.AddMinutes(1);
          var row = (vi_TenantEmp)save.Row;
          return Task.FromResult(new vi_TenantEmp {

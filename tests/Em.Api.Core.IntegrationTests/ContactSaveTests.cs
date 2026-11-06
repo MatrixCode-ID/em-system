@@ -48,7 +48,8 @@ public sealed class ContactSaveTests(SqlServerDatabase database) : TenantOrgTest
       var comm = Comm();
       var owner = await Svc().PostGetMeta_Contact_Save(new() { FullName = "Owner", ContactType = ContactType.Male, Comms = [comm], DefaultCommId = comm.cCommId });
       await Status(400, () => Svc().PostGetMeta_Contact_Save(new() { FullName = "Foreign", ContactType = ContactType.Male, DefaultCommId = comm.cCommId }));
-      await Status(400, () => Svc().PostGetMeta_Contact_Save(new() { FullName = "Foreign", ContactType = ContactType.Male, Comms = [(await Comms(owner.cContactId)).Single()] }));
+      var foreign = (await Comms(owner.cContactId)).Single();
+      await Status(400, () => Svc().PostGetMeta_Contact_Save(new() { FullName = "Foreign", ContactType = ContactType.Male, Comms = [foreign] }));
       Assert.Equal(before + 1, await Db().ta_Contacts.CountAsync(TestContext.Current.CancellationToken));
    }
 
