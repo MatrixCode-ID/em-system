@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Data;
 using System.Security.Cryptography;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Em.Api.Core.ObjectStorage.Volumes;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -220,7 +221,7 @@ public sealed class ObjectStore(ObjectStorageDbContext db, ObjectStorageRuntime 
    internal async Task<T> InBucketTransactionAsync<T>(string bucketId, Func<ta_StoreBucket, ta_StorePolicy, Task<T>> work, CancellationToken ct) {
       try {
          await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-         var bucket = await db.Buckets.FromSql($"SELECT * FROM dbo.ta_StoreBucket WITH (UPDLOCK, ROWLOCK) WHERE cStoreBucketId = {bucketId}")
+         var bucket = await db.Buckets.LockRows(EmRowLock.Row, (nameof(ta_StoreBucket.cStoreBucketId), bucketId))
             .AsTracking().SingleOrDefaultAsync(ct) ?? throw new ActionException("Bucket not found.", 404);
          var policy = await db.Policies.SingleAsync(p => p.cStorePolicyId == bucket.cStorePolicyId, ct);
          var result = await work(bucket, policy);
@@ -234,7 +235,7 @@ public sealed class ObjectStore(ObjectStorageDbContext db, ObjectStorageRuntime 
    }
 
    private async Task<ta_StoreObject?> LockObjectAsync(string bucketId, byte[] keyHash, CancellationToken ct) =>
-      await db.Objects.FromSql($"SELECT * FROM dbo.ta_StoreObject WITH (UPDLOCK, HOLDLOCK) WHERE cStoreBucketId = {bucketId} AND cStoreObjectKeyHash = {keyHash}")
+      await db.Objects.LockRows(EmRowLock.Range, (nameof(ta_StoreObject.cStoreBucketId), bucketId), (nameof(ta_StoreObject.cStoreObjectKeyHash), keyHash))
          .AsTracking().SingleOrDefaultAsync(ct);
 
    /// <summary>
@@ -331,7 +332,7 @@ public sealed class ObjectStore(ObjectStorageDbContext db, ObjectStorageRuntime 
    /// </summary>
    internal Task<bool> PurgeVersionCoreAsync(string bucketId, string objectId, int version, CancellationToken ct) =>
       InBucketTransactionAsync(bucketId, async (bucket, _) => {
-         var obj = await db.Objects.FromSql($"SELECT * FROM dbo.ta_StoreObject WITH (UPDLOCK, HOLDLOCK) WHERE cStoreObjectId = {objectId}")
+         var obj = await db.Objects.LockRows(EmRowLock.Range, (nameof(ta_StoreObject.cStoreObjectId), objectId))
             .AsTracking().SingleOrDefaultAsync(ct);
          if (obj is null || obj.cStoreBucketId != bucketId) return false;
          var versions = await db.Versions.AsTracking().Where(v => v.cStoreObjectId == objectId)

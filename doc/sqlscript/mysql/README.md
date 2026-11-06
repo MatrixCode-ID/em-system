@@ -38,6 +38,6 @@ Run `views/` separately after the tables only if needed. `updates/` is for an ol
 not a new database; review the applicable migration and take a backup before using it. MySQL DDL implicitly
 commits, so a failed migration can require manual repair.
 
-The conversion creates tables and their constraints; it does not by itself establish that every Em System
-runtime feature works with MySQL. Application testing is a separate step. Aggregating views use
-`GROUP_CONCAT`, which is subject to the session's `group_concat_max_len` and may need configuration.
+The engine runs on this schema; `doc/ideas/multi-database-runtime.md` lists what has been verified, what has not,
+and the behaviour that differs from SQL Server. Aggregating views use `GROUP_CONCAT`, which is subject to the
+session's `group_concat_max_len`.

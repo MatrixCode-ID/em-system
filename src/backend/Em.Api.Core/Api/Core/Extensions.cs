@@ -35,6 +35,7 @@ public static class Extensions
             break;
          case DatabaseProvider.MySql:
             opt.UseMySql(connectionString, mySqlVersions.GetOrAdd(connectionString, ServerVersion.AutoDetect));
+            opt.AddInterceptors(Em.Api.Core.Approval.ApprovalDatabaseSwitch.Instance);
             break;
          case DatabaseProvider.PostgreSql:
             opt.UseNpgsql(connectionString);

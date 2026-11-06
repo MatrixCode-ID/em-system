@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,9 +45,9 @@ internal sealed class SmtpSettingsStore(IDbContextFactory<ApiCoreContext> factor
       try {
          await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
          // Serialize mutations and first-use migration on one metadata row, including legacy saves.
-         var query = db.Database.IsSqlServer()
-            ? db.ta_Metas.FromSqlInterpolated($"SELECT * FROM [dbo].[ta_Meta] WITH (UPDLOCK, HOLDLOCK) WHERE [cMetaKey] = {RevisionKey}")
-            : db.ta_Metas.Where(x => x.cMetaKey == RevisionKey);
+         var query = EmSqlDialects.TryFor(db) is null
+            ? db.ta_Metas.Where(x => x.cMetaKey == RevisionKey)
+            : db.ta_Metas.LockRows(EmRowLock.Range, (nameof(ta_Meta.cMetaKey), RevisionKey));
          var marker = await query.AsTracking().SingleOrDefaultAsync(ct);
          if (marker is null) {
             var legacy = await db.ta_Metas.AsNoTracking().SingleOrDefaultAsync(x => x.cMetaKey == SettingsKey, ct);
@@ -219,11 +220,7 @@ internal sealed class SmtpSettingsStore(IDbContextFactory<ApiCoreContext> factor
       }
       return false;
    }
-   private static bool IsMissingSchema(Exception ex) {
-      for (Exception? error = ex; error is not null; error = error.InnerException)
-         if (error is Microsoft.Data.SqlClient.SqlException { Number: 208 }) return true;
-      return false;
-   }
+   private static bool IsMissingSchema(Exception ex) => EmDbErrors.IsMissingTable(ex);
 }
 
 internal static class SmtpSecrets

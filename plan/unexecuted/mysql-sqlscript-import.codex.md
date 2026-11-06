@@ -35,3 +35,8 @@ names and proved the installer rejects a lowercase-only server before database c
 existing directory. Scripts and usage: `scripts/mysql-server-init/`, `scripts/mysql-schema-install/`,
 `doc/sqlscript/mysql/README.md`. The old runtime smoke database and artifact directories are retained as
 fixtures; no claim of full runtime support is made.
+
+## Runtime support (2026-11-06)
+
+Runtime support was done separately at the user's request:
+[plan/executed/multi-database-runtime.md](../executed/multi-database-runtime.md).

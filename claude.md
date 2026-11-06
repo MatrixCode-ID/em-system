@@ -893,3 +893,19 @@ Ini menggantikan pilihan nilai `0` sebagai standar pada bagian sebelumnya.
 Nilai ini ditentukan ketika data directory diinisialisasi; jangan mengubahnya
 pada data directory yang sudah ada. Bila platform tidak mendukung nilai `2`,
 laporkan keterbatasannya dan jangan diam-diam memakai nilai lain sebagai standar.
+
+## Skema database wajib dual: MSSQL dan MySQL (keputusan pengguna 2026-11-06)
+
+Setiap pembuatan atau perubahan skema database di em-system wajib dikerjakan untuk
+**dua database sekaligus**, MSSQL dan MySQL, dalam pekerjaan yang sama: tabel, view,
+function/set, dan script update di `doc/sqlscript/mssql/` beserta padanannya di
+`doc/sqlscript/mysql/`. Nama objek, kapitalisasi, nama berkas dan urutan nomor harus
+sama pada keduanya. Skema tidak dianggap selesai bila baru ada untuk satu database.
+
+Engine berjalan pada SQL Server dan MySQL. SQL yang tidak bisa dihasilkan EF Core
+ditulis lewat dialect (`IEmSqlDialect`, `LockRows`, `EmDbErrors`), bukan ditulis
+langsung dengan sintaks satu database di kode fitur. Data Approval mengikuti provider
+database core: core dan modul harus satu provider, satu server dan satu login; campuran
+provider ditolak saat startup. PostgreSQL belum termasuk; skemanya baru tabel log.
+Rancangan dan status: `doc/ideas/multi-database-runtime.md`,
+`plan/executed/multi-database-runtime.md`.

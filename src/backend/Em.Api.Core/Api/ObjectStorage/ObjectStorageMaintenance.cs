@@ -29,17 +29,17 @@ public sealed class ObjectStorageMaintenance(ObjectStore store, ILogger<ObjectSt
    // Referenced blobs with the highest replica target of the policies whose buckets refer to them.
    private const string TargetsSql = """
       SELECT v.cStoreObjectBlobHash AS Hash, MAX(p.cStorePolicyReplicaTarget) AS Target
-      FROM dbo.ta_StoreObjectVersion v
-      JOIN dbo.ta_StoreObject o ON o.cStoreObjectId = v.cStoreObjectId
-      JOIN dbo.ta_StoreBucket k ON k.cStoreBucketId = o.cStoreBucketId
-      JOIN dbo.ta_StorePolicy p ON p.cStorePolicyId = k.cStorePolicyId
+      FROM ta_StoreObjectVersion v
+      JOIN ta_StoreObject o ON o.cStoreObjectId = v.cStoreObjectId
+      JOIN ta_StoreBucket k ON k.cStoreBucketId = o.cStoreBucketId
+      JOIN ta_StorePolicy p ON p.cStorePolicyId = k.cStorePolicyId
       WHERE v.cStoreObjectBlobHash IS NOT NULL
       GROUP BY v.cStoreObjectBlobHash
       """;
 
    private const string UnderReplicatedFilter = """
-      WHERE t.Target > (SELECT COUNT(*) FROM dbo.ta_StoreObjectBlobVol c
-                        JOIN dbo.ta_StoreVolume vol ON vol.cStoreVolumeId = c.cStoreVolumeId
+      WHERE t.Target > (SELECT COUNT(*) FROM ta_StoreObjectBlobVol c
+                        JOIN ta_StoreVolume vol ON vol.cStoreVolumeId = c.cStoreVolumeId
                         WHERE c.cStoreObjectBlobHash = t.Hash AND c.cStoreObjectBlobVolState = 2 AND vol.cStoreVolumeState <> 3)
       """;
 

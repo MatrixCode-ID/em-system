@@ -9,6 +9,8 @@ public class LogProviderTests
    private static (LogQueue Queue, ILoggerFactory Factory, LogRuntime Runtime) Create(int capacity = 1000, bool startLines = false) {
       var runtime = new LogRuntime("Tests", "Test");
       var queue = new LogQueue(capacity, runtime);
+      // The first provider of the process takes what other tests left in the bootstrap buffer.
+      BootstrapLogBuffer.TakeAll();
       var provider = new EmLogProvider(queue, runtime, startLines);
       var factory = LoggerFactory.Create(b => b.SetMinimumLevel(LogLevel.Trace).AddProvider(provider));
       return (queue, factory, runtime);

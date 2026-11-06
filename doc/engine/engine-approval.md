@@ -141,9 +141,10 @@ no paired-column business rules. Those belong to the module UI.
 
 ### Transactions
 
-Data application uses one SQL Server connection and transaction across core and module databases,
-without MSDTC. The declared entity contexts are enlisted. Use the supplied context in hooks; unrelated
-connections do not participate. Participating databases must use the same server and login. The engine
+Data application uses one connection and one transaction across core and module databases, without a
+distributed coordinator. It works on SQL Server and MySQL. The declared entity contexts are enlisted. Use the
+supplied context in hooks; unrelated connections do not participate. Participating databases must use the same
+provider, server and login; startup refuses anything else, including two different providers. The engine
 does not lock a subject for the lifetime of a pending Data request. Concurrent module/external writes
 can still race the value comparison; callers must review conflict results.
 

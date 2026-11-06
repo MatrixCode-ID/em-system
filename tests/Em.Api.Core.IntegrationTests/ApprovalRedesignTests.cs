@@ -1,6 +1,7 @@
 using Em.Api.Core.Approval;
 using Em.Api.Core.Models;
 using Em.Api.Core.ObjectStorage;
+using Em.Api.Shared;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -363,7 +364,8 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
       Assert.Single(await verify.Core.ta_ApprovalRequests.Where(x => x.cSubjectKey == "concurrent").ToArrayAsync(Ct));
    }
 
-   private sealed class Fixture(ServiceProvider provider, ApprovalRegistry registry) : IAsyncDisposable {
+   internal sealed class Fixture(ServiceProvider provider, ApprovalRegistry registry) : IAsyncDisposable {
+      private ServiceProvider Root => provider;
       public string Requester { get; } = Ulid.NewUlid().ToString();
       public string Decider { get; } = Ulid.NewUlid().ToString();
       public string Backup { get; } = Ulid.NewUlid().ToString();
@@ -371,24 +373,51 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
       public static async Task<Fixture> CreateAsync(SqlServerDatabase database, CancellationToken ct, IObjectStore? store = null) {
          var coreConnection = await database.CreateExtraDatabaseAsync(ct);
          var moduleConnection = await database.CreateExtraDatabaseAsync(ct);
+         var fixture = Build(o => o.UseSqlServer(coreConnection).AddInterceptors(ApprovalDatabaseSwitch.Instance),
+            o => o.UseSqlServer(moduleConnection).AddInterceptors(ApprovalDatabaseSwitch.Instance), store);
+         using var scope = fixture.Root.CreateScope();
+         var core = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
+         await core.Database.EnsureCreatedAsync(ct);
+         await scope.ServiceProvider.GetRequiredService<ModuleContext>().Database.EnsureCreatedAsync(ct);
+         fixture.AddUsers(core);
+         await core.SaveChangesAsync(ct);
+         return fixture;
+      }
+
+      /// <summary>The same fixture on MySQL: the core database comes from the real scripts, the module's from its model.</summary>
+      public static async Task<Fixture> CreateOnMySqlAsync(MySqlEngineDatabase database, CancellationToken ct) {
+         var coreConnection = await database.CreateFullAsync(ct);
+         var moduleConnection = await database.CreateEmptyAsync(ct);
+         var fixture = Build(o => o.UseEmProvider(DatabaseProvider.MySql, coreConnection), o => o.UseEmProvider(DatabaseProvider.MySql, moduleConnection), null);
+         using var scope = fixture.Root.CreateScope();
+         var core = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
+         await scope.ServiceProvider.GetRequiredService<ModuleContext>().Database.EnsureCreatedAsync(ct);
+         // The users of this fixture have no contact; the real schema enforces that link, the tests here do not need it.
+         await core.Database.OpenConnectionAsync(ct);
+         await core.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 0", ct);
+         fixture.AddUsers(core);
+         await core.SaveChangesAsync(ct);
+         await core.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 1", ct);
+         await core.Database.CloseConnectionAsync();
+         return fixture;
+      }
+
+      private static Fixture Build(Action<DbContextOptionsBuilder> core, Action<DbContextOptionsBuilder> module, IObjectStore? store) {
          var services = new ServiceCollection().AddLogging();
          if (store is not null) services.AddSingleton(store);
-         services.AddDbContext<ApiCoreContext>(o => o.UseSqlServer(coreConnection).AddInterceptors(ApprovalDatabaseSwitch.Instance));
-         services.AddDbContext<ModuleContext>(o => o.UseSqlServer(moduleConnection).AddInterceptors(ApprovalDatabaseSwitch.Instance));
+         services.AddDbContext<ApiCoreContext>(core);
+         services.AddDbContext<ModuleContext>(module);
          services.AddSingleton<RootDefinition>(); services.AddScoped<ChildDefinition>(); services.AddScoped<DynamicHandler>();
          var provider = services.BuildServiceProvider();
          var registry = new ApprovalRegistry([new(typeof(RootDefinition), typeof(Root), null), new(typeof(ChildDefinition), typeof(Child), typeof(Root))],
             [new(typeof(SystemDefinition), new SystemDefinition(), new SystemHandlerAdapter<SystemDefinition, string, DynamicHandler>())], [typeof(ModuleContext)], _ => { });
          registry.Initialize(provider);
-         var fixture = new Fixture(provider, registry);
-         using var scope = provider.CreateScope();
-         var core = scope.ServiceProvider.GetRequiredService<ApiCoreContext>();
-         await core.Database.EnsureCreatedAsync(ct);
-         await scope.ServiceProvider.GetRequiredService<ModuleContext>().Database.EnsureCreatedAsync(ct);
-         foreach (var id in new[] { fixture.Requester, fixture.Decider, fixture.Backup, fixture.Admin })
+         return new Fixture(provider, registry);
+      }
+
+      private void AddUsers(ApiCoreContext core) {
+         foreach (var id in new[] { Requester, Decider, Backup, Admin })
             core.ta_Users.Add(new ta_User { cUserId = id, cUserAccount = id, cContactId = id, cUserState = UserState.Active, datestamp = DateTime.Now, ustamp = DateTime.Now });
-         await core.SaveChangesAsync(ct);
-         return fixture;
       }
       public void SetBatchPolicy(bool allow) => ((SystemDefinition)registry.System("Test System").Definition).AllowBatchSign = allow;
       public void SetDataBatchPolicy(bool allow) => provider.GetRequiredService<RootDefinition>().AllowBatchSign = allow;
@@ -397,12 +426,13 @@ public sealed class ApprovalRedesignTests(SqlServerDatabase database) {
             Claims = decide ? [new ClaimAction { ModuleName = "Test", Name = "Decide" }] : [] });
       public ValueTask DisposeAsync() => provider.DisposeAsync();
    }
-   private sealed class Call : IDisposable {
+   internal sealed class Call : IDisposable {
       private readonly IServiceScope _scope;
       public Call(IServiceScope scope, ApprovalRegistry registry, ActionRequest caller) {
          _scope = scope; Core = scope.ServiceProvider.GetRequiredService<ApiCoreContext>(); Module = scope.ServiceProvider.GetRequiredService<ModuleContext>();
          Engine = new ApprovalEngine(Core, registry, scope.ServiceProvider, caller, NullLogger<ApprovalEngine>.Instance);
       }
+      public IServiceProvider Services => _scope.ServiceProvider;
       public ApiCoreContext Core { get; }
       public ModuleContext Module { get; }
       public ApprovalEngine Engine { get; }

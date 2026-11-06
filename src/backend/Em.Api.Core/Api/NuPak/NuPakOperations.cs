@@ -1,5 +1,6 @@
 using Em.Shared;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Microsoft.EntityFrameworkCore;
 namespace Em.Api.Core.NuPak;
 
@@ -9,7 +10,7 @@ public sealed record NuPakActor(string Kind, string? Id, string Name, string? Ad
 public static class NuPakOperations
 {
    /// <summary>Whether a failed save was caused by a unique index violation.</summary>
-   public static bool IsUniqueConflict(DbUpdateException ex) => ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
+   public static bool IsUniqueConflict(DbUpdateException ex) => EmDbErrors.IsUniqueConflict(ex);
    /// <summary>Adds an audit trail row to the context; the caller saves it.</summary>
    public static void Audit(NuPakDbContext db, NuPakActor actor, string action, string? package = null,
       string? version = null, string result = "Success", string? detail = null, ta_NuPakFeed? feed = null) {

@@ -51,6 +51,9 @@ and drops it at the end.
   connection string without a database (for example `Host=localhost;Username=postgres;Password=...` or
   `Server=localhost;User ID=emtest;Password=...`); the user must be allowed to create databases. Without
   them those cases are skipped.
+- `EM_TEST_MYSQL` also runs `MySqlRuntimeTests` and `MySqlApprovalTests`, which install the real scripts from
+  `doc/sqlscript/mysql` into temporary databases and drop them afterwards. The server must use
+  `lower_case_table_names=2`.
 - If the server cannot be reached, the integration tests are skipped with a reason instead of failing.
 - A run that is killed can leave its database behind. Find leftovers with
   `SELECT name FROM sys.databases WHERE name LIKE 'EmSystem_IntegrationTest_%'` and drop them manually.

@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Em.Api.Core.Models;
 using Em.Api.Core.ObjectStorage;
 using Em.Api.Core.ObjectStorage.Volumes;
+using Em.Api.Shared;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,7 +19,10 @@ internal sealed class ObjectStoreFixture : IAsyncDisposable
 {
    private readonly List<ObjectStorageDbContext> _contexts = [];
 
-   private ObjectStoreFixture(string connectionString, string folder) {
+   private readonly bool _mySql;
+
+   private ObjectStoreFixture(string connectionString, string folder, bool mySql = false) {
+      _mySql = mySql;
       ConnectionString = connectionString;
       Folder = folder;
       Runtime = new ObjectStorageRuntime([new LocalFolderVolumeProvider(folder)]);
@@ -46,9 +50,17 @@ internal sealed class ObjectStoreFixture : IAsyncDisposable
             await ExecuteBatchesAsync(connection, await File.ReadAllTextAsync(Path.Combine(sql, "views", view + ".sql"), ct), ct);
       }
 
+      return await WithVolumesAsync(connectionString, false, ct);
+   }
+
+   /// <summary>The same fixture on a MySQL database that already holds the engine schema.</summary>
+   public static Task<ObjectStoreFixture> CreateOnMySqlAsync(string connectionString, CancellationToken ct) =>
+      WithVolumesAsync(connectionString, true, ct);
+
+   private static async Task<ObjectStoreFixture> WithVolumesAsync(string connectionString, bool mySql, CancellationToken ct) {
       var folder = Path.Combine(Path.GetTempPath(), "em-objectstore-it-" + Guid.NewGuid().ToString("N"));
       Directory.CreateDirectory(folder);
-      var fixture = new ObjectStoreFixture(connectionString, folder);
+      var fixture = new ObjectStoreFixture(connectionString, folder, mySql);
       var db = fixture.NewContext();
       var now = DateTime.UtcNow;
       fixture.VolumeA = Ulid.NewUlid().ToString();
@@ -74,7 +86,10 @@ internal sealed class ObjectStoreFixture : IAsyncDisposable
    }
 
    public ObjectStorageDbContext NewContext() {
-      var db = new ObjectStorageDbContext(new DbContextOptionsBuilder<ObjectStorageDbContext>().UseSqlServer(ConnectionString).Options);
+      var options = new DbContextOptionsBuilder<ObjectStorageDbContext>();
+      if (_mySql) options.UseEmProvider(DatabaseProvider.MySql, ConnectionString);
+      else options.UseSqlServer(ConnectionString);
+      var db = new ObjectStorageDbContext(options.Options);
       lock (_contexts) _contexts.Add(db);
       return db;
    }

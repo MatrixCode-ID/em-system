@@ -59,13 +59,15 @@ public sealed class ObjectStorageDbContext(DbContextOptions<ObjectStorageDbConte
          e.HasOne<ta_StoreVolume>().WithMany().HasForeignKey(p => p.cStoreVolumeId).OnDelete(DeleteBehavior.Restrict);
       });
       b.Entity<ta_StoreBucket>(e => {
-         e.Property(p => p.cStoreBucketName).IsUnicode(false).HasMaxLength(63).UseCollation("Latin1_General_100_BIN2");
+         var name = e.Property(p => p.cStoreBucketName).IsUnicode(false).HasMaxLength(63);
+         if (Database.IsSqlServer()) name.UseCollation("Latin1_General_100_BIN2");
          e.Property(p => p.cStoreBucketNote).HasMaxLength(500);
          e.HasIndex(p => p.cStoreBucketName).IsUnique();
          e.HasOne<ta_StorePolicy>().WithMany().HasForeignKey(p => p.cStorePolicyId).OnDelete(DeleteBehavior.Restrict);
       });
       b.Entity<ta_StoreObject>(e => {
-         e.Property(p => p.cStoreObjectKey).HasMaxLength(1024).UseCollation("Latin1_General_100_BIN2");
+         var key = e.Property(p => p.cStoreObjectKey).HasMaxLength(1024);
+         if (Database.IsSqlServer()) key.UseCollation("Latin1_General_100_BIN2");
          e.Property(p => p.cStoreObjectKeyHash).HasMaxLength(32).IsFixedLength();
          e.HasIndex(p => new { p.cStoreBucketId, p.cStoreObjectKeyHash }).IsUnique();
          e.HasOne<ta_StoreBucket>().WithMany().HasForeignKey(p => p.cStoreBucketId).OnDelete(DeleteBehavior.Restrict);

@@ -1,6 +1,7 @@
 using System.Data;
 using Em.Api.Core.Log.Audit;
 using Em.Api.Core.Models;
+using Em.Api.Shared;
 using Em.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -51,7 +52,7 @@ internal sealed class ManagedBucketProvisioner(ObjectStorageDbContext db, Object
       var now = DateTime.UtcNow;
       var createdPolicy = false;
       await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-      var bucket = await db.Buckets.FromSql($"SELECT * FROM dbo.ta_StoreBucket WITH (UPDLOCK, ROWLOCK) WHERE cStoreBucketName = {declaration.Name}")
+      var bucket = await db.Buckets.LockRows(EmRowLock.Row, (nameof(ta_StoreBucket.cStoreBucketName), declaration.Name))
          .AsTracking().SingleOrDefaultAsync(ct);
       ta_StorePolicy policy;
       if (bucket is null) {
