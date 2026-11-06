@@ -14,8 +14,8 @@ dengan satu claim BMM; jangan menambah alur kerja bisnis, claim per peran, atau 
 
 **Absensi dan jadwal (keputusan pengguna 2026-11-06):** penugasan jadwal, roster, dan log kehadiran adalah
 alur kerja, jadi **cakupan BMM tidak diperluas**. Engine hanya menyediakan interface dan fondasinya; UI alur
-kerja itu dibuat di host (ConNexa). Layout layarnya sementara tetap di
-`doc/design/BusinessModuleManager.figcraft` (page `30 Attendance`) sampai dipindahkan ke ConNexa. Panduan
+kerja itu dibuat di aplikasi host. Layout layarnya sementara tetap di
+`doc/design/BusinessModuleManager.figcraft` (page `30 Attendance`) sampai dipindahkan ke aplikasi host. Panduan
 engine BMM tidak diubah. Rincian: `doc/ideas/tenant-attendance-schedule.md`.
 
 Pengguna library yang membutuhkan fitur pada data ini membangun **modul "Wrapper"** sendiri (mis. HR,
