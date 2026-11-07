@@ -75,6 +75,13 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
 
 ## Attendance in Business Module Manager (2026-11-06)
 
+**Update 2026-11-07:** the four setup screens (Scheduling settings, Schedule templates, Attendance codes, Public
+holidays) are now real BMM pages; assignments, roster and log stay with the host. The frames below are a known gap:
+they have not been updated with the corrections the real UI follows. The drawer folder has four pages, not seven.
+Schedule templates gain the Code field and a break per weekday, lose the Effective result panel and the Enable text,
+and derive days off from 0 hours. Scheduling settings lose `New position` and `Deactivate`, gain Period days on the
+tenant level, can add and remove rotation steps, and offer Built-in as the tenant mode.
+
 Page `30 Attendance` of `BusinessModuleManager.figcraft`: seven screens, Light and Dark, in a new drawer folder
 **Attendance (7)** (Organization and People are collapsed in these frames). The BMM scope rule (setup only)
 is **not** widened: assignments, roster and attendance log are workflows, so the engine provides the

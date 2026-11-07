@@ -1,7 +1,7 @@
 # Absensi dan jadwal kerja employee per tenant
 
 - Tanggal: 2026-11-05
-- Status: jadi plan untuk tahap setup: [bmm-attendance-setup.md](../../plan/unexecuted/bmm-attendance-setup.md). Schedule assignments, Roster, dan Attendance log masih diskusi.
+- Status: tahap setup sudah dieksekusi: [bmm-attendance-setup.md](../../plan/executed/bmm-attendance-setup.md). Schedule assignments, Roster, dan Attendance log masih diskusi.
 - Latar: kelanjutan employee per tenant (lihat [tenant-position.md](tenant-position.md)). Pengguna membahas
   **engine** untuk absensi dan scheduling employee, dengan contoh pemakaian di **manufacturing** (regu, shift
   bergilir, pabrik yang berjalan terus).

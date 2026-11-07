@@ -19,7 +19,7 @@ public class BusinessModuleManagerTests
       Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("tenantTree"));
       Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("pageTree"));
       Assert.True(view.Vm.IsTenantsTab);
-      Assert.Equal(["Tenants", "Departments", "Positions", "Employees"], view.Vm.Tabs.Select(t => t.Title));
+      Assert.Equal(["Tenants", "Departments", "Positions", "Employees", "Scheduling settings", "Schedule templates", "Attendance codes", "Public holidays"], view.Vm.Tabs.Select(t => t.Title));
       Assert.False(view.Vm.CanBrowse);
    }
 
@@ -27,7 +27,7 @@ public class BusinessModuleManagerTests
    public void PageDrawerListsTheExistingPagesInFolders() {
       var vm = new BusinessModuleManagerVm(new StubService());
 
-      Assert.Equal(["Organization (3)", "People (1)"], vm.PageNodes.Select(n => n.Caption));
+      Assert.Equal(["Organization (3)", "People (1)", "Attendance (4)"], vm.PageNodes.Select(n => n.Caption));
       Assert.Equal(["Tenants", "Departments", "Positions"], vm.PageNodes[0].Children.Select(n => n.Title));
       Assert.Equal(["Employees"], vm.PageNodes[1].Children.Select(n => n.Title));
       Assert.All(vm.PageNodes, n => Assert.True(n.IsExpanded));
@@ -211,7 +211,7 @@ public class BusinessModuleManagerTests
       Assert.Equal(expected ? 1 : 0, listed);
    }
 
-   private sealed class StubService : ITenantServices
+   internal sealed class StubService : ITenantServices
    {
       public const string Alpha = "01ALPHA000000000000000000A";
       public const string Beta = "01BETA0000000000000000000B";

@@ -1,15 +1,17 @@
 # Business Module Manager
 
 The Business Module Manager provides a small shared tenant directory, a department tree and a position list per
-tenant, and employee records connecting a person to a tenant. It is available to administrators and users with
+tenant, employee records connecting a person to a tenant, and the setup of attendance: schedule templates, scheduling
+settings, attendance codes and public holidays. It is available to administrators and users with
 `core.business:Business Module Manager Access`.
 
 ## Scope and wrapper modules
 
 The Business Module Manager is a **setup tool for basic information only**: tenants, departments, positions and
-employees with their basic contact data (full name, type, communications, addresses, attachments). It
-stays one administrator tool under Tools behind one claim. It is not where business workflows, per-role
-claims or Apps menu entries live.
+employees with their basic contact data (full name, type, communications, addresses, attachments), and the four
+attendance setup pages. It stays one administrator tool under Tools behind one claim. It is not where business
+workflows, per-role claims or Apps menu entries live. Schedule assignments, the roster and the attendance log are
+workflows, so they belong to the host application.
 
 A library consumer that needs features on top of this data builds its own **wrapper module** (for example
 a personnel, customer or vendor module). The wrapper:
@@ -33,13 +35,19 @@ the returned key and stamp. `WriteTo` sends the last-read stamp, not the server 
 
 Call `builder.AddBusinessModuleManager()` in the API host. The example host enables it by default;
 `modules.business: false` (or `EM_MODULE_BUSINESS=false`) disables it. WPF registers the navigation and all
-three client proxies automatically; its Tools entry follows the server claim catalogue. MAUI has proxies
+client proxies automatically; its Tools entry follows the server claim catalogue. MAUI has proxies
 but no manager screen. No business menu paths or document enablers are registered.
 
 For SQL Server, install `doc/sqlscript/mssql/sets/000-ulid.sql`, then `tables/010-core.sql`,
 `tables/080-tenant.sql`, `tables/090-tenant-org.sql`, then `views/vi_Tenant.sql`, `views/vi_TenantDept.sql`,
-`views/vi_TenantPosition.sql` and `views/vi_TenantEmp.sql`. MySQL has the same files under `doc/sqlscript/mysql`.
+`views/vi_TenantPosition.sql` and `views/vi_TenantEmp.sql`. Attendance setup adds `tables/110-attendance.sql` and
+`views/vi_TenantSchedTemplate.sql`, `views/vi_TenantSchedSetting.sql`, `views/vi_TenantAttCode.sql` and
+`views/vi_PublicHoliday.sql`. MySQL has the same files under `doc/sqlscript/mysql`.
 The numbered table scripts are re-runnable and have no tenant or organization seed. There is no startup schema check.
+
+**An existing installation must run the five attendance scripts before starting the new API.** The new tables are not
+checked at startup, so without them the first call to an attendance page fails. No update script is needed: every
+table is new, and `tables/110-attendance.sql` can run again safely.
 
 An installation from before positions runs `updates/20261107-TenantPosition.sql` and then the two views, before
 starting the new API. The update moves any employee position text into positions of the tenant, with the first 50
@@ -72,7 +80,30 @@ same transaction. Unsaved changes in the editor are confirmed before navigation.
 available for correction.
 
 Pages are switched from a left drawer with a tree that the module lists itself: **Organization** holds Tenants,
-Departments and Positions, **People** holds Employees. The drawer can be closed to a narrow rail with its toggle button.
+Departments and Positions, **People** holds Employees, **Attendance** holds the four setup pages below. The drawer can
+be closed to a narrow rail with its toggle button.
+
+**Schedule templates** starts with a tenant selector and lists working-hour patterns. A template has a short **Code**
+(up to 10 characters, unique per tenant), a name, a start time and a break, plus hours for each of the seven weekdays.
+A weekday means the day a shift starts, so a shift that crosses midnight belongs to the day it started. A day with 0
+hours is a day off; a short last day is one row with its own break, which is empty to use the template break. The end
+time is calculated, never stored. **Duplicate** copies a template, adding " copy" to the name and a number to the code.
+Deactivate stops offering a template; settings that use it keep it, and Scheduling settings warns about it.
+
+**Scheduling settings** shows the tenant with its departments as a tree. Each level has **Enable** and a **Default
+schedule**: one template, or a rotation of at least two templates with **Weeks per step** and **Day 1**. Below the
+tenant, Inherit follows the level above, and **Use inherited** sets a department back to it. The tenant level starts
+Disabled, offers Built-in instead of Inherit, and holds **Period days**. A rotation belongs to its setting; it is not
+a reusable list. The Effective result shows the saved values, so save a change to see what it does below.
+
+**Attendance codes** works like Positions: a list per tenant, with **Copy from tenant**, a category and a sort order.
+The engine keeps the list; what a code means for payroll belongs to a module.
+
+**Public holidays** is one calendar for every tenant. A **Fixed** entry is a month and day that applies every year,
+29 February included. A **Dated** entry is one date, entered per year: the engine calculates no lunar calendar. A year
+without dated entries shows a warning, and **Copy dated from year** copies them with the same month and day, skipping
+entries already there and 29 February into a non-leap year. The collective leave marker has no behaviour. Remove hides
+an entry from the calendar; nothing is deleted.
 
 Employee editing opens in a dedicated **Employee Editor** navigation. The Employees page contains a full-width
 list with New employee and Open actions; double-click, Enter and the row context menu open the same editor.
@@ -106,7 +137,7 @@ Saving preserves other entries and commits employment, type, entries and default
 
 ## Service actions
 
-The tenant, department, position, employee and attachment actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
+The tenant, department, position, employee, attachment and attendance setup actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
 engine administrator bypass. Inject these interfaces on the server or resolve the shared client proxies.
 
 | Interface | Action | Behavior |
@@ -119,6 +150,21 @@ engine administrator bypass. Inject these interfaces on the server or resolve th
 | `ITenantPositionServices` | `GetVi_TenantPositions(tenantId)` | All positions of the tenant, ordered by name |
 | | `PostGetTa_TenantPosition_New` / `PostGetTa_TenantPosition_Update` | Create or update a position; the state deactivates it |
 | | `PostGetMeta_TenantPosition_Copy(copy)` | Copy active positions to another tenant, skipping existing codes; returns the rows created |
+| `ITenantSchedTemplateServices` | `GetVi_TenantSchedTemplates(tenantId)` | All templates, ordered by order and name |
+| | `GetMeta_TenantSchedTemplate(templateId)` | Template with its seven days |
+| | `PostGetMeta_TenantSchedTemplate_Save(set)` | Create or update a template and its days in one transaction |
+| | `PostGetMeta_TenantSchedTemplate_Duplicate(templateId)` | Copy as active; the name gets " copy", the code a number |
+| `ITenantSchedSettingServices` | `GetMeta_TenantSchedSettings(tenantId)` | Tenant and departments: own values, steps and effective result |
+| | `GetMeta_TenantSchedSetting_Effective(tenantId, deptId)` | Effective result of one level; empty `deptId` is the tenant |
+| | `PostGetMeta_TenantSchedSetting_Save(save)` | Create or update a level and its rotation steps |
+| | `PostGetMeta_TenantSchedSetting_UseInherited(tenantId, deptId, ustamp)` | Set a department back to inherit, keeping its row |
+| `ITenantAttCodeServices` | `GetVi_TenantAttCodes(tenantId)` | All codes, ordered by order and name |
+| | `PostGetTa_TenantAttCode_New` / `PostGetTa_TenantAttCode_Update` | Create or update a code; the state deactivates it |
+| | `PostGetMeta_TenantAttCode_Copy(copy)` | Copy active codes to another tenant, skipping existing codes |
+| `IPublicHolidayServices` | `GetVi_PublicHolidays(year)` | Active fixed entries plus the active dated entries of that year |
+| | `PostGetTa_PublicHoliday_New` / `PostGetTa_PublicHoliday_Update` | Create or update an entry; the state removes it |
+| | `PostGetMeta_PublicHoliday_CopyDated(fromYear, toYear)` | Copy dated entries; returns the rows created and the count skipped |
+| | `GetMeta_PublicHoliday_HasDated(year)` | Whether the year has active dated entries |
 | `IContactAttachmentServices` | `GetMeta_ContactAttachments(contactId)` | Active attachments with file name, type, size and date from object storage |
 | | `PostGetMeta_ContactAttachment_Add(upload, content)` | Store a file and add its attachment |
 | | `PostGetMeta_ContactAttachment_Replace(upload, content)` | Add a version to the file, keeping name, kind and note |
@@ -200,14 +246,50 @@ its own operation. See [In-process calls](engine-in-process-calls.md). A person 
 accounts; a module requiring exactly one signer must resolve that ambiguity itself. This stage does not
 connect the lookups to approval or transactions.
 
+## Effective schedule
+
+A level has two inherited values. **Enable** comes from the nearest level with a non-zero value, the schedule from the
+nearest level with a non-zero mode, so a department can take one from its own row and the other from above. A
+sub-department walks its parent chain before the tenant. Nothing is stored: the result is calculated on every read and
+names the level each value came from.
+
+| Situation | Result |
+| --- | --- |
+| A tenant without a setting row | Disabled |
+| Disabled at the nearest level that sets Enable | `Enabled` is false; the schedule values are not in use |
+| Enabled, and no level sets a schedule | The built-in office schedule: 08:00, 60 minutes break, 8 hours Monday to Friday, weekend off |
+
+The built-in schedule lives in code, in `TenantSchedBuiltIn`, and no template row is created for it. `PeriodDays` always
+comes from the tenant level and defaults to 14.
+
+A wrapper reads the result in-process. These are direct calls, so the wrapper authorizes its own operation:
+
+```csharp
+var effective = await settings.GetMeta_TenantSchedSetting_Effective(tenantId, deptId);
+if (!effective.Enabled) return;                         // Not scheduled.
+var step = effective.StepOn(workDate);                  // Rotation step on a date; null before Day 1.
+var templateId = step?.TemplateId ?? effective.TemplateId;
+if (templateId is null) { /* TenantSchedBuiltIn applies when Mode is BuiltIn. */ }
+```
+
+A rotation is counted from Day 1: each step lasts `StepWeeks` weeks and the cycle repeats. Dates before Day 1 have no
+rotation result. Read hours from `GetMeta_TenantSchedTemplate`, using the weekday of the date the shift starts.
+
 ## Limits
 
 This directory does not select a session's active tenant, scope claims by tenant, or maintain user tenant
 membership. Each employee has one optional department. Hiring/leaving dates, additional personal data, department
 history, multiple appointments, custom employment policy, bulk import and legacy mappings belong to a
-consumer's personnel module. There is no department object browser or MAUI screen.
+consumer's personnel module. There is no department object browser or MAUI screen. Attendance setup has no scheduling
+per employee, lateness, overtime, pay or leave rules, department permissions or device integration. Schedule
+assignments, the roster and the attendance log do not exist yet.
 
 ## Maintainer notes
+
+`MySqlAttendanceSetupTests` (MySQL) covers templates, settings, inheritance, rotation steps, codes, holidays, stale
+stamps and tenant boundaries; `BusinessAttendanceTests` covers the four pages, the drawer, the dialog and the spin box
+without rendering. The SQL Server scripts are proved by installing them twice on a local database, not by a full test
+run.
 
 `TenantPositionServicesTests` (SQL Server) and `MySqlTenantOrgTests` (MySQL) cover positions, copying, the composite
 foreign key, full name, head changes and attachments, with an in-memory store for files. `BusinessPositionTests` covers

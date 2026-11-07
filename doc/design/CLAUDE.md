@@ -26,3 +26,8 @@ Navigasi halaman BMM memakai left drawer berisi TreeView yang diisi manual oleh 
 Keputusan pengguna 2026-11-07: drawer tree diterapkan ke BMM. Pada hari yang sama pengguna meminta menerapkan
 Positions, Contact dan Head of department di Employee Editor, serta Attachments; page `30 Attendance` tetap bukan
 perintah implementasi.
+
+Keputusan pengguna 2026-11-07: empat layar setup page `30 Attendance` (Scheduling settings, Schedule templates,
+Attendance codes, Public holidays) diterapkan langsung sebagai UI asli di BMM, dengan koreksi pada plan
+`plan/executed/bmm-attendance-setup.md`. Frame belum diperbarui mengikuti koreksi itu; tiga layar lainnya tetap di
+page tersebut sampai dipindah ke desain host.

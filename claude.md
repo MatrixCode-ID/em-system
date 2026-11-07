@@ -13,6 +13,9 @@ Positions) dan People (Employees). Positions, Head of department, Attachments da
 2026-11-07 atas permintaan pengguna, dengan default keputusan yang dicatat di `doc/ideas/tenant-position.md` dan
 `doc/ideas/contact-attachments.md`. Absensi dan jadwal tetap di luar BMM.
 
+Keputusan pengguna 2026-11-07 menggantikan kalimat terakhir untuk tahap setup: drawer BMM mendapat folder ketiga
+**Attendance** berisi Scheduling settings, Schedule templates, Attendance codes dan Public holidays.
+
 ## Cakupan BMM dan modul wrapper (keputusan pengguna 2026-11-05)
 
 Business Module Manager (BMM) **hanya untuk setup dan update info dasar**: tenant, department, posisi,
@@ -24,6 +27,12 @@ alur kerja, jadi **cakupan BMM tidak diperluas**. Engine hanya menyediakan inter
 kerja itu dibuat di aplikasi host. Layout layarnya sementara tetap di
 `doc/design/BusinessModuleManager.figcraft` (page `30 Attendance`) sampai dipindahkan ke aplikasi host. Panduan
 engine BMM tidak diubah. Rincian: `doc/ideas/tenant-attendance-schedule.md`.
+
+**Setup absensi di BMM (keputusan pengguna 2026-11-07, merevisi catatan 2026-11-06):** empat layar setup, yaitu
+Scheduling settings, Schedule templates, Attendance codes dan Public holidays, adalah setup info dasar dan masuk BMM
+di bawah satu claim BMM, dengan layanan dan skema dual di engine. Penugasan jadwal, roster, dan log kehadiran tetap
+alur kerja di aplikasi host. Panduan engine BMM mencatat keempat layar ini; plan:
+`plan/executed/bmm-attendance-setup.md`.
 
 Pengguna library yang membutuhkan fitur pada data ini membangun **modul "Wrapper"** sendiri (mis. HR,
 Customer, Vendor). Wrapper mendefinisikan claim yang proper untuk perannya, mendaftarkan navigasinya
