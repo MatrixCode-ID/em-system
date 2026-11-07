@@ -131,10 +131,14 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
          new BusinessPageNode(this, "Positions", "Position list per tenant", Tabs[2])));
       PageNodes.Add(new BusinessPageNode(this, "People", "Employment records", null,
          new BusinessPageNode(this, "Employees", "Employees per tenant", Tabs[3])));
+      PageNodes.Add(new BusinessPageNode(this, "Attendance", "Schedules and calendars", null,
+         new BusinessPageNode(this, "Scheduling settings", "Defaults per level", Tabs[4]),
+         new BusinessPageNode(this, "Schedule templates", "Hours per weekday", Tabs[5]),
+         new BusinessPageNode(this, "Attendance codes", "Status codes per tenant", Tabs[6]),
+         new BusinessPageNode(this, "Public holidays", "Global calendar", Tabs[7])));
       SyncPageSelection();
-      Departments.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
-      Positions.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
-      Employees.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
+      foreach (MvvmModelBase page in (MvvmModelBase[])[Departments, Positions, Employees, Schedules, Templates, AttCodes, Holidays])
+         page.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
       RegisterCommand(nameof(ToggleDrawerCommand), ToggleDrawerCommand, ToggleDrawerCommandAllowed);
       RegisterCommand(nameof(NewTenantCommand), NewTenantCommand, NewTenantCommandAllowed);
       RegisterCommand(nameof(NewChildCommand), NewChildCommand, NewChildCommandAllowed);
@@ -145,8 +149,9 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
 
    #region Pages
 
-   /// <summary>Pages of the screen. Tenants, departments, positions and employees.</summary>
-   public ObservableCollection<BusinessTab> Tabs { get; } = [new(TenantsTab, "Tenants"), new("departments", "Departments"), new("positions", "Positions"), new("employees", "Employees")];
+   /// <summary>Pages of the screen.</summary>
+   public ObservableCollection<BusinessTab> Tabs { get; } = [new(TenantsTab, "Tenants"), new("departments", "Departments"), new("positions", "Positions"), new("employees", "Employees"),
+      new("sched-settings", "Scheduling settings"), new("sched-templates", "Schedule templates"), new("att-codes", "Attendance codes"), new("holidays", "Public holidays")];
 
    /// <summary>Folders of the page drawer. The module lists them itself; they do not come from the menu.</summary>
    public ObservableCollection<BusinessPageNode> PageNodes { get; } = [];
@@ -171,8 +176,13 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
             else { RemoveDraft(); SelectedNode = null; ClearEditor(); }
          }
          Departments.DiscardChanges(); Positions.DiscardChanges(); Employees.DiscardChanges();
+         Schedules.DiscardChanges(); Templates.DiscardChanges(); AttCodes.DiscardChanges(); Holidays.DiscardChanges();
          Set(value); NotifyChanged(nameof(IsTenantsTab)); NotifyChanged(nameof(IsDepartmentsTab)); NotifyChanged(nameof(IsPositionsTab)); NotifyChanged(nameof(IsEmployeesTab));
+         NotifyChanged(nameof(IsSchedSettingsTab)); NotifyChanged(nameof(IsSchedTemplatesTab)); NotifyChanged(nameof(IsAttCodesTab)); NotifyChanged(nameof(IsHolidaysTab));
          SyncPageSelection();
+         // Templates may have changed on their own page; the calendar has no tenant choice to start its first load.
+         if (IsSchedSettingsTab && Schedules.SelectedTenant is not null) Schedules.Loading = Schedules.ReloadAsync();
+         if (IsHolidaysTab && !Holidays.IsLoaded) Holidays.Loading = Holidays.ReloadAsync();
       }
    }
 
@@ -343,6 +353,10 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
       if (IsDepartmentsTab) return Departments.RefreshCommand();
       if (IsPositionsTab) return Positions.RefreshCommand();
       if (IsEmployeesTab) return Employees.RefreshCommand();
+      if (IsSchedSettingsTab) return Schedules.RefreshCommand();
+      if (IsSchedTemplatesTab) return Templates.RefreshCommand();
+      if (IsAttCodesTab) return AttCodes.RefreshCommand();
+      if (IsHolidaysTab) return Holidays.RefreshCommand();
       if (IsDirty && ConfirmDiscard?.Invoke() == false) return Task.CompletedTask;
       return ReloadAsync();
    }
@@ -354,10 +368,14 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
       if (Service is not { } service) return;
       _draft = null;
       ApplyList(await service.GetVi_Tenants(), SelectedNode is { IsDraft: false } node ? node.Tenant.cTenantId : null);
-      Departments.EmApp = Positions.EmApp = Employees.EmApp = EmApp;
-      Departments.ConfirmDiscard = Positions.ConfirmDiscard = Employees.ConfirmDiscard = ConfirmDiscard;
+      Departments.EmApp = Positions.EmApp = Employees.EmApp = Schedules.EmApp = Templates.EmApp = AttCodes.EmApp = Holidays.EmApp = EmApp;
+      Departments.ConfirmDiscard = Positions.ConfirmDiscard = Employees.ConfirmDiscard = Schedules.ConfirmDiscard = Templates.ConfirmDiscard = AttCodes.ConfirmDiscard = Holidays.ConfirmDiscard = ConfirmDiscard;
       Departments.TenantChoices.Clear(); Positions.TenantChoices.Clear(); Employees.TenantChoices.Clear();
-      foreach (var tenant in Tenants) { Departments.TenantChoices.Add(tenant); Positions.TenantChoices.Add(tenant); Employees.TenantChoices.Add(tenant); }
+      Schedules.TenantChoices.Clear(); Templates.TenantChoices.Clear(); AttCodes.TenantChoices.Clear();
+      foreach (var tenant in Tenants) {
+         Departments.TenantChoices.Add(tenant); Positions.TenantChoices.Add(tenant); Employees.TenantChoices.Add(tenant);
+         Schedules.TenantChoices.Add(tenant); Templates.TenantChoices.Add(tenant); AttCodes.TenantChoices.Add(tenant);
+      }
       Status = "";
    });
 

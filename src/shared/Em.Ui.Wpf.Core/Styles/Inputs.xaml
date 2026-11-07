@@ -278,6 +278,65 @@
       </Setter>
    </Style>
 
+   <!-- Number field that may hold decimals or stay empty: the same shape as the whole-number field above. -->
+   <Style x:Key="fieldSpinBoxStyle" TargetType="controls:SpinBox" BasedOn="{StaticResource fieldBoxStyle}">
+      <Setter Property="Padding" Value="14,0,4,0" />
+      <Setter Property="Template">
+         <Setter.Value>
+            <ControlTemplate TargetType="controls:SpinBox">
+               <Border x:Name="shape"
+                       CornerRadius="10"
+                       Background="{TemplateBinding Background}"
+                       BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}">
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                     </Grid.ColumnDefinitions>
+                     <ScrollViewer x:Name="PART_ContentHost"
+                                   Focusable="False"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                   HorizontalScrollBarVisibility="Hidden"
+                                   VerticalScrollBarVisibility="Hidden" />
+                     <StackPanel Grid.Column="1" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <RepeatButton Style="{StaticResource numericStepButtonStyle}"
+                                      ToolTip="Increase"
+                                      Command="{x:Static controls:SpinBox.IncreaseCommand}"
+                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                           <fa:FontAwesome Icon="Solid_ChevronUp" />
+                        </RepeatButton>
+                        <RepeatButton Style="{StaticResource numericStepButtonStyle}"
+                                      ToolTip="Decrease"
+                                      Command="{x:Static controls:SpinBox.DecreaseCommand}"
+                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                           <fa:FontAwesome Icon="Solid_ChevronDown" />
+                        </RepeatButton>
+                     </StackPanel>
+                  </Grid>
+               </Border>
+               <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource outlineStrongBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{DynamicResource themeAccentBrush}" />
+                  </Trigger>
+                  <Trigger Property="IsEnabled" Value="False">
+                     <Setter Property="Opacity" Value="0.4" />
+                  </Trigger>
+                  <Trigger Property="shared:FieldValidation.HasError" Value="True">
+                     <Setter TargetName="shape" Property="BorderBrush"
+                             Value="{StaticResource dangerBrush}" />
+                  </Trigger>
+               </ControlTemplate.Triggers>
+            </ControlTemplate>
+         </Setter.Value>
+      </Setter>
+   </Style>
+
    <!-- ============================================================
         DROP DOWN
         A plain ComboBox with its chrome replaced, shaped like the text

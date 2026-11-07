@@ -25,6 +25,15 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
          var dialog = new CopyPositionsDialog(service, target, positions.TenantChoices, positions.Rows) { Owner = Window.GetWindow(this) ?? app.MainWindow };
          return dialog.ShowDialog() == true ? dialog.Vm.Result : null;
       };
+      Vm.AttCodes.PickCopy = () => {
+         var codes = Vm.AttCodes;
+         if (codes.SelectedTenant is not { } target) return null;
+         var service = app.ServiceProvider.GetRequiredService<ITenantAttCodeServices>();
+         var dialog = new CopyAttCodesDialog(service, target, codes.TenantChoices, codes.Rows) { Owner = Window.GetWindow(this) ?? app.MainWindow };
+         return dialog.ShowDialog() == true ? dialog.Vm.Result : null;
+      };
+      Vm.Holidays.ConfirmRemove = holiday => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
+         $"Remove {holiday.cPublicHolidayName} from the calendar?", "Remove Holiday") == MessageBoxResult.Yes;
       Vm.Employees.OpenEditor = payload => Vm.NavigationEntry?.NavigateTo(EmApp.EmployeeEditorNavigationName, payload) ?? Task.CompletedTask;
    }
 

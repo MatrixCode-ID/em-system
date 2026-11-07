@@ -359,19 +359,37 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
 public sealed partial class BusinessModuleManagerVm
 {
    /// <summary>Checks all editors before leaving the screen.</summary>
-   public bool CanLeave() => (!IsDirty || ConfirmDiscard?.Invoke() != false) && Departments.CanLeave() && Positions.CanLeave() && Employees.CanLeave();
+   public bool CanLeave() => (!IsDirty || ConfirmDiscard?.Invoke() != false) && Departments.CanLeave() && Positions.CanLeave() && Employees.CanLeave() &&
+      Schedules.CanLeave() && Templates.CanLeave() && AttCodes.CanLeave() && Holidays.CanLeave();
    /// <summary>Whether tabs can be switched during work.</summary>
-   public bool CanSwitchTabs => IsNotBusy && Departments.IsNotBusy && Positions.IsNotBusy && Employees.IsNotBusy;
+   public bool CanSwitchTabs => IsNotBusy && Departments.IsNotBusy && Positions.IsNotBusy && Employees.IsNotBusy &&
+      Schedules.IsNotBusy && Templates.IsNotBusy && AttCodes.IsNotBusy && Holidays.IsNotBusy;
    /// <summary>Department tab state.</summary>
    public BusinessModuleManagerDeptVm Departments { get; } = new();
    /// <summary>Position tab state.</summary>
    public BusinessModuleManagerPositionVm Positions { get; } = new();
    /// <summary>Employee tab state.</summary>
    public BusinessModuleManagerEmpVm Employees { get; } = new();
+   /// <summary>Scheduling settings page state.</summary>
+   public BusinessModuleManagerSchedSettingVm Schedules { get; } = new();
+   /// <summary>Schedule templates page state.</summary>
+   public BusinessModuleManagerSchedTemplateVm Templates { get; } = new();
+   /// <summary>Attendance codes page state.</summary>
+   public BusinessModuleManagerAttCodeVm AttCodes { get; } = new();
+   /// <summary>Public holidays page state.</summary>
+   public BusinessModuleManagerHolidayVm Holidays { get; } = new();
    /// <summary>Whether departments are shown.</summary>
    public bool IsDepartmentsTab => ActiveTab.Key == "departments";
    /// <summary>Whether positions are shown.</summary>
    public bool IsPositionsTab => ActiveTab.Key == "positions";
    /// <summary>Whether employees are shown.</summary>
    public bool IsEmployeesTab => ActiveTab.Key == "employees";
+   /// <summary>Whether scheduling settings are shown.</summary>
+   public bool IsSchedSettingsTab => ActiveTab.Key == "sched-settings";
+   /// <summary>Whether schedule templates are shown.</summary>
+   public bool IsSchedTemplatesTab => ActiveTab.Key == "sched-templates";
+   /// <summary>Whether attendance codes are shown.</summary>
+   public bool IsAttCodesTab => ActiveTab.Key == "att-codes";
+   /// <summary>Whether public holidays are shown.</summary>
+   public bool IsHolidaysTab => ActiveTab.Key == "holidays";
 }

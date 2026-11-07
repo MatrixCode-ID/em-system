@@ -814,6 +814,544 @@
             </Grid>
             <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
          </Grid>
+         <!-- Scheduling settings -->
+         <Grid Grid.Column="1" DataContext="{Binding Schedules}" Visibility="{Binding DataContext.IsSchedSettingsTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <WrapPanel Margin="22,12,22,10">
+               <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+               <ComboBox Width="230" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" ItemTemplate="{StaticResource tenantChoiceTemplate}" AutomationProperties.Name="Tenant"/>
+               <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+               <Button Margin="0,0,8,4" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[UseInheritedCommand]}" ToolTip="Set this department back to inherit from the level above. Its row is kept." ToolTipService.ShowOnDisabled="True">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowTurnUp" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Use inherited" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+            </WrapPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="TENANT AND DEPARTMENTS" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
+                     <TreeView x:Name="schedLevelTree" Grid.Row="1" Style="{StaticResource surfaceTreeViewStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="Transparent" BorderThickness="0" Padding="12,0,12,8" ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Tenant and departments">
+                        <TreeView.Resources>
+                           <HierarchicalDataTemplate DataType="{x:Type local:SchedLevelNode}" ItemsSource="{Binding Children}">
+                              <Grid MinHeight="38" Background="Transparent">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel Margin="4,0,8,0" VerticalAlignment="Center">
+                                    <TextBlock FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Row.Name}"><Run Text="{Binding Row.Name, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding LevelCaption, Mode=OneWay}" FontWeight="Normal" FontSize="11"/></TextBlock>
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" ToolTip="{Binding Row.Effective.Text}"/>
+                                 </StackPanel>
+                                 <Border Grid.Column="1" Style="{StaticResource chipMutedStyle}" Padding="8,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding IsDisabled, Converter={StaticResource boolVisibility}}">
+                                    <TextBlock Text="DISABLED"/>
+                                 </Border>
+                              </Grid>
+                           </HierarchicalDataTemplate>
+                        </TreeView.Resources>
+                     </TreeView>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="{Binding EditorCaption}" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Choose a tenant, then select a level in the tree." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <StackPanel Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Whether scheduling applies. Below the tenant, Inherit follows the level above. A tenant without a setting is disabled.">
+                              <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Enable" Style="{StaticResource fieldLabelStyle}"/>
+                                 <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                              </StackPanel>
+                              <ComboBox x:Name="schedEnablePicker" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding EnableOptions}" SelectedItem="{Binding EditEnable, Mode=TwoWay}" AutomationProperties.Name="Enable">
+                                 <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
+                              </ComboBox>
+                           </StackPanel>
+                           <StackPanel Margin="0,12,0,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="The schedule of this level. On the tenant, Built-in is 08:00, 60 minutes break and 8 hours Monday to Friday. Below the tenant, Inherit follows the level above.">
+                              <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Default schedule" Style="{StaticResource fieldLabelStyle}"/>
+                                 <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                              </StackPanel>
+                              <ComboBox x:Name="schedModePicker" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding ModeOptions}" SelectedItem="{Binding EditMode, Mode=TwoWay}" AutomationProperties.Name="Default schedule">
+                                 <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
+                              </ComboBox>
+                           </StackPanel>
+                           <StackPanel Margin="0,12,0,0" Visibility="{Binding IsTemplateMode, Converter={StaticResource boolVisibility}}">
+                              <TextBlock Text="Template" Style="{StaticResource fieldLabelStyle}"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TemplateOptions}" SelectedItem="{Binding EditTemplate, Mode=TwoWay}" AutomationProperties.Name="Template">
+                                 <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+                              </ComboBox>
+                           </StackPanel>
+                           <StackPanel Margin="0,14,0,0" Visibility="{Binding IsRotationMode, Converter={StaticResource boolVisibility}}">
+                              <TextBlock Text="ROTATION" Style="{StaticResource sectionCaptionStyle}"/>
+                              <ItemsControl x:Name="schedSteps" Margin="0,8,0,0" ItemsSource="{Binding Steps}" Focusable="False">
+                                 <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                       <Grid Margin="0,0,0,8">
+                                          <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="60"/>
+                                             <ColumnDefinition Width="*"/>
+                                             <ColumnDefinition Width="Auto"/>
+                                          </Grid.ColumnDefinitions>
+                                          <TextBlock Text="{Binding Caption}" VerticalAlignment="Center"/>
+                                          <ComboBox Grid.Column="1" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding DataContext.TemplateOptions, ElementName=schedSteps}" SelectedItem="{Binding Template, Mode=TwoWay}" AutomationProperties.Name="{Binding Caption}">
+                                             <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+                                          </ComboBox>
+                                          <Button Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource rowActionButtonStyle}" Command="{Binding DataContext.Commands[RemoveStepCommand], ElementName=schedSteps}" CommandParameter="{Binding}" ToolTip="Remove this step" AutomationProperties.Name="Remove step">
+                                             <fa:FontAwesome Icon="Solid_TrashCan"/>
+                                          </Button>
+                                       </Grid>
+                                    </DataTemplate>
+                                 </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                              <Button HorizontalAlignment="Left" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddStepCommand]}">
+                                 <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Add step" VerticalAlignment="Center"/></StackPanel>
+                              </Button>
+                              <Grid Margin="0,12,0,0">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="How many weeks each step lasts, at least 1.">
+                                    <StackPanel Orientation="Horizontal">
+                                       <TextBlock Text="Weeks per step" Style="{StaticResource fieldLabelStyle}"/>
+                                       <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                    </StackPanel>
+                                    <controls:SpinBox x:Name="schedStepWeeks" Style="{StaticResource fieldSpinBoxStyle}" Minimum="1" Maximum="52" AllowEmpty="True" Value="{Binding EditStepWeeks}" AutomationProperties.Name="Weeks per step"/>
+                                 </StackPanel>
+                                 <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="The date step 1 starts. Dates before it have no rotation result.">
+                                    <StackPanel Orientation="Horizontal">
+                                       <TextBlock Text="Day 1 (cycle start)" Style="{StaticResource fieldLabelStyle}"/>
+                                       <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                    </StackPanel>
+                                    <DatePicker Style="{StaticResource fieldDatePickerStyle}" SelectedDate="{Binding EditCycleStart, Mode=TwoWay}" AutomationProperties.Name="Day 1"/>
+                                 </StackPanel>
+                              </Grid>
+                           </StackPanel>
+                           <StackPanel Margin="0,12,0,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Length of an assignment period, from 1 to 366 days. Empty means 14 days. It is set on the tenant only." Visibility="{Binding IsTenantLevel, Converter={StaticResource boolVisibility}}">
+                              <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Period days" Style="{StaticResource fieldLabelStyle}"/>
+                                 <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                              </StackPanel>
+                              <controls:SpinBox x:Name="schedPeriodDays" Style="{StaticResource fieldSpinBoxStyle}" Minimum="1" Maximum="366" AllowEmpty="True" Value="{Binding EditPeriodDays}" Tag="14" AutomationProperties.Name="Period days"/>
+                           </StackPanel>
+                           <TextBlock Text="EFFECTIVE RESULT" Style="{StaticResource sectionCaptionStyle}" Margin="0,16,0,0"/>
+                           <TextBlock Text="{Binding EffectiveText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                           <TextBlock Text="{Binding TemplateWarning}" Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="{Binding HasTemplateWarning, Converter={StaticResource boolVisibility}}"/>
+                           <TextBlock Text="The lowest level that sets a value wins. A sub-department inherits from its parent departments before the tenant. The result shows the saved values." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
+         <!-- Schedule templates -->
+         <Grid Grid.Column="1" DataContext="{Binding Templates}" Visibility="{Binding DataContext.IsSchedTemplatesTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Margin="22,12,22,10">
+               <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewTemplateCommand]}" ToolTip="Start a new template in this tenant">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New template" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <WrapPanel>
+                  <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" ItemTemplate="{StaticResource tenantChoiceTemplate}" AutomationProperties.Name="Tenant"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[DuplicateCommand]}" ToolTip="Copy this template; the name gets ' copy' and the code a number">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Duplicate" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}" ToolTip="Stop or resume offering this template. Settings that use it keep it.">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+               </WrapPanel>
+            </DockPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="360"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="380"/>
+               </Grid.ColumnDefinitions>
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="TEMPLATES" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
+                     <ListBox x:Name="schedTemplateList" Grid.Row="1" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" ItemContainerStyle="{StaticResource positionRowStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="22,10">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                    <TextBlock Text="{Binding Caption}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                                 </StackPanel>
+                                 <Border Grid.Column="1" Style="{StaticResource chipMutedStyle}" Margin="8,0" VerticalAlignment="Center" Visibility="{Binding IsInactive, Converter={StaticResource boolVisibility}}">
+                                    <TextBlock Text="INACTIVE"/>
+                                 </Border>
+                              </Grid>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="TEMPLATE" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select a template in the list, or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <Grid>
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="120"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Short key of the template, up to 10 characters, unique within the tenant.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <TextBox x:Name="schedTemplateCode" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="10" AutomationProperties.Name="Template code"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1">
+                                 <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Template name"/>
+                              </StackPanel>
+                           </Grid>
+                           <Grid Margin="0,12,0,0">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Time a shift starts, in 24-hour HH:mm. The end time is calculated.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Start time" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditStart, UpdateSourceTrigger=PropertyChanged}" MaxLength="5" Tag="08:00" AutomationProperties.Name="Start time"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Break in minutes, used by a weekday that sets none.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Break (minutes)" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <controls:SpinBox x:Name="schedTemplateBreak" Style="{StaticResource fieldSpinBoxStyle}" Minimum="0" Maximum="1440" Step="15" Value="{Binding EditBreak}" AutomationProperties.Name="Break minutes"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="2" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Display order: lower comes first, equal values are ordered by name.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Order" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="-1000000" Maximum="1000000" Value="{Binding EditOrder}" AutomationProperties.Name="Order"/>
+                              </StackPanel>
+                           </Grid>
+                           <TextBlock Text="HOURS PER WEEKDAY" Style="{StaticResource sectionCaptionStyle}" Margin="0,16,0,0"/>
+                           <Grid Margin="0,8,0,4">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="60"/>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <TextBlock Grid.Column="1" Text="Hours" Style="{StaticResource fieldLabelStyle}"/>
+                              <TextBlock Grid.Column="2" Text="Break (empty = template)" Style="{StaticResource fieldLabelStyle}" Margin="8,0,0,0"/>
+                           </Grid>
+                           <ItemsControl x:Name="schedTemplateDays" ItemsSource="{Binding Days}" Focusable="False">
+                              <ItemsControl.ItemTemplate>
+                                 <DataTemplate>
+                                    <Grid Margin="0,0,0,6">
+                                       <Grid.ColumnDefinitions>
+                                          <ColumnDefinition Width="60"/>
+                                          <ColumnDefinition Width="*"/>
+                                          <ColumnDefinition Width="*"/>
+                                       </Grid.ColumnDefinitions>
+                                       <TextBlock Text="{Binding Caption}" VerticalAlignment="Center"/>
+                                       <controls:SpinBox Grid.Column="1" Style="{StaticResource fieldSpinBoxStyle}" Minimum="0" Maximum="24" Step="0.5" DecimalPlaces="2" Value="{Binding Hours}" AutomationProperties.Name="{Binding Name, StringFormat='Hours on {0}'}"/>
+                                       <controls:SpinBox Grid.Column="2" Margin="8,0,0,0" Style="{StaticResource fieldSpinBoxStyle}" Minimum="0" Maximum="1440" Step="15" AllowEmpty="True" Value="{Binding BreakMinutes}" AutomationProperties.Name="{Binding Name, StringFormat='Break on {0}'}"/>
+                                    </Grid>
+                                 </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                           </ItemsControl>
+                           <TextBlock Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap"><Run Text="{Binding WeekHoursCaption, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding DaysOffCaption, Mode=OneWay}"/></TextBlock>
+                           <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Template note"/>
+                           <TextBlock Text="Hours are set per weekday, so a short last day is one row with its own break. A weekday means the day a shift starts. A day with 0 hours is a day off." Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
+         <!-- Attendance codes -->
+         <Grid Grid.Column="1" DataContext="{Binding AttCodes}" Visibility="{Binding DataContext.IsAttCodesTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Margin="22,12,22,10">
+               <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewCodeCommand]}" ToolTip="Start a new code in this tenant">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New code" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <WrapPanel>
+                  <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" ItemTemplate="{StaticResource tenantChoiceTemplate}" AutomationProperties.Name="Tenant"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[CopyFromTenantCommand]}" ToolTip="Add codes from another tenant; codes that already exist here are skipped">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Copy from tenant" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}" ToolTip="Stop or resume offering this code.">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+               </WrapPanel>
+            </DockPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="CODES" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
+                     <ListBox x:Name="attCodeList" Grid.Row="1" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" ItemContainerStyle="{StaticResource positionRowStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="22,10">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel>
+                                    <TextBlock x:Name="attCodeName" Text="{Binding cTenantAttCodeName}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding cTenantAttCodeName}"/>
+                                    <TextBlock Text="{Binding cTenantAttCodeCode}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                                 </StackPanel>
+                                 <Border x:Name="inactiveChip" Grid.Column="1" Style="{StaticResource chipMutedStyle}" Margin="8,0" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <TextBlock Text="INACTIVE"/>
+                                 </Border>
+                              </Grid>
+                              <DataTemplate.Triggers>
+                                 <DataTrigger Binding="{Binding cTenantAttCodeState}" Value="-1">
+                                    <Setter TargetName="inactiveChip" Property="Visibility" Value="Visible"/>
+                                 </DataTrigger>
+                                 <DataTrigger Binding="{Binding cTenantAttCodeId}" Value="">
+                                    <Setter TargetName="attCodeName" Property="Text" Value="(new code)"/>
+                                 </DataTrigger>
+                              </DataTemplate.Triggers>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="CODE" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select a code in the list, or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50" AutomationProperties.Name="Attendance code"/>
+                           <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Code name"/>
+                           <Grid Margin="0,12,0,0">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="140"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0">
+                                 <TextBlock Text="Category" Style="{StaticResource fieldLabelStyle}"/>
+                                 <ComboBox x:Name="attCodeCategory" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding EditCategory, Mode=TwoWay}" AutomationProperties.Name="Category">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
+                                 </ComboBox>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Display order: lower comes first, equal values are ordered by name.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Sort order" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <controls:NumericBox Style="{StaticResource fieldNumericBoxStyle}" Minimum="-1000000" Maximum="1000000" Value="{Binding EditOrder}" AutomationProperties.Name="Sort order"/>
+                              </StackPanel>
+                           </Grid>
+                           <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Code note"/>
+                           <TextBlock Text="A new code is saved as active. Codes are never deleted; deactivate a code to stop offering it. Copy from tenant adds codes from another tenant; codes that already exist here are skipped. What a code means for payroll is decided by a module, not here." Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
+         <!-- Public holidays -->
+         <Grid Grid.Column="1" DataContext="{Binding Holidays}" Visibility="{Binding DataContext.IsHolidaysTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Margin="22,12,22,10">
+               <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewHolidayCommand]}" ToolTip="Start a new entry">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New holiday" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <WrapPanel>
+                  <TextBlock Text="Year" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox x:Name="holidayYear" Width="110" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Years}" SelectedItem="{Binding SelectedYear, Mode=TwoWay}" AutomationProperties.Name="Year">
+                     <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}"/></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="{Binding Summary}" VerticalAlignment="Center" Margin="0,0,8,4" Opacity="0.7"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <ComboBox x:Name="holidayCopyYear" Width="110" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Years}" SelectedItem="{Binding CopyFromYear, Mode=TwoWay}" ToolTip="The year to copy dated holidays from" AutomationProperties.Name="Copy from year">
+                     <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}"/></DataTemplate></ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[CopyDatedCommand]}" ToolTip="Copy dated holidays into the year shown, same month and day. Entries already there, and 29 February into a non-leap year, are skipped.">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Copy dated from year" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RemoveCommand]}" ToolTip="Remove this entry from the calendar.">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Remove" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+               </WrapPanel>
+            </DockPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,6" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Border Grid.Row="2" Margin="22,0,22,10" Style="{StaticResource chipWarningStyle}" HorizontalAlignment="Left" Visibility="{Binding HasWarning, Converter={StaticResource boolVisibility}}">
+               <TextBlock Text="{Binding Warning}" TextWrapping="Wrap"/>
+            </Border>
+            <Grid Grid.Row="3" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Style="{StaticResource sectionCaptionStyle}" Margin="22,12"><Run Text="HOLIDAYS "/><Run Text="{Binding SelectedYear, Mode=OneWay}"/></TextBlock>
+                     <ListBox x:Name="holidayList" Grid.Row="1" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" ItemContainerStyle="{StaticResource positionRowStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="22,10">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                    <TextBlock FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"><Run Text="{Binding DateCaption, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding KindCaption, Mode=OneWay}"/></TextBlock>
+                                 </StackPanel>
+                                 <Border Grid.Column="1" Style="{StaticResource chipMutedStyle}" Margin="8,0" VerticalAlignment="Center" Visibility="{Binding IsCollective, Converter={StaticResource boolVisibility}}">
+                                    <TextBlock Text="COLLECTIVE LEAVE"/>
+                                 </Border>
+                              </Grid>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="HOLIDAY" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select an entry in the list, or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <TextBlock Text="Kind" Style="{StaticResource fieldLabelStyle}"/>
+                           <ComboBox x:Name="holidayKind" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding KindOptions}" SelectedItem="{Binding EditKind, Mode=TwoWay}" AutomationProperties.Name="Kind">
+                              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
+                           </ComboBox>
+                           <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Holiday name"/>
+                           <Grid Margin="0,12,0,0" Visibility="{Binding IsFixedKind, Converter={StaticResource boolVisibility}}">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0">
+                                 <TextBlock Text="Month" Style="{StaticResource fieldLabelStyle}"/>
+                                 <controls:SpinBox Style="{StaticResource fieldSpinBoxStyle}" Minimum="1" Maximum="12" AllowEmpty="True" Value="{Binding EditMonth}" AutomationProperties.Name="Month"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1">
+                                 <TextBlock Text="Day" Style="{StaticResource fieldLabelStyle}"/>
+                                 <controls:SpinBox Style="{StaticResource fieldSpinBoxStyle}" Minimum="1" Maximum="31" AllowEmpty="True" Value="{Binding EditDay}" AutomationProperties.Name="Day"/>
+                              </StackPanel>
+                           </Grid>
+                           <StackPanel Margin="0,12,0,0" Visibility="{Binding IsDatedKind, Converter={StaticResource boolVisibility}}">
+                              <TextBlock Text="Date" Style="{StaticResource fieldLabelStyle}"/>
+                              <DatePicker Style="{StaticResource fieldDatePickerStyle}" SelectedDate="{Binding EditDate, Mode=TwoWay}" AutomationProperties.Name="Date"/>
+                           </StackPanel>
+                           <CheckBox Margin="0,12,0,0" Style="{StaticResource checkBoxStyle}" Content="Collective leave marker" IsChecked="{Binding EditCollective, Mode=TwoWay}" ToolTip="Only a marker: it has no behaviour in the engine."/>
+                           <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Holiday note"/>
+                           <TextBlock Text="Fixed holidays are entered once as a month and day and apply every year. Dated holidays are entered per year; the engine does not calculate a lunar calendar. One calendar applies to every tenant." Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="4" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
       </Grid>
       <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
    </Grid>
