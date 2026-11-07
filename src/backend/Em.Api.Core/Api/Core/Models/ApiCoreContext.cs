@@ -26,6 +26,26 @@ namespace Em.Api.Core.Models
       public DbSet<ta_TenantPosition> ta_TenantPositions => Set<ta_TenantPosition>();
       /// <summary>Tenant positions with display values.</summary>
       public DbSet<vi_TenantPosition> vi_TenantPositions => Set<vi_TenantPosition>();
+      /// <summary>Schedule templates.</summary>
+      public DbSet<ta_TenantSchedTemplate> ta_TenantSchedTemplates => Set<ta_TenantSchedTemplate>();
+      /// <summary>Schedule templates with display values.</summary>
+      public DbSet<vi_TenantSchedTemplate> vi_TenantSchedTemplates => Set<vi_TenantSchedTemplate>();
+      /// <summary>The seven weekdays of each schedule template.</summary>
+      public DbSet<ta_TenantSchedTemplateDay> ta_TenantSchedTemplateDays => Set<ta_TenantSchedTemplateDay>();
+      /// <summary>Scheduling settings per level.</summary>
+      public DbSet<ta_TenantSchedSetting> ta_TenantSchedSettings => Set<ta_TenantSchedSetting>();
+      /// <summary>Scheduling settings with department and template names.</summary>
+      public DbSet<vi_TenantSchedSetting> vi_TenantSchedSettings => Set<vi_TenantSchedSetting>();
+      /// <summary>Rotation steps of scheduling settings.</summary>
+      public DbSet<ta_TenantSchedSettingStep> ta_TenantSchedSettingSteps => Set<ta_TenantSchedSettingStep>();
+      /// <summary>Attendance codes.</summary>
+      public DbSet<ta_TenantAttCode> ta_TenantAttCodes => Set<ta_TenantAttCode>();
+      /// <summary>Attendance codes as read by the screens.</summary>
+      public DbSet<vi_TenantAttCode> vi_TenantAttCodes => Set<vi_TenantAttCode>();
+      /// <summary>The public holiday calendar.</summary>
+      public DbSet<ta_PublicHoliday> ta_PublicHolidays => Set<ta_PublicHoliday>();
+      /// <summary>Public holidays as read by the screens.</summary>
+      public DbSet<vi_PublicHoliday> vi_PublicHolidays => Set<vi_PublicHoliday>();
       /// <summary>Files attached to contacts.</summary>
       public DbSet<ta_ContactAttachment> ta_ContactAttachments => Set<ta_ContactAttachment>();
 
@@ -117,10 +137,16 @@ namespace Em.Api.Core.Models
             modelBuilder.Entity<ta_TenantDept>().Metadata, modelBuilder.Entity<vi_TenantDept>().Metadata,
             modelBuilder.Entity<ta_TenantEmp>().Metadata, modelBuilder.Entity<vi_TenantEmp>().Metadata,
             modelBuilder.Entity<ta_TenantPosition>().Metadata, modelBuilder.Entity<vi_TenantPosition>().Metadata,
-            modelBuilder.Entity<ta_ContactAttachment>().Metadata }) {
+            modelBuilder.Entity<ta_ContactAttachment>().Metadata,
+            modelBuilder.Entity<ta_TenantSchedTemplate>().Metadata, modelBuilder.Entity<vi_TenantSchedTemplate>().Metadata,
+            modelBuilder.Entity<ta_TenantSchedTemplateDay>().Metadata,
+            modelBuilder.Entity<ta_TenantSchedSetting>().Metadata, modelBuilder.Entity<vi_TenantSchedSetting>().Metadata,
+            modelBuilder.Entity<ta_TenantSchedSettingStep>().Metadata,
+            modelBuilder.Entity<ta_TenantAttCode>().Metadata, modelBuilder.Entity<vi_TenantAttCode>().Metadata,
+            modelBuilder.Entity<ta_PublicHoliday>().Metadata, modelBuilder.Entity<vi_PublicHoliday>().Metadata }) {
             entity.FindProperty("ustamp")!.SetColumnType("datetime");
             entity.FindProperty("datestamp")!.SetColumnType("datetime");
-            foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && p.Name.EndsWith("Id")))
+            foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && (p.Name.EndsWith("Id") || p.Name == nameof(ta_TenantSchedSetting.cTenantSchedSettingKey))))
                property.SetColumnType("char(26)");
          }
 
