@@ -952,7 +952,7 @@
                                  <TextBlock Text="Period days" Style="{StaticResource fieldLabelStyle}"/>
                                  <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
                               </StackPanel>
-                              <controls:SpinBox x:Name="schedPeriodDays" Style="{StaticResource fieldSpinBoxStyle}" Minimum="1" Maximum="366" AllowEmpty="True" Value="{Binding EditPeriodDays}" Tag="14" AutomationProperties.Name="Period days"/>
+                              <controls:SpinBox x:Name="schedPeriodDays" Style="{StaticResource fieldSpinBoxStyle}" Minimum="1" Maximum="366" AllowEmpty="True" Value="{Binding EditPeriodDays}" AutomationProperties.Name="Period days"/>
                            </StackPanel>
                            <TextBlock Text="EFFECTIVE RESULT" Style="{StaticResource sectionCaptionStyle}" Margin="0,16,0,0"/>
                            <TextBlock Text="{Binding EffectiveText}" Margin="0,6,0,0" TextWrapping="Wrap"/>

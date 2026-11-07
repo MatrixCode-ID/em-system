@@ -1,11 +1,11 @@
 # Plan: attendance setup in the Business Module Manager
 
-Status: **not executed, waiting for review.** Written 2026-11-07. All decisions below are final (user answers of
+Status: **executed 2026-11-07; see the execution report at the end.** Written 2026-11-07. All decisions below are final (user answers of
 2026-11-07); the executor must not stop to ask. If something not covered appears, pick the choice most consistent with
 this plan and record it in the execution report.
 
 Idea and history: [tenant-attendance-schedule.md](../../doc/ideas/tenant-attendance-schedule.md). The consumer host has
-its own plan in its repository, at `plan/unexecuted/attendance-setup.md`; it installs the schema and verifies the result.
+its own plan in its repository, at `plan/executed/attendance-setup.md`; it installs the schema and verifies the result.
 This repository is public: no product, server or secret names in code, docs or commits.
 
 ## Goal
@@ -197,3 +197,56 @@ only, so the executor records this exception in the report instead of treating i
 - The four pages work against MySQL through the consumer host plan.
 - The consumer host plan's verification has passed, or what remains is listed in the report.
 - This plan moves to `plan/executed/` with a report: commits, run ids, tests and pending visual checks.
+
+## Execution report (2026-11-07)
+
+All six steps are done. The prerequisite baseline was already committed as 64c0268, so none was made. No push.
+
+**Commits on `work-bench`:** 20f89c3 schema, models, contracts; 72f6b3e services; 93a3497 client registration; f3f38e7 WPF;
+b7465c9 documentation and tests; 827269e tracking fix; plus the closing commit that moves this plan. The client proxy
+files landed in 72f6b3e with the services, not in 93a3497.
+
+**RunBay runs:**
+
+| Action | Run id | Result |
+| --- | --- | --- |
+| `test-bmm-attendance-setup` | `20261107-110115-test-bmm-attendance-setup-c925` | Backend and frontend build; 14 MySQL tests and 48 WPF tests passed |
+| `install-attendance-sql-server` | `20261107-105410-install-attendance-sql-server-9725` | Five scripts ran twice on a temporary local database: 6 tables, 4 views, 8 foreign keys; database removed |
+| `test-multi-database-regression` | `20261107-105944-test-multi-database-regression-27df` | Added, not required: 44 + 286 + 154 tests passed, 4 of the 154 skipped |
+| `build-bmm-attendance-maui` | `20261107-110108-build-bmm-attendance-maui-803a` | Added, not required: MAUI core builds with the proxies |
+
+The first run, `20261107-105246-test-bmm-attendance-setup-2f9f`, failed because the local MySQL server was stopped; it
+was started through RunBay and left running. The second, `20261107-105418-test-bmm-attendance-setup-f115`, found a real
+defect: 6 tests failed because the core context reads without tracking, so changes to rows read by the new services were
+not saved. Fixed in 827269e with `AsTracking()`.
+
+The consumer host verification passed; its report is in that repository's `plan/executed/attendance-setup.md`.
+
+**Decisions the plan did not cover:**
+
+- The plan says the core has no spin box, but `NumericBox` exists. It is integer-only and always holds a value, while
+  hours need decimals and a day break may be empty, so `SpinBox` was still added and holds a nullable decimal.
+- `vi_TenantSchedTemplate` also has `ccTenantSchedTemplateEndsNextDay`, for the "ends next day" caption of page
+  `30 Attendance`.
+- `TenantSchedEffective.StepOn(workDate)` gives decision 9 a place in code: it answers empty before Day 1.
+- A deactivated template may stay in a rotation that already has it, as in template mode, but cannot be chosen anew. The
+  warning is on Scheduling settings, from `HasInactiveTemplate`.
+- `GetVi_PublicHolidays` returns active entries only, since Remove should hide an entry. Remove asks for confirmation.
+- Copy dated from year uses a year box in the toolbar, not a dialog. The toolbar offers three years either side of today.
+- The duplicate holiday check compares entries of the same kind. Years are limited to 1900 to 2199.
+- Period days on a department answers 400 rather than being cleared. When a level is disabled, the effective result keeps
+  its schedule values, and `Enabled` says they are not in use.
+- `UseInherited` for a department without a row changes nothing and answers empty.
+- Scheduling settings reloads each time its page opens, so templates changed on their own page appear.
+- The seven audit kinds are also listed in `SystemAudits`.
+
+**Mockup check:** status "none", exception of 2026-11-07 confirmed from this plan and the idea note. Page `30 Attendance`
+was read from `doc/design/BusinessModuleManager.figcraft`: it has the seven frames, matching what the plan recorded. There
+is no mismatch.
+
+**Pending:**
+
+- Visual checks of the four pages, `SpinBox` and `CopyAttCodesDialog`, light and dark, until the user asks. Real-window
+  interaction is also unproven: step combo boxes, the date pickers and typing in the spin box.
+- The attendance services have not run on SQL Server; its scripts were only installed, by decision 13.
+- Updating the frames of page `30 Attendance`, recorded as a known gap in `doc/design/README.md`.
