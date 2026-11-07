@@ -6,10 +6,48 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Em.Ui.Wpf.Navigations;
 
-/// <summary>A tab of the Business Module Manager.</summary>
-/// <param name="Key">Stable tab key.</param>
-/// <param name="Title">Caption shown on the tab strip.</param>
+/// <summary>A page of the Business Module Manager.</summary>
+/// <param name="Key">Stable page key.</param>
+/// <param name="Title">Caption of the page.</param>
 public sealed record BusinessTab(string Key, string Title);
+
+/// <summary>A node of the page drawer: a folder that groups pages, or one page.</summary>
+public sealed class BusinessPageNode : MvvmModelBase
+{
+   private readonly BusinessModuleManagerVm _owner;
+
+   internal BusinessPageNode(BusinessModuleManagerVm owner, string title, string subtitle, BusinessTab? page, params BusinessPageNode[] children) {
+      _owner = owner; Title = title; Subtitle = subtitle; Page = page; Children = [.. children];
+      IsExpanded = true;
+   }
+
+   /// <summary>Node title.</summary>
+   public string Title { get; }
+
+   /// <summary>Line shown under the title.</summary>
+   public string Subtitle { get; }
+
+   /// <summary>Page this node opens; <c>null</c> for a folder.</summary>
+   public BusinessTab? Page { get; }
+
+   /// <summary>Pages of a folder; empty for a page.</summary>
+   public ObservableCollection<BusinessPageNode> Children { get; }
+
+   /// <summary>Title with the page count of a folder.</summary>
+   public string Caption => Page is null ? $"{Title} ({Children.Count})" : Title;
+
+   /// <summary>Whether the pages of a folder are shown.</summary>
+   public bool IsExpanded { get => Get<bool>(); set => Set(value); }
+
+   /// <summary>Whether this page is selected; selecting it opens the page.</summary>
+   public bool IsSelected {
+      get => Get<bool>();
+      set { if (Set(value) && value) _owner.OnPageSelected(this); }
+   }
+
+   // Changes the selection mark without opening the page.
+   internal void SelectQuietly(bool value) => Set(value, propertyName: nameof(IsSelected));
+}
 
 /// <summary>A choice of the Parent field: a tenant, or no parent at all.</summary>
 /// <param name="Id">Tenant ID; <c>null</c> = no parent (a root tenant).</param>
@@ -66,15 +104,16 @@ public sealed class TenantNode : MvvmModelBase
    internal void SelectQuietly(bool value) => Set(value, propertyName: nameof(IsSelected));
 }
 
-/// <summary>State and commands of the Business Module Manager; the first tab manages tenants.</summary>
+/// <summary>State and commands of the Business Module Manager; the first page manages tenants.</summary>
 public sealed partial class BusinessModuleManagerVm : MvvmModelBase
 {
-   /// <summary>Key of the Tenants tab.</summary>
+   /// <summary>Key of the Tenants page.</summary>
    public const string TenantsTab = "tenants";
 
    private readonly ITenantServices? _service;
    private TenantNode? _draft;
    private bool _restoringSelection;
+   private bool _syncingPages;
 
    /// <summary>Creates a view model for navigation; the service is taken from the application.</summary>
    public BusinessModuleManagerVm() { RegisterCommands(); }
@@ -85,8 +124,18 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
    private ITenantServices? Service => _service ?? EmApp?.ServiceProvider.GetRequiredService<ITenantServices>();
 
    private void RegisterCommands() {
+      IsDrawerOpen = true;
+      PageNodes.Add(new BusinessPageNode(this, "Organization", "Company structure", null,
+         new BusinessPageNode(this, "Tenants", "Company tree and identity", Tabs[0]),
+         new BusinessPageNode(this, "Departments", "Department tree per tenant", Tabs[1]),
+         new BusinessPageNode(this, "Positions", "Position list per tenant", Tabs[2])));
+      PageNodes.Add(new BusinessPageNode(this, "People", "Employment records", null,
+         new BusinessPageNode(this, "Employees", "Employees per tenant", Tabs[3])));
+      SyncPageSelection();
       Departments.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
+      Positions.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
       Employees.PropertyChanged += (_, e) => { if (e.PropertyName is nameof(IsBusy) or nameof(IsNotBusy)) NotifyChanged(nameof(CanSwitchTabs)); };
+      RegisterCommand(nameof(ToggleDrawerCommand), ToggleDrawerCommand, ToggleDrawerCommandAllowed);
       RegisterCommand(nameof(NewTenantCommand), NewTenantCommand, NewTenantCommandAllowed);
       RegisterCommand(nameof(NewChildCommand), NewChildCommand, NewChildCommandAllowed);
       RegisterCommand(nameof(SaveCommand), SaveCommand, SaveCommandAllowed);
@@ -94,12 +143,24 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
       RegisterCommand(nameof(RefreshCommand), RefreshCommand, RefreshCommandAllowed);
    }
 
-   #region Tabs
+   #region Pages
 
-   /// <summary>Tabs of the screen. Tenants, departments and employees.</summary>
-   public ObservableCollection<BusinessTab> Tabs { get; } = [new(TenantsTab, "Tenants"), new("departments", "Departments"), new("employees", "Employees")];
+   /// <summary>Pages of the screen. Tenants, departments, positions and employees.</summary>
+   public ObservableCollection<BusinessTab> Tabs { get; } = [new(TenantsTab, "Tenants"), new("departments", "Departments"), new("positions", "Positions"), new("employees", "Employees")];
 
-   /// <summary>The tab being shown.</summary>
+   /// <summary>Folders of the page drawer. The module lists them itself; they do not come from the menu.</summary>
+   public ObservableCollection<BusinessPageNode> PageNodes { get; } = [];
+
+   /// <summary>Whether the page drawer is open.</summary>
+   public bool IsDrawerOpen { get => Get<bool>(); set => Set(value); }
+
+   /// <summary>Whether the page drawer can be toggled.</summary>
+   public bool ToggleDrawerCommandAllowed() => true;
+
+   /// <summary>Opens or closes the page drawer.</summary>
+   public void ToggleDrawerCommand() => IsDrawerOpen = !IsDrawerOpen;
+
+   /// <summary>The page being shown.</summary>
    public BusinessTab ActiveTab {
       get => Get<BusinessTab>() ?? Tabs[0];
       set {
@@ -109,13 +170,29 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
             if (SelectedNode is { IsDraft: false } node) Open(node);
             else { RemoveDraft(); SelectedNode = null; ClearEditor(); }
          }
-         Departments.DiscardChanges(); Employees.DiscardChanges();
-         Set(value); NotifyChanged(nameof(IsTenantsTab)); NotifyChanged(nameof(IsDepartmentsTab)); NotifyChanged(nameof(IsEmployeesTab));
+         Departments.DiscardChanges(); Positions.DiscardChanges(); Employees.DiscardChanges();
+         Set(value); NotifyChanged(nameof(IsTenantsTab)); NotifyChanged(nameof(IsDepartmentsTab)); NotifyChanged(nameof(IsPositionsTab)); NotifyChanged(nameof(IsEmployeesTab));
+         SyncPageSelection();
       }
    }
 
-   /// <summary>Whether the Tenants tab is shown.</summary>
+   /// <summary>Whether the Tenants page is shown.</summary>
    public bool IsTenantsTab => ActiveTab.Key == TenantsTab;
+
+   internal void OnPageSelected(BusinessPageNode node) {
+      if (_syncingPages) return;
+      if (node.Page is not null) ActiveTab = node.Page;
+      // A refused switch leaves the drawer on the page still being shown.
+      SyncPageSelection();
+   }
+
+   private void SyncPageSelection() {
+      _syncingPages = true;
+      try {
+         foreach (var page in PageNodes.SelectMany(n => n.Children)) page.SelectQuietly(ReferenceEquals(page.Page, ActiveTab));
+      }
+      finally { _syncingPages = false; }
+   }
 
    #endregion
 
@@ -264,6 +341,7 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
    /// <summary>Reads the tenants again, asking first when the editor holds unsaved changes.</summary>
    public Task RefreshCommand() {
       if (IsDepartmentsTab) return Departments.RefreshCommand();
+      if (IsPositionsTab) return Positions.RefreshCommand();
       if (IsEmployeesTab) return Employees.RefreshCommand();
       if (IsDirty && ConfirmDiscard?.Invoke() == false) return Task.CompletedTask;
       return ReloadAsync();
@@ -276,10 +354,10 @@ public sealed partial class BusinessModuleManagerVm : MvvmModelBase
       if (Service is not { } service) return;
       _draft = null;
       ApplyList(await service.GetVi_Tenants(), SelectedNode is { IsDraft: false } node ? node.Tenant.cTenantId : null);
-      Departments.EmApp = Employees.EmApp = EmApp;
-      Departments.ConfirmDiscard = Employees.ConfirmDiscard = ConfirmDiscard;
-      Departments.TenantChoices.Clear(); Employees.TenantChoices.Clear();
-      foreach (var tenant in Tenants) { Departments.TenantChoices.Add(tenant); Employees.TenantChoices.Add(tenant); }
+      Departments.EmApp = Positions.EmApp = Employees.EmApp = EmApp;
+      Departments.ConfirmDiscard = Positions.ConfirmDiscard = Employees.ConfirmDiscard = ConfirmDiscard;
+      Departments.TenantChoices.Clear(); Positions.TenantChoices.Clear(); Employees.TenantChoices.Clear();
+      foreach (var tenant in Tenants) { Departments.TenantChoices.Add(tenant); Positions.TenantChoices.Add(tenant); Employees.TenantChoices.Add(tenant); }
       Status = "";
    });
 

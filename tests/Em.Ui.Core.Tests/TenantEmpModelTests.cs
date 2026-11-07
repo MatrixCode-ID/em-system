@@ -10,7 +10,7 @@ public sealed class TenantEmpModelTests
 
    private static vi_TenantEmp Row(string? json = null) => new() {
       cTenantEmpId = "E1", cTenantId = "T1", cContactId = "C1", cTenantDeptId = "D1", cTenantEmpCode = "001",
-      cTenantEmpPosition = "Clerk", cTenantEmpNote = "Note", cvContactFullName = "Name", cvContactType = ContactType.Female,
+      cTenantPositionId = "P", cvTenantPositionCode = "CLK", cvTenantPositionName = "Clerk", cvTenantPositionState = 0, cTenantEmpNote = "Note", cvContactFullName = "Name", cvContactType = ContactType.Female,
       cvTenantDeptCode = "DC", cvTenantDeptName = "Dept", ccTenantEmpIsDeptHead = true, cvTenantEmpUserAccounts = "name",
       ustamp = ReadStamp, datestamp = ReadStamp.AddDays(-1), json_object = json
    };

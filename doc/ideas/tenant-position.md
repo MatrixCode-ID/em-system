@@ -1,7 +1,7 @@
 # Daftar posisi per tenant di Business Module Manager
 
 - Tanggal: 2026-11-05
-- Status: diskusi (desain layout untuk review)
+- Status: diterapkan 2026-11-07 (A1 Positions, A2 Contact, A3 Head of department); default pertanyaan terbuka perlu ditinjau
 - Desain: `doc/design/BusinessModuleManager.figcraft`, page `10 Business Module Manager` (Positions,
   Copy from tenant) dan `20 Employee Editor` (field Position). Rincian di [README desain](../design/README.md).
 - Latar: kelanjutan employee per tenant di Business Module Manager (BMM). Catatan ide employee sebelumnya
@@ -56,6 +56,23 @@ filter, laporan, atau aturan.
   kodenya sudah ada di tenant tujuan ditandai EXISTS dan tidak bisa dicentang. Posisi hasil salinan
   disimpan aktif.
 - Employee Editor: field **Position** menjadi combo yang hanya berisi posisi aktif tenant employee.
+
+## Keputusan agen yang perlu ditinjau (2026-11-07)
+
+Pengguna meminta eksekusi tanpa menjawab pertanyaan terbuka di bawah, jadi dipakai default berikut:
+
+1. Cukup salin manual, tanpa pewarisan dari tenant induk.
+2. Satu employee satu posisi.
+3. Posisi bebas dari department.
+4. Copy from tenant hanya menampilkan posisi aktif sumber.
+5. Salinan bersifat sekali salin.
+6. "Sudah ada" dicocokkan dari kode, termasuk posisi nonaktif di tenant tujuan.
+7. Chip HEAD di daftar Employees dipindah ke kolom Department; sumber datanya tetap department.
+
+Pilihan tambahan agen: skrip update memindahkan nilai teks jabatan yang ternyata ada menjadi posisi tenant-nya
+sebelum kolom dibuang, supaya data tidak hilang (pertanyaan 8). Field Name tetap satu isian: employee baru dengan
+contact baru memakai **Contact full name** yang sama. Pilihan Existing/New contact pada employee baru dipertahankan
+karena perilaku pemilihannya sudah ada.
 
 ## Pertanyaan terbuka
 

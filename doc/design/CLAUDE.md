@@ -21,5 +21,8 @@
 Navigasi halaman BMM memakai left drawer berisi TreeView yang diisi manual oleh BMM. Node **Folder**
 (kelompok) dan **App** (halaman) dibedakan dengan ikon. Gaya node mengikuti kartu bertingkat katalog
 (tile ikon, judul, subtitle); App tanpa arrow, pin, maupun tombol tiga titik. Ikon `secondary` di atas tile
-`secondaryContainer`; App terpilih memakai tile `primary` dengan ikon `onPrimary`. Ini desain untuk
-review, belum perintah implementasi.
+`secondaryContainer`; App terpilih memakai tile `primary` dengan ikon `onPrimary`.
+
+Keputusan pengguna 2026-11-07: drawer tree diterapkan ke BMM. Pada hari yang sama pengguna meminta menerapkan
+Positions, Contact dan Head of department di Employee Editor, serta Attachments; page `30 Attendance` tetap bukan
+perintah implementasi.

@@ -55,8 +55,8 @@ namespace Em.Api.Core.Models
       public string? cTenantDeptId { get; set => SetField(ref field, value); }
       /// <summary>Employee number, unique within the tenant.</summary>
       public string cTenantEmpCode { get; set => SetField(ref field, value); } = "";
-      /// <summary>Optional position title.</summary>
-      public string? cTenantEmpPosition { get; set => SetField(ref field, value); }
+      /// <summary>Optional position in the same tenant.</summary>
+      public string? cTenantPositionId { get; set => SetField(ref field, value); }
       /// <summary>Active or inactive employment state.</summary>
       public int cTenantEmpState { get; set => SetField(ref field, value); }
       /// <summary>Optional administrator note.</summary>
@@ -69,6 +69,12 @@ namespace Em.Api.Core.Models
       public string? cvTenantDeptCode { get; private set => SetField(ref field, value); }
       /// <summary>Department name; read-only.</summary>
       public string? cvTenantDeptName { get; private set => SetField(ref field, value); }
+      /// <summary>Position code; read-only.</summary>
+      public string? cvTenantPositionCode { get; private set => SetField(ref field, value); }
+      /// <summary>Position name; read-only.</summary>
+      public string? cvTenantPositionName { get; private set => SetField(ref field, value); }
+      /// <summary>Position state; read-only.</summary>
+      public int? cvTenantPositionState { get; private set => SetField(ref field, value); }
       /// <summary>Whether the employee heads the department; read-only.</summary>
       public bool ccTenantEmpIsDeptHead { get; private set => SetField(ref field, value); }
       /// <summary>Active user accounts of the person; read-only.</summary>
@@ -80,6 +86,8 @@ namespace Em.Api.Core.Models
       public string? NewContactName { get; set; }
       /// <summary>Type of the new person when <see cref="cContactId"/> is empty.</summary>
       public ContactType NewContactType { get; set; } = ContactType.Male;
+      /// <summary>Whether the employee heads its department after the save; null leaves the head unchanged.</summary>
+      public bool? IsDeptHead { get; set; }
 
       #endregion
 
@@ -92,13 +100,16 @@ namespace Em.Api.Core.Models
          cContactId = source.cContactId;
          cTenantDeptId = source.cTenantDeptId;
          cTenantEmpCode = source.cTenantEmpCode;
-         cTenantEmpPosition = source.cTenantEmpPosition;
+         cTenantPositionId = source.cTenantPositionId;
          cTenantEmpState = source.cTenantEmpState;
          cTenantEmpNote = source.cTenantEmpNote;
          cvContactFullName = source.cvContactFullName;
          cvContactType = source.cvContactType;
          cvTenantDeptCode = source.cvTenantDeptCode;
          cvTenantDeptName = source.cvTenantDeptName;
+         cvTenantPositionCode = source.cvTenantPositionCode;
+         cvTenantPositionName = source.cvTenantPositionName;
+         cvTenantPositionState = source.cvTenantPositionState;
          ccTenantEmpIsDeptHead = source.ccTenantEmpIsDeptHead;
          cvTenantEmpUserAccounts = source.cvTenantEmpUserAccounts;
          ustamp = source.ustamp;
@@ -113,13 +124,16 @@ namespace Em.Api.Core.Models
          target.cContactId = cContactId;
          target.cTenantDeptId = cTenantDeptId;
          target.cTenantEmpCode = cTenantEmpCode;
-         target.cTenantEmpPosition = cTenantEmpPosition;
+         target.cTenantPositionId = cTenantPositionId;
          target.cTenantEmpState = cTenantEmpState;
          target.cTenantEmpNote = cTenantEmpNote;
          target.cvContactFullName = cvContactFullName;
          target.cvContactType = cvContactType;
          target.cvTenantDeptCode = cvTenantDeptCode;
          target.cvTenantDeptName = cvTenantDeptName;
+         target.cvTenantPositionCode = cvTenantPositionCode;
+         target.cvTenantPositionName = cvTenantPositionName;
+         target.cvTenantPositionState = cvTenantPositionState;
          target.ccTenantEmpIsDeptHead = ccTenantEmpIsDeptHead;
          target.cvTenantEmpUserAccounts = cvTenantEmpUserAccounts;
          // SaveAsync refills ustamp with server time, while the employee save compares the stamp last read.
@@ -144,7 +158,7 @@ namespace Em.Api.Core.Models
 
       /// <summary>Builds the save request of a mapped row from <see cref="Person"/> and the new person fields.</summary>
       protected TenantEmpSave BuildSave(vi_TenantEmp entity) => new() {
-         Row = entity, Person = Person, NewContactName = NewContactName, NewContactType = NewContactType
+         Row = entity, Person = Person, NewContactName = NewContactName, NewContactType = NewContactType, IsDeptHead = IsDeptHead
       };
 
       /// <summary>
@@ -160,6 +174,9 @@ namespace Em.Api.Core.Models
          entity.cvContactType = saved.cvContactType;
          entity.cvTenantDeptCode = saved.cvTenantDeptCode;
          entity.cvTenantDeptName = saved.cvTenantDeptName;
+         entity.cvTenantPositionCode = saved.cvTenantPositionCode;
+         entity.cvTenantPositionName = saved.cvTenantPositionName;
+         entity.cvTenantPositionState = saved.cvTenantPositionState;
          entity.ccTenantEmpIsDeptHead = saved.ccTenantEmpIsDeptHead;
          entity.cvTenantEmpUserAccounts = saved.cvTenantEmpUserAccounts;
          entity.ustamp = saved.ustamp;

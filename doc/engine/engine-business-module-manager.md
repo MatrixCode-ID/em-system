@@ -1,13 +1,13 @@
 # Business Module Manager
 
-The Business Module Manager provides a small shared tenant directory, a department tree per tenant and
-employee records connecting a person to a tenant. It is available to administrators and users with
+The Business Module Manager provides a small shared tenant directory, a department tree and a position list per
+tenant, and employee records connecting a person to a tenant. It is available to administrators and users with
 `core.business:Business Module Manager Access`.
 
 ## Scope and wrapper modules
 
-The Business Module Manager is a **setup tool for basic information only**: tenants, departments and
-employees with their basic contact data (type, communications, addresses). It
+The Business Module Manager is a **setup tool for basic information only**: tenants, departments, positions and
+employees with their basic contact data (full name, type, communications, addresses, attachments). It
 stays one administrator tool under Tools behind one claim. It is not where business workflows, per-role
 claims or Apps menu entries live.
 
@@ -37,9 +37,16 @@ three client proxies automatically; its Tools entry follows the server claim cat
 but no manager screen. No business menu paths or document enablers are registered.
 
 For SQL Server, install `doc/sqlscript/mssql/sets/000-ulid.sql`, then `tables/010-core.sql`,
-`tables/080-tenant.sql`, `tables/090-tenant-org.sql`, then `views/vi_Tenant.sql`, `views/vi_TenantDept.sql` and
-`views/vi_TenantEmp.sql`. The numbered table scripts are re-runnable and have no tenant or organization seed.
-There is no startup schema check. Other database providers do not yet have organization scripts.
+`tables/080-tenant.sql`, `tables/090-tenant-org.sql`, then `views/vi_Tenant.sql`, `views/vi_TenantDept.sql`,
+`views/vi_TenantPosition.sql` and `views/vi_TenantEmp.sql`. MySQL has the same files under `doc/sqlscript/mysql`.
+The numbered table scripts are re-runnable and have no tenant or organization seed. There is no startup schema check.
+
+An installation from before positions runs `updates/20261107-TenantPosition.sql` and then the two views, before
+starting the new API. The update moves any employee position text into positions of the tenant, with the first 50
+characters as the code, then drops the text column.
+
+Attachments need `builder.AddObjectStorage()`. The module declares the managed bucket `contact-attachments`, with a
+50 MB limit per file. Without object storage the other features work and an upload answers 503.
 
 ## Desktop workflow
 
@@ -55,11 +62,19 @@ its descendants. Inactive departments can remain parents and retain employees.
 department. User accounts link to employment through the shared contact. Each contact can be employed once
 per tenant and in several tenants; employee numbers are unique within each tenant.
 
+**Positions** starts with a tenant selector and lists the positions employees can hold, with the active employee
+count. Codes are unique per tenant. Deactivate stops offering a position; employees holding it keep it and nothing is
+deleted. **Copy from tenant** lists the active positions of another tenant. Codes that already exist here, active or
+not, are marked EXISTS and cannot be checked. Copies are saved as active and do not follow the source afterwards.
+
 Transferring or deactivating a department head asks for confirmation and clears the previous head in the
 same transaction. Unsaved changes in the editor are confirmed before navigation. Errors leave the draft
 available for correction.
 
-Employee editing opens in a dedicated **Employee Editor** navigation. The Employees tab contains a full-width
+Pages are switched from a left drawer with a tree that the module lists itself: **Organization** holds Tenants,
+Departments and Positions, **People** holds Employees. The drawer can be closed to a narrow rail with its toggle button.
+
+Employee editing opens in a dedicated **Employee Editor** navigation. The Employees page contains a full-width
 list with New employee and Open actions; double-click, Enter and the row context menu open the same editor.
 Selecting a row does not load an inline editor. Refresh the manager to see changes saved in another tab.
 
@@ -67,6 +82,21 @@ Search contact includes **all types and lifecycle states**, with linked username
 A contact already employed in this tenant remains visible but cannot be selected again. Employee uniqueness
 is also enforced by the server. The editor can create a contact or edit an existing contact's type as
 **Organization**, **Male** or **Female**. Shared contact changes affect all accounts and tenants using it.
+
+A saved employee keeps its tenant and contact; **Search contact** exists only for a new employee. **Contact full name**
+can be edited and is saved with the employee, under the contact's update stamp. It cannot be blank and it changes the
+contact everywhere it is used. The linked user account is shown read-only and changes in User Manager.
+
+**Position** offers the active positions of the tenant, plus the employee's own position when it was deactivated.
+**Head of department** needs a department and an active employee and shows the current head. Saving it checked makes
+this employee the head, after confirmation when that replaces someone; saving it unchecked clears the head. Moving
+department with it checked clears the old department and sets the new one in one transaction. **Revert** discards the
+unsaved changes.
+
+**Attachments** lists the active files of the contact. Add attachment, Replace file and Remove apply at once: Replace
+adds a version to the same object, and Remove hides the record while the file and its versions stay in object storage.
+Kind, Name and Note are saved with the employee. A new contact can have files once the employee is saved. Open
+downloads a temporary copy, deleted when the editor closes unless another program holds it.
 
 The editor loads all communication and address entries, allows adding entries, and independently selects
 the entry being edited and the default entry. A new contact starts with one draft of each kind. Save requires
@@ -76,7 +106,7 @@ Saving preserves other entries and commits employment, type, entries and default
 
 ## Service actions
 
-The tenant, department and employee actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
+The tenant, department, position, employee and attachment actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
 engine administrator bypass. Inject these interfaces on the server or resolve the shared client proxies.
 
 | Interface | Action | Behavior |
@@ -86,6 +116,14 @@ engine administrator bypass. Inject these interfaces on the server or resolve th
 | `ITenantDeptServices` | `GetVi_TenantDepts(tenantId)` | All departments of the tenant |
 | | `PostGetTa_TenantDept_New` | Create a department; ignore head until saved |
 | | `PostGetTa_TenantDept_Update` | Update hierarchy, fields and active head |
+| `ITenantPositionServices` | `GetVi_TenantPositions(tenantId)` | All positions of the tenant, ordered by name |
+| | `PostGetTa_TenantPosition_New` / `PostGetTa_TenantPosition_Update` | Create or update a position; the state deactivates it |
+| | `PostGetMeta_TenantPosition_Copy(copy)` | Copy active positions to another tenant, skipping existing codes; returns the rows created |
+| `IContactAttachmentServices` | `GetMeta_ContactAttachments(contactId)` | Active attachments with file name, type, size and date from object storage |
+| | `PostGetMeta_ContactAttachment_Add(upload, content)` | Store a file and add its attachment |
+| | `PostGetMeta_ContactAttachment_Replace(upload, content)` | Add a version to the file, keeping name, kind and note |
+| | `PostMeta_ContactAttachment_Remove(attachmentId, ustamp)` | Deactivate an attachment; the file stays |
+| | `GetMeta_ContactAttachment_Download(attachmentId)` | Current file of an active attachment |
 | `ITenantEmpServices` | `GetVi_TenantEmps(tenantId)` | All employees, ordered by person name and code |
 | | `GetVi_TenantEmp_ById(tenantEmpId)` | One employee, or null |
 | | `GetMeta_TenantEmpContacts(tenantId, search)` | Up to 50 contacts of all types/states, linked accounts and existing employee marker |
@@ -109,6 +147,12 @@ stamp; existing entries retain their last-read stamps and contact identity. Set 
 an existing contact's type. Contact and row stamp conflicts return 409; foreign details or missing,
 inactive or blank defaults return 400. Omitted entries are preserved rather than deleted.
 
+`TenantEmpPerson.FullName` saves the contact name and null preserves it. `TenantEmpPerson.Attachments` saves the name,
+kind, note and order of the rows sent, under each row's stamp. `TenantEmpSave.IsDeptHead` true makes the employee the
+head of its department, false clears the head when it is this employee, and null leaves the head alone. A wrapper that
+leaves these null keeps its behaviour. `Row.cTenantPositionId` must be an active position of the tenant, or the one the
+employee already holds. A new contact needs a nonblank name.
+
 Earlier callers can leave `EditCollections` false and edit `Comm` / `Address` as default-only fields.
 Omitting `Person` preserves contact data only when valid defaults already exist. A new contact requires
 nonblank default details. Updating employment cannot change its tenant or contact. No database migration
@@ -120,7 +164,8 @@ foreign-tenant departments or nonmember/inactive heads return 400. Stamps move b
 before SQL datetime rounding. Composite foreign keys protect tenant boundaries and head membership even
 for direct SQL. A head must be cleared before direct SQL transfers its employee. The service performs both
 changes and their `System.Settings` audit entries in one transaction. Audit kinds are `tenant.dept.created`,
-`tenant.dept.changed`, `tenant.emp.created` and `tenant.emp.changed`.
+`tenant.dept.changed`, `tenant.position.created`, `tenant.position.changed`, `tenant.emp.created`, `tenant.emp.changed`,
+`contact.attachment.created` and `contact.attachment.changed`.
 
 ## Use from another module
 
@@ -163,6 +208,11 @@ history, multiple appointments, custom employment policy, bulk import and legacy
 consumer's personnel module. There is no department object browser or MAUI screen.
 
 ## Maintainer notes
+
+`TenantPositionServicesTests` (SQL Server) and `MySqlTenantOrgTests` (MySQL) cover positions, copying, the composite
+foreign key, full name, head changes and attachments, with an in-memory store for files. `BusinessPositionTests` covers
+the page, dialog and editor without rendering. Offline light/dark rendering of the drawer, Positions and Employee Editor
+lives in `../.artefacts/em-system/scripts/bmm-drawer-render/`.
 
 SQL integration tests cover tenant boundaries, hierarchy, duplicate codes/people, stale writes, head
 transfers/deactivation, rollback and contact/account lookups. WPF tests load XAML without rendering and

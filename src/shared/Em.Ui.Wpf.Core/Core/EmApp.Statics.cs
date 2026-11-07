@@ -109,6 +109,8 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<ITenantServices>(provider => new Em.Ui.Core.TenantClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ITenantDeptServices>(provider => new Em.Ui.Core.TenantDeptClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ITenantEmpServices>(provider => new Em.Ui.Core.TenantEmpClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantPositionServices>(provider => new Em.Ui.Core.TenantPositionClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<IContactAttachmentServices>(provider => new Em.Ui.Core.ContactAttachmentClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ApprovalAccessCatalog>();

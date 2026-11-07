@@ -9,7 +9,9 @@ namespace Em.Ui.Wpf.Navigations;
 /// <summary>A choice of the Parent field: a department, or no parent at all.</summary>
 /// <param name="Id">Department ID; <c>null</c> = no parent (a root department).</param>
 /// <param name="Caption">Text shown in the list.</param>
-public sealed record DepartmentOption(string? Id, string Caption);
+/// <param name="HeadId">Employee heading the department; <c>null</c> = no head.</param>
+/// <param name="HeadCaption">Name and code of the head.</param>
+public sealed record DepartmentOption(string? Id, string Caption, string? HeadId = null, string? HeadCaption = null);
 
 /// <summary>One department in the tree of the Business Module Manager, or a draft that is not saved yet.</summary>
 public sealed class DepartmentNode : MvvmModelBase

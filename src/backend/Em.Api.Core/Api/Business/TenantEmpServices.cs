@@ -31,7 +31,7 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       var contact = await ctx.ta_Contacts.AsNoTracking().SingleOrDefaultAsync(x => x.cContactId == contactId, AbortToken)
          ?? throw new ActionException("The person was not found.", 404);
       var result = new TenantEmpPerson {
-         ContactId = contact.cContactId, ContactUstamp = contact.ustamp, ContactType = contact.cContactType,
+         ContactId = contact.cContactId, ContactUstamp = contact.ustamp, ContactType = contact.cContactType, FullName = contact.cContactFullName,
          Comms = await ctx.ta_Comms.AsNoTracking().Where(x => x.cContactId == contactId).OrderBy(x => x.cCommId).ToArrayAsync(AbortToken),
          Addresses = await ctx.ta_Addresses.AsNoTracking().Where(x => x.cContactId == contactId).OrderBy(x => x.cAddressId).ToArrayAsync(AbortToken),
          DefaultCommId = contact.cContactDefaultComm_cCommId, DefaultAddressId = contact.cContactDefaultAddress_cAddressId,
@@ -72,12 +72,22 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       var department = TenantOrg.Optional(row.cTenantDeptId);
       if (department is not null && !await ctx.ta_TenantDepts.AnyAsync(x => x.cTenantDeptId == department && x.cTenantId == row.cTenantId, AbortToken))
          throw new ActionException("The department must belong to this tenant.", 400);
+      var position = TenantOrg.Optional(row.cTenantPositionId);
+      if (position is not null) {
+         var state = await ctx.ta_TenantPositions.AsNoTracking().Where(x => x.cTenantPositionId == position && x.cTenantId == row.cTenantId).Select(x => (int?)x.cTenantPositionState).SingleOrDefaultAsync(AbortToken)
+            ?? throw new ActionException("The position must belong to this tenant.", 400);
+         // An employee keeps a position that was deactivated later, but cannot be given one.
+         if (state != ta_TenantPosition.StateActive && !TenantOrg.Same(current?.cTenantPositionId, position)) throw new ActionException("Choose an active position.", 400);
+      }
+      if (save.IsDeptHead == true && (department is null || row.cTenantEmpState != ta_TenantEmp.StateActive))
+         throw new ActionException("The head must be an active employee of the department.", 400);
       var contactId = row.cContactId;
       var newPerson = creating && string.IsNullOrWhiteSpace(contactId);
       if (newPerson) {
          if (!Enum.IsDefined(save.NewContactType)) throw new ActionException("Choose a contact type.", 400);
+         if (string.IsNullOrWhiteSpace(save.NewContactName)) throw new ActionException("Enter the contact name.", 400);
          contactId = Ulid.NewUlid().ToString();
-         ctx.ta_Contacts.Add(new ta_Contact { cContactId = contactId, cContactFullName = save.NewContactName ?? "", cContactType = save.NewContactType, cContactState = ContactState.Active, ustamp = DateTime.UtcNow, datestamp = DateTime.UtcNow });
+         ctx.ta_Contacts.Add(new ta_Contact { cContactId = contactId, cContactFullName = save.NewContactName.Trim(), cContactType = save.NewContactType, cContactState = ContactState.Active, ustamp = DateTime.UtcNow, datestamp = DateTime.UtcNow });
          await ctx.SaveChangesAsync(AbortToken);
       }
       else if (!await ctx.ta_Contacts.AnyAsync(x => x.cContactId == contactId, AbortToken))
@@ -105,18 +115,19 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
          if (creating) {
             ctx.ta_TenantEmps.Add(new ta_TenantEmp {
                cTenantEmpId = id, cTenantId = row.cTenantId, cContactId = contactId, cTenantDeptId = department,
-               cTenantEmpCode = row.cTenantEmpCode, cTenantEmpPosition = row.cTenantEmpPosition, cTenantEmpState = row.cTenantEmpState,
+               cTenantEmpCode = row.cTenantEmpCode, cTenantPositionId = position, cTenantEmpState = row.cTenantEmpState,
                cTenantEmpNote = row.cTenantEmpNote, json_object = row.json_object, ustamp = DateTime.UtcNow, datestamp = DateTime.UtcNow
             });
             await ctx.SaveChangesAsync(AbortToken);
          }
          else await ctx.ta_TenantEmps.Where(x => x.cTenantEmpId == id).ExecuteUpdateAsync(s => s
             .SetProperty(x => x.cTenantDeptId, department).SetProperty(x => x.cTenantEmpCode, row.cTenantEmpCode)
-            .SetProperty(x => x.cTenantEmpPosition, row.cTenantEmpPosition).SetProperty(x => x.cTenantEmpState, row.cTenantEmpState)
+            .SetProperty(x => x.cTenantPositionId, position).SetProperty(x => x.cTenantEmpState, row.cTenantEmpState)
             .SetProperty(x => x.cTenantEmpNote, row.cTenantEmpNote).SetProperty(x => x.json_object, row.json_object)
             .SetProperty(x => x.ustamp, TenantOrg.Stamp(current!.ustamp)), AbortToken);
       }, "The employee number or person is already used in this tenant.");
       foreach (var dept in cleared) Audit(dept, "tenant.dept.changed", "Cleared department head after employee transfer or deactivation", "department");
+      if (save.IsDeptHead is { } head && department is not null) await SaveHeadAsync(department, id, head);
       Audit(id, creating ? "tenant.emp.created" : "tenant.emp.changed", "Saved employee '" + row.cTenantEmpCode + "'", "employee");
       await ctx.SaveChangesAsync(AbortToken);
       await tx.CommitAsync(AbortToken);
@@ -142,6 +153,32 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       select head).SingleOrDefaultAsync(AbortToken);
    #endregion
 
+   // Runs after the employee row, because the head link requires the employee to be in the department.
+   private async Task SaveHeadAsync(string departmentId, string employeeId, bool head) {
+      var department = await ctx.ta_TenantDepts.AsNoTracking().SingleAsync(x => x.cTenantDeptId == departmentId, AbortToken);
+      var isHead = TenantOrg.Same(department.cTenantDeptHead_cTenantEmpId, employeeId);
+      if (head == isHead) return;
+      var value = head ? employeeId : null;
+      await ctx.ta_TenantDepts.Where(x => x.cTenantDeptId == departmentId).ExecuteUpdateAsync(s => s
+         .SetProperty(x => x.cTenantDeptHead_cTenantEmpId, value).SetProperty(x => x.ustamp, TenantOrg.Stamp(department.ustamp)), AbortToken);
+      Audit(departmentId, "tenant.dept.changed", head ? "Set department head from the employee editor" : "Cleared department head from the employee editor", "department");
+   }
+
+   private async Task SaveAttachmentsAsync(string contactId, ta_ContactAttachment[] attachments) {
+      foreach (var item in attachments) {
+         var old = await ctx.ta_ContactAttachments.AsNoTracking().SingleOrDefaultAsync(x => x.cContactAttachmentId == item.cContactAttachmentId, AbortToken);
+         if (old is null || !TenantOrg.Same(old.cContactId, contactId) || old.cContactAttachmentState != ta_ContactAttachment.StateActive)
+            throw new ActionException("The attachment must belong to this contact.", 400);
+         if (old.ustamp != item.ustamp) throw new ActionException("An attachment changed. Refresh before saving.", 409);
+         if (string.IsNullOrWhiteSpace(item.cContactAttachmentName)) throw new ActionException("Enter the attachment name.", 400);
+         if (!Enum.IsDefined(item.cContactAttachmentKind)) throw new ActionException("Choose an attachment kind.", 400);
+         await ctx.ta_ContactAttachments.Where(x => x.cContactAttachmentId == item.cContactAttachmentId).ExecuteUpdateAsync(s => s
+            .SetProperty(x => x.cContactAttachmentName, item.cContactAttachmentName.Trim()).SetProperty(x => x.cContactAttachmentKind, item.cContactAttachmentKind)
+            .SetProperty(x => x.cContactAttachmentNote, item.cContactAttachmentNote).SetProperty(x => x.cContactAttachmentOrder, item.cContactAttachmentOrder)
+            .SetProperty(x => x.ustamp, TenantOrg.Stamp(old.ustamp)), AbortToken);
+      }
+   }
+
    private async Task SavePersonAsync(string contactId, TenantEmpPerson? input, bool creating) {
       var person = await ctx.ta_Contacts.AsNoTracking().SingleAsync(x => x.cContactId == contactId, AbortToken);
       if (input is null) throw new ActionException("Choose a non-empty default communication and address before saving.", 400);
@@ -149,6 +186,8 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       if (!creating && input.ContactUstamp != person.ustamp) throw new ActionException("The contact changed. Refresh before saving.", 409);
       if (creating && !string.IsNullOrEmpty(input.ContactId)) throw new ActionException("A new contact cannot reuse another contact's details.", 400);
       if (input.ContactType is { } type && !Enum.IsDefined(type)) throw new ActionException("Choose a contact type.", 400);
+      if (input.FullName is not null && string.IsNullOrWhiteSpace(input.FullName)) throw new ActionException("Enter the contact name.", 400);
+      if (input.FullName?.Trim().Length > 255) throw new ActionException("The contact name is too long.", 400);
 
       var comms = (input.EditCollections ? input.Comms : null) ?? (input.Comm is { } comm ? [comm] : Array.Empty<ta_Comm>());
       var addresses = (input.EditCollections ? input.Addresses : null) ?? (input.Address is { } address ? [address] : Array.Empty<ta_Address>());
@@ -162,8 +201,10 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
          throw new ActionException("Choose a non-empty active default communication and address before saving.", 400);
 
       await ContactDetails.WriteAsync(ctx, contactId, comms, addresses, commId, addressId, creating, AbortToken);
+      if (input.Attachments is { Length: > 0 } attachments) await SaveAttachmentsAsync(contactId, attachments);
+      var fullName = input.FullName?.Trim() ?? person.cContactFullName;
       await ctx.ta_Contacts.Where(x => x.cContactId == contactId).ExecuteUpdateAsync(s => s
-         .SetProperty(x => x.cContactType, input.ContactType ?? person.cContactType)
+         .SetProperty(x => x.cContactFullName, fullName).SetProperty(x => x.cContactType, input.ContactType ?? person.cContactType)
          .SetProperty(x => x.cContactDefaultComm_cCommId, commId).SetProperty(x => x.cContactDefaultAddress_cAddressId, addressId)
          .SetProperty(x => x.ustamp, TenantOrg.Stamp(person.ustamp)), AbortToken);
    }

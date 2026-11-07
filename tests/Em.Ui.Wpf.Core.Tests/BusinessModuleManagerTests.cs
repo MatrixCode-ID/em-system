@@ -17,10 +17,60 @@ public class BusinessModuleManagerTests
       var view = new BusinessModuleManager(app);
       Assert.IsType<System.Windows.Style>(view.Resources["tenantTreeItemStyle"]);
       Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("tenantTree"));
+      Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("pageTree"));
       Assert.True(view.Vm.IsTenantsTab);
-      Assert.Equal(["Tenants", "Departments", "Employees"], view.Vm.Tabs.Select(t => t.Title));
+      Assert.Equal(["Tenants", "Departments", "Positions", "Employees"], view.Vm.Tabs.Select(t => t.Title));
       Assert.False(view.Vm.CanBrowse);
    }
+
+   [Fact]
+   public void PageDrawerListsTheExistingPagesInFolders() {
+      var vm = new BusinessModuleManagerVm(new StubService());
+
+      Assert.Equal(["Organization (3)", "People (1)"], vm.PageNodes.Select(n => n.Caption));
+      Assert.Equal(["Tenants", "Departments", "Positions"], vm.PageNodes[0].Children.Select(n => n.Title));
+      Assert.Equal(["Employees"], vm.PageNodes[1].Children.Select(n => n.Title));
+      Assert.All(vm.PageNodes, n => Assert.True(n.IsExpanded));
+      Assert.Equal(["Tenants"], SelectedPages(vm));
+      Assert.True(vm.IsDrawerOpen);
+   }
+
+   [Fact]
+   public void SelectingADrawerPageOpensItAndMovesTheSelection() {
+      var vm = new BusinessModuleManagerVm(new StubService());
+
+      vm.PageNodes[1].Children[0].IsSelected = true;
+
+      Assert.True(vm.IsEmployeesTab);
+      Assert.Equal(["Employees"], SelectedPages(vm));
+   }
+
+   [Fact]
+   public async Task RefusedPageSwitchKeepsTheDrawerOnTheShownPage() {
+      var vm = new BusinessModuleManagerVm(new StubService());
+      await vm.ReloadAsync();
+      vm.RootNodes[1].IsSelected = true;
+      vm.EditName = "Alpha Renamed";
+      vm.ConfirmDiscard = () => false;
+
+      vm.PageNodes[0].Children[1].IsSelected = true;
+
+      Assert.True(vm.IsTenantsTab);
+      Assert.Equal(["Tenants"], SelectedPages(vm));
+   }
+
+   [Fact]
+   public void ToggleDrawerClosesAndReopensTheDrawer() {
+      var vm = new BusinessModuleManagerVm(new StubService());
+
+      vm.ToggleDrawerCommand();
+      Assert.False(vm.IsDrawerOpen);
+      vm.ToggleDrawerCommand();
+      Assert.True(vm.IsDrawerOpen);
+   }
+
+   private static string[] SelectedPages(BusinessModuleManagerVm vm) =>
+      [.. vm.PageNodes.SelectMany(n => n.Children).Where(n => n.IsSelected).Select(n => n.Title)];
 
    [Fact]
    public async Task ReloadBuildsTheTreeInDisplayOrder() {

@@ -11,4 +11,9 @@ public sealed class TenantEmpSave
    public TenantEmpPerson? Person { get; set; }
    /// <summary>Type of the new person.</summary>
    public ContactType NewContactType { get; set; } = ContactType.Male;
+   /// <summary>
+   /// Whether the employee heads its department after this save. True replaces the current head and needs an
+   /// active employee with a department; false clears the head when it is this employee; null leaves it unchanged.
+   /// </summary>
+   public bool? IsDeptHead { get; set; }
 }

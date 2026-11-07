@@ -21,8 +21,8 @@ public class ta_TenantEmp
    [MaxLength(26)] public string? cTenantDeptId { get; set; }
    /// <summary>Employee number, unique within its tenant.</summary>
    [MaxLength(50)] public string cTenantEmpCode { get; set; } = "";
-   /// <summary>Optional position title.</summary>
-   [MaxLength(255)] public string? cTenantEmpPosition { get; set; }
+   /// <summary>Optional position in the same tenant.</summary>
+   [MaxLength(26)] public string? cTenantPositionId { get; set; }
    /// <summary>Active or inactive employment state.</summary>
    public int cTenantEmpState { get; set; }
    /// <summary>Optional administrator note.</summary>

@@ -16,18 +16,31 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
 {
    private readonly ITenantEmpServices? _service;
    private readonly ITenantDeptServices? _departments;
+   private readonly ITenantPositionServices? _positions;
+   private readonly IContactAttachmentServices? _attachments;
    private vi_TenantEmp[] _rows = [];
+   private vi_TenantPosition[] _positionRows = [];
    private bool _opening;
    private bool _refreshingRows;
    private TenantEmpPerson? _person;
    private int _personGeneration;
    private ITenantEmpServices? Service => _service ?? EmApp?.ServiceProvider.GetRequiredService<ITenantEmpServices>();
    private ITenantDeptServices? DepartmentService => _departments ?? EmApp?.ServiceProvider.GetRequiredService<ITenantDeptServices>();
+   private ITenantPositionServices? PositionService => _positions ?? EmApp?.ServiceProvider.GetService<ITenantPositionServices>();
+   private IContactAttachmentServices? AttachmentService => _attachments ?? EmApp?.ServiceProvider.GetService<IContactAttachmentServices>();
    /// <summary>Creates navigation state.</summary>
    public BusinessModuleManagerEmpVm() : this(null, null) { }
    /// <summary>Creates state with explicit services for tests.</summary>
-   public BusinessModuleManagerEmpVm(ITenantEmpServices? service, ITenantDeptServices? departments) {
-      _service = service; _departments = departments;
+   public BusinessModuleManagerEmpVm(ITenantEmpServices? service, ITenantDeptServices? departments, ITenantPositionServices? positions = null, IContactAttachmentServices? attachments = null) {
+      _service = service; _departments = departments; _positions = positions; _attachments = attachments;
+      RegisterCommand(nameof(RevertCommand), RevertCommand, RevertCommandAllowed);
+      RegisterCommand(nameof(AddAttachmentCommand), AddAttachmentCommand, AddAttachmentCommandAllowed);
+      RegisterCommand(nameof(OpenAttachmentCommand), OpenAttachmentCommand, OpenAttachmentCommandAllowed);
+      RegisterCommand(nameof(ReplaceAttachmentCommand), ReplaceAttachmentCommand, ReplaceAttachmentCommandAllowed);
+      RegisterCommand(nameof(RemoveAttachmentCommand), RemoveAttachmentCommand, RemoveAttachmentCommandAllowed);
+      Communications.CollectionChanged += (_, _) => NotifyChanged(nameof(CommunicationsCaption));
+      Addresses.CollectionChanged += (_, _) => NotifyChanged(nameof(AddressesCaption));
+      Attachments.CollectionChanged += (_, _) => NotifyChanged(nameof(AttachmentsCaption));
       RegisterCommand<vi_TenantEmp>(nameof(OpenEmployeeCommand), OpenEmployeeCommand, OpenEmployeeCommandAllowed);
       RegisterCommand(nameof(AddCommCommand), AddCommCommand, AddCommCommandAllowed);
       RegisterCommand(nameof(AddAddressCommand), AddAddressCommand, AddAddressCommandAllowed);
@@ -77,14 +90,21 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
    public string Filter { get => Get<string>() ?? ""; set { Set(value); ApplyFilter(); } }
    /// <summary>Editable employee number.</summary>
    public string EditCode { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
-   /// <summary>Editable position.</summary>
-   public string? EditPosition { get => Get<string>(); set => Set(value, _ => UpdateState()); }
+   /// <summary>Position choices: none, the active positions, and the employee's own position when it was deactivated.</summary>
+   public ObservableCollection<PositionOption> PositionOptions { get; } = [];
+   /// <summary>Selected position.</summary>
+   public PositionOption? EditPosition { get => Get<PositionOption>(); set => Set(value, _ => UpdateState()); }
    /// <summary>Editable note.</summary>
    public string? EditNote { get => Get<string>(); set => Set(value, _ => UpdateState()); }
    /// <summary>Department choices, including no department.</summary>
    public ObservableCollection<DepartmentOption> DepartmentOptions { get; } = [];
    /// <summary>Selected department.</summary>
-   public DepartmentOption? EditDepartment { get => Get<DepartmentOption>(); set => Set(value, _ => UpdateState()); }
+   public DepartmentOption? EditDepartment {
+      get => Get<DepartmentOption>();
+      set => Set(value, _ => { if (value?.Id is null) EditIsHead = false; UpdateState(); });
+   }
+   /// <summary>Whether saving makes this employee the head of the selected department.</summary>
+   public bool EditIsHead { get => Get<bool>(); set => Set(value, _ => UpdateState()); }
    /// <summary>The selected person's pending detail load, awaitable without rendering.</summary>
    public Task PersonLoading { get; private set; } = Task.CompletedTask;
    /// <summary>Whether the shared contact defaults are being loaded.</summary>
@@ -124,8 +144,8 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
    }
    /// <summary>Whether the existing-person picker is active.</summary>
    public bool ExistingPerson { get => !NewPerson; set => NewPerson = !value; }
-   /// <summary>New person's name.</summary>
-   public string NewPersonName { get => Get<string>() ?? ""; set => Set(value, _ => UpdateState()); }
+   /// <summary>New person's name, which is the same field as the contact's full name.</summary>
+   public string NewPersonName { get => EditContactName; set => EditContactName = value; }
    /// <summary>Available person types.</summary>
    public ContactType[] PersonTypes { get; } = [ContactType.Organization, ContactType.Male, ContactType.Female];
    /// <summary>New person's type.</summary>
@@ -171,12 +191,15 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
    public string Status { get => Get<string>() ?? ""; private set => Set(value); }
    /// <summary>Whether the employee has unsaved changes.</summary>
    public bool IsDirty => IsEditorPage && SelectedRow is { } row && (IsDraft || EditCode != row.cTenantEmpCode ||
-      (EditPosition ?? "") != (row.cTenantEmpPosition ?? "") || (EditNote ?? "") != (row.cTenantEmpNote ?? "") || EditDepartment?.Id != row.cTenantDeptId || PersonDirty);
+      EditPosition?.Id != row.cTenantPositionId || EditIsHead != row.ccTenantEmpIsDeptHead || (EditNote ?? "") != (row.cTenantEmpNote ?? "") ||
+      EditDepartment?.Id != row.cTenantDeptId || PersonDirty || Attachments.Any(x => x.IsDirty));
    private bool PersonDirty => _person is not null && PersonSnapshot() != _personSnapshot;
    /// <summary>State action caption.</summary>
    public string ToggleStateCaption => SelectedRow?.cTenantEmpState < 0 ? "Activate" : "Deactivate";
    /// <summary>Explains the effect of transferring a department head.</summary>
-   public string HeadChangeHint => SelectedRow?.ccTenantEmpIsDeptHead == true && EditDepartment?.Id != SelectedRow.cTenantDeptId ? "Saving this transfer will leave the previous department without a head." : "";
+   public string HeadChangeHint => SelectedRow?.ccTenantEmpIsDeptHead != true ? "" :
+      EditDepartment?.Id != SelectedRow.cTenantDeptId ? "Saving this transfer will leave the previous department without a head." :
+      !EditIsHead ? "Saving will leave this department without a head." : "";
    /// <summary>Whether a draft can be started.</summary>
    public bool NewEmployeeCommandAllowed() => CanBrowse;
    /// <summary>Starts a draft employee.</summary>
@@ -187,10 +210,11 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
       return Task.CompletedTask;
    }
    /// <summary>Whether the employee can be saved.</summary>
-   public bool SaveCommandAllowed() => CanEdit && IsDirty && IsPersonReady && DefaultsValid && (!IsDraft || NewPerson || SelectedCandidate is not null);
+   public bool SaveCommandAllowed() => CanEdit && IsDirty && IsPersonReady && DefaultsValid && ContactNameValid && Attachments.All(x => x.IsValid) && (!IsDraft || NewPerson || SelectedCandidate is not null);
    /// <summary>Saves the employee and refreshes the list.</summary>
    public Task SaveCommand() {
       if (!SaveCommandAllowed() || HeadChangeHint.Length > 0 && ConfirmHeadChange?.Invoke() == false) return Task.CompletedTask;
+      if (ReplacesHead && ConfirmHeadReplace?.Invoke(EditDepartment!.HeadCaption ?? "") == false) return Task.CompletedTask;
       return SaveAsync(false);
    }
    /// <summary>Whether state can be changed.</summary>
@@ -206,10 +230,10 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
          Row = new ta_TenantEmp {
             cTenantEmpId = row.cTenantEmpId, cTenantId = row.cTenantId,
             cContactId = IsDraft ? (NewPerson ? "" : SelectedCandidate!.ContactId) : row.cContactId,
-            cTenantDeptId = EditDepartment?.Id, cTenantEmpCode = EditCode, cTenantEmpPosition = EditPosition,
+            cTenantDeptId = EditDepartment?.Id, cTenantEmpCode = EditCode, cTenantPositionId = EditPosition?.Id,
             cTenantEmpNote = EditNote, cTenantEmpState = toggle ? (row.cTenantEmpState == 0 ? -1 : 0) : row.cTenantEmpState,
             json_object = row.json_object, ustamp = row.ustamp
-         }, NewContactName = NewPersonName, NewContactType = NewPersonType, Person = toggle ? null : BuildPerson()
+         }, NewContactName = EditContactName, NewContactType = NewPersonType, Person = toggle ? null : BuildSavePerson(), IsDeptHead = toggle ? null : EditIsHead
       });
       await Load(saved.cTenantEmpId);
       NavigationEntry?.SetTitle("Employee: " + saved.cTenantEmpId);
@@ -243,9 +267,11 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
    private async Task Load(string? selectId) {
       if (Service is not { } service || SelectedTenant is null) return;
       var departments = DepartmentService is { } ds ? await ds.GetVi_TenantDepts(SelectedTenant.cTenantId) : [];
+      _positionRows = PositionService is { } ps ? await ps.GetVi_TenantPositions(SelectedTenant.cTenantId) : [];
       _rows = await service.GetVi_TenantEmps(SelectedTenant.cTenantId);
       DepartmentOptions.Clear(); DepartmentOptions.Add(new(null, "(none)"));
-      foreach (var d in departments) DepartmentOptions.Add(new(d.cTenantDeptId, $"{d.cTenantDeptName} ({d.cTenantDeptCode})"));
+      foreach (var d in departments) DepartmentOptions.Add(new(d.cTenantDeptId, $"{d.cTenantDeptName} ({d.cTenantDeptCode})", d.cTenantDeptHead_cTenantEmpId,
+         d.cTenantDeptHead_cTenantEmpId is null ? null : $"{d.cvTenantDeptHeadName} ({d.cvTenantDeptHeadCode})"));
       ApplyFilter();
       var selected = _rows.FirstOrDefault(e => e.cTenantEmpId == selectId);
       if (IsEditorPage) Open(selected); else SelectedRow = selected;
@@ -256,7 +282,7 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
       _refreshingRows = true;
       try {
          Rows.Clear(); foreach (var e in _rows.Where(e => string.IsNullOrEmpty(Filter) ||
-            (e.cvContactFullName + " " + e.cTenantEmpCode + " " + e.cvTenantDeptCode + " " + e.cvTenantDeptName).Contains(Filter, StringComparison.OrdinalIgnoreCase))) Rows.Add(e);
+            (e.cvContactFullName + " " + e.cTenantEmpCode + " " + e.cvTenantDeptCode + " " + e.cvTenantDeptName + " " + e.cvTenantPositionName).Contains(Filter, StringComparison.OrdinalIgnoreCase))) Rows.Add(e);
          NotifyChanged(nameof(SelectedRow));
       } finally { _refreshingRows = false; }
    }
@@ -264,15 +290,19 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
       _opening = true;
       try {
          ResetPerson();
-         SelectedRow = row; EditCode = row?.cTenantEmpCode ?? ""; EditPosition = row?.cTenantEmpPosition; EditNote = row?.cTenantEmpNote;
+         SelectedRow = row; EditCode = row?.cTenantEmpCode ?? ""; EditNote = row?.cTenantEmpNote;
+         FillPositionOptions(row);
+         EditPosition = PositionOptions.FirstOrDefault(p => p.Id == row?.cTenantPositionId);
          EditDepartment = DepartmentOptions.FirstOrDefault(d => d.Id == row?.cTenantDeptId);
+         EditIsHead = row?.ccTenantEmpIsDeptHead == true;
          NewPerson = false; NewPersonName = ""; NewPersonType = ContactType.Male; SelectedCandidate = null;
       } finally { _opening = false; UpdateState(); }
       if (row is { cContactId.Length: > 0 }) PersonLoading = LoadPersonAsync(row.cContactId);
    }
    private void ResetPerson() {
       _personGeneration++; _person = null; IsPersonLoading = false;
-      _personSnapshot = "";
+      _personSnapshot = ""; EditContactName = "";
+      Attachments.Clear(); SelectedAttachment = null;
       Communications.Clear(); Addresses.Clear(); SelectedComm = DefaultComm = null; SelectedAddress = DefaultAddress = null;
       PersonLoading = Task.CompletedTask;
       UpdateState();
@@ -286,12 +316,19 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
          if (generation != _personGeneration) return;
          _person = person;
          EditContactType = person.ContactType ?? SelectedCandidate?.ContactType ?? SelectedRow?.cvContactType ?? ContactType.Organization;
+         EditContactName = person.FullName ?? SelectedCandidate?.FullName ?? SelectedRow?.cvContactFullName ?? "";
          foreach (var item in person.Comms ?? (person.Comm is { } comm ? [comm] : Array.Empty<ta_Comm>())) Communications.Add(Watch(new EmployeeCommunicationVm(item)));
          foreach (var item in person.Addresses ?? (person.Address is { } address ? [address] : Array.Empty<ta_Address>())) Addresses.Add(Watch(new EmployeeAddressVm(item)));
          DefaultComm = Communications.FirstOrDefault(x => x.Id == (person.DefaultCommId ?? person.Comm?.cCommId));
          DefaultAddress = Addresses.FirstOrDefault(x => x.Id == (person.DefaultAddressId ?? person.Address?.cAddressId));
          SelectedComm = DefaultComm ?? Communications.FirstOrDefault(); SelectedAddress = DefaultAddress ?? Addresses.FirstOrDefault();
          _personSnapshot = PersonSnapshot();
+         if (AttachmentService is { } attachments) {
+            var files = await attachments.GetMeta_ContactAttachments(contactId);
+            if (generation != _personGeneration) return;
+            foreach (var file in files) Attachments.Add(Watch(new EmployeeAttachmentVm(file)));
+            SelectedAttachment = Attachments.FirstOrDefault();
+         }
       }
       catch (Exception ex) {
          if (generation == _personGeneration) Status = ex is ActionException ? ex.Message.Replace("Server Error: ", "") : "Could not load the person's defaults. Refresh and try again.";
@@ -300,7 +337,7 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
    }
    private TenantEmpPerson BuildPerson() => new() {
       ContactId = NewPerson ? "" : _person!.ContactId, ContactUstamp = _person?.ContactUstamp ?? default,
-      ContactType = NewPerson ? NewPersonType : EditContactType, EditCollections = true,
+      ContactType = NewPerson ? NewPersonType : EditContactType, EditCollections = true, FullName = EditContactName,
       Comms = Communications.Select(x => x.ToRow()).ToArray(), Addresses = Addresses.Select(x => x.ToRow()).ToArray(),
       DefaultCommId = DefaultComm?.Id, DefaultAddressId = DefaultAddress?.Id,
       Comm = DefaultComm?.ToRow(), Address = DefaultAddress?.ToRow()
@@ -313,7 +350,7 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
       finally { IsBusy = InWaiting = false; UpdateState(); }
    }
    private void UpdateState() {
-      foreach (var name in new[] { nameof(SelectedContactCaption), nameof(IsPersonReady), nameof(ShowPersonDetails), nameof(CanEditPerson), nameof(HasSelection), nameof(HasNoSelection), nameof(IsDraft), nameof(IsSaved), nameof(ShowNewPerson), nameof(ShowExistingPerson), nameof(CanBrowse), nameof(CanEdit), nameof(IsDirty), nameof(ToggleStateCaption), nameof(PersonCaption), nameof(HeadChangeHint), nameof(DefaultsValid), nameof(DefaultGuardMessage) }) NotifyChanged(name);
+      foreach (var name in new[] { nameof(SelectedContactCaption), nameof(IsPersonReady), nameof(ShowPersonDetails), nameof(CanEditPerson), nameof(HasSelection), nameof(HasNoSelection), nameof(IsDraft), nameof(IsSaved), nameof(ShowNewPerson), nameof(ShowExistingPerson), nameof(CanBrowse), nameof(CanEdit), nameof(IsDirty), nameof(ToggleStateCaption), nameof(PersonCaption), nameof(HeadChangeHint), nameof(DefaultsValid), nameof(DefaultGuardMessage), nameof(LinkedUserCaption), nameof(ShowNoContact), nameof(CanEditHead), nameof(CurrentHeadCaption), nameof(CanManageAttachments), nameof(AttachmentHint), nameof(HasSelectedAttachment) }) NotifyChanged(name);
       foreach (var command in Commands) command.RaiseCanExecuteChanged();
    }
 }
@@ -322,15 +359,19 @@ public sealed partial class BusinessModuleManagerEmpVm : MvvmModelBase
 public sealed partial class BusinessModuleManagerVm
 {
    /// <summary>Checks all editors before leaving the screen.</summary>
-   public bool CanLeave() => (!IsDirty || ConfirmDiscard?.Invoke() != false) && Departments.CanLeave() && Employees.CanLeave();
+   public bool CanLeave() => (!IsDirty || ConfirmDiscard?.Invoke() != false) && Departments.CanLeave() && Positions.CanLeave() && Employees.CanLeave();
    /// <summary>Whether tabs can be switched during work.</summary>
-   public bool CanSwitchTabs => IsNotBusy && Departments.IsNotBusy && Employees.IsNotBusy;
+   public bool CanSwitchTabs => IsNotBusy && Departments.IsNotBusy && Positions.IsNotBusy && Employees.IsNotBusy;
    /// <summary>Department tab state.</summary>
    public BusinessModuleManagerDeptVm Departments { get; } = new();
+   /// <summary>Position tab state.</summary>
+   public BusinessModuleManagerPositionVm Positions { get; } = new();
    /// <summary>Employee tab state.</summary>
    public BusinessModuleManagerEmpVm Employees { get; } = new();
    /// <summary>Whether departments are shown.</summary>
    public bool IsDepartmentsTab => ActiveTab.Key == "departments";
+   /// <summary>Whether positions are shown.</summary>
+   public bool IsPositionsTab => ActiveTab.Key == "positions";
    /// <summary>Whether employees are shown.</summary>
    public bool IsEmployeesTab => ActiveTab.Key == "employees";
 }

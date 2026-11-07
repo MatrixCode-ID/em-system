@@ -69,6 +69,9 @@ product (the file is a zip; `images/` and `versions/` entries are kept until rem
     shared across tenants and accounts, like communications and addresses. Discussion: [contact-attachments idea](../ideas/contact-attachments.md).
   - **Note**: the employee's own multi-line note (per tenant, not the contact's), after Department.
 - Sample data is fictitious. This is a design for review, not an implementation decision.
+- Implemented 2026-11-07: the drawer, Positions with Copy from tenant, and the Employee Editor fields and tabs. The
+  Communications and Addresses tabs keep the picker layout of the previous editor instead of the entry lists drawn
+  here. New employee keeps the Existing/New contact choice above the full name field.
 
 ## Attendance in Business Module Manager (2026-11-06)
 

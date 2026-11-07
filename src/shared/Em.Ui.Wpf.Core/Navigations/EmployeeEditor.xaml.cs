@@ -19,6 +19,13 @@ public partial class EmployeeEditor : UserControl, INavigationBody
       Vm.EmApp = app;
       Vm.ConfirmDiscard = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning("Discard the unsaved changes of this employee?", "Unsaved Changes") == MessageBoxResult.Yes;
       Vm.ConfirmHeadChange = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning("This department will lose its head. Continue?", "Department Head") == MessageBoxResult.Yes;
+      Vm.ConfirmHeadReplace = head => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning($"{head} is the current head of this department and will be replaced. Continue?", "Department Head") == MessageBoxResult.Yes;
+      Vm.ConfirmRemoveAttachment = item => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning($"Remove {item.Name}? The file stays in storage, but it is hidden for every tenant and account using this contact.", "Remove Attachment") == MessageBoxResult.Yes;
+      Vm.PickAttachmentFile = () => {
+         var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose a file" };
+         return dialog.ShowDialog(Window.GetWindow(this) ?? app.MainWindow) == true ? dialog.FileName : null;
+      };
+      Vm.OpenLocalFile = path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
       Vm.PickContact = _ => {
          var dialog = new ContactPickerDialog(app, filter: Vm.BuildContactPickerFilter(), selectionBlockReason: Vm.GetContactSelectionBlockReason) { Owner = Window.GetWindow(this) ?? app.MainWindow };
          return dialog.ShowDialog() == true ? dialog.Vm.SelectedContact : null;
@@ -45,5 +52,5 @@ public partial class EmployeeEditor : UserControl, INavigationBody
       else await Vm.RefreshCommand();
    }
    /// <inheritdoc />
-   public Task OnRelease(INavigation sender) => Task.CompletedTask;
+   public Task OnRelease(INavigation sender) { Vm.ReleaseOpenedFiles(); return Task.CompletedTask; }
 }

@@ -27,6 +27,25 @@ CREATE TABLE [dbo].[ta_TenantDept] (
 END
 GO
 
+IF OBJECT_ID(N'[dbo].[ta_TenantPosition]', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[ta_TenantPosition] (
+   [cTenantPositionId]                 char(26)      NOT NULL CONSTRAINT [DF_ta_TenantPosition_cTenantPositionId] DEFAULT ([dbo].[NewUlidString]()),
+   [cTenantId]                         char(26)      NOT NULL,
+   [cTenantPositionCode]               varchar(50)   NOT NULL,   -- unique per tenant
+   [cTenantPositionName]               varchar(255)  NOT NULL,
+   [cTenantPositionState]              int           NOT NULL CONSTRAINT [DF_ta_TenantPosition_cTenantPositionState] DEFAULT (0),   -- 0 active, -1 inactive
+   [cTenantPositionNote]               varchar(500)  NULL,
+   [ustamp]                            datetime      NOT NULL CONSTRAINT [DF_ta_TenantPosition_ustamp] DEFAULT (getdate()),
+   [datestamp]                         datetime      NOT NULL CONSTRAINT [DF_ta_TenantPosition_datestamp] DEFAULT (getdate()),
+   [json_object]                       nvarchar(max) NULL,
+   CONSTRAINT [PK_ta_TenantPosition] PRIMARY KEY CLUSTERED ([cTenantPositionId]),
+   CONSTRAINT [UQ_ta_TenantPosition_cTenantId_cTenantPositionCode] UNIQUE ([cTenantId], [cTenantPositionCode]),
+   CONSTRAINT [UQ_ta_TenantPosition_cTenantPositionId_cTenantId] UNIQUE ([cTenantPositionId], [cTenantId])
+);
+END
+GO
+
 IF OBJECT_ID(N'[dbo].[ta_TenantEmp]', N'U') IS NULL
 BEGIN
 CREATE TABLE [dbo].[ta_TenantEmp] (
@@ -35,7 +54,7 @@ CREATE TABLE [dbo].[ta_TenantEmp] (
    [cContactId]                        char(26)      NOT NULL,
    [cTenantDeptId]                     char(26)      NULL,
    [cTenantEmpCode]                    varchar(50)   NOT NULL,   -- employee number, free text, unique per tenant
-   [cTenantEmpPosition]                varchar(255)  NULL,       -- position title, free text
+   [cTenantPositionId]                 char(26)      NULL,       -- a position of this tenant
    [cTenantEmpState]                   int           NOT NULL CONSTRAINT [DF_ta_TenantEmp_cTenantEmpState] DEFAULT (0),     -- 0 active, -1 inactive
    [cTenantEmpNote]                    varchar(500)  NULL,
    [ustamp]                            datetime      NOT NULL CONSTRAINT [DF_ta_TenantEmp_ustamp] DEFAULT (getdate()),
@@ -47,6 +66,11 @@ CREATE TABLE [dbo].[ta_TenantEmp] (
    CONSTRAINT [UQ_ta_TenantEmp_cTenantEmpId_cTenantDeptId] UNIQUE ([cTenantEmpId], [cTenantDeptId])
 );
 END
+GO
+
+-- An older installation keeps its table; updates/20261107-TenantPosition.sql then moves and removes the text column.
+IF COL_LENGTH(N'dbo.ta_TenantEmp', N'cTenantPositionId') IS NULL
+   ALTER TABLE [dbo].[ta_TenantEmp] ADD [cTenantPositionId] char(26) NULL;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_ta_TenantDept_ta_Tenant' AND parent_object_id = OBJECT_ID(N'[dbo].[ta_TenantDept]'))
@@ -91,3 +115,44 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ta_TenantEmp_cTenantD
    CREATE INDEX [IX_ta_TenantEmp_cTenantDeptId] ON [dbo].[ta_TenantEmp] ([cTenantDeptId]) WHERE [cTenantDeptId] IS NOT NULL;
 GO
 
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_ta_TenantPosition_ta_Tenant' AND parent_object_id = OBJECT_ID(N'[dbo].[ta_TenantPosition]'))
+   ALTER TABLE [dbo].[ta_TenantPosition] ADD CONSTRAINT [FK_ta_TenantPosition_ta_Tenant]
+      FOREIGN KEY (cTenantId) REFERENCES [dbo].[ta_Tenant] (cTenantId);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_ta_TenantEmp_ta_TenantPosition' AND parent_object_id = OBJECT_ID(N'[dbo].[ta_TenantEmp]'))
+   ALTER TABLE [dbo].[ta_TenantEmp] ADD CONSTRAINT [FK_ta_TenantEmp_ta_TenantPosition]
+      FOREIGN KEY (cTenantPositionId, cTenantId) REFERENCES [dbo].[ta_TenantPosition] (cTenantPositionId, cTenantId);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ta_TenantEmp_cTenantPositionId' AND object_id = OBJECT_ID(N'[dbo].[ta_TenantEmp]'))
+   CREATE INDEX [IX_ta_TenantEmp_cTenantPositionId] ON [dbo].[ta_TenantEmp] ([cTenantPositionId]) WHERE [cTenantPositionId] IS NOT NULL;
+GO
+
+IF OBJECT_ID(N'[dbo].[ta_ContactAttachment]', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[ta_ContactAttachment] (
+   [cContactAttachmentId]              char(26)       NOT NULL CONSTRAINT [DF_ta_ContactAttachment_cContactAttachmentId] DEFAULT ([dbo].[NewUlidString]()),
+   [cContactId]                        char(26)       NOT NULL,
+   [cStoreObjectId]                    char(26)       NOT NULL,   -- object storage object; no foreign key, object storage is optional for a host
+   [cContactAttachmentName]            nvarchar(255)  NOT NULL,
+   [cContactAttachmentKind]            int            NOT NULL CONSTRAINT [DF_ta_ContactAttachment_cContactAttachmentKind] DEFAULT (99),   -- 1 photo, 2 ID card, 3 diploma, 99 other
+   [cContactAttachmentNote]            nvarchar(500)  NULL,
+   [cContactAttachmentState]           int            NOT NULL CONSTRAINT [DF_ta_ContactAttachment_cContactAttachmentState] DEFAULT (0),   -- 0 active, -1 inactive
+   [cContactAttachmentOrder]           int            NOT NULL CONSTRAINT [DF_ta_ContactAttachment_cContactAttachmentOrder] DEFAULT (0),
+   [ustamp]                            datetime       NOT NULL CONSTRAINT [DF_ta_ContactAttachment_ustamp] DEFAULT (getdate()),
+   [datestamp]                         datetime       NOT NULL CONSTRAINT [DF_ta_ContactAttachment_datestamp] DEFAULT (getdate()),
+   [json_object]                       nvarchar(max)  NULL,
+   CONSTRAINT [PK_ta_ContactAttachment] PRIMARY KEY CLUSTERED ([cContactAttachmentId])
+);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_ta_ContactAttachment_ta_Contact' AND parent_object_id = OBJECT_ID(N'[dbo].[ta_ContactAttachment]'))
+   ALTER TABLE [dbo].[ta_ContactAttachment] ADD CONSTRAINT [FK_ta_ContactAttachment_ta_Contact]
+      FOREIGN KEY (cContactId) REFERENCES [dbo].[ta_Contact] (cContactId);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ta_ContactAttachment_cContactId' AND object_id = OBJECT_ID(N'[dbo].[ta_ContactAttachment]'))
+   CREATE INDEX [IX_ta_ContactAttachment_cContactId] ON [dbo].[ta_ContactAttachment] ([cContactId]);
+GO

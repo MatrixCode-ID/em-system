@@ -3,6 +3,10 @@ namespace Em.Api.Core.Models;
 /// <summary>The shared contact's type, communication and address entries, defaults and last-read stamps.</summary>
 public sealed class TenantEmpPerson
 {
+   /// <summary>Full name of the contact, read from and saved to the contact; null preserves it.</summary>
+   public string? FullName { get; set; }
+   /// <summary>Attachments whose name, kind, note or order changed; null or empty changes none.</summary>
+   public ta_ContactAttachment[]? Attachments { get; set; }
    /// <summary>Whether to save the complete editable collections instead of the legacy default fields.</summary>
    public bool EditCollections { get; set; }
    /// <summary>Contact type to save; null preserves the type for older callers.</summary>

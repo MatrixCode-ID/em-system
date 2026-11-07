@@ -1,7 +1,7 @@
 # Attachment contact yang dikelola dari Employee Editor
 
 - Tanggal: 2026-11-05
-- Status: diskusi (desain layout untuk review)
+- Status: diterapkan 2026-11-07 (A4); default pertanyaan terbuka perlu ditinjau
 - Desain: `doc/design/BusinessModuleManager.figcraft`, page `20 Employee Editor`, frame
   `Employee Editor · Attachments · Light/Dark`, serta tab **Attachments** di semua frame editor. Rincian di
   [README desain](../design/README.md).
@@ -49,6 +49,29 @@ dilakukan dari **Employee Editor**, berupa **Attachment List**.
 - Panel attachment terpilih: Kind (combo), File (disimpan pada contact, baca saja), Note.
 - Teks bantuan menjelaskan attachment beserta jenis, nama dan catatannya milik contact, sehingga dipakai
   bersama lintas tenant dan akun.
+
+## Keputusan agen yang perlu ditinjau (2026-11-07)
+
+Pengguna meminta eksekusi tanpa menjawab pertanyaan terbuka di bawah, jadi dipakai default berikut:
+
+1. Kind enum di kode: Photo, ID card, Diploma, Other.
+2. Name bawaan dari nama file dan boleh diubah.
+4. Replace file membuat versi baru pada object yang sama.
+5. Foto belum dipakai sebagai avatar.
+6. Cukup claim BMM, tanpa audit tiap pembukaan file.
+7. Bucket managed `contact-attachments`, batas 50 MB per file mengikuti contoh bucket managed di panduan object storage,
+   tanpa pembatasan tipe file.
+8. Hanya dikelola dari Employee Editor.
+
+Pilihan tambahan agen:
+
+- Add, Replace file, dan Remove berlaku langsung ke server. Kind, Name, dan Note ikut Save employee dalam transaksi yang
+  sama, seperti Comm dan Address, dan ikut tanda unsaved serta Revert.
+- Contact baru baru bisa diberi attachment setelah employee tersimpan, karena file butuh contact yang sudah ada.
+- Pilihan "pilih file contact yang sudah ada" pada Add attachment tidak dibuat: file contact sudah tampil di daftar yang
+  sama, dan file yang sudah di-Remove belum punya jalur pemulihan.
+- Key object adalah `<contact>/<attachment>`, dan nama file asli disimpan pada metadata versi.
+- Open mengunduh salinan sementara lalu membukanya; salinan dihapus saat editor ditutup bila tidak sedang terbuka.
 
 ## Pertanyaan terbuka
 

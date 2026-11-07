@@ -6,6 +6,13 @@ Desain layout/mockup engine disimpan di `doc/design/` (FigCraft), dengan baselin
 `doc/design/_BASELINE/em-wpf.figcraft`, bukan baseline produk konsumen. Baca `doc/design/CLAUDE.md`
 sebelum mendesain. Desain pertama: `doc/design/BusinessModuleManager.figcraft`.
 
+## Drawer tree BMM (permintaan pengguna 2026-11-07)
+
+Navigasi BMM memakai left drawer TreeView dari desain, menggantikan tab strip: Organization (Tenants, Departments,
+Positions) dan People (Employees). Positions, Head of department, Attachments dan perubahan Employee Editor diterapkan
+2026-11-07 atas permintaan pengguna, dengan default keputusan yang dicatat di `doc/ideas/tenant-position.md` dan
+`doc/ideas/contact-attachments.md`. Absensi dan jadwal tetap di luar BMM.
+
 ## Cakupan BMM dan modul wrapper (keputusan pengguna 2026-11-05)
 
 Business Module Manager (BMM) **hanya untuk setup dan update info dasar**: tenant, department, posisi,

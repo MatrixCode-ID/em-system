@@ -27,6 +27,8 @@ public class BusinessOrganizationTests
       vm.NewPerson = true; vm.NewPersonType = ContactType.Organization;
       Assert.False(vm.SaveCommandAllowed()); Assert.NotEmpty(vm.DefaultGuardMessage);
       vm.EditCommValue = "first@example.test"; vm.EditAddressLocation = "First address";
+      Assert.False(vm.SaveCommandAllowed()); Assert.Equal("Enter the contact full name.", vm.DefaultGuardMessage);
+      vm.EditContactName = "New organization";
       Assert.True(vm.SaveCommandAllowed());
       var originalComm = vm.DefaultComm; var originalAddress = vm.DefaultAddress;
       vm.AddCommCommand(); vm.AddAddressCommand();
@@ -43,7 +45,7 @@ public class BusinessOrganizationTests
    public async Task EditorDefaultPickersBindObjectsAndKeepEditingChoiceIndependent() {
       var service = new OrgService(); var vm = new BusinessModuleManagerEmpVm(service, service) { IsEditorPage = true };
       vm.SelectedTenant = new() { cTenantId = "T" }; await vm.Loading; await vm.NewEmployeeCommand(); vm.NewPerson = true;
-      vm.EditCommValue = "first@example.test"; vm.EditAddressLocation = "First address";
+      vm.EditContactName = "New person"; vm.EditCommValue = "first@example.test"; vm.EditAddressLocation = "First address";
       var first = vm.DefaultComm; vm.AddCommCommand(); vm.EditCommValue = "second@example.test";
       var editor = new EmployeeEditor { DataContext = vm };
       await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
@@ -108,7 +110,7 @@ public class BusinessOrganizationTests
       await vm.SearchPeopleCommand();
       Assert.Equal("available@example.test", vm.EditCommValue);
       vm.NewPerson = true; Assert.Empty(vm.EditCommValue); Assert.Empty(vm.EditAddressLocation);
-      vm.EditCommValue = "new@example.test"; vm.EditAddressLocation = "New address";
+      vm.EditContactName = "New person"; vm.EditCommValue = "new@example.test"; vm.EditAddressLocation = "New address";
       await vm.SaveCommand();
       Assert.Equal("", service.LastSave!.Person!.ContactId);
       Assert.Equal("new@example.test", service.LastSave.Person.Comm!.cCommValue);

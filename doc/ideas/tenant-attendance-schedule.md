@@ -1,7 +1,7 @@
 # Absensi dan jadwal kerja employee per tenant
 
 - Tanggal: 2026-11-05
-- Status: diskusi
+- Status: jadi plan untuk tahap setup: [bmm-attendance-setup.md](../../plan/unexecuted/bmm-attendance-setup.md). Schedule assignments, Roster, dan Attendance log masih diskusi.
 - Latar: kelanjutan employee per tenant (lihat [tenant-position.md](tenant-position.md)). Pengguna membahas
   **engine** untuk absensi dan scheduling employee, dengan contoh pemakaian di **manufacturing** (regu, shift
   bergilir, pabrik yang berjalan terus).
@@ -136,6 +136,41 @@
   roster dibatasi pada department yang menjadi tanggung jawabnya. Engine perlu menyediakan lingkup department
   pada interface/fondasi alur kerja, sedangkan penegakannya di layar dan claim milik host. Bentuk lingkup
   (daftar department per user, atau mengikuti kepala department) belum diputuskan: pertanyaan no. 40.
+
+- 2026-11-07 (pengguna): **tahap pertama hanya layar setup**: Scheduling settings, Schedule templates, Attendance
+  codes, dan Public holidays. Schedule assignments, Roster, dan Attendance log menyusul. Usulan skemanya ada di
+  bagian "Skema tahap setup (usulan agent 2026-11-07)".
+- 2026-11-07 (pengguna): **keempat layar setup masuk BMM**, sebagai setup info dasar di bawah satu claim BMM.
+  Menjawab pertanyaan no. 37. Tiga layar alur kerja tetap di aplikasi host. **Host pertama untuk memakai dan menguji
+  fitur ini: aplikasi desktop berbasis MySQL.** Pengujian: tes integrasi MySQL, skrip SQL Server dipasang di database
+  lokal tanpa tes penuh, uji visual tertunda sampai diminta.
+- 2026-11-07 (pengguna): **langsung membuat UI asli** untuk keempat layar setup, sebagai pengecualian mockup; page
+  `30 Attendance` menjadi acuan isi dengan koreksi yang dicatat di plan.
+- 2026-11-07 (pengguna): **Schedule assignments, Roster, dan Attendance log di luar cakupan tahap ini** dan akan
+  dibahas lagi lebih detail. Frame-nya tetap di page `30 Attendance` sampai dipindah ke desain host.
+- 2026-11-07 (pengguna): **istirahat bisa diatur per hari** pada template, kosong memakai nilai template. Hari pendek
+  cukup satu baris dengan istirahat 0.
+- 2026-11-07 (pengguna): **setelan tingkat employee ditunda** bersama layarnya, sehingga `ta_TenantEmp` tidak disentuh.
+- 2026-11-07 (pengguna): **tenant aktif tanpa jadwal bawaan memakai jam kantor bawaan engine**; nilai awal Enable
+  tenant adalah nonaktif. Menjawab pertanyaan no. 24 dan bagian enable pada no. 25. Waktu penyalinan ke roster
+  dibahas bersama layar Roster.
+
+## Skema tahap setup (2026-11-07, rincian final di plan)
+
+Menggantikan usulan shift, regu, dan rotasi pada bagian "Rancangan data" untuk tahap setup. Skrip dual di
+`tables/110-attendance.sql`, dengan view `vi_` di folder view masing-masing database.
+
+| Tabel | Isi | Catatan |
+| --- | --- | --- |
+| `ta_TenantSchedTemplate` | Kode pendek, nama, jam mulai, istirahat (menit), state, urutan, catatan | Kode unik per tenant; jam selesai dihitung, bukan disimpan |
+| `ta_TenantSchedTemplateDay` | Tujuh baris per template: hari, jam kerja, istirahat khusus hari itu (opsional) | Hari mengikuti tanggal shift dimulai; 0 jam = libur |
+| `ta_TenantSchedSetting` | Satu baris per tenant, department, atau employee: Enable, mode jadwal, template, Weeks per step, Day 1, panjang periode | Tingkat tanpa baris berarti mewarisi; tenant tanpa baris berarti nonaktif |
+| `ta_TenantSchedSettingStep` | Urutan template rotasi | Rotasi bagian dari setelan, bukan daftar rotasi tersendiri |
+| `ta_TenantAttCode` | Kode, nama, kategori, state, urutan, catatan | Pola Positions; kategori enum di kode |
+| `ta_PublicHoliday` | Nama, jenis tetap/bertanggal, bulan + tanggal atau tanggal penuh, tanda cuti bersama, state, catatan | Global, tanpa tenant |
+
+Keunikan setelan per tingkat memakai kolom kunci wajib (`id department` atau `id tenant`), karena
+SQL Server dan MySQL memperlakukan NULL berbeda pada unique. Setelan hasil warisan dihitung service, tidak disimpan.
 
 ## Contoh kebutuhan lapangan (pengguna, 2026-11-05)
 

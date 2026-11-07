@@ -8,6 +8,33 @@
             <ResourceDictionary Source="pack://application:,,,/Em.Ui.Wpf.Core;component/Styles/MaterialDesign.xaml"/>
          </ResourceDictionary.MergedDictionaries>
          <BooleanToVisibilityConverter x:Key="boolVisibility"/>
+         <Style x:Key="attachmentRowStyle" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource themeWindowForegroundBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+               <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                     <Grid>
+                        <Border x:Name="state" Background="Transparent"/>
+                        <Border x:Name="selected" Width="3" HorizontalAlignment="Left" Background="{DynamicResource themeAccentBrush}" Visibility="Collapsed"/>
+                        <ContentPresenter/>
+                        <Border Height="1" Background="{StaticResource dividerBrush}" VerticalAlignment="Bottom"/>
+                     </Grid>
+                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="state" Property="Background" Value="{StaticResource stateHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                           <Setter TargetName="state" Property="Background" Value="{StaticResource statePressedBrush}"/>
+                           <Setter TargetName="selected" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                     </ControlTemplate.Triggers>
+                  </ControlTemplate>
+               </Setter.Value>
+            </Setter>
+         </Style>
       </ResourceDictionary>
    </UserControl.Resources>
    <Grid>
@@ -22,6 +49,12 @@
                <StackPanel Orientation="Horizontal">
                   <fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/>
                   <TextBlock Text="Save" VerticalAlignment="Center"/>
+               </StackPanel>
+            </Button>
+            <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RevertCommand]}" ToolTip="Discard the unsaved changes">
+               <StackPanel Orientation="Horizontal">
+                  <fa:FontAwesome Icon="Solid_RotateLeft" Style="{StaticResource buttonIconStyle}"/>
+                  <TextBlock Text="Revert" VerticalAlignment="Center"/>
                </StackPanel>
             </Button>
             <Button Margin="0,0,8,0" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}">
@@ -46,8 +79,8 @@
          <TextBlock Text="{Binding Status}" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
          <TextBlock Text="{Binding DefaultGuardMessage}" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap"/>
       </StackPanel>
-      <ScrollViewer Grid.Row="2" Margin="22,0,22,16" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-         <Grid MinWidth="760">
+      <ScrollViewer Grid.Row="2" Margin="22,0,22,16" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+         <Grid>
             <Grid.ColumnDefinitions>
                <ColumnDefinition Width="*"/>
                <ColumnDefinition Width="1.4*"/>
@@ -58,25 +91,25 @@
                   <TextBlock Text="Select an employee or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
                   <StackPanel IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
                      <TextBlock Text="CONTACT" Style="{StaticResource sectionCaptionStyle}" Margin="0,16,0,8"/>
-                     <TextBlock Text="{Binding PersonCaption}" TextWrapping="Wrap" Visibility="{Binding IsSaved, Converter={StaticResource boolVisibility}}"/>
-                     <StackPanel Orientation="Horizontal" Visibility="{Binding IsDraft, Converter={StaticResource boolVisibility}}">
+                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12" Visibility="{Binding IsDraft, Converter={StaticResource boolVisibility}}">
                         <RadioButton Content="Existing contact" IsChecked="{Binding ExistingPerson}" Margin="0,0,14,0"/>
                         <RadioButton Content="New contact" IsChecked="{Binding NewPerson}"/>
                      </StackPanel>
-                     <StackPanel Visibility="{Binding ShowExistingPerson, Converter={StaticResource boolVisibility}}" Margin="0,12,0,0">
+                     <StackPanel Visibility="{Binding ShowExistingPerson, Converter={StaticResource boolVisibility}}" Margin="0,0,0,12">
                         <Button Style="{StaticResource outlinedButtonStyle}" HorizontalAlignment="Left" Command="{Binding Commands[SearchPeopleCommand]}">
                            <StackPanel Orientation="Horizontal">
                               <fa:FontAwesome Icon="Solid_MagnifyingGlass" Style="{StaticResource buttonIconStyle}"/>
-                              <TextBlock Text="Search contact..." VerticalAlignment="Center"/>
+                              <TextBlock Text="Search contact" VerticalAlignment="Center"/>
                            </StackPanel>
                         </Button>
-                        <TextBlock Text="{Binding SelectedContactCaption}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="No contact selected." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" Visibility="{Binding ShowNoContact, Converter={StaticResource boolVisibility}}"/>
+                     </StackPanel>
+                     <StackPanel Visibility="{Binding ShowPersonDetails, Converter={StaticResource boolVisibility}}" IsEnabled="{Binding CanEditPerson}" ToolTipService.ShowOnDisabled="True" ToolTip="The name belongs to the contact and is shared with every account and tenant using it.">
+                        <TextBlock Text="Contact full name" Style="{StaticResource fieldLabelStyle}"/>
+                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditContactName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Contact full name"/>
+                        <TextBlock Text="{Binding LinkedUserCaption}" Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap"/>
                      </StackPanel>
                      <StackPanel Visibility="{Binding ShowNewPerson, Converter={StaticResource boolVisibility}}">
-                        <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
-                           <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}"/>
-                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding NewPersonName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
-                        </StackPanel>
                         <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
                            <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}"/>
                            <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding PersonTypes}" SelectedItem="{Binding NewPersonType}">
@@ -103,6 +136,16 @@
                         <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
                         <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50"/>
                      </StackPanel>
+                     <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True" ToolTip="Picked from the active positions of this tenant.">
+                        <TextBlock Text="Position" Style="{StaticResource fieldLabelStyle}"/>
+                        <ComboBox x:Name="positionPicker" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding PositionOptions}" SelectedItem="{Binding EditPosition, Mode=TwoWay}" AutomationProperties.Name="Position">
+                           <ComboBox.ItemTemplate>
+                              <DataTemplate>
+                                 <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                              </DataTemplate>
+                           </ComboBox.ItemTemplate>
+                        </ComboBox>
+                     </StackPanel>
                      <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
                         <TextBlock Text="Department" Style="{StaticResource fieldLabelStyle}"/>
                         <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding DepartmentOptions}" SelectedItem="{Binding EditDepartment, Mode=TwoWay}">
@@ -113,9 +156,9 @@
                            </ComboBox.ItemTemplate>
                         </ComboBox>
                      </StackPanel>
-                     <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
-                        <TextBlock Text="Position" Style="{StaticResource fieldLabelStyle}"/>
-                        <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditPosition, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+                     <StackPanel Margin="0,10,0,0" ToolTipService.ShowOnDisabled="True" ToolTip="Saving makes this employee the head of the selected department, replacing the current head.">
+                        <CheckBox IsChecked="{Binding EditIsHead, Mode=TwoWay}" IsEnabled="{Binding CanEditHead}" AutomationProperties.Name="Head of department" Content="Head of department"/>
+                        <TextBlock Text="{Binding CurrentHeadCaption}" Style="{StaticResource fieldHelpStyle}" Margin="24,2,0,0" TextWrapping="Wrap"/>
                      </StackPanel>
                      <StackPanel Margin="0,14,0,0" ToolTipService.ShowOnDisabled="True">
                         <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}"/>
@@ -126,77 +169,155 @@
                </StackPanel>
             </Border>
             <Border Grid.Column="1" Style="{StaticResource cardStyle}" Padding="22,12" Margin="8,0,0,0">
-               <StackPanel Margin="0,14,0,0" IsEnabled="{Binding CanEditPerson}" Visibility="{Binding ShowPersonDetails, Converter={StaticResource boolVisibility}}">
-                  <DockPanel Margin="0,12,0,8">
-                     <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddCommCommand]}">
-                        <StackPanel Orientation="Horizontal">
-                           <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
-                           <TextBlock Text="Add comm"/>
-                        </StackPanel>
-                     </Button>
-                     <TextBlock Text="COMMUNICATIONS" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
-                  </DockPanel>
-                  <TextBlock Text="Entry to edit" Style="{StaticResource fieldLabelStyle}"/>
-                  <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="communicationPicker" ItemsSource="{Binding Communications}" SelectedItem="{Binding SelectedComm}">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Text="Default (required)" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
-                  <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="defaultCommPicker" ItemsSource="{Binding Communications}" SelectedItem="{Binding DefaultComm}">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
-                  <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding CommTypes}" SelectedValuePath="Value" SelectedValue="{Binding SelectedComm.Type, Mode=TwoWay}" AutomationProperties.Name="Communication type">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <TextBlock Text="{Binding Caption}"/>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Text="Value" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
-                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedComm.Value, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Communication value"/>
-                  <TextBlock Text="Communication note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
-                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedComm.Note, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"/>
-                  <DockPanel Margin="0,12,0,8">
-                     <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddAddressCommand]}">
-                        <StackPanel Orientation="Horizontal">
-                           <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
-                           <TextBlock Text="Add address"/>
-                        </StackPanel>
-                     </Button>
-                     <TextBlock Text="ADDRESSES" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
-                  </DockPanel>
-                  <TextBlock Text="Entry to edit" Style="{StaticResource fieldLabelStyle}"/>
-                  <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Text="Default (required)" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
-                  <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="defaultAddressPicker" ItemsSource="{Binding Addresses}" SelectedItem="{Binding DefaultAddress}">
-                     <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                           <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
-                        </DataTemplate>
-                     </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Text="Label" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
-                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Name, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" Tag="Home or office"/>
-                  <TextBlock Text="Address" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
-                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Location, UpdateSourceTrigger=PropertyChanged}" MaxLength="1000" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Default address"/>
-                  <TextBlock Text="ZIP" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
-                  <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Zip, UpdateSourceTrigger=PropertyChanged}" MaxLength="10"/>
-                  <TextBlock Text="These entries and defaults belong to the contact and are shared across their accounts and employment in other tenants." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
-               </StackPanel>
+               <TabControl x:Name="personTabs" Style="{StaticResource materialTabControlStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" IsEnabled="{Binding CanEditPerson}" Visibility="{Binding ShowPersonDetails, Converter={StaticResource boolVisibility}}">
+                  <TabItem Header="{Binding CommunicationsCaption}" Style="{StaticResource materialTabItemStyle}">
+                     <StackPanel Margin="0,4,0,0">
+                              <DockPanel Margin="0,12,0,8">
+                                 <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddCommCommand]}">
+                                    <StackPanel Orientation="Horizontal">
+                                       <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                                       <TextBlock Text="Add comm"/>
+                                    </StackPanel>
+                                 </Button>
+                                 <TextBlock Text="COMMUNICATIONS" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
+                              </DockPanel>
+                              <TextBlock Text="Entry to edit" Style="{StaticResource fieldLabelStyle}"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="communicationPicker" ItemsSource="{Binding Communications}" SelectedItem="{Binding SelectedComm}">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <TextBlock Text="Default (required)" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="defaultCommPicker" ItemsSource="{Binding Communications}" SelectedItem="{Binding DefaultComm}">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <TextBlock Text="Type" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding CommTypes}" SelectedValuePath="Value" SelectedValue="{Binding SelectedComm.Type, Mode=TwoWay}" AutomationProperties.Name="Communication type">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <TextBlock Text="Value" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedComm.Value, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Communication value"/>
+                              <TextBlock Text="Communication note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedComm.Note, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"/>
+                        <TextBlock Text="These entries and defaults belong to the contact and are shared across their accounts and employment in other tenants." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                     </StackPanel>
+                  </TabItem>
+                  <TabItem Header="{Binding AddressesCaption}" Style="{StaticResource materialTabItemStyle}">
+                     <StackPanel Margin="0,4,0,0">
+                              <DockPanel Margin="0,12,0,8">
+                                 <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddAddressCommand]}">
+                                    <StackPanel Orientation="Horizontal">
+                                       <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                                       <TextBlock Text="Add address"/>
+                                    </StackPanel>
+                                 </Button>
+                                 <TextBlock Text="ADDRESSES" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
+                              </DockPanel>
+                              <TextBlock Text="Entry to edit" Style="{StaticResource fieldLabelStyle}"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <TextBlock Text="Default (required)" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <ComboBox Style="{StaticResource fieldComboStyle}" x:Name="defaultAddressPicker" ItemsSource="{Binding Addresses}" SelectedItem="{Binding DefaultAddress}">
+                                 <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                              </ComboBox>
+                              <TextBlock Text="Label" Style="{StaticResource fieldLabelStyle}" Margin="0,8,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Name, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" Tag="Home or office"/>
+                              <TextBlock Text="Address" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Location, UpdateSourceTrigger=PropertyChanged}" MaxLength="1000" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Default address"/>
+                              <TextBlock Text="ZIP" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                              <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAddress.Zip, UpdateSourceTrigger=PropertyChanged}" MaxLength="10"/>
+                        <TextBlock Text="These entries and defaults belong to the contact and are shared across their accounts and employment in other tenants." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                     </StackPanel>
+                  </TabItem>
+                  <TabItem Header="{Binding AttachmentsCaption}" Style="{StaticResource materialTabItemStyle}">
+                     <StackPanel Margin="0,12,0,0">
+                              <TextBlock Text="{Binding AttachmentHint}" Style="{StaticResource fieldHelpStyle}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                              <DockPanel Margin="0,0,0,8">
+                                 <Button DockPanel.Dock="Right" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddAttachmentCommand]}">
+                                    <StackPanel Orientation="Horizontal">
+                                       <fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/>
+                                       <TextBlock Text="Add attachment"/>
+                                    </StackPanel>
+                                 </Button>
+                                 <TextBlock Text="ATTACHMENTS" Style="{StaticResource sectionCaptionStyle}" VerticalAlignment="Center"/>
+                              </DockPanel>
+                              <ListBox x:Name="attachmentList" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" MaxHeight="260" ItemsSource="{Binding Attachments}" SelectedItem="{Binding SelectedAttachment, Mode=TwoWay}" ItemContainerStyle="{StaticResource attachmentRowStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                 <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                       <Grid Margin="14,8">
+                                          <Grid.ColumnDefinitions>
+                                             <ColumnDefinition Width="90"/>
+                                             <ColumnDefinition Width="*"/>
+                                          </Grid.ColumnDefinitions>
+                                          <TextBlock Text="{Binding KindCaption}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                          <StackPanel Grid.Column="1">
+                                             <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}"/>
+                                             <TextBlock Text="{Binding DetailCaption}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                                          </StackPanel>
+                                       </Grid>
+                                    </DataTemplate>
+                                 </ListBox.ItemTemplate>
+                              </ListBox>
+                              <StackPanel Margin="0,14,0,0" Visibility="{Binding HasSelectedAttachment, Converter={StaticResource boolVisibility}}">
+                                 <TextBlock Text="SELECTED ATTACHMENT" Style="{StaticResource sectionCaptionStyle}" Margin="0,0,0,8"/>
+                                 <TextBlock Text="Kind" Style="{StaticResource fieldLabelStyle}"/>
+                                 <ComboBox Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding AttachmentKinds}" SelectedValuePath="Value" SelectedValue="{Binding SelectedAttachment.Kind, Mode=TwoWay}" AutomationProperties.Name="Attachment kind">
+                                    <ComboBox.ItemTemplate>
+                                       <DataTemplate>
+                                          <TextBlock Text="{Binding Caption}"/>
+                                       </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                 </ComboBox>
+                                 <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAttachment.Name, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Attachment name"/>
+                                 <TextBlock Text="File" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAttachment.FileCaption, Mode=OneWay}" IsReadOnly="True" AutomationProperties.Name="File"/>
+                                 <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                                 <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding SelectedAttachment.Note, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="60" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" AutomationProperties.Name="Attachment note"/>
+                                 <WrapPanel Margin="0,12,0,0">
+                                    <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[OpenAttachmentCommand]}">
+                                       <StackPanel Orientation="Horizontal">
+                                          <fa:FontAwesome Icon="Solid_FolderOpen" Style="{StaticResource buttonIconStyle}"/>
+                                          <TextBlock Text="Open" VerticalAlignment="Center"/>
+                                       </StackPanel>
+                                    </Button>
+                                    <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ReplaceAttachmentCommand]}">
+                                       <StackPanel Orientation="Horizontal">
+                                          <fa:FontAwesome Icon="Solid_FileArrowUp" Style="{StaticResource buttonIconStyle}"/>
+                                          <TextBlock Text="Replace file" VerticalAlignment="Center"/>
+                                       </StackPanel>
+                                    </Button>
+                                    <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RemoveAttachmentCommand]}">
+                                       <StackPanel Orientation="Horizontal">
+                                          <fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/>
+                                          <TextBlock Text="Remove" VerticalAlignment="Center"/>
+                                       </StackPanel>
+                                    </Button>
+                                 </WrapPanel>
+                              </StackPanel>
+                              <TextBlock Text="Attachments belong to the contact, with their kind, name and note, so they are shared across its accounts and employment in other tenants. Remove hides an attachment; the file and its earlier versions stay in storage." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                     </StackPanel>
+                  </TabItem>
+               </TabControl>
             </Border>
          </Grid>
       </ScrollViewer>

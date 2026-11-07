@@ -50,6 +50,13 @@ public sealed class MySqlEngineDatabase : IAsyncLifetime
       return connectionString;
    }
 
+   /// <summary>Runs a script of <c>doc/sqlscript/mysql</c> on an existing database.</summary>
+   public async Task RunAsync(string connectionString, string relativeFile, CancellationToken ct) {
+      await using var connection = new MySqlConnection(connectionString);
+      await connection.OpenAsync(ct);
+      await RunScriptAsync(connection, await File.ReadAllTextAsync(Path.Combine(RepoRoot(), "doc", "sqlscript", "mysql", relativeFile), ct), ct);
+   }
+
    // The client's DELIMITER command is not SQL, so the script is split here the way the client would.
    private static async Task RunScriptAsync(MySqlConnection connection, string script, CancellationToken ct) {
       var delimiter = ";";

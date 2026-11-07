@@ -185,7 +185,7 @@ public sealed class TenantEmpServicesTests(SqlServerDatabase database) : TenantO
       await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = change }));
       change = Copy<ta_TenantEmp>(e); change.cContactId = Ulid.NewUlid().ToString();
       await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = change }));
-      change = Copy<ta_TenantEmp>(e); change.cTenantEmpPosition = "Manager";
+      change = Copy<ta_TenantEmp>(e); change.cTenantEmpNote = "Manager";
       var saved = await Emp().PostGetMeta_TenantEmpSave(new() { Row = change });
       Assert.NotEqual(e.ustamp, saved.ustamp);
       await Status(409, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = change }));

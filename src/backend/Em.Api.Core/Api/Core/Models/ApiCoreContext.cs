@@ -22,6 +22,12 @@ namespace Em.Api.Core.Models
       public DbSet<ta_TenantEmp> ta_TenantEmps => Set<ta_TenantEmp>();
       /// <summary>Tenant organization records.</summary>
       public DbSet<vi_TenantEmp> vi_TenantEmps => Set<vi_TenantEmp>();
+      /// <summary>Tenant positions.</summary>
+      public DbSet<ta_TenantPosition> ta_TenantPositions => Set<ta_TenantPosition>();
+      /// <summary>Tenant positions with display values.</summary>
+      public DbSet<vi_TenantPosition> vi_TenantPositions => Set<vi_TenantPosition>();
+      /// <summary>Files attached to contacts.</summary>
+      public DbSet<ta_ContactAttachment> ta_ContactAttachments => Set<ta_ContactAttachment>();
 
       /// <summary>Rows of table <c>ta_Contact</c>.</summary>
       public DbSet<ta_Contact> ta_Contacts => Set<ta_Contact>();
@@ -109,7 +115,9 @@ namespace Em.Api.Core.Models
          modelBuilder.Entity<ta_Tenant>().HasIndex(x => x.cTenantCode).IsUnique();
          if (Database.IsSqlServer()) foreach (var entity in new[] {
             modelBuilder.Entity<ta_TenantDept>().Metadata, modelBuilder.Entity<vi_TenantDept>().Metadata,
-            modelBuilder.Entity<ta_TenantEmp>().Metadata, modelBuilder.Entity<vi_TenantEmp>().Metadata }) {
+            modelBuilder.Entity<ta_TenantEmp>().Metadata, modelBuilder.Entity<vi_TenantEmp>().Metadata,
+            modelBuilder.Entity<ta_TenantPosition>().Metadata, modelBuilder.Entity<vi_TenantPosition>().Metadata,
+            modelBuilder.Entity<ta_ContactAttachment>().Metadata }) {
             entity.FindProperty("ustamp")!.SetColumnType("datetime");
             entity.FindProperty("datestamp")!.SetColumnType("datetime");
             foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && p.Name.EndsWith("Id")))

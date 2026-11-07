@@ -1,8 +1,10 @@
 using System.Windows;
+using Em.Api.Core.Models;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
 using Em.Ui.Wpf.Dialogs;
 using Em.Ui.Wpf.Shared;
+using Microsoft.Extensions.DependencyInjection;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace Em.Ui.Wpf.Navigations;
@@ -16,6 +18,13 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
       Vm.EmApp = app;
       Vm.ConfirmDiscard = () => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
          "Discard the unsaved changes of this record?", "Unsaved Changes") == MessageBoxResult.Yes;
+      Vm.Positions.PickCopy = () => {
+         var positions = Vm.Positions;
+         if (positions.SelectedTenant is not { } target) return null;
+         var service = app.ServiceProvider.GetRequiredService<ITenantPositionServices>();
+         var dialog = new CopyPositionsDialog(service, target, positions.TenantChoices, positions.Rows) { Owner = Window.GetWindow(this) ?? app.MainWindow };
+         return dialog.ShowDialog() == true ? dialog.Vm.Result : null;
+      };
       Vm.Employees.OpenEditor = payload => Vm.NavigationEntry?.NavigateTo(EmApp.EmployeeEditorNavigationName, payload) ?? Task.CompletedTask;
    }
 

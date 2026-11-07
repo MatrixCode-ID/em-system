@@ -15,6 +15,12 @@ public class vi_TenantEmp : ta_TenantEmp
    public string? cvTenantDeptCode { get; set; }
    /// <summary>Department name.</summary>
    public string? cvTenantDeptName { get; set; }
+   /// <summary>Position code.</summary>
+   public string? cvTenantPositionCode { get; set; }
+   /// <summary>Position name.</summary>
+   public string? cvTenantPositionName { get; set; }
+   /// <summary>Position state; an employee keeps a position that was deactivated later.</summary>
+   public int? cvTenantPositionState { get; set; }
    /// <summary>Whether this employee is the head of its department.</summary>
    public bool ccTenantEmpIsDeptHead { get; set; }
    /// <summary>Active user accounts associated with this person, separated by commas.</summary>
