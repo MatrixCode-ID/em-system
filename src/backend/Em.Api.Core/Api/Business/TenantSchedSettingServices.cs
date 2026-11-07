@@ -47,9 +47,9 @@ public sealed class TenantSchedSettingServices(ApiCoreContext ctx) : ServicesBas
       await ValidateLevel(save.TenantId, deptId);
       ValidateValues(save, deptId);
       var key = deptId ?? save.TenantId;
-      var row = await ctx.ta_TenantSchedSettings.SingleOrDefaultAsync(x => x.cTenantId == save.TenantId && x.cTenantSchedSettingKey == key, AbortToken);
+      var row = await ctx.ta_TenantSchedSettings.AsTracking().SingleOrDefaultAsync(x => x.cTenantId == save.TenantId && x.cTenantSchedSettingKey == key, AbortToken);
       if (row is not null ? row.ustamp != save.ustamp : save.ustamp is not null) throw new ActionException(ChangedMessage, 409);
-      var steps = row is null ? [] : await ctx.ta_TenantSchedSettingSteps.Where(x => x.cTenantSchedSettingId == row.cTenantSchedSettingId).ToArrayAsync(AbortToken);
+      var steps = row is null ? [] : await ctx.ta_TenantSchedSettingSteps.AsTracking().Where(x => x.cTenantSchedSettingId == row.cTenantSchedSettingId).ToArrayAsync(AbortToken);
       await ValidateTemplates(save, row, steps);
       var now = DateTime.UtcNow;
       if (row is null) {
@@ -80,10 +80,10 @@ public sealed class TenantSchedSettingServices(ApiCoreContext ctx) : ServicesBas
       if (string.IsNullOrWhiteSpace(deptId)) throw new ActionException("Only a department can inherit.", 400);
       await using var tx = await ctx.Database.BeginTransactionAsync(IsolationLevel.Serializable, AbortToken);
       await ValidateLevel(tenantId, deptId);
-      var row = await ctx.ta_TenantSchedSettings.SingleOrDefaultAsync(x => x.cTenantId == tenantId && x.cTenantSchedSettingKey == deptId, AbortToken);
+      var row = await ctx.ta_TenantSchedSettings.AsTracking().SingleOrDefaultAsync(x => x.cTenantId == tenantId && x.cTenantSchedSettingKey == deptId, AbortToken);
       if (row is null) return null;
       if (row.ustamp != ustamp) throw new ActionException(ChangedMessage, 409);
-      var steps = await ctx.ta_TenantSchedSettingSteps.Where(x => x.cTenantSchedSettingId == row.cTenantSchedSettingId).ToArrayAsync(AbortToken);
+      var steps = await ctx.ta_TenantSchedSettingSteps.AsTracking().Where(x => x.cTenantSchedSettingId == row.cTenantSchedSettingId).ToArrayAsync(AbortToken);
       row.cTenantSchedSettingEnable = TenantSchedEnable.Inherit; row.cTenantSchedSettingMode = TenantSchedMode.Inherit;
       row.cTenantSchedTemplateId = null; row.cTenantSchedSettingStepWeeks = null; row.cTenantSchedSettingCycleStart = null;
       row.ustamp = TenantOrg.Stamp(row.ustamp);

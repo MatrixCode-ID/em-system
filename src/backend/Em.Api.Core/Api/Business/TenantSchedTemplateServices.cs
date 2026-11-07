@@ -39,7 +39,7 @@ public sealed class TenantSchedTemplateServices(ApiCoreContext ctx) : ServicesBa
          ctx.ta_TenantSchedTemplates.Add(entity);
       }
       else {
-         entity = await ctx.ta_TenantSchedTemplates.SingleOrDefaultAsync(x => x.cTenantSchedTemplateId == row.cTenantSchedTemplateId, AbortToken)
+         entity = await ctx.ta_TenantSchedTemplates.AsTracking().SingleOrDefaultAsync(x => x.cTenantSchedTemplateId == row.cTenantSchedTemplateId, AbortToken)
             ?? throw new ActionException("The template was not found.", 404);
          if (!TenantOrg.Same(entity.cTenantId, row.cTenantId)) throw new ActionException("The tenant cannot be changed.", 400);
          if (entity.ustamp != row.ustamp) throw new ActionException("The template changed. Refresh before saving.", 409);
@@ -51,7 +51,7 @@ public sealed class TenantSchedTemplateServices(ApiCoreContext ctx) : ServicesBa
       entity.cTenantSchedTemplateNote = row.cTenantSchedTemplateNote; entity.json_object = row.json_object;
       // The parent row goes first: the model has no navigation that would order the two inserts.
       await TenantOrg.Save(() => ctx.SaveChangesAsync(AbortToken), DuplicateCode);
-      var days = (await ctx.ta_TenantSchedTemplateDays.Where(x => x.cTenantSchedTemplateId == entity.cTenantSchedTemplateId).ToArrayAsync(AbortToken))
+      var days = (await ctx.ta_TenantSchedTemplateDays.AsTracking().Where(x => x.cTenantSchedTemplateId == entity.cTenantSchedTemplateId).ToArrayAsync(AbortToken))
          .ToDictionary(x => x.cTenantSchedTemplateDayWeekday);
       foreach (var day in set.Days) {
          if (!days.TryGetValue(day.cTenantSchedTemplateDayWeekday, out var target)) {

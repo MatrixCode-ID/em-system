@@ -41,7 +41,7 @@ public sealed class PublicHolidayServices(ApiCoreContext ctx) : ServicesBase, IP
    [PostAction(claim: ITenantServices.ManagerClaim)]
    public async Task<vi_PublicHoliday> PostGetTa_PublicHoliday_Update(ta_PublicHoliday row) {
       await using var tx = await ctx.Database.BeginTransactionAsync(IsolationLevel.Serializable, AbortToken);
-      var entity = await ctx.ta_PublicHolidays.SingleOrDefaultAsync(x => x.cPublicHolidayId == row.cPublicHolidayId, AbortToken)
+      var entity = await ctx.ta_PublicHolidays.AsTracking().SingleOrDefaultAsync(x => x.cPublicHolidayId == row.cPublicHolidayId, AbortToken)
          ?? throw new ActionException("The holiday was not found.", 404);
       if (entity.ustamp != row.ustamp) throw new ActionException("The holiday changed. Refresh before saving.", 409);
       Normalize(row);
