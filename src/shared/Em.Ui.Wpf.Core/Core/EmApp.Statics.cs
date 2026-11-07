@@ -110,6 +110,10 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<ITenantDeptServices>(provider => new Em.Ui.Core.TenantDeptClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ITenantEmpServices>(provider => new Em.Ui.Core.TenantEmpClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<ITenantPositionServices>(provider => new Em.Ui.Core.TenantPositionClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantSchedTemplateServices>(provider => new Em.Ui.Core.TenantSchedTemplateClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantSchedSettingServices>(provider => new Em.Ui.Core.TenantSchedSettingClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantAttCodeServices>(provider => new Em.Ui.Core.TenantAttCodeClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<IPublicHolidayServices>(provider => new Em.Ui.Core.PublicHolidayClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IContactAttachmentServices>(provider => new Em.Ui.Core.ContactAttachmentClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
