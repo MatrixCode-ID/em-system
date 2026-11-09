@@ -130,9 +130,11 @@ Kind, Name and Note are saved with the employee. A new contact can have files on
 downloads a temporary copy, deleted when the editor closes unless another program holds it.
 
 The editor loads all communication and address entries, allows adding entries, and independently selects
-the entry being edited and the default entry. A new contact starts with one draft of each kind. Save requires
-an active default communication with a nonblank value and an active default address with a nonblank location.
-Both UI and server enforce these guards. Existing contacts without defaults must be corrected before saving.
+the entry being edited and the default entry. A new contact starts with one draft of each kind. The BMM editor
+requires an active default communication with a nonblank value and an active default address with a nonblank
+location before it saves. This is a UI guard only: the server saves an employee without default communication
+or address, so a host UI decides whether its own screens require them (for example only for a new employee).
+The server still refuses a default that does not belong to the contact.
 Saving preserves other entries and commits employment, type, entries and defaults in one transaction.
 
 ## Service actions

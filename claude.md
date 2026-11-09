@@ -355,8 +355,10 @@ tersendiri dengan payload tenant/employee yang dapat dibuka dari layar lain.
 BMM menampilkan daftar dan membuka editor melalui New/Open/double-click/context menu.
 Editor dapat mengubah tipe Contact ke Organization, Male, atau Female, menambah
 Comm/Address, serta mengganti default keduanya. Default Comm dan Address wajib
-dipilih, dimiliki Contact tersebut, aktif dan berisi nilai/alamat; guard UI dan
-server menolak simpan bila kosong. Perubahan Contact berlaku bersama lintas tenant
+dipilih, dimiliki Contact tersebut, aktif dan berisi nilai/alamat; guard UI
+menolak simpan bila kosong. **Keputusan pengguna 2026-11-10:** validasi wajib
+Comm/Address default hanya di UI host; server tidak lagi menolak simpan employee
+tanpa default (server tetap menolak default yang bukan milik Contact). Perubahan Contact berlaku bersama lintas tenant
 dan akun; simpan atomik serta pemeriksaan concurrency tetap berlaku.
 
 ## Kepemilikan Contact Picker (keputusan pengguna 2026-10-19)

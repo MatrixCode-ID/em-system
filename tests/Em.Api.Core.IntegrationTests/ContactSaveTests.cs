@@ -79,13 +79,16 @@ public sealed class ContactSaveTests(SqlServerDatabase database) : TenantOrgTest
    }
 
    [Fact]
-   public async Task EmployeeSaveStillRequiresDefaultsAndGetByIdReturnsTheRow() {
+   public async Task EmployeeSaveLeavesDefaultsToTheHostAndGetByIdReturnsTheRow() {
       var tenant = await Tenant("contact-save-regression"); var employee = await Employee(tenant.cTenantId, "regression");
       var read = await Emp().GetVi_TenantEmp_ById(employee.cTenantEmpId);
       Assert.Equal(employee.cTenantEmpCode, read!.cTenantEmpCode);
       Assert.Null(await Emp().GetVi_TenantEmp_ById(Ulid.NewUlid().ToString()));
-      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() {
+      // The host UI decides whether a default communication and address are required.
+      var bare = await Emp().PostGetMeta_TenantEmpSave(new() {
          Row = new() { cTenantId = tenant.cTenantId, cTenantEmpCode = "no-default" }, NewContactName = "No default", NewContactType = ContactType.Male
-      }));
+      });
+      var person = await Emp().GetMeta_TenantEmpPerson(bare.cContactId);
+      Assert.Null(person.DefaultCommId); Assert.Null(person.DefaultAddressId);
    }
 }

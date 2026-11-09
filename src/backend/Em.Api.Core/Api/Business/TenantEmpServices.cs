@@ -93,13 +93,8 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       else if (!await ctx.ta_Contacts.AnyAsync(x => x.cContactId == contactId, AbortToken))
          throw new ActionException("The person was not found.", 400);
 
-      if (newPerson || save.Person is not null) await SavePersonAsync(contactId, save.Person, newPerson);
-      else {
-         var contact = await ctx.ta_Contacts.AsNoTracking().SingleAsync(x => x.cContactId == contactId, AbortToken);
-         if (!await ctx.ta_Comms.AnyAsync(x => x.cContactId == contactId && x.cCommId == contact.cContactDefaultComm_cCommId && x.cCommState != ContactCommunicationState.Inactive && x.cCommValue.Trim() != "", AbortToken) ||
-             !await ctx.ta_Addresses.AnyAsync(x => x.cContactId == contactId && x.cAddressId == contact.cContactDefaultAddress_cAddressId && x.cAddressState != AddressState.Inactive && x.cAddressLocation.Trim() != "", AbortToken))
-            throw new ActionException("Choose a non-empty default communication and address before saving.", 400);
-      }
+      // Whether a person needs a default communication or address is decided by the host UI, not here.
+      if (newPerson || save.Person is not null) await SavePersonAsync(contactId, save.Person ?? new TenantEmpPerson(), newPerson);
 
       var cleared = new List<string>();
       if (current is not null && (!TenantOrg.Same(current.cTenantDeptId, department) || row.cTenantEmpState != ta_TenantEmp.StateActive)) {
@@ -179,9 +174,8 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       }
    }
 
-   private async Task SavePersonAsync(string contactId, TenantEmpPerson? input, bool creating) {
+   private async Task SavePersonAsync(string contactId, TenantEmpPerson input, bool creating) {
       var person = await ctx.ta_Contacts.AsNoTracking().SingleAsync(x => x.cContactId == contactId, AbortToken);
-      if (input is null) throw new ActionException("Choose a non-empty default communication and address before saving.", 400);
       if (!creating && !TenantOrg.Same(input.ContactId, contactId)) throw new ActionException("The details must belong to this contact.", 400);
       if (!creating && input.ContactUstamp != person.ustamp) throw new ActionException("The contact changed. Refresh before saving.", 409);
       if (creating && !string.IsNullOrEmpty(input.ContactId)) throw new ActionException("A new contact cannot reuse another contact's details.", 400);
@@ -192,13 +186,16 @@ public sealed class TenantEmpServices(ApiCoreContext ctx, IContactServices? cont
       var comms = (input.EditCollections ? input.Comms : null) ?? (input.Comm is { } comm ? [comm] : Array.Empty<ta_Comm>());
       var addresses = (input.EditCollections ? input.Addresses : null) ?? (input.Address is { } address ? [address] : Array.Empty<ta_Address>());
       ContactDetails.Prepare(comms, addresses);
-      var commId = !input.EditCollections ? input.Comm?.cCommId : input.DefaultCommId;
-      var addressId = !input.EditCollections ? input.Address?.cAddressId : input.DefaultAddressId;
-      var defaultComm = comms.SingleOrDefault(x => TenantOrg.Same(x.cCommId, commId));
-      var defaultAddress = addresses.SingleOrDefault(x => TenantOrg.Same(x.cAddressId, addressId));
-      if (defaultComm is null || defaultAddress is null || string.IsNullOrWhiteSpace(defaultComm.cCommValue) ||
-          string.IsNullOrWhiteSpace(defaultAddress.cAddressLocation) || defaultComm.cCommState == ContactCommunicationState.Inactive || defaultAddress.cAddressState == AddressState.Inactive)
-         throw new ActionException("Choose a non-empty active default communication and address before saving.", 400);
+      // A default is optional; a caller that sends no entry keeps the stored default link.
+      var commId = TenantOrg.Optional(!input.EditCollections ? input.Comm?.cCommId ?? person.cContactDefaultComm_cCommId : input.DefaultCommId);
+      var addressId = TenantOrg.Optional(!input.EditCollections ? input.Address?.cAddressId ?? person.cContactDefaultAddress_cAddressId : input.DefaultAddressId);
+      // A default must still point to an entry of this contact, sent now or stored.
+      if (commId is not null && !comms.Any(x => TenantOrg.Same(x.cCommId, commId)) &&
+          !await ctx.ta_Comms.AnyAsync(x => x.cCommId == commId && x.cContactId == contactId, AbortToken))
+         throw new ActionException("The default communication must belong to this contact.", 400);
+      if (addressId is not null && !addresses.Any(x => TenantOrg.Same(x.cAddressId, addressId)) &&
+          !await ctx.ta_Addresses.AnyAsync(x => x.cAddressId == addressId && x.cContactId == contactId, AbortToken))
+         throw new ActionException("The default address must belong to this contact.", 400);
 
       await ContactDetails.WriteAsync(ctx, contactId, comms, addresses, commId, addressId, creating, AbortToken);
       if (input.Attachments is { Length: > 0 } attachments) await SaveAttachmentsAsync(contactId, attachments);

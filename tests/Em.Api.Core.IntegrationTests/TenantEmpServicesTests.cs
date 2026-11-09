@@ -41,24 +41,25 @@ public sealed class TenantEmpServicesTests(SqlServerDatabase database) : TenantO
       Assert.Equal(ContactType.Female, read.ContactType); Assert.Equal("org@example.test", read.Comm!.cCommValue);
    }
    [Fact]
-   public async Task EmptyForeignAndStaleDefaultsAreRejectedWithoutPartialWrites() {
+   public async Task DefaultsAreOptionalButForeignAndStaleDetailsAreRejected() {
       var tenant = await Tenant("default-guards"); var employee = await Employee(tenant.cTenantId, "guarded");
       var other = await Employee(tenant.cTenantId, "foreign");
       async Task<TenantEmpPerson> Read() { var person = await Emp().GetMeta_TenantEmpPerson(employee.cContactId); person.EditCollections = true; return person; }
-      var details = await Read(); details.DefaultCommId = null;
+      // Requiring a default communication or address is left to the host UI.
+      var details = await Read(); details.DefaultCommId = null; details.DefaultAddressId = null; details.ContactType = ContactType.Organization;
+      employee = await Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details });
+      var read = await Read();
+      Assert.Equal(ContactType.Organization, read.ContactType); Assert.Null(read.DefaultCommId); Assert.Null(read.DefaultAddressId);
+      details = await Read(); details.DefaultAddressId = Ulid.NewUlid().ToString();
       await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
-      details = await Read(); details.Addresses![0].cAddressLocation = " "; details.ContactType = ContactType.Organization;
-      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
-      Assert.Equal(ContactType.Female, (await Read()).ContactType);
       details = await Read(); var foreign = await Emp().GetMeta_TenantEmpPerson(other.cContactId);
       details.Comms = [foreign.Comm!]; details.DefaultCommId = foreign.Comm!.cCommId;
       await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
-      details = await Read(); details.Comms![0].cCommState = ContactCommunicationState.Inactive;
-      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
-      details = await Read();
-      await Db().ta_Comms.Where(x => x.cCommId == details.DefaultCommId).ExecuteUpdateAsync(s => s.SetProperty(x => x.ustamp, DateTime.UtcNow.AddSeconds(1)), TestContext.Current.CancellationToken);
+      details = await Read(); var commId = details.Comms![0].cCommId;
+      await Db().ta_Comms.Where(x => x.cCommId == commId).ExecuteUpdateAsync(s => s.SetProperty(x => x.ustamp, DateTime.UtcNow.AddSeconds(1)), TestContext.Current.CancellationToken);
       await Status(409, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = Copy<ta_TenantEmp>(employee), Person = details }));
-      await Status(400, () => Emp().PostGetMeta_TenantEmpSave(new() { Row = new() { cTenantId = tenant.cTenantId, cTenantEmpCode = "empty" }, NewContactName = "Empty" }));
+      var bare = await Emp().PostGetMeta_TenantEmpSave(new() { Row = new() { cTenantId = tenant.cTenantId, cTenantEmpCode = "empty" }, NewContactName = "Empty", NewContactType = ContactType.Male });
+      Assert.Equal("Empty", bare.cvContactFullName);
    }
    [Fact]
    public async Task ContactDialogSearchPagesAllResultsAndIncludesStatusAndLinkedUsernames() {
