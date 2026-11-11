@@ -1,5 +1,15 @@
 # CLAUDE.md
 
+## Export profil harus lengkap (keputusan pengguna 2026-11-11)
+
+Setiap perubahan sistem yang menambah atau mengubah setting pada profil Container Manager, NuGet Manager
+atau Release Manager (mis. release note lock, folder notes, tagging, opsi deploy) **wajib memperbarui Export/Import
+profil dalam perubahan yang sama**. Latar: export yang tidak membawa lock membuat PC lain bisa rilis tanpa
+release note. `tests/Em.Ui.Wpf.Core.Tests/ProfileExportCompletenessTests.cs` mengisi semua properti lewat
+refleksi dan gagal bila ada yang tidak ikut; perbaiki Export/Import, bukan tesnya. Jalankan lewat action
+RunBay `test-profile-export`. Setting di luar profil (mis. Publisher settings) yang sengaja tidak diekspor
+dinyatakan di `doc/engine/engine-publish.md`. Panduan: `doc/engine/engine-publish.md`.
+
 ## Library desain Em (keputusan pengguna 2026-11-05)
 
 Desain layout/mockup engine disimpan di `doc/design/` (FigCraft), dengan baseline Em sendiri di

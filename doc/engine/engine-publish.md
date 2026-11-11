@@ -145,6 +145,12 @@ stored secret is exported empty and the screen says how many. **Import** accepts
 storage (DPAPI for the importing account) for a Separate profile, so the profile can push right away.
 Credentials always get new IDs, so an import never touches another profile's remembered secrets.
 
+**Export must carry every profile setting.** Whenever a setting is added to or changed in a Container Manager,
+NuGet Manager or Release Manager profile (release note lock, notes folder, tagging, deploy options, and so on),
+Export and Import must carry it in the same change. `ProfileExportCompletenessTests` fills every property of
+each profile type through reflection and fails when Export/Import drops one; fix Export/Import, never the test.
+Machine-local values (absolute notes folder, secrets) stay in the file unless the design says otherwise.
+
 ## Tools and runtime behavior
 
 - Requires the .NET SDK 8 or later for metadata evaluation (the project's own SDK and `global.json` still
