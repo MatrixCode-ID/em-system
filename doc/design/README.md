@@ -6,7 +6,7 @@ in this folder; screens of engine-owned modules sit at the top level as `<Subjec
 | File | Contents |
 | --- | --- |
 | `_BASELINE/em-wpf.figcraft` | **Em WPF Baseline**: assets (page `00 Assets`), `Em Palette` variables (Light/Dark), Main Window, Login, Context Menu, Buttons & Toolbar |
-| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments), Attendance (page `30 Attendance`) |
+| `BusinessModuleManager.figcraft` | **Business Module Manager**: drawer navigation, Tenants, Departments, Positions (with Copy from tenant), Employees, Employee Editor (with Attachments), Attendance (page `30 Attendance`), Products (page `40 Products`) |
 
 ## Baseline
 
@@ -117,3 +117,51 @@ to the host's design. Decisions and open questions are in the
   (see the [attendance idea](../ideas/tenant-attendance-schedule.md)).
 - Device integration (attendance machines) is **not** part of this design; integrations have their own place.
 - Sample data is fictitious.
+
+## Products in Business Module Manager (2026-11-12)
+
+**Status: design for review, not approved.** Page `40 Products` of `BusinessModuleManager.figcraft`: the generic
+product setup per tenant, in six screens with Light and Dark frames (Light at y = 0, Dark 1180 px below). The drawer
+gets a fourth folder **Products (3)** with **Units**, **Product types** and **Products**; Organization, People and Attendance (4)
+are collapsed in these frames. BMM stays a setup tool: it shows and edits every product field except the extra data
+(`json_object`), which belongs to the host application's own product screens. Recipes are a later stage and are not
+drawn. Sample data is fictitious (tenant "Footwear Co").
+
+- **Product types** (`PRD · Product types`): the Positions pattern. Left: product types with product count, code and
+  kind, INACTIVE chip. Right: Code, Name, **Kind** (a combo of the fixed engine list), State (read only; Deactivate /
+  Activate on the toolbar) and Note. The kind belongs to the product type; products follow the kind of their type.
+  Toolbar: tenant, Refresh, Save, Deactivate, New product type.
+- **Products** (`PRD · Products`): the Departments pattern (tree card left, editor right). The tree card has a
+  product type filter and a code/name search box; each node shows name, code and child count, with the INACTIVE chip.
+  Children load when a node is opened. The sample tree is model → sole → upper → size (the sizes are the leaves,
+  SKUs), plus one-level products (a service and a financial item). The editor shows the parent path as a breadcrumb,
+  then Product type, Unit, Parent (read only; changed with Move…), State (read only), Code (entered by hand, unique
+  per tenant), Name and Note. Toolbar: tenant, Refresh, Add child, Add children…, Copy children from…, Move…, Save,
+  Deactivate and the primary **New root product**.
+- **Context menu** (`PRD · Products · Context menu`): right-click on a node opens `Menu/ProductNode` (Add child,
+  Add children…, Copy children from…, Move…, Deactivate).
+- **Add children** (`PRD · Products · Add children`): dialog for a batch of children of one parent. One child per
+  line (code, name); a preview lists each child with a checkbox and marks codes that already exist in the tenant as
+  EXISTS (not selectable). New children take the parent's product type and unit and are saved as active.
+- **Copy children from** (`PRD · Products · Copy children from`): copies the direct children of another node, one
+  level only (no grandchildren), into the selected node. The user picks the source product and a code prefix that
+  replaces the source prefix in every copied code; each child can be unchecked, and codes that already exist are
+  marked EXISTS. Copying recipes with the children is decided but belongs to the recipe stage, so it is not drawn.
+- **Units** (`PRD · Units`, added 2026-11-12 on request): the global unit-of-measure list, in the Positions
+  pattern without a tenant selector (units are shared by every tenant, like the public holiday calendar). Left:
+  units with the number of products that use them and code · symbol. Right: Code (read only after save, it is
+  the key products and document lines refer to), Description and Symbol. Toolbar: Refresh, Save, New unit. The
+  drawer folder becomes **Products (3)** with Units first. Decided 2026-11-12: units **stay global** (one list
+  for every tenant) and **cannot be deactivated** (no state, no Deactivate). Unit conversion per product stays
+  out of this stage.
+- New asset in `00 Assets`: `Menu/ProductNode` (built from `Menu/Context`).
+- Read-only values (State, Parent, the dialog's parent) use a filled box (`surfaceContainerHigh`, no outline), so
+  they are not mistaken for editable fields.
+
+Open points for review (proposals in this design, not decisions):
+
+- The kind list shown on the help text (Goods, Manufacture Base, Product Component, Non-stock, Service, Financial)
+  is still being settled; the system-only generic transaction kind is not drawn.
+- Move… has no dialog yet (pick a new parent in the same tenant; no cycles).
+- Whether the tree should show a marker for leaves, and whether the product type filter is single or multi-select.
+- The Copy children code prefix rule is a proposal; codes stay manual and unique per tenant.
