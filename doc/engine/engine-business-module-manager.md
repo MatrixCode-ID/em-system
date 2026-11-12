@@ -2,14 +2,14 @@
 
 The Business Module Manager provides a small shared tenant directory, a department tree and a position list per
 tenant, employee records connecting a person to a tenant, and the setup of attendance: schedule templates, scheduling
-settings, attendance codes and public holidays. It is available to administrators and users with
+settings, attendance codes and public holidays. It also provides global units, tenant product types and a tenant product tree. It is available to administrators and users with
 `core.business:Business Module Manager Access`.
 
 ## Scope and wrapper modules
 
 The Business Module Manager is a **setup tool for basic information only**: tenants, departments, positions and
-employees with their basic contact data (full name, type, communications, addresses, attachments), and the four
-attendance setup pages. It stays one administrator tool under Tools behind one claim. It is not where business
+employees with their basic contact data (full name, type, communications, addresses, attachments), the four
+attendance setup pages, and product setup. It stays one administrator tool under Tools behind one claim. It is not where business
 workflows, per-role claims or Apps menu entries live. Schedule assignments, the roster and the attendance log are
 workflows, so they belong to the host application.
 
@@ -30,6 +30,13 @@ fields to properties with `GetJson<T>` in `ReadFrom`, and write them in `BuildJs
 Module Manager claim over HTTP, a wrapper with its own claim overrides `FetchAsync`, `UpdateAsync` and
 `InsertAsync` to go through its own service and ends both saves with `ApplySaved(entity, saved)`, which carries
 the returned key and stamp. `WriteTo` sends the last-read stamp, not the server time `SaveAsync` puts in `ustamp`.
+
+The product equivalent is `TenantProduct` in `Em.Ui.Core`. Derive a model for host attributes, read them with
+`GetJson<T>` and patch them in `BuildJson(patch)`, calling the base implementation first. Override
+`FetchAsync`, `UpdateAsync` and `InsertAsync` to use the wrapper's authorized actions, and call
+`ApplySaved(entity, saved)` after each save. Keep the original update stamp for optimistic concurrency.
+The wrapper can resolve its type with `PostGetMeta_TenantProductType_Ensure`; existing rows retain their
+saved name, kind and state. Hosts own product workflows and extra JSON attributes.
 
 ## Enable it
 
@@ -52,6 +59,15 @@ table is new, and `tables/110-attendance.sql` can run again safely.
 An installation from before positions runs `updates/20261107-TenantPosition.sql` and then the two views, before
 starting the new API. The update moves any employee position text into positions of the tenant, with the first 50
 characters as the code, then drops the text column.
+
+**Product setup requires its schema before the API starts.** For a new installation, run `tables/100-business.sql`
+after the organization tables, then `tables/120-product.sql` and the views `vi_Unit.sql`,
+`vi_TenantProductType.sql` and `vi_TenantProduct.sql`. For an existing installation, run
+`updates/20261112-Unit-Stamp.sql` before `tables/120-product.sql`, then the three views and
+`updates/20261112-DropLegacyProduct.sql`. The files have the same names on SQL Server and MySQL.
+The legacy cleanup stops with counts if any of the five legacy tables contains rows. It also stops if
+another table still references one of them. The SQL Server table script aligns the unit key collation
+with `ta_Unit` for the foreign key. The product unit index supports the unit usage lookup.
 
 Attachments need `builder.AddObjectStorage()`. The module declares the managed bucket `contact-attachments`, with a
 50 MB limit per file. Without object storage the other features work and an upload answers 503.
@@ -80,7 +96,7 @@ same transaction. Unsaved changes in the editor are confirmed before navigation.
 available for correction.
 
 Pages are switched from a left drawer with a tree that the module lists itself: **Organization** holds Tenants,
-Departments and Positions, **People** holds Employees, **Attendance** holds the four setup pages below. The drawer can
+Departments and Positions, **People** holds Employees, **Attendance** holds the four setup pages below, and **Products** holds Units, Product types and Products. The drawer can
 be closed to a narrow rail with its toggle button.
 
 **Schedule templates** starts with a tenant selector and lists working-hour patterns. A template has a short **Code**
@@ -137,9 +153,47 @@ or address, so a host UI decides whether its own screens require them (for examp
 The server still refuses a default that does not belong to the contact.
 Saving preserves other entries and commits employment, type, entries and defaults in one transaction.
 
+### Product setup
+
+**Units** lists shared units by code with their product usage count. Code, description and symbol are required.
+A saved unit keeps its code. Delete asks for confirmation and returns 409 if a product or another foreign key
+still references the unit.
+
+**Product types** lists the selected tenant's types, their kind and product count. The selectable kinds are
+Goods (1), Manufacture Base (2), Product Component (3), Non-stock (4), Service (5) and Financial (6).
+A type with products keeps its kind. Deactivation asks for confirmation and leaves existing products in place.
+The type editor retains the saved order.
+
+**Products** loads roots first and direct children when a node expands, ordered by order then code. The type
+filter applies to each level. Code/name search displays results in place of the tree. Open a result to clear the
+type filter and expand its path, or clear the search to return to the tree. The breadcrumb includes the product.
+Codes are entered by hand and must be unique across the tenant, including inactive products. The parent stays
+fixed after the first save. A child can use a different active type in the same tenant. Deactivation asks for
+confirmation and affects the selected product only. A new product uses its supplied order when nonnegative and
+otherwise appends to its siblings.
+
+**Add children** accepts one code and name per line, separated by a comma, semicolon or tab. Preview marks
+existing, repeated and invalid codes. Batch requests can supply a type and unit or inherit them from the parent.
+The selected type must be active. **Copy children from** finds a source with children and copies one level,
+including when the source is the destination. Enter the old and replacement prefixes and adjust individual
+codes in the preview. Copies keep the source name, unit, active user-defined type and note. Both actions
+append active children in row order in one transaction. Copy omits extra JSON attributes.
+
+### System product
+
+The engine reserves code `GENERIC` for the type **Generic Transaction** and its root product
+**Generic Transaction Item**. The kind `GenericTransaction` (7) identifies system records. They keep their
+code and active state, the type keeps its kind, and the product keeps its type. Their names, notes and order
+are editable through the service, as is the product's unit. An empty unit catalogue is supported by creating
+unit `UNIT` (description `Unit`, symbol `unit`) when needed.
+
+System setup runs on tenant creation, type listing, root product listing and explicit ensure. Listing by type
+only reads the requested type. A unique-key race can be retried on the next ensure. A setup failure during
+tenant creation is logged as a warning so tenant creation can finish.
+
 ## Service actions
 
-The tenant, department, position, employee, attachment and attendance setup actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
+The tenant, department, position, employee, attachment, attendance and product setup actions below belong to `core.business` and require the same manager claim over HTTP. Administrators use the
 engine administrator bypass. Inject these interfaces on the server or resolve the shared client proxies.
 
 | Interface | Action | Behavior |
@@ -167,6 +221,22 @@ engine administrator bypass. Inject these interfaces on the server or resolve th
 | | `PostGetTa_PublicHoliday_New` / `PostGetTa_PublicHoliday_Update` | Create or update an entry; the state removes it |
 | | `PostGetMeta_PublicHoliday_CopyDated(fromYear, toYear)` | Copy dated entries; returns the rows created and the count skipped |
 | | `GetMeta_PublicHoliday_HasDated(year)` | Whether the year has active dated entries |
+| `IUnitServices` | `GetVi_Units` | Global units ordered by code |
+| | `PostGetTa_Unit_New` / `PostGetTa_Unit_Update` | Save a unit |
+| | `PostMeta_Unit_Delete(unitId, ustamp)` | Delete an unused unit using its update stamp |
+| `ITenantProductTypeServices` | `GetVi_TenantProductTypes(tenantId)` | List types after system setup |
+| | `PostGetTa_TenantProductType_New` / `PostGetTa_TenantProductType_Update` | Save a type and its state |
+| | `PostGetMeta_TenantProductType_Ensure(tenantId, code, name, kind)` | Resolve or create a user-defined type |
+| `ITenantProductServices` | `GetVi_TenantProducts_Children(tenantId, parentId, typeId)` | Direct children, with an empty parent for roots and optional type filter |
+| | `GetVi_TenantProducts_ByType(tenantId, typeId)` | Flat list for one type |
+| | `GetVi_TenantProduct_ById(productId)` | One product or null |
+| | `GetMeta_TenantProduct_Search(tenantId, text, typeId)` | Up to 200 matches with paths |
+| | `GetMeta_TenantProduct_Path(productId)` | Path from the root through the selected product |
+| | `PostGetMeta_TenantProduct_CodesExist(tenantId, codes)` | Existing tenant codes, including inactive products |
+| | `PostGetTa_TenantProduct_New` / `PostGetTa_TenantProduct_Update` | Save a product and its state |
+| | `PostGetMeta_TenantProduct_AddChildren(batch)` | Add selected children atomically |
+| | `PostGetMeta_TenantProduct_CopyChildren(copy)` | Copy selected direct children atomically |
+| | `PostMeta_TenantProduct_EnsureSystem(tenantId)` | Ensure the reserved type and product |
 | `IContactAttachmentServices` | `GetMeta_ContactAttachments(contactId)` | Active attachments with file name, type, size and date from object storage |
 | | `PostGetMeta_ContactAttachment_Add(upload, content)` | Store a file and add its attachment |
 | | `PostGetMeta_ContactAttachment_Replace(upload, content)` | Add a version to the file, keeping name, kind and note |
@@ -214,6 +284,12 @@ for direct SQL. A head must be cleared before direct SQL transfers its employee.
 changes and their `System.Settings` audit entries in one transaction. Audit kinds are `tenant.dept.created`,
 `tenant.dept.changed`, `tenant.position.created`, `tenant.position.changed`, `tenant.emp.created`, `tenant.emp.changed`,
 `contact.attachment.created` and `contact.attachment.changed`.
+
+Product changes use `System.Settings` events `unit.created`, `unit.changed`, `unit.deleted`,
+`tenant.product.type.created`, `tenant.product.type.changed`, `tenant.product.created` and
+`tenant.product.changed`. Product and type saves check the tenant, references and update stamp.
+Invalid values or a changed parent return 400, missing targets return 404, and duplicate codes or stale
+stamps return 409. Product setup covers a fixed hierarchy and excludes recipes and transactions.
 
 ## Use from another module
 

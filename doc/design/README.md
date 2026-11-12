@@ -120,7 +120,7 @@ to the host's design. Decisions and open questions are in the
 
 ## Products in Business Module Manager (2026-11-12)
 
-**Status: design for review, not approved.** Page `40 Products` of `BusinessModuleManager.figcraft`: the generic
+**Status: approved on 2026-11-12.** Page `40 Products` of `BusinessModuleManager.figcraft`: the generic
 product setup per tenant, in six screens with Light and Dark frames (Light at y = 0, Dark 1180 px below). The drawer
 gets a fourth folder **Products (3)** with **Units**, **Product types** and **Products**; Organization, People and Attendance (4)
 are collapsed in these frames. BMM stays a setup tool: it shows and edits every product field except the extra data
@@ -158,7 +158,15 @@ drawn. Sample data is fictitious (tenant "Footwear Co").
 - Read-only values (State, Parent, the dialog's parent) use a filled box (`surfaceContainerHigh`, no outline), so
   they are not mistaken for editable fields.
 
-Open points for review (proposals in this design, not decisions):
+Approved implementation corrections (the frames retain their original layout):
+
+- Parent is permanently read-only. Omit Move from the toolbar and node menu.
+- The Kind picker offers the six user-defined kinds. A type with products keeps its kind. The system type's
+  identity and state are locked and its name can be edited.
+- Units has Delete for unused units.
+- The Copy children preview supports editing each destination code. The type filter is single-select.
+
+Original review notes:
 
 - The kind list shown on the help text (Goods, Manufacture Base, Product Component, Non-stock, Service, Financial)
   is still being settled; the system-only generic transaction kind is not drawn.
