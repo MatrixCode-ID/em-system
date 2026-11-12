@@ -115,6 +115,9 @@ namespace Em.Ui.Wpf.Core
          app.Services.AddSingleton<ITenantAttCodeServices>(provider => new Em.Ui.Core.TenantAttCodeClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IPublicHolidayServices>(provider => new Em.Ui.Core.PublicHolidayClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IContactAttachmentServices>(provider => new Em.Ui.Core.ContactAttachmentClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<IUnitServices>(provider => new Em.Ui.Core.UnitClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantProductTypeServices>(provider => new Em.Ui.Core.TenantProductTypeClientService(app, app.GetActiveApiClient));
+         app.Services.AddSingleton<ITenantProductServices>(provider => new Em.Ui.Core.TenantProductClientService(app, app.GetActiveApiClient));
          app.Services.AddSingleton<IBusinessTaskServices, BusinessTaskService>();
          app.Services.AddSingleton<IApprovalServices, ApprovalService>();
          app.Services.AddSingleton<ApprovalAccessCatalog>();
