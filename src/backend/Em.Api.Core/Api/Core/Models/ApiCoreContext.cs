@@ -48,6 +48,18 @@ namespace Em.Api.Core.Models
       public DbSet<vi_PublicHoliday> vi_PublicHolidays => Set<vi_PublicHoliday>();
       /// <summary>Files attached to contacts.</summary>
       public DbSet<ta_ContactAttachment> ta_ContactAttachments => Set<ta_ContactAttachment>();
+      /// <summary>Units of measure, shared by every tenant.</summary>
+      public DbSet<ta_Unit> ta_Units => Set<ta_Unit>();
+      /// <summary>Units of measure with the number of products using them.</summary>
+      public DbSet<vi_Unit> vi_Units => Set<vi_Unit>();
+      /// <summary>Product types of tenants.</summary>
+      public DbSet<ta_TenantProductType> ta_TenantProductTypes => Set<ta_TenantProductType>();
+      /// <summary>Product types with display values.</summary>
+      public DbSet<vi_TenantProductType> vi_TenantProductTypes => Set<vi_TenantProductType>();
+      /// <summary>Products of tenants.</summary>
+      public DbSet<ta_TenantProduct> ta_TenantProducts => Set<ta_TenantProduct>();
+      /// <summary>Products with display values.</summary>
+      public DbSet<vi_TenantProduct> vi_TenantProducts => Set<vi_TenantProduct>();
 
       /// <summary>Rows of table <c>ta_Contact</c>.</summary>
       public DbSet<ta_Contact> ta_Contacts => Set<ta_Contact>();
@@ -143,10 +155,16 @@ namespace Em.Api.Core.Models
             modelBuilder.Entity<ta_TenantSchedSetting>().Metadata, modelBuilder.Entity<vi_TenantSchedSetting>().Metadata,
             modelBuilder.Entity<ta_TenantSchedSettingStep>().Metadata,
             modelBuilder.Entity<ta_TenantAttCode>().Metadata, modelBuilder.Entity<vi_TenantAttCode>().Metadata,
-            modelBuilder.Entity<ta_PublicHoliday>().Metadata, modelBuilder.Entity<vi_PublicHoliday>().Metadata }) {
+            modelBuilder.Entity<ta_PublicHoliday>().Metadata, modelBuilder.Entity<vi_PublicHoliday>().Metadata,
+            modelBuilder.Entity<ta_Unit>().Metadata, modelBuilder.Entity<vi_Unit>().Metadata,
+            modelBuilder.Entity<ta_TenantProductType>().Metadata, modelBuilder.Entity<vi_TenantProductType>().Metadata,
+            modelBuilder.Entity<ta_TenantProduct>().Metadata, modelBuilder.Entity<vi_TenantProduct>().Metadata }) {
             entity.FindProperty("ustamp")!.SetColumnType("datetime");
             entity.FindProperty("datestamp")!.SetColumnType("datetime");
-            foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && (p.Name.EndsWith("Id") || p.Name == nameof(ta_TenantSchedSetting.cTenantSchedSettingKey))))
+            // The unit code is a hand-entered key, not a ULID, and product codes are searched: both stay varchar.
+            foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && p.Name is nameof(ta_Unit.cUnitId) or nameof(ta_TenantProduct.cTenantProductCode)))
+               property.SetIsUnicode(false);
+            foreach (var property in entity.GetProperties().Where(p => p.ClrType == typeof(string) && p.Name != nameof(ta_Unit.cUnitId) && (p.Name.EndsWith("Id") || p.Name == nameof(ta_TenantSchedSetting.cTenantSchedSettingKey))))
                property.SetColumnType("char(26)");
          }
 

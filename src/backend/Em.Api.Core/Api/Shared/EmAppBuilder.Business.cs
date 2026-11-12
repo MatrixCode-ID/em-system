@@ -9,8 +9,8 @@ public partial class EmAppBuilder
    private bool _businessModuleManagerAdded;
 
    /// <summary>
-   /// Turns on the Business Module Manager: tenant, department, position, employee, contact attachment and attendance setup actions,
-   /// sharing the single
+   /// Turns on the Business Module Manager: tenant, department, position, employee, contact attachment, attendance setup,
+   /// unit, product type and product actions, sharing the single
    /// claim <see cref="ITenantServices.ManagerClaim"/> in module <see cref="Defaults.BusinessModuleName"/>.
    /// </summary>
    /// <remarks>
@@ -29,6 +29,9 @@ public partial class EmAppBuilder
       AddService<ITenantAttCodeServices, TenantAttCodeServices>();
       AddService<IPublicHolidayServices, PublicHolidayServices>();
       AddService<IContactAttachmentServices, ContactAttachmentServices>();
+      AddService<IUnitServices, UnitServices>();
+      AddService<ITenantProductTypeServices, TenantProductTypeServices>();
+      AddService<ITenantProductServices, TenantProductServices>();
       AddManagedBucket(IContactAttachmentServices.Bucket, "Business Module Manager",
          "Files attached to contacts, such as photos, identity cards and diplomas, written by the Business Module Manager. " +
          "Moving it to another volume does not move existing files; a smaller quota stops new attachments.",

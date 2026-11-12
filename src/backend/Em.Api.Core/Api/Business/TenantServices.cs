@@ -3,6 +3,7 @@ using Em.Api.Core.Models;
 using Em.Shared;
 using Em.Api.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Em.Api.Core;
 
@@ -51,6 +52,7 @@ public sealed class TenantServices(ApiCoreContext ctx) : ServicesBase, ITenantSe
       ctx.ta_Tenants.Add(tenant);
       await SaveAsync(() => ctx.SaveChangesAsync());
       await AuditAsync(tenant.cTenantId, "tenant.created", $"Created tenant '{tenant.cTenantCode}'");
+      await EnsureSystemProductAsync(tenant.cTenantId);
       return await ReadAsync(tenant.cTenantId);
    }
 
@@ -116,6 +118,18 @@ public sealed class TenantServices(ApiCoreContext ctx) : ServicesBase, ITenantSe
       }
       catch (Exception ex) when (EmDbErrors.IsUniqueConflict(ex)) {
          throw new ActionException("The tenant code is already in use.", 409);
+      }
+   }
+
+   // A new tenant gets its system product type and product at once. They are also created when the product pages
+   // are first used, so a database that has no product tables yet must not make creating the tenant fail.
+   private async Task EnsureSystemProductAsync(string tenantId) {
+      try {
+         await TenantProductSeed.EnsureAsync(ctx, tenantId, App is null ? null : GetService<Em.Api.Core.Log.Audit.IAuditWriter>(), AbortToken);
+      }
+      catch (Exception ex) when (ex is not OperationCanceledException) {
+         ctx.ChangeTracker.Clear();
+         if (App is not null) Logger.LogWarning(ex, "The system product of tenant {TenantId} was not created; it is created when the product pages are first used.", tenantId);
       }
    }
 
