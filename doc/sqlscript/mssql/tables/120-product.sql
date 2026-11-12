@@ -87,8 +87,8 @@ IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_ta_TenantProduct
       FOREIGN KEY (cUnitId) REFERENCES [dbo].[ta_Unit] (cUnitId);
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ta_TenantProduct_cTenantId_cTenantProductParentId_cTenantProductOrder' AND object_id = OBJECT_ID(N'[dbo].[ta_TenantProduct]'))
-   CREATE INDEX [IX_ta_TenantProduct_cTenantId_cTenantProductParentId_cTenantProductOrder] ON [dbo].[ta_TenantProduct] ([cTenantId], [cTenantProductParentId], [cTenantProductOrder]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ta_TenantProduct_Tenant_Parent_Order' AND object_id = OBJECT_ID(N'[dbo].[ta_TenantProduct]'))
+   CREATE INDEX [IX_ta_TenantProduct_Tenant_Parent_Order] ON [dbo].[ta_TenantProduct] ([cTenantId], [cTenantProductParentId], [cTenantProductOrder]);
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ta_TenantProduct_cTenantId_cTenantProductTypeId' AND object_id = OBJECT_ID(N'[dbo].[ta_TenantProduct]'))

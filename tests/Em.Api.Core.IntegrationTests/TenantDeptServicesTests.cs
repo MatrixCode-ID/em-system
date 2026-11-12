@@ -11,13 +11,14 @@ public abstract class TenantOrgTestsBase(SqlServerDatabase database) : IAsyncLif
 {
    private string _connection = "";
    private readonly List<ApiCoreContext> _contexts = [];
+   protected virtual string[] AdditionalScripts => [];
    public async ValueTask InitializeAsync() {
       _connection = await database.CreateExtraDatabaseAsync(TestContext.Current.CancellationToken);
       var root = new DirectoryInfo(AppContext.BaseDirectory);
       while (root is not null && !File.Exists(Path.Combine(root.FullName, "doc/sqlscript/mssql/tables/090-tenant-org.sql"))) root = root.Parent;
       Assert.NotNull(root);
       await using var connection = new SqlConnection(_connection); await connection.OpenAsync(TestContext.Current.CancellationToken);
-      foreach (var file in new[] { "sets/000-ulid.sql", "tables/010-core.sql", "tables/080-tenant.sql", "tables/090-tenant-org.sql", "tables/090-tenant-org.sql", "views/vi_Tenant.sql", "views/vi_TenantDept.sql", "views/vi_TenantEmp.sql", "views/vi_TenantPosition.sql", "views/vi_Contact.sql" }) {
+      foreach (var file in new[] { "sets/000-ulid.sql", "tables/010-core.sql", "tables/080-tenant.sql", "tables/090-tenant-org.sql", "tables/090-tenant-org.sql", "views/vi_Tenant.sql", "views/vi_TenantDept.sql", "views/vi_TenantEmp.sql", "views/vi_TenantPosition.sql", "views/vi_Contact.sql" }.Concat(AdditionalScripts)) {
          var script = await File.ReadAllTextAsync(Path.Combine(root.FullName, "doc/sqlscript/mssql", file), TestContext.Current.CancellationToken);
          foreach (var batch in Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase).Where(x => !string.IsNullOrWhiteSpace(x))) {
             await using var command = new SqlCommand(batch, connection); await command.ExecuteNonQueryAsync();

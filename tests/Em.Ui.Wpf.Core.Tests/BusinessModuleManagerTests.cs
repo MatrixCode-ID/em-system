@@ -19,7 +19,7 @@ public class BusinessModuleManagerTests
       Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("tenantTree"));
       Assert.IsType<System.Windows.Controls.TreeView>(view.FindName("pageTree"));
       Assert.True(view.Vm.IsTenantsTab);
-      Assert.Equal(["Tenants", "Departments", "Positions", "Employees", "Scheduling settings", "Schedule templates", "Attendance codes", "Public holidays"], view.Vm.Tabs.Select(t => t.Title));
+      Assert.Equal(["Tenants", "Departments", "Positions", "Employees", "Scheduling settings", "Schedule templates", "Attendance codes", "Public holidays", "Units", "Product types", "Products"], view.Vm.Tabs.Select(t => t.Title));
       Assert.False(view.Vm.CanBrowse);
    }
 
@@ -27,9 +27,10 @@ public class BusinessModuleManagerTests
    public void PageDrawerListsTheExistingPagesInFolders() {
       var vm = new BusinessModuleManagerVm(new StubService());
 
-      Assert.Equal(["Organization (3)", "People (1)", "Attendance (4)"], vm.PageNodes.Select(n => n.Caption));
+      Assert.Equal(["Organization (3)", "People (1)", "Attendance (4)", "Products (3)"], vm.PageNodes.Select(n => n.Caption));
       Assert.Equal(["Tenants", "Departments", "Positions"], vm.PageNodes[0].Children.Select(n => n.Title));
       Assert.Equal(["Employees"], vm.PageNodes[1].Children.Select(n => n.Title));
+      Assert.Equal(["Units", "Product types", "Products"], vm.PageNodes[3].Children.Select(n => n.Title));
       Assert.All(vm.PageNodes, n => Assert.True(n.IsExpanded));
       Assert.Equal(["Tenants"], SelectedPages(vm));
       Assert.True(vm.IsDrawerOpen);

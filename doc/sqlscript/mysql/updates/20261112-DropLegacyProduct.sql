@@ -1,7 +1,8 @@
 /* Removes the product tables that tables/100-business.sql created before 2026-11-12: ta_ShoeHelper, ta_ProductTranData,
    ta_ProductTran, ta_Product and ta_ProductType. Products now live in tables/120-product.sql.
    The tables are dropped only when all of them are empty. When one holds rows, or a table outside this list refers to
-   one of them, the script stops with the reason and changes nothing. Safe to run again: missing tables are skipped. */
+   one of them, the script stops with the reason and changes nothing. Safe to run again: missing tables are skipped.
+   Pause writes to the legacy tables during this update because MySQL DDL commits implicitly. */
 DROP PROCEDURE IF EXISTS mysql_drop_legacy_product;
 DELIMITER $$
 CREATE PROCEDURE mysql_drop_legacy_product()
@@ -40,11 +41,7 @@ BEGIN
   SET message = LEFT(CONCAT('Legacy product tables are still referenced: ', outside), 128);
   SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = message;
  END IF;
- DROP TABLE IF EXISTS ta_ShoeHelper;
- DROP TABLE IF EXISTS ta_ProductTranData;
- DROP TABLE IF EXISTS ta_ProductTran;
- DROP TABLE IF EXISTS ta_Product;
- DROP TABLE IF EXISTS ta_ProductType;
+ DROP TABLE IF EXISTS ta_ShoeHelper, ta_ProductTranData, ta_ProductTran, ta_Product, ta_ProductType;
 END$$
 DELIMITER ;
 CALL mysql_drop_legacy_product();

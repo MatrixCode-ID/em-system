@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS ta_TenantProduct (
  ustamp datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), datestamp datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), json_object longtext NULL,
  PRIMARY KEY(cTenantProductId), UNIQUE KEY UQ_ta_TenantProduct_cTenantId_cTenantProductCode(cTenantId,cTenantProductCode),
  UNIQUE KEY UQ_ta_TenantProduct_cTenantProductId_cTenantId(cTenantProductId,cTenantId),
- KEY IX_ta_TenantProduct_cTenantId_cTenantProductParentId_cTenantProductOrder(cTenantId,cTenantProductParentId,cTenantProductOrder),
+ KEY IX_ta_TenantProduct_Tenant_Parent_Order(cTenantId,cTenantProductParentId,cTenantProductOrder),
  KEY IX_ta_TenantProduct_cTenantId_cTenantProductTypeId(cTenantId,cTenantProductTypeId),
  KEY IX_ta_TenantProduct_cUnitId(cUnitId),
  CONSTRAINT FK_ta_TenantProduct_ta_Tenant FOREIGN KEY(cTenantId) REFERENCES ta_Tenant(cTenantId),

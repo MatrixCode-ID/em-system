@@ -31,6 +31,8 @@ internal static class TenantProductSeed
                cTenantProductTypeKind = ProductKind.GenericTransaction, cTenantProductTypeState = ta_TenantProductType.StateActive, ustamp = now, datestamp = now
             });
          }
+         // Save the referenced rows first. The database enforces these foreign keys.
+         await ctx.SaveChangesAsync(ct);
          var productId = Ulid.NewUlid().ToString();
          ctx.ta_TenantProducts.Add(new ta_TenantProduct {
             cTenantProductId = productId, cTenantId = tenantId, cTenantProductTypeId = typeId, cUnitId = TenantProductSystem.UnitId,

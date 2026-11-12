@@ -66,7 +66,8 @@ after the organization tables, then `tables/120-product.sql` and the views `vi_U
 `updates/20261112-Unit-Stamp.sql` before `tables/120-product.sql`, then the three views and
 `updates/20261112-DropLegacyProduct.sql`. The files have the same names on SQL Server and MySQL.
 The legacy cleanup stops with counts if any of the five legacy tables contains rows. It also stops if
-another table still references one of them. The SQL Server table script aligns the unit key collation
+another table still references one of them. SQL Server locks the legacy tables from counting through commit.
+Pause writes to the legacy tables for the MySQL update. The SQL Server table script aligns the unit key collation
 with `ta_Unit` for the foreign key. The product unit index supports the unit usage lookup.
 
 Attachments need `builder.AddObjectStorage()`. The module declares the managed bucket `contact-attachments`, with a

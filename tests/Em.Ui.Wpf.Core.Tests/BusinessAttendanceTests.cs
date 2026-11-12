@@ -275,7 +275,7 @@ public class BusinessAttendanceTests
    [Fact]
    public void DrawerListsTheAttendanceFolder() {
       var vm = new BusinessModuleManagerVm(new BusinessModuleManagerTests.StubService());
-      Assert.Equal(["Organization (3)", "People (1)", "Attendance (4)"], vm.PageNodes.Select(n => n.Caption));
+      Assert.Equal("Attendance (4)", vm.PageNodes[2].Caption);
       Assert.Equal(["Scheduling settings", "Schedule templates", "Attendance codes", "Public holidays"], vm.PageNodes[2].Children.Select(n => n.Title));
       vm.PageNodes[2].Children[1].IsSelected = true;
       Assert.True(vm.IsSchedTemplatesTab); Assert.False(vm.IsTenantsTab);
