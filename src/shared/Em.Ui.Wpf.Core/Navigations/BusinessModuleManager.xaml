@@ -1352,6 +1352,416 @@
             </Grid>
             <controls:WaitOverlay Grid.RowSpan="4" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
          </Grid>
+         <!-- Units -->
+         <Grid Grid.Column="1" DataContext="{Binding Units}" Visibility="{Binding DataContext.IsUnitsTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Margin="22,12,22,10">
+               <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewUnitCommand]}" ToolTip="Start a new unit of measure">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New unit" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <WrapPanel>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[DeleteCommand]}" ToolTip="Delete this unit. Only a unit no product uses can be deleted." ToolTipService.ShowOnDisabled="True">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_TrashCan" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Delete" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+               </WrapPanel>
+            </DockPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <!-- Unit list -->
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="UNITS" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
+                     <ListBox x:Name="unitList" Grid.Row="1" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" ItemContainerStyle="{StaticResource positionRowStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="22,10">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel>
+                                    <TextBlock x:Name="unitName" Text="{Binding cUnitDesc}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding cUnitDesc}"/>
+                                    <TextBlock FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"><Run Text="{Binding cUnitId, Mode=OneWay}"/><Run Text="  ·  "/><Run Text="{Binding cUnitSymbol, Mode=OneWay}"/></TextBlock>
+                                 </StackPanel>
+                                 <TextBlock Grid.Column="1" Text="{Binding ccUnitProductCount}" Opacity="0.6" VerticalAlignment="Center" ToolTip="Products that use this unit"/>
+                              </Grid>
+                              <DataTemplate.Triggers>
+                                 <DataTrigger Binding="{Binding cUnitId}" Value="">
+                                    <Setter TargetName="unitName" Property="Text" Value="(new unit)"/>
+                                 </DataTrigger>
+                              </DataTemplate.Triggers>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <!-- Unit editor -->
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="UNIT" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select a unit in the list, or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <StackPanel Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="The key products and document lines refer to (up to 50 characters). It can be entered for a new unit only and never changes afterwards.">
+                              <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                                 <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                              </StackPanel>
+                              <TextBox x:Name="unitCode" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50" IsReadOnly="{Binding IsCodeFixed}" AutomationProperties.Name="Unit code"/>
+                           </StackPanel>
+                           <TextBlock Text="Description" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox x:Name="unitDescription" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditDescription, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Unit description"/>
+                           <TextBlock Text="Symbol" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox x:Name="unitSymbol" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditSymbol, UpdateSourceTrigger=PropertyChanged}" MaxLength="50" AutomationProperties.Name="Unit symbol"/>
+                           <TextBlock Text="{Binding UsageCaption}" Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                           <TextBlock Text="Units are one list for every tenant and have no state: a unit is either there or deleted, and it can be deleted only while no product uses it." Style="{StaticResource fieldHelpStyle}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
+         <!-- Product types -->
+         <Grid Grid.Column="1" DataContext="{Binding ProductTypes}" Visibility="{Binding DataContext.IsProductTypesTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Margin="22,12,22,10">
+               <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewProductTypeCommand]}" ToolTip="Start a new product type in this tenant">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New product type" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <WrapPanel>
+                  <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" ItemTemplate="{StaticResource tenantChoiceTemplate}" AutomationProperties.Name="Tenant"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}" ToolTip="Stop or resume offering this product type. Its products keep it and keep their own state." ToolTipService.ShowOnDisabled="True">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+               </WrapPanel>
+            </DockPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="220" MaxWidth="420"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <!-- Product type list -->
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="PRODUCT TYPES" Style="{StaticResource sectionCaptionStyle}" Margin="22,12"/>
+                     <ListBox x:Name="productTypeList" Grid.Row="1" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" ItemContainerStyle="{StaticResource positionRowStyle}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="22,10">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                    <TextBlock Text="{Binding DetailCaption}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                                 </StackPanel>
+                                 <Border Grid.Column="1" Style="{StaticResource chipMutedStyle}" Margin="8,0" VerticalAlignment="Center" Visibility="{Binding IsInactive, Converter={StaticResource boolVisibility}}">
+                                    <TextBlock Text="INACTIVE"/>
+                                 </Border>
+                                 <TextBlock Grid.Column="2" Text="{Binding ProductCount}" Opacity="0.6" VerticalAlignment="Center" ToolTip="Products of this type"/>
+                              </Grid>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <!-- Product type editor -->
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="PRODUCT TYPE" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select a product type in the list, or start a new one." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                           <TextBox x:Name="productTypeCode" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50" IsReadOnly="{Binding IsSystemSelected}" AutomationProperties.Name="Product type code"/>
+                           <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox x:Name="productTypeName" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Product type name"/>
+                           <Grid Margin="0,12,0,0">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0">
+                                 <TextBlock Text="Kind" Style="{StaticResource fieldLabelStyle}"/>
+                                 <ComboBox x:Name="productTypeKind" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding KindOptions}" SelectedItem="{Binding EditKind, Mode=TwoWay}" Visibility="{Binding CanEditKind, Converter={StaticResource boolVisibility}}" AutomationProperties.Name="Kind">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}"/></DataTemplate></ComboBox.ItemTemplate>
+                                 </ComboBox>
+                                 <TextBox x:Name="productTypeKindLocked" Style="{StaticResource fieldBoxStyle}" Text="{Binding KindCaption, Mode=OneWay}" IsReadOnly="True" IsTabStop="False" Visibility="{Binding IsKindLocked, Converter={StaticResource boolVisibility}}" AutomationProperties.Name="Kind"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Changed with Deactivate and Activate on the toolbar.">
+                                 <TextBlock Text="State" Style="{StaticResource fieldLabelStyle}"/>
+                                 <TextBox x:Name="productTypeState" Style="{StaticResource fieldBoxStyle}" Text="{Binding StateCaption, Mode=OneWay}" IsReadOnly="True" IsTabStop="False" AutomationProperties.Name="State"/>
+                              </StackPanel>
+                           </Grid>
+                           <TextBlock Text="{Binding KindHint}" Style="{StaticResource fieldHelpStyle}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                           <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Product type note"/>
+                           <TextBlock Text="A new product type is saved as active. Product types are never deleted; deactivate one to stop offering it to new products. Deactivating a type does not change its products." Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
+         <!-- Products -->
+         <Grid Grid.Column="1" DataContext="{Binding Products}" Visibility="{Binding DataContext.IsProductsTab, ElementName=businessRoot, Converter={StaticResource boolVisibility}}">
+            <Grid.RowDefinitions>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="Auto"/>
+               <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Margin="22,12,22,10">
+               <Button DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource filledButtonStyle}" Command="{Binding Commands[NewRootCommand]}" ToolTip="Start a new product at the top of the tree. It needs at least one unit and one active product type." ToolTipService.ShowOnDisabled="True">
+                  <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Plus" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="New root product" VerticalAlignment="Center"/></StackPanel>
+               </Button>
+               <WrapPanel>
+                  <TextBlock Text="Tenant" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                  <ComboBox Width="230" Height="38" Margin="0,0,8,4" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TenantChoices}" SelectedItem="{Binding SelectedTenant, Mode=TwoWay}" IsEnabled="{Binding IsNotBusy}" ItemTemplate="{StaticResource tenantChoiceTemplate}" AutomationProperties.Name="Tenant"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[RefreshCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ArrowsRotate" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Refresh" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Border Width="1" Height="22" Margin="6,0,14,4" VerticalAlignment="Center" Background="{StaticResource outlineBrush}"/>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddChildCommand]}" ToolTip="Start a new product under the selected product">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Sitemap" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Add child" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[AddChildrenCommand]}" ToolTip="Add several children to the selected product in one save">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_ListUl" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Add children..." VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[CopyChildrenCommand]}" ToolTip="Copy the direct children of another product under the selected product">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_Copy" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Copy children from..." VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[SaveCommand]}">
+                     <StackPanel Orientation="Horizontal"><fa:FontAwesome Icon="Solid_FloppyDisk" Style="{StaticResource buttonIconStyle}"/><TextBlock Text="Save" VerticalAlignment="Center"/></StackPanel>
+                  </Button>
+                  <Button Margin="0,0,8,4" Style="{StaticResource outlinedButtonStyle}" Command="{Binding Commands[ToggleStateCommand]}" ToolTip="Deactivate or activate the selected product. Its children keep their own state." ToolTipService.ShowOnDisabled="True">
+                     <StackPanel Orientation="Horizontal">
+                        <fa:FontAwesome Icon="Solid_PowerOff" Style="{StaticResource buttonIconStyle}"/>
+                        <TextBlock Text="{Binding ToggleStateCaption}" VerticalAlignment="Center"/>
+                     </StackPanel>
+                  </Button>
+               </WrapPanel>
+            </DockPanel>
+            <TextBlock Grid.Row="1" Text="{Binding Status}" Margin="22,0,22,10" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            <Grid Grid.Row="2" Margin="22,0,22,16">
+               <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="2*" MinWidth="280" MaxWidth="520"/>
+                  <ColumnDefinition Width="14"/>
+                  <ColumnDefinition Width="3*" MinWidth="320"/>
+               </Grid.ColumnDefinitions>
+               <!-- Product tree -->
+               <Border Style="{StaticResource cardStyle}" Padding="0">
+                  <Grid>
+                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                     </Grid.RowDefinitions>
+                     <TextBlock Text="PRODUCTS" Style="{StaticResource sectionCaptionStyle}" Margin="22,12,22,8"/>
+                     <StackPanel Grid.Row="1" Margin="22,0,22,8">
+                        <ComboBox x:Name="productTypeFilter" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TypeFilterOptions}" SelectedItem="{Binding TypeFilter, Mode=TwoWay}" IsEnabled="{Binding CanBrowse}" ToolTip="Show only products of one type. A product under a parent of another type is then reached through the search." AutomationProperties.Name="Product type filter">
+                           <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Grid Margin="0,8,0,0">
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="Auto"/>
+                              <ColumnDefinition Width="Auto"/>
+                           </Grid.ColumnDefinitions>
+                           <TextBox x:Name="productSearch" Style="{StaticResource fieldBoxStyle}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Tag="Search code or name" IsEnabled="{Binding CanBrowse}" AutomationProperties.Name="Search products">
+                              <TextBox.InputBindings>
+                                 <KeyBinding Key="Return" Command="{Binding Commands[SearchCommand]}"/>
+                              </TextBox.InputBindings>
+                           </TextBox>
+                           <Button Grid.Column="1" Margin="8,0,0,0" Width="38" Height="38" Style="{StaticResource flatIconButtonStyle}" Command="{Binding Commands[SearchCommand]}" ToolTip="Search products by code or name" AutomationProperties.Name="Search">
+                              <fa:FontAwesome Icon="Solid_MagnifyingGlass" FontSize="14"/>
+                           </Button>
+                           <Button Grid.Column="2" Margin="4,0,0,0" Width="38" Height="38" Style="{StaticResource flatIconButtonStyle}" Command="{Binding Commands[ClearSearchCommand]}" ToolTip="Close the search results and show the tree" AutomationProperties.Name="Clear search">
+                              <fa:FontAwesome Icon="Solid_Xmark" FontSize="14"/>
+                           </Button>
+                        </Grid>
+                     </StackPanel>
+                     <TextBlock Grid.Row="2" Text="{Binding SearchCaption}" Margin="22,0,22,8" Style="{StaticResource fieldHelpStyle}" TextWrapping="Wrap" Visibility="{Binding IsSearching, Converter={StaticResource boolVisibility}}"/>
+                     <TreeView x:Name="productTree" Grid.Row="3" Style="{StaticResource surfaceTreeViewStyle}" Foreground="{DynamicResource themeWindowForegroundBrush}" Background="Transparent" BorderThickness="0" Padding="12,0,12,8" ItemsSource="{Binding RootNodes}" ItemContainerStyle="{StaticResource tenantTreeItemStyle}" IsEnabled="{Binding CanBrowse}" Visibility="{Binding IsBrowsingTree, Converter={StaticResource boolVisibility}}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Products">
+                        <TreeView.Resources>
+                           <HierarchicalDataTemplate DataType="{x:Type local:ProductNode}" ItemsSource="{Binding Children}">
+                              <Grid MinHeight="32" Background="Transparent" Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}" PreviewMouseRightButtonDown="SelectProductNode">
+                                 <Grid.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Style="{StaticResource cascadeContextMenuStyle}">
+                                       <MenuItem Header="Add child" Style="{StaticResource cascadeMenuItemStyle}" Command="{Binding Commands[AddChildCommand]}"/>
+                                       <MenuItem Header="Add children..." Style="{StaticResource cascadeMenuItemStyle}" Command="{Binding Commands[AddChildrenCommand]}"/>
+                                       <MenuItem Header="Copy children from..." Style="{StaticResource cascadeMenuItemStyle}" Command="{Binding Commands[CopyChildrenCommand]}"/>
+                                       <Separator/>
+                                       <MenuItem Header="{Binding ToggleStateCaption}" Style="{StaticResource cascadeMenuItemStyle}" Command="{Binding Commands[ToggleStateCommand]}"/>
+                                    </ContextMenu>
+                                 </Grid.ContextMenu>
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <fa:FontAwesome Icon="Solid_Box" Width="20" FontSize="13" Opacity="0.7" VerticalAlignment="Center"/>
+                                 <DockPanel Grid.Column="1" Margin="6,0,8,0" VerticalAlignment="Center" LastChildFill="True">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}"/>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding ChildCountCaption}" Margin="6,0,0,0" Opacity="0.6" ToolTip="Direct children"/>
+                                    <TextBlock Text="{Binding DisplayCode}" Margin="8,0,0,0" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayCode}"/>
+                                 </DockPanel>
+                                 <Border Grid.Column="2" Style="{StaticResource chipMutedStyle}" Padding="8,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding IsInactive, Converter={StaticResource boolVisibility}}" ToolTip="This product is deactivated. It can still be a parent and can be activated again.">
+                                    <TextBlock Text="INACTIVE"/>
+                                 </Border>
+                              </Grid>
+                           </HierarchicalDataTemplate>
+                        </TreeView.Resources>
+                     </TreeView>
+                     <ListBox x:Name="productSearchResults" Grid.Row="3" Style="{StaticResource surfaceListBoxStyle}" BorderThickness="0" ItemsSource="{Binding SearchResults}" IsEnabled="{Binding IsNotBusy}" Visibility="{Binding IsSearching, Converter={StaticResource boolVisibility}}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Search results">
+                        <ListBox.ItemContainerStyle>
+                           <Style TargetType="ListBoxItem" BasedOn="{StaticResource positionRowStyle}">
+                              <EventSetter Event="MouseLeftButtonUp" Handler="OpenProductHit"/>
+                              <Setter Property="Cursor" Value="Hand"/>
+                           </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                           <DataTemplate>
+                              <Grid Margin="22,10">
+                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                 </Grid.ColumnDefinitions>
+                                 <StackPanel>
+                                    <TextBlock Text="{Binding Row.cTenantProductName}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Row.cTenantProductName}"/>
+                                    <TextBlock FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"><Run Text="{Binding Row.cTenantProductCode, Mode=OneWay}"/><Run Text="  ·  "/><Run Text="{Binding Row.cvTenantProductTypeName, Mode=OneWay}"/></TextBlock>
+                                 </StackPanel>
+                                 <Border x:Name="hitInactive" Grid.Column="1" Style="{StaticResource chipMutedStyle}" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed">
+                                    <TextBlock Text="INACTIVE"/>
+                                 </Border>
+                              </Grid>
+                              <DataTemplate.Triggers>
+                                 <DataTrigger Binding="{Binding Row.cTenantProductState}" Value="-1">
+                                    <Setter TargetName="hitInactive" Property="Visibility" Value="Visible"/>
+                                 </DataTrigger>
+                              </DataTemplate.Triggers>
+                           </DataTemplate>
+                        </ListBox.ItemTemplate>
+                     </ListBox>
+                  </Grid>
+               </Border>
+               <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent" ShowsPreview="False" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+               <!-- Product editor -->
+               <Border Grid.Column="2" Style="{StaticResource cardStyle}" Padding="22,12,22,16">
+                  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                     <StackPanel>
+                        <TextBlock Text="PRODUCT" Style="{StaticResource sectionCaptionStyle}"/>
+                        <TextBlock Text="Select a product in the tree, or start a new one. Open a node to read its children." Style="{StaticResource fieldHelpStyle}" Margin="0,10,0,0" TextWrapping="Wrap" Visibility="{Binding HasNoSelection, Converter={StaticResource boolVisibility}}"/>
+                        <StackPanel Margin="0,10,0,0" IsEnabled="{Binding CanEdit}" Visibility="{Binding HasSelection, Converter={StaticResource boolVisibility}}">
+                           <TextBlock x:Name="productPath" Text="{Binding PathCaption}" FontSize="12" Opacity="0.75" TextWrapping="Wrap" AutomationProperties.Name="Path"/>
+                           <Grid Margin="0,12,0,0">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="An active product type of this tenant. The product follows the kind of its type; a child may have another type than its parent.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Product type" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <ComboBox x:Name="productType" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding TypeOptions}" SelectedItem="{Binding EditType, Mode=TwoWay}" IsEnabled="{Binding CanEditIdentity}" AutomationProperties.Name="Product type">
+                                    <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Caption}" TextTrimming="CharacterEllipsis"/></DataTemplate></ComboBox.ItemTemplate>
+                                 </ComboBox>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1">
+                                 <TextBlock Text="Unit" Style="{StaticResource fieldLabelStyle}"/>
+                                 <ComboBox x:Name="productUnit" Style="{StaticResource fieldComboStyle}" ItemsSource="{Binding UnitOptions}" SelectedItem="{Binding EditUnit, Mode=TwoWay}" AutomationProperties.Name="Unit">
+                                    <ComboBox.ItemTemplate>
+                                       <DataTemplate>
+                                          <TextBlock TextTrimming="CharacterEllipsis"><Run Text="{Binding cUnitDesc, Mode=OneWay}"/><Run Text=" ("/><Run Text="{Binding cUnitSymbol, Mode=OneWay}"/><Run Text=")"/></TextBlock>
+                                       </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                 </ComboBox>
+                              </StackPanel>
+                           </Grid>
+                           <Grid Margin="0,12,0,0">
+                              <Grid.ColumnDefinitions>
+                                 <ColumnDefinition Width="*"/>
+                                 <ColumnDefinition Width="*"/>
+                              </Grid.ColumnDefinitions>
+                              <StackPanel Margin="0,0,8,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="The parent is set when the product is created and cannot change afterwards.">
+                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Parent" Style="{StaticResource fieldLabelStyle}"/>
+                                    <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                                 </StackPanel>
+                                 <TextBox x:Name="productParent" Style="{StaticResource fieldBoxStyle}" Text="{Binding ParentCaption, Mode=OneWay}" IsReadOnly="True" IsTabStop="False" AutomationProperties.Name="Parent"/>
+                              </StackPanel>
+                              <StackPanel Grid.Column="1" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Changed with Deactivate and Activate on the toolbar.">
+                                 <TextBlock Text="State" Style="{StaticResource fieldLabelStyle}"/>
+                                 <TextBox x:Name="productState" Style="{StaticResource fieldBoxStyle}" Text="{Binding StateCaption, Mode=OneWay}" IsReadOnly="True" IsTabStop="False" AutomationProperties.Name="State"/>
+                              </StackPanel>
+                           </Grid>
+                           <StackPanel Margin="0,12,0,0" Background="Transparent" ToolTipService.ShowOnDisabled="True" ToolTip="Entered by hand and unique within the tenant, also among inactive products (up to 50 characters).">
+                              <StackPanel Orientation="Horizontal">
+                                 <TextBlock Text="Code" Style="{StaticResource fieldLabelStyle}"/>
+                                 <fa:FontAwesome Style="{StaticResource fieldInfoIconStyle}"/>
+                              </StackPanel>
+                              <TextBox x:Name="productCode" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditCode, UpdateSourceTrigger=PropertyChanged}" MaxLength="50" IsReadOnly="{Binding IsSystemSelected}" AutomationProperties.Name="Product code"/>
+                           </StackPanel>
+                           <TextBlock Text="Name" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox x:Name="productName" Style="{StaticResource fieldBoxStyle}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="255" AutomationProperties.Name="Product name"/>
+                           <TextBlock Text="Note" Style="{StaticResource fieldLabelStyle}" Margin="0,12,0,0"/>
+                           <TextBox Style="{StaticResource fieldBoxStyle}" Text="{Binding EditNote, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" Height="Auto" MinHeight="72" Padding="12,8" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Product note"/>
+                           <TextBlock Text="A new product is saved as active. Products are never deleted; deactivating one does not change its children. Extra data an application keeps on a product is not shown or changed here." Style="{StaticResource fieldHelpStyle}" Margin="0,12,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                     </StackPanel>
+                  </ScrollViewer>
+               </Border>
+            </Grid>
+            <controls:WaitOverlay Grid.RowSpan="3" IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
+         </Grid>
       </Grid>
       <controls:WaitOverlay IsWaiting="{Binding InWaiting}" Caption="{Binding WaiterText}"/>
    </Grid>

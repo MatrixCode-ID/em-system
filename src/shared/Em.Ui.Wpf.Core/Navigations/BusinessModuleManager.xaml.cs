@@ -34,11 +34,38 @@ public partial class BusinessModuleManager : UserControl, INavigationBody
       };
       Vm.Holidays.ConfirmRemove = holiday => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
          $"Remove {holiday.cPublicHolidayName} from the calendar?", "Remove Holiday") == MessageBoxResult.Yes;
+      Vm.Units.ConfirmDelete = unit => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
+         $"Delete unit {unit.cUnitId}? This cannot be undone.", "Delete Unit") == MessageBoxResult.Yes;
+      Vm.ProductTypes.ConfirmDeactivate = type => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
+         $"Deactivate product type {type.cTenantProductTypeName}? Its products keep it; it is no longer offered to new products.", "Deactivate Product Type") == MessageBoxResult.Yes;
+      Vm.Products.ConfirmDeactivate = product => (Window.GetWindow(this) ?? app.MainWindow).ShowMboxDecideWarning(
+         $"Deactivate product {product.cTenantProductName} ({product.cTenantProductCode})? Its children keep their own state.", "Deactivate Product") == MessageBoxResult.Yes;
+      Vm.Products.PickChildren = parent => {
+         var service = app.ServiceProvider.GetRequiredService<ITenantProductServices>();
+         var dialog = new AddProductChildrenDialog(service, parent) { Owner = Window.GetWindow(this) ?? app.MainWindow };
+         return dialog.ShowDialog() == true ? dialog.Vm.Result : null;
+      };
+      Vm.Products.PickCopy = target => {
+         var service = app.ServiceProvider.GetRequiredService<ITenantProductServices>();
+         var dialog = new CopyProductChildrenDialog(service, target) { Owner = Window.GetWindow(this) ?? app.MainWindow };
+         return dialog.ShowDialog() == true ? dialog.Vm.Result : null;
+      };
       Vm.Employees.OpenEditor = payload => Vm.NavigationEntry?.NavigateTo(EmApp.EmployeeEditorNavigationName, payload) ?? Task.CompletedTask;
    }
 
    // Mouse selection is view-owned; the editor action itself remains one bound VM command.
    private void SelectEmployeeRow(object sender, System.Windows.Input.MouseButtonEventArgs args) => ((System.Windows.Controls.ListBoxItem)sender).IsSelected = true;
+
+   // A right click selects the product first, so the context menu acts on the node under the pointer.
+   private void SelectProductNode(object sender, System.Windows.Input.MouseButtonEventArgs args) {
+      if (sender is FrameworkElement { DataContext: ProductNode { IsPlaceholder: false } node }) node.IsSelected = true;
+   }
+
+   // Mouse selection is view-owned; opening the product in the tree remains one bound VM command.
+   private void OpenProductHit(object sender, System.Windows.Input.MouseButtonEventArgs args) {
+      if (sender is FrameworkElement { DataContext: TenantProductSearchHit hit } && Vm.Products.Commands[nameof(BusinessModuleManagerProductVm.OpenHitCommand)] is { } command && command.CanExecute(hit))
+         command.Execute(hit);
+   }
 
    /// <summary>Screen view model.</summary>
    public BusinessModuleManagerVm Vm => (BusinessModuleManagerVm)DataContext;

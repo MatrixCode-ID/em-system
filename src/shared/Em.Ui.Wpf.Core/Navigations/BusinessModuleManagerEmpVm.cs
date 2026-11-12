@@ -360,10 +360,12 @@ public sealed partial class BusinessModuleManagerVm
 {
    /// <summary>Checks all editors before leaving the screen.</summary>
    public bool CanLeave() => (!IsDirty || ConfirmDiscard?.Invoke() != false) && Departments.CanLeave() && Positions.CanLeave() && Employees.CanLeave() &&
-      Schedules.CanLeave() && Templates.CanLeave() && AttCodes.CanLeave() && Holidays.CanLeave();
+      Schedules.CanLeave() && Templates.CanLeave() && AttCodes.CanLeave() && Holidays.CanLeave() &&
+      Units.CanLeave() && ProductTypes.CanLeave() && Products.CanLeave();
    /// <summary>Whether tabs can be switched during work.</summary>
    public bool CanSwitchTabs => IsNotBusy && Departments.IsNotBusy && Positions.IsNotBusy && Employees.IsNotBusy &&
-      Schedules.IsNotBusy && Templates.IsNotBusy && AttCodes.IsNotBusy && Holidays.IsNotBusy;
+      Schedules.IsNotBusy && Templates.IsNotBusy && AttCodes.IsNotBusy && Holidays.IsNotBusy &&
+      Units.IsNotBusy && ProductTypes.IsNotBusy && Products.IsNotBusy;
    /// <summary>Department tab state.</summary>
    public BusinessModuleManagerDeptVm Departments { get; } = new();
    /// <summary>Position tab state.</summary>
@@ -378,6 +380,12 @@ public sealed partial class BusinessModuleManagerVm
    public BusinessModuleManagerAttCodeVm AttCodes { get; } = new();
    /// <summary>Public holidays page state.</summary>
    public BusinessModuleManagerHolidayVm Holidays { get; } = new();
+   /// <summary>Units page state.</summary>
+   public BusinessModuleManagerUnitVm Units { get; } = new();
+   /// <summary>Product types page state.</summary>
+   public BusinessModuleManagerProductTypeVm ProductTypes { get; } = new();
+   /// <summary>Products page state.</summary>
+   public BusinessModuleManagerProductVm Products { get; } = new();
    /// <summary>Whether departments are shown.</summary>
    public bool IsDepartmentsTab => ActiveTab.Key == "departments";
    /// <summary>Whether positions are shown.</summary>
@@ -392,4 +400,10 @@ public sealed partial class BusinessModuleManagerVm
    public bool IsAttCodesTab => ActiveTab.Key == "att-codes";
    /// <summary>Whether public holidays are shown.</summary>
    public bool IsHolidaysTab => ActiveTab.Key == "holidays";
+   /// <summary>Whether units are shown.</summary>
+   public bool IsUnitsTab => ActiveTab.Key == "units";
+   /// <summary>Whether product types are shown.</summary>
+   public bool IsProductTypesTab => ActiveTab.Key == "product-types";
+   /// <summary>Whether products are shown.</summary>
+   public bool IsProductsTab => ActiveTab.Key == "products";
 }
