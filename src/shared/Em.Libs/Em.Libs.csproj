@@ -8,7 +8,7 @@
         <RootNamespace>Em</RootNamespace>
         <Description>Shared types and utilities for Em System.</Description>
         <Title>Em System shared library</Title>
-        <PackageTags>em-system;shared;contracts;argon2;qrcode</PackageTags>
+        <PackageTags>em-system;shared;contracts;argon2;qrcode;documents;spreadsheet;pdf;xlsx;docx</PackageTags>
     </PropertyGroup>
     <ItemGroup>
       <Folder Include="Services\" />
@@ -18,6 +18,12 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
       <PackageReference Include="QRCoder" Version="1.8.1" />
       <PackageReference Include="Ulid" Version="1.4.1" />
+    </ItemGroup>
+    <!-- Grid, Editors, Editing, Documents, Sheet and Write are synced from MatrixGrid; see doc/engine/engine-documents.md#sync. -->
+    <ItemGroup>
+      <EmbeddedResource Include="Documents\Assets\NotoSans-Regular.ttf" LogicalName="Em.Documents.Assets.NotoSans-Regular.ttf" />
+      <None Include="..\..\..\THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="/" Visible="false" />
+      <None Include="..\..\..\licenses\*" Pack="true" PackagePath="licenses/" Visible="false" />
     </ItemGroup>
 
 </Project>

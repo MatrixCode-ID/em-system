@@ -44,7 +44,8 @@
     { "from": "tests/MatrixGrid.Tests/Editors", "to": "tests/Em.Libs.Tests/Editors" },
     { "from": "tests/MatrixGrid.Tests/Sheet", "to": "tests/Em.Libs.Tests/Sheet" },
     { "from": "tests/MatrixGrid.Tests/Write", "to": "tests/Em.Libs.Tests/Write" },
-    { "from": "tests/MatrixGrid.Tests/Wpf", "to": "tests/Em.Ui.Wpf.Documents.Tests/Wpf" }
+    { "from": "tests/MatrixGrid.Tests/Wpf", "to": "tests/Em.Ui.Wpf.Documents.Tests/Wpf" },
+    { "from": "licenses", "to": "licenses" }
   ],
   "files": [
     { "from": "src/MatrixGrid/Data/GeneratedOrderProvider.cs", "to": "tests/Em.Libs.Tests/Grid/Fixtures/GeneratedOrderProvider.cs" },
@@ -123,6 +124,7 @@
     "benchmarks/**"
   ],
   "owned": [
+    "THIRD-PARTY-NOTICES.md",
     "src/shared/Em.Libs/Em.Libs.csproj",
     "src/shared/Em.Libs/Properties/DocumentsAccess.cs",
     "src/shared/Em.Ui.Wpf.Documents/Em.Ui.Wpf.Documents.csproj",

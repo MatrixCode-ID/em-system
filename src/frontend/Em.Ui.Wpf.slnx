@@ -2,6 +2,7 @@
   <Project Path="../shared/Em.Libs/Em.Libs.csproj" />
   <Project Path="../shared/Em.Ui.Core/Em.Ui.Core.csproj" />
   <Project Path="../shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj" />
+  <Project Path="../shared/Em.Ui.Wpf.Documents/Em.Ui.Wpf.Documents.csproj" />
   <Folder Name="/modules/Em.Test/">
     <Project Path="../modules/Em.Test/Em.Test.Models/Em.Test.Models.csproj" />
     <Project Path="../modules/Em.Test/Em.Test.Models.Ui/Em.Test.Models.Ui.csproj" />
@@ -11,6 +12,7 @@
     <File Path="../../tests/Directory.Build.props" />
     <Project Path="../../tests/Em.Ui.Core.Tests/Em.Ui.Core.Tests.csproj" />
     <Project Path="../../tests/Em.Ui.Wpf.Core.Tests/Em.Ui.Wpf.Core.Tests.csproj" />
+    <Project Path="../../tests/Em.Ui.Wpf.Documents.Tests/Em.Ui.Wpf.Documents.Tests.csproj" />
   </Folder>
   <Project Path="Em.Ui.Wpf/Em.Ui.Wpf.csproj" />
 </Solution>
