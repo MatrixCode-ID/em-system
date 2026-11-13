@@ -1,8 +1,8 @@
 # Plan: integrasi MatrixGrid ke engine Em
 
-Tanggal: 2026-11-13. Eksekutor: Claude Code. Status: **belum dieksekusi — keputusan final, menunggu
-perintah eksekusi pengguna.** Perubahan engine dari plan ini baru boleh dikerjakan setelah pengguna
-secara eksplisit meminta eksekusi.
+Tanggal: 2026-11-13. Eksekutor: Claude Code. Status: **dieksekusi 2026-11-13** (langkah 1–8 selesai). Laporan:
+[doc/report/matrixgrid-integration.md](../../doc/report/matrixgrid-integration.md); penyimpangan dan keputusan agen
+selama eksekusi dicatat di sana.
 
 ## Tujuan
 
