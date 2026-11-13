@@ -1,5 +1,36 @@
 # CLAUDE.md
 
+## Kontrol dokumen dari MatrixGrid (keputusan pengguna 2026-11-13)
+
+Grid data, MatrixSheet, MatrixWriter, editor nilai, print preview dan writer PDF/XLSX/DOCX/CSV berasal dari repo
+saudara `..\MatrixGrid`, yang **tetap master dan dikembangkan paralel**. Ringkasan keputusan
+(plan: `plan/executed/matrixgrid-integration.md`, panduan: `doc/engine/engine-documents.md`):
+
+1. Kode netral (`net10.0`), termasuk `SheetSession` dan `WriteSession`, masuk `Em.Libs` agar server bisa menyusun
+   dokumen. Kode WPF masuk project `src/shared/Em.Ui.Wpf.Documents`; renderer lain nanti mendapat project sendiri
+   (mis. `Em.Ui.Avalonia.Documents`) dengan nama kelas control yang sama.
+2. Payung namespace `Em` tanpa segmen `Matrix`, namespace mengikuti folder (`Em.Grid`, `Em.Editors`, `Em.Editing`,
+   `Em.Documents.*`, `Em.Sheet.*`, `Em.Write.*`, `Em.Ui.Wpf.Documents.*`); peta lengkap di panduan.
+3. `GridControl` menjadi `MatrixGrid`, `MatrixWrite` menjadi `MatrixWriter`, `MatrixSheet` tetap; tipe engine tidak
+   diganti nama. Resource key `MatrixGrid.Brush.*` dan `Material.*` tidak diganti.
+4. xmlns per kelompok control: `https://MatrixCode/wpf/grid` (`emg`), `/editors` (`eme`), `/sheet` (`ems`),
+   `/writer` (`emw`), `/printing` (`emp`), ditulis persis termasuk huruf besar-kecil.
+5. Tema: `builder.UseDocuments()` memetakan tema aktif Em ke palet control; tanpa host Em control memakai palet
+   Light/Dark bawaannya.
+6. Tes dipindah sebagai xUnit v3 (`tests/Em.Libs.Tests`, `tests/Em.Ui.Wpf.Documents.Tests`) dan dijalankan lewat RunBay.
+7. Demo dan benchmark MatrixGrid tidak dipindah.
+8. Arah sync hanya MatrixGrid -> em-system lewat `scripts/sync-matrixgrid.cmd` + `scripts/sync-matrixgrid/map.json`
+   (action RunBay **Sync MatrixGrid**).
+9. Paket NuGet baru `EmSys.Ui.Wpf.Documents` ada di `packages.txt`; rilis berikutnya wajib punya release note-nya.
+10. Lisensi pihak ketiga di `THIRD-PARTY-NOTICES.md` dan `licenses/`, ikut dipaketkan ke `EmSys.Libs` dan
+    `EmSys.Ui.Wpf.Documents`; header `Ported from ...` dipertahankan.
+11. XML doc Inggris untuk member public/protected ditulis di MatrixGrid lalu ikut tersalin; CS1591 tidak disuppress.
+
+**Jangan menyunting berkas hasil sync di em-system** (folder `Grid`, `Editors`, `Editing`, `Documents`, `Sheet`,
+`Write` di `Em.Libs`, folder control di `Em.Ui.Wpf.Documents`, tes hasil salinan, `licenses/`). Perubahan dikerjakan
+di MatrixGrid lalu sync ulang; terjemahan yang salah diperbaiki di peta atau skrip. Hanya berkas yang terdaftar
+`owned` di `map.json` yang disunting di em-system.
+
 ## Export profil harus lengkap (keputusan pengguna 2026-11-11)
 
 Setiap perubahan sistem yang menambah atau mengubah setting pada profil Container Manager, NuGet Manager
