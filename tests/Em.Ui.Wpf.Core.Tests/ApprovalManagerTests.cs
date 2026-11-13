@@ -12,6 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Em.Ui.Wpf.Core.Tests;
 
+// Em.Grid (the document grid namespace in Em.Libs) would otherwise hide the WPF Grid inside namespace Em.
+using Grid = System.Windows.Controls.Grid;
+
 public sealed class ApprovalManagerTests {
    private static EmApp NewApp(IServiceProvider services) {
       var app = (EmApp)Activator.CreateInstance(typeof(EmApp),

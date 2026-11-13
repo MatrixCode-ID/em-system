@@ -16,6 +16,9 @@ using Microsoft.Win32;
 
 namespace Em.Ui.Wpf.Navigations.Publish;
 
+// Em.Grid (the document grid namespace in Em.Libs) would otherwise hide the WPF Grid inside namespace Em.
+using Grid = System.Windows.Controls.Grid;
+
 public partial class PublishProfileDialog : EmWindow {
  private const double LabelWidth=170;
  private static readonly Dictionary<string,string> Captions=new() {["Credentials"]="Credentials (robot token / API key)",["MsbuildProperties"]="MSBuild properties",["AutoDeploy"]="Deploy after push"};

@@ -14,7 +14,7 @@ namespace Em.Libs.Tests
       [Fact]
       public void Em_Libs_does_not_reference_ui_assemblies() {
          var references = typeof(GridValue).Assembly.GetReferencedAssemblies().Select(name => name.Name!).ToArray();
-         Assert.Empty(references.Where(name => UiAssemblies.Contains(name, StringComparer.OrdinalIgnoreCase)));
+         Assert.DoesNotContain(references, name => UiAssemblies.Contains(name, StringComparer.OrdinalIgnoreCase));
       }
 
       [Fact]

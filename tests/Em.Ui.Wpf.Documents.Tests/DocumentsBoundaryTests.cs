@@ -15,8 +15,8 @@ namespace Em.Ui.Wpf.Documents.Tests
       [Fact]
       public void Documents_assembly_references_no_commercial_library() {
          var references = typeof(MatrixGrid).Assembly.GetReferencedAssemblies().Select(name => name.Name!).ToArray();
-         Assert.Empty(references.Where(name =>
-            CommercialPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))));
+         Assert.DoesNotContain(references, name =>
+            CommercialPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)));
       }
 
       [Fact]

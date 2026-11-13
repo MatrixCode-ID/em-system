@@ -144,11 +144,19 @@ foreach ($item in $planned.Values) {
         $text = $utf8.GetString($bytes, $(if ($bom) { 3 } else { 0 }), $bytes.Length - $(if ($bom) { 3 } else { 0 }))
         $text = Convert-Text $text $item.Target.StartsWith('tests/', [StringComparison]::Ordinal)
         $body = $utf8.GetBytes($text)
-        $bytes = if ($bom) { [byte[]](0xEF, 0xBB, 0xBF) + $body } else { $body }
+        $bytes = if ($bom) { [byte[]]@(@(0xEF, 0xBB, 0xBF) + $body) } else { $body }
     }
     if (Test-Path -LiteralPath $targetPath) {
         $existing = [System.IO.File]::ReadAllBytes($targetPath)
-        if ([System.Linq.Enumerable]::SequenceEqual($existing, $bytes)) { $unchanged++; continue }
+        if ($textExtensions -contains $extension) {
+            # Git may check text files out with other line endings; only a content change counts.
+            $same = $utf8.GetString($existing).Replace("`r`n", "`n") -ceq $utf8.GetString($bytes).Replace("`r`n", "`n")
+        }
+        else {
+            $same = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($existing)) -eq
+                [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes))
+        }
+        if ($same) { $unchanged++; continue }
         $changed.Add($item.Target)
     }
     else { $added.Add($item.Target) }

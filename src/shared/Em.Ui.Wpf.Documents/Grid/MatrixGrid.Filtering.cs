@@ -396,8 +396,8 @@ public sealed partial class MatrixGrid
                     Filter = combined, FilterEnabled = true,
                     Groups = [], Summaries = [], Sort = []
                 };
-                var range = new Data.RowRange(page, size + 1);
-                var pageValues = provider is Data.IDistinctValueCountsProvider withCounts
+                var range = new global::Em.Grid.Data.RowRange(page, size + 1);
+                var pageValues = provider is global::Em.Grid.Data.IDistinctValueCountsProvider withCounts
                     ? (await withCounts.GetDistinctValueCountsAsync(withoutColumn, key, range, token))
                         .Select(entry => (entry.Value, Count: (int?)entry.Count)).ToArray()
                     : (await provider.GetDistinctValuesAsync(withoutColumn, key, range, token))
