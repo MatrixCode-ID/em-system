@@ -70,6 +70,7 @@ public sealed class LookupEditor : ValueEditor
         actions.Children.Add(_previous);
         actions.Children.Add(_next);
         var select = Material.Button("Select", "FilledButton");
+        System.Windows.Automation.AutomationProperties.SetName(select, "Select choice");
         select.Click += (_, _) => SelectChoice();
         actions.Children.Add(select);
 

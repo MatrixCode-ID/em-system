@@ -3,6 +3,9 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace Em.Ui.Maui.Controls;
 
+// Em.Grid (the document grid namespace in Em.Libs) would otherwise hide the MAUI Grid inside namespace Em.
+using Grid = Microsoft.Maui.Controls.Grid;
+
 /// <summary>A consistent workspace tab with a small icon indicator and a full native action target.</summary>
 public sealed class WorkspaceTab : ContentView
 {

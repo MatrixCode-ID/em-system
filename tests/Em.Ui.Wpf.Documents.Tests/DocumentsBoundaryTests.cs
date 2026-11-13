@@ -30,13 +30,28 @@ namespace Em.Ui.Wpf.Documents.Tests
       }
 
       [Fact]
-      public void Xaml_namespaces_resolve_controls_and_engine_types() {
+      public void Compiled_xaml_resolves_controls_through_the_namespaces() {
+         RunOnSta(() => {
+            var sample = new XamlNamespaceSample();
+            var grid = Assert.IsType<MatrixGrid>(sample.FindName("Orders"));
+            Assert.Equal(["Customer", "Units"], grid.Columns.Select(column => column.Key));
+            Assert.IsType<Editors.TextEditor>(sample.FindName("Note"));
+            Assert.IsType<Sheet.MatrixSheet>(sample.FindName("Sheet"));
+            Assert.IsType<Writer.MatrixWriter>(sample.FindName("Writer"));
+            Assert.IsType<Printing.PagePresenter>(sample.FindName("Preview"));
+         });
+      }
+
+      [Fact]
+      public void Runtime_xaml_resolves_controls_through_the_namespaces() {
+         // Engine types from Em.Libs are named with clr-namespace; see doc/engine/engine-documents.md#xaml-namespaces.
          RunOnSta(() => {
             const string xaml = """
                <emg:MatrixGrid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                               xmlns:emg="https://MatrixCode/wpf/grid" AutoGenerateColumns="False">
+                               xmlns:emg="https://MatrixCode/wpf/grid" xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs"
+                               AutoGenerateColumns="False">
                  <emg:MatrixGrid.Columns>
-                   <emg:GridColumn Key="Name" Header="Name" Kind="Text" Width="150" />
+                   <grid:GridColumn Key="Name" Header="Name" Kind="Text" Width="150" />
                  </emg:MatrixGrid.Columns>
                </emg:MatrixGrid>
                """;

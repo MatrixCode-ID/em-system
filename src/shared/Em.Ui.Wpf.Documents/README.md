@@ -18,10 +18,17 @@ builder.UseDocuments();
 ```
 
 ```xml
-<Window xmlns:emg="https://MatrixCode/wpf/grid">
-  <emg:MatrixGrid ItemsSource="{Binding Orders}" />
+<Window xmlns:emg="https://MatrixCode/wpf/grid" xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs">
+  <emg:MatrixGrid ItemsSource="{Binding Orders}" AutoGenerateColumns="False">
+    <emg:MatrixGrid.Columns>
+      <grid:GridColumn Key="Customer" Header="Customer" Kind="Text" />
+    </emg:MatrixGrid.Columns>
+  </emg:MatrixGrid>
 </Window>
 ```
+
+The XAML namespaces `https://MatrixCode/wpf/grid`, `/editors`, `/sheet`, `/writer` and `/printing` cover the WPF
+controls; engine types such as `GridColumn` come from `Em.Libs` through `clr-namespace`.
 
 The code is synced from the MatrixGrid project; do not edit the synced folders here. Guide, XAML namespaces, theme
 mapping and the sync workflow: `doc/engine/engine-documents.md` in the Em System repository. Third-party notices:

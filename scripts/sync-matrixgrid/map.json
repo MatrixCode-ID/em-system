@@ -135,6 +135,8 @@
     "tests/Em.Libs.Tests/DocumentsBoundaryTests.cs",
     "tests/Em.Ui.Wpf.Documents.Tests/Em.Ui.Wpf.Documents.Tests.csproj",
     "tests/Em.Ui.Wpf.Documents.Tests/DocumentsBoundaryTests.cs",
-    "tests/Em.Ui.Wpf.Documents.Tests/DocumentsThemeApplierTests.cs"
+    "tests/Em.Ui.Wpf.Documents.Tests/DocumentsThemeApplierTests.cs",
+    "tests/Em.Ui.Wpf.Documents.Tests/XamlNamespaceSample.xaml",
+    "tests/Em.Ui.Wpf.Documents.Tests/XamlNamespaceSample.xaml.cs"
   ]
 }

@@ -108,29 +108,40 @@ Reference `EmSys.Ui.Wpf.Documents` and call `builder.UseDocuments()` in the host
 
 ### XAML namespaces {#xaml-namespaces}
 
-| URI | Prefix | CLR namespaces |
+| URI | Prefix | CLR namespaces (assembly `Em.Ui.Wpf.Documents`) |
 | --- | --- | --- |
-| `https://MatrixCode/wpf/grid` | `emg` | `Em.Ui.Wpf.Documents.Grid`, `Em.Grid`, `Em.Grid.Query`, `Em.Grid.Menus` |
-| `https://MatrixCode/wpf/editors` | `eme` | `Em.Ui.Wpf.Documents.Editors`, `Em.Editors` |
+| `https://MatrixCode/wpf/grid` | `emg` | `Em.Ui.Wpf.Documents.Grid` |
+| `https://MatrixCode/wpf/editors` | `eme` | `Em.Ui.Wpf.Documents.Editors` |
 | `https://MatrixCode/wpf/sheet` | `ems` | `Em.Ui.Wpf.Documents.Sheet` |
 | `https://MatrixCode/wpf/writer` | `emw` | `Em.Ui.Wpf.Documents.Writer` |
 | `https://MatrixCode/wpf/printing` | `emp` | `Em.Ui.Wpf.Documents.Printing` |
 
-`Em.Ui.Wpf.Documents.Menus`, `.Editing` and `.Themes` are mapped to all five URIs. The URIs are case-sensitive. The
-`Em.Libs` namespaces are mapped from `Em.Ui.Wpf.Documents` with `XmlnsDefinition(..., AssemblyName = "Em.Libs")`
-(`src/shared/Em.Ui.Wpf.Documents/Properties/XmlnsDefinitions.cs`). The runtime XAML reader resolves them
-(`Xaml_namespaces_resolve_controls_and_engine_types`). The compile-time XAML compiler has not been verified with a
-consumer project yet; if it rejects a mapped engine type, declare it with
-`xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs"`.
+`Em.Ui.Wpf.Documents.Menus`, `.Editing` and `.Themes` are mapped to all five URIs. The URIs are case-sensitive
+(`src/shared/Em.Ui.Wpf.Documents/Properties/XmlnsDefinitions.cs`).
+
+**Engine types from `Em.Libs` are not in the URIs.** The plan also mapped `Em.Grid`, `Em.Grid.Query`, `Em.Grid.Menus`
+and `Em.Editors` to the grid and editors URIs with `XmlnsDefinition(..., AssemblyName = "Em.Libs")`. Verified on
+2026-11-13: the XAML markup compiler rejects such a type (MC3074, "The tag 'GridColumn' does not exist in XML namespace")
+and the runtime XAML reader does too, and `Em.Libs` cannot declare the attribute itself because it lives in a WPF
+assembly. Name those types with a `clr-namespace` prefix:
+
+```xml
+xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs"
+xmlns:query="clr-namespace:Em.Grid.Query;assembly=Em.Libs"
+xmlns:menus="clr-namespace:Em.Grid.Menus;assembly=Em.Libs"
+xmlns:settings="clr-namespace:Em.Editors;assembly=Em.Libs"
+```
+
+`tests/Em.Ui.Wpf.Documents.Tests/XamlNamespaceSample.xaml` is compiled with every URI and checks this.
 
 ### MatrixGrid
 
 ```xml
-<Window xmlns:emg="https://MatrixCode/wpf/grid" xmlns:eme="https://MatrixCode/wpf/editors">
+<Window xmlns:emg="https://MatrixCode/wpf/grid" xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs">
   <emg:MatrixGrid ItemsSource="{Binding Orders}" AutoGenerateColumns="False" ShowGroupPanel="True">
     <emg:MatrixGrid.Columns>
-      <emg:GridColumn Key="Customer" Header="Customer" Kind="Text" Width="180" />
-      <emg:GridColumn Key="Units" Header="Units" Kind="Number" />
+      <grid:GridColumn Key="Customer" Header="Customer" Kind="Text" Width="180" />
+      <grid:GridColumn Key="Units" Header="Units" Kind="Number" />
     </emg:MatrixGrid.Columns>
   </emg:MatrixGrid>
 </Window>
@@ -214,7 +225,7 @@ is wrong, or fix the source in MatrixGrid and sync again. Files Em owns:
 - `src/shared/Em.Ui.Wpf.Documents/Em.Ui.Wpf.Documents.csproj`, `README.md`, `DocumentsExtensions.cs`,
   `DocumentsThemeApplier.cs`, `Properties/XmlnsDefinitions.cs`
 - `tests/Em.Libs.Tests/DocumentsBoundaryTests.cs`, `tests/Em.Ui.Wpf.Documents.Tests/Em.Ui.Wpf.Documents.Tests.csproj`,
-  `DocumentsBoundaryTests.cs`, `DocumentsThemeApplierTests.cs`
+  `DocumentsBoundaryTests.cs`, `DocumentsThemeApplierTests.cs`, `XamlNamespaceSample.xaml(.cs)`
 - `THIRD-PARTY-NOTICES.md`
 
 The sample `GeneratedOrderProvider` becomes the test fixture `tests/Em.Libs.Tests/Grid/Fixtures/`, which the WPF tests
@@ -228,3 +239,5 @@ The controls inherit MatrixGrid's known limitations; see `docs/KnownLimitations.
 - The bundled Noto Sans font (about 570 KB) is embedded in `Em.Libs`, so every consumer of `EmSys.Libs`, including MAUI
   apps, carries it. `Em.Ui.Wpf.Documents` embeds a second copy as a WPF resource for on-screen text.
 - No GUI or visual check of the controls inside an Em host has been run yet.
+- `Em.Grid` and the other new root namespaces hide same-named types for code inside the `Em` namespace (see
+  [Layers](#layers)); Em's own code aliases the WPF and MAUI `Grid` where it uses it.
