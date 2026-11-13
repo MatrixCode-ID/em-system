@@ -2,9 +2,6 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace Em.Ui.Maui.Controls;
 
-// Em.Grid (the document grid namespace in Em.Libs) would otherwise hide the MAUI Grid inside namespace Em.
-using Grid = Microsoft.Maui.Controls.Grid;
-
 /// <summary>An outlined field with a permanent label, native editor, help and associated error.</summary>
 public sealed class MaterialField : ContentView
 {

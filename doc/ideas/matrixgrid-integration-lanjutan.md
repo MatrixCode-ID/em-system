@@ -8,26 +8,20 @@ Temuan dan saran dari eksekusi [plan integrasi MatrixGrid](../../plan/executed/m
 
 ## 1. Namespace `Em.Grid` menutupi `Grid` WPF/MAUI
 
-Kode di dalam namespace `Em.*` yang menyebut `Grid` (WPF atau MAUI) gagal kompilasi karena `Em.Grid` ditemukan lebih
-dulu daripada `using` di atas berkas. Empat berkas engine sudah diberi alias. Konsumen yang memakai namespace `Em.*`
-(misalnya host turunan) akan terkena hal yang sama saat memperbarui paket.
-
-Pilihan:
-- Biarkan, dan tulis di release note sebagai perubahan yang bisa memutus kompilasi, dengan contoh alias.
-- Tambah analyzer/aturan konvensi yang melarang namespace akar baru dengan nama tipe umum.
-- Tinjau ulang nama `Em.Grid` (mis. `Em.DataGrid`) sebelum paket pertama dirilis. Ini mengubah keputusan pengguna.
-
-Pertanyaan: apakah ada repo turunan yang kodenya berada di namespace `Em.*`?
+Selesai 2026-11-14: pengguna mengganti namespace model grid menjadi `Em.Controls`, lalu `Em.Controls.Grid` (bersama `Em.Controls.Sheet`/`.Write`), sehingga alias `Grid` di empat
+berkas engine dicabut. Sisa risiko umum: namespace akar baru (`Em.Controls`, `Em.Editors`, `Em.Editing`,
+`Em.Documents`) tetap menutupi tipe bernama sama untuk kode di bawah namespace `Em.*`. Bila
+perlu, tulis di release note sebagai perubahan yang bisa memutus kompilasi.
 
 ## 2. Tipe engine di XAML tanpa URI
 
 `GridColumn`, `GridQuery`, `EditorSettings` dan entri menu harus memakai `clr-namespace:...;assembly=Em.Libs` karena
-xmlns lintas assembly tidak didukung. Pilihan: tipe pembungkus XAML di `Em.Ui.Wpf.Documents` (mis. `emg:Column`)
+xmlns lintas assembly tidak didukung. Pilihan: tipe pembungkus XAML di `Em.Ui.Wpf.Controls` (mis. `emc:Column`)
 yang diubah menjadi `GridColumn`, atau menerima `clr-namespace` sebagai pola resmi.
 
 ## 3. Font Noto ganda dan ukuran `EmSys.Libs`
 
-Noto Sans (±570 KB) ada di `Em.Libs` (untuk layout/PDF) dan sekali lagi di `Em.Ui.Wpf.Documents` (pack URI WPF).
+Noto Sans (±570 KB) ada di `Em.Libs` (untuk layout/PDF) dan sekali lagi di `Em.Ui.Wpf.Controls` (pack URI WPF).
 Pilihan: `WpfFontProvider` di MatrixGrid membaca font dari resource `Em.Libs`/`TrueTypeFace` alih-alih pack URI; atau
 font dipisah ke paket opsional agar konsumen MAUI/server yang tidak membuat PDF tidak membawanya.
 

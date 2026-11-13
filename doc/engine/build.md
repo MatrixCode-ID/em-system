@@ -52,8 +52,8 @@ the `validate`/`publish` jobs of `.github/workflows/publish-nuget.yml`. Every li
 `EmSys.Ui.Maui.Core` targets `net10.0-android` and can only be packed with the `maui-android` workload
 installed; the `publish` job installs it before packing.
 
-`EmSys.Ui.Wpf.Documents` (document controls) joined the list on 2026-11-13. Its first release needs its own release
-note like every other package. `EmSys.Libs` and `EmSys.Ui.Wpf.Documents` also pack `THIRD-PARTY-NOTICES.md` and
+`EmSys.Ui.Wpf.Controls` (WPF grid, sheet and writer controls; first named `EmSys.Ui.Wpf.Controls`) joined the list on 2026-11-13. Its first release needs its own release
+note like every other package. `EmSys.Libs` and `EmSys.Ui.Wpf.Controls` also pack `THIRD-PARTY-NOTICES.md` and
 `licenses/`; see [Document controls](engine-documents.md).
 
 ## Package metadata {#package-metadata}

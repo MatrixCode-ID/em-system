@@ -3,6 +3,6 @@ src/shared/Em.Libs/Em.Libs.csproj
 src/backend/Em.Api.Core/Em.Api.Core.csproj
 src/shared/Em.Ui.Core/Em.Ui.Core.csproj
 src/shared/Em.Ui.Wpf.Core/Em.Ui.Wpf.Core.csproj
-src/shared/Em.Ui.Wpf.Documents/Em.Ui.Wpf.Documents.csproj
+src/shared/Em.Ui.Wpf.Controls/Em.Ui.Wpf.Controls.csproj
 # Needs the maui-android workload to pack; see doc/engine/build.md#packages
 src/shared/Em.Ui.Maui.Core/Em.Ui.Maui.Core.csproj

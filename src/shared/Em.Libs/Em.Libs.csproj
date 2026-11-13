@@ -19,7 +19,7 @@
       <PackageReference Include="QRCoder" Version="1.8.1" />
       <PackageReference Include="Ulid" Version="1.4.1" />
     </ItemGroup>
-    <!-- Grid, Editors, Editing, Documents, Sheet and Write are synced from MatrixGrid; see doc/engine/engine-documents.md#sync. -->
+    <!-- Controls (Grid, Sheet, Write), Editors, Editing and Documents are synced from MatrixGrid; see doc/engine/engine-documents.md#sync. -->
     <ItemGroup>
       <EmbeddedResource Include="Documents\Assets\NotoSans-Regular.ttf" LogicalName="Em.Documents.Assets.NotoSans-Regular.ttf" />
       <None Include="..\..\..\THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="/" Visible="false" />

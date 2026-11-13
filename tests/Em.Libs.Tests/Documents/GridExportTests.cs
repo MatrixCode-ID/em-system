@@ -2,11 +2,11 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using Em.Grid;
-using Em.Grid.Data;
+using Em.Controls.Grid;
+using Em.Controls.Grid.Data;
 using Em.Documents.Layout;
-using Em.Grid.Export;
-using Em.Grid.Query;
+using Em.Controls.Grid.Export;
+using Em.Controls.Grid.Query;
 using Xunit;
 
 namespace Em.Libs.Tests.Documents;

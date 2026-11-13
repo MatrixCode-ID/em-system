@@ -9,47 +9,52 @@ made by a sync script, plus a few files of its own (see [Sync](#sync)).
 | Layer | Project / package | Contents |
 | --- | --- | --- |
 | Renderer-neutral | `Em.Libs` / `EmSys.Libs` (`net10.0`) | Grid query, data providers, export, menus model, editor settings, document model, layout, fonts, PDF/XLSX/DOCX/CSV writers, `SheetSession`, `WriteSession` and their file formats |
-| WPF | `Em.Ui.Wpf.Documents` / `EmSys.Ui.Wpf.Documents` (`net10.0-windows`) | `MatrixGrid`, `MatrixSheet`, `MatrixWriter`, value editors, menus, print preview, themes, `UseDocuments()` |
+| WPF | `Em.Ui.Wpf.Controls` / `EmSys.Ui.Wpf.Controls` (`net10.0-windows`) | `MatrixGrid`, `MatrixSheet`, `MatrixWriter`, value editors, menus, print preview, themes, `UseDocuments()` |
 
 A server needs only `EmSys.Libs`: `SheetSession` and `WriteSession` are the API for building formatted documents
 (styles, tables, headers and footers, fields), so they live in the neutral layer. `Em.Libs` references no UI
-framework; `tests/Em.Libs.Tests/DocumentsBoundaryTests.cs` checks it. `Em.Ui.Wpf.Documents` references no commercial
-control library; `tests/Em.Ui.Wpf.Documents.Tests/DocumentsBoundaryTests.cs` checks it.
+framework; `tests/Em.Libs.Tests/DocumentsBoundaryTests.cs` checks it. `Em.Ui.Wpf.Controls` references no commercial
+control library; `tests/Em.Ui.Wpf.Controls.Tests/DocumentsBoundaryTests.cs` checks it.
 
-The engine was written as one assembly, so `Em.Libs` grants `InternalsVisibleTo` to `Em.Ui.Wpf.Documents` and to the
+The engine was written as one assembly, so `Em.Libs` grants `InternalsVisibleTo` to `Em.Ui.Wpf.Controls` and to the
 two test projects (`src/shared/Em.Libs/Properties/DocumentsAccess.cs`).
 
 ### Namespace map
 
 | MatrixGrid | Em folder | Em namespace |
 | --- | --- | --- |
-| `Core` | `Em.Libs/Grid` | `Em.Grid` |
-| `Data` (without the sample `GeneratedOrderProvider`) | `Em.Libs/Grid/Data` | `Em.Grid.Data` |
-| `Query`, `Export`, `Menus` | `Em.Libs/Grid/...` | `Em.Grid.Query`, `Em.Grid.Export`, `Em.Grid.Menus` |
+| `Core` | `Em.Libs/Controls/Grid` | `Em.Controls.Grid` |
+| `Data` (without the sample `GeneratedOrderProvider`) | `Em.Libs/Controls/Grid/Data` | `Em.Controls.Grid.Data` |
+| `Query`, `Export`, `Menus` | `Em.Libs/Controls/Grid/...` | `Em.Controls.Grid.Query`, `Em.Controls.Grid.Export`, `Em.Controls.Grid.Menus` |
 | `Editors` (settings) | `Em.Libs/Editors` | `Em.Editors` |
 | `Editing` | `Em.Libs/Editing` | `Em.Editing` |
 | `Documents/Model`, `Layout`, `Fonts`, `Packaging`, `Formats`, `Assets` | `Em.Libs/Documents/...` | `Em.Documents.*` |
 | `Documents/PdfEngine` | `Em.Libs/Documents/Pdf` | `Em.Documents.Pdf` |
 | `Documents/CellsEngine` (XLSX and CSV writers) | `Em.Libs/Documents/Xlsx` | `Em.Documents.Xlsx` |
 | `Documents/WriterEngine` | `Em.Libs/Documents/Docx` | `Em.Documents.Docx` |
-| `Sheet/Core` | `Em.Libs/Sheet/Cells` | `Em.Sheet.Cells` |
-| `Sheet/*` | `Em.Libs/Sheet/*` | `Em.Sheet.*` |
-| `Write/*` | `Em.Libs/Write/*` | `Em.Write.*` (types keep their `Write*` names) |
-| `Wpf/Grid`, `Editors`, `Editing`, `Menus`, `Printing`, `Sheet`, `Themes` | `Em.Ui.Wpf.Documents/...` | `Em.Ui.Wpf.Documents.*` |
-| `Wpf/Write` | `Em.Ui.Wpf.Documents/Writer` | `Em.Ui.Wpf.Documents.Writer` |
+| `Sheet/Core` | `Em.Libs/Controls/Sheet/Cells` | `Em.Controls.Sheet.Cells` |
+| `Sheet/*` | `Em.Libs/Controls/Sheet/*` | `Em.Controls.Sheet.*` |
+| `Write/*` | `Em.Libs/Controls/Write/*` | `Em.Controls.Write.*` (types keep their `Write*` names) |
+| `Wpf/Grid`, `Editors`, `Editing`, `Menus`, `Printing`, `Sheet`, `Themes` | `Em.Ui.Wpf.Controls/...` (same folder names) | `Em.Ui.Wpf.Controls` (one namespace) |
+| `Wpf/Write` | `Em.Ui.Wpf.Controls/Writer` | `Em.Ui.Wpf.Controls` |
 
 Control names: MatrixGrid's `GridControl` is `MatrixGrid` here and `MatrixWrite` is `MatrixWriter`; `MatrixSheet`
 keeps its name. Other type names are unchanged. Resource keys such as `MatrixGrid.Brush.Primary` and `Material.*` are
 not renamed.
 
-Because `Em.Grid`, `Em.Editors`, `Em.Editing`, `Em.Documents`, `Em.Sheet` and `Em.Write` are namespaces, code that is
-itself inside the `Em` namespace resolves a simple name such as `Grid` to `Em.Grid` before any `using` directive at the
-top of the file. Engine code under `Em.*` that means the WPF or MAUI `Grid` control therefore names it with an alias or
-a qualified name. Code in other root namespaces is not affected.
+Namespace history (user decisions of 2026-11-14): the grid model was first `Em.Grid`, which hid the WPF and MAUI
+`Grid` type for code inside the `Em` namespace; it became `Em.Controls`, then `Em.Controls.Grid` once the sheet and
+write engines moved under `Em.Controls` too (`Em.Controls.Sheet.*`, `Em.Controls.Write.*`), because the grid
+`CellAddress` at the root of `Em.Controls` hid the sheet `CellAddress`. The WPF project, first `Em.Ui.Wpf.Controls`
+with one namespace per control group, became `Em.Ui.Wpf.Controls` with every WPF type in the single namespace
+`Em.Ui.Wpf.Controls`, which it shares with the controls of `Em.Ui.Wpf.Core` (no type names overlap). `Em.Controls`,
+`Em.Editors`, `Em.Editing` and `Em.Documents` are root namespaces: code inside the `Em` namespace resolves a simple name
+equal to one of them to that namespace before any `using` directive at the top of the file.
 
 ## Server: building files {#server}
 
-A spreadsheet with `SheetSession` and `SheetFiles` (namespaces `Em.Sheet.Commands`, `Em.Sheet.Cells`, `Em.Sheet.IO`):
+A spreadsheet with `SheetSession` and `SheetFiles` (namespaces `Em.Controls.Sheet.Commands`, `Em.Controls.Sheet.Cells`,
+`Em.Controls.Sheet.IO`):
 
 ```csharp
 var session = new SheetSession();
@@ -65,7 +70,8 @@ using var file = File.Create("report.xlsx");
 SheetFiles.SaveXlsx(session.Workbook, file);
 ```
 
-A letter with `WriteSession` and `WriteFiles` (namespaces `Em.Write.Editing`, `Em.Write.Model`, `Em.Write.IO`):
+A letter with `WriteSession` and `WriteFiles` (namespaces `Em.Controls.Write.Editing`, `Em.Controls.Write.Model`,
+`Em.Controls.Write.IO`):
 
 ```csharp
 var session = new WriteSession(WriteDocument.Create("Quarterly summary\nSales grew in every region."));
@@ -84,8 +90,8 @@ await using (var pdf = File.Create("summary.pdf"))
    await WriteFiles.SavePdfAsync(session.Document, pdf);
 ```
 
-A grid-shaped report from any `IGridDataProvider` with `GridDocument` (namespaces `Em.Grid`, `Em.Grid.Data`,
-`Em.Grid.Export`, `Em.Grid.Query`):
+A grid-shaped report from any `IGridDataProvider` with `GridDocument` (namespaces `Em.Controls.Grid`, `Em.Controls.Grid.Data`,
+`Em.Controls.Grid.Export`, `Em.Controls.Grid.Query`):
 
 ```csharp
 var columns = ImmutableArray.Create(
@@ -104,46 +110,43 @@ Rows are streamed from the provider while the file is written, so large views ne
 
 ## WPF: controls {#wpf}
 
-Reference `EmSys.Ui.Wpf.Documents` and call `builder.UseDocuments()` in the host setup (see [Theme](#theme)).
+Reference `EmSys.Ui.Wpf.Controls` and call `builder.UseDocuments()` in the host setup (see [Theme](#theme)).
 
 ### XAML namespaces {#xaml-namespaces}
 
-| URI | Prefix | CLR namespaces (assembly `Em.Ui.Wpf.Documents`) |
+| URI | Prefix | CLR namespace (assembly `Em.Ui.Wpf.Controls`) |
 | --- | --- | --- |
-| `https://MatrixCode/wpf/grid` | `emg` | `Em.Ui.Wpf.Documents.Grid` |
-| `https://MatrixCode/wpf/editors` | `eme` | `Em.Ui.Wpf.Documents.Editors` |
-| `https://MatrixCode/wpf/sheet` | `ems` | `Em.Ui.Wpf.Documents.Sheet` |
-| `https://MatrixCode/wpf/writer` | `emw` | `Em.Ui.Wpf.Documents.Writer` |
-| `https://MatrixCode/wpf/printing` | `emp` | `Em.Ui.Wpf.Documents.Printing` |
+| `https://MatrixCode/wpf/controls` | `emc` | `Em.Ui.Wpf.Controls` |
 
-`Em.Ui.Wpf.Documents.Menus`, `.Editing` and `.Themes` are mapped to all five URIs. The URIs are case-sensitive
-(`src/shared/Em.Ui.Wpf.Documents/Properties/XmlnsDefinitions.cs`).
+One URI covers every WPF control of the assembly (`src/shared/Em.Ui.Wpf.Controls/Properties/XmlnsDefinitions.cs`). The
+URI is case-sensitive. It replaced the five URIs (`/grid`, `/editors`, `/sheet`, `/writer`, `/printing`) of the first
+layout on 2026-11-14.
 
-**Engine types from `Em.Libs` are not in the URIs.** The plan also mapped `Em.Grid`, `Em.Grid.Query`, `Em.Grid.Menus`
-and `Em.Editors` to the grid and editors URIs with `XmlnsDefinition(..., AssemblyName = "Em.Libs")`. Verified on
-2026-11-13: the XAML markup compiler rejects such a type (MC3074, "The tag 'GridColumn' does not exist in XML namespace")
-and the runtime XAML reader does too, and `Em.Libs` cannot declare the attribute itself because it lives in a WPF
-assembly. Name those types with a `clr-namespace` prefix:
+**Engine types from `Em.Libs` are not in the URI.** The plan also mapped the grid model and editor settings namespaces
+with `XmlnsDefinition(..., AssemblyName = "Em.Libs")`. Verified on 2026-11-13: the XAML markup compiler rejects such a
+type (MC3074, "The tag 'GridColumn' does not exist in XML namespace") and the runtime XAML reader does too, and
+`Em.Libs` cannot declare the attribute itself because it lives in a WPF assembly. Name those types with a
+`clr-namespace` prefix:
 
 ```xml
-xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs"
-xmlns:query="clr-namespace:Em.Grid.Query;assembly=Em.Libs"
-xmlns:menus="clr-namespace:Em.Grid.Menus;assembly=Em.Libs"
+xmlns:grid="clr-namespace:Em.Controls.Grid;assembly=Em.Libs"
+xmlns:query="clr-namespace:Em.Controls.Grid.Query;assembly=Em.Libs"
+xmlns:menus="clr-namespace:Em.Controls.Grid.Menus;assembly=Em.Libs"
 xmlns:settings="clr-namespace:Em.Editors;assembly=Em.Libs"
 ```
 
-`tests/Em.Ui.Wpf.Documents.Tests/XamlNamespaceSample.xaml` is compiled with every URI and checks this.
+`tests/Em.Ui.Wpf.Controls.Tests/XamlNamespaceSample.xaml` is compiled with the URI and checks this.
 
 ### MatrixGrid
 
 ```xml
-<Window xmlns:emg="https://MatrixCode/wpf/grid" xmlns:grid="clr-namespace:Em.Grid;assembly=Em.Libs">
-  <emg:MatrixGrid ItemsSource="{Binding Orders}" AutoGenerateColumns="False" ShowGroupPanel="True">
-    <emg:MatrixGrid.Columns>
+<Window xmlns:emc="https://MatrixCode/wpf/controls" xmlns:grid="clr-namespace:Em.Controls.Grid;assembly=Em.Libs">
+  <emc:MatrixGrid ItemsSource="{Binding Orders}" AutoGenerateColumns="False" ShowGroupPanel="True">
+    <emc:MatrixGrid.Columns>
       <grid:GridColumn Key="Customer" Header="Customer" Kind="Text" Width="180" />
       <grid:GridColumn Key="Units" Header="Units" Kind="Number" />
-    </emg:MatrixGrid.Columns>
-  </emg:MatrixGrid>
+    </emc:MatrixGrid.Columns>
+  </emc:MatrixGrid>
 </Window>
 ```
 
@@ -160,8 +163,8 @@ xmlns:settings="clr-namespace:Em.Editors;assembly=Em.Libs"
 ### MatrixSheet and MatrixWriter
 
 ```xml
-<ems:MatrixSheet xmlns:ems="https://MatrixCode/wpf/sheet" ToolbarStyle="Ribbon" Source="{Binding WorkbookPath}" />
-<emw:MatrixWriter xmlns:emw="https://MatrixCode/wpf/writer" Mode="Viewer" Source="{Binding DocumentPath}" />
+<emc:MatrixSheet xmlns:emc="https://MatrixCode/wpf/controls" ToolbarStyle="Ribbon" Source="{Binding WorkbookPath}" />
+<emc:MatrixWriter xmlns:emc="https://MatrixCode/wpf/controls" Mode="Viewer" Source="{Binding DocumentPath}" />
 ```
 
 Both derive from `EditorControl`: `Mode` (`Full` or `Viewer`), `ToolbarStyle` (`Compact` or `Ribbon`),
@@ -198,7 +201,7 @@ Without `UseDocuments()` the controls keep their built-in palette, which is also
 ## Renderers {#renderers}
 
 Only WPF is implemented. The neutral layer (queries, documents, layout as drawing commands, sessions, writers) has no UI
-dependency, so another renderer gets its own project, for example `Em.Ui.Avalonia.Documents`, with the same control
+dependency, so another renderer gets its own project, for example `Em.Ui.Avalonia.Controls`, with the same control
 class names, without changing `Em.Libs`. MAUI has no document controls yet; a MAUI app can still use the neutral layer.
 
 ## Sync {#sync}
@@ -222,13 +225,13 @@ v2 to v3, and deletes a copied file whose source is gone, but only inside mapped
 is wrong, or fix the source in MatrixGrid and sync again. Files Em owns:
 
 - `src/shared/Em.Libs/Em.Libs.csproj`, `src/shared/Em.Libs/Properties/DocumentsAccess.cs`
-- `src/shared/Em.Ui.Wpf.Documents/Em.Ui.Wpf.Documents.csproj`, `README.md`, `DocumentsExtensions.cs`,
+- `src/shared/Em.Ui.Wpf.Controls/Em.Ui.Wpf.Controls.csproj`, `README.md`, `DocumentsExtensions.cs`,
   `DocumentsThemeApplier.cs`, `Properties/XmlnsDefinitions.cs`
-- `tests/Em.Libs.Tests/DocumentsBoundaryTests.cs`, `tests/Em.Ui.Wpf.Documents.Tests/Em.Ui.Wpf.Documents.Tests.csproj`,
+- `tests/Em.Libs.Tests/DocumentsBoundaryTests.cs`, `tests/Em.Ui.Wpf.Controls.Tests/Em.Ui.Wpf.Controls.Tests.csproj`,
   `DocumentsBoundaryTests.cs`, `DocumentsThemeApplierTests.cs`, `XamlNamespaceSample.xaml(.cs)`
 - `THIRD-PARTY-NOTICES.md`
 
-The sample `GeneratedOrderProvider` becomes the test fixture `tests/Em.Libs.Tests/Grid/Fixtures/`, which the WPF tests
+The sample `GeneratedOrderProvider` becomes the test fixture `tests/Em.Libs.Tests/Controls/Grid/Fixtures/`, which the WPF tests
 link. Third-party licenses are in `THIRD-PARTY-NOTICES.md` and `licenses/`, packed with both packages.
 
 ## Limitations {#limitations}
@@ -237,7 +240,7 @@ The controls inherit MatrixGrid's known limitations; see `docs/KnownLimitations.
 `docs/WriteEngine.md` in the MatrixGrid repository (not copied here). In Em in particular:
 
 - The bundled Noto Sans font (about 570 KB) is embedded in `Em.Libs`, so every consumer of `EmSys.Libs`, including MAUI
-  apps, carries it. `Em.Ui.Wpf.Documents` embeds a second copy as a WPF resource for on-screen text.
+  apps, carries it. `Em.Ui.Wpf.Controls` embeds a second copy as a WPF resource for on-screen text.
 - No GUI or visual check of the controls inside an Em host has been run yet.
-- `Em.Grid` and the other new root namespaces hide same-named types for code inside the `Em` namespace (see
-  [Layers](#layers)); Em's own code aliases the WPF and MAUI `Grid` where it uses it.
+- `Em.Controls` and the other new root namespaces hide same-named types for code inside the `Em` namespace (see
+  [Layers](#layers)).

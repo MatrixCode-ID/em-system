@@ -1,0 +1,668 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="Icons.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <FontFamily x:Key="MatrixGrid.FontFamily">pack://application:,,,/Em.Ui.Wpf.Controls;component/Themes/Fonts/#Roboto, Segoe UI</FontFamily>
+  <Style x:Key="Material.Control" TargetType="Control">
+    <Setter Property="FontFamily" Value="{StaticResource MatrixGrid.FontFamily}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+  </Style>
+
+  <Style x:Key="Material.GridWaiter" TargetType="Control">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Cursor" Value="Wait" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Control">
+          <Border x:Name="Scrim" Background="{DynamicResource MatrixGrid.Brush.Scrim}"
+                  CornerRadius="11" Opacity="0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Ellipse x:Name="First" Width="8" Height="8" Fill="{DynamicResource MatrixGrid.Brush.InverseSurface}" />
+              <Ellipse x:Name="Second" Width="8" Height="8" Margin="8,0"
+                       Fill="{DynamicResource MatrixGrid.Brush.InverseSurface}" />
+              <Ellipse x:Name="Third" Width="8" Height="8" Fill="{DynamicResource MatrixGrid.Brush.InverseSurface}" />
+            </StackPanel>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsVisible" Value="True">
+              <Trigger.EnterActions>
+                <BeginStoryboard x:Name="WaitAnimation">
+                  <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="Scrim" Storyboard.TargetProperty="Opacity"
+                                     To="1" BeginTime="0:0:0.25" Duration="0:0:0.12" />
+                    <DoubleAnimation Storyboard.TargetName="First" Storyboard.TargetProperty="Opacity"
+                                     From="1" To="0.35" Duration="0:0:0.45" AutoReverse="True" RepeatBehavior="Forever" />
+                    <DoubleAnimation Storyboard.TargetName="Second" Storyboard.TargetProperty="Opacity"
+                                     From="1" To="0.35" BeginTime="0:0:0.15" Duration="0:0:0.45"
+                                     AutoReverse="True" RepeatBehavior="Forever" />
+                    <DoubleAnimation Storyboard.TargetName="Third" Storyboard.TargetProperty="Opacity"
+                                     From="1" To="0.35" BeginTime="0:0:0.30" Duration="0:0:0.45"
+                                     AutoReverse="True" RepeatBehavior="Forever" />
+                  </Storyboard>
+                </BeginStoryboard>
+              </Trigger.EnterActions>
+              <Trigger.ExitActions>
+                <RemoveStoryboard BeginStoryboardName="WaitAnimation" />
+              </Trigger.ExitActions>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.Button" TargetType="Button" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Outline}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Grid Background="Transparent">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="20" />
+            <Border x:Name="State" CornerRadius="20" />
+            <Border x:Name="Focus" CornerRadius="20" BorderThickness="2"
+                    BorderBrush="{DynamicResource MatrixGrid.Brush.Primary}" Visibility="Collapsed" />
+            <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateSelected}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.FilledButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnPrimary}" />
+    <Setter Property="Padding" Value="24,0" />
+  </Style>
+  <Style x:Key="Material.TonalButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.SecondaryContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSecondaryContainer}" />
+    <Setter Property="Padding" Value="16,0" />
+  </Style>
+  <Style x:Key="Material.OutlinedButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="24,0" />
+  </Style>
+  <Style x:Key="Material.TextButton" TargetType="Button" BasedOn="{StaticResource Material.Button}" />
+  <Style x:Key="Material.ToolbarButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.OutlineVariant}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Grid Background="Transparent">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" />
+            <Border x:Name="State" CornerRadius="8" />
+            <Border x:Name="Focus" CornerRadius="8" BorderThickness="2"
+                    BorderBrush="{DynamicResource MatrixGrid.Brush.Primary}" Visibility="Collapsed" />
+            <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateSelected}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.RibbonTab" TargetType="Button" BasedOn="{StaticResource Material.ToolbarButton}">
+    <Setter Property="Height" Value="37" />
+    <Setter Property="Padding" Value="16,0" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+  </Style>
+  <Style x:Key="Material.IconButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style x:Key="Material.OperatorButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="Frame" CornerRadius="4" Background="{TemplateBinding Background}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Frame" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="1" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.HeaderButton" TargetType="Button" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Height" Value="Auto" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="State" Background="{TemplateBinding Background}">
+            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateSelected}" />
+            </Trigger>
+            <DataTrigger Binding="{Binding ContextMenu.IsOpen, RelativeSource={RelativeSource Self}}" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </DataTrigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <ControlTemplate x:Key="Material.BareInputTemplate" TargetType="TextBox">
+    <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" Background="Transparent"
+                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Focusable="False" />
+  </ControlTemplate>
+  <Style x:Key="Material.BareInput" TargetType="TextBox" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template" Value="{StaticResource Material.BareInputTemplate}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style x:Key="Material.Field" TargetType="TextBox" BasedOn="{StaticResource Material.BareInput}">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Grid>
+            <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" />
+            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" Background="Transparent"
+                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Focusable="False" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.SearchField" TargetType="TextBox" BasedOn="{StaticResource Material.Field}">
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.SurfaceContainerHighest}" />
+    <!-- The icon column already insets the text, so the caret and the placeholder share one origin. -->
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <!-- A constant 2-DIP frame keeps the text from shifting when the focus outline appears. -->
+          <Border x:Name="Frame" Background="{TemplateBinding Background}" CornerRadius="18"
+                  BorderThickness="2" BorderBrush="Transparent">
+            <DockPanel Margin="10,0">
+              <Path DockPanel.Dock="Left" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,8,0"
+                    Data="{StaticResource Search}" Stroke="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" StrokeThickness="1.6" />
+              <Grid VerticalAlignment="Center">
+                <ScrollViewer x:Name="PART_ContentHost" Background="Transparent" Focusable="False" />
+                <!-- TextBoxView draws text 2 DIP inside its host. -->
+                <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Margin="2,0,0,0" Visibility="Collapsed"
+                           IsHitTestVisible="False" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+              </Grid>
+            </DockPanel>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Text" Value="">
+              <Setter TargetName="Placeholder" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.FinderFieldOutline" TargetType="Border">
+    <Style.Triggers>
+      <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=Grid}}" Value="True">
+        <Setter Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+      </DataTrigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="Material.CheckBox" TargetType="CheckBox" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <Border x:Name="State" Background="Transparent" CornerRadius="4" Padding="{TemplateBinding Padding}">
+            <DockPanel>
+              <Grid DockPanel.Dock="Left" Width="18" Height="18" VerticalAlignment="Center">
+                <Border x:Name="Box" CornerRadius="2" BorderThickness="2" BorderBrush="{DynamicResource MatrixGrid.Brush.Outline}" />
+                <Path x:Name="Tick" Data="M4,9.5 L7.5,13 L14,5.5" StrokeThickness="2" StrokeLineJoin="Round"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Stroke="{DynamicResource MatrixGrid.Brush.OnPrimary}" Visibility="Collapsed" />
+                <Path x:Name="Dash" Data="M4,9 H14" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                      Stroke="{DynamicResource MatrixGrid.Brush.OnPrimary}" Visibility="Collapsed" />
+              </Grid>
+              <ContentPresenter x:Name="Label" Margin="8,0,0,0" RecognizesAccessKey="True"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </DockPanel>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="HasContent" Value="False">
+              <Setter TargetName="Label" Property="Margin" Value="0" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Box" Property="Background" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Box" Property="BorderThickness" Value="0" />
+              <Setter TargetName="Tick" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="{x:Null}">
+              <Setter TargetName="Box" Property="Background" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Box" Property="BorderThickness" Value="0" />
+              <Setter TargetName="Dash" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateSelected}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.ComboItem" TargetType="ComboBoxItem" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ComboBoxItem">
+          <Border x:Name="State" MinHeight="36" Padding="12,0" Background="Transparent">
+            <ContentPresenter VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.SecondaryContainer}" />
+              <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSecondaryContainer}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.ComboBox" TargetType="ComboBox" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Outline}" />
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.Surface}" />
+    <Setter Property="Padding" Value="12,0,30,0" />
+    <Setter Property="ItemContainerStyle" Value="{StaticResource Material.ComboItem}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ComboBox">
+          <Grid>
+            <Border x:Name="Frame" CornerRadius="4" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" />
+            <ToggleButton x:Name="DropDown" Focusable="False" ClickMode="Press"
+                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+              <ToggleButton.Template>
+                <ControlTemplate TargetType="ToggleButton">
+                  <Border Background="Transparent" CornerRadius="4">
+                    <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" Width="20" Height="20"
+                          Data="{StaticResource ChevronDown}" Stroke="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}"
+                          StrokeThickness="1.6" StrokeLineJoin="Round" />
+                  </Border>
+                </ControlTemplate>
+              </ToggleButton.Template>
+            </ToggleButton>
+            <ContentPresenter x:Name="Selection" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" IsHitTestVisible="False"
+                              Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+            <TextBox x:Name="PART_EditableTextBox" Style="{StaticResource Material.BareInput}" Padding="0"
+                     Margin="{TemplateBinding Padding}" VerticalAlignment="Stretch" Visibility="Collapsed"
+                     Foreground="{TemplateBinding Foreground}" IsReadOnly="{TemplateBinding IsReadOnly}" />
+            <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True" Focusable="False"
+                   IsOpen="{TemplateBinding IsDropDownOpen}">
+              <Border MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Padding="0,8"
+                      Background="{DynamicResource MatrixGrid.Brush.SurfaceContainer}" CornerRadius="4" Margin="0,0,8,8">
+                <Border.Effect>
+                  <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.23" />
+                </Border.Effect>
+                <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto">
+                  <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                </ScrollViewer>
+              </Border>
+            </Popup>
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsEditable" Value="True">
+              <Setter TargetName="Selection" Property="Visibility" Value="Collapsed" />
+              <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.TabItem" TargetType="TabItem" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Height" Value="48" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TabItem">
+          <Border x:Name="State" Background="Transparent" BorderBrush="{DynamicResource MatrixGrid.Brush.Primary}"
+                  BorderThickness="0" Padding="16,0">
+            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="State" Property="BorderThickness" Value="0,0,0,3" />
+              <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateSelected}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.Tabs" TargetType="TabControl" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="ItemContainerStyle" Value="{StaticResource Material.TabItem}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TabControl">
+          <DockPanel KeyboardNavigation.TabNavigation="Local">
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource MatrixGrid.Brush.OutlineVariant}" BorderThickness="0,0,0,1">
+              <UniformGrid Rows="1" IsItemsHost="True" />
+            </Border>
+            <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
+          </DockPanel>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.Segment" TargetType="ListBoxItem" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBoxItem">
+          <Border x:Name="State" CornerRadius="18" Background="Transparent" Padding="8,0">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.SecondaryContainer}" />
+              <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSecondaryContainer}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="State" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="State" Property="BorderThickness" Value="1" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.Segments" TargetType="ListBox" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="SelectionMode" Value="Single" />
+    <Setter Property="ItemContainerStyle" Value="{StaticResource Material.Segment}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBox">
+          <Border CornerRadius="18" BorderThickness="1" BorderBrush="{DynamicResource MatrixGrid.Brush.Outline}">
+            <UniformGrid Rows="1" IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.CalendarCell" TargetType="CalendarDayButton" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Height" Value="32" />
+    <Setter Property="MinWidth" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Style.Triggers>
+      <Trigger Property="IsToday" Value="True">
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+      </Trigger>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+        <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnPrimary}" />
+      </Trigger>
+      <Trigger Property="IsBlackedOut" Value="True">
+        <Setter Property="Opacity" Value="0.38" />
+      </Trigger>
+      <Trigger Property="IsInactive" Value="True">
+        <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="Material.CalendarPeriod" TargetType="CalendarButton" BasedOn="{StaticResource Material.Button}">
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Setter Property="Padding" Value="4,0" />
+    <Style.Triggers>
+      <Trigger Property="IsInactive" Value="True">
+        <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="Material.CalendarItem" TargetType="CalendarItem" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CalendarItem">
+          <ControlTemplate.Resources>
+            <DataTemplate x:Key="{x:Static CalendarItem.DayTitleTemplateResourceKey}">
+              <TextBlock Text="{Binding}" FontSize="12" FontWeight="Medium" HorizontalAlignment="Center"
+                         Foreground="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" />
+            </DataTemplate>
+          </ControlTemplate.Resources>
+          <DockPanel x:Name="PART_Root" MinWidth="252">
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+              <Button x:Name="PART_PreviousButton" DockPanel.Dock="Left" Style="{StaticResource Material.IconButton}"
+                      AutomationProperties.Name="Previous period">
+                <Path Width="20" Height="20" Data="{StaticResource ChevronLeft}"
+                      Stroke="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" StrokeThickness="1.6" />
+              </Button>
+              <Button x:Name="PART_NextButton" DockPanel.Dock="Right" Style="{StaticResource Material.IconButton}"
+                      AutomationProperties.Name="Next period">
+                <Path Width="20" Height="20" Data="{StaticResource ChevronRight}"
+                      Stroke="{DynamicResource MatrixGrid.Brush.OnSurfaceVariant}" StrokeThickness="1.6" />
+              </Button>
+              <Button x:Name="PART_HeaderButton" Style="{StaticResource Material.Button}" Height="32" />
+            </DockPanel>
+            <Grid>
+              <Grid x:Name="PART_MonthView">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
+                  <ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="20" /><RowDefinition Height="32" /><RowDefinition Height="32" />
+                  <RowDefinition Height="32" /><RowDefinition Height="32" /><RowDefinition Height="32" /><RowDefinition Height="32" />
+                </Grid.RowDefinitions>
+              </Grid>
+              <Grid x:Name="PART_YearView" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="48" /><RowDefinition Height="48" /><RowDefinition Height="48" />
+                </Grid.RowDefinitions>
+              </Grid>
+            </Grid>
+          </DockPanel>
+          <ControlTemplate.Triggers>
+            <DataTrigger Binding="{Binding DisplayMode, RelativeSource={RelativeSource AncestorType=Calendar}}" Value="Year">
+              <Setter TargetName="PART_MonthView" Property="Visibility" Value="Collapsed" />
+              <Setter TargetName="PART_YearView" Property="Visibility" Value="Visible" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding DisplayMode, RelativeSource={RelativeSource AncestorType=Calendar}}" Value="Decade">
+              <Setter TargetName="PART_MonthView" Property="Visibility" Value="Collapsed" />
+              <Setter TargetName="PART_YearView" Property="Visibility" Value="Visible" />
+            </DataTrigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.Calendar" TargetType="Calendar" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="CalendarDayButtonStyle" Value="{StaticResource Material.CalendarCell}" />
+    <Setter Property="CalendarButtonStyle" Value="{StaticResource Material.CalendarPeriod}" />
+    <Setter Property="CalendarItemStyle" Value="{StaticResource Material.CalendarItem}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Calendar">
+          <CalendarItem x:Name="PART_CalendarItem" Style="{TemplateBinding CalendarItemStyle}" />
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="Material.ListViewItem" TargetType="ListViewItem" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListViewItem">
+          <Border x:Name="State" MinHeight="36" Padding="6,0" Background="Transparent">
+            <GridViewRowPresenter VerticalAlignment="Center" Content="{TemplateBinding Content}"
+                                  Columns="{TemplateBinding GridView.ColumnCollection}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.StateHover}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="State" Property="Background" Value="{DynamicResource MatrixGrid.Brush.SecondaryContainer}" />
+              <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSecondaryContainer}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="Material.LookupHeader" TargetType="GridViewColumnHeader" BasedOn="{StaticResource Material.Control}">
+    <Setter Property="OverridesDefaultStyle" Value="True" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="GridViewColumnHeader">
+          <Border MinHeight="36" Padding="6,0" Background="{DynamicResource MatrixGrid.Brush.SurfaceContainer}">
+            <ContentPresenter VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+</ResourceDictionary>

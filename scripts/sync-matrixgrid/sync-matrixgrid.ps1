@@ -78,6 +78,13 @@ function Convert-Text([string]$text, [bool]$isTest) {
     foreach ($drop in $map.dropLines) {
         $text = [regex]::Replace($text, '(?m)^[^\r\n]*' + [regex]::Escape($drop) + '[^\r\n]*(\r?\n)?', '')
     }
+    # Several source namespaces can map to one Em namespace; keep only the first of identical using directives.
+    $seenUsings = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $text = [regex]::Replace($text, '(?m)^[ \t]*using[ \t]+[\w.]+[ \t]*;[ \t]*(\r?\n)', {
+        param($match)
+        if ($seenUsings.Add($match.Value.Trim())) { return $match.Value }
+        return ''
+    })
     if ($isTest) {
         # xUnit v3: Xunit.Abstractions is gone (ITestOutputHelper lives in Xunit) and IAsyncLifetime uses ValueTask.
         $text = [regex]::Replace($text, '(?m)^\s*using\s+Xunit\.Abstractions\s*;[^\r\n]*(\r?\n)?', '')

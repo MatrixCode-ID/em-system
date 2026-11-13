@@ -34,7 +34,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\shared\Em.Libs\Em.Libs.csproj" />
       <ProjectReference Include="..\..\shared\Em.Ui.Wpf.Core\Em.Ui.Wpf.Core.csproj" />
-      <ProjectReference Include="..\..\shared\Em.Ui.Wpf.Documents\Em.Ui.Wpf.Documents.csproj" />
+      <ProjectReference Include="..\..\shared\Em.Ui.Wpf.Controls\Em.Ui.Wpf.Controls.csproj" />
       <ProjectReference Include="..\..\modules\Em.Test\Em.Test.Wpf\Em.Test.Wpf.csproj" />
     </ItemGroup>
 

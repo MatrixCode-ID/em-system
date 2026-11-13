@@ -1,0 +1,20 @@
+<UserControl x:Class="Em.Ui.Wpf.Controls.Tests.XamlNamespaceSample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:emc="https://MatrixCode/wpf/controls"
+             xmlns:grid="clr-namespace:Em.Controls.Grid;assembly=Em.Libs">
+    <!-- Compiled by the XAML markup compiler, so it checks the XAML namespace as a consumer project sees it.
+         Engine types from Em.Libs use clr-namespace; the URI maps only the WPF assembly. -->
+    <StackPanel>
+        <emc:MatrixGrid x:Name="Orders" AutoGenerateColumns="False" ShowGroupPanel="True">
+            <emc:MatrixGrid.Columns>
+                <grid:GridColumn Key="Customer" Header="Customer" Kind="Text" Width="160" />
+                <grid:GridColumn Key="Units" Header="Units" Kind="Number" />
+            </emc:MatrixGrid.Columns>
+        </emc:MatrixGrid>
+        <emc:TextEditor x:Name="Note" />
+        <emc:MatrixSheet x:Name="Sheet" ShowToolbar="False" />
+        <emc:MatrixWriter x:Name="Writer" ShowToolbar="False" />
+        <emc:PagePresenter x:Name="Preview" />
+    </StackPanel>
+</UserControl>

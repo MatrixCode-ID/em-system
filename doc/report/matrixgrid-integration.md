@@ -145,3 +145,27 @@ Action baru di app RunBay `em-system`: `sync-matrixgrid`, `build-documents`, `te
 ## Ide lanjutan
 
 Dicatat di [doc/ideas/matrixgrid-integration-lanjutan.md](../ideas/matrixgrid-integration-lanjutan.md).
+
+## Perubahan sesudah eksekusi (2026-11-14)
+
+Pengguna meminta namespace model grid `Em.Grid` diganti menjadi **`Em.Controls`** (folder `Em.Libs/Controls`,
+`Em.Controls.Data`, `.Query`, `.Export`, `.Menus`; tes `tests/Em.Libs.Tests/Controls/...`). Pada hari yang
+sama `Sheet` dan `Write` juga dipindah ke bawahnya: `Em.Libs/Controls/Sheet` (`Em.Controls.Sheet.*`, mis.
+`Em.Controls.Sheet.Calc`) dan `Em.Libs/Controls/Write` (`Em.Controls.Write.*`), tes di `tests/Em.Libs.Tests/Controls/`. Peta sync diubah, salinan
+lama di folder `Grid` dihapus lalu sync diulang. Karena `Em.Grid` tidak ada lagi, alias `Grid` di
+`PublishProfileDialog.xaml.cs`, `ApprovalManagerTests.cs`, `WorkspaceTab.cs` dan `MaterialField.cs` dicabut. Keputusan
+agen nomor 1 di atas tidak berlaku lagi; contoh `clr-namespace` sekarang `clr-namespace:Em.Controls;assembly=Em.Libs`.
+
+Masih pada 2026-11-14, atas permintaan pengguna:
+
+- `CellAddress` grid di root `Em.Controls` menutupi `CellAddress` sheet setelah Sheet/Write masuk ke `Em.Controls`
+  (213 error). Pengguna memilih memindahkan model grid ke **`Em.Controls.Grid`** (`Em.Libs/Controls/Grid`,
+  `.Data`, `.Query`, `.Export`, `.Menus`; tes `tests/Em.Libs.Tests/Controls/Grid/...`).
+- Project WPF diganti nama menjadi **`Em.Ui.Wpf.Controls`** (paket `EmSys.Ui.Wpf.Controls`, tes
+  `tests/Em.Ui.Wpf.Controls.Tests`), dan semua tipe WPF dari MatrixGrid masuk **satu namespace `Em.Ui.Wpf.Controls`**,
+  berbagi namespace dengan control `Em.Ui.Wpf.Core` (tidak ada nama tipe yang sama). Skrip sync membuang `using`
+  ganda yang muncul karena delapan namespace sumber menjadi satu.
+- xmlns menjadi **satu URI** `https://MatrixCode/wpf/controls` (prefix `emc`).
+- Run: sync `20261114-005718-sync-matrixgrid-9e38`, Test Documents `20261114-005828-test-documents-26e0`
+  (Em.Libs.Tests 120/120, Em.Ui.Wpf.Controls.Tests 23/23), tes engine `20261114-005907-test-engine-solutions-6963`
+  (API 564: 525 lulus, 39 dilewati; WPF 516/516), MAUI `20261114-010000-build-maui-solution-e990` (0 error).

@@ -2,7 +2,7 @@ using System.IO;
 using Em.Test.Wpf;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
-using Em.Ui.Wpf.Documents;
+using Em.Ui.Wpf.Controls;
 using Em.Ui.Wpf.Shared;
 
 namespace Em;

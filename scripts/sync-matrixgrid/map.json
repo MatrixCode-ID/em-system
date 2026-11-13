@@ -2,61 +2,199 @@
   "description": "Copies the MatrixGrid master (sibling checkout ..\\MatrixGrid) into Em. See doc/engine/engine-documents.md#sync. Edit this map, never the synced copies.",
   "defaultSource": "..\\MatrixGrid",
   "folders": [
-    { "from": "src/MatrixGrid/Core", "to": "src/shared/Em.Libs/Grid" },
-    { "from": "src/MatrixGrid/Data", "to": "src/shared/Em.Libs/Grid/Data" },
-    { "from": "src/MatrixGrid/Query", "to": "src/shared/Em.Libs/Grid/Query" },
-    { "from": "src/MatrixGrid/Export", "to": "src/shared/Em.Libs/Grid/Export" },
-    { "from": "src/MatrixGrid/Menus", "to": "src/shared/Em.Libs/Grid/Menus" },
-    { "from": "src/MatrixGrid/Editors", "to": "src/shared/Em.Libs/Editors" },
-    { "from": "src/MatrixGrid/Editing", "to": "src/shared/Em.Libs/Editing" },
-    { "from": "src/MatrixGrid/Documents/Model", "to": "src/shared/Em.Libs/Documents/Model" },
-    { "from": "src/MatrixGrid/Documents/Layout", "to": "src/shared/Em.Libs/Documents/Layout" },
-    { "from": "src/MatrixGrid/Documents/Fonts", "to": "src/shared/Em.Libs/Documents/Fonts" },
-    { "from": "src/MatrixGrid/Documents/Packaging", "to": "src/shared/Em.Libs/Documents/Packaging" },
-    { "from": "src/MatrixGrid/Documents/Formats", "to": "src/shared/Em.Libs/Documents/Formats" },
-    { "from": "src/MatrixGrid/Documents/Assets", "to": "src/shared/Em.Libs/Documents/Assets" },
-    { "from": "src/MatrixGrid/Documents/PdfEngine", "to": "src/shared/Em.Libs/Documents/Pdf" },
-    { "from": "src/MatrixGrid/Documents/CellsEngine", "to": "src/shared/Em.Libs/Documents/Xlsx" },
-    { "from": "src/MatrixGrid/Documents/WriterEngine", "to": "src/shared/Em.Libs/Documents/Docx" },
-    { "from": "src/MatrixGrid/Sheet/Core", "to": "src/shared/Em.Libs/Sheet/Cells" },
-    { "from": "src/MatrixGrid/Sheet/Calc", "to": "src/shared/Em.Libs/Sheet/Calc" },
-    { "from": "src/MatrixGrid/Sheet/Commands", "to": "src/shared/Em.Libs/Sheet/Commands" },
-    { "from": "src/MatrixGrid/Sheet/Formulas", "to": "src/shared/Em.Libs/Sheet/Formulas" },
-    { "from": "src/MatrixGrid/Sheet/Functions", "to": "src/shared/Em.Libs/Sheet/Functions" },
-    { "from": "src/MatrixGrid/Sheet/IO", "to": "src/shared/Em.Libs/Sheet/IO" },
-    { "from": "src/MatrixGrid/Sheet/Model", "to": "src/shared/Em.Libs/Sheet/Model" },
-    { "from": "src/MatrixGrid/Sheet/NumberFormats", "to": "src/shared/Em.Libs/Sheet/NumberFormats" },
-    { "from": "src/MatrixGrid/Sheet/View", "to": "src/shared/Em.Libs/Sheet/View" },
-    { "from": "src/MatrixGrid/Write/Editing", "to": "src/shared/Em.Libs/Write/Editing" },
-    { "from": "src/MatrixGrid/Write/IO", "to": "src/shared/Em.Libs/Write/IO" },
-    { "from": "src/MatrixGrid/Write/Layout", "to": "src/shared/Em.Libs/Write/Layout" },
-    { "from": "src/MatrixGrid/Write/Model", "to": "src/shared/Em.Libs/Write/Model" },
-    { "from": "src/MatrixGrid/Wpf/Grid", "to": "src/shared/Em.Ui.Wpf.Documents/Grid" },
-    { "from": "src/MatrixGrid/Wpf/Editors", "to": "src/shared/Em.Ui.Wpf.Documents/Editors" },
-    { "from": "src/MatrixGrid/Wpf/Editing", "to": "src/shared/Em.Ui.Wpf.Documents/Editing" },
-    { "from": "src/MatrixGrid/Wpf/Menus", "to": "src/shared/Em.Ui.Wpf.Documents/Menus" },
-    { "from": "src/MatrixGrid/Wpf/Printing", "to": "src/shared/Em.Ui.Wpf.Documents/Printing" },
-    { "from": "src/MatrixGrid/Wpf/Sheet", "to": "src/shared/Em.Ui.Wpf.Documents/Sheet" },
-    { "from": "src/MatrixGrid/Wpf/Write", "to": "src/shared/Em.Ui.Wpf.Documents/Writer" },
-    { "from": "src/MatrixGrid/Wpf/Themes", "to": "src/shared/Em.Ui.Wpf.Documents/Themes" },
-    { "from": "tests/MatrixGrid.Tests/Data", "to": "tests/Em.Libs.Tests/Grid/Data" },
-    { "from": "tests/MatrixGrid.Tests/Documents", "to": "tests/Em.Libs.Tests/Documents" },
-    { "from": "tests/MatrixGrid.Tests/Editors", "to": "tests/Em.Libs.Tests/Editors" },
-    { "from": "tests/MatrixGrid.Tests/Sheet", "to": "tests/Em.Libs.Tests/Sheet" },
-    { "from": "tests/MatrixGrid.Tests/Write", "to": "tests/Em.Libs.Tests/Write" },
-    { "from": "tests/MatrixGrid.Tests/Wpf", "to": "tests/Em.Ui.Wpf.Documents.Tests/Wpf" },
-    { "from": "licenses", "to": "licenses" }
+    {
+      "from": "src/MatrixGrid/Core",
+      "to": "src/shared/Em.Libs/Controls/Grid"
+    },
+    {
+      "from": "src/MatrixGrid/Data",
+      "to": "src/shared/Em.Libs/Controls/Grid/Data"
+    },
+    {
+      "from": "src/MatrixGrid/Query",
+      "to": "src/shared/Em.Libs/Controls/Grid/Query"
+    },
+    {
+      "from": "src/MatrixGrid/Export",
+      "to": "src/shared/Em.Libs/Controls/Grid/Export"
+    },
+    {
+      "from": "src/MatrixGrid/Menus",
+      "to": "src/shared/Em.Libs/Controls/Grid/Menus"
+    },
+    {
+      "from": "src/MatrixGrid/Editors",
+      "to": "src/shared/Em.Libs/Editors"
+    },
+    {
+      "from": "src/MatrixGrid/Editing",
+      "to": "src/shared/Em.Libs/Editing"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/Model",
+      "to": "src/shared/Em.Libs/Documents/Model"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/Layout",
+      "to": "src/shared/Em.Libs/Documents/Layout"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/Fonts",
+      "to": "src/shared/Em.Libs/Documents/Fonts"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/Packaging",
+      "to": "src/shared/Em.Libs/Documents/Packaging"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/Formats",
+      "to": "src/shared/Em.Libs/Documents/Formats"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/Assets",
+      "to": "src/shared/Em.Libs/Documents/Assets"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/PdfEngine",
+      "to": "src/shared/Em.Libs/Documents/Pdf"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/CellsEngine",
+      "to": "src/shared/Em.Libs/Documents/Xlsx"
+    },
+    {
+      "from": "src/MatrixGrid/Documents/WriterEngine",
+      "to": "src/shared/Em.Libs/Documents/Docx"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/Core",
+      "to": "src/shared/Em.Libs/Controls/Sheet/Cells"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/Calc",
+      "to": "src/shared/Em.Libs/Controls/Sheet/Calc"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/Commands",
+      "to": "src/shared/Em.Libs/Controls/Sheet/Commands"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/Formulas",
+      "to": "src/shared/Em.Libs/Controls/Sheet/Formulas"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/Functions",
+      "to": "src/shared/Em.Libs/Controls/Sheet/Functions"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/IO",
+      "to": "src/shared/Em.Libs/Controls/Sheet/IO"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/Model",
+      "to": "src/shared/Em.Libs/Controls/Sheet/Model"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/NumberFormats",
+      "to": "src/shared/Em.Libs/Controls/Sheet/NumberFormats"
+    },
+    {
+      "from": "src/MatrixGrid/Sheet/View",
+      "to": "src/shared/Em.Libs/Controls/Sheet/View"
+    },
+    {
+      "from": "src/MatrixGrid/Write/Editing",
+      "to": "src/shared/Em.Libs/Controls/Write/Editing"
+    },
+    {
+      "from": "src/MatrixGrid/Write/IO",
+      "to": "src/shared/Em.Libs/Controls/Write/IO"
+    },
+    {
+      "from": "src/MatrixGrid/Write/Layout",
+      "to": "src/shared/Em.Libs/Controls/Write/Layout"
+    },
+    {
+      "from": "src/MatrixGrid/Write/Model",
+      "to": "src/shared/Em.Libs/Controls/Write/Model"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Grid",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Grid"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Editors",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Editors"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Editing",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Editing"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Menus",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Menus"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Printing",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Printing"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Sheet",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Sheet"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Write",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Writer"
+    },
+    {
+      "from": "src/MatrixGrid/Wpf/Themes",
+      "to": "src/shared/Em.Ui.Wpf.Controls/Themes"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Data",
+      "to": "tests/Em.Libs.Tests/Controls/Grid/Data"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Documents",
+      "to": "tests/Em.Libs.Tests/Documents"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Editors",
+      "to": "tests/Em.Libs.Tests/Editors"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Sheet",
+      "to": "tests/Em.Libs.Tests/Controls/Sheet"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Write",
+      "to": "tests/Em.Libs.Tests/Controls/Write"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Wpf",
+      "to": "tests/Em.Ui.Wpf.Controls.Tests/Wpf"
+    },
+    {
+      "from": "licenses",
+      "to": "licenses"
+    }
   ],
   "files": [
-    { "from": "src/MatrixGrid/Data/GeneratedOrderProvider.cs", "to": "tests/Em.Libs.Tests/Grid/Fixtures/GeneratedOrderProvider.cs" },
-    { "from": "tests/MatrixGrid.Tests/Architecture/EditorContractTests.cs", "to": "tests/Em.Libs.Tests/Editing/EditorContractTests.cs" }
+    {
+      "from": "src/MatrixGrid/Data/GeneratedOrderProvider.cs",
+      "to": "tests/Em.Libs.Tests/Controls/Grid/Fixtures/GeneratedOrderProvider.cs"
+    },
+    {
+      "from": "tests/MatrixGrid.Tests/Architecture/EditorContractTests.cs",
+      "to": "tests/Em.Libs.Tests/Editing/EditorContractTests.cs"
+    }
   ],
   "namespaces": {
-    "MatrixGrid.Core": "Em.Grid",
-    "MatrixGrid.Data": "Em.Grid.Data",
-    "MatrixGrid.Query": "Em.Grid.Query",
-    "MatrixGrid.Export": "Em.Grid.Export",
-    "MatrixGrid.Menus": "Em.Grid.Menus",
+    "MatrixGrid.Core": "Em.Controls.Grid",
+    "MatrixGrid.Data": "Em.Controls.Grid.Data",
+    "MatrixGrid.Query": "Em.Controls.Grid.Query",
+    "MatrixGrid.Export": "Em.Controls.Grid.Export",
+    "MatrixGrid.Menus": "Em.Controls.Grid.Menus",
     "MatrixGrid.Editors": "Em.Editors",
     "MatrixGrid.Editing": "Em.Editing",
     "MatrixGrid.Documents.Model": "Em.Documents.Model",
@@ -68,44 +206,56 @@
     "MatrixGrid.Documents.PdfEngine": "Em.Documents.Pdf",
     "MatrixGrid.Documents.CellsEngine": "Em.Documents.Xlsx",
     "MatrixGrid.Documents.WriterEngine": "Em.Documents.Docx",
-    "MatrixGrid.Sheet.Core": "Em.Sheet.Cells",
-    "MatrixGrid.Sheet.Calc": "Em.Sheet.Calc",
-    "MatrixGrid.Sheet.Commands": "Em.Sheet.Commands",
-    "MatrixGrid.Sheet.Formulas": "Em.Sheet.Formulas",
-    "MatrixGrid.Sheet.Functions": "Em.Sheet.Functions",
-    "MatrixGrid.Sheet.IO": "Em.Sheet.IO",
-    "MatrixGrid.Sheet.Model": "Em.Sheet.Model",
-    "MatrixGrid.Sheet.NumberFormats": "Em.Sheet.NumberFormats",
-    "MatrixGrid.Sheet.View": "Em.Sheet.View",
-    "MatrixGrid.Write.Editing": "Em.Write.Editing",
-    "MatrixGrid.Write.IO": "Em.Write.IO",
-    "MatrixGrid.Write.Layout": "Em.Write.Layout",
-    "MatrixGrid.Write.Model": "Em.Write.Model",
-    "MatrixGrid.Wpf.Grid": "Em.Ui.Wpf.Documents.Grid",
-    "MatrixGrid.Wpf.Editors": "Em.Ui.Wpf.Documents.Editors",
-    "MatrixGrid.Wpf.Editing": "Em.Ui.Wpf.Documents.Editing",
-    "MatrixGrid.Wpf.Menus": "Em.Ui.Wpf.Documents.Menus",
-    "MatrixGrid.Wpf.Printing": "Em.Ui.Wpf.Documents.Printing",
-    "MatrixGrid.Wpf.Sheet": "Em.Ui.Wpf.Documents.Sheet",
-    "MatrixGrid.Wpf.Write": "Em.Ui.Wpf.Documents.Writer",
-    "MatrixGrid.Wpf.Themes": "Em.Ui.Wpf.Documents.Themes",
-    "MatrixGrid.Tests.Data": "Em.Libs.Tests.Grid.Data",
+    "MatrixGrid.Sheet.Core": "Em.Controls.Sheet.Cells",
+    "MatrixGrid.Sheet.Calc": "Em.Controls.Sheet.Calc",
+    "MatrixGrid.Sheet.Commands": "Em.Controls.Sheet.Commands",
+    "MatrixGrid.Sheet.Formulas": "Em.Controls.Sheet.Formulas",
+    "MatrixGrid.Sheet.Functions": "Em.Controls.Sheet.Functions",
+    "MatrixGrid.Sheet.IO": "Em.Controls.Sheet.IO",
+    "MatrixGrid.Sheet.Model": "Em.Controls.Sheet.Model",
+    "MatrixGrid.Sheet.NumberFormats": "Em.Controls.Sheet.NumberFormats",
+    "MatrixGrid.Sheet.View": "Em.Controls.Sheet.View",
+    "MatrixGrid.Write.Editing": "Em.Controls.Write.Editing",
+    "MatrixGrid.Write.IO": "Em.Controls.Write.IO",
+    "MatrixGrid.Write.Layout": "Em.Controls.Write.Layout",
+    "MatrixGrid.Write.Model": "Em.Controls.Write.Model",
+    "MatrixGrid.Wpf.Grid": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Editors": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Editing": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Menus": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Printing": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Sheet": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Write": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Wpf.Themes": "Em.Ui.Wpf.Controls",
+    "MatrixGrid.Tests.Data": "Em.Libs.Tests.Controls.Grid.Data",
     "MatrixGrid.Tests.Documents": "Em.Libs.Tests.Documents",
     "MatrixGrid.Tests.Editors": "Em.Libs.Tests.Editors",
-    "MatrixGrid.Tests.Sheet": "Em.Libs.Tests.Sheet",
-    "MatrixGrid.Tests.Write": "Em.Libs.Tests.Write",
+    "MatrixGrid.Tests.Sheet": "Em.Libs.Tests.Controls.Sheet",
+    "MatrixGrid.Tests.Write": "Em.Libs.Tests.Controls.Write",
     "MatrixGrid.Tests.Architecture": "Em.Libs.Tests.Editing",
-    "MatrixGrid.Tests.Wpf": "Em.Ui.Wpf.Documents.Tests.Wpf"
+    "MatrixGrid.Tests.Wpf": "Em.Ui.Wpf.Controls.Tests.Wpf"
   },
   "types": {
     "GridControl": "MatrixGrid",
     "MatrixWrite": "MatrixWriter"
   },
   "strings": [
-    { "from": "/MatrixGrid;component/Wpf/", "to": "/Em.Ui.Wpf.Documents;component/" },
-    { "from": "/MatrixGrid;component/Documents/", "to": "/Em.Ui.Wpf.Documents;component/Documents/" },
-    { "from": "InternalsVisibleTo(\"MatrixGrid.Tests\")", "to": "InternalsVisibleTo(\"Em.Ui.Wpf.Documents.Tests\")" },
-    { "from": "https://matrixgrid.dev/wpf", "to": "https://MatrixCode/wpf/grid" }
+    {
+      "from": "/MatrixGrid;component/Wpf/",
+      "to": "/Em.Ui.Wpf.Controls;component/"
+    },
+    {
+      "from": "/MatrixGrid;component/Documents/",
+      "to": "/Em.Ui.Wpf.Controls;component/Documents/"
+    },
+    {
+      "from": "InternalsVisibleTo(\"MatrixGrid.Tests\")",
+      "to": "InternalsVisibleTo(\"Em.Ui.Wpf.Controls.Tests\")"
+    },
+    {
+      "from": "https://matrixgrid.dev/wpf",
+      "to": "https://MatrixCode/wpf/controls"
+    }
   ],
   "dropLines": [
     "InternalsVisibleTo(\"MatrixGrid.Wpf.Benchmarks\")"
@@ -127,16 +277,16 @@
     "THIRD-PARTY-NOTICES.md",
     "src/shared/Em.Libs/Em.Libs.csproj",
     "src/shared/Em.Libs/Properties/DocumentsAccess.cs",
-    "src/shared/Em.Ui.Wpf.Documents/Em.Ui.Wpf.Documents.csproj",
-    "src/shared/Em.Ui.Wpf.Documents/README.md",
-    "src/shared/Em.Ui.Wpf.Documents/DocumentsExtensions.cs",
-    "src/shared/Em.Ui.Wpf.Documents/DocumentsThemeApplier.cs",
-    "src/shared/Em.Ui.Wpf.Documents/Properties/XmlnsDefinitions.cs",
+    "src/shared/Em.Ui.Wpf.Controls/Em.Ui.Wpf.Controls.csproj",
+    "src/shared/Em.Ui.Wpf.Controls/README.md",
+    "src/shared/Em.Ui.Wpf.Controls/DocumentsExtensions.cs",
+    "src/shared/Em.Ui.Wpf.Controls/DocumentsThemeApplier.cs",
+    "src/shared/Em.Ui.Wpf.Controls/Properties/XmlnsDefinitions.cs",
     "tests/Em.Libs.Tests/DocumentsBoundaryTests.cs",
-    "tests/Em.Ui.Wpf.Documents.Tests/Em.Ui.Wpf.Documents.Tests.csproj",
-    "tests/Em.Ui.Wpf.Documents.Tests/DocumentsBoundaryTests.cs",
-    "tests/Em.Ui.Wpf.Documents.Tests/DocumentsThemeApplierTests.cs",
-    "tests/Em.Ui.Wpf.Documents.Tests/XamlNamespaceSample.xaml",
-    "tests/Em.Ui.Wpf.Documents.Tests/XamlNamespaceSample.xaml.cs"
+    "tests/Em.Ui.Wpf.Controls.Tests/Em.Ui.Wpf.Controls.Tests.csproj",
+    "tests/Em.Ui.Wpf.Controls.Tests/DocumentsBoundaryTests.cs",
+    "tests/Em.Ui.Wpf.Controls.Tests/DocumentsThemeApplierTests.cs",
+    "tests/Em.Ui.Wpf.Controls.Tests/XamlNamespaceSample.xaml",
+    "tests/Em.Ui.Wpf.Controls.Tests/XamlNamespaceSample.xaml.cs"
   ]
 }
