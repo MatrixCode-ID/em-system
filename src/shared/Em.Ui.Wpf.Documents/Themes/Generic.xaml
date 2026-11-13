@@ -1,0 +1,108 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:editors="clr-namespace:Em.Ui.Wpf.Documents.Editors"
+                    xmlns:grid="clr-namespace:Em.Ui.Wpf.Documents.Grid">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="/Em.Ui.Wpf.Documents;component/Themes/Light.xaml" />
+    <ResourceDictionary Source="/Em.Ui.Wpf.Documents;component/Themes/Material.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+  <Style TargetType="{x:Type editors:TextEditor}">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="FontFamily" Value="{StaticResource MatrixGrid.FontFamily}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.Surface}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type editors:TextEditor}">
+          <Border x:Name="Frame"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{DynamicResource MatrixGrid.Brush.Outline}"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  ToolTip="{TemplateBinding Error}">
+            <TextBox x:Name="PART_Input"
+                     Style="{StaticResource Material.BareInput}"
+                     BorderThickness="0"
+                     Background="Transparent"
+                     Padding="12,0"
+                     VerticalContentAlignment="Center"
+                     Foreground="{TemplateBinding Foreground}"
+                     FontFamily="{TemplateBinding FontFamily}"
+                     FontSize="{TemplateBinding FontSize}"
+                     AutomationProperties.Name="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=(AutomationProperties.Name)}" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+            <Trigger Property="HasError" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Error}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="MatrixGrid.ValueEditor" TargetType="{x:Type editors:ValueEditor}">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="FontFamily" Value="{StaticResource MatrixGrid.FontFamily}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.Surface}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type editors:ValueEditor}">
+          <Border x:Name="Frame" Background="{TemplateBinding Background}"
+                  BorderBrush="{DynamicResource MatrixGrid.Brush.Outline}"
+                  BorderThickness="1" CornerRadius="4" ToolTip="{TemplateBinding Error}">
+            <ContentPresenter x:Name="PART_Host" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Primary}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+            </Trigger>
+            <Trigger Property="HasError" Value="True">
+              <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource MatrixGrid.Brush.Error}" />
+              <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.38" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style TargetType="{x:Type editors:SpinEditor}" BasedOn="{StaticResource MatrixGrid.ValueEditor}" />
+  <Style TargetType="{x:Type editors:CheckEditor}" BasedOn="{StaticResource MatrixGrid.ValueEditor}" />
+  <Style TargetType="{x:Type editors:DateEditor}" BasedOn="{StaticResource MatrixGrid.ValueEditor}" />
+  <Style TargetType="{x:Type editors:ComboEditor}" BasedOn="{StaticResource MatrixGrid.ValueEditor}" />
+  <Style TargetType="{x:Type editors:LookupEditor}" BasedOn="{StaticResource MatrixGrid.ValueEditor}" />
+  <Style TargetType="{x:Type grid:MatrixGrid}">
+    <Setter Property="Focusable" Value="True" />
+    <Setter Property="FontFamily" Value="{StaticResource MatrixGrid.FontFamily}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource MatrixGrid.Brush.OnSurface}" />
+    <Setter Property="Background" Value="{DynamicResource MatrixGrid.Brush.SurfaceContainerLowest}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type grid:MatrixGrid}">
+          <Border BorderThickness="1" CornerRadius="12"
+                  BorderBrush="{DynamicResource MatrixGrid.Brush.OutlineVariant}"
+                  Background="{TemplateBinding Background}" ClipToBounds="True">
+            <ContentPresenter x:Name="PART_Host" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+</ResourceDictionary>

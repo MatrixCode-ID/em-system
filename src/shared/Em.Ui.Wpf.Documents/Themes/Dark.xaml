@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="MatrixGrid.Brush.Primary" Color="#AAC7FF" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OnPrimary" Color="#0A305F" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.Success" Color="#9DD67D" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.PrimaryContainer" Color="#284777" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OnPrimaryContainer" Color="#D6E3FF" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.SecondaryContainer" Color="#3E4759" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OnSecondaryContainer" Color="#DAE2F9" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.TertiaryContainer" Color="#573E5C" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OnTertiaryContainer" Color="#FAD8FD" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.Error" Color="#FFB4AB" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.ErrorContainer" Color="#93000A" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.Surface" Color="#111318" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.SurfaceContainerLowest" Color="#0C0E13" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.SurfaceContainerLow" Color="#191C20" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.SurfaceContainer" Color="#1D2024" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.SurfaceContainerHigh" Color="#282A2F" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.SurfaceContainerHighest" Color="#33353A" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OnSurface" Color="#E2E2E9" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OnSurfaceVariant" Color="#C4C6D0" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.Outline" Color="#8E9099" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.OutlineVariant" Color="#44474E" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.InverseSurface" Color="#E2E2E9" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.InverseOnSurface" Color="#2E3036" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.StateHover" Color="#14E2E2E9" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.StateSelected" Color="#29AAC7FF" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.StateDisabled" Color="#61E2E2E9" />
+  <SolidColorBrush x:Key="MatrixGrid.Brush.Scrim" Color="#99000000" />
+</ResourceDictionary>
