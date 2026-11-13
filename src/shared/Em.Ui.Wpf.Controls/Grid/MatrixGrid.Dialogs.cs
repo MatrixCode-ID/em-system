@@ -87,7 +87,7 @@ public sealed partial class MatrixGrid
                 for (int index = 0; index < Columns.Count; index++)
                 {
                     var column = Columns[index];
-                    if (!column.IsVisible)
+                    if (!column.IsVisible && column.ShowInColumnChooser)
                         Columns[index] = column with { IsVisible = true };
                 }
             }
@@ -116,7 +116,8 @@ public sealed partial class MatrixGrid
         void Populate()
         {
             list.Children.Clear();
-            foreach (var column in Columns.Where(column => column.Header.Contains(search.Text, StringComparison.CurrentCultureIgnoreCase)))
+            foreach (var column in Columns.Where(column => column.ShowInColumnChooser
+                && column.Header.Contains(search.Text, StringComparison.CurrentCultureIgnoreCase)))
             {
                 var row = new DockPanel { Height = 44, Background = Brushes.Transparent, AllowDrop = true };
                 var drag = Material.IconButton("DragIndicator", $"Drag {column.Header}");

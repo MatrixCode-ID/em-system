@@ -46,6 +46,11 @@ public sealed record GridExportOptions
     public ExportValueMode Values { get; init; }
     /// <summary>Gets the culture used to format values. The default is the current culture.</summary>
     public CultureInfo Culture { get; init; } = CultureInfo.CurrentCulture;
+    /// <summary>
+    /// Gets an optional function that replaces the text of a data cell. When it returns a value, the cell is written as
+    /// that text in every value mode; null keeps the normal cell. The function may run on worker threads.
+    /// </summary>
+    public Func<GridRow, GridColumn, string?>? CellText { get; init; }
 }
 
 /// <summary>The view state captured when an export starts, so the export does not change if the grid changes meanwhile.</summary>
@@ -170,8 +175,9 @@ public static class GridDocument
                         return formatters;
                     var cells = new DocumentCell[columns.Length];
                     for (int column = 0; column < cells.Length; column++)
-                        cells[column] = Cell(slots[column].Get(row.Values), columns[column],
-                            formatters[column], options);
+                        cells[column] = options.CellText?.Invoke(row, columns[column]) is { } custom
+                            ? DocumentCell.Text(custom)
+                            : Cell(slots[column].Get(row.Values), columns[column], formatters[column], options);
                     mapped[index] = new DocumentRow(ImmutableCollectionsMarshal.AsImmutableArray(cells), OutlineLevel: outline);
                     return formatters;
                 },
@@ -280,7 +286,7 @@ public static class GridDocument
         var cells = columns.Select(column => DocumentCell.Text(string.Join(" · ", query.Summaries
             .Where(summary => summary.Scope == scope && summary.ColumnKey == column.Key && values.ContainsKey(summary.Key))
             .Select(summary => $"{summary.Operation} = {values[summary.Key].Format(culture,
-                summary.Operation == SummaryOperation.Count ? null : column.DisplayFormat)}")))).ToImmutableArray();
+                summary.Operation == SummaryOperation.Count ? null : column.SummaryFormat ?? column.DisplayFormat)}")))).ToImmutableArray();
         return new DocumentRow(cells, DocumentRowKind.Summary, level);
     }
 

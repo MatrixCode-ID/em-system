@@ -219,6 +219,8 @@ public sealed partial class MatrixGrid : Control
             return;
         if (EditingCell is { } editing && editing != address)
             CancelEdit();
+        if (SelectionMode == GridSelectionMode.Single)
+            toggle = extendRange = false;
 
         if (extendRange && _selectionAnchor is { } anchor)
         {
@@ -375,6 +377,10 @@ public sealed partial class MatrixGrid : Control
     }
 
     internal string Display(GridRow row, GridColumn column) =>
+        row.Group is null && PresentationFor(column)?.DisplayText is { } display
+            && display(CellInfo(row, column)) is { } text ? text : FormatCell(row, column);
+
+    internal string FormatCell(GridRow row, GridColumn column) =>
         column.Format(row.Values.GetValueOrDefault(column.Key), CultureInfo.CurrentCulture);
 
     internal void OnRowRebound(GridRowView view)
@@ -403,6 +409,7 @@ public sealed partial class MatrixGrid : Control
     {
         foreach (var row in _realized.ToArray())
             row.Synchronize();
+        SyncSelectionProperties();
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -777,6 +784,7 @@ public sealed partial class MatrixGrid : Control
     private void SetRows(IReadOnlyList<GridRow> rows)
     {
         VisibleRows = rows;
+        ApplyPendingSelection();
         _list!.ItemsSource = rows;
         ShowMessage(rows.Count == 0 ? "No rows" : null);
         PublishState();

@@ -13,6 +13,8 @@ public sealed record NumericSettings : EditorSettings
     public decimal Increment { get; init; } = 1;
     /// <summary>Gets the format used while editing, or null for the plain number.</summary>
     public string? EditFormat { get; init; }
+    /// <summary>Gets whether numbers with a fractional part are accepted. The default is true; false accepts whole numbers only.</summary>
+    public bool AllowDecimals { get; init; } = true;
 
     /// <inheritdoc/>
     protected override EditorResult ParseValue(string text)
@@ -21,6 +23,8 @@ public sealed record NumericSettings : EditorSettings
             return EditorResult.Reject("Enter a valid number.");
         if (number < Minimum || number > Maximum)
             return EditorResult.Reject("The number is outside the allowed range.");
+        if (!AllowDecimals && decimal.Truncate(number) != number)
+            return EditorResult.Reject("Enter a whole number.");
         return EditorResult.Accept(number);
     }
 }

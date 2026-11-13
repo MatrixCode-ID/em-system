@@ -41,7 +41,7 @@ public sealed partial class MatrixGrid
     public Document CreateDocument(GridExportOptions? options = null, IProgress<ExportProgress>? progress = null)
     {
         var source = Provider ?? _local ?? throw new InvalidOperationException("The grid is not bound to a data source.");
-        return GridDocument.Create(source, ExportSnapshot(), options ?? new GridExportOptions { Title = DocumentTitle }, progress);
+        return GridDocument.Create(source, ExportSnapshot(), WithCellText(options ?? new GridExportOptions { Title = DocumentTitle }), progress);
     }
 
     /// <summary>Opens the print preview of the current view as a dialog.</summary>
@@ -51,7 +51,7 @@ public sealed partial class MatrixGrid
         if ((Provider ?? _local) is not { } source || !CanExport())
             return;
         var snapshot = ExportSnapshot();
-        var settings = options ?? new GridExportOptions { Title = DocumentTitle };
+        var settings = WithCellText(options ?? new GridExportOptions { Title = DocumentTitle });
         var owner = Window.GetWindow(this);
         var preview = new PrintPreviewWindow((page, fit, progress) =>
             GridDocument.Create(source, snapshot, settings with { Page = page, FitToWidth = fit }, progress),
@@ -129,6 +129,31 @@ public sealed partial class MatrixGrid
         }
         catch (Exception ex) { ShowMessage(ex.GetBaseException().Message); }
         await Task.CompletedTask;
+    }
+
+    private GridExportOptions WithCellText(GridExportOptions options) =>
+        options.CellText is null && ExportCellText() is { } text ? options with { CellText = text } : options;
+
+    /// <summary>
+    /// Exports the current view to a file without showing any dialog. The file is written to a temporary file next to
+    /// the target and moved into place when complete, so a failed or canceled export leaves no partial file.
+    /// </summary>
+    /// <param name="path">The target file path.</param>
+    /// <param name="formatId">The id of a registered format in <see cref="ExportFormats"/>, such as <c>xlsx</c>, <c>pdf</c>, <c>docx</c> or <c>csv</c>.</param>
+    /// <param name="options">The export options, or null for the defaults with <see cref="DocumentTitle"/>.</param>
+    /// <param name="cancellationToken">Cancels the export.</param>
+    /// <returns>A task that completes when the file is written.</returns>
+    /// <exception cref="InvalidOperationException">The grid is not bound to a data source or has no visible columns.</exception>
+    public Task ExportToFileAsync(string path, string formatId, GridExportOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentException.ThrowIfNullOrWhiteSpace(formatId);
+        if (!CanExport())
+            throw new InvalidOperationException("The grid has no data source or visible columns to export.");
+        var writer = ExportFormats.Get(formatId);
+        var document = CreateDocument(options);
+        return DocumentFileExport.WriteFileAsync(writer, document, path, cancellationToken);
     }
 
     private bool CanExport() => (Provider ?? _local) is not null && _displayColumns.Count > 0;

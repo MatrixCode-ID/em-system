@@ -82,7 +82,39 @@ public sealed partial class MatrixGrid
         CellPresentations.LastOrDefault(candidate => candidate.ColumnKey == column.Key);
 
     internal GridCellInfo CellInfo(GridRow row, GridColumn column) => new(row, column,
-        row.Values.GetValueOrDefault(column.Key), Display(row, column), State.SelectedRows.Contains(row.Key));
+        row.Values.GetValueOrDefault(column.Key), FormatCell(row, column), State.SelectedRows.Contains(row.Key))
+    {
+        Item = GetRowItem(row.Key) ?? row
+    };
+
+    /// <summary>Returns the text a loaded data cell shows, after <see cref="GridCellPresentation.DisplayText"/> is applied.</summary>
+    /// <param name="key">The row key.</param>
+    /// <param name="columnKey">The column key.</param>
+    /// <returns>The shown text, or null when the row is not loaded, is a group row, or the column does not exist.</returns>
+    public string? GetDisplayText(RowKey key, string columnKey) =>
+        DataRow(key) is { } row && GetColumn(columnKey) is { } column ? Display(row, column) : null;
+
+    internal bool HasCellToolTips => CellPresentations.Any(presentation => presentation.ToolTip is not null);
+
+    /// <summary>Builds the export hook for <see cref="GridCellPresentation.DisplayText"/>, reading from a copy of the row objects.</summary>
+    private Func<GridRow, GridColumn, string?>? ExportCellText()
+    {
+        var presentations = CellPresentations.Where(presentation => presentation.DisplayText is not null)
+            .GroupBy(presentation => presentation.ColumnKey).ToDictionary(group => group.Key, group => group.Last().DisplayText!,
+                StringComparer.Ordinal);
+        if (presentations.Count == 0)
+            return null;
+        var items = Provider is null ? _objects.CopyItems() : null;
+        var selected = State.SelectedRows;
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        return (row, column) => presentations.TryGetValue(column.Key, out var text)
+            ? text(new GridCellInfo(row, column, row.Values.GetValueOrDefault(column.Key),
+                column.Format(row.Values.GetValueOrDefault(column.Key), culture), selected.Contains(row.Key))
+            {
+                Item = items is not null && items.TryGetValue(row.Key, out var item) ? item : row
+            })
+            : null;
+    }
 
     private int FrozenColumnCount => _displayColumns.TakeWhile(column => column.IsFrozen).Count();
     private double FrozenWidth => FrozenColumnCount > 0 ? _columnOffsets[FrozenColumnCount] : 0;

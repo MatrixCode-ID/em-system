@@ -85,6 +85,13 @@ internal sealed class ObjectRows
 
     public void Clear() => _objects.Clear();
 
+    public Dictionary<RowKey, object> CopyItems() => _objects.ToDictionary(entry => entry.Key, entry => entry.Value.Item);
+
+    public object? ItemFor(RowKey key) => _objects.TryGetValue(key, out var entry) ? entry.Item : null;
+
+    public RowKey? KeyFor(object item) =>
+        _identities.TryGetValue(item, out var identity) && _objects.ContainsKey(identity.Key) ? identity.Key : null;
+
     public static GridValue ToValue(object? value) => value switch
     {
         null => default,

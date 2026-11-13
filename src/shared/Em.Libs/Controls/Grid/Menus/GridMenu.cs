@@ -91,4 +91,9 @@ public sealed class MenuOpeningEventArgs(MenuHit hit, ImmutableArray<MenuEntry> 
     public ImmutableArray<MenuEntry> Items { get; set; } = items;
     /// <summary>Gets or sets whether the menu is suppressed.</summary>
     public bool Cancel { get; set; }
+    /// <summary>
+    /// Gets or sets the object of the row under the pointer: the source object of an in-memory grid, the provider row,
+    /// or null when the menu was not opened on a data row.
+    /// </summary>
+    public object? RowItem { get; set; }
 }

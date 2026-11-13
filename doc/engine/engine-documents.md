@@ -160,6 +160,45 @@ xmlns:settings="clr-namespace:Em.Editors;assembly=Em.Libs"
   view; `ExportFormats` holds the writers.
 - `MenuDefinitions`, `MenuOpening` and `MenuOpeningCommand` customize the context menus.
 
+#### Selection, row commands and conditional cells
+
+```xml
+<emc:MatrixGrid x:Name="DocumentGrid" ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}"
+                SelectionMode="Single" RowDoubleClickCommand="{Binding Commands[OpenCommand]}" />
+```
+
+```csharp
+// Menu entries are plain records, not dependency objects, so their commands are set from code.
+DocumentGrid.MenuDefinitions.Add(new GridMenuDefinition {
+   Region = MenuRegion.RowCell, Mode = GridMenuMode.Replace,
+   Items = { new GridCommandItem { Label = "Open", Icon = "Edit", Command = Vm.Commands[nameof(Vm.OpenCommand)] } }
+});
+```
+
+- `SelectedItem` (two-way) is the focused selected row: the source object for `ItemsSource`, or the `GridRow` for a
+  `Provider`. A value set before the rows load is applied when they arrive. `SelectedItems` takes a list (for example an
+  `ObservableCollection<object>`) that the grid keeps equal to the selected rows; changes the host makes to it select the
+  rows. `SelectionMode` is `Single` or `Multiple` (default). `GetRowItem(RowKey)` and `GetRowKey(object)` map between
+  rows and objects.
+- `GridCommandItem` runs a host `ICommand` from a context menu. The command parameter is the object of the row under the
+  pointer (or `CommandParameter` when set), and `CanExecute` enables the item. A right-click selects that row first.
+  `MenuOpeningEventArgs.RowItem` carries the same object. Menu entries are records outside the visual tree, so their
+  `Command` is assigned in code (or through `x:Static`/resources), not with `{Binding}`.
+- `RowDoubleClickCommand` runs with the row object when a double-click does not open an in-place editor. Enter keeps its
+  editing role; add a `KeyBinding` on the grid when Enter should run a command on a read-only grid.
+- `CellPresentations` entries (`GridCellPresentation`) take functions of `GridCellInfo` for `Background`,
+  `Foreground`, `Opacity`, `ToolTip` and `DisplayText`. `GridCellInfo.Item` is the row object. `DisplayText` replaces
+  only the shown text: sorting, filtering and summaries keep the value; copy, best fit, finder highlighting and exports
+  use the text. `GetDisplayText(RowKey, columnKey)` reads it.
+- `GridColumn.ShowInColumnChooser = false` keeps a column out of the column chooser; its visibility then comes from the
+  definition, also after `RestoreLayout`. `SearchWhenHidden = true` lets the finder search a hidden column.
+  `SummaryFormat` formats the column's summaries (other than Count). `NumericSettings.AllowDecimals = false` accepts
+  whole numbers only.
+- `ExportToFileAsync(path, formatId, options)` exports the view to a file without any dialog (`formatId` is `xlsx`,
+  `pdf`, `docx` or `csv`), writing through a temporary file next to the target.
+- Drag-and-drop payloads that the grid does not own pass through its header and group panel, so a drop handler set on
+  the grid (or an attached drop behaviour) receives them over the whole control.
+
 ### MatrixSheet and MatrixWriter
 
 ```xml

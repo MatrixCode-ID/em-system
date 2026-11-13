@@ -336,7 +336,10 @@ public sealed partial class MatrixGrid
 
     private void UpdateFinderColumns(bool refreshFilter)
     {
-        var columns = _displayColumns.Where(column => column.IsSearchable).ToArray();
+        var hidden = (Columns.Count > 0 ? (IEnumerable<GridColumn>)Columns : _generatedColumns)
+            .Where(column => !column.IsVisible && column.SearchWhenHidden && column.IsSearchable
+                && !_displayColumns.Any(shown => shown.Key == column.Key));
+        var columns = _displayColumns.Where(column => column.IsSearchable).Concat(hidden).DistinctBy(column => column.Key).ToArray();
         bool scopeChanged = !_finderColumns.Select(SearchColumn).SequenceEqual(columns.Select(SearchColumn));
         _finderColumns = columns;
         if (scopeChanged && IsSearchPanelVisible)

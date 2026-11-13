@@ -42,6 +42,12 @@ public sealed record GridColumn(string Key, string Header, GridValueKind Kind)
     public bool IsVisible { get; init; } = true;
     /// <summary>Gets whether the grid search and the finder look at this column's text. The default is true.</summary>
     public bool IsSearchable { get; init; } = true;
+    /// <summary>Gets whether the column chooser lists the column, so users can show or hide it. The default is true. A column that is not listed keeps the visibility its definition gives it, also when a layout is restored or the chooser is reset.</summary>
+    public bool ShowInColumnChooser { get; init; } = true;
+    /// <summary>Gets whether the finder also searches this column while it is hidden. The default is false; hidden columns are otherwise not searched.</summary>
+    public bool SearchWhenHidden { get; init; }
+    /// <summary>Gets an optional format for the total and group summaries of the column, other than Count. When null, the summaries use <see cref="DisplayFormat"/>.</summary>
+    public string? SummaryFormat { get; init; }
     /// <summary>Gets whether in-place editing is blocked for this column even when the grid is editable.</summary>
     public bool IsReadOnly { get; init; }
     /// <summary>Gets whether the column stays pinned at the leading edge while the grid scrolls horizontally.</summary>

@@ -295,7 +295,10 @@ public sealed partial class MatrixGrid
         button.AllowDrop = true;
         button.DragOver += (_, e) =>
         {
-            e.Effects = e.Data.GetDataPresent(ColumnDragFormat) ? DragDropEffects.Move : DragDropEffects.None;
+            // Data from outside the grid is left to the host, so an external drop target on the grid still sees it.
+            if (!e.Data.GetDataPresent(ColumnDragFormat) && !e.Data.GetDataPresent(GroupDragFormat))
+                return;
+            e.Effects = DragDropEffects.Move;
             e.Handled = true;
         };
         button.Drop += (_, e) =>

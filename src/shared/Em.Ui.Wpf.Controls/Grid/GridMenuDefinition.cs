@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using System.Windows.Markup;
 using Em.Controls.Grid.Menus;
 
@@ -46,6 +47,34 @@ public sealed class GridMenuDefinition
 
     /// <summary>Gets the entries to add.</summary>
     public ObservableCollection<MenuEntry> Items { get; } = [];
+}
+
+/// <summary>
+/// A menu item that runs a host <see cref="ICommand"/>, declared in XAML or code. When the menu opens on a data row,
+/// the command receives the object of that row (the source object of an in-memory grid, or the provider
+/// <see cref="Em.Controls.Grid.Data.GridRow"/>) unless <see cref="CommandParameter"/> is set. The item is enabled when
+/// <see cref="ICommand.CanExecute(object)"/> returns true for that parameter.
+/// </summary>
+public sealed record GridCommandItem : MenuEntry
+{
+    /// <summary>Gets or sets the command to run.</summary>
+    public ICommand? Command { get; set; }
+    /// <summary>Gets or sets a fixed command parameter. When null, the row under the pointer is passed.</summary>
+    public object? CommandParameter { get; set; }
+    /// <summary>Gets or sets the item caption.</summary>
+    public string Label { get; set; } = "";
+    /// <summary>Gets or sets the optional icon key.</summary>
+    public string? Icon { get; set; }
+    /// <summary>Gets or sets an optional shortcut text shown next to the caption. It does not bind the key.</summary>
+    public string? Shortcut { get; set; }
+    /// <summary>Gets or sets whether the item shows a check mark.</summary>
+    public bool IsChecked { get; set; }
+
+    /// <summary>
+    /// Optional id that <see cref="GridMenuDefinition.InsertBefore"/> and <see cref="GridMenuDefinition.InsertAfter"/>
+    /// can target and that menu automation uses. A generated id is used when empty.
+    /// </summary>
+    public string? Id { get; set; }
 }
 
 /// <summary>A submenu that can be declared in XAML. It becomes a <see cref="MenuSubmenu"/> when the menu opens.</summary>

@@ -41,6 +41,7 @@ public sealed partial class MatrixGrid
     private bool _updatingColumns;
     private TextBox? _columnChooser;
     private readonly List<FilterExpression> _recentFilters = [];
+    private readonly Dictionary<string, ICommand> _hostCommands = new(StringComparer.Ordinal);
 
     /// <summary>Gets or sets whether the group panel is shown above the column headers.</summary>
     public bool ShowGroupPanel
@@ -105,7 +106,12 @@ public sealed partial class MatrixGrid
         foreach (var setting in layout.Columns)
         {
             if (available.Remove(setting.Key, out var column))
-                result.Add(column with { Width = WidthFor(column with { Width = setting.Width }), IsVisible = setting.IsVisible, IsFrozen = setting.IsFrozen, Band = setting.Band });
+                result.Add(column with
+                {
+                    Width = WidthFor(column with { Width = setting.Width }),
+                    IsVisible = column.ShowInColumnChooser ? setting.IsVisible : column.IsVisible,
+                    IsFrozen = setting.IsFrozen, Band = setting.Band
+                });
         }
         result.AddRange(available.Values);
         Columns.Clear();
@@ -291,7 +297,7 @@ public sealed partial class MatrixGrid
         string.Join("  ·  ", Query.Summaries.Where(item => item.ColumnKey == column.Key && item.Scope == scope)
             .Where(item => values.ContainsKey(item.Key))
             .Select(item => $"{item.Operation} = {values[item.Key].Format(System.Globalization.CultureInfo.CurrentCulture,
-                item.Operation is SummaryOperation.Count ? null : column.Editor?.DisplayFormat)}"));
+                item.Operation is SummaryOperation.Count ? null : column.SummaryFormat ?? column.Editor?.DisplayFormat)}"));
 
     private int GroupIndex(string key)
     {
@@ -319,13 +325,11 @@ public sealed partial class MatrixGrid
         _groupBar.SetResourceReference(BackgroundProperty, "MatrixGrid.Brush.SurfaceContainerLow");
         _groupBar.DragOver += (_, e) =>
         {
-            if (e.Data.GetData(ColumnDragFormat) is string key)
-            {
-                e.Effects = DragDropEffects.Move;
-                DrawGroupDrop(key, e.GetPosition(_groupPanel).X);
-            }
-            else
-                e.Effects = DragDropEffects.None;
+            // Data from outside the grid is left to the host, so an external drop target on the grid still sees it.
+            if (e.Data.GetData(ColumnDragFormat) is not string key)
+                return;
+            e.Effects = DragDropEffects.Move;
+            DrawGroupDrop(key, e.GetPosition(_groupPanel).X);
             e.Handled = true;
         };
         _groupBar.DragLeave += (_, _) => _dropOverlay?.Children.Clear();
@@ -489,12 +493,16 @@ public sealed partial class MatrixGrid
         var menu = MenuRenderer.Attach(target, () =>
         {
             var context = hit();
-            var opening = new MenuOpeningEventArgs(context, ComposeMenu(context));
+            var opening = new MenuOpeningEventArgs(context, ComposeMenu(context))
+            {
+                RowItem = context.RowKey is { } rowKey ? GetRowItem(new RowKey(rowKey)) : null
+            };
             MenuOpening?.Invoke(this, opening);
             if (MenuOpeningCommand is { } command && command.CanExecute(opening))
                 command.Execute(opening);
             return opening;
-        }, id => MenuCommandResolver?.Invoke(id) ?? new GridMenuCommand(this, id));
+        }, id => _hostCommands.TryGetValue(id, out var bound) ? bound
+            : MenuCommandResolver?.Invoke(id) ?? new GridMenuCommand(this, id));
         TrackGridMenu(menu);
     }
 
@@ -514,14 +522,16 @@ public sealed partial class MatrixGrid
 
     private ImmutableArray<MenuEntry> ComposeMenu(MenuHit context)
     {
+        _hostCommands.Clear();
+        var rowItem = context.RowKey is { } rowKey ? GetRowItem(new RowKey(rowKey)) : null;
         var definitions = MenuDefinitions.Where(candidate => candidate.Region == context.Region).ToArray();
         var replace = definitions.LastOrDefault(candidate => candidate.Mode == GridMenuMode.Replace);
-        var items = replace is null ? DefaultMenu(context) : ResolveMenu(replace.Items);
+        var items = replace is null ? DefaultMenu(context) : ResolveMenu(replace.Items, rowItem);
         foreach (var definition in definitions)
         {
             if (definition.Mode == GridMenuMode.Replace || definition.Items.Count == 0)
                 continue;
-            var added = ResolveMenu(definition.Items);
+            var added = ResolveMenu(definition.Items, rowItem);
             items = definition.Mode switch
             {
                 GridMenuMode.Prepend => JoinMenus(added, items),
@@ -533,10 +543,23 @@ public sealed partial class MatrixGrid
         return items;
     }
 
-    private static ImmutableArray<MenuEntry> ResolveMenu(IEnumerable<MenuEntry> entries) =>
-        [.. entries.Select(entry => entry is GridMenuSubmenu submenu
-            ? new MenuSubmenu(submenu.Label, ResolveMenu(submenu.Items), submenu.Icon, submenu.Id)
-            : entry)];
+    private ImmutableArray<MenuEntry> ResolveMenu(IEnumerable<MenuEntry> entries, object? rowItem) =>
+        [.. entries.Select(entry => entry switch
+        {
+            GridMenuSubmenu submenu => new MenuSubmenu(submenu.Label, ResolveMenu(submenu.Items, rowItem), submenu.Icon, submenu.Id),
+            GridCommandItem item => BindHostCommand(item, rowItem),
+            _ => entry
+        })];
+
+    private MenuEntry BindHostCommand(GridCommandItem item, object? rowItem)
+    {
+        var id = string.IsNullOrEmpty(item.Id) ? $"host-command:{_hostCommands.Count}" : item.Id;
+        var parameter = item.CommandParameter ?? rowItem;
+        bool enabled = item.Command is { } command && command.CanExecute(parameter);
+        if (item.Command is { } bound)
+            _hostCommands[id] = new RowBoundCommand(bound, parameter);
+        return new MenuCommand(id, item.Label, item.Icon, item.Shortcut, enabled, item.IsChecked);
+    }
 
     private static int InsertPosition(ImmutableArray<MenuEntry> items, GridMenuDefinition definition)
     {
@@ -787,6 +810,21 @@ public sealed partial class MatrixGrid
         var grid = (MatrixGrid)sender;
         grid.RebuildGroupBar();
         grid.RebuildFilterSurfaces();
+    }
+
+    private sealed class RowBoundCommand(ICommand inner, object? parameter) : ICommand
+    {
+        public event EventHandler? CanExecuteChanged
+        {
+            add => inner.CanExecuteChanged += value;
+            remove => inner.CanExecuteChanged -= value;
+        }
+        public bool CanExecute(object? ignored) => inner.CanExecute(parameter);
+        public void Execute(object? ignored)
+        {
+            if (inner.CanExecute(parameter))
+                inner.Execute(parameter);
+        }
     }
 
     private sealed class GridMenuCommand(MatrixGrid grid, string id) : ICommand

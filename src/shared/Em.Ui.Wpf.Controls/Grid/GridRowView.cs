@@ -30,8 +30,22 @@ internal sealed class GridRowView : Canvas
         Height = MatrixGrid.RowHeight;
         ClipToBounds = true;
         DataContextChanged += (_, _) => Synchronize();
+        ToolTipOpening += OnCellToolTipOpening;
         Loaded += (_, _) => Synchronize();
         Unloaded += (_, _) => Owner?.OnRowUnloaded(this);
+    }
+
+    private void OnCellToolTipOpening(object sender, ToolTipEventArgs e)
+    {
+        if (Owner is not { } grid || Row is not { Group: null } row
+            || grid.ColumnAt(Mouse.GetPosition(this).X) is not { } column
+            || grid.PresentationFor(column)?.ToolTip is not { } tip
+            || tip(grid.CellInfo(row, column)) is not { } content)
+        {
+            e.Handled = true;
+            return;
+        }
+        ToolTip = content;
     }
 
     public MatrixGrid? Owner
@@ -53,7 +67,13 @@ internal sealed class GridRowView : Canvas
         Height = row.Group is { IsFooter: true } ? 34 : row.Group is not null ? 40 : MatrixGrid.RowHeight;
         if (ContextMenu is null)
         {
-            PreviewMouseRightButtonDown += (_, e) => _contextColumn = Owner?.ColumnAt(e.GetPosition(this).X)?.Key;
+            PreviewMouseRightButtonDown += (_, e) =>
+            {
+                _contextColumn = Owner?.ColumnAt(e.GetPosition(this).X)?.Key;
+                // A right-click selects the row first, so selection-bound commands act on the row under the pointer.
+                if (Row is { } clicked)
+                    Owner?.SelectForMenu(clicked, _contextColumn);
+            };
             grid.AttachGridMenu(this, () =>
             {
                 var target = Row;
@@ -63,6 +83,11 @@ internal sealed class GridRowView : Canvas
                     target?.Key.Value, target?.Group?.Level);
             });
         }
+        // A placeholder makes WPF raise ToolTipOpening, where the cell under the pointer supplies the real tooltip.
+        if (grid.HasCellToolTips)
+            ToolTip ??= string.Empty;
+        else
+            ClearValue(ToolTipProperty);
         AutomationProperties.SetName(this, string.Join(", ", grid.RenderColumns().Select(entry => grid.Display(row, entry.Column))));
         grid.OnRowRebound(this);
         UpdatePresenters(grid, row);
@@ -232,8 +257,8 @@ internal sealed class GridRowView : Canvas
             (Keyboard.Modifiers & ModifierKeys.Control) != 0, (Keyboard.Modifiers & ModifierKeys.Shift) != 0);
         if (row.Group is { IsFooter: false } group)
             grid.ToggleGroup(group);
-        else if (e.ClickCount == 2)
-            grid.BeginEdit();
+        else if (e.ClickCount == 2 && !grid.BeginEdit())
+            grid.ActivateRow(row);
         e.Handled = true;
     }
 
@@ -263,7 +288,27 @@ internal sealed class GridRowView : Canvas
             if (selected && x <= grid.ViewportLeft)
                 drawing.DrawRectangle(Brush("Primary"), null, new Rect(x, 0, 4, rowHeight));
         }
-        if (!selected && presentation?.Background?.Invoke(grid.CellInfo(row, column)) is { } background)
+        GridCellInfo? info = presentation is { Background: not null } or { Foreground: not null } or { Opacity: not null }
+            ? grid.CellInfo(row, column) : null;
+        double opacity = info is not null && presentation?.Opacity is { } fade ? Math.Clamp(fade(info), 0, 1) : 1;
+        if (opacity < 1)
+            drawing.PushOpacity(opacity);
+        try
+        {
+            DrawCellContent(drawing, grid, row, column, x, width, selected, presentation, info, cell);
+        }
+        finally
+        {
+            if (opacity < 1)
+                drawing.Pop();
+        }
+    }
+
+    private void DrawCellContent(DrawingContext drawing, MatrixGrid grid, GridRow row, GridColumn column,
+        double x, double width, bool selected, GridCellPresentation? presentation, GridCellInfo? info, Rect cell)
+    {
+        double rowHeight = MatrixGrid.RowHeight;
+        if (!selected && info is not null && presentation?.Background?.Invoke(info) is { } background)
             drawing.DrawRectangle(background, null, cell);
 
         var address = new CellAddress(row.Key, column.Key);
@@ -280,7 +325,8 @@ internal sealed class GridRowView : Canvas
         var value = grid.Display(row, column);
         if (string.IsNullOrEmpty(value))
             return;
-        var foreground = Brush(selected ? "OnSecondaryContainer" : "OnSurface");
+        var foreground = !selected && info is not null && presentation?.Foreground?.Invoke(info) is { } custom
+            ? custom : Brush(selected ? "OnSecondaryContainer" : "OnSurface");
         var text = new FormattedText(value, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
             new Typeface(grid.FontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
             CellFontSize, foreground, VisualTreeHelper.GetDpi(this).PixelsPerDip)
