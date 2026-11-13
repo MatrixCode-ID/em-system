@@ -194,6 +194,8 @@ DocumentGrid.MenuDefinitions.Add(new GridMenuDefinition {
   definition, also after `RestoreLayout`. `SearchWhenHidden = true` lets the finder search a hidden column.
   `SummaryFormat` formats the column's summaries (other than Count). `NumericSettings.AllowDecimals = false` accepts
   whole numbers only.
+- `BeginningEdit` fires before an in-place editor opens; set `Cancel` to keep one row's cell read-only (for example a
+  value that does not apply to that row) while the column stays editable.
 - `ExportToFileAsync(path, formatId, options)` exports the view to a file without any dialog (`formatId` is `xlsx`,
   `pdf`, `docx` or `csv`), writing through a temporary file next to the target.
 - Drag-and-drop payloads that the grid does not own pass through its header and group panel, so a drop handler set on

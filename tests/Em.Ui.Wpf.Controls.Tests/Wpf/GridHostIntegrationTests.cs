@@ -66,6 +66,9 @@ public sealed class GridHostIntegrationTests
                 var zero = grid.VisibleRows.Single(row => grid.GetRowItem(row.Key) == rows[1]);
                 Assert.Equal("", grid.GetDisplayText(zero.Key, "Count"));
 
+                grid.BeginningEdit += (_, args) => args.Cancel = args.Item == rows[0];
+                grid.SelectCell(new CellAddress(grid.GetRowKey(rows[0])!.Value, "Count"));
+                Assert.False(grid.BeginEdit());
                 grid.SelectCell(new CellAddress(zero.Key, "Count"));
                 Assert.True(grid.BeginEdit());
                 var editor = Descendants<Control>(grid).First(control => control is Em.Ui.Wpf.Controls.SpinEditor);

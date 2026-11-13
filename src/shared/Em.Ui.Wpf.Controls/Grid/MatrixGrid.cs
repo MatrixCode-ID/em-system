@@ -257,6 +257,13 @@ public sealed partial class MatrixGrid : Control
         var row = VisibleRows[rowIndex];
         if (row.Group is not null)
             return false;
+        if (BeginningEdit is { } beginning)
+        {
+            var request = new GridBeginningEditEventArgs(row, column, GetRowItem(row.Key));
+            beginning(this, request);
+            if (request.Cancel)
+                return false;
+        }
         ScrollTo(address);
         _list.UpdateLayout();
         if (_realized.FirstOrDefault(view => view.Row?.Key == row.Key) is not { } view)

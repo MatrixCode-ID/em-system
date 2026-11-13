@@ -8,6 +8,22 @@ using Em.Controls.Grid.Data;
 
 namespace Em.Ui.Wpf.Controls;
 
+/// <summary>Event data for <see cref="MatrixGrid.BeginningEdit"/>.</summary>
+/// <param name="row">The row of the cell.</param>
+/// <param name="column">The column of the cell.</param>
+/// <param name="item">The row object: the source object for <see cref="MatrixGrid.ItemsSource"/>, or the row for a provider.</param>
+public sealed class GridBeginningEditEventArgs(GridRow row, GridColumn column, object? item) : EventArgs
+{
+    /// <summary>Gets the row of the cell.</summary>
+    public GridRow Row { get; } = row;
+    /// <summary>Gets the column of the cell.</summary>
+    public GridColumn Column { get; } = column;
+    /// <summary>Gets the row object.</summary>
+    public object? Item { get; } = item;
+    /// <summary>Gets or sets whether the editor stays closed.</summary>
+    public bool Cancel { get; set; }
+}
+
 /// <summary>How many rows the user can select in a <see cref="MatrixGrid"/>.</summary>
 public enum GridSelectionMode
 {
@@ -40,6 +56,12 @@ public sealed partial class MatrixGrid
     /// <summary>Identifies the <see cref="RowDoubleClickCommand"/> dependency property.</summary>
     public static readonly DependencyProperty RowDoubleClickCommandProperty = DependencyProperty.Register(
         nameof(RowDoubleClickCommand), typeof(ICommand), typeof(MatrixGrid));
+
+    /// <summary>
+    /// Occurs before an in-place editor opens on a cell that the column allows to edit. Set
+    /// <see cref="GridBeginningEditEventArgs.Cancel"/> to keep the cell read-only for that row.
+    /// </summary>
+    public event EventHandler<GridBeginningEditEventArgs>? BeginningEdit;
 
     private bool _syncingSelection;
     private object? _pendingSelectedItem;
