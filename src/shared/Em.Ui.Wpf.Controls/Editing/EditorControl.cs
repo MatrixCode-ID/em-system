@@ -56,7 +56,7 @@ public abstract class EditorControl : ContentControl, IDisposable, IToolbarState
     public bool AllowOpen { get => (bool)GetValue(AllowOpenProperty); set => SetValue(AllowOpenProperty, value); }
     /// <summary>Gets or sets the path of a file to open. The file is read in the background when the editor becomes visible.</summary>
     public string? Source { get => (string?)GetValue(SourceProperty); set => SetValue(SourceProperty, value); }
-    /// <summary>Gets the number of times a file was opened through <see cref="Source"/>.</summary>
+    /// <summary>Gets the number of open attempts through <see cref="Source"/> or <see cref="OpenAsync"/>.</summary>
     public int OpenCount { get; private set; }
     /// <summary>Gets the error of the last open attempt, or null when it succeeded.</summary>
     public Exception? OpenError { get; private set; }
@@ -72,7 +72,7 @@ public abstract class EditorControl : ContentControl, IDisposable, IToolbarState
     public event EventHandler? ModeChanged;
     /// <summary>Occurs after the document changes in full mode.</summary>
     public event EventHandler? DocumentChanged;
-    /// <summary>Occurs when opening <see cref="Source"/> finishes, whether it succeeded or failed.</summary>
+    /// <summary>Occurs when opening <see cref="Source"/> or a stream through <see cref="OpenAsync"/> finishes, whether it succeeded or failed.</summary>
     public event EventHandler? OpenCompleted;
 
     /// <summary>Gets the command catalog of the editor.</summary>
@@ -242,10 +242,47 @@ public abstract class EditorControl : ContentControl, IDisposable, IToolbarState
         if (!sourcePending || string.IsNullOrWhiteSpace(Source))
             return;
         sourcePending = false;
-        var request = new CancellationTokenSource();
+        var path = Source;
+        await OpenCore(path, () => File.OpenRead(path), true, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Opens a document from a stream, for content that is not a local file, such as a download. The format is chosen
+    /// from the extension of <paramref name="fileName"/>, the same way as a file opened through <see cref="Source"/>. The
+    /// stream is read on a background thread while the waiter is shown and is not closed; a stream that cannot seek is
+    /// buffered by the reader. The result is reported through <see cref="OpenError"/>, <see cref="OpenWarnings"/> and
+    /// <see cref="OpenCompleted"/>, as for <see cref="Source"/>. A later open, a change of <see cref="Source"/> or
+    /// <see cref="Dispose"/> cancels a pending one.
+    /// </summary>
+    /// <param name="stream">The readable stream with the document content.</param>
+    /// <param name="fileName">The file name or path whose extension selects the format.</param>
+    /// <param name="cancellation">Cancels the read.</param>
+    /// <returns>True when the document was opened and shown; false when it failed or was cancelled.</returns>
+    /// <exception cref="NotSupportedException">The extension of <paramref name="fileName"/> is not a format this editor opens.</exception>
+    public Task<bool> OpenAsync(Stream stream, string fileName, CancellationToken cancellation = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        if (!stream.CanRead)
+            throw new ArgumentException("The stream must be readable.", nameof(stream));
+        if (!OpenExtensions.Contains(Path.GetExtension(fileName), StringComparer.OrdinalIgnoreCase))
+            throw new NotSupportedException($"The file type of '{Path.GetFileName(fileName)}' cannot be opened by this editor.");
+        ObjectDisposedException.ThrowIf(disposed, this);
+        sourcePending = false;
+        InitializeSurface();
+        return OpenCore(fileName, () => stream, false, cancellation);
+    }
+
+    /// <summary>Gets the file extensions, including the leading dot, that this editor opens through <see cref="Source"/> or <see cref="OpenAsync"/>.</summary>
+    public abstract IReadOnlyList<string> OpenExtensions { get; }
+
+    private async Task<bool> OpenCore(string path, Func<Stream> open, bool ownsStream, CancellationToken cancellation)
+    {
+        openRequest?.Cancel();
+        var request = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         openRequest = request;
         var token = request.Token;
-        var path = Source;
+        bool opened = false;
         OpenError = null;
         OpenWarnings = [];
         OpenCount++;
@@ -256,17 +293,26 @@ public abstract class EditorControl : ContentControl, IDisposable, IToolbarState
         {
             var loaded = await Task.Run(() =>
             {
-                using var stream = File.OpenRead(path);
-                return ReadFile(path, stream, token);
+                var stream = open();
+                try
+                {
+                    return ReadFile(path, stream, token);
+                }
+                finally
+                {
+                    if (ownsStream)
+                        stream.Dispose();
+                }
             }, token);
             if (!request.IsCancellationRequested && !disposed)
             {
                 InstallDocument(loaded.Document);
                 OpenWarnings = loaded.Warnings;
+                opened = true;
             }
         }
         catch (OperationCanceledException) when (request.IsCancellationRequested) { }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException or
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or FormatException or
             ArgumentException or System.Xml.XmlException)
         {
             if (!request.IsCancellationRequested)
@@ -285,6 +331,7 @@ public abstract class EditorControl : ContentControl, IDisposable, IToolbarState
             }
             request.Dispose();
         }
+        return opened;
     }
 
     private static void SourceChanged(DependencyObject source, DependencyPropertyChangedEventArgs _)

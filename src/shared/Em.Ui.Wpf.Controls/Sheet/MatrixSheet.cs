@@ -201,6 +201,18 @@ public sealed partial class MatrixSheet : EditorControl
         Refresh();
     }
 
+    /// <summary>Gets the file extensions, including the leading dot, that a sheet opens: XLSX workbooks and CSV files.</summary>
+    public static IReadOnlyList<string> SupportedExtensions { get; } = [".xlsx", ".csv"];
+
+    /// <summary>Checks whether a sheet can open a file, judged by the extension of its name.</summary>
+    /// <param name="fileName">The file name or path.</param>
+    /// <returns>True when the extension is one of <see cref="SupportedExtensions"/>.</returns>
+    public static bool CanOpen(string? fileName) =>
+        !string.IsNullOrWhiteSpace(fileName) && SupportedExtensions.Contains(Path.GetExtension(fileName), StringComparer.OrdinalIgnoreCase);
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<string> OpenExtensions => SupportedExtensions;
+
     /// <inheritdoc/>
     protected override (object Document, IReadOnlyList<string> Warnings) ReadFile(string path, Stream stream, CancellationToken cancellation)
     {

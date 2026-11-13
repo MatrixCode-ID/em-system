@@ -6,6 +6,8 @@ WPF controls for Em System desktop clients, all in the namespace `Em.Ui.Wpf.Cont
   editing, layouts, context menus, print preview and export (PDF, XLSX, DOCX, CSV).
 - `MatrixSheet` — a spreadsheet editor (formulas, formatting, merges, frozen panes, CSV and XLSX).
 - `MatrixWriter` — a word-processing editor (paged layout, tables, headers and footers, DOCX and PDF).
+- `DocumentViewer` — a read-only viewer screen registered by `UseDocuments()`; `NavigationEntry.ViewDocument(...)`
+  shows a downloaded spreadsheet or document in MatrixSheet or MatrixWriter and sends PDF to the PDF viewer.
 - Standalone and in-cell value editors (`TextEditor`, `SpinEditor`, `DateEditor`, `CheckEditor`, `ComboEditor`,
   `LookupEditor`) and `PrintPreviewWindow`.
 

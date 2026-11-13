@@ -282,10 +282,15 @@
     "src/shared/Em.Ui.Wpf.Controls/DocumentsExtensions.cs",
     "src/shared/Em.Ui.Wpf.Controls/DocumentsThemeApplier.cs",
     "src/shared/Em.Ui.Wpf.Controls/Properties/XmlnsDefinitions.cs",
+    "src/shared/Em.Ui.Wpf.Controls/Viewers/DocumentViewer.xaml",
+    "src/shared/Em.Ui.Wpf.Controls/Viewers/DocumentViewer.xaml.cs",
+    "src/shared/Em.Ui.Wpf.Controls/Viewers/DocumentViewerNavigationPayload.cs",
+    "src/shared/Em.Ui.Wpf.Controls/Viewers/DocumentViewers.cs",
     "tests/Em.Libs.Tests/DocumentsBoundaryTests.cs",
     "tests/Em.Ui.Wpf.Controls.Tests/Em.Ui.Wpf.Controls.Tests.csproj",
     "tests/Em.Ui.Wpf.Controls.Tests/DocumentsBoundaryTests.cs",
     "tests/Em.Ui.Wpf.Controls.Tests/DocumentsThemeApplierTests.cs",
+    "tests/Em.Ui.Wpf.Controls.Tests/DocumentViewerTests.cs",
     "tests/Em.Ui.Wpf.Controls.Tests/XamlNamespaceSample.xaml",
     "tests/Em.Ui.Wpf.Controls.Tests/XamlNamespaceSample.xaml.cs"
   ]

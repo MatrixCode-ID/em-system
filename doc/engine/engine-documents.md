@@ -213,6 +213,32 @@ Both derive from `EditorControl`: `Mode` (`Full` or `Viewer`), `ToolbarStyle` (`
 event. `Session` gives the underlying `SheetSession` or `WriteSession`; `LoadWorkbook` and `LoadDocument` show a
 workbook or document built in code.
 
+`OpenAsync(stream, fileName)` opens content that is not a local file, such as a download, through the same path as
+`Source`: the extension of `fileName` picks the format, the stream is read in the background behind the waiter and is
+not closed, and `OpenError`, `OpenWarnings` and `OpenCompleted` report the result. `OpenExtensions` lists what an editor
+opens; the static `MatrixSheet.SupportedExtensions`/`CanOpen` (`.xlsx`, `.csv`) and
+`MatrixWriter.SupportedExtensions`/`CanOpen` (`.docx`) tell a host which editor fits a file before creating one.
+
+### Document viewer {#viewer}
+
+`UseDocuments()` also registers a built-in read-only document viewer (navigation `em.viewer.document`), the counterpart
+of the PDF viewer for every format MatrixSheet and MatrixWriter open. Like the PDF viewer it belongs to no module and no
+claim: it only shows what the caller's loader returns, so the right to the document is checked by the action the loader
+calls.
+
+```csharp
+if (DocumentViewers.CanView(fileName))
+    await NavigationEntry.ViewDocument($"Attachment:{documentId}:{fileName}",
+        token => Service.DownloadAttachment(documentId, token), fileName);
+```
+
+`ViewDocument` (on `NavigationEntry`, or `EmApp` for the main stack) sends a PDF to `ViewPdf` and a spreadsheet or
+document to the document viewer, which shows it in `MatrixSheet` or `MatrixWriter` with `Mode = Viewer` and
+`AllowOpen = false`. The viewer reloads through its loader, reports skipped content as warnings, and Save as writes the
+original bytes unchanged. `DocumentViewers.KindOf` and `SupportedExtensions` tell which viewer fits a file; anything
+else (`DocumentViewKind.None`) should still be offered as a download. The title is the entry key: include the document
+identifier so two attachments with the same name open in their own tabs.
+
 ### Print preview
 
 `PrintPreviewWindow` takes a function that builds a `Document` for a page setup, plus the export formats. The grid and
