@@ -2,6 +2,7 @@ using System.IO;
 using Em.Test.Wpf;
 using Em.Ui.Core.Shared;
 using Em.Ui.Wpf.Core;
+using Em.Ui.Wpf.Documents;
 using Em.Ui.Wpf.Shared;
 
 namespace Em;
@@ -23,6 +24,7 @@ internal static class Program
             opt.SymbolRule = PasswordRuleLevel.Off;
          });
          builder.EnableAnimation = true;
+         builder.UseDocuments();
          builder.AddTestModule();
 #if DEBUG
          builder.AddDebug(opt => {
