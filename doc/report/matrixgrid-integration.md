@@ -34,7 +34,7 @@ Uji GUI/visual tidak dijalankan (di luar cakupan plan).
 | — | 7 | Action RunBay tersimpan di data folder RunBay (di luar repo em-system), jadi tidak ada commit |
 | `fa818e5` | 8 | Perbaikan build: alias `Grid` WPF, sync `66d8676`, skrip sync (hash, line ending, BOM) |
 | `984011c` | 8 | Verifikasi xmlns (pemetaan `AssemblyName` dihapus), alias `Grid` MAUI, sync `ec4583c`, panduan |
-| (commit penutup) | 8 | Laporan ini, catatan ide, plan dipindah ke `plan/executed/` |
+| `fa2ecd8`, berikutnya | 8 | Plan dipindah ke `plan/executed/`; laporan ini dan catatan ide |
 
 `last-sync.json` mencatat sumber terakhir: MatrixGrid `ec4583c`.
 
