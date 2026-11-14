@@ -12,7 +12,7 @@ namespace Em.Ui.Wpf.Core
          // usually long after the active connection was picked. Subscribing alone would then wait for
          // a change that never comes, so the client for the connection already in place is taken here.
          ApiClient = App.GetActiveApiClient();
-         App.ActiveConnectionChanged += AppOnActiveConnectionChanged;
+         App.ServiceConnectionChanged += AppOnActiveConnectionChanged;
       }
 
       private void AppOnActiveConnectionChanged(object? sender, EventArgs e) {

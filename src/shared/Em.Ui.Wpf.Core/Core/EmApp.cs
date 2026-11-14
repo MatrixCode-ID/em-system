@@ -19,6 +19,7 @@ namespace Em.Ui.Wpf.Core
       private Dictionary<ApiConnection, ApiClient> _apiClients { get; } = [];
       /// <summary>Raised for active connection changed.</summary>
       public event EventHandler? ActiveConnectionChanged;
+      internal event EventHandler? ServiceConnectionChanged;
 
       /// <summary>
       /// Raised every time <see cref="ActiveUser"/> changes. Used by UI that shows the identity of the active
@@ -30,15 +31,6 @@ namespace Em.Ui.Wpf.Core
 
       private EmApp(string[] args) {
          Args = args;
-         // Debug mode has no sign-in moment: its user is already made active synchronously inside BuildApp
-         // (InitDebugMode), before there is an active connection for any await to ride on. The moment that is
-         // really available is when an active connection is attached - that is, when the connection card on the
-         // home screen selects DefaultDebugConnection.
-         ActiveConnectionChanged += (_, _) => {
-            if (IsDebugActive && ActiveConnection is not null) {
-               _claimsRefresh = RefreshClaimsAsync();
-            }
-         };
       }
 
       #region Properties
@@ -152,6 +144,12 @@ namespace Em.Ui.Wpf.Core
          set {
             field = value;
             RememberDebugConnection(value);
+            // Debug menus are built from client registrations. Defer claims until a screen needs them.
+            if (IsDebugActive) {
+               _claimsRefresh = null;
+               _claimsRefreshVersion++;
+            }
+            ServiceConnectionChanged?.Invoke(this, EventArgs.Empty);
             ActiveConnectionChanged?.Invoke(this, EventArgs.Empty);
          }
       }
@@ -257,6 +255,9 @@ namespace Em.Ui.Wpf.Core
          (_containerManagerEnabled || !string.Equals(navigation.Name, "admin.container", StringComparison.OrdinalIgnoreCase)) &&
          (!_serverClaimsLoaded || NavigationAccess.IsDeclared(navigation, _allClaims)) &&
          (IsDebugBypass || NavigationAccess.CanOpen(navigation, ActiveUser));
+
+      internal bool IsAppMenuEntry(Navigation navigation) =>
+         navigation.IsMenuVisible && (IsDebugActive || CanOpen(navigation));
 
       // Until a server has been asked, module presence is unknown and must not hide anything.
       private bool _serverClaimsLoaded;
@@ -772,6 +773,7 @@ namespace Em.Ui.Wpf.Core
       private ISessionStorage SessionStorage => ServiceProvider.GetRequiredService<ISessionStorage>();
 
       private Task? _claimsRefresh;
+      private long _claimsRefreshVersion;
 
       /// <summary>Used by screens that want to wait until rights have finished loading before drawing themselves.</summary>
       public Task EnsureClaimsLoadedAsync() => _claimsRefresh ?? Task.CompletedTask;
@@ -783,14 +785,14 @@ namespace Em.Ui.Wpf.Core
       /// without an active user the <see cref="ClaimCollection"/> indexer answers <c>false</c> by itself.
       /// </summary>
       public async Task RefreshClaimsAsync() {
+         var version = ++_claimsRefreshVersion;
+         var connection = ActiveConnection;
+         var user = ActiveUser;
          if (GetActiveApiClient() is null) return;
 
-         _serverClaims = await ServiceProvider.GetRequiredService<ICredentialServices>()
+         var serverClaims = await ServiceProvider.GetRequiredService<ICredentialServices>()
             .GetMeta_AllClaimActions();
-         _serverClaimsLoaded = true;
-         RebuildClaimCatalog();
-
-         if (ActiveUser is not { } user) return;
+         if (!IsCurrent()) return;
 
          // An administrator need not have their grants read at all: the indexer already answers true for them as
          // long as the claim's name is in the catalog. The debugger account and the built-in administrator
@@ -801,13 +803,22 @@ namespace Em.Ui.Wpf.Core
          // right came from, then merged here. DistinctBy is there because one right may come twice - granted
          // directly and also carried by a role - and AvailableClaims is also read by screens, not just
          // ClaimCollection which does not care about duplicate rows.
-         user.AvailableClaims = user.cUserIsAdmin
-            ? []
-            : [
-               .. (await user.GetClaims())
-                  .Concat(await user.GetRoleClaims())
-                  .DistinctBy(r => r.Key, StringComparer.OrdinalIgnoreCase)
-            ];
+         ClaimAction[] grants = [];
+         if (user is { cUserIsAdmin: false }) {
+            var directClaims = await user.GetClaims();
+            if (!IsCurrent()) return;
+            var roleClaims = await user.GetRoleClaims();
+            if (!IsCurrent()) return;
+            grants = [.. directClaims.Concat(roleClaims).DistinctBy(r => r.Key, StringComparer.OrdinalIgnoreCase)];
+         }
+
+         _serverClaims = serverClaims;
+         _serverClaimsLoaded = true;
+         RebuildClaimCatalog();
+         if (user is not null) user.AvailableClaims = grants;
+
+         bool IsCurrent() => version == _claimsRefreshVersion &&
+            ReferenceEquals(connection, ActiveConnection) && ReferenceEquals(user, ActiveUser);
       }
 
       /// <summary>

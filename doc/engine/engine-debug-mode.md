@@ -21,6 +21,12 @@ Code that hides or refuses something by permission should check `IsDebugBypass` 
 feature should check `IsDebugActive`. WPF raises `DebugStateChanged` whenever Simulate Login starts or ends;
 MAUI refreshes the host through its active-user notifications.
 
+While WPF debug is active, the Apps menu and Home module list come from the
+client's menu registrations. Changing the server neither reloads claims nor
+rebuilds the list. Opening a module loads its server's claim catalogue when
+needed. Release and Simulate Login filter the module list using the signed-in
+session and the server's claims.
+
 ## Switch User
 
 **Tools > Switch User** (only while debug is active) lists the built-in administrator and every stored
@@ -33,10 +39,10 @@ hidden. Picking an account and pressing **Switch** (or double-clicking it):
 2. closes every tab and window;
 3. makes the account the active user. Requests keep the debug token and add the account's identity in the
    `X-Em-User` header; the server then runs them with that account's real permissions;
-4. reloads the claims and rebuilds the menus for that account.
+4. reloads the claims for the account's actions and refreshes the Tools menu.
 
 The client follows the same permissions as the server: once another account is active, the debug bypass
-is off, so menus, `NavigateTo`, approval and task screens behave as they would for that user. The account
+is off, so `NavigateTo`, approval and task screens behave as they would for that user. The account
 button's tooltip reads *Debug: acting as &lt;account&gt;*.
 
 Suspended, pending and deleted accounts are shown dimmed and cannot be picked; the server refuses them

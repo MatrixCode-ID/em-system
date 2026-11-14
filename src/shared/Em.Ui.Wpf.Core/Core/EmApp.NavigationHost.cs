@@ -120,6 +120,14 @@ namespace Em.Ui.Wpf.Core
       // included, when it lives in another one - otherwise a new entry is opened on the stack the
       // request came from.
       internal async Task<bool> NavigateTo(Navigation targetNav, object? data, NavigationStack origin) {
+         if (IsDebugActive && targetNav.ModuleName is not null && ActiveConnection is { } connection) {
+            var user = ActiveUser;
+            if (_claimsRefresh is null || _claimsRefresh.IsFaulted || _claimsRefresh.IsCanceled)
+               _claimsRefresh = RefreshClaimsAsync();
+            await _claimsRefresh;
+            if (!ReferenceEquals(connection, ActiveConnection) || !ReferenceEquals(user, ActiveUser)) return false;
+         }
+
          if (!CanOpen(targetNav)) return false;
 
          var title = ResolveTitle(targetNav, data);

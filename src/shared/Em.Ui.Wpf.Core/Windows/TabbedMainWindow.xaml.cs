@@ -876,29 +876,13 @@ namespace Em.Ui.Wpf.Windows
          set => Set(value);
       }
 
-      // Redraws both menus for the user signed in now. The text is copied out of each navigation, not
-      // bound to it, so a navigation re-titling one of its open entries leaves the menu alone.
+      private ObservableCollection<TabbedMainWindowMenuItem>? _debugAppMenu;
+
       internal void RebuildMenus() {
-         AppMenu.Clear();
          ToolsMenu.Clear();
          if (EmApp is not { } app) return;
 
-         // Like the home screen: navigations without a path sit above the groups.
-         var roots = new List<TabbedMainWindowMenuItem>();
-         var groups = new List<TabbedMainWindowMenuItem>();
-         foreach (var nav in app.Navigations.Where(r => r.IsMenuVisible && app.CanOpen(r)).InMenuOrder()) {
-            var item = new TabbedMainWindowMenuItem {
-               Title = nav.Title,
-               Subtitle = string.IsNullOrWhiteSpace(nav.Subtitle) ? null : nav.Subtitle,
-               Navigation = nav
-            };
-
-            var segments = MenuPaths.Split(nav.MenuPath);
-            if (segments.Length == 0) roots.Add(item);
-            else ResolveBranch(groups, segments).Items.Add(item);
-         }
-
-         foreach (var item in roots.Concat(groups)) AppMenu.Add(item);
+         AppMenu = app.IsDebugActive ? _debugAppMenu ??= BuildAppMenu(app) : BuildAppMenu(app);
 
          foreach (var tool in app.GetStaticTools()) {
             var invoke = tool.Invoke;
@@ -911,6 +895,26 @@ namespace Em.Ui.Wpf.Windows
                Invoke = invoke == null ? null : () => invoke(DialogOwner!)
             });
          }
+      }
+
+      // Copy the display text so an open navigation can retitle itself without changing the menu.
+      private static ObservableCollection<TabbedMainWindowMenuItem> BuildAppMenu(EmApp app) {
+         // Like the home screen: navigations without a path sit above the groups.
+         var roots = new List<TabbedMainWindowMenuItem>();
+         var groups = new List<TabbedMainWindowMenuItem>();
+         foreach (var nav in app.Navigations.Where(app.IsAppMenuEntry).InMenuOrder()) {
+            var item = new TabbedMainWindowMenuItem {
+               Title = nav.Title,
+               Subtitle = string.IsNullOrWhiteSpace(nav.Subtitle) ? null : nav.Subtitle,
+               Navigation = nav
+            };
+
+            var segments = MenuPaths.Split(nav.MenuPath);
+            if (segments.Length == 0) roots.Add(item);
+            else ResolveBranch(groups, segments).Items.Add(item);
+         }
+
+         return new(roots.Concat(groups));
       }
 
       // Walks the path segment by segment, creating the branches that do not exist yet, and returns
@@ -936,10 +940,12 @@ namespace Em.Ui.Wpf.Windows
       // Claims may still be arriving when the workspace opens; once they have, the menus are drawn
       // again so a navigation the user turns out to be allowed shows up.
       internal async Task RebuildMenusWhenClaimsLoadedAsync() {
-         if (EmApp is not { } app) return;
+         if (EmApp is not { IsDebugActive: false } app) return;
+         var connection = app.ActiveConnection;
+         var claimsRefresh = app.EnsureClaimsLoadedAsync();
 
          try {
-            await app.EnsureClaimsLoadedAsync();
+            await claimsRefresh;
             await app.ServiceProvider.GetRequiredService<ApprovalAccessCatalog>().LoadAsync();
          }
          catch (Exception) {
@@ -947,7 +953,9 @@ namespace Em.Ui.Wpf.Windows
             return;
          }
 
-         if (IsSignedIn) RebuildMenus();
+         if (IsSignedIn && !app.IsDebugActive && ReferenceEquals(connection, app.ActiveConnection) &&
+             ReferenceEquals(claimsRefresh, app.EnsureClaimsLoadedAsync()))
+            RebuildMenus();
       }
 
       /// <summary>Runs the open menu item command.</summary>
@@ -1011,7 +1019,6 @@ namespace Em.Ui.Wpf.Windows
          if (IsSignedIn) RebuildMenus();
       }
 
-      // In debug mode a new connection brings a new claim catalogue with it.
       private void AppActiveConnectionChanged(object? sender, EventArgs e) {
          SyncSelectedConnection();
          if (IsSignedIn) _ = RebuildMenusWhenClaimsLoadedAsync();

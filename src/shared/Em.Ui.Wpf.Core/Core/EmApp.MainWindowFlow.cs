@@ -76,13 +76,16 @@ namespace Em.Ui.Wpf.Core
       }
 
       // Called once, on the first Loaded of the main window: the connection list is read, the debug
-      // connection picked last time (or the default one) becomes the active one, and a remembered session
-      // is resumed.
+      // connection picked last time (or the default one) becomes active in debug mode.
+      // Ordinary startup resumes the remembered session.
       internal async Task OnMainWindowLoadedAsync() {
          RetrieveApiConnections();
          _connectionsLoaded = true;
-         if (IsDebugMode && PreferredDebugConnection is { } debugConnection && ActiveConnection != debugConnection)
-            ActiveConnection = debugConnection;
+         if (IsDebugMode) {
+            if (PreferredDebugConnection is { } debugConnection && ActiveConnection != debugConnection)
+               ActiveConnection = debugConnection;
+            return;
+         }
 
          await RestoreSessionAsync();
       }
@@ -101,8 +104,7 @@ namespace Em.Ui.Wpf.Core
             if (await TryRestoreSessionAsync(profileName)) {
                // A restored session is no different from one opened through the form, so the window
                // goes to the same place - and the login screen is released along with the stack.
-               // Debug mode is already there.
-               if (!IsDebugActive) await ShowSignedInAfterLoginAsync();
+               await ShowSignedInAfterLoginAsync();
                return;
             }
          }

@@ -86,8 +86,7 @@ namespace Em.Ui.Wpf.Core
 
          await MainWindow.ReleaseWorkspaceAsync();
 
-         // Turned on before anything else, so the session a debug run may have restored at startup is
-         // ended without touching what is stored for the runs without debug.
+         // Enter simulation before any session cleanup so ordinary stored sessions are left alone.
          IsSimulatingLogin = true;
          if (_sessionClient is not null) await EndSessionCoreAsync(notifyServer: false, null, raiseEnded: false);
 
@@ -131,7 +130,7 @@ namespace Em.Ui.Wpf.Core
          if (PreferredDebugConnection is { } debugConnection && !ReferenceEquals(ActiveConnection, debugConnection))
             ActiveConnection = debugConnection;
 
-         _claimsRefresh = RefreshClaimsAsync();
+         _claimsRefresh = null;
          DebugStateChanged?.Invoke(this, EventArgs.Empty);
 
          await MainWindow.ShowSignedInAsync();

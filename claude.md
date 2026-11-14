@@ -34,6 +34,16 @@ di `Em.Libs`, folder control di `Em.Ui.Wpf.Controls`, tes hasil salinan, `licens
 di MatrixGrid lalu sync ulang; terjemahan yang salah diperbaiki di peta atau skrip. Hanya berkas yang terdaftar
 `owned` di `map.json` yang disunting di em-system.
 
+## WPF Apps menu during active debug (user decision 2026-11-12)
+
+While debug is active and Simulate Login is off, WPF builds the module list from
+the client's menu registrations. Switching servers does not reload claims or
+rebuild that list. Release and Simulate Login build the list from the signed-in
+session and server claim catalogue. This supersedes the 2026-10-06 rule about
+server catalogue filtering for the WPF debug module list. Opening a module and
+Switch User still follow their existing access rules. See
+[Debug mode](doc/engine/engine-debug-mode.md).
+
 ## Export profil harus lengkap (keputusan pengguna 2026-11-11)
 
 Setiap perubahan sistem yang menambah atau mengubah setting pada profil Container Manager, NuGet Manager

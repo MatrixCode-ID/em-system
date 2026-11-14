@@ -17,6 +17,7 @@ namespace Em.Ui.Wpf.Navigations
    public partial class DefaultHomeControl : UserControl, INavigationBody
    {
       private readonly EmApp _app;
+      private bool _showingDebugAppMenus;
 
       /// <summary>Creates a new instance of <see cref="DefaultHomeControl"/>.</summary>
       public DefaultHomeControl(EmApp app) {
@@ -132,9 +133,12 @@ namespace Em.Ui.Wpf.Navigations
       // Every menu-visible navigation goes in as a flat item; the view model turns MenuPath into
       // the group hierarchy, so nothing here has to know about levels.
       void RenderMainItems() {
+         if (_app.IsDebugActive && _showingDebugAppMenus) return;
+
+         _showingDebugAppMenus = _app.IsDebugActive;
          Vm.AppMenus.Clear();
          _app.Navigations
-            .Where(r => r.IsMenuVisible && _app.CanOpen(r))
+            .Where(_app.IsAppMenuEntry)
             .InMenuOrder()
             .EachOf(AddMenuItems);
       }
